@@ -170,74 +170,76 @@ export default function LoginPage() {
           <div id="google-signin-btn" style={{ minHeight: '40px', width: '100%', display: 'flex', justifyContent: 'center' }}></div>
 
           {/* Dev Mock login selection */}
-          {!showMockOptions ? (
-            <Button
-              type="default"
-              icon={<GoogleOutlined />}
-              onClick={() => setShowMockOptions(true)}
-              block
-              style={{
-                background: '#222',
-                borderColor: '#333',
-                color: '#D4A84B',
-                height: '40px',
-                fontWeight: '500'
-              }}
-            >
-              Mock Google Sign-In Options (Dev)
-            </Button>
-          ) : (
-            <div style={{ width: '100%', background: '#1c1c1c', padding: '12px', borderRadius: '8px', border: '1px solid #333' }}>
-              <div style={{ color: '#888', fontSize: '11px', marginBottom: '8px', textAlign: 'center', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                MOCK LOGIN (LOCAL DEV ONLY)
-              </div>
-              <div className="flex flex-col gap-2" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <Button
-                  size="middle"
-                  onClick={() => handleMockGoogleLogin('danny.do@wingslashes.com', 'Danny Wings')}
-                  loading={loading}
-                  style={{ background: '#262626', borderColor: '#434343', color: '#D4A84B', width: '100%', textAlign: 'left' }}
-                >
-                  Danny Wings (danny.do@wingslashes.com)
-                </Button>
-                <Button
-                  size="middle"
-                  onClick={() => handleMockGoogleLogin('danhdo@gmail.com', 'Danh Do')}
-                  loading={loading}
-                  style={{ background: '#262626', borderColor: '#434343', color: '#D4A84B', width: '100%', textAlign: 'left' }}
-                >
-                  Danh Do (danhdo@gmail.com)
-                </Button>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                  <Input 
-                    size="middle" 
-                    placeholder="Custom email..." 
-                    value={mockEmail}
-                    onChange={(e) => setMockEmail(e.target.value)}
-                    style={{ background: '#1f1f1f', border: '1px solid #333', color: '#fff' }}
-                  />
+          {process.env.NODE_ENV !== 'production' && (
+            !showMockOptions ? (
+              <Button
+                type="default"
+                icon={<GoogleOutlined />}
+                onClick={() => setShowMockOptions(true)}
+                block
+                style={{
+                  background: '#222',
+                  borderColor: '#333',
+                  color: '#D4A84B',
+                  height: '40px',
+                  fontWeight: '500'
+                }}
+              >
+                Mock Google Sign-In Options (Dev)
+              </Button>
+            ) : (
+              <div style={{ width: '100%', background: '#1c1c1c', padding: '12px', borderRadius: '8px', border: '1px solid #333' }}>
+                <div style={{ color: '#888', fontSize: '11px', marginBottom: '8px', textAlign: 'center', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                  MOCK LOGIN (LOCAL DEV ONLY)
+                </div>
+                <div className="flex flex-col gap-2" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <Button
                     size="middle"
-                    type="primary"
-                    onClick={() => handleMockGoogleLogin(mockEmail, mockEmail.split('@')[0])}
+                    onClick={() => handleMockGoogleLogin('danny.do@wingslashes.com', 'Danny Wings')}
                     loading={loading}
-                    style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000' }}
+                    style={{ background: '#262626', borderColor: '#434343', color: '#D4A84B', width: '100%', textAlign: 'left' }}
                   >
-                    Go
+                    Danny Wings (danny.do@wingslashes.com)
                   </Button>
-                </div>
-                <div style={{ textAlign: 'center', marginTop: '4px' }}>
                   <Button
-                    type="link"
-                    size="small"
-                    onClick={() => setShowMockOptions(false)}
-                    style={{ color: '#666', padding: 0, height: 'auto' }}
+                    size="middle"
+                    onClick={() => handleMockGoogleLogin('danhdo@gmail.com', 'Danh Do')}
+                    loading={loading}
+                    style={{ background: '#262626', borderColor: '#434343', color: '#D4A84B', width: '100%', textAlign: 'left' }}
                   >
-                    Hide Mock Options
+                    Danh Do (danhdo@gmail.com)
                   </Button>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                    <Input 
+                      size="middle" 
+                      placeholder="Custom email..." 
+                      value={mockEmail}
+                      onChange={(e) => setMockEmail(e.target.value)}
+                      style={{ background: '#1f1f1f', border: '1px solid #333', color: '#fff' }}
+                    />
+                    <Button
+                      size="middle"
+                      type="primary"
+                      onClick={() => handleMockGoogleLogin(mockEmail, mockEmail.split('@')[0])}
+                      loading={loading}
+                      style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000' }}
+                    >
+                      Go
+                    </Button>
+                  </div>
+                  <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={() => setShowMockOptions(false)}
+                      style={{ color: '#666', padding: 0, height: 'auto' }}
+                    >
+                      Hide Mock Options
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )
           )}
         </div>
 
