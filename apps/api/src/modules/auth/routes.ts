@@ -226,6 +226,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           displayName: staff.displayName,
           role: staff.role as any,
           isActive: staff.isActive,
+          avatarUrl: staff.avatarUrl,
           createdAt: staff.createdAt.toISOString()
         }
       };
@@ -234,6 +235,82 @@ export async function authRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ 
         error: 'Internal Server Error', 
         message: 'Failed to retrieve profile' 
+      });
+    }
+  });
+
+  // POST /api/auth/impersonate (Admin only, cannot impersonate other admins)
+  fastify.post('/auth/impersonate', { preHandler: [requireAuth] }, async (request, reply) => {
+    const currentUser = request.user as JwtUserPayload;
+
+    if (currentUser.role !== 'admin') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Quyền truy cập bị từ chối. Chỉ Admin mới có thể thực hiện chức năng này.'
+      });
+    }
+
+    const { userId } = request.body as { userId: number };
+
+    if (!userId) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Yêu cầu Target userId'
+      });
+    }
+
+    try {
+      const targetStaff = await fastify.prisma.crm.crmStaff.findUnique({
+        where: { id: userId }
+      });
+
+      if (!targetStaff) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Không tìm thấy người dùng đích'
+        });
+      }
+
+      if (!targetStaff.isActive) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Không thể đăng nhập dưới quyền tài khoản đang bị khóa'
+        });
+      }
+
+      if (targetStaff.role === 'admin') {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Không được phép đăng nhập dưới quyền của Admin khác'
+        });
+      }
+
+      const payload: JwtUserPayload = {
+        id: targetStaff.id,
+        username: targetStaff.username,
+        displayName: targetStaff.displayName,
+        role: targetStaff.role as any
+      };
+
+      const token = fastify.jwt.sign(payload, { expiresIn: '7d' });
+
+      return {
+        token,
+        user: {
+          id: targetStaff.id,
+          username: targetStaff.username,
+          displayName: targetStaff.displayName,
+          role: targetStaff.role as any,
+          isActive: targetStaff.isActive,
+          avatarUrl: targetStaff.avatarUrl,
+          createdAt: targetStaff.createdAt.toISOString()
+        }
+      };
+    } catch (error: any) {
+      fastify.log.error('Impersonation error:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Đăng nhập giả lập thất bại'
       });
     }
   });

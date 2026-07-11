@@ -2,7 +2,7 @@
 
 import '../suppress-warnings';
 import React, { useEffect, useState, Suspense } from 'react';
-import { Layout, Menu, Button, Avatar, Space, Dropdown, theme } from 'antd';
+import { Layout, Menu, Button, Avatar, Space, Dropdown, theme, message, Tag } from 'antd';
 import {
   UserOutlined,
   TeamOutlined,
@@ -113,6 +113,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isImpersonating, setIsImpersonating] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { themeMode, toggleTheme } = useTheme();
@@ -122,13 +123,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Check authentication
     const tokenStr = localStorage.getItem('mos_token');
     const storedUser = localStorage.getItem('mos_user');
+    const hasOriginal = !!localStorage.getItem('mos_original_token');
 
     if (!tokenStr || !storedUser) {
       localStorage.removeItem('mos_token');
       localStorage.removeItem('mos_user');
+      localStorage.removeItem('mos_original_token');
+      localStorage.removeItem('mos_original_user');
       router.push('/login');
     } else {
       setUser(JSON.parse(storedUser));
+      setIsImpersonating(hasOriginal);
       setLoading(false);
     }
   }, [router]);
@@ -136,7 +141,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleLogout = () => {
     localStorage.removeItem('mos_token');
     localStorage.removeItem('mos_user');
+    localStorage.removeItem('mos_original_token');
+    localStorage.removeItem('mos_original_user');
     router.push('/login');
+  };
+
+  const handleExitImpersonation = () => {
+    const origToken = localStorage.getItem('mos_original_token');
+    const origUser = localStorage.getItem('mos_original_user');
+    if (origToken && origUser) {
+      localStorage.setItem('mos_token', origToken);
+      localStorage.setItem('mos_user', origUser);
+      localStorage.removeItem('mos_original_token');
+      localStorage.removeItem('mos_original_user');
+      message.success('Đã quay lại tài khoản Admin');
+      window.location.href = '/dashboard/staff';
+    }
   };
 
   if (loading) {
@@ -244,6 +264,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           
           <div style={{ display: 'flex', alignItems: 'center' }}>
+            {isImpersonating && (
+              <Tag 
+                color="warning" 
+                style={{ 
+                  marginRight: '16px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  padding: '4px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #D4A84B',
+                  background: themeMode === 'dark' ? '#2b2111' : '#fffbe6'
+                }}
+              >
+                <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#d46b08', fontSize: '13px' }}>
+                  Đang giả lập: <strong>{user?.displayName}</strong>
+                </span>
+                <Button 
+                  type="primary" 
+                  danger 
+                  size="small" 
+                  onClick={handleExitImpersonation}
+                  style={{ height: '22px', display: 'flex', alignItems: 'center', fontSize: '11px', padding: '0 8px' }}
+                >
+                  Thoát
+                </Button>
+              </Tag>
+            )}
             <Button 
               type="text" 
               icon={themeMode === 'dark' ? <SunOutlined style={{ color: '#FAAD14' }} /> : <MoonOutlined style={{ color: '#1890ff' }} />} 

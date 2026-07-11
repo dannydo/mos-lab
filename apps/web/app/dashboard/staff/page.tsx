@@ -88,9 +88,17 @@ export default function StaffPage() {
 
   const [activeTab, setActiveTab] = useState<string>('staff');
   const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [rolesLoading, setRolesLoading] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('mos_user');
+    if (stored) {
+      setCurrentUser(JSON.parse(stored));
+    }
+  }, []);
 
   // Staff Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -240,6 +248,32 @@ export default function StaffPage() {
     } catch (err: any) {
       console.error('Delete staff error:', err);
       message.error(err.response?.data?.message || 'Không thể xóa nhân viên');
+    }
+  };
+
+  // Impersonate user (Login as)
+  const handleImpersonate = async (userId: number, displayName: string) => {
+    try {
+      const currentToken = localStorage.getItem('mos_token');
+      const currentUserStr = localStorage.getItem('mos_user');
+
+      const res = await api.post('/auth/impersonate', { userId });
+      const { token, user } = res.data;
+
+      if (currentToken && currentUserStr) {
+        localStorage.setItem('mos_original_token', currentToken);
+        localStorage.setItem('mos_original_user', currentUserStr);
+      }
+
+      localStorage.setItem('mos_token', token);
+      localStorage.setItem('mos_user', JSON.stringify(user));
+
+      message.success(`Đang đăng nhập giả lập dưới quyền ${displayName}`);
+      window.location.href = '/dashboard/customers';
+    } catch (err: any) {
+      console.error('Impersonate error:', err);
+      const errMsg = err.response?.data?.message || 'Đăng nhập giả lập thất bại';
+      message.error(errMsg);
     }
   };
 
@@ -401,41 +435,55 @@ export default function StaffPage() {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 140,
-      render: (_: any, record: Staff) => (
-        <Space size="middle">
-          <Tooltip title="Xem thông tin chi tiết">
-            <Button
-              type="text"
-              icon={<EyeOutlined style={{ color: '#D4A84B' }} />}
-              onClick={() => openStaffDetails(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="text"
-              icon={<EditOutlined style={{ color: '#1890ff' }} />}
-              onClick={() => openStaffModal(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Xóa nhân viên">
-            <Popconfirm
-              title="Xóa nhân viên"
-              description={`Bạn có chắc chắn muốn xóa nhân viên "${record.displayName}"?`}
-              onConfirm={() => handleDeleteStaff(record.id)}
-              okText="Xóa"
-              cancelText="Hủy"
-              okButtonProps={{ danger: true }}
-            >
+      width: 180,
+      render: (_: any, record: Staff) => {
+        const isAdmin = currentUser?.role === 'admin';
+        const isTargetAdmin = record.role === 'admin';
+        const canImpersonate = isAdmin && !isTargetAdmin && record.isActive;
+
+        return (
+          <Space size="middle">
+            {canImpersonate && (
+              <Tooltip title={`Đăng nhập dưới quyền ${record.displayName}`}>
+                <Button
+                  type="text"
+                  icon={<KeyOutlined style={{ color: '#52c41a' }} />}
+                  onClick={() => handleImpersonate(record.id, record.displayName)}
+                />
+              </Tooltip>
+            )}
+            <Tooltip title="Xem thông tin chi tiết">
               <Button
                 type="text"
-                danger
-                icon={<DeleteOutlined />}
+                icon={<EyeOutlined style={{ color: '#D4A84B' }} />}
+                onClick={() => openStaffDetails(record)}
               />
-            </Popconfirm>
-          </Tooltip>
-        </Space>
-      )
+            </Tooltip>
+            <Tooltip title="Chỉnh sửa">
+              <Button
+                type="text"
+                icon={<EditOutlined style={{ color: '#1890ff' }} />}
+                onClick={() => openStaffModal(record)}
+              />
+            </Tooltip>
+            <Tooltip title="Xóa nhân viên">
+              <Popconfirm
+                title="Xóa nhân viên"
+                description={`Bạn có chắc chắn muốn xóa nhân viên "${record.displayName}"?`}
+                onConfirm={() => handleDeleteStaff(record.id)}
+                okText="Xóa"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true }}
+              >
+                <Button
+                  type="text"
+                  icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />}
+                />
+              </Popconfirm>
+            </Tooltip>
+          </Space>
+        );
+      }
     }
   ];
 
