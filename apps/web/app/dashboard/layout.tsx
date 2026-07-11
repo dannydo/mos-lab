@@ -259,7 +259,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             />
             <Dropdown menu={userMenu} placement="bottomRight" arrow>
               <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                <Avatar icon={<UserOutlined />} style={{ backgroundColor: token.colorPrimary, color: '#000' }} />
+                <Avatar src={user?.avatarUrl || undefined} icon={<UserOutlined />} style={{ backgroundColor: token.colorPrimary, color: '#000' }} />
               </div>
             </Dropdown>
           </div>

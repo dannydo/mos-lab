@@ -83,10 +83,12 @@ export async function authRoutes(fastify: FastifyInstance) {
     try {
       let email: string;
       let name: string;
+      let picture: string | null = null;
 
       if (isMock && process.env.NODE_ENV !== 'production') {
         email = mockEmail || 'danhdo@gmail.com';
         name = mockName || 'Danh Do (Mock Google)';
+        picture = 'https://lh3.googleusercontent.com/a/default-user=s96-c';
       } else {
         const tokenRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
         if (!tokenRes.ok) {
@@ -104,6 +106,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         }
         email = tokenInfo.email;
         name = tokenInfo.name || tokenInfo.given_name || 'Google User';
+        picture = tokenInfo.picture || null;
       }
 
       // Find staff in CRM DB
@@ -140,13 +143,22 @@ export async function authRoutes(fastify: FastifyInstance) {
               role: (email === 'danhdo@gmail.com' || isDanny) ? 'admin' : 'telesales',
               passwordHash,
               isActive: true,
-              email: email
+              email: email,
+              avatarUrl: picture
             }
           });
         } else {
           return reply.status(403).send({
             error: 'Forbidden',
             message: `Email ${email} không có quyền truy cập Wings Lashes CRM. Vui lòng liên hệ Admin.`
+          });
+        }
+      } else {
+        // If user already exists, update their avatarUrl with the latest from Google
+        if (picture && staff.avatarUrl !== picture) {
+          staff = await fastify.prisma.crm.crmStaff.update({
+            where: { id: staff.id },
+            data: { avatarUrl: picture }
           });
         }
       }
@@ -176,6 +188,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           displayName: staff.displayName,
           role: staff.role as any,
           isActive: staff.isActive,
+          avatarUrl: staff.avatarUrl,
           createdAt: staff.createdAt.toISOString()
         }
       };
