@@ -1121,7 +1121,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       return { success: true, count: customerIds.length, batchId };
     } catch (error: any) {
-      fastify.log.error('Assign customers error:', error);
+      fastify.log.error({ err: error }, 'Assign customers error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to assign customers' });
     }
   });
@@ -1170,7 +1170,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       return { success: true, count: customerIds.length, batchId };
     } catch (error: any) {
-      fastify.log.error('Unassign customers error:', error);
+      fastify.log.error({ err: error }, 'Unassign customers error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to unassign customers' });
     }
   });
@@ -1265,7 +1265,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       };
     } catch (error: any) {
-      fastify.log.error('Get assignment history error:', error);
+      fastify.log.error({ err: error }, 'Get assignment history error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve assignment history' });
     }
   });
@@ -1333,7 +1333,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       return { data };
     } catch (error: any) {
-      fastify.log.error('Get assignment history details error:', error);
+      fastify.log.error({ err: error }, 'Get assignment history details error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve assignment history details' });
     }
   });
@@ -1416,7 +1416,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         skippedCount: historyRecords.length - assignmentsToRevert.length
       };
     } catch (error: any) {
-      fastify.log.error('Undo assignment error:', error);
+      fastify.log.error({ err: error }, 'Undo assignment error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to undo assignments' });
     }
   });
