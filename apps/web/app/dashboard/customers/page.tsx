@@ -233,7 +233,8 @@ export default function CustomersPage() {
     refU?: 'yes' | 'no' | 'all',
     refCMin?: number,
     refCMax?: number,
-    staffId?: string
+    staffId?: string,
+    overrideIds?: number[]
   ) => {
     setLoading(true);
     try {
@@ -243,8 +244,9 @@ export default function CustomersPage() {
         sort
       };
 
-      if (randomSelectedIds && randomSelectedIds.length > 0) {
-        params.ids = randomSelectedIds.join(',');
+      const idsToUse = overrideIds !== undefined ? overrideIds : randomSelectedIds;
+      if (idsToUse && idsToUse.length > 0) {
+        params.ids = idsToUse.join(',');
       }
 
       if (tab !== 'ALL') {
@@ -281,8 +283,8 @@ export default function CustomersPage() {
         });
       }
       
-      if (randomSelectedIds && randomSelectedIds.length > 0) {
-        setTotal(randomSelectedIds.length);
+      if (idsToUse && idsToUse.length > 0) {
+        setTotal(idsToUse.length);
       } else {
         setTotal(response.data.pagination.total);
       }
@@ -654,6 +656,31 @@ export default function CustomersPage() {
       } else {
         setSelectedRowKeys(selectedIds);
         setRandomSelectedIds(selectedIds);
+        
+        // Force immediate fetch with the new selected random IDs
+        fetchCustomers(
+          1,
+          pageSize,
+          activeTab,
+          searchQuery,
+          sortField,
+          daysSinceLastVisitMin,
+          daysSinceLastVisitMax,
+          totalSpentMin,
+          totalSpentMax,
+          totalVisitsMin,
+          totalVisitsMax,
+          promoUsed,
+          promoCountMin,
+          promoCountMax,
+          referralUsed,
+          referralCountMin,
+          referralCountMax,
+          assignedStaffId,
+          selectedIds
+        );
+        setCurrentPage(1);
+
         message.success(`Đã chọn ngẫu nhiên ${selectedIds.length} khách hàng chưa phân bổ!`);
         setRandomModalVisible(false);
       }
