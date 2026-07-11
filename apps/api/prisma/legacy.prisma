@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/legacy-client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("LEGACY_DATABASE_URL")
+}
+
+model client_store_language {
+  id                        Int             @id @default(autoincrement())
+  language_id               Int             @db.UnsignedInt
+  client_store_id           Int             @db.UnsignedInt
+  client_store_name         String          @db.VarChar(255)
+  client_store_address_map  String          @db.VarChar(255)
+  client_store_address_sms  String          @db.VarChar(255)
+  client_store_address_web  String          @db.VarChar(255)
+  client_store_address_city String          @db.VarChar(255)
+
+}
+
+model order {
+  id                                                                       Int                                @id @default(autoincrement()) @db.UnsignedInt
+  client_id                                                                Int                                @db.UnsignedInt
+  client_business_id                                                       Int                                @db.UnsignedInt
+  created_staff_id                                                         Int?                               @db.UnsignedInt
+  order_key                                                                String                             @db.Char(30)
+  next_order_id                                                            Int?                               @db.UnsignedInt
+  next_completed_order_id                                                  Int?                               @db.UnsignedInt
+  client_store_id                                                          Int                                @db.UnsignedInt
+  user_id                                                                  Int                                @db.UnsignedInt
+  currency_id                                                              Int                                @db.UnsignedInt
+  assigned_staff_id                                                        Int?                               @db.UnsignedInt
+  user_contact_id                                                          Int?                               @db.UnsignedInt
+  campaign_id                                                              Int?                               @db.UnsignedInt
+  advertise_id                                                             Int?                               @db.UnsignedInt
+  user_url_id                                                              Int?                               @db.UnsignedInt
+  selected_user_url_id                                                     Int?                               @db.UnsignedInt
+  promotion_id                                                             Int?                               @db.UnsignedInt
+  selected_promotion_id                                                    Int?                               @db.UnsignedInt
+  selected_user_membership_id                                              Int?                               @db.UnsignedInt
+  user_debt_id                                                             Int?
+  user_ticket_id                                                           Int?                               @db.UnsignedInt
+  user_sms_id                                                              Int?                               @db.UnsignedInt
+  invoice_printed_staff_id                                                 Int?                               @db.UnsignedInt
+  booking_note                                                             String?                            @db.VarChar(255)
+  booking_channels                                                         String                             @db.Char(50)
+  booking_duration_minute                                                  Int                                @db.UnsignedInt
+  booking_date_start                                                       DateTime?                          @db.DateTime(0)
+  booking_date_end                                                         DateTime?                          @db.DateTime(0)
+  total_quantity                                                           Int                                @db.UnsignedInt
+  total_price                                                              Float
+  order_state                                                              String                             @db.Char(20)
+  order_number                                                             Int?                               @db.UnsignedInt
+  last_day_order_completed                                                 Int                                @db.UnsignedInt
+  combo_sale_required                                                      Boolean
+  is_new                                                                   Boolean
+  is_debt                                                                  Boolean
+  date_updated                                                             DateTime?                          @db.DateTime(0)
+  date_created                                                             DateTime                           @db.DateTime(0)
+  booking_date_only                                                        DateTime?                          @db.Date
+
+}
+
+model order_service {
+  id                                                                                                                   Int                                @id @default(autoincrement()) @db.UnsignedInt
+  client_id                                                                                                            Int?                               @db.UnsignedInt
+  client_business_id                                                                                                   Int?                               @db.UnsignedInt
+  created_staff_id                                                                                                     Int?                               @db.UnsignedInt
+  user_id                                                                                                              Int                                @db.UnsignedInt
+  order_id                                                                                                             Int                                @db.UnsignedInt
+  next_retain_order_service_id                                                                                         Int?                               @db.UnsignedInt
+  next_fix_order_service_id                                                                                            Int?                               @db.UnsignedInt
+  next_adjust_order_service_id                                                                                         Int?                               @db.UnsignedInt
+  next_normal_order_service_id                                                                                         Int?                               @db.UnsignedInt
+  next_removal_order_service_id                                                                                        Int?                               @db.UnsignedInt
+  next_log_order_service_id                                                                                            Int?                               @db.UnsignedInt
+  user_ticket_id                                                                                                       Int?                               @db.UnsignedInt
+  service_id                                                                                                           Int                                @db.UnsignedInt
+  service_type                                                                                                         String                             @db.Char(30)
+  service_group                                                                                                        String                             @db.Char(30)
+  user_service_type                                                                                                    String                             @db.Char(30)
+  service_price_id                                                                                                     Int?
+  assigned_staff_id                                                                                                    Int?                               @db.UnsignedInt
+  booked_staff_id                                                                                                      Int?                               @db.UnsignedInt
+  check_in_staff_id                                                                                                    Int?                               @db.UnsignedInt
+  check_out_staff_id                                                                                                   Int?                               @db.UnsignedInt
+  quality_control_staff_id                                                                                             Int?                               @db.UnsignedInt
+  final_check_staff_id                                                                                                 Int?                               @db.UnsignedInt
+  promotion_staff_id                                                                                                   Int?                               @db.UnsignedInt
+  user_service_balance_transaction_id                                                                                  Int?
+  profile_attribute_group_key                                                                                          String?                            @db.Char(30)
+  attribute_group_key                                                                                                  String?                            @db.Char(30)
+  retain_attribute_group_key                                                                                           String?                            @db.Char(30)
+  assigned_attribute_group_key                                                                                         String?                            @db.Char(30)
+  check_in_attribute_group_key                                                                                         String?                            @db.Char(30)
+  check_out_attribute_group_key                                                                                        String?                            @db.Char(30)
+  quality_control_attribute_group_key                                                                                  String?                            @db.Char(30)
+  final_check_attribute_group_key                                                                                      String?                            @db.Char(30)
+  duration_minute                                                                                                      Int
+  quantity                                                                                                             Int
+  promotion_id                                                                                                         Int?                               @db.UnsignedInt
+  user_url_id                                                                                                          Int?                               @db.UnsignedInt
+  service_price                                                                                                        Float
+  discount_amount                                                                                                      Float
+  paid_credit_amount                                                                                                   Float
+  tax_amount                                                                                                           Float
+  balance_price                                                                                                        Float
+  upgrade_price                                                                                                        Float
+  downgrade_price                                                                                                      Float
+  refund_price                                                                                                         Float
+  total_price                                                                                                          Float
+  extra_price_tracking_key                                                                                             String?                            @db.VarChar(1000)
+  date_created                                                                                                         DateTime                           @db.DateTime(0)
+
+}
+
+model service {
+  id                                                                          Int                                @id @default(autoincrement()) @db.UnsignedInt
+  client_id                                                                   Int                                @db.UnsignedInt
+  client_business_id                                                          Int                                @db.UnsignedInt
+  parent_service_id                                                           Int?                               @db.UnsignedInt
+  service_key                                                                 String                             @db.Char(40)
+  service_type                                                                String                             @db.Char(30)
+  service_group                                                               String                             @db.Char(30)
+  duration_minute                                                             Int                                @db.UnsignedInt
+  duration_minute_standard                                                    Int                                @db.UnsignedInt
+  image_filename                                                              String?                            @db.VarChar(255)
+  image_extension                                                             String?                            @db.Char(5)
+  service_attribute_set_id                                                    Int?                               @db.UnsignedInt
+  service_retain_attribute_set_id                                             Int?                               @db.UnsignedInt
+  profile_attribute_set_id                                                    Int                                @db.UnsignedInt
+  before_attribute_set_id                                                     Int?                               @db.UnsignedInt
+  after_attribute_set_id                                                      Int?                               @db.UnsignedInt
+  staff_assigned_attribute_set_id                                             Int?                               @db.UnsignedInt
+  staff_check_in_attribute_set_id                                             Int?                               @db.UnsignedInt
+  staff_check_out_attribute_set_id                                            Int?                               @db.UnsignedInt
+  staff_quality_control_attribute_set_id                                      Int?                               @db.UnsignedInt
+  customer_survey_set_id                                                      Int                                @db.UnsignedInt
+  staff_survey_set_id                                                         Int                                @db.UnsignedInt
+  feedback_attribute_set_id                                                   Int?                               @db.UnsignedInt
+  remind_interval_day                                                         Int                                @db.UnsignedInt
+  last_day_required                                                           Int                                @db.UnsignedInt
+  position                                                                    Int                                @db.UnsignedInt
+  is_temporary                                                                Boolean
+  is_disabled                                                                 Boolean
+  date_updated                                                                DateTime?                          @db.DateTime(0)
+  date_created                                                                DateTime                           @db.DateTime(0)
+
+}
+
+model service_language {
+  id                        Int             @id @default(autoincrement()) @db.UnsignedInt
+  language_id               Int             @db.UnsignedInt
+  service_id                Int             @db.UnsignedInt
+  service_name              String          @db.VarChar(255)
+  service_short_description String?         @db.VarChar(255)
+  service_description       String?         @db.Text
+
+}
+
+model user {
+  id                                                                                                 Int                                     @id @default(autoincrement()) @db.UnsignedInt
+  created_staff_id                                                                                   Int?                                    @db.UnsignedInt
+  email                                                                                              String?                                 @db.VarChar(100)
+  password                                                                                           String?                                 @db.VarChar(60)
+  gender                                                                                             String?                                 @db.Char(10)
+  attribute_gender_id                                                                                Int?                                    @db.UnsignedInt
+  date_of_birth                                                                                      DateTime?                               @db.Date
+  last_login                                                                                         DateTime?                               @db.DateTime(0)
+  date_created                                                                                       DateTime                                @db.DateTime(0)
+
+}
+
+model user_contact {
+  id                                                     Int         @id @default(autoincrement()) @db.UnsignedInt
+  created_staff_id                                       Int?        @db.UnsignedInt
+  user_id                                                Int         @db.UnsignedInt
+  phone_number                                           String      @db.VarChar(50)
+  is_disabled                                            Boolean
+  date_created                                           DateTime    @db.DateTime(0)
+
+}
+
+model user_profile {
+  id                                                Int               @id @default(autoincrement()) @db.UnsignedInt
+  client_id                                         Int               @db.UnsignedInt
+  client_business_id                                Int?              @db.UnsignedInt
+  created_staff_id                                  Int?              @db.UnsignedInt
+  user_id                                           Int               @db.UnsignedInt
+  language_id                                       Int               @db.UnsignedInt
+  campaign_id                                       Int?              @db.UnsignedInt
+  advertise_id                                      Int?              @db.UnsignedInt
+  referrer_user_id                                  Int?              @db.UnsignedInt
+  referrer_created_staff_id                         Int?              @db.UnsignedInt
+  referrer_check_out_staff_id                       Int?              @db.UnsignedInt
+  client_store_id                                   Int?              @db.UnsignedInt
+  user_group_id                                     Int               @db.UnsignedInt
+  access_user_group_ids                             String            @db.VarChar(255)
+  passcode                                          String?           @db.Char(10)
+  username                                          String?           @db.Char(100)
+  username_created_staff_id                         Int?              @db.UnsignedInt
+  provider                                          String            @db.Char(30)
+  first_name                                        String?           @db.VarChar(50)
+  last_name                                         String?           @db.VarChar(50)
+  full_name                                         String?           @db.VarChar(50)
+  avatar                                            String?           @db.VarChar(255)
+  avatar_internal                                   String?           @db.VarChar(255)
+  country_street_id                                 Int?              @db.UnsignedInt
+  country_district_id                               Int?              @db.UnsignedInt
+  is_academy                                        Boolean
+  is_temporary                                      Boolean
+  is_disabled                                       Boolean
+  is_leaved                                         Boolean
+  is_deleted                                        Boolean
+  last_order_booking                                DateTime?         @db.DateTime(0)
+  referrer_date_created                             DateTime?         @db.DateTime(0)
+  username_date_created                             DateTime?         @db.DateTime(0)
+  date_created                                      DateTime          @db.DateTime(0)
+  referrer_date_created_only                        DateTime?         @db.Date
+
+}
+
+model user_service_balance {
+  id                                               Int                                @id @default(autoincrement()) @db.UnsignedInt
+  client_id                                        Int                                @db.UnsignedInt
+  client_business_id                               Int                                @db.UnsignedInt
+  created_staff_id                                 Int?                               @db.UnsignedInt
+  updated_staff_id                                 Int?                               @db.UnsignedInt
+  user_id                                          Int                                @db.UnsignedInt
+  service_id                                       Int                                @db.UnsignedInt
+  service_group                                    String                             @db.Char(30)
+  service_price_id                                 Int?
+  service_price_group                              String?                            @db.Char(30)
+  normal_count                                     Int
+  retain_count                                     Int
+  total_normal_balance_amount                      Float
+  total_retain_balance_amount                      Float
+  tracking_key                                     String?                            @db.VarChar(255)
+  note                                             String?                            @db.VarChar(255)
+  next_normal_date_expired                         DateTime?                          @db.DateTime(0)
+  next_retain_date_expired                         DateTime?                          @db.DateTime(0)
+  date_expired                                     DateTime?                          @db.DateTime(0)
+  date_updated                                     DateTime?                          @db.DateTime(0)
+  date_created                                     DateTime                           @db.DateTime(0)
+
+}

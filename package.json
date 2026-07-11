@@ -1,0 +1,17 @@
+{
+  "name": "mos-lab-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.15.2",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "clean": "turbo clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3"
+  }
+}

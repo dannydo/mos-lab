@@ -1,0 +1,80 @@
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import jwt from '@fastify/jwt';
+import dotenv from 'dotenv';
+import path from 'path';
+import prismaPlugin from './plugins/prisma.js';
+import { healthRoutes } from './modules/health/routes.js';
+import { authRoutes } from './modules/auth/routes.js';
+import { customerRoutes } from './modules/customers/routes.js';
+import { planRoutes } from './modules/plans/routes.js';
+import { callRoutes } from './modules/calls/routes.js';
+import { kpiRoutes } from './modules/kpi/routes.js';
+import { staffRoutes } from './modules/staff/routes.js';
+import { rolesRoutes } from './modules/roles/routes.js';
+
+// Load environment variables
+dotenv.config();
+
+// BigInt JSON serialization patch
+(BigInt.prototype as any).toJSON = function () {
+  return Number(this);
+};
+
+const server = Fastify({
+  logger: true,
+});
+
+const start = async () => {
+  try {
+    // Register CORS
+    await server.register(cors, {
+      origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+      credentials: true,
+    });
+
+    // Register JWT
+    await server.register(jwt, {
+      secret: process.env.JWT_SECRET || 'super_secret_mos_lab_jwt_key_development_only',
+    });
+
+    // Register Prisma plugin
+    await server.register(prismaPlugin);
+
+    // Seed default roles if empty
+    const roleCount = await server.prisma.crm.crmRole.count();
+    if (roleCount === 0) {
+      await server.prisma.crm.crmRole.createMany({
+        data: [
+          { key: 'admin', name: 'Administrator', color: 'red', viewKPI: true, viewTeamKPI: true, manageStaff: true, isSystem: true, description: 'Toàn quyền quản trị hệ thống' },
+          { key: 'manager', name: 'Manager', color: 'purple', viewKPI: true, viewTeamKPI: true, manageStaff: false, isSystem: true, description: 'Quản lý bộ phận' },
+          { key: 'oc', name: 'Operations Coordinator', color: 'blue', viewKPI: true, viewTeamKPI: true, manageStaff: false, isSystem: true, description: 'Điều phối vận hành' },
+          { key: 'cc', name: 'Customer Care', color: 'cyan', viewKPI: true, viewTeamKPI: false, manageStaff: false, isSystem: true, description: 'Chăm sóc khách hàng' },
+          { key: 'ls', name: 'Leader Sales', color: 'gold', viewKPI: true, viewTeamKPI: true, manageStaff: false, isSystem: true, description: 'Trưởng nhóm Telesales' },
+          { key: 'telesales', name: 'Telesales Executive', color: 'orange', viewKPI: true, viewTeamKPI: false, manageStaff: false, isSystem: true, description: 'Nhân viên Telesales' }
+        ]
+      });
+      server.log.info('Seeded default roles successfully');
+    }
+
+    // Register routes
+    await server.register(healthRoutes, { prefix: '/api' });
+    await server.register(authRoutes, { prefix: '/api' });
+    await server.register(customerRoutes, { prefix: '/api' });
+    await server.register(planRoutes, { prefix: '/api' });
+    await server.register(callRoutes, { prefix: '/api' });
+    await server.register(kpiRoutes, { prefix: '/api' });
+    await server.register(staffRoutes, { prefix: '/api' });
+    await server.register(rolesRoutes, { prefix: '/api' });
+
+    const port = Number(process.env.PORT) || 3001;
+    await server.listen({ port, host: '0.0.0.0' });
+    
+    server.log.info(`Server is running at http://localhost:${port}`);
+  } catch (err) {
+    server.log.error(err);
+    process.exit(1);
+  }
+};
+
+start();

@@ -1,0 +1,114 @@
+datasource db {
+  provider = "mysql"
+  url      = env("CRM_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/crm-client"
+}
+
+model CrmStaff {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(50)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  displayName  String   @map("display_name") @db.VarChar(100)
+  role         String   @default("telesales") @db.VarChar(20)
+  isActive     Boolean  @default(true) @map("is_active") @db.TinyInt
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  
+  // HR System Extensions
+  email            String?   @db.VarChar(100)
+  phone            String?   @db.VarChar(20)
+  joinedAt         DateTime? @map("joined_at") @db.Date
+  birthDate        DateTime? @map("birth_date") @db.Date
+  gender           String?   @db.VarChar(10)
+  address          String?   @db.Text
+  emergencyContact String?   @map("emergency_contact") @db.VarChar(100)
+  emergencyPhone   String?   @map("emergency_phone") @db.VarChar(20)
+  avatarUrl        String?   @map("avatar_url") @db.VarChar(255)
+  notes            String?   @db.Text
+
+  customerAssignments CrmCustomerAssignment[]
+
+  @@map("crm_staff")
+}
+
+model CrmDailyPlan {
+  id           Int      @id @default(autoincrement())
+  legacyUserId Int      @map("legacy_user_id")
+  staffId      Int      @map("staff_id")
+  plannedDate  DateTime @map("planned_date") @db.Date
+  bucket       String?  @db.VarChar(20)
+  priority     Int      @default(0)
+  status       String   @default("PLANNED") @db.VarChar(20)
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  @@unique([legacyUserId, plannedDate], name: "legacyUserId_plannedDate")
+  @@map("crm_daily_plans")
+}
+
+model CrmCallLog {
+  id           Int       @id @default(autoincrement())
+  planId       Int?      @map("plan_id")
+  legacyUserId Int       @map("legacy_user_id")
+  staffId      Int       @map("staff_id")
+  callType     String    @map("call_type") @db.VarChar(20)
+  callResult   String?   @map("call_result") @db.VarChar(20)
+  durationSec  Int?      @map("duration_sec")
+  note         String?   @db.Text
+  outcome      String?   @db.VarChar(30)
+  callbackDate DateTime? @map("callback_date") @db.Date
+  createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+
+  @@map("crm_call_logs")
+}
+
+model CrmStaffKpi {
+  id            Int      @id @default(autoincrement())
+  staffId       Int      @map("staff_id")
+  kpiDate       DateTime @map("kpi_date") @db.Date
+  totalPlanned  Int      @default(0) @map("total_planned")
+  totalCalled   Int      @default(0) @map("total_called")
+  totalAnswered Int      @default(0) @map("total_answered")
+  totalBooked   Int      @default(0) @map("total_booked")
+  totalRenewed  Int      @default(0) @map("total_renewed")
+
+  @@unique([staffId, kpiDate], name: "staffId_kpiDate")
+  @@map("crm_staff_kpi")
+}
+
+model CrmConfig {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique @db.VarChar(50)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@map("crm_config")
+}
+
+model CrmCustomerAssignment {
+  id           Int      @id @default(autoincrement())
+  legacyUserId Int      @unique @map("legacy_user_id")
+  staffId      Int      @map("staff_id")
+  assignedAt   DateTime @default(now()) @map("assigned_at") @db.DateTime(0)
+  assignedBy   Int?     @map("assigned_by")
+  staff        CrmStaff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@map("crm_customer_assignments")
+}
+
+model CrmRole {
+  key         String   @id @db.VarChar(20)
+  name        String   @db.VarChar(100)
+  color       String   @default("default") @db.VarChar(20)
+  viewKPI     Boolean  @default(false) @map("view_kpi") @db.TinyInt
+  viewTeamKPI Boolean  @default(false) @map("view_team_kpi") @db.TinyInt
+  manageStaff Boolean  @default(false) @map("manage_staff") @db.TinyInt
+  isSystem    Boolean  @default(false) @map("is_system") @db.TinyInt
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  @@map("crm_roles")
+}
+
