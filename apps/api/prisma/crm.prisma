@@ -30,6 +30,9 @@ model CrmStaff {
   notes            String?   @db.Text
 
   customerAssignments CrmCustomerAssignment[]
+  prevHistory         CrmAssignmentHistory[] @relation("PrevStaffHistory")
+  newHistory          CrmAssignmentHistory[] @relation("NewStaffHistory")
+  assignedHistory     CrmAssignmentHistory[] @relation("AssignerHistory")
 
   @@map("crm_staff")
 }
@@ -111,4 +114,25 @@ model CrmRole {
 
   @@map("crm_roles")
 }
+
+model CrmAssignmentHistory {
+  id           Int       @id @default(autoincrement())
+  batchId      String    @map("batch_id") @db.VarChar(50)
+  legacyUserId Int       @map("legacy_user_id")
+  prevStaffId  Int?      @map("prev_staff_id")
+  newStaffId   Int?      @map("new_staff_id")
+  assignedBy   Int       @map("assigned_by")
+  assignedAt   DateTime  @default(now()) @map("assigned_at") @db.DateTime(0)
+  isUndone     Boolean   @default(false) @map("is_undone") @db.TinyInt
+  undoneAt     DateTime? @map("undone_at") @db.DateTime(0)
+
+  prevStaff    CrmStaff? @relation("PrevStaffHistory", fields: [prevStaffId], references: [id], onDelete: SetNull)
+  newStaff     CrmStaff? @relation("NewStaffHistory", fields: [newStaffId], references: [id], onDelete: SetNull)
+  assigner     CrmStaff  @relation("AssignerHistory", fields: [assignedBy], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([legacyUserId])
+  @@map("crm_assignment_history")
+}
+
 

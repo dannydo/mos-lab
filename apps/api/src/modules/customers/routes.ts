@@ -1088,18 +1088,38 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      // Upsert assignments inside a transaction
-      await fastify.prisma.crm.$transaction(
-        customerIds.map(cid => 
+      // 1. Get current assignments for all selected customerIds to know prevStaffId
+      const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+        where: { legacyUserId: { in: customerIds } }
+      });
+      const assignmentMap = new Map(currentAssignments.map(a => [a.legacyUserId, a.staffId]));
+
+      // 2. Generate a unique batch ID
+      const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+      // 3. Perform upserts and create history entries in a transaction
+      await fastify.prisma.crm.$transaction([
+        ...customerIds.map(cid => 
           fastify.prisma.crm.crmCustomerAssignment.upsert({
             where: { legacyUserId: cid },
             update: { staffId, assignedBy: adminUser.id },
             create: { legacyUserId: cid, staffId, assignedBy: adminUser.id }
           })
+        ),
+        ...customerIds.map(cid => 
+          fastify.prisma.crm.crmAssignmentHistory.create({
+            data: {
+              batchId,
+              legacyUserId: cid,
+              prevStaffId: assignmentMap.get(cid) ?? null,
+              newStaffId: staffId,
+              assignedBy: adminUser.id
+            }
+          })
         )
-      );
+      ]);
 
-      return { success: true, count: customerIds.length };
+      return { success: true, count: customerIds.length, batchId };
     } catch (error: any) {
       fastify.log.error('Assign customers error:', error);
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to assign customers' });
@@ -1121,17 +1141,283 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      // Delete assignments in crm database
-      await fastify.prisma.crm.crmCustomerAssignment.deleteMany({
-        where: {
-          legacyUserId: { in: customerIds }
-        }
+      // 1. Get current assignments for all selected customerIds
+      const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+        where: { legacyUserId: { in: customerIds } }
       });
+      const assignmentMap = new Map(currentAssignments.map(a => [a.legacyUserId, a.staffId]));
 
-      return { success: true, count: customerIds.length };
+      // 2. Generate a unique batch ID
+      const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+      // 3. Perform deletes and create history entries in a transaction
+      await fastify.prisma.crm.$transaction([
+        fastify.prisma.crm.crmCustomerAssignment.deleteMany({
+          where: { legacyUserId: { in: customerIds } }
+        }),
+        ...customerIds.map(cid => 
+          fastify.prisma.crm.crmAssignmentHistory.create({
+            data: {
+              batchId,
+              legacyUserId: cid,
+              prevStaffId: assignmentMap.get(cid) ?? null,
+              newStaffId: null,
+              assignedBy: adminUser.id
+            }
+          })
+        )
+      ]);
+
+      return { success: true, count: customerIds.length, batchId };
     } catch (error: any) {
       fastify.log.error('Unassign customers error:', error);
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to unassign customers' });
+    }
+  });
+
+  // GET /api/customers/assignment-history
+  // Get history of allocations grouped by batchId
+  fastify.get('/customers/assignment-history', { preHandler: [requireAuth] }, async (request, reply) => {
+    const adminUser = request.user as { id: number; role: string };
+    if (adminUser.role !== 'admin') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền xem lịch sử phân bổ.' });
+    }
+
+    const { page = '1', limit = '10' } = request.query as { page?: string; limit?: string };
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const skip = (pageNum - 1) * limitNum;
+
+    try {
+      // 1. Get unique batchIds with pagination (ordered by assignedAt desc)
+      const distinctHistory = await fastify.prisma.crm.crmAssignmentHistory.findMany({
+        distinct: ['batchId'],
+        orderBy: { assignedAt: 'desc' },
+        skip,
+        take: limitNum,
+        include: {
+          newStaff: { select: { displayName: true } },
+          assigner: { select: { displayName: true } }
+        }
+      });
+
+      // 2. Fetch total count of distinct batches
+      const allBatches = await fastify.prisma.crm.crmAssignmentHistory.groupBy({
+        by: ['batchId']
+      });
+      const total = allBatches.length;
+
+      if (distinctHistory.length === 0) {
+        return {
+          data: [],
+          pagination: {
+            total: 0,
+            page: pageNum,
+            limit: limitNum,
+            pages: 0
+          }
+        };
+      }
+
+      // 3. For each distinct batch, fetch the total count of customers and if the batch is undone
+      const batchIds = distinctHistory.map(h => h.batchId);
+      const batchStats = await fastify.prisma.crm.crmAssignmentHistory.groupBy({
+        by: ['batchId', 'isUndone'],
+        where: { batchId: { in: batchIds } },
+        _count: { id: true }
+      });
+
+      // Group stats by batchId
+      const statsMap = new Map<string, { count: number; isUndone: boolean }>();
+      batchStats.forEach(stat => {
+        const existing = statsMap.get(stat.batchId);
+        if (existing) {
+          existing.count += stat._count.id;
+          if (stat.isUndone) existing.isUndone = true;
+        } else {
+          statsMap.set(stat.batchId, {
+            count: stat._count.id,
+            isUndone: !!stat.isUndone
+          });
+        }
+      });
+
+      const data = distinctHistory.map(h => {
+        const stat = statsMap.get(h.batchId) || { count: 0, isUndone: false };
+        return {
+          batchId: h.batchId,
+          assignedAt: h.assignedAt,
+          assignedBy: h.assigner?.displayName || 'Hệ thống',
+          newStaffName: h.newStaff?.displayName || null,
+          customerCount: stat.count,
+          isUndone: !!h.isUndone || stat.isUndone,
+          undoneAt: h.undoneAt
+        };
+      });
+
+      return {
+        data,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          pages: Math.ceil(total / limitNum)
+        }
+      };
+    } catch (error: any) {
+      fastify.log.error('Get assignment history error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve assignment history' });
+    }
+  });
+
+  // GET /api/customers/assignment-history/:batchId/details
+  // Get detailed list of customers assigned in a batch
+  fastify.get('/customers/assignment-history/:batchId/details', { preHandler: [requireAuth] }, async (request, reply) => {
+    const adminUser = request.user as { id: number; role: string };
+    if (adminUser.role !== 'admin') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền xem chi tiết phân bổ.' });
+    }
+
+    const { batchId } = request.params as { batchId: string };
+    if (!batchId) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'batchId is required' });
+    }
+
+    try {
+      const historyRecords = await fastify.prisma.crm.crmAssignmentHistory.findMany({
+        where: { batchId },
+        include: {
+          prevStaff: { select: { displayName: true } },
+          newStaff: { select: { displayName: true } }
+        },
+        orderBy: { id: 'asc' }
+      });
+
+      if (historyRecords.length === 0) {
+        return { data: [] };
+      }
+
+      const customerIds = historyRecords.map(r => r.legacyUserId);
+
+      // Fetch customer names and phones from legacy database using queryRawUnsafe
+      const legacyCustomers = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT 
+          u.id,
+          up.full_name as fullName,
+          (
+            SELECT uc.phone_number 
+            FROM user_contact uc 
+            WHERE uc.user_id = u.id AND uc.is_disabled = 0 
+            LIMIT 1
+          ) as phone
+        FROM user u
+        LEFT JOIN user_profile up ON u.id = up.user_id
+        WHERE u.id IN (${customerIds.join(',')})
+      `);
+
+      const customerMap = new Map(legacyCustomers.map(c => [Number(c.id), c]));
+
+      const data = historyRecords.map(r => {
+        const legacyCust = customerMap.get(r.legacyUserId) || { fullName: `Khách hàng #${r.legacyUserId}`, phone: 'N/A' };
+        return {
+          id: r.id,
+          legacyUserId: r.legacyUserId,
+          fullName: legacyCust.fullName || `Khách hàng #${r.legacyUserId}`,
+          phone: legacyCust.phone || 'N/A',
+          prevStaffName: r.prevStaff?.displayName || 'Chưa phân bổ',
+          newStaffName: r.newStaff?.displayName || 'Gỡ Booker',
+          isUndone: r.isUndone === true || (r.isUndone as any) === 1,
+          undoneAt: r.undoneAt
+        };
+      });
+
+      return { data };
+    } catch (error: any) {
+      fastify.log.error('Get assignment history details error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve assignment history details' });
+    }
+  });
+
+  // POST /api/customers/assignment-history/undo
+  // Undo a batch of assignments
+  fastify.post('/customers/assignment-history/undo', { preHandler: [requireAuth] }, async (request, reply) => {
+    const adminUser = request.user as { id: number; role: string };
+    if (adminUser.role !== 'admin') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền hoàn tác phân bổ.' });
+    }
+
+    const { batchId } = request.body as { batchId: string };
+    if (!batchId) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'batchId is required' });
+    }
+
+    try {
+      // 1. Find all history records for this batch that are not undone
+      const historyRecords = await fastify.prisma.crm.crmAssignmentHistory.findMany({
+        where: { batchId, isUndone: false }
+      });
+
+      if (historyRecords.length === 0) {
+        return reply.status(400).send({ error: 'Bad Request', message: 'Đợt phân bổ này không tồn tại hoặc đã được hoàn tác trước đó.' });
+      }
+
+      const customerIds = historyRecords.map(r => r.legacyUserId);
+      const newStaffId = historyRecords[0].newStaffId;
+
+      // 2. Fetch current assignments of these customers to check if they've changed
+      const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+        where: { legacyUserId: { in: customerIds } }
+      });
+      const currentMap = new Map(currentAssignments.map(a => [a.legacyUserId, a.staffId]));
+
+      // 3. Determine which assignments can be safely reverted (where current staff matches newStaffId of the batch)
+      const assignmentsToRevert: typeof historyRecords = [];
+      for (const record of historyRecords) {
+        const currentStaffId = currentMap.get(record.legacyUserId);
+        
+        const isCurrentMatch = (newStaffId === null && currentStaffId === undefined) || 
+                              (newStaffId !== null && currentStaffId === newStaffId);
+                              
+        if (isCurrentMatch) {
+          assignmentsToRevert.push(record);
+        }
+      }
+
+      // 4. Run the reversion in a transaction
+      await fastify.prisma.crm.$transaction(async (tx) => {
+        for (const record of assignmentsToRevert) {
+          if (record.prevStaffId === null) {
+            await tx.crmCustomerAssignment.deleteMany({
+              where: { legacyUserId: record.legacyUserId }
+            });
+          } else {
+            await tx.crmCustomerAssignment.upsert({
+              where: { legacyUserId: record.legacyUserId },
+              update: { staffId: record.prevStaffId, assignedBy: adminUser.id },
+              create: { legacyUserId: record.legacyUserId, staffId: record.prevStaffId, assignedBy: adminUser.id }
+            });
+          }
+        }
+
+        // Mark the entire batch in history as undone
+        await tx.crmAssignmentHistory.updateMany({
+          where: { batchId },
+          data: {
+            isUndone: true,
+            undoneAt: new Date()
+          }
+        });
+      });
+
+      return { 
+        success: true, 
+        revertedCount: assignmentsToRevert.length, 
+        totalCount: historyRecords.length,
+        skippedCount: historyRecords.length - assignmentsToRevert.length
+      };
+    } catch (error: any) {
+      fastify.log.error('Undo assignment error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to undo assignments' });
     }
   });
 

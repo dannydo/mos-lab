@@ -42,7 +42,9 @@ import {
   GiftOutlined,
   TeamOutlined,
   UserOutlined,
-  SyncOutlined
+  SyncOutlined,
+  HistoryOutlined,
+  UndoOutlined
 } from '@ant-design/icons';
 import { useSearchParams } from 'next/navigation';
 import { useTheme } from '../../../context/ThemeContext';
@@ -63,6 +65,7 @@ const PRESET_FILTERS = [
 export default function CustomersPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const [modal, contextHolder] = Modal.useModal();
   // Table state
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -168,6 +171,17 @@ export default function CustomersPage() {
   const [history, setHistory] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
+
+  // Allocation History states
+  const [historyDrawerVisible, setHistoryDrawerVisible] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
+  const [batchDetailsLoading, setBatchDetailsLoading] = useState(false);
+  const [batchDetails, setBatchDetails] = useState<any[]>([]);
+  const [undoingBatchId, setUndoingBatchId] = useState<string | null>(null);
 
   // Fetch Stats (Counts for badges)
   const fetchStats = useCallback(async (
@@ -625,6 +639,89 @@ export default function CustomersPage() {
     }
   };
 
+  const fetchAssignmentHistory = useCallback(async (page = 1) => {
+    setHistoryLoading(true);
+    try {
+      const response = await api.get('/customers/assignment-history', {
+        params: { page, limit: 10 }
+      });
+      setHistoryData(response.data.data);
+      setHistoryTotal(response.data.pagination.total);
+      setHistoryPage(page);
+    } catch (error) {
+      console.error('Fetch assignment history error:', error);
+      message.error('Không thể lấy lịch sử phân bổ');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  const fetchBatchDetails = async (batchId: string) => {
+    setBatchDetailsLoading(true);
+    setExpandedBatchId(batchId);
+    try {
+      const response = await api.get(`/customers/assignment-history/${batchId}/details`);
+      setBatchDetails(response.data.data);
+    } catch (error) {
+      console.error('Fetch batch details error:', error);
+      message.error('Không thể lấy chi tiết đợt phân bổ');
+    } finally {
+      setBatchDetailsLoading(false);
+    }
+  };
+
+  const handleUndoAssignment = async (batchId: string) => {
+    setUndoingBatchId(batchId);
+    try {
+      const response = await api.post('/customers/assignment-history/undo', { batchId });
+      const { revertedCount, totalCount, skippedCount } = response.data;
+      
+      let msg = `Đã hoàn tác thành công ${revertedCount}/${totalCount} khách hàng!`;
+      if (skippedCount > 0) {
+        msg += ` (${skippedCount} khách hàng bỏ qua do đã có phân bổ mới hơn)`;
+      }
+      message.success(msg);
+      
+      fetchAssignmentHistory(historyPage);
+      
+      if (expandedBatchId === batchId) {
+        fetchBatchDetails(batchId);
+      }
+      
+      fetchCustomers(
+        currentPage,
+        pageSize,
+        activeTab,
+        searchQuery,
+        sortField,
+        daysSinceLastVisitMin,
+        daysSinceLastVisitMax,
+        totalSpentMin,
+        totalSpentMax,
+        totalVisitsMin,
+        totalVisitsMax,
+        promoUsed,
+        promoCountMin,
+        promoCountMax,
+        referralUsed,
+        referralCountMin,
+        referralCountMax,
+        assignedStaffId
+      );
+    } catch (error: any) {
+      console.error('Undo assignment error:', error);
+      message.error(error.response?.data?.message || 'Không thể hoàn tác phân bổ');
+    } finally {
+      setUndoingBatchId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (historyDrawerVisible) {
+      fetchAssignmentHistory(1);
+    }
+  }, [historyDrawerVisible, fetchAssignmentHistory]);
+
   const handleRandomSelect = async () => {
     setRandomLoading(true);
     try {
@@ -881,6 +978,7 @@ export default function CustomersPage() {
 
   return (
     <div>
+      {contextHolder}
       <div className="flex justify-between items-center mb-6">
         <div>
           <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>Danh Sách Khách Hàng</Title>
@@ -1012,13 +1110,22 @@ export default function CustomersPage() {
                 </>
               )}
               {currentUser?.role === 'admin' && (
-                <Button 
-                  icon={<SyncOutlined />} 
-                  onClick={() => setRandomModalVisible(true)}
-                  style={{ borderColor: '#D4A84B', color: '#D4A84B' }}
-                >
-                  Chọn ngẫu nhiên
-                </Button>
+                <>
+                  <Button 
+                    icon={<SyncOutlined />} 
+                    onClick={() => setRandomModalVisible(true)}
+                    style={{ borderColor: '#D4A84B', color: '#D4A84B' }}
+                  >
+                    Chọn ngẫu nhiên
+                  </Button>
+                  <Button 
+                    icon={<HistoryOutlined />} 
+                    onClick={() => setHistoryDrawerVisible(true)}
+                    style={{ borderColor: '#D4A84B', color: '#D4A84B' }}
+                  >
+                    Lịch sử phân bổ
+                  </Button>
+                </>
               )}
             </Space>
 
@@ -1724,6 +1831,162 @@ export default function CustomersPage() {
           </div>
         </div>
       </Modal>
+
+      {/* ALLOCATION HISTORY DRAWER */}
+      <Drawer
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 168, 75, 0.1)', color: '#D4A84B' }}>
+              <HistoryOutlined style={{ fontSize: '15px' }} />
+            </span>
+            <span style={{ color: '#D4A84B', fontWeight: 'bold', fontSize: '16px' }}>Lịch Sử Phân Bổ</span>
+          </div>
+        }
+        placement="right"
+        onClose={() => {
+          setHistoryDrawerVisible(false);
+          setExpandedBatchId(null);
+          setBatchDetails([]);
+        }}
+        open={historyDrawerVisible}
+        width={650}
+        styles={{
+          header: {
+            borderBottom: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`,
+            padding: '16px 24px',
+          },
+          body: {
+            padding: '20px 24px',
+            background: themeMode === 'dark' ? '#141414' : '#fff',
+          }
+        }}
+      >
+        <Spin spinning={historyLoading && historyData.length === 0}>
+          {historyData.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: token.colorTextDescription }}>
+              Không có dữ liệu phân bổ trước đây.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {historyData.map((batch) => {
+                const isExpanded = expandedBatchId === batch.batchId;
+                const formattedDate = new Date(batch.assignedAt).toLocaleString('vi-VN');
+                const isUndone = batch.isUndone;
+
+                return (
+                  <Card
+                    key={batch.batchId}
+                    size="small"
+                    style={{
+                      background: themeMode === 'dark' ? '#1f1f1f' : '#fafafa',
+                      border: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 'bold', fontSize: '14px', color: token.colorText }}>
+                            {batch.newStaffName ? `Phân bổ cho ${batch.newStaffName}` : 'Gỡ Booker'}
+                          </span>
+                          <Tag color={isUndone ? 'default' : (batch.newStaffName ? 'blue' : 'warning')}>
+                            {isUndone ? 'Đã hoàn tác' : (batch.newStaffName ? 'Phân bổ' : 'Hủy phân bổ')}
+                          </Tag>
+                        </div>
+                        <div style={{ marginTop: '6px', fontSize: '12px', color: token.colorTextDescription }}>
+                          <span style={{ marginRight: '16px' }}>Thời gian: {formattedDate}</span>
+                          <span>Người thực hiện: {batch.assignedBy}</span>
+                        </div>
+                        <div style={{ marginTop: '4px', fontSize: '13px', color: token.colorText }}>
+                          Số khách hàng: <span style={{ fontWeight: 'bold', color: '#D4A84B' }}>{batch.customerCount}</span>
+                        </div>
+                      </div>
+
+                      <Space>
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            if (isExpanded) {
+                              setExpandedBatchId(null);
+                              setBatchDetails([]);
+                            } else {
+                              fetchBatchDetails(batch.batchId);
+                            }
+                          }}
+                        >
+                          {isExpanded ? 'Thu gọn' : 'Chi tiết'}
+                        </Button>
+
+                        {!isUndone && (
+                          <Button
+                            danger
+                            size="small"
+                            type="primary"
+                            icon={<UndoOutlined />}
+                            loading={undoingBatchId === batch.batchId}
+                            onClick={() => {
+                              modal.confirm({
+                                title: 'Xác nhận hoàn tác',
+                                content: `Bạn có chắc chắn muốn hoàn tác đợt phân bổ này không? Toàn bộ ${batch.customerCount} khách hàng trong đợt này sẽ được hoàn tác về Booker cũ (nếu Booker chưa được phân bổ mới).`,
+                                okText: 'Đồng ý',
+                                cancelText: 'Hủy',
+                                okButtonProps: { danger: true },
+                                onOk: () => handleUndoAssignment(batch.batchId)
+                              });
+                            }}
+                          >
+                            Hoàn tác
+                          </Button>
+                        )}
+                      </Space>
+                    </div>
+
+                    {isExpanded && (
+                      <div style={{ marginTop: '12px', borderTop: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`, paddingTop: '12px' }}>
+                        <Spin spinning={batchDetailsLoading}>
+                          <div className="antd-custom-table">
+                            <Table
+                              size="small"
+                              pagination={false}
+                              dataSource={batchDetails}
+                              rowKey="id"
+                              columns={[
+                                { title: 'Họ và tên', dataIndex: 'fullName', key: 'fullName', render: (text) => <span style={{ fontWeight: 500 }}>{text}</span> },
+                                { title: 'Số điện thoại', dataIndex: 'phone', key: 'phone' },
+                                { title: 'Booker cũ', dataIndex: 'prevStaffName', key: 'prevStaffName', render: (text) => <Tag>{text}</Tag> },
+                                { title: 'Booker mới', dataIndex: 'newStaffName', key: 'newStaffName', render: (text) => <Tag color="blue">{text}</Tag> }
+                              ]}
+                            />
+                          </div>
+                        </Spin>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px', alignItems: 'center' }}>
+                <Button
+                  disabled={historyPage === 1 || historyLoading}
+                  onClick={() => fetchAssignmentHistory(historyPage - 1)}
+                  style={{ marginRight: '8px' }}
+                >
+                  Trang trước
+                </Button>
+                <span style={{ display: 'flex', alignItems: 'center', margin: '0 8px', color: token.colorTextDescription }}>
+                  Trang {historyPage} / {Math.ceil(historyTotal / 10) || 1}
+                </span>
+                <Button
+                  disabled={historyPage >= Math.ceil(historyTotal / 10) || historyLoading}
+                  onClick={() => fetchAssignmentHistory(historyPage + 1)}
+                >
+                  Trang sau
+                </Button>
+              </div>
+            </div>
+          )}
+        </Spin>
+      </Drawer>
 
       <style jsx global>{`
         /* Custom styles for Ant Design Table under Dark Mode */
