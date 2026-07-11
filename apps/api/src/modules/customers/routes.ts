@@ -1741,4 +1741,113 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /nyc/config
+  // Get touchpoint config for NYC campaign
+  fastify.get('/nyc/config', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const config = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'NYC_TOUCHPOINTS_CONFIG' }
+      });
+      if (config) {
+        return JSON.parse(config.value);
+      }
+      // Return defaults if not configured
+      const defaultConfigs = {
+        NYC_30: [
+          { key: 'now', label: 'Chạm Now', daysMin: 0, daysMax: 1, color: 'blue' },
+          { key: '3', label: 'Chạm 3', daysMin: 3, daysMax: 3, color: 'cyan' },
+          { key: '7', label: 'Chạm 7', daysMin: 7, daysMax: 7, color: 'green' },
+          { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'orange' },
+          { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'red' }
+        ],
+        NYC_60: [
+          { key: '35', label: 'Chạm 35', daysMin: 31, daysMax: 35, color: 'blue' },
+          { key: '45', label: 'Chạm 45', daysMin: 41, daysMax: 45, color: 'orange' },
+          { key: '55', label: 'Chạm 55', daysMin: 51, daysMax: 55, color: 'red' }
+        ],
+        NYC_90: [
+          { key: '70', label: 'Chạm 70', daysMin: 65, daysMax: 70, color: 'blue' },
+          { key: '80', label: 'Chạm 80', daysMin: 75, daysMax: 80, color: 'orange' }
+        ],
+        NYC_180: [
+          { key: '100', label: 'Chạm 100', daysMin: 95, daysMax: 100, color: 'blue' },
+          { key: '150', label: 'Chạm 150', daysMin: 145, daysMax: 150, color: 'orange' }
+        ],
+        NYC_365: [
+          { key: '200', label: 'Chạm 200', daysMin: 195, daysMax: 200, color: 'blue' },
+          { key: '300', label: 'Chạm 300', daysMin: 295, daysMax: 300, color: 'orange' }
+        ],
+        NYC_365plus: [
+          { key: '400', label: 'Chạm 400', daysMin: 395, daysMax: 400, color: 'blue' },
+          { key: '500', label: 'Chạm 500', daysMin: 495, daysMax: 500, color: 'orange' }
+        ]
+      };
+      return defaultConfigs;
+    } catch (error: any) {
+      fastify.log.error('Get NYC config error:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve touchpoint config'
+      });
+    }
+  });
+
+  // PUT /nyc/config
+  // Save touchpoint config for NYC campaign (Admins only)
+  fastify.put('/nyc/config', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string };
+    if (user.role !== 'admin') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Chỉ Admin mới có quyền cấu hình touchpoints.'
+      });
+    }
+
+    const configs = request.body as Record<string, any[]>;
+    if (typeof configs !== 'object' || configs === null) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Configs must be an object'
+      });
+    }
+
+    // Validate structure
+    for (const [tabKey, touchpoints] of Object.entries(configs)) {
+      if (!Array.isArray(touchpoints)) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: `Touchpoints for tab ${tabKey} must be an array`
+        });
+      }
+      for (const tp of touchpoints) {
+        if (!tp.key || !tp.label || typeof tp.daysMin !== 'number' || typeof tp.daysMax !== 'number') {
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: `Mỗi touchpoint trong tab ${tabKey} phải có key, label, daysMin, và daysMax hợp lệ.`
+          });
+        }
+      }
+    }
+
+    try {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: 'NYC_TOUCHPOINTS_CONFIG' },
+        create: {
+          key: 'NYC_TOUCHPOINTS_CONFIG',
+          value: JSON.stringify(configs)
+        },
+        update: {
+          value: JSON.stringify(configs)
+        }
+      });
+      return { success: true, message: 'Đã lưu cấu hình template touchpoints thành công.' };
+    } catch (error: any) {
+      fastify.log.error('Save NYC config error:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to save touchpoint config'
+      });
+    }
+  });
+
 }

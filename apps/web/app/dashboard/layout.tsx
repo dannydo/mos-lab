@@ -14,7 +14,8 @@ import {
   MoonOutlined,
   LeftOutlined,
   RightOutlined,
-  SolutionOutlined
+  SolutionOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
@@ -31,6 +32,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     if (pathname.includes('/dashboard/customers')) {
       return assignedStaffId === 'me' ? 'my-customers' : 'customers';
     }
+    if (pathname.includes('/dashboard/nyc')) return 'nyc';
     if (pathname.includes('/dashboard/appointments')) return 'my-appointments';
     if (pathname.includes('/dashboard/plans')) return 'plans';
     if (pathname.includes('/dashboard/calls')) return 'calls';
@@ -66,6 +68,12 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
       icon: <UserOutlined />,
       label: 'KH của tôi',
       onClick: () => router.push('/dashboard/customers?assignedStaffId=me')
+    },
+    {
+      key: 'nyc',
+      icon: <ClockCircleOutlined />,
+      label: 'Chiến dịch NYC',
+      onClick: () => router.push('/dashboard/nyc')
     },
     {
       key: 'my-appointments',
