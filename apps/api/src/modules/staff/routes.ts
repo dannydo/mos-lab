@@ -220,6 +220,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
     }
 
     const {
+      username,
       password,
       displayName,
       role,
@@ -271,6 +272,20 @@ export async function staffRoutes(fastify: FastifyInstance) {
         if (role !== undefined) updateData.role = role;
         if (isActive !== undefined) updateData.isActive = isActive;
         if (joinedAt !== undefined) updateData.joinedAt = joinedAt ? new Date(joinedAt) : null;
+
+        if (username !== undefined && username !== existingStaff.username) {
+          // Check for duplicate username
+          const duplicate = await fastify.prisma.crm.crmStaff.findUnique({
+            where: { username }
+          });
+          if (duplicate) {
+            return reply.status(400).send({
+              error: 'Bad Request',
+              message: 'Tên đăng nhập (Email / Prefix) đã được sử dụng bởi nhân sự khác'
+            });
+          }
+          updateData.username = username;
+        }
       }
 
       const updated = await fastify.prisma.crm.crmStaff.update({

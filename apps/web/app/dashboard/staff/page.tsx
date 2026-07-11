@@ -1127,7 +1127,6 @@ function StaffTabsContent({
               >
                 <Input 
                   placeholder="nguyenvan@gmail.com hoặc nguyenvan" 
-                  disabled={!!editingStaff} 
                   prefix={<UserOutlined style={{ color: '#888' }} />}
                 />
               </Form.Item>
