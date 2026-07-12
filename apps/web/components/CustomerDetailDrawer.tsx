@@ -168,6 +168,68 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     };
   }, [isModalDragging, dragStartInfo]);
 
+  // Resizable gem modal states and hooks
+  const [gemModalWidth, setGemModalWidth] = useState(750);
+  const [isGemModalDragging, setIsGemModalDragging] = useState(false);
+  const [gemDragStartInfo, setGemDragStartInfo] = useState<{ x: number; width: number; direction: 'left' | 'right' } | null>(null);
+  const gemModalWidthRef = React.useRef(gemModalWidth);
+
+  useEffect(() => {
+    gemModalWidthRef.current = gemModalWidth;
+  }, [gemModalWidth]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('customer_gem_modal_width');
+      if (saved) {
+        setGemModalWidth(parseInt(saved, 10));
+      }
+    }
+  }, []);
+
+  const handleGemModalDragStart = useCallback((e: React.MouseEvent, direction: 'left' | 'right') => {
+    e.preventDefault();
+    setGemDragStartInfo({
+      x: e.clientX,
+      width: gemModalWidthRef.current,
+      direction
+    });
+    setIsGemModalDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isGemModalDragging || !gemDragStartInfo) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      let deltaX = 0;
+      if (gemDragStartInfo.direction === 'right') {
+        deltaX = e.clientX - gemDragStartInfo.x;
+      } else {
+        deltaX = gemDragStartInfo.x - e.clientX;
+      }
+      
+      const newWidth = gemDragStartInfo.width + deltaX * 2;
+      const minWidth = 500;
+      const maxWidth = window.innerWidth * 0.95;
+      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+      setGemModalWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsGemModalDragging(false);
+      setGemDragStartInfo(null);
+      localStorage.setItem('customer_gem_modal_width', String(gemModalWidthRef.current));
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isGemModalDragging, gemDragStartInfo]);
+
   const gemColumns = [
     {
       title: 'Thời gian',
@@ -1107,9 +1169,57 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
             Đóng
           </Button>
         ]}
-        width={750}
+        width={gemModalWidth}
         styles={{
           body: { padding: '12px 0 0 0' }
+        }}
+        modalRender={(modal) => {
+          if (React.isValidElement(modal)) {
+            return React.cloneElement(modal as any, {
+              style: {
+                ...(modal.props as any)?.style,
+                position: 'relative'
+              },
+              children: (
+                <>
+                  {(modal.props as any)?.children}
+                  {/* Right edge drag handle */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: '-4px',
+                      bottom: 0,
+                      width: '8px',
+                      cursor: 'ew-resize',
+                      zIndex: 10000,
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseDown={(e) => handleGemModalDragStart(e, 'right')}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  />
+                  {/* Left edge drag handle */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: '-4px',
+                      bottom: 0,
+                      width: '8px',
+                      cursor: 'ew-resize',
+                      zIndex: 10000,
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseDown={(e) => handleGemModalDragStart(e, 'left')}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  />
+                </>
+              )
+            });
+          }
+          return modal;
         }}
       >
         <Table

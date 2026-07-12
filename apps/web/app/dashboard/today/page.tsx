@@ -58,6 +58,7 @@ interface BookingData {
   group: 'combo_live' | 'combo_dead' | 'single';
   promo: string | null;
   booker: string;
+  channel?: string;
   createdTime: string;
   avatarColor?: string;
   code?: string;
@@ -97,6 +98,7 @@ interface ComingClientData {
   group: 'combo_live' | 'combo_dead' | 'single';
   promo: string | null;
   booker: string;
+  channel?: string;
   cc: string;
   cv: string;
   service: string;
@@ -387,6 +389,12 @@ export default function TodayDashboard() {
       render: (b: string) => <span style={{ fontWeight: 500 }}>{b}</span>
     },
     {
+      title: 'Channel',
+      dataIndex: 'channel',
+      key: 'channel',
+      render: (c: string) => <Tag color="purple">{c || 'N/A'}</Tag>
+    },
+    {
       title: 'Khách hàng',
       key: 'customer',
       render: (_: any, record: BookingData) => (
@@ -553,6 +561,12 @@ export default function TodayDashboard() {
       dataIndex: 'booker',
       key: 'booker',
       render: (b: string) => <span style={{ fontWeight: 500 }}>{b}</span>
+    },
+    {
+      title: 'Channel',
+      dataIndex: 'channel',
+      key: 'channel',
+      render: (c: string) => <Tag color="purple">{c || 'N/A'}</Tag>
     },
     {
       title: 'CC',
