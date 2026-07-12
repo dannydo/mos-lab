@@ -106,6 +106,68 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     };
   }, [isDragging]);
 
+  // Resizable modal states and hooks
+  const [modalWidth, setModalWidth] = useState(800);
+  const [isModalDragging, setIsModalDragging] = useState(false);
+  const [dragStartInfo, setDragStartInfo] = useState<{ x: number; width: number; direction: 'left' | 'right' } | null>(null);
+  const modalWidthRef = React.useRef(modalWidth);
+
+  useEffect(() => {
+    modalWidthRef.current = modalWidth;
+  }, [modalWidth]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('customer_combo_modal_width');
+      if (saved) {
+        setModalWidth(parseInt(saved, 10));
+      }
+    }
+  }, []);
+
+  const handleModalDragStart = useCallback((e: React.MouseEvent, direction: 'left' | 'right') => {
+    e.preventDefault();
+    setDragStartInfo({
+      x: e.clientX,
+      width: modalWidthRef.current,
+      direction
+    });
+    setIsModalDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isModalDragging || !dragStartInfo) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      let deltaX = 0;
+      if (dragStartInfo.direction === 'right') {
+        deltaX = e.clientX - dragStartInfo.x;
+      } else {
+        deltaX = dragStartInfo.x - e.clientX;
+      }
+      
+      const newWidth = dragStartInfo.width + deltaX * 2;
+      const minWidth = 500;
+      const maxWidth = window.innerWidth * 0.95;
+      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+      setModalWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsModalDragging(false);
+      setDragStartInfo(null);
+      localStorage.setItem('customer_combo_modal_width', String(modalWidthRef.current));
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isModalDragging, dragStartInfo]);
+
   const gemColumns = [
     {
       title: 'Thời gian',
@@ -1066,10 +1128,47 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
             Đóng
           </Button>
         ]}
-        width={800}
+        width={modalWidth}
         styles={{
           body: { padding: '12px 0 0 0' }
         }}
+        modalRender={(modal) => (
+          <div style={{ position: 'relative' }}>
+            {modal}
+            {/* Right edge drag handle */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: '6px',
+                cursor: 'ew-resize',
+                zIndex: 10000,
+                transition: 'background 0.2s',
+              }}
+              onMouseDown={(e) => handleModalDragStart(e, 'right')}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            />
+            {/* Left edge drag handle */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                width: '6px',
+                cursor: 'ew-resize',
+                zIndex: 10000,
+                transition: 'background 0.2s',
+              }}
+              onMouseDown={(e) => handleModalDragStart(e, 'left')}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            />
+          </div>
+        )}
       >
         <Table
           dataSource={comboBalances}
