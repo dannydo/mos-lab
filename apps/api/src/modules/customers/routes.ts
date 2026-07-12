@@ -3916,25 +3916,60 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
 
         if (b.cc.length === 0) {
+          let list: { name: string; shift: 'sáng' | 'chiều' | 'full' | 'off'; attendance: string; doing: string }[] = [];
           if (bKey === 'detham') {
-            b.cc = [
-              { name: "Nguyễn Minh Thuỷ", doing: "Đang tư vấn KH mới", clients: 12, combos: 3, revenue: 18000000, shift: 'sáng', attendance: 'checked_in' },
-              { name: "Phạm Khánh Ly", doing: "Đang gọi điện CSKH cũ", clients: 10, combos: 1, revenue: 9500000, shift: 'chiều', attendance: 'late' },
-              { name: "Trần Bảo Ngọc", doing: "Trống (Đang hỗ trợ thu ngân)", clients: 6, combos: 1, revenue: 5000000, shift: 'full', attendance: 'checked_out' },
-              { name: "Lê Thu Trang", doing: "Nghỉ phép tuần", clients: 0, combos: 0, revenue: 0, shift: 'off', attendance: 'none' }
+            list = [
+              { name: "Nguyễn Minh Thuỷ", shift: 'sáng', attendance: 'checked_in', doing: "Đang tư vấn KH mới" },
+              { name: "Phạm Khánh Ly", shift: 'chiều', attendance: 'checked_in', doing: "Đang gọi điện CSKH cũ" },
+              { name: "Trần Bảo Ngọc", shift: 'full', attendance: 'checked_in', doing: "Trống (Đang hỗ trợ thu ngân)" },
+              { name: "Lê Thu Trang", shift: 'off', attendance: 'none', doing: "Nghỉ phép tuần" }
             ];
           } else if (bKey === 'pxl') {
-            b.cc = [
-              { name: "Lê Cẩm Tú", doing: "Đang chốt sale combo mới", clients: 9, combos: 2, revenue: 12000000, shift: 'sáng', attendance: 'checked_in' },
-              { name: "Nguyễn Quỳnh Chi", doing: "Đang tư vấn KH lẻ nâng cấp combo", clients: 8, combos: 1, revenue: 7800000, shift: 'chiều', attendance: 'checked_in' },
-              { name: "Hoàng Thanh Hà", doing: "Trống ca", clients: 4, combos: 0, revenue: 5000000, shift: 'full', attendance: 'checked_out' }
+            list = [
+              { name: "Lê Cẩm Tú", shift: 'sáng', attendance: 'checked_in', doing: "Đang chốt sale combo mới" },
+              { name: "Nguyễn Quỳnh Chi", shift: 'chiều', attendance: 'checked_in', doing: "Đang tư vấn KH lẻ nâng cấp combo" },
+              { name: "Hoàng Thanh Hà", shift: 'full', attendance: 'checked_in', doing: "Trống ca" }
             ];
           } else {
-            b.cc = [
-              { name: "Lâm Nhã Phương", doing: "Đang hỗ trợ khách ký hợp đồng combo", clients: 15, combos: 4, revenue: 22500000, shift: 'sáng', attendance: 'checked_in' },
-              { name: "Đinh Hoài An", doing: "Đang kiểm tra hồ sơ khách hàng ngày", clients: 12, combos: 3, revenue: 16200000, shift: 'chiều', attendance: 'checked_in' }
+            list = [
+              { name: "Lâm Nhã Phương", shift: 'sáng', attendance: 'checked_in', doing: "Đang hỗ trợ khách ký hợp đồng combo" },
+              { name: "Đinh Hoài An", shift: 'chiều', attendance: 'checked_in', doing: "Đang kiểm tra hồ sơ khách hàng ngày" }
             ];
           }
+
+          b.cc = list.map(ccInfo => {
+            const normName = normalizeName(ccInfo.name);
+            const staffId = staffNameToIdMap.get(normName);
+            const isOff = ccInfo.shift === 'off';
+
+            // Find orders booked by this CC today
+            const bookedOrders = comingOrders.filter(o => {
+              if (staffId && o.created_staff_id === staffId) return true;
+              const bookerName = staffMap.get(Number(o.created_staff_id));
+              return bookerName && normalizeName(bookerName) === normName;
+            });
+
+            let rev = 0;
+            let combosCount = 0;
+            bookedOrders.forEach(o => {
+              rev += o.total_price || 0;
+              const userBal = balanceMap.get(o.user_id) || [];
+              const activeCombo = userBal.find(b => b.normal_count > 0 && (!b.date_expired || new Date(b.date_expired) > new Date()));
+              if (activeCombo) {
+                combosCount++;
+              }
+            });
+
+            return {
+              name: ccInfo.name,
+              doing: isOff ? ccInfo.doing : (bookedOrders.length > 0 ? ccInfo.doing : "Trống (Đang hỗ trợ thu ngân)"),
+              clients: isOff ? 0 : bookedOrders.length,
+              combos: isOff ? 0 : combosCount,
+              revenue: isOff ? 0 : rev,
+              shift: ccInfo.shift,
+              attendance: ccInfo.attendance
+            };
+          });
         }
 
         if (b.cv.length === 0) {
