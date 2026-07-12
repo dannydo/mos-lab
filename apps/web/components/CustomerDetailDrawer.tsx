@@ -56,6 +56,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
   const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<any>(null);
   const [isGemModalOpen, setIsGemModalOpen] = useState(false);
+  const [isComboModalOpen, setIsComboModalOpen] = useState(false);
 
   const gemColumns = [
     {
@@ -119,6 +120,69 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       dataIndex: 'staffName',
       key: 'staffName',
       width: '150px'
+    }
+  ];
+
+  const comboHistoryColumns = [
+    {
+      title: 'Tên Combo',
+      key: 'serviceName',
+      render: (_: any, record: any) => (
+        <span style={{ fontWeight: 'bold' }}>
+          {record.serviceName} {record.packageKey ? `(${record.packageKey})` : ''}
+        </span>
+      )
+    },
+    {
+      title: 'Ngày mua',
+      dataIndex: 'dateCreated',
+      key: 'dateCreated',
+      render: (text: string) => text ? new Date(text).toLocaleDateString('vi-VN') : 'N/A',
+      width: '110px'
+    },
+    {
+      title: 'Người bán (CC)',
+      dataIndex: 'creatorStaffName',
+      key: 'creatorStaffName',
+      render: (text: string) => text || 'Hệ thống',
+      width: '130px'
+    },
+    {
+      title: 'Giá tiền',
+      dataIndex: 'packagePrice',
+      key: 'packagePrice',
+      render: (val: number) => val ? `${val.toLocaleString('vi-VN')} đ` : 'Miễn phí / N/A',
+      width: '120px'
+    },
+    {
+      title: 'Số buổi',
+      key: 'sessions',
+      render: (_: any, record: any) => (
+        <span>
+          Mới: <strong>{record.normalCount}</strong> / Dặm: <strong>{record.retainCount}</strong>
+        </span>
+      ),
+      width: '130px'
+    },
+    {
+      title: 'Hạn dùng',
+      dataIndex: 'dateExpired',
+      key: 'dateExpired',
+      render: (text: string) => text ? new Date(text).toLocaleDateString('vi-VN') : 'Vô thời hạn',
+      width: '110px'
+    },
+    {
+      title: 'Trạng thái',
+      key: 'status',
+      render: (_: any, record: any) => {
+        const isActive = (record.normalCount || 0) + (record.retainCount || 0) > 0;
+        return (
+          <Tag color={isActive ? 'success' : 'default'}>
+            {isActive ? 'Đang chạy' : 'Đã dùng hết'}
+          </Tag>
+        );
+      },
+      width: '110px'
     }
   ];
 
@@ -428,23 +492,38 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb'
                 }}
               >
-                {comboBalances.length > 0 ? (
+                {comboBalances.filter((cb: any) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0).length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {comboBalances.map((cb: any) => {
+                    {comboBalances.filter((cb: any) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0).map((cb: any) => {
                       const info = getComboDisplayInfo(cb.serviceName, cb.normalCount, cb.retainCount, cb.packageNormalCount, cb.packageKey);
  
                       return (
-                        <div key={cb.id} style={{
-                          background: themeMode === 'dark' ? 'rgba(250, 140, 22, 0.05)' : '#fffbe6',
-                          border: `1px solid ${themeMode === 'dark' ? 'rgba(250, 140, 22, 0.2)' : '#ffe58f'}`,
-                          borderRadius: '8px',
-                          padding: '10px'
-                        }}>
+                        <div 
+                          key={cb.id} 
+                          onClick={() => setIsComboModalOpen(true)}
+                          style={{
+                            background: themeMode === 'dark' ? 'rgba(250, 140, 22, 0.05)' : '#fffbe6',
+                            border: `1px solid ${themeMode === 'dark' ? 'rgba(250, 140, 22, 0.2)' : '#ffe58f'}`,
+                            borderRadius: '8px',
+                            padding: '10px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#fa8c16';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(250, 140, 22, 0.15)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = themeMode === 'dark' ? 'rgba(250, 140, 22, 0.2)' : '#ffe58f';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                        >
                           {/* Header row: Service Name + Package Key in Parentheses */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                             <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fa8c16', flex: 1 }}>
                               {cb.serviceName} {cb.packageKey ? `(${cb.packageKey})` : ''}
                             </div>
+                            <span style={{ fontSize: '10px', color: '#fa8c16', textDecoration: 'underline' }}>Chi tiết</span>
                           </div>
                           
                           {/* Icons row matching legacy screenshot */}
@@ -479,6 +558,12 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                               <span>Refill (Dặm):</span>
                               <span><strong>{cb.retainCount}</strong> / {info.totalRefill} buổi</span>
                             </div>
+                            {cb.creatorStaffName && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                                <span>Người bán (CC):</span>
+                                <strong style={{ color: themeMode === 'dark' ? '#fff' : '#555' }}>{cb.creatorStaffName}</strong>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -898,6 +983,35 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
           pagination={{ pageSize: 8, showSizeChanger: false }}
           size="small"
           locale={{ emptyText: 'Không có giao dịch kim cương nào.' }}
+        />
+      </Modal>
+
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 'bold' }}>
+            <span>📦 Lịch sử mua Combo</span>
+            {customer && <span style={{ fontSize: '13px', color: '#888', fontWeight: 'normal' }}>(Khách hàng: {customer.name})</span>}
+          </div>
+        }
+        open={isComboModalOpen}
+        onCancel={() => setIsComboModalOpen(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setIsComboModalOpen(false)}>
+            Đóng
+          </Button>
+        ]}
+        width={800}
+        styles={{
+          body: { padding: '12px 0 0 0' }
+        }}
+      >
+        <Table
+          dataSource={comboBalances}
+          columns={comboHistoryColumns}
+          rowKey="id"
+          pagination={{ pageSize: 8, showSizeChanger: false }}
+          size="small"
+          locale={{ emptyText: 'Không có lịch sử mua combo nào.' }}
         />
       </Modal>
     </Drawer>

@@ -2407,12 +2407,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
           sp.normal_count as packageNormalCount,
           sp.service_price_package_key as packageKey,
           usb.total_normal_balance_amount as totalNormalBalanceAmount,
-          usb.total_retain_balance_amount as totalRetainBalanceAmount
+          usb.total_retain_balance_amount as totalRetainBalanceAmount,
+          sp.service_price as packagePrice,
+          up.full_name as creatorStaffName
         FROM user_service_balance usb
         LEFT JOIN service s ON usb.service_id = s.id
         LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
         LEFT JOIN service_price sp ON usb.service_price_id = sp.id
-        WHERE usb.user_id = ? AND (usb.normal_count > 0 OR usb.retain_count > 0)
+        LEFT JOIN user_profile up ON usb.created_staff_id = up.user_id
+        WHERE usb.user_id = ?
+        ORDER BY usb.date_created DESC
       `;
       const comboBalances = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(balanceSql, customerId);
 
@@ -2704,7 +2708,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           serviceKey: cb.serviceKey,
           serviceName: cb.serviceName,
           packageNormalCount: cb.packageNormalCount ? Number(cb.packageNormalCount) : null,
-          packageKey: cb.packageKey
+          packageKey: cb.packageKey,
+          creatorStaffName: cb.creatorStaffName || null,
+          packagePrice: cb.packagePrice ? Number(cb.packagePrice) : null
         })),
         bookings: formattedBookings,
         notes: formattedNotes,
