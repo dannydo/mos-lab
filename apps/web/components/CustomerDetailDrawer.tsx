@@ -69,27 +69,36 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       title: 'Loại',
       dataIndex: 'method',
       key: 'method',
-      render: (method: string) => (
-        <Tag color={method === 'Credit' ? 'success' : 'warning'}>
-          {method === 'Credit' ? 'Cộng (+)' : 'Trừ (-)'}
-        </Tag>
-      ),
+      render: (method: string, record: any) => {
+        const val = Number(record.amount || 0);
+        const isNegative = val < 0 || method !== 'Credit';
+        return (
+          <Tag color={isNegative ? 'error' : 'success'}>
+            {isNegative ? 'Trừ (-)' : 'Cộng (+)'}
+          </Tag>
+        );
+      },
       width: '100px'
     },
     {
       title: 'Số lượng',
       dataIndex: 'amount',
       key: 'amount',
-      render: (val: number, record: any) => (
-        <span style={{ 
-          fontWeight: 'bold', 
-          color: record.method === 'Credit' 
-            ? (themeMode === 'dark' ? '#4ade80' : '#22c55e') 
-            : (themeMode === 'dark' ? '#fb923c' : '#ea580c') 
-        }}>
-          {record.method === 'Credit' ? '+' : '-'}{val} 💎
-        </span>
-      ),
+      render: (val: number, record: any) => {
+        const amountVal = Number(val || 0);
+        const isNegative = amountVal < 0 || record.method !== 'Credit';
+        const displayVal = Math.abs(amountVal);
+        return (
+          <span style={{ 
+            fontWeight: 'bold', 
+            color: isNegative 
+              ? (themeMode === 'dark' ? '#ff7875' : '#ff4d4f') 
+              : (themeMode === 'dark' ? '#4ade80' : '#22c55e') 
+          }}>
+            {isNegative ? '-' : '+'}{displayVal} 💎
+          </span>
+        );
+      },
       width: '110px'
     },
     {
