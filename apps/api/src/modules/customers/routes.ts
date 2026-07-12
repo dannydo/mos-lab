@@ -3622,6 +3622,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const profileMap = new Map(userProfiles.map(p => [Number(p.userId), p]));
       const contactMap = new Map(userContacts.map(c => [Number(c.userId), c.phoneNumber]));
 
+      // Query promotions used by orders
+      const promoIds = Array.from(new Set([
+        ...bookingsOrders.map(o => o.promotion_id).filter(id => id !== null && id !== undefined),
+        ...bookingsOrders.map(o => o.selected_promotion_id).filter(id => id !== null && id !== undefined),
+        ...comingOrders.map(o => o.promotion_id).filter(id => id !== null && id !== undefined),
+        ...comingOrders.map(o => o.selected_promotion_id).filter(id => id !== null && id !== undefined)
+      ].map(id => Number(id))));
+
+      const promotions = promoIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT p.id, p.promotion_key as promotionKey, pl.promotion_name as name
+        FROM promotion p
+        LEFT JOIN promotion_language pl ON p.id = pl.promotion_id AND pl.language_id = 1
+        WHERE p.id IN (${promoIds.join(',')})
+      `) : [];
+
+      const promoMap = new Map(promotions.map(p => [Number(p.id), p.promotionKey || p.name || `PROMO-${p.id}`]));
+
       // Fetch staff profiles map
       const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT user_id as userId, full_name as fullName
@@ -3714,7 +3731,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           avatar: uProfile?.avatar || null,
           phone,
           group,
-          promo: o.promotion_id ? `PROMO-${o.promotion_id}` : null,
+          promo: (o.promotion_id || o.selected_promotion_id) ? (promoMap.get(Number(o.promotion_id || o.selected_promotion_id)) || `PROMO-${o.promotion_id || o.selected_promotion_id}`) : null,
           booker,
           createdTime: new Date(o.date_created).toLocaleTimeString('vi-VN', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false }),
           avatarColor: ['#1890ff', '#722ed1', '#f5222d', '#fa8c16', '#52c41a', '#13c2c2', '#eb2f96'][index % 7],
@@ -3920,7 +3937,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           avatar: uProfile?.avatar || null,
           phone,
           group,
-          promo: o.promotion_id ? `PROMO-${o.promotion_id}` : null,
+          promo: (o.promotion_id || o.selected_promotion_id) ? (promoMap.get(Number(o.promotion_id || o.selected_promotion_id)) || `PROMO-${o.promotion_id || o.selected_promotion_id}`) : null,
           booker,
           cc: ccName,
           cv: cvName,
