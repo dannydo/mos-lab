@@ -187,6 +187,7 @@ interface ComingClientData {
   code?: string;
   email?: string;
   ltv?: string;
+  price?: number;
   bookingsCount?: number;
   diamonds?: number;
   frequency?: string;
@@ -802,23 +803,82 @@ export default function TodayDashboard() {
     );
   };
 
-  const comingCountDeTham = branchesData.detham?.coming?.length || 0;
-  const comingCountPxl = branchesData.pxl?.coming?.length || 0;
-  const comingCountEstella = branchesData.estella?.coming?.length || 0;
-  const comingCountAll = comingCountDeTham + comingCountPxl + comingCountEstella;
+  const comingBranchStats = React.useMemo(() => {
+    let dtCount = 0, dtPrice = 0;
+    let epCount = 0, epPrice = 0;
+    let pxlCount = 0, pxlPrice = 0;
+
+    const getItemPrice = (item: any) => {
+      if (typeof item.price === 'number') return item.price;
+      const ltvStr = item.ltv || '';
+      const parsed = Number(ltvStr.replace(/[^\d]/g, ''));
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
+    (branchesData.detham?.coming || []).forEach((item: any) => {
+      dtCount++;
+      dtPrice += getItemPrice(item);
+    });
+    (branchesData.estella?.coming || []).forEach((item: any) => {
+      epCount++;
+      epPrice += getItemPrice(item);
+    });
+    (branchesData.pxl?.coming || []).forEach((item: any) => {
+      pxlCount++;
+      pxlPrice += getItemPrice(item);
+    });
+
+    const totalCount = dtCount + epCount + pxlCount;
+    const totalPrice = dtPrice + epPrice + pxlPrice;
+
+    return {
+      dt: { count: dtCount, price: dtPrice },
+      ep: { count: epCount, price: epPrice },
+      pxl: { count: pxlCount, price: pxlPrice },
+      totalCount,
+      totalPrice
+    };
+  }, [branchesData]);
 
   const comingStats = React.useMemo(() => {
-    let combo = 0;
-    let oc = 0;
-    let other = 0;
+    let comboCount = 0, comboPrice = 0;
+    let ocCount = 0, ocPrice = 0;
+    let otherCount = 0, otherPrice = 0;
+
+    const getItemPrice = (item: any) => {
+      if (typeof item.price === 'number') return item.price;
+      const ltvStr = item.ltv || '';
+      const parsed = Number(ltvStr.replace(/[^\d]/g, ''));
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
     const allComing = Object.keys(branchesData).flatMap(branchKey => branchesData[branchKey].coming || []);
     allComing.forEach(item => {
-      if (item.category === 'combo') combo++;
-      else if (item.category === 'oc') oc++;
-      else other++;
+      const price = getItemPrice(item);
+      if (item.category === 'combo') {
+        comboCount++;
+        comboPrice += price;
+      } else if (item.category === 'oc') {
+        ocCount++;
+        ocPrice += price;
+      } else {
+        otherCount++;
+        otherPrice += price;
+      }
     });
-    return { combo, oc, other, total: allComing.length };
+
+    const totalCount = allComing.length;
+    const totalPrice = comboPrice + ocPrice + otherPrice;
+
+    return {
+      combo: { count: comboCount, price: comboPrice },
+      oc: { count: ocCount, price: ocPrice },
+      other: { count: otherCount, price: otherPrice },
+      totalCount,
+      totalPrice
+    };
   }, [branchesData]);
+
 
   const totalRevenueData = React.useMemo(() => {
     const revLe = Object.values(branchesData).reduce((sum, b) => sum + (showTax ? (b.revLe || 0) : (b.netLe || 0)), 0);
@@ -1002,7 +1062,9 @@ export default function TodayDashboard() {
                       <PieChartOutlined style={{ color: '#1890ff', marginRight: '6px' }} />
                       Khách Đến Hôm Nay
                     </span>
-                    <strong style={{ fontSize: '14px', color: token.colorText }}>{comingStats.total}</strong>
+                    <strong style={{ fontSize: '13px', color: token.colorText }} title={`Tổng cộng: ${comingStats.totalCount} khách • ${comingStats.totalPrice.toLocaleString('vi-VN')} đ`}>
+                      {comingStats.totalCount} khách • {formatCenterRevenue(comingStats.totalPrice)}
+                    </strong>
                   </div>
 
                   <Row gutter={16} style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
@@ -1011,26 +1073,26 @@ export default function TodayDashboard() {
                       <div style={{ fontSize: '11px', color: token.colorTextDescription, fontWeight: 500, marginBottom: '6px' }}>Nhóm khách</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <DonutChart 
-                          total={comingStats.total}
+                          total={comingStats.totalCount}
                           themeMode={themeMode}
                           segments={[
-                            { value: comingStats.combo, color: '#D4A84B', label: 'Combo' },
-                            { value: comingStats.oc, color: '#52C41A', label: 'Tele' },
-                            { value: comingStats.other, color: '#1890FF', label: 'Khác' }
+                            { value: comingStats.combo.count, color: '#D4A84B', label: 'Combo' },
+                            { value: comingStats.oc.count, color: '#52C41A', label: 'Tele' },
+                            { value: comingStats.other.count, color: '#1890FF', label: 'Khác' }
                           ]}
                         />
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, overflow: 'hidden' }}>
-                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Combo: ${comingStats.combo.count} khách • ${comingStats.combo.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#D4A84B', borderRadius: '50%', marginRight: '3px' }} />
-                            Combo: <strong>{comingStats.combo}</strong>
+                            Combo: <strong>{comingStats.combo.count}</strong> <span style={{ fontSize: '9px', color: token.colorTextDescription }}>({formatCenterRevenue(comingStats.combo.price)})</span>
                           </div>
-                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Telesales: ${comingStats.oc.count} khách • ${comingStats.oc.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#52C41A', borderRadius: '50%', marginRight: '3px' }} />
-                            Tele: <strong>{comingStats.oc}</strong>
+                            Tele: <strong>{comingStats.oc.count}</strong> <span style={{ fontSize: '9px', color: token.colorTextDescription }}>({formatCenterRevenue(comingStats.oc.price)})</span>
                           </div>
-                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Khác: ${comingStats.other.count} khách • ${comingStats.other.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#1890FF', borderRadius: '50%', marginRight: '3px' }} />
-                            Khác: <strong>{comingStats.other}</strong>
+                            Khác: <strong>{comingStats.other.count}</strong> <span style={{ fontSize: '9px', color: token.colorTextDescription }}>({formatCenterRevenue(comingStats.other.price)})</span>
                           </div>
                         </div>
                       </div>
@@ -1041,26 +1103,26 @@ export default function TodayDashboard() {
                       <div style={{ fontSize: '11px', color: token.colorTextDescription, fontWeight: 500, marginBottom: '6px' }}>Chi nhánh</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <DonutChart 
-                          total={comingCountAll}
+                          total={comingBranchStats.totalCount}
                           themeMode={themeMode}
                           segments={[
-                            { value: comingCountDeTham, color: '#722ED1', label: 'Đ.Thám' },
-                            { value: comingCountEstella, color: '#13C2C2', label: 'Estella' },
-                            { value: comingCountPxl, color: '#EB2F96', label: 'PXL' }
+                            { value: comingBranchStats.dt.count, color: '#722ED1', label: 'Đ.Thám' },
+                            { value: comingBranchStats.ep.count, color: '#13C2C2', label: 'Estella' },
+                            { value: comingBranchStats.pxl.count, color: '#EB2F96', label: 'PXL' }
                           ]}
                         />
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, overflow: 'hidden' }}>
-                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Đề Thám: ${comingBranchStats.dt.count} khách • ${comingBranchStats.dt.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#722ED1', borderRadius: '50%', marginRight: '3px' }} />
-                            DT: <strong>{comingCountDeTham}</strong>
+                            DT: <strong>{comingBranchStats.dt.count}</strong> <span style={{ fontSize: '9px', color: token.colorTextDescription }}>({formatCenterRevenue(comingBranchStats.dt.price)})</span>
                           </div>
-                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Estella: ${comingBranchStats.ep.count} khách • ${comingBranchStats.ep.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#13C2C2', borderRadius: '50%', marginRight: '3px' }} />
-                            EP: <strong>{comingCountEstella}</strong>
+                            EP: <strong>{comingBranchStats.ep.count}</strong> <span style={{ fontSize: '9px', color: token.colorTextDescription }}>({formatCenterRevenue(comingBranchStats.ep.price)})</span>
                           </div>
-                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Phan Xích Long: ${comingBranchStats.pxl.count} khách • ${comingBranchStats.pxl.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#EB2F96', borderRadius: '50%', marginRight: '3px' }} />
-                            PXL: <strong>{comingCountPxl}</strong>
+                            PXL: <strong>{comingBranchStats.pxl.count}</strong> <span style={{ fontSize: '9px', color: token.colorTextDescription }}>({formatCenterRevenue(comingBranchStats.pxl.price)})</span>
                           </div>
                         </div>
                       </div>
@@ -1221,10 +1283,10 @@ export default function TodayDashboard() {
                       localStorage.setItem('today_coming_category', val);
                     }}
                   >
-                    <Radio.Button value="all">ALL ({comingStats.total})</Radio.Button>
-                    <Radio.Button value="combo">Combo ({comingStats.combo})</Radio.Button>
-                    <Radio.Button value="oc">Telesales ({comingStats.oc})</Radio.Button>
-                    <Radio.Button value="other">Khác ({comingStats.other})</Radio.Button>
+                    <Radio.Button value="all">ALL ({comingStats.totalCount})</Radio.Button>
+                    <Radio.Button value="combo">Combo ({comingStats.combo.count})</Radio.Button>
+                    <Radio.Button value="oc">Telesales ({comingStats.oc.count})</Radio.Button>
+                    <Radio.Button value="other">Khác ({comingStats.other.count})</Radio.Button>
                   </Radio.Group>
                   <Radio.Group 
                     size="small" 
@@ -1235,10 +1297,10 @@ export default function TodayDashboard() {
                       localStorage.setItem('today_coming_branch', val);
                     }}
                   >
-                    <Radio.Button value="all">ALL ({comingCountAll})</Radio.Button>
-                    <Radio.Button value="detham">DT ({comingCountDeTham})</Radio.Button>
-                    <Radio.Button value="pxl">PXL ({comingCountPxl})</Radio.Button>
-                    <Radio.Button value="estella">EP ({comingCountEstella})</Radio.Button>
+                    <Radio.Button value="all">ALL ({comingBranchStats.totalCount})</Radio.Button>
+                    <Radio.Button value="detham">DT ({comingBranchStats.dt.count})</Radio.Button>
+                    <Radio.Button value="pxl">PXL ({comingBranchStats.pxl.count})</Radio.Button>
+                    <Radio.Button value="estella">EP ({comingBranchStats.ep.count})</Radio.Button>
                   </Radio.Group>
                 </Space>
               }

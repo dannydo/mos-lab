@@ -4165,6 +4165,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           code: String(o.id),
           email: uProfile?.email || '',
           ltv: (o.total_price || 0).toLocaleString('vi-VN') + ' đ',
+          price: Number(o.total_price || 0),
           bookingsCount: 1,
           diamonds: 50,
           frequency: 'N/A',
