@@ -189,7 +189,9 @@ export default function TodayDashboard() {
   
   // Tabs states
   const [bookingFilter, setBookingFilter] = useState<'all' | 'combo' | 'oc' | 'other'>('all');
+  const [bookingBranch, setBookingBranch] = useState<'all' | 'detham' | 'pxl' | 'estella'>('all');
   const [comingBranch, setComingBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
+  const [comingCategory, setComingCategory] = useState<'all' | 'combo' | 'oc' | 'other'>('all');
   const [shopBranch, setShopBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
 
   // Drawer states
@@ -214,9 +216,17 @@ export default function TodayDashboard() {
       if (persistedBookingFilter !== null) {
         setBookingFilter(persistedBookingFilter as any);
       }
+      const persistedBookingBranch = localStorage.getItem('today_booking_branch');
+      if (persistedBookingBranch !== null) {
+        setBookingBranch(persistedBookingBranch as any);
+      }
       const persistedComingBranch = localStorage.getItem('today_coming_branch');
       if (persistedComingBranch !== null) {
         setComingBranch(persistedComingBranch as any);
+      }
+      const persistedComingCategory = localStorage.getItem('today_coming_category');
+      if (persistedComingCategory !== null) {
+        setComingCategory(persistedComingCategory as any);
       }
       const persistedShopBranch = localStorage.getItem('today_shop_branch');
       if (persistedShopBranch !== null) {
@@ -306,31 +316,65 @@ export default function TodayDashboard() {
   };
 
   const allBookings = React.useMemo(() => {
-    const combined = [...bookingsCombo, ...bookingsOc, ...bookingsOther];
+    const combined = [
+      ...bookingsCombo.map(b => ({ ...b, category: 'combo' })),
+      ...bookingsOc.map(b => ({ ...b, category: 'oc' })),
+      ...bookingsOther.map(b => ({ ...b, category: 'other' }))
+    ];
     return combined.sort((a, b) => Number(b.key) - Number(a.key));
   }, [bookingsCombo, bookingsOc, bookingsOther]);
 
+  const bookingBranchCounts = React.useMemo(() => {
+    let dt = 0;
+    let pxl = 0;
+    let ep = 0;
+    allBookings.forEach(b => {
+      if (b.branchName === 'Đề Thám') dt++;
+      else if (b.branchName === 'PXL') pxl++;
+      else if (b.branchName === 'Estella') ep++;
+    });
+    return { dt, pxl, ep, total: allBookings.length };
+  }, [allBookings]);
+
   const filteredBookings = React.useMemo(() => {
-    if (bookingFilter === 'all') return allBookings;
-    if (bookingFilter === 'combo') return bookingsCombo;
-    if (bookingFilter === 'oc') return bookingsOc;
-    return bookingsOther;
-  }, [bookingFilter, allBookings, bookingsCombo, bookingsOc, bookingsOther]);
+    return allBookings.filter(b => {
+      // Category filter
+      if (bookingFilter !== 'all' && b.category !== bookingFilter) {
+        return false;
+      }
+      // Branch filter
+      if (bookingBranch !== 'all') {
+        if (bookingBranch === 'detham' && b.branchName !== 'Đề Thám') return false;
+        if (bookingBranch === 'pxl' && b.branchName !== 'PXL') return false;
+        if (bookingBranch === 'estella' && b.branchName !== 'Estella') return false;
+      }
+      return true;
+    });
+  }, [allBookings, bookingFilter, bookingBranch]);
 
   const activeComingList = React.useMemo(() => {
-    const list = comingBranch === 'all'
-      ? Object.keys(branchesData).flatMap(branchKey => 
-          branchesData[branchKey].coming.map(item => ({
-            ...item,
-            branchName: getBranchLabel(branchKey)
-          }))
-        )
-      : branchesData[comingBranch].coming.map(item => ({
-          ...item,
-          branchName: getBranchLabel(comingBranch)
-        }));
-    return [...list].sort((a, b) => a.time.localeCompare(b.time));
-  }, [branchesData, comingBranch]);
+    const fullList = Object.keys(branchesData).flatMap(branchKey => 
+      (branchesData[branchKey].coming || []).map(item => ({
+        ...item,
+        branchName: getBranchLabel(branchKey),
+        branchKey
+      }))
+    );
+
+    const filtered = fullList.filter(item => {
+      // Branch filter
+      if (comingBranch !== 'all' && item.branchKey !== comingBranch) {
+        return false;
+      }
+      // Category filter
+      if (comingCategory !== 'all' && item.category !== comingCategory) {
+        return false;
+      }
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => a.time.localeCompare(b.time));
+  }, [branchesData, comingBranch, comingCategory]);
 
   const activeShopData = React.useMemo(() => {
     const raw = shopBranch === 'all'
@@ -1083,20 +1127,36 @@ export default function TodayDashboard() {
                 </Space>
               }
               extra={
-                <Radio.Group 
-                  size="small" 
-                  value={bookingFilter} 
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setBookingFilter(val);
-                    localStorage.setItem('today_booking_filter', val);
-                  }}
-                >
-                  <Radio.Button value="all">ALL ({allBookings.length})</Radio.Button>
-                  <Radio.Button value="combo">Combo ({bookingsCombo.length})</Radio.Button>
-                  <Radio.Button value="oc">Telesales ({bookingsOc.length})</Radio.Button>
-                  <Radio.Button value="other">Khác ({bookingsOther.length})</Radio.Button>
-                </Radio.Group>
+                <Space size="middle">
+                  <Radio.Group 
+                    size="small" 
+                    value={bookingFilter} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBookingFilter(val as any);
+                      localStorage.setItem('today_booking_filter', val);
+                    }}
+                  >
+                    <Radio.Button value="all">ALL ({allBookings.length})</Radio.Button>
+                    <Radio.Button value="combo">Combo ({bookingsCombo.length})</Radio.Button>
+                    <Radio.Button value="oc">Telesales ({bookingsOc.length})</Radio.Button>
+                    <Radio.Button value="other">Khác ({bookingsOther.length})</Radio.Button>
+                  </Radio.Group>
+                  <Radio.Group 
+                    size="small" 
+                    value={bookingBranch} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBookingBranch(val as any);
+                      localStorage.setItem('today_booking_branch', val);
+                    }}
+                  >
+                    <Radio.Button value="all">ALL ({bookingBranchCounts.total})</Radio.Button>
+                    <Radio.Button value="detham">DT ({bookingBranchCounts.dt})</Radio.Button>
+                    <Radio.Button value="pxl">PXL ({bookingBranchCounts.pxl})</Radio.Button>
+                    <Radio.Button value="estella">EP ({bookingBranchCounts.ep})</Radio.Button>
+                  </Radio.Group>
+                </Space>
               }
               style={{ height: '100%', borderColor: token.colorBorderSecondary }}
             >
@@ -1125,20 +1185,36 @@ export default function TodayDashboard() {
                 </Space>
               }
               extra={
-                <Radio.Group 
-                  size="small" 
-                  value={comingBranch} 
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setComingBranch(val);
-                    localStorage.setItem('today_coming_branch', val);
-                  }}
-                >
-                  <Radio.Button value="all">ALL ({comingCountAll})</Radio.Button>
-                  <Radio.Button value="detham">DT ({comingCountDeTham})</Radio.Button>
-                  <Radio.Button value="pxl">PXL ({comingCountPxl})</Radio.Button>
-                  <Radio.Button value="estella">EP ({comingCountEstella})</Radio.Button>
-                </Radio.Group>
+                <Space size="middle">
+                  <Radio.Group 
+                    size="small" 
+                    value={comingCategory} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setComingCategory(val as any);
+                      localStorage.setItem('today_coming_category', val);
+                    }}
+                  >
+                    <Radio.Button value="all">ALL ({comingStats.total})</Radio.Button>
+                    <Radio.Button value="combo">Combo ({comingStats.combo})</Radio.Button>
+                    <Radio.Button value="oc">Telesales ({comingStats.oc})</Radio.Button>
+                    <Radio.Button value="other">Khác ({comingStats.other})</Radio.Button>
+                  </Radio.Group>
+                  <Radio.Group 
+                    size="small" 
+                    value={comingBranch} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setComingBranch(val as any);
+                      localStorage.setItem('today_coming_branch', val);
+                    }}
+                  >
+                    <Radio.Button value="all">ALL ({comingCountAll})</Radio.Button>
+                    <Radio.Button value="detham">DT ({comingCountDeTham})</Radio.Button>
+                    <Radio.Button value="pxl">PXL ({comingCountPxl})</Radio.Button>
+                    <Radio.Button value="estella">EP ({comingCountEstella})</Radio.Button>
+                  </Radio.Group>
+                </Space>
               }
               style={{ height: '100%', borderColor: token.colorBorderSecondary }}
             >

@@ -2756,10 +2756,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
           const cleanName = staff.displayName.replace(/\s+CC$/i, '').trim();
 
           const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-            SELECT user_id as userId
-            FROM \`user_profile\`
-            WHERE full_name = ? OR full_name = ?
-            ORDER BY user_id DESC
+            SELECT up.user_id as userId
+            FROM \`staff_profile\` sp
+            JOIN \`user_profile\` up ON sp.user_id = up.user_id
+            WHERE up.provider = 'Staff' AND up.is_disabled = 0
+              AND (up.full_name = ? OR up.full_name = ?)
+            ORDER BY up.user_id DESC
             LIMIT 1
           `, cleanName, cleanName + ' ');
 
@@ -2831,6 +2833,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           o.order_state as orderState,
           o.total_price as totalPrice,
           o.user_id as userId,
+          o.date_created as dateCreated,
           o.assigned_staff_id as technicianId,
           o.client_store_id as storeId,
           COALESCE(up.full_name, 'No Name') as customerName,
@@ -2946,7 +2949,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           o.id,
           o.order_state as orderState,
           o.total_price as totalPrice,
-          o.booking_date_start as bookingDateStart
+          o.booking_date_start as bookingDateStart,
+          o.user_id as userId,
+          o.date_created as dateCreated
         FROM \`order\` o
         WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
           AND o.order_state != 'Cancelled'
@@ -2963,6 +2968,84 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       const allOrdersInRange = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(allOrdersSql, ...allOrdersParams);
+
+      // Collect all customer IDs from both allOrdersInRange and the paginated result
+      const allRangeUserIds = allOrdersInRange.map(o => Number(o.userId)).filter(id => !isNaN(id));
+      const paginatedUserIds = result.map(o => Number(o.userId)).filter(id => !isNaN(id));
+      const customerIds = Array.from(new Set([...allRangeUserIds, ...paginatedUserIds]));
+
+      const userBalances = customerIds.length > 0 ? await fastify.prisma.legacy.user_service_balance.findMany({
+        where: { user_id: { in: customerIds } }
+      }) : [];
+
+      const balanceIds = userBalances.map(b => b.id);
+      const userBalanceTransactions = balanceIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT usbt.*, o.booking_date_start as o_booking_date_start
+        FROM user_service_balance_transaction usbt
+        LEFT JOIN \`order\` o ON o.id = usbt.order_id
+        WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
+      `) : [];
+
+      const txnsByBalanceId = new Map<number, any[]>();
+      for (const t of userBalanceTransactions) {
+        const bid = Number(t.user_service_balance_id);
+        let list = txnsByBalanceId.get(bid);
+        if (!list) {
+          list = [];
+          txnsByBalanceId.set(bid, list);
+        }
+        list.push(t);
+      }
+
+      const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
+        const bTime = bookingDateStart || orderCreatedDate;
+        const userBals = userBalances.filter(b => b.user_id === userId);
+        
+        for (const usb of userBals) {
+          if (new Date(usb.date_created) >= new Date(bTime)) {
+            continue;
+          }
+
+          const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(t => 
+            new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+          );
+
+          txnsBefore.sort((a, b) => {
+            const timeA = new Date(a.o_booking_date_start || a.date_created).getTime();
+            const timeB = new Date(b.o_booking_date_start || b.date_created).getTime();
+            if (timeA !== timeB) return timeB - timeA;
+            return b.id - a.id;
+          });
+
+          const lastTxnBefore = txnsBefore[0];
+
+          const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
+          const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
+
+          let countLeft = 0;
+          if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
+            countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
+          } else {
+            const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
+              new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
+            );
+            
+            let usedAfter = 0;
+            txnsAfterOrAt.forEach(t => {
+              if (t.used_staff_id !== null) {
+                usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
+              }
+            });
+
+            countLeft = (usb.normal_count || 0) + (usb.retain_count || 0) + usedAfter;
+          }
+
+          if (isNotExpired && countLeft > 0) {
+            return true;
+          }
+        }
+        return false;
+      };
 
       const summaryCompletedOrders = allOrdersInRange.filter(o => o.orderState === 'Completed');
       const summaryCompletedOrderIds = summaryCompletedOrders.map(o => Number(o.id));
@@ -3020,7 +3103,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
             }
 
             const isRefill = serviceName.toLowerCase().includes('refill');
-            const isCombo = serviceName.toLowerCase().includes('combo') || (primaryService.service_type || '').toLowerCase().includes('combo');
+            const isCombo = checkHasLiveCombo(
+              Number(o.userId),
+              o.bookingDateStart ? new Date(o.bookingDateStart) : null,
+              o.dateCreated ? new Date(o.dateCreated) : new Date()
+            );
 
             let bonus = 0;
             if (isCombo) {
@@ -3124,7 +3211,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
             }
 
             const isRefill = serviceName.toLowerCase().includes('refill');
-            const isCombo = serviceName.toLowerCase().includes('combo') || (primaryService.service_type || '').toLowerCase().includes('combo');
+            const isCombo = checkHasLiveCombo(
+              Number(row.userId),
+              row.bookingDateStart ? new Date(row.bookingDateStart) : null,
+              row.dateCreated ? new Date(row.dateCreated) : new Date()
+            );
 
             if (isCombo) {
               bookingBonus = 0;
