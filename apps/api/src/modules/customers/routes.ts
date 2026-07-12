@@ -3664,10 +3664,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         };
 
         const isOc = telesalesNames.has(booker.trim().toLowerCase());
-        if (isOc) {
-          bookingsOc.push(record);
-        } else if (group === 'combo_live') {
+        if (group === 'combo_live') {
           bookingsCombo.push(record);
+        } else if (isOc) {
+          bookingsOc.push(record);
         } else {
           bookingsOther.push(record);
         }
