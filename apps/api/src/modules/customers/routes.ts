@@ -3625,9 +3625,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const dob = uProfile?.dob ? new Date(uProfile.dob).toLocaleDateString('en-CA') : 'N/A';
         const gender = uProfile?.gender || 'N/A';
 
-        // Check active combo
+        // Check active combo at the time of booking
         const userBal = balanceMap.get(o.user_id) || [];
-        const activeCombo = userBal.find(b => b.normal_count > 0 && (!b.date_expired || new Date(b.date_expired) > new Date()));
+        const activeCombo = userBal.find(b => 
+          new Date(b.date_created) <= new Date(o.date_created) && 
+          (!b.date_expired || new Date(b.date_expired) > new Date(o.date_created))
+        );
         const group = activeCombo ? 'combo_live' : (userBal.length > 0 ? 'combo_dead' : 'single');
 
         const booker = staffMap.get(Number(o.created_staff_id)) || o.booking_channels || 'System';
@@ -3833,7 +3836,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
 
         const userBal = balanceMap.get(o.user_id) || [];
-        const activeCombo = userBal.find(b => b.normal_count > 0 && (!b.date_expired || new Date(b.date_expired) > new Date()));
+        const activeCombo = userBal.find(b => 
+          new Date(b.date_created) <= new Date(o.date_created) && 
+          (!b.date_expired || new Date(b.date_expired) > new Date(o.date_created))
+        );
         const group = activeCombo ? 'combo_live' : (userBal.length > 0 ? 'combo_dead' : 'single');
 
         let status: 'arrived' | 'confirmed' | 'pending' | 'late' = 'pending';
