@@ -3668,6 +3668,58 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const comingProfileMap = new Map(comingProfiles.map(p => [Number(p.userId), p]));
       const comingContactMap = new Map(comingContacts.map(c => [Number(c.userId), c.phoneNumber]));
 
+      // Get active CCs (check-in/out in the last 30 days and user_profile.is_disabled = 0)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const activeCcRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT DISTINCT s.staffId
+        FROM (
+          SELECT DISTINCT check_in_staff_id as staffId FROM \`order_service\` WHERE check_in_staff_id IS NOT NULL AND check_in_staff_id > 0 AND date_created >= ?
+          UNION
+          SELECT DISTINCT check_out_staff_id as staffId FROM \`order_service\` WHERE check_out_staff_id IS NOT NULL AND check_out_staff_id > 0 AND date_created >= ?
+        ) s
+      `, thirtyDaysAgo, thirtyDaysAgo);
+
+      const activeCcIds = activeCcRows.map(r => Number(r.staffId));
+      let activeCcs: { id: number; name: string; branch: 'detham' | 'pxl' | 'estella' }[] = [];
+
+      if (activeCcIds.length > 0) {
+        const ccProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          SELECT user_id as userId, full_name as fullName
+          FROM \`user_profile\`
+          WHERE user_id IN (${activeCcIds.join(',')}) AND provider = 'Staff' AND is_disabled = 0
+        `);
+
+        // Map each CC to their preferred store
+        for (const p of ccProfiles) {
+          const ccId = Number(p.userId);
+          const stores = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+            SELECT o.client_store_id as storeId, COUNT(*) as count
+            FROM \`order_service\` os
+            JOIN \`order\` o ON os.order_id = o.id
+            WHERE (os.check_in_staff_id = ? OR os.check_out_staff_id = ?)
+            GROUP BY o.client_store_id
+            ORDER BY count DESC
+            LIMIT 1
+          `, ccId, ccId);
+
+          const prefStoreId = Number(stores[0]?.storeId);
+          let branch: 'detham' | 'pxl' | 'estella' | null = null;
+          if (prefStoreId === 6) branch = 'detham';
+          else if (prefStoreId === 2) branch = 'pxl';
+          else if (prefStoreId === 16) branch = 'estella';
+
+          if (branch) {
+            activeCcs.push({
+              id: ccId,
+              name: p.fullName.trim(),
+              branch
+            });
+          }
+        }
+      }
+
       // Roster data
       const rosters = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT * FROM \`wingsctrl_roster\`
@@ -3679,6 +3731,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
         pxl: { revLe: 0, revCombo: 0, revProduct: 0, cc: [], cv: [], coming: [] },
         estella: { revLe: 0, revCombo: 0, revProduct: 0, cc: [], cv: [], coming: [] }
       };
+
+      // Pre-populate active CCs for each branch
+      activeCcs.forEach(cc => {
+        branchDetailMap[cc.branch].cc.push({
+          id: cc.id,
+          name: cc.name,
+          doing: 'Nghỉ phép tuần',
+          clients: 0,
+          combos: 0,
+          revenue: 0,
+          shift: 'off',
+          attendance: 'none'
+        });
+      });
 
       comingOrders.forEach((o, index) => {
         let branchKey = 'detham';
@@ -3700,6 +3766,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
 
         const booker = staffMap.get(Number(o.created_staff_id)) || o.booking_channels || 'System';
+
+        let ccName = 'Chưa nhận';
+        const checkInStaffId = orderSvs.find(cs => cs.check_in_staff_id)?.check_in_staff_id || orderSvs.find(cs => cs.check_out_staff_id)?.check_out_staff_id;
+        if (checkInStaffId) {
+          ccName = staffMap.get(Number(checkInStaffId)) || 'Tư vấn viên';
+        }
 
         const userBal = balanceMap.get(o.user_id) || [];
         const activeCombo = userBal.find(b => b.normal_count > 0 && (!b.date_expired || new Date(b.date_expired) > new Date()));
@@ -3726,7 +3798,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           group,
           promo: o.promotion_id ? `PROMO-${o.promotion_id}` : null,
           booker,
-          cc: booker,
+          cc: ccName,
           cv: cvName,
           service: serviceName,
           status,
@@ -3791,37 +3863,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         const attendance = isOff ? 'none' : 'checked_in';
 
-        if (role === 'cc' || role === 'consultant') {
-          // CC
-          const bookedOrders = comingOrders.filter(o => {
-            if (staffId && o.created_staff_id === staffId) return true;
-            const bookerName = staffMap.get(Number(o.created_staff_id));
-            return bookerName && normalizeName(bookerName) === normName;
-          });
-
-          let rev = 0;
-          let combosCount = 0;
-          bookedOrders.forEach(o => {
-            rev += o.total_price || 0;
-            const userBal = balanceMap.get(o.user_id) || [];
-            const activeCombo = userBal.find(b => b.normal_count > 0 && (!b.date_expired || new Date(b.date_expired) > new Date()));
-            if (activeCombo) {
-              combosCount++;
-            }
-          });
-
-          branchDetailMap[bKey].cc.push({
-            name: staffName,
-            doing: isOff ? 'Nghỉ phép' : 'Đang hỗ trợ khách hàng',
-            clients: isOff ? 0 : bookedOrders.length,
-            combos: isOff ? 0 : combosCount,
-            revenue: isOff ? 0 : rev,
-            shift,
-            attendance
-          });
-        } else {
-          // CV
-          const staffOrders = comingOrders.filter(o => {
+        // CV
+        const staffOrders = comingOrders.filter(o => {
             if (staffId && o.assigned_staff_id === staffId) return true;
             const assignedName = staffMap.get(Number(o.assigned_staff_id));
             if (assignedName && normalizeName(assignedName) === normName) return true;
@@ -3892,7 +3935,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
             attendance,
             status
           });
-        }
       });
 
       // Fallback roster / revenue data if empty
@@ -3915,62 +3957,82 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
         }
 
-        if (b.cc.length === 0) {
-          let list: { name: string; shift: 'sáng' | 'chiều' | 'full' | 'off'; attendance: string; doing: string }[] = [];
-          if (bKey === 'detham') {
-            list = [
-              { name: "Nguyễn Minh Thuỷ", shift: 'sáng', attendance: 'checked_in', doing: "Đang tư vấn KH mới" },
-              { name: "Phạm Khánh Ly", shift: 'chiều', attendance: 'checked_in', doing: "Đang gọi điện CSKH cũ" },
-              { name: "Trần Bảo Ngọc", shift: 'full', attendance: 'checked_in', doing: "Trống (Đang hỗ trợ thu ngân)" },
-              { name: "Lê Thu Trang", shift: 'off', attendance: 'none', doing: "Nghỉ phép tuần" }
-            ];
-          } else if (bKey === 'pxl') {
-            list = [
-              { name: "Lê Cẩm Tú", shift: 'sáng', attendance: 'checked_in', doing: "Đang chốt sale combo mới" },
-              { name: "Nguyễn Quỳnh Chi", shift: 'chiều', attendance: 'checked_in', doing: "Đang tư vấn KH lẻ nâng cấp combo" },
-              { name: "Hoàng Thanh Hà", shift: 'full', attendance: 'checked_in', doing: "Trống ca" }
-            ];
-          } else {
-            list = [
-              { name: "Lâm Nhã Phương", shift: 'sáng', attendance: 'checked_in', doing: "Đang hỗ trợ khách ký hợp đồng combo" },
-              { name: "Đinh Hoài An", shift: 'chiều', attendance: 'checked_in', doing: "Đang kiểm tra hồ sơ khách hàng ngày" }
-            ];
+        // Calculate today's CC statistics from today's order services
+        comingServices.forEach(s => {
+          const order = comingOrders.find(o => o.id === s.order_id);
+          if (!order) return;
+
+          let orderBranchKey = 'detham';
+          if (order.client_store_id === 2) orderBranchKey = 'pxl';
+          else if (order.client_store_id === 16) orderBranchKey = 'estella';
+
+          if (orderBranchKey !== bKey) return; // skip other branches
+
+          // Check-in CC
+          if (s.check_in_staff_id) {
+            const ccId = Number(s.check_in_staff_id);
+            let cc = b.cc.find((c: any) => c.id === ccId);
+            if (!cc) {
+              const staffName = staffMap.get(ccId) || 'Tư vấn viên';
+              cc = {
+                id: ccId,
+                name: staffName,
+                doing: 'Đang hoạt động',
+                clients: 0,
+                combos: 0,
+                revenue: 0,
+                shift: 'full',
+                attendance: 'checked_in'
+              };
+              b.cc.push(cc);
+            }
+            cc.shift = 'full';
+            cc.attendance = 'checked_in';
+            cc.doing = 'Đang hỗ trợ khách check-in';
           }
 
-          b.cc = list.map(ccInfo => {
-            const normName = normalizeName(ccInfo.name);
-            const staffId = staffNameToIdMap.get(normName);
-            const isOff = ccInfo.shift === 'off';
+          // Check-out CC
+          if (s.check_out_staff_id) {
+            const ccId = Number(s.check_out_staff_id);
+            let cc = b.cc.find((c: any) => c.id === ccId);
+            if (!cc) {
+              const staffName = staffMap.get(ccId) || 'Tư vấn viên';
+              cc = {
+                id: ccId,
+                name: staffName,
+                doing: 'Đang hoạt động',
+                clients: 0,
+                combos: 0,
+                revenue: 0,
+                shift: 'full',
+                attendance: 'checked_in'
+              };
+              b.cc.push(cc);
+            }
+            cc.shift = 'full';
+            cc.attendance = 'checked_in';
+            cc.doing = 'Đang thanh toán cho khách';
+            cc.revenue += order.total_price || 0;
+            if (s.user_service_type === 'combo') {
+              cc.combos++;
+            }
+          }
+        });
 
-            // Find orders booked by this CC today
-            const bookedOrders = comingOrders.filter(o => {
-              if (staffId && o.created_staff_id === staffId) return true;
-              const bookerName = staffMap.get(Number(o.created_staff_id));
-              return bookerName && normalizeName(bookerName) === normName;
-            });
+        // Compute unique clients count for each CC today
+        b.cc.forEach((cc: any) => {
+          const ccId = cc.id;
+          const ccServices = comingServices.filter(s => s.check_in_staff_id === ccId || s.check_out_staff_id === ccId);
+          const uniqueOrders = new Set(ccServices.map(s => s.order_id));
+          cc.clients = uniqueOrders.size;
 
-            let rev = 0;
-            let combosCount = 0;
-            bookedOrders.forEach(o => {
-              rev += o.total_price || 0;
-              const userBal = balanceMap.get(o.user_id) || [];
-              const activeCombo = userBal.find(b => b.normal_count > 0 && (!b.date_expired || new Date(b.date_expired) > new Date()));
-              if (activeCombo) {
-                combosCount++;
-              }
-            });
-
-            return {
-              name: ccInfo.name,
-              doing: isOff ? ccInfo.doing : (bookedOrders.length > 0 ? ccInfo.doing : "Trống (Đang hỗ trợ thu ngân)"),
-              clients: isOff ? 0 : bookedOrders.length,
-              combos: isOff ? 0 : combosCount,
-              revenue: isOff ? 0 : rev,
-              shift: ccInfo.shift,
-              attendance: ccInfo.attendance
-            };
-          });
-        }
+          // If they did check-in/out today but doing is not set, set to default idle message
+          if (cc.clients > 0 && cc.doing === 'Nghỉ phép tuần') {
+            cc.doing = 'Trống (Sẵn sàng đón khách)';
+            cc.shift = 'full';
+            cc.attendance = 'checked_in';
+          }
+        });
 
         if (b.cv.length === 0) {
           if (bKey === 'detham') {
