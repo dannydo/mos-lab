@@ -26,7 +26,17 @@ export default function ReferralsPage() {
     if (saved) {
       setPageSize(Number(saved));
     }
+    const savedFilter = localStorage.getItem('mos_referrals_timeFilter');
+    if (savedFilter) {
+      setTimeFilter(savedFilter as any);
+    }
   }, []);
+
+  const handleTimeFilterChange = (key: string) => {
+    setTimeFilter(key as any);
+    setCurrentPage(1);
+    localStorage.setItem('mos_referrals_timeFilter', key);
+  };
 
   const handlePageSizeChange = (page: number, size: number) => {
     setCurrentPage(page);
@@ -293,7 +303,7 @@ export default function ReferralsPage() {
       >
         <Tabs
           activeKey={timeFilter}
-          onChange={(key) => setTimeFilter(key as any)}
+          onChange={handleTimeFilterChange}
           style={{ marginBottom: 0 }}
           items={[
             { key: 'all_time', label: `All time (${getTabCount('all_time')})` },
