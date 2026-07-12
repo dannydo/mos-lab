@@ -904,7 +904,7 @@ export default function TodayDashboard() {
             }} 
             size="small"
           >
-            {record.customer.split(' ').pop()?.substring(0, 2).toUpperCase()}
+            {record.customer.trim().split(' ').pop()?.substring(0, 2).toUpperCase()}
           </Avatar>
           <strong>{record.customer}</strong>
         </Space>
@@ -994,7 +994,7 @@ export default function TodayDashboard() {
             }} 
             size="small"
           >
-            {record.customer.split(' ').pop()?.substring(0, 2).toUpperCase()}
+            {record.customer.trim().split(' ').pop()?.substring(0, 2).toUpperCase()}
           </Avatar>
           <strong>{record.customer}</strong>
         </Space>
