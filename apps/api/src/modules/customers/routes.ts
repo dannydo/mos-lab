@@ -3540,7 +3540,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const userIds = Array.from(new Set(bookingsOrders.map(o => o.user_id)));
       
       const userProfiles = userIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-        SELECT up.user_id as userId, up.full_name as fullName, u.email, u.gender, u.date_of_birth as dob
+        SELECT up.user_id as userId, up.full_name as fullName, up.avatar, u.email, u.gender, u.date_of_birth as dob
         FROM \`user_profile\` up
         LEFT JOIN \`user\` u ON up.user_id = u.id
         WHERE up.user_id IN (${userIds.join(',')})
@@ -3594,6 +3594,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const record = {
           key: String(o.id),
           customer: name,
+          avatar: uProfile?.avatar || null,
           phone,
           group,
           promo: o.promotion_id ? `PROMO-${o.promotion_id}` : null,
@@ -3654,7 +3655,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const comingUserIds = Array.from(new Set(comingOrders.map(o => o.user_id)));
       const comingProfiles = comingUserIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-        SELECT up.user_id as userId, up.full_name as fullName, u.email, u.gender, u.date_of_birth as dob
+        SELECT up.user_id as userId, up.full_name as fullName, up.avatar, u.email, u.gender, u.date_of_birth as dob
         FROM \`user_profile\` up
         LEFT JOIN \`user\` u ON up.user_id = u.id
         WHERE up.user_id IN (${comingUserIds.join(',')})
@@ -3720,6 +3721,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           key: String(o.id),
           time: o.booking_date_start ? new Date(o.booking_date_start).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '00:00',
           customer: name,
+          avatar: uProfile?.avatar || null,
           phone,
           group,
           promo: o.promotion_id ? `PROMO-${o.promotion_id}` : null,

@@ -50,6 +50,7 @@ const { Title, Text } = Typography;
 interface BookingData {
   key: string;
   customer: string;
+  avatar?: string | null;
   phone: string;
   group: 'combo_live' | 'combo_dead' | 'single';
   promo: string | null;
@@ -82,6 +83,7 @@ interface ComingClientData {
   key: string;
   time: string;
   customer: string;
+  avatar?: string | null;
   phone: string;
   group: 'combo_live' | 'combo_dead' | 'single';
   promo: string | null;
@@ -896,6 +898,7 @@ export default function TodayDashboard() {
       render: (_: any, record: BookingData) => (
         <Space size="middle">
           <Avatar 
+            src={record.avatar || undefined}
             style={{ 
               backgroundColor: record.avatarColor || '#D4A84B', 
               color: '#fff', 
@@ -986,6 +989,7 @@ export default function TodayDashboard() {
       render: (_: any, record: ComingClientData) => (
         <Space size="middle">
           <Avatar 
+            src={record.avatar || undefined}
             style={{ 
               backgroundColor: record.avatarColor || '#D4A84B', 
               color: '#fff', 
