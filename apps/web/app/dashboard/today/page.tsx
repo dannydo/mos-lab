@@ -162,7 +162,7 @@ export default function TodayDashboard() {
   const [liveClock, setLiveClock] = useState('');
   
   // Tabs states
-  const [bookingTab, setBookingTab] = useState<'combo' | 'other'>('combo');
+  const [bookingTab, setBookingTab] = useState<'combo' | 'oc' | 'other'>('combo');
   const [comingBranch, setComingBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
   const [shopBranch, setShopBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
 
@@ -170,6 +170,45 @@ export default function TodayDashboard() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<BookingData | null>(null);
   const [showTax, setShowTax] = useState(true);
+
+  // Load persisted states on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const persistedShowTax = localStorage.getItem('today_show_tax');
+      if (persistedShowTax !== null) {
+        setShowTax(persistedShowTax === 'true');
+      }
+      const persistedBookingTab = localStorage.getItem('today_booking_tab');
+      if (persistedBookingTab !== null) {
+        setBookingTab(persistedBookingTab as any);
+      }
+      const persistedComingBranch = localStorage.getItem('today_coming_branch');
+      if (persistedComingBranch !== null) {
+        setComingBranch(persistedComingBranch as any);
+      }
+      const persistedShopBranch = localStorage.getItem('today_shop_branch');
+      if (persistedShopBranch !== null) {
+        setShopBranch(persistedShopBranch as any);
+      }
+    }
+  }, []);
+
+  // Save states to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('today_show_tax', String(showTax));
+  }, [showTax]);
+
+  useEffect(() => {
+    localStorage.setItem('today_booking_tab', bookingTab);
+  }, [bookingTab]);
+
+  useEffect(() => {
+    localStorage.setItem('today_coming_branch', comingBranch);
+  }, [comingBranch]);
+
+  useEffect(() => {
+    localStorage.setItem('today_shop_branch', shopBranch);
+  }, [shopBranch]);
 
   const openCustomerDrawer = (record: BookingData) => {
     setSelectedCustomer(record);
