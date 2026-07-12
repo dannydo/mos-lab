@@ -45,7 +45,7 @@ ssh -o StrictHostKeyChecking=no live-wings "
   pnpm install
 
   echo '[VPS] Syncing Database Schema (Prisma db push)...'
-  pnpm --filter @mos-lab/api prisma db push --schema=prisma/crm.prisma --skip-generate
+  pnpm --filter @mos-lab/api exec prisma db push --schema=prisma/crm.prisma --skip-generate
 
   echo '[VPS] Building project packages...'
   pnpm build
