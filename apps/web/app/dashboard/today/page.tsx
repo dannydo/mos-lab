@@ -675,6 +675,11 @@ export default function TodayDashboard() {
     );
   };
 
+  const comingCountDeTham = branchesData.detham?.coming?.length || 0;
+  const comingCountPxl = branchesData.pxl?.coming?.length || 0;
+  const comingCountEstella = branchesData.estella?.coming?.length || 0;
+  const comingCountAll = comingCountDeTham + comingCountPxl + comingCountEstella;
+
   if (!selectedDate) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: themeMode === 'dark' ? '#141414' : '#ffffff' }}>
@@ -790,10 +795,10 @@ export default function TodayDashboard() {
                   value={comingBranch} 
                   onChange={(e) => setComingBranch(e.target.value)}
                 >
-                  <Radio.Button value="all">ALL</Radio.Button>
-                  <Radio.Button value="detham">Đề Thám (DT)</Radio.Button>
-                  <Radio.Button value="pxl">PXL</Radio.Button>
-                  <Radio.Button value="estella">Estella (EP)</Radio.Button>
+                  <Radio.Button value="all">ALL ({comingCountAll})</Radio.Button>
+                  <Radio.Button value="detham">DT ({comingCountDeTham})</Radio.Button>
+                  <Radio.Button value="pxl">PXL ({comingCountPxl})</Radio.Button>
+                  <Radio.Button value="estella">EP ({comingCountEstella})</Radio.Button>
                 </Radio.Group>
               }
               style={{ height: '100%', borderColor: token.colorBorderSecondary }}
