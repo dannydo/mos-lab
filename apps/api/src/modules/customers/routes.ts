@@ -3947,6 +3947,29 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
       });
 
+      // Pre-populate active CVs (technicians) for each branch
+      const activeCvs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT user_id as userId, full_name as fullName, client_store_id as storeId
+        FROM \`user_profile\`
+        WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0
+      `);
+
+      activeCvs.forEach(cv => {
+        const storeId = Number(cv.storeId);
+        let bKey = 'estella';
+        if (storeId === 6) bKey = 'detham';
+        else if (storeId === 2) bKey = 'pxl';
+
+        branchDetailMap[bKey].cv.push({
+          name: cv.fullName.trim(),
+          doing: 'Nghỉ phép',
+          clients: 0,
+          shift: 'off',
+          attendance: 'none',
+          status: 'available'
+        });
+      });
+
       comingOrders.forEach((o, index) => {
         let branchKey = 'detham';
         if (o.client_store_id === 2) branchKey = 'pxl';
@@ -4201,14 +4224,41 @@ export async function customerRoutes(fastify: FastifyInstance) {
             }
           }
 
-          branchDetailMap[bKey].cv.push({
+        // Find if this CV was already pre-populated under any branch
+        let cvObj: any = null;
+        Object.keys(branchDetailMap).forEach(k => {
+          const foundIdx = branchDetailMap[k].cv.findIndex((c: any) => normalizeName(c.name) === normName);
+          if (foundIdx !== -1) {
+            cvObj = branchDetailMap[k].cv[foundIdx];
+            if (k !== bKey) {
+              // Remove from old branch
+              branchDetailMap[k].cv.splice(foundIdx, 1);
+            }
+          }
+        });
+
+        if (cvObj) {
+          cvObj.doing = doing;
+          cvObj.clients = isOff ? 0 : staffOrders.length;
+          cvObj.shift = shift;
+          cvObj.attendance = attendance;
+          cvObj.status = status;
+        } else {
+          cvObj = {
             name: staffName,
             doing,
             clients: isOff ? 0 : staffOrders.length,
             shift,
             attendance,
             status
-          });
+          };
+        }
+
+        // Ensure CV is in correct target branch list
+        const exists = branchDetailMap[bKey].cv.some((c: any) => normalizeName(c.name) === normName);
+        if (!exists) {
+          branchDetailMap[bKey].cv.push(cvObj);
+        }
       });
 
       // Helper function to find and move CC to their active branch today
