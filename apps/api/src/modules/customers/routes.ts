@@ -3916,7 +3916,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // 1. Query schedules for weekly off calculations
       const allSchedules = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-        `SELECT user_id, type, type_value 
+        `SELECT user_id, type, type_value, start_time, end_time 
          FROM staff_working_shift_schedule 
          WHERE is_disabled = 0 AND user_id IS NOT NULL`
       );
