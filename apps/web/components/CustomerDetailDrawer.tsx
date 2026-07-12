@@ -1132,43 +1132,54 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         styles={{
           body: { padding: '12px 0 0 0' }
         }}
-        modalRender={(modal) => (
-          <div style={{ position: 'relative' }}>
-            {modal}
-            {/* Right edge drag handle */}
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                bottom: 0,
-                width: '6px',
-                cursor: 'ew-resize',
-                zIndex: 10000,
-                transition: 'background 0.2s',
-              }}
-              onMouseDown={(e) => handleModalDragStart(e, 'right')}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-            />
-            {/* Left edge drag handle */}
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                bottom: 0,
-                width: '6px',
-                cursor: 'ew-resize',
-                zIndex: 10000,
-                transition: 'background 0.2s',
-              }}
-              onMouseDown={(e) => handleModalDragStart(e, 'left')}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-            />
-          </div>
-        )}
+        modalRender={(modal) => {
+          if (React.isValidElement(modal)) {
+            return React.cloneElement(modal as any, {
+              style: {
+                ...(modal.props as any)?.style,
+                position: 'relative'
+              },
+              children: (
+                <>
+                  {(modal.props as any)?.children}
+                  {/* Right edge drag handle */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: '-4px',
+                      bottom: 0,
+                      width: '8px',
+                      cursor: 'ew-resize',
+                      zIndex: 10000,
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseDown={(e) => handleModalDragStart(e, 'right')}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  />
+                  {/* Left edge drag handle */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: '-4px',
+                      bottom: 0,
+                      width: '8px',
+                      cursor: 'ew-resize',
+                      zIndex: 10000,
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseDown={(e) => handleModalDragStart(e, 'left')}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  />
+                </>
+              )
+            });
+          }
+          return modal;
+        }}
       >
         <Table
           dataSource={comboBalances}
