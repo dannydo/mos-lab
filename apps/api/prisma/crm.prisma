@@ -49,6 +49,7 @@ model CrmDailyPlan {
   createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
   @@unique([legacyUserId, plannedDate], name: "legacyUserId_plannedDate")
+  @@index([staffId, plannedDate])
   @@map("crm_daily_plans")
 }
 
@@ -65,6 +66,9 @@ model CrmCallLog {
   callbackDate DateTime? @map("callback_date") @db.Date
   createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(0)
 
+  @@index([legacyUserId])
+  @@index([staffId])
+  @@index([createdAt])
   @@map("crm_call_logs")
 }
 
