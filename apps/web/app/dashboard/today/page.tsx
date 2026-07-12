@@ -180,7 +180,6 @@ export default function TodayDashboard() {
   const [showTax, setShowTax] = useState(true);
 
   // Load persisted states on mount
-  const isMounted = useRef(false);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const persistedDate = localStorage.getItem('today_selected_date');
@@ -205,40 +204,8 @@ export default function TodayDashboard() {
       if (persistedShopBranch !== null) {
         setShopBranch(persistedShopBranch as any);
       }
-      isMounted.current = true;
     }
   }, []);
-
-  // Save states to localStorage when they change
-  useEffect(() => {
-    if (isMounted.current) {
-      localStorage.setItem('today_show_tax', String(showTax));
-    }
-  }, [showTax]);
-
-  useEffect(() => {
-    if (isMounted.current) {
-      localStorage.setItem('today_booking_filter', bookingFilter);
-    }
-  }, [bookingFilter]);
-
-  useEffect(() => {
-    if (isMounted.current) {
-      localStorage.setItem('today_coming_branch', comingBranch);
-    }
-  }, [comingBranch]);
-
-  useEffect(() => {
-    if (isMounted.current) {
-      localStorage.setItem('today_shop_branch', shopBranch);
-    }
-  }, [shopBranch]);
-
-  useEffect(() => {
-    if (isMounted.current && selectedDate) {
-      localStorage.setItem('today_selected_date', selectedDate.format('YYYY-MM-DD'));
-    }
-  }, [selectedDate]);
 
   const openCustomerDrawer = (record: BookingData) => {
     setSelectedCustomer(record);
@@ -742,7 +709,12 @@ export default function TodayDashboard() {
           <Divider type="vertical" style={{ height: '32px', borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9' }} />
           <DatePicker 
             value={selectedDate} 
-            onChange={(date) => date && setSelectedDate(date)} 
+            onChange={(date) => {
+              if (date) {
+                setSelectedDate(date);
+                localStorage.setItem('today_selected_date', date.format('YYYY-MM-DD'));
+              }
+            }} 
             format="DD/MM/YYYY" 
             allowClear={false}
             style={{ width: '140px' }}
@@ -774,7 +746,11 @@ export default function TodayDashboard() {
                 <Radio.Group 
                   size="small" 
                   value={bookingFilter} 
-                  onChange={(e) => setBookingFilter(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setBookingFilter(val);
+                    localStorage.setItem('today_booking_filter', val);
+                  }}
                 >
                   <Radio.Button value="all">ALL ({allBookings.length})</Radio.Button>
                   <Radio.Button value="combo">Combo ({bookingsCombo.length})</Radio.Button>
@@ -812,7 +788,11 @@ export default function TodayDashboard() {
                 <Radio.Group 
                   size="small" 
                   value={comingBranch} 
-                  onChange={(e) => setComingBranch(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setComingBranch(val);
+                    localStorage.setItem('today_coming_branch', val);
+                  }}
                 >
                   <Radio.Button value="all">ALL ({comingCountAll})</Radio.Button>
                   <Radio.Button value="detham">DT ({comingCountDeTham})</Radio.Button>
@@ -853,7 +833,10 @@ export default function TodayDashboard() {
                       <span style={{ fontSize: '13px', color: token.colorTextSecondary }}>Bao gồm thuế (VAT 8%)</span>
                       <Switch 
                         checked={showTax} 
-                        onChange={(checked) => setShowTax(checked)} 
+                        onChange={(checked) => {
+                          setShowTax(checked);
+                          localStorage.setItem('today_show_tax', String(checked));
+                        }} 
                         checkedChildren="Bật"
                         unCheckedChildren="Tắt"
                       />
@@ -861,7 +844,11 @@ export default function TodayDashboard() {
                     
                     <Radio.Group 
                       value={shopBranch} 
-                      onChange={(e) => setShopBranch(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setShopBranch(val);
+                        localStorage.setItem('today_shop_branch', val);
+                      }}
                       buttonStyle="solid"
                     >
                       <Radio.Button value="all">ALL</Radio.Button>
