@@ -261,7 +261,15 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       title: 'Giá tiền',
       dataIndex: 'packagePrice',
       key: 'packagePrice',
-      render: (val: number) => val ? `${val.toLocaleString('vi-VN')} đ` : 'Miễn phí / N/A',
+      render: (val: number | null | undefined) => {
+        if (val === null || val === undefined) {
+          return 'N/A';
+        }
+        if (val === 0) {
+          return 'Miễn phí';
+        }
+        return `${val.toLocaleString('vi-VN')} đ`;
+      },
       width: '120px'
     },
     {

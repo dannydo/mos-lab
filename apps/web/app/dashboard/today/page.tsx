@@ -166,7 +166,7 @@ export default function TodayDashboard() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const [loading, setLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
   const [liveClock, setLiveClock] = useState('');
   
   // Tabs states
@@ -266,6 +266,11 @@ export default function TodayDashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  // Initialize selectedDate on client mount to prevent timezone leak from SSR
+  useEffect(() => {
+    setSelectedDate(dayjs());
+  }, []);
+
   const fetchDashboardData = useCallback(async (date: dayjs.Dayjs) => {
     setLoading(true);
     try {
@@ -287,12 +292,16 @@ export default function TodayDashboard() {
   }, []);
 
   useEffect(() => {
-    fetchDashboardData(selectedDate);
+    if (selectedDate) {
+      fetchDashboardData(selectedDate);
+    }
   }, [selectedDate, fetchDashboardData]);
 
   const handleRefresh = async () => {
-    await fetchDashboardData(selectedDate);
-    message.success('Đã làm mới dữ liệu vận hành từ cơ sở dữ liệu!');
+    if (selectedDate) {
+      await fetchDashboardData(selectedDate);
+      message.success('Đã làm mới dữ liệu vận hành từ cơ sở dữ liệu!');
+    }
   };
 
   const getBranchLabel = (key: string) => {
@@ -653,6 +662,14 @@ export default function TodayDashboard() {
       </Tooltip>
     );
   };
+
+  if (!selectedDate) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: themeMode === 'dark' ? '#141414' : '#ffffff' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

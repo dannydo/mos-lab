@@ -4340,115 +4340,117 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
       });
 
-      // Fallback roster / revenue data if empty
-      Object.keys(branchDetailMap).forEach(bKey => {
-        const b = branchDetailMap[bKey];
-        
-        if (b.revLe === 0 && b.revCombo === 0 && b.revProduct === 0) {
-          if (bKey === 'detham') {
-            b.revLe = 12500000;
-            b.revCombo = 18000000;
-            b.revProduct = 2000000;
-          } else if (bKey === 'pxl') {
-            b.revLe = 9800000;
-            b.revCombo = 12000000;
-            b.revProduct = 3000000;
-          } else {
-            b.revLe = 15200000;
-            b.revCombo = 24000000;
-            b.revProduct = 6000000;
+      // Fallback roster / revenue data if empty (development only)
+      if (process.env.NODE_ENV !== 'production') {
+        Object.keys(branchDetailMap).forEach(bKey => {
+          const b = branchDetailMap[bKey];
+          
+          if (b.revLe === 0 && b.revCombo === 0 && b.revProduct === 0) {
+            if (bKey === 'detham') {
+              b.revLe = 12500000;
+              b.revCombo = 18000000;
+              b.revProduct = 2000000;
+            } else if (bKey === 'pxl') {
+              b.revLe = 9800000;
+              b.revCombo = 12000000;
+              b.revProduct = 3000000;
+            } else {
+              b.revLe = 15200000;
+              b.revCombo = 24000000;
+              b.revProduct = 6000000;
+            }
           }
-        }
 
-        if (b.cv.length === 0) {
-          if (bKey === 'detham') {
-            b.cv = [
-              { name: "Lý Mỹ Linh", doing: "Đang nối mi Volume", clients: 5, shift: 'sáng', attendance: 'checked_in', status: 'busy' },
-              { name: "Trần Hoàng Anh", doing: "Trống (Chờ khách)", clients: 4, shift: 'sáng', attendance: 'checked_in', status: 'available' },
-              { name: "Vũ Phương Thanh", doing: "Đang uốn mi Collagen", clients: 2, shift: 'chiều', attendance: 'late', status: 'busy' },
-              { name: "Phạm Thị Hoa", doing: "Nghỉ phép tuần", clients: 0, shift: 'off', attendance: 'none', status: 'available' }
-            ];
-          } else if (bKey === 'pxl') {
-            b.cv = [
-              { name: "Đặng Hồng Nhung", doing: "Trống (Đang ăn nhẹ ca lỡ)", clients: 3, shift: 'sáng', attendance: 'checked_in', status: 'available' },
-              { name: "Phùng Mỹ Tâm", doing: "Đang dặm mi Classic", clients: 4, shift: 'sáng', attendance: 'checked_in', status: 'busy' },
-              { name: "Trịnh Gia Linh", doing: "Trống (Chờ khách)", clients: 2, shift: 'chiều', attendance: 'checked_in', status: 'available' }
-            ];
-          } else {
-            b.cv = [
-              { name: "Nguyễn Thuỳ Lâm", doing: "Đang nối mi Volume", clients: 6, shift: 'sáng', attendance: 'checked_in', status: 'busy' },
-              { name: "Cao Thanh Hằng", doing: "Đang uốn mi Collagen nâng tông", clients: 4, shift: 'sáng', attendance: 'checked_in', status: 'busy' },
-              { name: "Mai Hồng Ngọc", doing: "Trống (Chờ khách)", clients: 3, shift: 'chiều', attendance: 'checked_in', status: 'available' }
-            ];
+          if (b.cv.length === 0) {
+            if (bKey === 'detham') {
+              b.cv = [
+                { name: "Lý Mỹ Linh", doing: "Đang nối mi Volume", clients: 5, shift: 'sáng', attendance: 'checked_in', status: 'busy' },
+                { name: "Trần Hoàng Anh", doing: "Trống (Chờ khách)", clients: 4, shift: 'sáng', attendance: 'checked_in', status: 'available' },
+                { name: "Vũ Phương Thanh", doing: "Đang uốn mi Collagen", clients: 2, shift: 'chiều', attendance: 'late', status: 'busy' },
+                { name: "Phạm Thị Hoa", doing: "Nghỉ phép tuần", clients: 0, shift: 'off', attendance: 'none', status: 'available' }
+              ];
+            } else if (bKey === 'pxl') {
+              b.cv = [
+                { name: "Đặng Hồng Nhung", doing: "Trống (Đang ăn nhẹ ca lỡ)", clients: 3, shift: 'sáng', attendance: 'checked_in', status: 'available' },
+                { name: "Phùng Mỹ Tâm", doing: "Đang dặm mi Classic", clients: 4, shift: 'sáng', attendance: 'checked_in', status: 'busy' },
+                { name: "Trịnh Gia Linh", doing: "Trống (Chờ khách)", clients: 2, shift: 'chiều', attendance: 'checked_in', status: 'available' }
+              ];
+            } else {
+              b.cv = [
+                { name: "Nguyễn Thuỳ Lâm", doing: "Đang nối mi Volume", clients: 6, shift: 'sáng', attendance: 'checked_in', status: 'busy' },
+                { name: "Cao Thanh Hằng", doing: "Đang uốn mi Collagen nâng tông", clients: 4, shift: 'sáng', attendance: 'checked_in', status: 'busy' },
+                { name: "Mai Hồng Ngọc", doing: "Trống (Chờ khách)", clients: 3, shift: 'chiều', attendance: 'checked_in', status: 'available' }
+              ];
+            }
           }
-        }
-      });
+        });
 
-      if (bookingsCombo.length === 0 && bookingsOther.length === 0) {
-        bookingsCombo.push(
-          {
-            key: 'mock_1',
-            customer: 'Trần Thị Mai',
-            phone: '0901234567',
-            group: 'combo_live',
-            promo: null,
-            booker: 'CS Mai Anh',
-            createdTime: '09:45',
-            avatarColor: '#1890ff',
-            code: '51833',
-            email: 'mai.tran@gmail.com',
-            ltv: '15.000.000 đ',
-            bookingsCount: 4,
-            diamonds: 120,
-            frequency: 'N/A',
-            gender: 'N/A',
-            dob: '1994-08-15',
-            daysAway: '0 ngày (hôm nay)',
-            favoriteDay: 'Thứ Bảy (2 lần)',
-            oc: 'CS Mai Anh',
-            historyService: 'Dặm mi Volume (Combo)',
-            historyBranch: 'Đề Thám',
-            historyCv: 'Lý Mỹ Linh',
-            historyCcIn: 'CS Mai Anh',
-            historyCcOut: 'CS Mai Anh',
-            historyBooker: 'CS Mai Anh',
-            historyDate: 'T7, 09:45:00 12/7/2026',
-            historyStatus: 'Hoàn thành',
-            historyNote: 'Khách đi xe máy.'
-          }
-        );
-        bookingsOther.push(
-          {
-            key: 'mock_2',
-            customer: 'Lê Thuỳ Trang',
-            phone: '0933334444',
-            group: 'combo_dead',
-            promo: null,
-            booker: 'OC Quỳnh Chi',
-            createdTime: '14:20',
-            avatarColor: '#f5222d',
-            code: '49822',
-            email: 'trangle@gmail.com',
-            ltv: '5.000.000 đ',
-            bookingsCount: 5,
-            diamonds: 10,
-            frequency: 'N/A',
-            gender: 'N/A',
-            dob: '1997-03-24',
-            daysAway: '45 ngày',
-            favoriteDay: 'Thứ Hai (2 lần)',
-            oc: 'OC Quỳnh Chi',
-            historyService: 'Nối mi Volume mới',
-            historyBranch: 'Phan Xích Long',
-            historyCv: 'Phùng Mỹ Tâm',
-            historyCcIn: 'OC Quỳnh Chi',
-            historyCcOut: 'OC Quỳnh Chi',
-            historyBooker: 'OC Quỳnh Chi',
-            historyDate: 'T2, 14:20:00 12/7/2026',
-            historyStatus: 'Hoàn thành',
-            historyNote: 'Combo cũ đã hết hạn.'
-          }
-        );
+        if (bookingsCombo.length === 0 && bookingsOther.length === 0) {
+          bookingsCombo.push(
+            {
+              key: 'mock_1',
+              customer: 'Trần Thị Mai',
+              phone: '0901234567',
+              group: 'combo_live',
+              promo: null,
+              booker: 'CS Mai Anh',
+              createdTime: '09:45',
+              avatarColor: '#1890ff',
+              code: '51833',
+              email: 'mai.tran@gmail.com',
+              ltv: '15.000.000 đ',
+              bookingsCount: 4,
+              diamonds: 120,
+              frequency: 'N/A',
+              gender: 'N/A',
+              dob: '1994-08-15',
+              daysAway: '0 ngày (hôm nay)',
+              favoriteDay: 'Thứ Bảy (2 lần)',
+              oc: 'CS Mai Anh',
+              historyService: 'Dặm mi Volume (Combo)',
+              historyBranch: 'Đề Thám',
+              historyCv: 'Lý Mỹ Linh',
+              historyCcIn: 'CS Mai Anh',
+              historyCcOut: 'CS Mai Anh',
+              historyBooker: 'CS Mai Anh',
+              historyDate: 'T7, 09:45:00 12/7/2026',
+              historyStatus: 'Hoàn thành',
+              historyNote: 'Khách đi xe máy.'
+            }
+          );
+          bookingsOther.push(
+            {
+              key: 'mock_2',
+              customer: 'Lê Thuỳ Trang',
+              phone: '0933334444',
+              group: 'combo_dead',
+              promo: null,
+              booker: 'OC Quỳnh Chi',
+              createdTime: '14:20',
+              avatarColor: '#f5222d',
+              code: '49822',
+              email: 'trangle@gmail.com',
+              ltv: '5.000.000 đ',
+              bookingsCount: 5,
+              diamonds: 10,
+              frequency: 'N/A',
+              gender: 'N/A',
+              dob: '1997-03-24',
+              daysAway: '45 ngày',
+              favoriteDay: 'Thứ Hai (2 lần)',
+              oc: 'OC Quỳnh Chi',
+              historyService: 'Nối mi Volume mới',
+              historyBranch: 'Phan Xích Long',
+              historyCv: 'Phùng Mỹ Tâm',
+              historyCcIn: 'OC Quỳnh Chi',
+              historyCcOut: 'OC Quỳnh Chi',
+              historyBooker: 'OC Quỳnh Chi',
+              historyDate: 'T2, 14:20:00 12/7/2026',
+              historyStatus: 'Hoàn thành',
+              historyNote: 'Combo cũ đã hết hạn.'
+            }
+          );
+        }
       }
 
       return reply.send({
