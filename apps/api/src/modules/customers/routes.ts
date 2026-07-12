@@ -4041,6 +4041,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       });
 
+      // Fetch working shifts for today to determine actual check-in/out presence
+      const workingShifts = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT * FROM \`staff_working_shift\` WHERE \`date\` = ?
+      `, targetDateStr);
+
+      const shiftMap = new Map<number, any>();
+      workingShifts.forEach(ws => {
+        shiftMap.set(Number(ws.user_id), ws);
+      });
+
       rosters.forEach(r => {
         let bKey = 'detham';
         const storeLower = (r.store || '').toLowerCase();
@@ -4061,7 +4071,39 @@ export async function customerRoutes(fastify: FastifyInstance) {
           else if (sTime === '14:00:00') shift = 'chiều';
         }
 
-        const attendance = isOff ? 'none' : 'checked_in';
+        const wsRecord = staffId ? shiftMap.get(staffId) : null;
+        let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
+        let doing = 'Chưa check-in';
+
+        if (isOff) {
+          attendance = 'none';
+          doing = 'Nghỉ phép';
+        } else {
+          if (wsRecord) {
+            if (wsRecord.check_out_staff_task_id !== null) {
+              attendance = 'checked_out';
+              doing = 'Đã về';
+            } else if (wsRecord.check_in_staff_task_id !== null) {
+              attendance = 'checked_in';
+              doing = 'Đang trống';
+            } else {
+              attendance = 'none';
+              doing = 'Chưa check-in';
+            }
+          } else {
+            attendance = 'none';
+            doing = 'Chưa check-in';
+          }
+        }
+
+        // If CC, find pre-populated and update
+        const ccList = Object.keys(branchDetailMap).flatMap(k => branchDetailMap[k].cc);
+        const ccObj = ccList.find(c => c.id === staffId || normalizeName(c.name) === normName);
+        if (ccObj) {
+          ccObj.shift = shift;
+          ccObj.attendance = attendance;
+          ccObj.doing = doing;
+        }
 
         // CV
         const staffOrders = comingOrders.filter(o => {
@@ -4077,10 +4119,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
             return false;
           });
 
-          let doing = isOff ? 'Nghỉ phép' : 'Đang trống';
           let status: 'available' | 'busy' = 'available';
 
-          if (!isOff) {
+          if (!isOff && attendance !== 'checked_out') {
             // Find active order
             const activeOrder = staffOrders.find(o => {
               if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
@@ -4194,9 +4235,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (checkInStaffId) {
           const ccId = Number(checkInStaffId);
           const cc = getOrMoveCC(ccId, bKey);
-          cc.shift = 'full';
-          cc.attendance = 'checked_in';
-          cc.doing = 'Đang hỗ trợ khách check-in';
+          
+          if (['CheckIn', 'Parking', 'Consultation', 'Preparation'].includes(o.order_state)) {
+            cc.doing = 'Đang hỗ trợ khách check-in';
+            if (cc.attendance !== 'checked_out') {
+              cc.attendance = 'checked_in';
+            }
+          }
         }
 
         // Check-out CC
@@ -4204,9 +4249,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (checkOutStaffId) {
           const ccId = Number(checkOutStaffId);
           const cc = getOrMoveCC(ccId, bKey);
-          cc.shift = 'full';
-          cc.attendance = 'checked_in';
-          cc.doing = 'Đang thanh toán cho khách';
+
+          if (o.order_state === 'CheckOut') {
+            cc.doing = 'Đang thanh toán cho khách';
+            if (cc.attendance !== 'checked_out') {
+              cc.attendance = 'checked_in';
+            }
+          }
 
           if (o.order_state === 'Completed') {
             const orderServices = comingServices.filter(cs => cs.order_id === o.id);

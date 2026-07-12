@@ -903,7 +903,7 @@ export default function TodayDashboard() {
                       <Table
                         dataSource={activeShopData.cv}
                         rowKey="name"
-                        rowClassName={(record) => record.shift === 'off' ? 'opacity-40 pointer-events-none' : ''}
+                        rowClassName={(record) => (record.shift === 'off' || record.attendance === 'checked_out') ? 'opacity-40 pointer-events-none' : ''}
                         pagination={false}
                         size="small"
                         columns={[
@@ -963,7 +963,7 @@ export default function TodayDashboard() {
                       <Table
                         dataSource={activeShopData.cc}
                         rowKey="name"
-                        rowClassName={(record) => record.shift === 'off' ? 'opacity-40 pointer-events-none' : ''}
+                        rowClassName={(record) => (record.shift === 'off' || record.attendance === 'checked_out') ? 'opacity-40 pointer-events-none' : ''}
                         pagination={false}
                         size="small"
                         columns={[
