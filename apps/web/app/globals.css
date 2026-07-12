@@ -57,3 +57,18 @@ body {
 .dark-theme .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* Custom row background colors for Coming Today table */
+.light-theme .coming-row-completed td {
+  background-color: #f6ffed !important;
+}
+.light-theme .coming-row-late td {
+  background-color: #fff1f0 !important;
+}
+
+.dark-theme .coming-row-completed td {
+  background-color: #135200 !important;
+}
+.dark-theme .coming-row-late td {
+  background-color: #5c0011 !important;
+}

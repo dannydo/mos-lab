@@ -96,7 +96,7 @@ interface ComingClientData {
   cc: string;
   cv: string;
   service: string;
-  status: 'arrived' | 'confirmed' | 'pending' | 'late';
+  status: 'completed' | 'serving' | 'arrived' | 'confirmed' | 'pending' | 'late';
   avatarColor?: string;
   code?: string;
   email?: string;
@@ -543,14 +543,14 @@ export default function TodayDashboard() {
       title: 'CV',
       dataIndex: 'cv',
       key: 'cv',
-      render: (cv: string) => <Tag color={cv === 'Nghỉ phép' ? 'red' : 'blue'}>{cv}</Tag>
+      render: (cv: string) => <Tag color={cv === 'Chưa phân công' ? 'default' : (cv === 'Nghỉ phép' ? 'red' : 'blue')}>{cv}</Tag>
     },
     {
       title: 'Trạng Thái',
       dataIndex: 'status',
       key: 'status',
       align: 'right' as const,
-      render: (status: 'arrived' | 'confirmed' | 'pending' | 'late') => renderComingStatus(status)
+      render: (status: any) => renderComingStatus(status)
     },
     {
       title: 'Action',
@@ -568,11 +568,13 @@ export default function TodayDashboard() {
     }
   ];
 
-  // Render Status Badge for Coming Customer
-  const renderComingStatus = (status: 'arrived' | 'confirmed' | 'pending' | 'late') => {
+  const renderComingStatus = (status: 'completed' | 'serving' | 'arrived' | 'confirmed' | 'pending' | 'late') => {
     switch (status) {
+      case 'completed':
+        return <Tag color="success">Hoàn thành</Tag>;
+      case 'serving':
       case 'arrived':
-        return <Tag color="success">Đang làm</Tag>;
+        return <Tag color="cyan">Đang làm</Tag>;
       case 'confirmed':
         return <Tag color="processing">Đã xác nhận</Tag>;
       case 'pending':
@@ -792,6 +794,11 @@ export default function TodayDashboard() {
                 pagination={false}
                 bordered
                 className="antd-custom-table"
+                rowClassName={(record) => {
+                  if (record.status === 'completed') return 'coming-row-completed';
+                  if (record.status === 'late') return 'coming-row-late';
+                  return '';
+                }}
               />
             </Card>
           </Col>

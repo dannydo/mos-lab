@@ -3945,16 +3945,28 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const userBal = userBalances.filter(b => b.user_id === o.user_id);
         const group = hasLiveCombo ? 'combo_live' : (userBal.length > 0 ? 'combo_dead' : 'single');
 
-        let status: 'arrived' | 'confirmed' | 'pending' | 'late' = 'pending';
+        let status: 'completed' | 'serving' | 'confirmed' | 'pending' | 'late' = 'pending';
         if (o.order_state === 'Completed') {
-          status = 'arrived';
-        } else if (o.order_state === 'Confirmed' || o.order_state === 'New') {
+          status = 'completed';
+        } else if ([
+          'CheckIn',
+          'Consultation',
+          'Preparation',
+          'ServiceStart',
+          'ServiceCleaned',
+          'ServiceEnd',
+          'ServiceCompleted',
+          'CheckOut',
+          'Parking'
+        ].includes(o.order_state)) {
+          status = 'serving';
+        } else if (o.order_state === 'Confirmed' || o.order_state === 'New' || o.order_state === 'Approved') {
           const now = new Date();
           const actualStart = toActualDate(o.booking_date_start);
           if (o.booking_date_start && actualStart < new Date(now.getTime() - 15 * 60000)) {
             status = 'late';
           } else {
-            status = 'confirmed';
+            status = o.order_state === 'New' ? 'pending' : 'confirmed';
           }
         }
 
