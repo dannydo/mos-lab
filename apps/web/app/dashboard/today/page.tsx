@@ -884,6 +884,13 @@ export default function TodayDashboard() {
 
   const bookingColumns = [
     {
+      title: 'STT',
+      key: 'index',
+      width: 50,
+      align: 'center' as const,
+      render: (_: any, __: any, index: number) => <Text type="secondary">{index + 1}</Text>
+    },
+    {
       title: 'Khách hàng',
       key: 'customer',
       render: (_: any, record: BookingData) => (
@@ -954,6 +961,13 @@ export default function TodayDashboard() {
   ];
 
   const comingColumns = [
+    {
+      title: 'STT',
+      key: 'index',
+      width: 50,
+      align: 'center' as const,
+      render: (_: any, __: any, index: number) => <Text type="secondary">{index + 1}</Text>
+    },
     {
       title: 'Giờ Hẹn',
       dataIndex: 'time',

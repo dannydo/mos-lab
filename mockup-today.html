@@ -220,6 +220,7 @@
                         <table class="w-full text-xs text-left">
                             <thead class="text-gray-500 dark:text-gray-400 uppercase font-semibold border-b border-gray-200 dark:border-darkBorder pb-2">
                                 <tr>
+                                    <th class="py-2.5 w-12 text-center">STT</th>
                                     <th class="py-2.5">Giờ Hẹn</th>
                                     <th class="py-2.5">Chi nhánh</th>
                                     <th class="py-2.5">Khách Hàng</th>
@@ -523,10 +524,11 @@
                 });
             }
 
-            list.forEach(item => {
+            list.forEach((item, index) => {
                 const row = document.createElement("tr");
                 row.className = "hover:bg-gray-50/50 dark:hover:bg-zinc-900/20 border-b border-gray-100 dark:border-zinc-800/50";
                 row.innerHTML = `
+                    <td class="py-3 text-center text-gray-400 dark:text-zinc-500 font-medium">${index + 1}</td>
                     <td class="py-3 font-semibold text-gold">${item.time}</td>
                     <td class="py-3"><span class="px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-400 font-bold text-[9px]">${item.branchName}</span></td>
                     <td class="py-3 font-bold text-gray-900 dark:text-white flex items-center gap-2">
