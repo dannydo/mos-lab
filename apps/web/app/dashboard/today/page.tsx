@@ -751,6 +751,143 @@ export default function TodayDashboard() {
     return { revLe, revCombo, revProduct, total };
   }, [branchesData, showTax]);
 
+  const bookingMatrix = React.useMemo(() => {
+    const matrix = {
+      combo: { dt: 0, ep: 0, pxl: 0, total: 0 },
+      oc: { dt: 0, ep: 0, pxl: 0, total: 0 },
+      other: { dt: 0, ep: 0, pxl: 0, total: 0 },
+      total: { dt: 0, ep: 0, pxl: 0, total: 0 }
+    };
+    allBookings.forEach(b => {
+      const cat = b.category as 'combo' | 'oc' | 'other';
+      let branch: 'dt' | 'ep' | 'pxl' = 'dt';
+      if (b.branchName === 'PXL') branch = 'pxl';
+      else if (b.branchName === 'Estella') branch = 'ep';
+      
+      if (matrix[cat] && branch) {
+        matrix[cat][branch]++;
+        matrix[cat].total++;
+        matrix.total[branch]++;
+        matrix.total.total++;
+      }
+    });
+    return matrix;
+  }, [allBookings]);
+
+  const comingMatrix = React.useMemo(() => {
+    const matrix = {
+      combo: { dt: 0, ep: 0, pxl: 0, total: 0 },
+      oc: { dt: 0, ep: 0, pxl: 0, total: 0 },
+      other: { dt: 0, ep: 0, pxl: 0, total: 0 },
+      total: { dt: 0, ep: 0, pxl: 0, total: 0 }
+    };
+    
+    Object.keys(branchesData).forEach(branchKey => {
+      const comingList = branchesData[branchKey].coming || [];
+      const branch: 'dt' | 'ep' | 'pxl' = branchKey === 'detham' ? 'dt' : branchKey === 'estella' ? 'ep' : 'pxl';
+      
+      comingList.forEach(item => {
+        const cat = (item.category || 'other') as 'combo' | 'oc' | 'other';
+        if (matrix[cat] && branch) {
+          matrix[cat][branch]++;
+          matrix[cat].total++;
+          matrix.total[branch]++;
+          matrix.total.total++;
+        }
+      });
+    });
+    return matrix;
+  }, [branchesData]);
+
+  const renderMatrix = (matrix: typeof bookingMatrix) => {
+    const categories = [
+      { key: 'combo', label: 'Combo', color: '#D4A84B' },
+      { key: 'oc', label: 'Tele', color: '#52C41A' },
+      { key: 'other', label: 'Khác', color: '#1890FF' }
+    ];
+    const branches: Array<{ key: 'dt' | 'ep' | 'pxl'; label: string }> = [
+      { key: 'dt', label: 'Đ.Thám' },
+      { key: 'ep', label: 'Estella' },
+      { key: 'pxl', label: 'PXL' }
+    ];
+
+    // Find max value in cells (excluding totals) to scale heatmap
+    const cellValues = [
+      matrix.combo.dt, matrix.combo.ep, matrix.combo.pxl,
+      matrix.oc.dt, matrix.oc.ep, matrix.oc.pxl,
+      matrix.other.dt, matrix.other.ep, matrix.other.pxl
+    ];
+    const maxVal = Math.max(...cellValues, 1);
+
+    const getHeatmapBg = (val: number, catKey: string) => {
+      if (val === 0) return 'transparent';
+      const ratio = val / maxVal;
+      let hue = 210; // Blue
+      if (catKey === 'combo') hue = 40; // Gold/orange
+      if (catKey === 'oc') hue = 100; // Green
+      
+      const alpha = themeMode === 'dark' ? 0.08 + ratio * 0.25 : 0.05 + ratio * 0.2;
+      return `hsla(${hue}, 80%, ${themeMode === 'dark' ? '40%' : '50%'}, ${alpha})`;
+    };
+
+    return (
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', marginTop: '6px' }}>
+        <thead>
+          <tr style={{ borderBottom: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`, color: token.colorTextDescription }}>
+            <th style={{ textAlign: 'left', padding: '2px 4px', fontWeight: 500 }}>Nhóm</th>
+            {branches.map(b => (
+              <th key={b.key} style={{ textAlign: 'center', padding: '2px 4px', fontWeight: 500 }}>{b.label}</th>
+            ))}
+            <th style={{ textAlign: 'center', padding: '2px 4px', fontWeight: 600 }}>Tổng</th>
+          </tr>
+        </thead>
+        <tbody>
+          {categories.map(cat => (
+            <tr key={cat.key} style={{ borderBottom: `1px solid ${themeMode === 'dark' ? '#222222' : '#fafafa'}` }}>
+              <td style={{ textAlign: 'left', padding: '3px 4px', fontWeight: 500 }}>
+                <span style={{ display: 'inline-block', width: '5px', height: '5px', borderRadius: '50%', backgroundColor: cat.color, marginRight: '4px' }} />
+                {cat.label}
+              </td>
+              {branches.map(b => {
+                const val = matrix[cat.key as 'combo' | 'oc' | 'other'][b.key];
+                return (
+                  <td 
+                    key={b.key} 
+                    style={{ 
+                      textAlign: 'center', 
+                      padding: '3px 4px', 
+                      background: getHeatmapBg(val, cat.key), 
+                      borderRadius: '2px', 
+                      fontWeight: val > 0 ? 600 : 'normal',
+                      color: val > 0 ? token.colorText : token.colorTextDescription
+                    }}
+                  >
+                    {val}
+                  </td>
+                );
+              })}
+              <td style={{ textAlign: 'center', padding: '3px 4px', fontWeight: 600, color: token.colorTextSecondary }}>
+                {matrix[cat.key as 'combo' | 'oc' | 'other'].total}
+              </td>
+            </tr>
+          ))}
+          {/* Total Row */}
+          <tr style={{ borderTop: `1px dashed ${themeMode === 'dark' ? '#434343' : '#d9d9d9'}`, fontWeight: 'bold' }}>
+            <td style={{ textAlign: 'left', padding: '4px 4px', color: token.colorText }}>Tổng</td>
+            {branches.map(b => (
+              <td key={b.key} style={{ textAlign: 'center', padding: '4px 4px', color: token.colorText }}>
+                {matrix.total[b.key]}
+              </td>
+            ))}
+            <td style={{ textAlign: 'center', padding: '4px 4px', color: token.colorLink }}>
+              {matrix.total.total}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    );
+  };
+
   if (!selectedDate) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: themeMode === 'dark' ? '#141414' : '#ffffff' }}>
@@ -843,119 +980,7 @@ export default function TodayDashboard() {
                     <strong style={{ fontSize: '14px', color: token.colorText }}>{allBookings.length}</strong>
                   </div>
                   
-                  <Row gutter={16} style={{ flex: 1, display: 'flex', alignItems: 'stretch' }}>
-                    {/* Left Column: Cơ cấu nhóm */}
-                    <Col span={12} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRight: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`, paddingRight: '8px' }}>
-                      <div style={{ fontSize: '11px', color: token.colorTextDescription, fontWeight: 500 }}>Cơ cấu nhóm khách</div>
-                      
-                      {/* Stacked progress bar */}
-                      <div style={{ width: '100%', height: '8px', backgroundColor: themeMode === 'dark' ? '#303030' : '#f0f0f0', borderRadius: '4px', display: 'flex', overflow: 'hidden', margin: '8px 0' }}>
-                        {allBookings.length > 0 ? (
-                          <>
-                            <Tooltip title={`Combo: ${bookingsCombo.length} (${Math.round((bookingsCombo.length / allBookings.length) * 100)}%)`}>
-                              <div style={{ width: `${(bookingsCombo.length / allBookings.length) * 100}%`, backgroundColor: '#D4A84B' }} />
-                            </Tooltip>
-                            <Tooltip title={`Telesales: ${bookingsOc.length} (${Math.round((bookingsOc.length / allBookings.length) * 100)}%)`}>
-                              <div style={{ width: `${(bookingsOc.length / allBookings.length) * 100}%`, backgroundColor: '#52C41A' }} />
-                            </Tooltip>
-                            <Tooltip title={`Khác: ${bookingsOther.length} (${Math.round((bookingsOther.length / allBookings.length) * 100)}%)`}>
-                              <div style={{ width: `${(bookingsOther.length / allBookings.length) * 100}%`, backgroundColor: '#1890FF' }} />
-                            </Tooltip>
-                          </>
-                        ) : (
-                          <div style={{ width: '100%', backgroundColor: themeMode === 'dark' ? '#434343' : '#d9d9d9' }} />
-                        )}
-                      </div>
-                      
-                      {/* Legends */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '2px', fontSize: '10px' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#D4A84B', borderRadius: '50%' }} />
-                            Combo
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {bookingsCombo.length} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({allBookings.length > 0 ? Math.round((bookingsCombo.length / allBookings.length) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#52C41A', borderRadius: '50%' }} />
-                            Tele
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {bookingsOc.length} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({allBookings.length > 0 ? Math.round((bookingsOc.length / allBookings.length) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#1890FF', borderRadius: '50%' }} />
-                            Khác
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {bookingsOther.length} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({allBookings.length > 0 ? Math.round((bookingsOther.length / allBookings.length) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Col>
-
-                    {/* Right Column: Chi nhánh */}
-                    <Col span={12} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingLeft: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: token.colorTextDescription, fontWeight: 500 }}>
-                        <ShopOutlined style={{ color: '#722ed1' }} /> Chi nhánh
-                      </div>
-                      
-                      {/* Stacked progress bar */}
-                      <div style={{ width: '100%', height: '8px', backgroundColor: themeMode === 'dark' ? '#303030' : '#f0f0f0', borderRadius: '4px', display: 'flex', overflow: 'hidden', margin: '8px 0' }}>
-                        {bookingBranchCounts.total > 0 ? (
-                          <>
-                            <Tooltip title={`Đề Thám: ${bookingBranchCounts.dt} (${Math.round((bookingBranchCounts.dt / bookingBranchCounts.total) * 100)}%)`}>
-                              <div style={{ width: `${(bookingBranchCounts.dt / bookingBranchCounts.total) * 100}%`, backgroundColor: '#722ED1' }} />
-                            </Tooltip>
-                            <Tooltip title={`Estella: ${bookingBranchCounts.ep} (${Math.round((bookingBranchCounts.ep / bookingBranchCounts.total) * 100)}%)`}>
-                              <div style={{ width: `${(bookingBranchCounts.ep / bookingBranchCounts.total) * 100}%`, backgroundColor: '#13C2C2' }} />
-                            </Tooltip>
-                            <Tooltip title={`PXL: ${bookingBranchCounts.pxl} (${Math.round((bookingBranchCounts.pxl / bookingBranchCounts.total) * 100)}%)`}>
-                              <div style={{ width: `${(bookingBranchCounts.pxl / bookingBranchCounts.total) * 100}%`, backgroundColor: '#EB2F96' }} />
-                            </Tooltip>
-                          </>
-                        ) : (
-                          <div style={{ width: '100%', backgroundColor: themeMode === 'dark' ? '#434343' : '#d9d9d9' }} />
-                        )}
-                      </div>
-                      
-                      {/* Legends */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '2px', fontSize: '10px' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#722ED1', borderRadius: '50%' }} />
-                            Đ.Thám
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {bookingBranchCounts.dt} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({bookingBranchCounts.total > 0 ? Math.round((bookingBranchCounts.dt / bookingBranchCounts.total) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#13C2C2', borderRadius: '50%' }} />
-                            Estella
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {bookingBranchCounts.ep} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({bookingBranchCounts.total > 0 ? Math.round((bookingBranchCounts.ep / bookingBranchCounts.total) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#EB2F96', borderRadius: '50%' }} />
-                            PXL
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {bookingBranchCounts.pxl} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({bookingBranchCounts.total > 0 ? Math.round((bookingBranchCounts.pxl / bookingBranchCounts.total) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Col>
-                  </Row>
+                  {renderMatrix(bookingMatrix)}
                 </Card>
               </Col>
 
@@ -980,119 +1005,7 @@ export default function TodayDashboard() {
                     <strong style={{ fontSize: '14px', color: token.colorText }}>{comingStats.total}</strong>
                   </div>
 
-                  <Row gutter={24} style={{ flex: 1, display: 'flex', alignItems: 'stretch' }}>
-                    {/* Left Column: Cơ cấu khách đến */}
-                    <Col span={12} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRight: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`, paddingRight: '12px' }}>
-                      <div style={{ fontSize: '11px', color: token.colorTextDescription, fontWeight: 500 }}>Cơ cấu nhóm khách</div>
-                      
-                      {/* Stacked progress bar */}
-                      <div style={{ width: '100%', height: '8px', backgroundColor: themeMode === 'dark' ? '#303030' : '#f0f0f0', borderRadius: '4px', display: 'flex', overflow: 'hidden', margin: '8px 0' }}>
-                        {comingStats.total > 0 ? (
-                          <>
-                            <Tooltip title={`Combo: ${comingStats.combo} (${Math.round((comingStats.combo / comingStats.total) * 100)}%)`}>
-                              <div style={{ width: `${(comingStats.combo / comingStats.total) * 100}%`, backgroundColor: '#D4A84B' }} />
-                            </Tooltip>
-                            <Tooltip title={`Telesales: ${comingStats.oc} (${Math.round((comingStats.oc / comingStats.total) * 100)}%)`}>
-                              <div style={{ width: `${(comingStats.oc / comingStats.total) * 100}%`, backgroundColor: '#52C41A' }} />
-                            </Tooltip>
-                            <Tooltip title={`Khác: ${comingStats.other} (${Math.round((comingStats.other / comingStats.total) * 100)}%)`}>
-                              <div style={{ width: `${(comingStats.other / comingStats.total) * 100}%`, backgroundColor: '#1890FF' }} />
-                            </Tooltip>
-                          </>
-                        ) : (
-                          <div style={{ width: '100%', backgroundColor: themeMode === 'dark' ? '#434343' : '#d9d9d9' }} />
-                        )}
-                      </div>
-                      
-                      {/* Legends */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', fontSize: '10px' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#D4A84B', borderRadius: '50%' }} />
-                            Combo
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {comingStats.combo} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({comingStats.total > 0 ? Math.round((comingStats.combo / comingStats.total) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#52C41A', borderRadius: '50%' }} />
-                            Tele
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {comingStats.oc} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({comingStats.total > 0 ? Math.round((comingStats.oc / comingStats.total) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#1890FF', borderRadius: '50%' }} />
-                            Khác
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {comingStats.other} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({comingStats.total > 0 ? Math.round((comingStats.other / comingStats.total) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Col>
-
-                    {/* Right Column: Chi nhánh khách đến */}
-                    <Col span={12} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingLeft: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: token.colorTextDescription, fontWeight: 500 }}>
-                        <ShopOutlined style={{ color: '#722ed1' }} /> Chi nhánh
-                      </div>
-                      
-                      {/* Stacked progress bar */}
-                      <div style={{ width: '100%', height: '8px', backgroundColor: themeMode === 'dark' ? '#303030' : '#f0f0f0', borderRadius: '4px', display: 'flex', overflow: 'hidden', margin: '8px 0' }}>
-                        {comingCountAll > 0 ? (
-                          <>
-                            <Tooltip title={`Đề Thám: ${comingCountDeTham} (${Math.round((comingCountDeTham / comingCountAll) * 100)}%)`}>
-                              <div style={{ width: `${(comingCountDeTham / comingCountAll) * 100}%`, backgroundColor: '#722ED1' }} />
-                            </Tooltip>
-                            <Tooltip title={`Estella: ${comingCountEstella} (${Math.round((comingCountEstella / comingCountAll) * 100)}%)`}>
-                              <div style={{ width: `${(comingCountEstella / comingCountAll) * 100}%`, backgroundColor: '#13C2C2' }} />
-                            </Tooltip>
-                            <Tooltip title={`PXL: ${comingCountPxl} (${Math.round((comingCountPxl / comingCountAll) * 100)}%)`}>
-                              <div style={{ width: `${(comingCountPxl / comingCountAll) * 100}%`, backgroundColor: '#EB2F96' }} />
-                            </Tooltip>
-                          </>
-                        ) : (
-                          <div style={{ width: '100%', backgroundColor: themeMode === 'dark' ? '#434343' : '#d9d9d9' }} />
-                        )}
-                      </div>
-                      
-                      {/* Legends */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', fontSize: '10px' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#722ED1', borderRadius: '50%' }} />
-                            Đ.Thám
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {comingCountDeTham} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({comingCountAll > 0 ? Math.round((comingCountDeTham / comingCountAll) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#13C2C2', borderRadius: '50%' }} />
-                            Estella
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {comingCountEstella} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({comingCountAll > 0 ? Math.round((comingCountEstella / comingCountAll) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: token.colorTextDescription, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '5px', height: '5px', backgroundColor: '#EB2F96', borderRadius: '50%' }} />
-                            PXL
-                          </div>
-                          <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
-                            {comingCountPxl} <span style={{ fontWeight: 'normal', fontSize: '9px', color: token.colorTextDescription }}>({comingCountAll > 0 ? Math.round((comingCountPxl / comingCountAll) * 100) : 0}%)</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Col>
-                  </Row>
+                  {renderMatrix(comingMatrix)}
                 </Card>
               </Col>
 
