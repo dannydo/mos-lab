@@ -85,6 +85,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const needOrderCounts = needSpent || needVisits;
 
       let innerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
+      if (needServiceBalance) {
+        innerJoins += ` LEFT JOIN (
+          SELECT 
+            user_id,
+            SUM(
+              CASE 
+                WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
+                ELSE 0 
+              END
+            ) as live_count,
+            SUM(normal_count) as normalCount,
+            SUM(retain_count) as retainCount,
+            MAX(date_expired) as expiryDate
+          FROM user_service_balance
+          GROUP BY user_id
+        ) as usb_agg ON u.id = usb_agg.user_id`;
+      }
       if (needOrderCounts) {
         innerJoins += ` LEFT JOIN (
           SELECT 
@@ -173,47 +190,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
         innerParams.push(searchLike, searchLike);
       }
 
-      // 2. Filter by Bucket (using EXISTS/NOT EXISTS to avoid GROUP BY)
+      // 2. Filter by Bucket (Optimized using usb_agg joins)
       if (bucket && bucket !== 'ALL') {
         if (bucket === 'SINGLE') {
-          innerWhereClauses.push(`NOT EXISTS (
-            SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id
-          )`);
+          innerWhereClauses.push('usb_agg.user_id IS NULL');
         } else if (bucket === 'COMBO_LIVE') {
-          innerWhereClauses.push(`(
-            SELECT 
-              CASE 
-                WHEN SUM(COALESCE(usb.normal_count, 0) + COALESCE(usb.retain_count, 0)) > 0 
-                  AND (MAX(usb.date_expired) IS NULL OR MAX(usb.date_expired) > NOW()) THEN 1
-                ELSE 0
-              END
-            FROM user_service_balance usb
-            WHERE usb.user_id = u.id
-          ) = 1`);
+          innerWhereClauses.push('usb_agg.live_count > 0');
         } else if (bucket === 'COMBO_DEAD') {
-          innerWhereClauses.push(`EXISTS (
-            SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id
-          ) AND (
-            SELECT 
-              CASE 
-                WHEN SUM(COALESCE(usb.normal_count, 0) + COALESCE(usb.retain_count, 0)) > 0 
-                  AND (MAX(usb.date_expired) IS NULL OR MAX(usb.date_expired) > NOW()) THEN 1
-                ELSE 0
-              END
-            FROM user_service_balance usb
-            WHERE usb.user_id = u.id
-          ) = 0`);
+          innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
         } else if (bucket === 'NOT_COMBO_LIVE') {
-          innerWhereClauses.push(`(
-            SELECT 
-              CASE 
-                WHEN SUM(COALESCE(usb.normal_count, 0) + COALESCE(usb.retain_count, 0)) > 0 
-                  AND (MAX(usb.date_expired) IS NULL OR MAX(usb.date_expired) > NOW()) THEN 1
-                ELSE 0
-              END
-            FROM user_service_balance usb
-            WHERE usb.user_id = u.id
-          ) = 0`);
+          innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
         }
       }
 
@@ -310,7 +296,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ${innerOrderBy}
       `;
 
-      // 4. Main Query (Optimized raw query using dynamic Deferred Join pagination)
+      // 4. Main Query (Optimized raw query using dynamic Deferred Join pagination & usb_agg)
       const querySql = `
         SELECT 
           u.id, 
@@ -330,32 +316,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           COALESCE(order_counts.totalVisits, 0) as totalVisits,
           COALESCE(promo_counts.totalPromotionsUsed, 0) as totalPromotionsUsed,
           COALESCE(ref_counts.totalReferrals, 0) as totalReferrals,
-          (
-            SELECT 
-              CASE
-                WHEN COUNT(usb.id) = 0 THEN 'SINGLE'
-                WHEN SUM(COALESCE(usb.normal_count, 0) + COALESCE(usb.retain_count, 0)) > 0 
-                  AND (MAX(usb.date_expired) IS NULL OR MAX(usb.date_expired) > NOW()) THEN 'COMBO_LIVE'
-                ELSE 'COMBO_DEAD'
-              END
-            FROM user_service_balance usb
-            WHERE usb.user_id = u.id
-          ) as bucket,
-          (
-            SELECT COALESCE(SUM(usb.normal_count), 0)
-            FROM user_service_balance usb
-            WHERE usb.user_id = u.id
-          ) as normalCount,
-          (
-            SELECT COALESCE(SUM(usb.retain_count), 0)
-            FROM user_service_balance usb
-            WHERE usb.user_id = u.id
-          ) as retainCount,
-          (
-            SELECT MAX(usb.date_expired)
-            FROM user_service_balance usb
-            WHERE usb.user_id = u.id
-          ) as expiryDate
+          CASE
+            WHEN usb_agg.user_id IS NULL THEN 'SINGLE'
+            WHEN usb_agg.live_count > 0 THEN 'COMBO_LIVE'
+            ELSE 'COMBO_DEAD'
+          END as bucket,
+          COALESCE(usb_agg.normalCount, 0) as normalCount,
+          COALESCE(usb_agg.retainCount, 0) as retainCount,
+          usb_agg.expiryDate as expiryDate
         FROM (
           ${innerQuerySql}
           LIMIT ? OFFSET ?
@@ -383,6 +351,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
           WHERE referrer_user_id IS NOT NULL
           GROUP BY referrer_user_id
         ) as ref_counts ON u.id = ref_counts.referrer_user_id
+        LEFT JOIN (
+          SELECT 
+            user_id,
+            SUM(
+              CASE 
+                WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
+                ELSE 0 
+              END
+            ) as live_count,
+            SUM(normal_count) as normalCount,
+            SUM(retain_count) as retainCount,
+            MAX(date_expired) as expiryDate
+          FROM user_service_balance
+          GROUP BY user_id
+        ) as usb_agg ON u.id = usb_agg.user_id
         ${outerOrderBy}
       `;
 
@@ -531,6 +514,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const needOrderCounts = needSpent || needVisits;
 
       let statsInnerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
+      statsInnerJoins += ` LEFT JOIN (
+        SELECT 
+          user_id,
+          SUM(
+            CASE 
+              WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
+              ELSE 0 
+            END
+          ) as live_count
+        FROM user_service_balance
+        GROUP BY user_id
+      ) as usb_agg ON u.id = usb_agg.user_id`;
       if (needOrderCounts) {
         statsInnerJoins += ` LEFT JOIN (
           SELECT 
@@ -679,24 +674,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
         : '';
 
       const statsSql = `
-        SELECT bucket, COUNT(*) as count
-        FROM (
-          SELECT 
-            (
-              SELECT 
-                CASE
-                  WHEN COUNT(usb.id) = 0 THEN 'SINGLE'
-                  WHEN SUM(COALESCE(usb.normal_count, 0) + COALESCE(usb.retain_count, 0)) > 0 
-                    AND (MAX(usb.date_expired) IS NULL OR MAX(usb.date_expired) > NOW()) THEN 'COMBO_LIVE'
-                  ELSE 'COMBO_DEAD'
-                END
-              FROM user_service_balance usb
-              WHERE usb.user_id = u.id
-            ) as bucket
-          FROM user u
-          ${statsInnerJoins}
-          ${innerWhereString}
-        ) as stats_sub
+        SELECT 
+          CASE
+            WHEN usb_agg.user_id IS NULL THEN 'SINGLE'
+            WHEN usb_agg.live_count > 0 THEN 'COMBO_LIVE'
+            ELSE 'COMBO_DEAD'
+          END as bucket,
+          COUNT(*) as count
+        FROM user u
+        ${statsInnerJoins}
+        ${innerWhereString}
         GROUP BY bucket
       `;
 
@@ -771,6 +758,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const needOrderCounts = needSpent || needVisits;
 
       let innerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
+      if (needServiceBalance) {
+        innerJoins += ` LEFT JOIN (
+          SELECT 
+            user_id,
+            SUM(
+              CASE 
+                WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
+                ELSE 0 
+              END
+            ) as live_count
+          FROM user_service_balance
+          GROUP BY user_id
+        ) as usb_agg ON u.id = usb_agg.user_id`;
+      }
       if (needOrderCounts) {
         innerJoins += ` LEFT JOIN (
           SELECT 
@@ -827,44 +828,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       if (bucket && bucket !== 'ALL') {
         if (bucket === 'SINGLE') {
-          innerWhereClauses.push(`NOT EXISTS (
-            SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id
-          )`);
+          innerWhereClauses.push('usb_agg.user_id IS NULL');
         } else if (bucket === 'COMBO_LIVE') {
-          innerWhereClauses.push(`(
-            SELECT 
-              CASE 
-                WHEN SUM(COALESCE(usb.normal_count, 0) + COALESCE(usb.retain_count, 0)) > 0 
-                  AND (MAX(usb.date_expired) IS NULL OR MAX(usb.date_expired) > NOW()) THEN 1
-                ELSE 0
-              END
-            FROM user_service_balance usb
-            WHERE usb.user_id = u.id
-          ) = 1`);
+          innerWhereClauses.push('usb_agg.live_count > 0');
         } else if (bucket === 'COMBO_DEAD') {
-          innerWhereClauses.push(`EXISTS (
-            SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id
-          ) AND (
-            SELECT 
-              CASE 
-                WHEN SUM(COALESCE(usb.normal_count, 0) + COALESCE(usb.retain_count, 0)) > 0 
-                  AND (MAX(usb.date_expired) IS NULL OR MAX(usb.date_expired) > NOW()) THEN 1
-                ELSE 0
-              END
-            FROM user_service_balance usb
-            WHERE usb.user_id = u.id
-          ) = 0`);
+          innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
         } else if (bucket === 'NOT_COMBO_LIVE') {
-          innerWhereClauses.push(`(
-            SELECT 
-              CASE 
-                WHEN SUM(COALESCE(usb.normal_count, 0) + COALESCE(usb.retain_count, 0)) > 0 
-                  AND (MAX(usb.date_expired) IS NULL OR MAX(usb.date_expired) > NOW()) THEN 1
-                ELSE 0
-              END
-            FROM user_service_balance usb
-            WHERE usb.user_id = u.id
-          ) = 0`);
+          innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
         }
       }
 
@@ -1311,11 +1281,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
          ORDER BY u.id DESC`
       );
 
-      // 3. Fetch all referral transactions at once
-      const referralTxs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      // 3. Fetch all referral transactions at once for active referrers only
+      const referrerIds = referrers.map(r => Number(r.referrerId));
+      const referralTxs = referrerIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
         `SELECT user_id as referrerId, amount, tracking_key FROM user_balance_transaction 
-         WHERE template_id = 7 AND currency_id = 3`
-      );
+         WHERE template_id = 7 AND currency_id = 3 AND user_id IN (${referrerIds.join(',')})`
+      ) : [];
 
       // Map of referrerId -> Map of referredId -> rewardAmount
       const referrerRewardMaps = new Map<number, Map<number, number>>();
@@ -2368,13 +2339,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
       const row = customerResult[0];
 
-      // 3. Fetch LTV and Total Visits
-      const ltvSql = `SELECT SUM(total_price) as totalSpent FROM \`order\` WHERE user_id = ? AND order_state = 'Completed'`;
-      const visitsSql = `SELECT COUNT(*) as totalVisits FROM \`order\` WHERE user_id = ? AND order_state = 'Completed'`;
-      const [ltvResult, visitsResult] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(ltvSql, customerId),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(visitsSql, customerId)
-      ]);
+      // 3. Fetch LTV and Total Visits in a single query
+      const statsSql = `SELECT SUM(total_price) as totalSpent, COUNT(*) as totalVisits FROM \`order\` WHERE user_id = ? AND order_state = 'Completed'`;
+      const statsResult = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(statsSql, customerId);
+      const statsRow = statsResult[0] || {};
+      const totalSpent = Number(statsRow.totalSpent || 0);
+      const totalVisits = Number(statsRow.totalVisits || 0);
 
       // 4. Calculate Average Visit Frequency (in days)
       const bookingDatesResult = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
@@ -2524,7 +2494,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const formattedReferred = Array.from(friendsGrouped.values());
 
-      // 6. Fetch Bookings and order services
+      // 6. Fetch Bookings and order services (Optimized)
       const bookingsSql = `
         SELECT 
           o.id,
@@ -2535,47 +2505,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           o.total_price as totalPrice,
           o.assigned_staff_id as technicianId,
           o.client_store_id as storeId,
+          o.created_staff_id as createdStaffId,
           COALESCE(csl.client_store_name, 'Estella Place') as branchName,
-          COALESCE(
-            (
-              SELECT up2.full_name 
-              FROM order_service os2 
-              LEFT JOIN user_profile up2 ON os2.assigned_staff_id = up2.user_id 
-              WHERE os2.order_id = o.id AND os2.assigned_staff_id IS NOT NULL AND os2.assigned_staff_id > 0
-              LIMIT 1
-            ),
-            up.full_name,
-            'Unknown'
-          ) as technicianName,
-          COALESCE(
-            (
-              SELECT up3.full_name 
-              FROM order_service os3 
-              LEFT JOIN user_profile up3 ON os3.check_in_staff_id = up3.user_id 
-              WHERE os3.order_id = o.id AND os3.check_in_staff_id IS NOT NULL AND os3.check_in_staff_id > 0
-              LIMIT 1
-            ),
-            'Unknown'
-          ) as ccInName,
-          COALESCE(
-            (
-              SELECT up4.full_name 
-              FROM order_service os4 
-              LEFT JOIN user_profile up4 ON os4.check_out_staff_id = up4.user_id 
-              WHERE os4.order_id = o.id AND os4.check_out_staff_id IS NOT NULL AND os4.check_out_staff_id > 0
-              LIMIT 1
-            ),
-            'Unknown'
-          ) as ccOutName,
-          COALESCE(
-            (
-              SELECT up5.full_name
-              FROM user_profile up5
-              WHERE up5.user_id = o.created_staff_id
-              LIMIT 1
-            ),
-            'Unknown'
-          ) as bookerName
+          up.full_name as assignedTechnicianName
         FROM \`order\` o
         LEFT JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
         LEFT JOIN user_profile up ON o.assigned_staff_id = up.user_id
@@ -2598,6 +2530,36 @@ export async function customerRoutes(fastify: FastifyInstance) {
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(servicesSql, customerId)
       ]);
 
+      const bookingIds = bookingsRaw.map(b => Number(b.id));
+      const orderServicesDetails = bookingIds.length > 0 ? await fastify.prisma.legacy.order_service.findMany({
+        where: { order_id: { in: bookingIds } },
+        select: {
+          order_id: true,
+          assigned_staff_id: true,
+          check_in_staff_id: true,
+          check_out_staff_id: true
+        }
+      }) : [];
+
+      const staffUserIds = new Set<number>();
+      for (const b of bookingsRaw) {
+        if (b.technicianId) staffUserIds.add(Number(b.technicianId));
+        if (b.createdStaffId) staffUserIds.add(Number(b.createdStaffId));
+      }
+      for (const os of orderServicesDetails) {
+        if (os.assigned_staff_id) staffUserIds.add(Number(os.assigned_staff_id));
+        if (os.check_in_staff_id) staffUserIds.add(Number(os.check_in_staff_id));
+        if (os.check_out_staff_id) staffUserIds.add(Number(os.check_out_staff_id));
+      }
+      
+      const staffIdArray = Array.from(staffUserIds);
+      const staffProfiles = staffIdArray.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT user_id as userId, full_name as fullName
+        FROM user_profile
+        WHERE user_id IN (${staffIdArray.join(',')})
+      `) : [];
+      const staffNamesMap = new Map<number, string>(staffProfiles.map(s => [Number(s.userId), s.fullName]));
+
       // Map services to bookings
       const servicesByOrderId = new Map<number, string[]>();
       for (const s of servicesRaw) {
@@ -2606,22 +2568,29 @@ export async function customerRoutes(fastify: FastifyInstance) {
         servicesByOrderId.set(Number(s.orderId), list);
       }
 
-      const formattedBookings = bookingsRaw.map(b => ({
-        id: b.id,
-        orderKey: b.orderKey,
-        bookingDate: b.bookingDate ? new Date(b.bookingDate).toISOString() : null,
-        bookingNote: b.bookingNote || '',
-        orderState: b.orderState,
-        totalPrice: Number(b.totalPrice || 0),
-        branchName: b.branchName,
-        technicianName: b.technicianName,
-        ccInName: b.ccInName,
-        ccOutName: b.ccOutName,
-        bookerName: b.bookerName,
-        technicianId: b.technicianId ? Number(b.technicianId) : null,
-        storeId: b.storeId ? Number(b.storeId) : null,
-        services: servicesByOrderId.get(Number(b.id)) || []
-      }));
+      const formattedBookings = bookingsRaw.map(b => {
+        const orderSvs = orderServicesDetails.filter(os => os.order_id === b.id);
+        const checkInStaffId = orderSvs.find(os => os.check_in_staff_id)?.check_in_staff_id;
+        const checkOutStaffId = orderSvs.find(os => os.check_out_staff_id)?.check_out_staff_id;
+        const firstCvStaffId = b.technicianId || orderSvs.find(os => os.assigned_staff_id)?.assigned_staff_id;
+
+        return {
+          id: b.id,
+          orderKey: b.orderKey,
+          bookingDate: b.bookingDate ? new Date(b.bookingDate).toISOString() : null,
+          bookingNote: b.bookingNote || '',
+          orderState: b.orderState,
+          totalPrice: Number(b.totalPrice || 0),
+          branchName: b.branchName,
+          technicianName: firstCvStaffId ? (staffNamesMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên') : (b.assignedTechnicianName || 'Unknown'),
+          ccInName: checkInStaffId ? (staffNamesMap.get(Number(checkInStaffId)) || 'Tư vấn viên') : 'Unknown',
+          ccOutName: checkOutStaffId ? (staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên') : 'Unknown',
+          bookerName: b.createdStaffId ? (staffNamesMap.get(Number(b.createdStaffId)) || 'Unknown') : 'Unknown',
+          technicianId: b.technicianId ? Number(b.technicianId) : null,
+          storeId: b.storeId ? Number(b.storeId) : null,
+          services: servicesByOrderId.get(Number(b.id)) || []
+        };
+      });
 
       // 7. Fetch Notes from user_note
       const notesSql = `
@@ -2690,8 +2659,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           onlineConsultant: onlineConsultantName
         },
         stats: {
-          totalSpent: Number(ltvResult[0]?.totalSpent || 0),
-          totalVisits: Number(visitsResult[0]?.totalVisits || 0),
+          totalSpent: totalSpent,
+          totalVisits: totalVisits,
           comboCount: Number(row.normalCount || 0) + Number(row.retainCount || 0),
           comboWalletBalance: comboWalletBalance,
           gemBalance: gemBalance,
@@ -3625,6 +3594,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
       `) : [];
 
+      // Index transactions by balance ID for O(1) lookups
+      const txnsByBalanceId = new Map<number, any[]>();
+      for (const t of userBalanceTransactions) {
+        const bid = Number(t.user_service_balance_id);
+        let list = txnsByBalanceId.get(bid);
+        if (!list) {
+          list = [];
+          txnsByBalanceId.set(bid, list);
+        }
+        list.push(t);
+      }
+
       const allOrderIds = Array.from(new Set([
         ...bookingsOrders.map(o => o.id),
         ...comingOrders.map(o => o.id)
@@ -3675,8 +3656,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
 
           // Get all transactions for this balance before this booking
-          const txnsBefore = userBalanceTransactions.filter(t => 
-            t.user_service_balance_id === usb.id && 
+          const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(t => 
             new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
           );
 
@@ -3700,8 +3680,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
           } else {
             // If no transaction before, calculate based on current count + all transactions that used sessions after or at the booking
-            const txnsAfterOrAt = userBalanceTransactions.filter(t => 
-              t.user_service_balance_id === usb.id && 
+            const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
               new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
             );
             
@@ -3839,21 +3818,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }) : [];
       const serviceLangMap = new Map(serviceLangs.map(sl => [sl.service_id, sl.service_name]));
 
-      const comingUserIds = Array.from(new Set(comingOrders.map(o => o.user_id)));
-      const comingProfiles = comingUserIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-        SELECT up.user_id as userId, up.full_name as fullName, up.avatar, u.email, u.gender, u.date_of_birth as dob
-        FROM \`user_profile\` up
-        LEFT JOIN \`user\` u ON up.user_id = u.id
-        WHERE up.user_id IN (${comingUserIds.join(',')})
-      `) : [];
-      const comingContacts = comingUserIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-        SELECT user_id as userId, phone_number as phoneNumber
-        FROM \`user_contact\`
-        WHERE user_id IN (${comingUserIds.join(',')}) AND is_disabled = 0
-      `) : [];
-      const comingProfileMap = new Map(comingProfiles.map(p => [Number(p.userId), p]));
-      const comingContactMap = new Map(comingContacts.map(c => [Number(c.userId), c.phoneNumber]));
-
       const comingProducts = comingOrderIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT * FROM \`order_product\` WHERE order_id IN (${comingOrderIds.join(',')})
       `) : [];
@@ -3885,20 +3849,38 @@ export async function customerRoutes(fastify: FastifyInstance) {
           WHERE user_id IN (${activeCcIds.join(',')}) AND provider = 'Staff' AND is_disabled = 0
         `);
 
-        // Map each CC to their preferred store
+        // Map each CC to their preferred store in a single grouped query (Batch CC preference fetch)
+        const prefStores = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          SELECT s.staffId, o.client_store_id as storeId, COUNT(*) as count
+          FROM (
+            SELECT check_in_staff_id as staffId, order_id 
+            FROM \`order_service\` 
+            WHERE check_in_staff_id IN (${activeCcIds.join(',')})
+            UNION ALL
+            SELECT check_out_staff_id as staffId, order_id 
+            FROM \`order_service\` 
+            WHERE check_out_staff_id IN (${activeCcIds.join(',')})
+          ) s
+          JOIN \`order\` o ON s.order_id = o.id
+          GROUP BY s.staffId, o.client_store_id
+        `);
+
+        const ccCountsMap = new Map<number, { storeId: number; count: number }>();
+        for (const row of prefStores) {
+          const ccId = Number(row.staffId);
+          const storeId = Number(row.storeId);
+          const count = Number(row.count);
+          const existing = ccCountsMap.get(ccId);
+          if (!existing || count > existing.count) {
+            ccCountsMap.set(ccId, { storeId, count });
+          }
+        }
+
         for (const p of ccProfiles) {
           const ccId = Number(p.userId);
-          const stores = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-            SELECT o.client_store_id as storeId, COUNT(*) as count
-            FROM \`order_service\` os
-            JOIN \`order\` o ON os.order_id = o.id
-            WHERE (os.check_in_staff_id = ? OR os.check_out_staff_id = ?)
-            GROUP BY o.client_store_id
-            ORDER BY count DESC
-            LIMIT 1
-          `, ccId, ccId);
-
-          const prefStoreId = Number(stores[0]?.storeId);
+          const pref = ccCountsMap.get(ccId);
+          const prefStoreId = pref ? pref.storeId : null;
+          
           let branch: 'detham' | 'pxl' | 'estella' | null = null;
           if (prefStoreId === 6) branch = 'detham';
           else if (prefStoreId === 2) branch = 'pxl';
@@ -4300,7 +4282,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           });
 
           if (activeOrder) {
-            const custProfile = comingProfileMap.get(activeOrder.user_id);
+            const custProfile = profileMap.get(activeOrder.user_id);
             const custName = custProfile?.fullName ? custProfile.fullName.trim() : 'Khách hàng';
             const parts = custName.split(' ');
             const shortCustName = parts.length > 2 ? parts.slice(-2).join(' ') : custName;

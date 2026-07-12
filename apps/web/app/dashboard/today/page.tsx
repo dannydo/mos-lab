@@ -162,12 +162,25 @@ interface BranchDetail {
   coming: ComingClientData[];
 }
 
+const RealtimeClock = React.memo(() => {
+  const [time, setTime] = useState('');
+  useEffect(() => {
+    const updateTime = () => {
+      setTime(dayjs().format('HH:mm:ss - DD/MM/YYYY'));
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+  return <strong style={{ color: '#D4A84B', fontSize: '14px' }}>{time}</strong>;
+});
+RealtimeClock.displayName = 'RealtimeClock';
+
 export default function TodayDashboard() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
-  const [liveClock, setLiveClock] = useState('');
   
   // Tabs states
   const [bookingFilter, setBookingFilter] = useState<'all' | 'combo' | 'oc' | 'other'>('all');
@@ -244,16 +257,6 @@ export default function TodayDashboard() {
   const [bookingsOc, setBookingsOc] = useState<BookingData[]>([]);
   const [bookingsOther, setBookingsOther] = useState<BookingData[]>([]);
 
-  // Update clock every second
-  useEffect(() => {
-    const updateTime = () => {
-      const now = dayjs();
-      setLiveClock(now.format('HH:mm:ss - DD/MM/YYYY'));
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
 
 
@@ -704,7 +707,7 @@ export default function TodayDashboard() {
         <Space size="middle">
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '11px', color: token.colorTextDescription }}>Thời gian thực tế</div>
-            <strong style={{ color: '#D4A84B', fontSize: '14px' }}>{liveClock}</strong>
+            <RealtimeClock />
           </div>
           <Divider type="vertical" style={{ height: '32px', borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9' }} />
           <DatePicker 

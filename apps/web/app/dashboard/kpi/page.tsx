@@ -208,22 +208,20 @@ export default function KPIPage() {
     }
 
     try {
-      // 1. Fetch Summary
-      const summaryRes = await api.get('/kpi/summary', { params });
-      setSummary(summaryRes.data);
-
-      // 2. Fetch Trends and Outcome Breakdown
-      const trendsRes = await api.get('/kpi/trends', { params });
-      setBreakdown(trendsRes.data.breakdown);
-      setTrends(trendsRes.data.dailyTrends);
-
-      // 3. Fetch Leaderboard if Admin
       const stored = localStorage.getItem('mos_user');
       const userObj = stored ? JSON.parse(stored) : null;
-      if (userObj && userObj.role === 'admin') {
-        const leaderboardRes = await api.get('/kpi/leaderboard', { 
-          params: { startDate, endDate, role: selectedRole } 
-        });
+      const isAdmin = userObj && userObj.role === 'admin';
+
+      const [summaryRes, trendsRes, leaderboardRes] = await Promise.all([
+        api.get('/kpi/summary', { params }),
+        api.get('/kpi/trends', { params }),
+        isAdmin ? api.get('/kpi/leaderboard', { params: { startDate, endDate, role: selectedRole } }) : Promise.resolve(null)
+      ]) as [any, any, any];
+
+      setSummary(summaryRes.data);
+      setBreakdown(trendsRes.data.breakdown);
+      setTrends(trendsRes.data.dailyTrends);
+      if (leaderboardRes) {
         setLeaderboard(leaderboardRes.data);
       }
     } catch (err: any) {

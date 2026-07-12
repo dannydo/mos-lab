@@ -44,14 +44,21 @@ const DEFAULT_SALARY_CONFIG = {
   ]
 };
 
+// Global in-memory cache for Booker Salary Config
+let cachedSalaryConfig: any = null;
+
 // Fetch salary config from DB or fallback to default
 async function getSalaryConfig(fastify: FastifyInstance) {
+  if (cachedSalaryConfig !== null) {
+    return cachedSalaryConfig;
+  }
   try {
     const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
       where: { key: 'BOOKER_SALARY_CONFIG' }
     });
     if (configRecord) {
-      return JSON.parse(configRecord.value);
+      cachedSalaryConfig = JSON.parse(configRecord.value);
+      return cachedSalaryConfig;
     }
   } catch (err) {
     fastify.log.error(err as any, 'Error fetching Booker salary config from DB');
@@ -704,6 +711,9 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           value: JSON.stringify(newConfig)
         }
       });
+
+      // Update in-memory cache
+      cachedSalaryConfig = newConfig;
 
       return { success: true, message: 'Cấu hình lương Booker đã được cập nhật thành công.' };
     } catch (err: any) {

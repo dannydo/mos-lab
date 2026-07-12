@@ -53,3 +53,44 @@ export interface CustomerWeeklyProgress {
   confirmTime?: string | null;
   planId?: number | null;
 }
+
+export interface ListCustomersParams {
+  bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE';
+  search?: string;
+  page?: number | string;
+  limit?: number | string;
+  sort?: string;
+  daysSinceLastVisitMin?: number | string;
+  daysSinceLastVisitMax?: number | string;
+  totalSpentMin?: number | string;
+  totalSpentMax?: number | string;
+  totalVisitsMin?: number | string;
+  totalVisitsMax?: number | string;
+  promoUsed?: 'yes' | 'no' | 'all';
+  promoCountMin?: number | string;
+  promoCountMax?: number | string;
+  referralUsed?: 'yes' | 'no' | 'all';
+  referralCountMin?: number | string;
+  referralCountMax?: number | string;
+  assignedStaffId?: string;
+  ids?: string;
+}
+
+export interface ListCustomersResponse {
+  data: Customer[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export interface CustomerStatsResponse {
+  total: number;
+  comboLive: number;
+  comboDead: number;
+  single: number;
+  notComboLive: number;
+}
+

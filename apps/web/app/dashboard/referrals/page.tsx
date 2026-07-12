@@ -98,12 +98,40 @@ export default function ReferralsPage() {
     return true;
   };
 
-  const getTabCount = (filter: typeof timeFilter) => {
-    return referrers.map(r => {
-      const filteredUsers = (r.referredUsers || []).filter((ru: any) => isInRange(ru.dateCreated, filter));
-      return filteredUsers.length;
-    }).filter(count => count > 0).length;
-  };
+  const tabCounts = React.useMemo(() => {
+    const counts = {
+      all_time: 0,
+      this_month: 0,
+      last_month: 0,
+      this_year: 0,
+      last_year: 0
+    };
+    
+    for (const r of referrers) {
+      const users = r.referredUsers || [];
+      let cAllTime = 0;
+      let cThisMonth = 0;
+      let cLastMonth = 0;
+      let cThisYear = 0;
+      let cLastYear = 0;
+      
+      for (const ru of users) {
+        if (isInRange(ru.dateCreated, 'all_time')) cAllTime++;
+        if (isInRange(ru.dateCreated, 'this_month')) cThisMonth++;
+        if (isInRange(ru.dateCreated, 'last_month')) cLastMonth++;
+        if (isInRange(ru.dateCreated, 'this_year')) cThisYear++;
+        if (isInRange(ru.dateCreated, 'last_year')) cLastYear++;
+      }
+      
+      if (cAllTime > 0) counts.all_time++;
+      if (cThisMonth > 0) counts.this_month++;
+      if (cLastMonth > 0) counts.last_month++;
+      if (cThisYear > 0) counts.this_year++;
+      if (cLastYear > 0) counts.last_year++;
+    }
+    
+    return counts;
+  }, [referrers]);
 
   const processedReferrers = referrers.map(r => {
     const filteredUsers = (r.referredUsers || []).filter((ru: any) => isInRange(ru.dateCreated, timeFilter));
@@ -306,11 +334,11 @@ export default function ReferralsPage() {
           onChange={handleTimeFilterChange}
           style={{ marginBottom: 0 }}
           items={[
-            { key: 'all_time', label: `All time (${getTabCount('all_time')})` },
-            { key: 'this_month', label: `This month (${getTabCount('this_month')})` },
-            { key: 'last_month', label: `Last month (${getTabCount('last_month')})` },
-            { key: 'this_year', label: `This Year (${getTabCount('this_year')})` },
-            { key: 'last_year', label: `Last Year (${getTabCount('last_year')})` }
+            { key: 'all_time', label: `All time (${tabCounts.all_time})` },
+            { key: 'this_month', label: `This month (${tabCounts.this_month})` },
+            { key: 'last_month', label: `Last month (${tabCounts.last_month})` },
+            { key: 'this_year', label: `This Year (${tabCounts.this_year})` },
+            { key: 'last_year', label: `Last Year (${tabCounts.last_year})` }
           ]}
         />
       </Card>

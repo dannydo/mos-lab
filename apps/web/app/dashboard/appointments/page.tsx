@@ -1,7 +1,7 @@
 'use client';
 
 import '../../suppress-warnings';
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { 
   Table, 
   Tabs, 
@@ -137,11 +137,26 @@ export default function AppointmentsPage() {
     return 'month';
   });
   const [referenceDate, setReferenceDate] = useState<dayjs.Dayjs>(dayjs());
-  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>(() => {
-    const start = dayjs().startOf('month');
-    const end = dayjs().endOf('month');
+  const [customRange, setCustomRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+  const dateRange = useMemo<[dayjs.Dayjs, dayjs.Dayjs]>(() => {
+    if (customRange) {
+      return customRange;
+    }
+    let start = referenceDate;
+    let end = referenceDate;
+
+    if (viewMode === 'month') {
+      start = referenceDate.startOf('month');
+      end = referenceDate.endOf('month');
+    } else if (viewMode === 'week') {
+      start = referenceDate.startOf('isoWeek');
+      end = referenceDate.endOf('isoWeek');
+    } else if (viewMode === 'day') {
+      start = referenceDate.startOf('day');
+      end = referenceDate.endOf('day');
+    }
     return [start, end];
-  });
+  }, [viewMode, referenceDate, customRange]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>(() => {
     if (typeof window !== 'undefined') {
@@ -186,24 +201,7 @@ export default function AppointmentsPage() {
   const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
   const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<any>(null);
 
-  // Sync dateRange when viewMode or referenceDate changes
-  useEffect(() => {
-    let start = referenceDate;
-    let end = referenceDate;
-
-    if (viewMode === 'month') {
-      start = referenceDate.startOf('month');
-      end = referenceDate.endOf('month');
-    } else if (viewMode === 'week') {
-      start = referenceDate.startOf('isoWeek');
-      end = referenceDate.endOf('isoWeek');
-    } else if (viewMode === 'day') {
-      start = referenceDate.startOf('day');
-      end = referenceDate.endOf('day');
-    }
-
-    setDateRange([start, end]);
-  }, [viewMode, referenceDate]);
+  // Caching mechanism replaces the redundant useEffect sync block
 
   // Load user info and staff list on mount
   useEffect(() => {
@@ -313,6 +311,7 @@ export default function AppointmentsPage() {
 
   // Quick period navigation
   const handleNavigate = (direction: number) => {
+    setCustomRange(null);
     setReferenceDate(prev => prev.add(direction, viewMode as any));
   };
 
@@ -760,6 +759,7 @@ export default function AppointmentsPage() {
               onChange={(e) => {
                 const val = e.target.value;
                 setViewMode(val);
+                setCustomRange(null);
                 setReferenceDate(dayjs());
                 localStorage.setItem('mos_appointments_viewMode', val);
               }}
@@ -801,7 +801,7 @@ export default function AppointmentsPage() {
               <RangePicker 
                 value={dateRange} 
                 onChange={(dates) => {
-                  if (dates) setDateRange([dates[0]!, dates[1]!]);
+                  if (dates) setCustomRange([dates[0]!, dates[1]!]);
                 }}
                 format="DD/MM/YYYY"
                 open={pickerOpen}
