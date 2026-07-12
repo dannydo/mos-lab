@@ -3751,6 +3751,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         const record = {
           key: String(o.id),
+          customerId: o.user_id,
           customer: name,
           avatar: uProfile?.avatar || null,
           phone,
@@ -3976,6 +3977,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         const comingItem = {
           key: String(o.id),
+          customerId: o.user_id,
           time: formatDbTime(o.booking_date_start),
           customer: name,
           avatar: uProfile?.avatar || null,
