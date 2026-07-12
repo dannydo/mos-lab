@@ -3619,6 +3619,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
       `) : [];
 
+      const allOrderIds = Array.from(new Set([
+        ...bookingsOrders.map(o => o.id),
+        ...comingOrders.map(o => o.id)
+      ]));
+
+      const allOrderServices = allOrderIds.length > 0 ? await fastify.prisma.legacy.order_service.findMany({
+        where: { order_id: { in: allOrderIds } }
+      }) : [];
+
       const profileMap = new Map(userProfiles.map(p => [Number(p.userId), p]));
       const contactMap = new Map(userContacts.map(c => [Number(c.userId), c.phoneNumber]));
 
@@ -3627,7 +3636,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ...bookingsOrders.map(o => o.promotion_id).filter(id => id !== null && id !== undefined),
         ...bookingsOrders.map(o => o.selected_promotion_id).filter(id => id !== null && id !== undefined),
         ...comingOrders.map(o => o.promotion_id).filter(id => id !== null && id !== undefined),
-        ...comingOrders.map(o => o.selected_promotion_id).filter(id => id !== null && id !== undefined)
+        ...comingOrders.map(o => o.selected_promotion_id).filter(id => id !== null && id !== undefined),
+        ...allOrderServices.map(os => os.promotion_id).filter(id => id !== null && id !== undefined)
       ].map(id => Number(id))));
 
       const promotions = promoIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -3637,7 +3647,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE p.id IN (${promoIds.join(',')})
       `) : [];
 
-      const promoMap = new Map(promotions.map(p => [Number(p.id), p.promotionKey || p.name || `PROMO-${p.id}`]));
+      const promoMap = new Map(promotions.map(p => [Number(p.id), p.name || p.promotionKey || `PROMO-${p.id}`]));
 
       // Fetch staff profiles map
       const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -3725,13 +3735,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         const booker = staffMap.get(Number(o.created_staff_id)) || o.booking_channels || 'System';
 
+        const orderSvs = allOrderServices.filter(cs => cs.order_id === o.id);
+        const firstPromoSv = orderSvs.find(cs => cs.promotion_id !== null && cs.promotion_id !== undefined);
+        const pId = firstPromoSv?.promotion_id || o.promotion_id || o.selected_promotion_id;
+        const promoName = pId ? (promoMap.get(Number(pId)) || `PROMO-${pId}`) : null;
+
         const record = {
           key: String(o.id),
           customer: name,
           avatar: uProfile?.avatar || null,
           phone,
           group,
-          promo: (o.promotion_id || o.selected_promotion_id) ? (promoMap.get(Number(o.promotion_id || o.selected_promotion_id)) || `PROMO-${o.promotion_id || o.selected_promotion_id}`) : null,
+          promo: promoName,
           booker,
           createdTime: new Date(o.date_created).toLocaleTimeString('vi-VN', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false }),
           avatarColor: ['#1890ff', '#722ed1', '#f5222d', '#fa8c16', '#52c41a', '#13c2c2', '#eb2f96'][index % 7],
@@ -3930,6 +3945,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
         }
 
+        const firstPromoSv = orderSvs.find(cs => cs.promotion_id !== null && cs.promotion_id !== undefined);
+        const pId = firstPromoSv?.promotion_id || o.promotion_id || o.selected_promotion_id;
+        const promoName = pId ? (promoMap.get(Number(pId)) || `PROMO-${pId}`) : null;
+
         const comingItem = {
           key: String(o.id),
           time: formatDbTime(o.booking_date_start),
@@ -3937,7 +3956,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           avatar: uProfile?.avatar || null,
           phone,
           group,
-          promo: (o.promotion_id || o.selected_promotion_id) ? (promoMap.get(Number(o.promotion_id || o.selected_promotion_id)) || `PROMO-${o.promotion_id || o.selected_promotion_id}`) : null,
+          promo: promoName,
           booker,
           cc: ccName,
           cv: cvName,
