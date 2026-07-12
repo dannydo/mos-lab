@@ -84,6 +84,7 @@ interface BookingData {
   bookingDateTime?: string;
   requestedCv?: string;
   bookingNote?: string;
+  status?: 'completed' | 'serving' | 'arrived' | 'confirmed' | 'pending' | 'late';
 }
 
 interface ComingClientData {
@@ -452,6 +453,13 @@ export default function TodayDashboard() {
       )
     },
     {
+      title: 'Trạng Thái',
+      dataIndex: 'status',
+      key: 'status',
+      align: 'right' as const,
+      render: (status: any) => renderComingStatus(status)
+    },
+    {
       title: 'Action',
       key: 'action',
       align: 'right' as const,
@@ -732,6 +740,11 @@ export default function TodayDashboard() {
                         pagination={false}
                         bordered
                         className="antd-custom-table"
+                        rowClassName={(record) => {
+                          if (record.status === 'completed') return 'coming-row-completed';
+                          if (record.status === 'late') return 'coming-row-late';
+                          return '';
+                        }}
                       />
                     )
                   },
@@ -746,6 +759,11 @@ export default function TodayDashboard() {
                         pagination={false}
                         bordered
                         className="antd-custom-table"
+                        rowClassName={(record) => {
+                          if (record.status === 'completed') return 'coming-row-completed';
+                          if (record.status === 'late') return 'coming-row-late';
+                          return '';
+                        }}
                       />
                     )
                   },
@@ -760,6 +778,11 @@ export default function TodayDashboard() {
                         pagination={false}
                         bordered
                         className="antd-custom-table"
+                        rowClassName={(record) => {
+                          if (record.status === 'completed') return 'coming-row-completed';
+                          if (record.status === 'late') return 'coming-row-late';
+                          return '';
+                        }}
                       />
                     )
                   }

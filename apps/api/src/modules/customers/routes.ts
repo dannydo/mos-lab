@@ -3755,6 +3755,31 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const firstCvStaffId = o.assigned_staff_id || (orderSvs.length > 0 ? orderSvs.find(cs => cs.assigned_staff_id !== null)?.assigned_staff_id : null);
         const cvRequested = firstCvStaffId ? (staffMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên') : 'Chưa phân công';
 
+        let status: 'completed' | 'serving' | 'confirmed' | 'pending' | 'late' = 'pending';
+        if (o.order_state === 'Completed') {
+          status = 'completed';
+        } else if ([
+          'CheckIn',
+          'Consultation',
+          'Preparation',
+          'ServiceStart',
+          'ServiceCleaned',
+          'ServiceEnd',
+          'ServiceCompleted',
+          'CheckOut',
+          'Parking'
+        ].includes(o.order_state)) {
+          status = 'serving';
+        } else if (o.order_state === 'Confirmed' || o.order_state === 'New' || o.order_state === 'Approved') {
+          const now = new Date();
+          const actualStart = toActualDate(o.booking_date_start);
+          if (o.booking_date_start && actualStart < new Date(now.getTime() - 15 * 60000)) {
+            status = 'late';
+          } else {
+            status = o.order_state === 'New' ? 'pending' : 'confirmed';
+          }
+        }
+
         const record = {
           key: String(o.id),
           customerId: o.user_id,
@@ -3767,6 +3792,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           branchName: o.client_store_id === 2 ? 'PXL' : (o.client_store_id === 16 ? 'Estella' : 'Đề Thám'),
           bookingDateTime: formatBookingDateTime(o.booking_date_start),
           requestedCv: cvRequested,
+          status,
           bookingNote: o.booking_note || '',
           createdTime: new Date(o.date_created).toLocaleTimeString('vi-VN', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false }),
           avatarColor: ['#1890ff', '#722ed1', '#f5222d', '#fa8c16', '#52c41a', '#13c2c2', '#eb2f96'][index % 7],
