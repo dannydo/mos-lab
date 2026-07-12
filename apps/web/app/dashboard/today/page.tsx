@@ -906,17 +906,20 @@ export default function TodayDashboard() {
     return '';
   };
 
-  const activeComingList = comingBranch === 'all'
-    ? Object.keys(branchesData).flatMap(branchKey => 
-        branchesData[branchKey].coming.map(item => ({
+  const activeComingList = React.useMemo(() => {
+    const list = comingBranch === 'all'
+      ? Object.keys(branchesData).flatMap(branchKey => 
+          branchesData[branchKey].coming.map(item => ({
+            ...item,
+            branchName: getBranchLabel(branchKey)
+          }))
+        )
+      : branchesData[comingBranch].coming.map(item => ({
           ...item,
-          branchName: getBranchLabel(branchKey)
-        }))
-      )
-    : branchesData[comingBranch].coming.map(item => ({
-        ...item,
-        branchName: getBranchLabel(comingBranch)
-      }));
+          branchName: getBranchLabel(comingBranch)
+        }));
+    return [...list].sort((a, b) => a.time.localeCompare(b.time));
+  }, [branchesData, comingBranch]);
 
   const activeShopData = React.useMemo(() => {
     const raw = shopBranch === 'all'
