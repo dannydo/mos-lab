@@ -3769,9 +3769,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       `, targetDateStr);
 
       const branchDetailMap: Record<string, any> = {
-        detham: { revLe: 0, revCombo: 0, revProduct: 0, cc: [], cv: [], coming: [] },
-        pxl: { revLe: 0, revCombo: 0, revProduct: 0, cc: [], cv: [], coming: [] },
-        estella: { revLe: 0, revCombo: 0, revProduct: 0, cc: [], cv: [], coming: [] }
+        detham: { revLe: 0, revCombo: 0, revProduct: 0, netLe: 0, netCombo: 0, netProduct: 0, cc: [], cv: [], coming: [] },
+        pxl: { revLe: 0, revCombo: 0, revProduct: 0, netLe: 0, netCombo: 0, netProduct: 0, cc: [], cv: [], coming: [] },
+        estella: { revLe: 0, revCombo: 0, revProduct: 0, netLe: 0, netCombo: 0, netProduct: 0, cc: [], cv: [], coming: [] }
       };
 
       // Pre-populate active CCs for each branch
@@ -3786,6 +3786,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
           revLe: 0,
           revCombo: 0,
           revProduct: 0,
+          netRevenue: 0,
+          netLe: 0,
+          netCombo: 0,
+          netProduct: 0,
           shift: 'off',
           attendance: 'none'
         });
@@ -3865,16 +3869,30 @@ export async function customerRoutes(fastify: FastifyInstance) {
         branchDetailMap[branchKey].coming.push(comingItem);
 
         if (o.order_state === 'Completed') {
+          const orderServices = comingServices.filter(cs => cs.order_id === o.id);
           const orderCombos = comingCombos.filter(c => Number(c.order_id) === o.id);
           const orderProducts = comingProducts.filter(p => Number(p.order_id) === o.id);
+
+          const totalTax = orderServices.reduce((sum, s) => sum + Number(s.tax_amount || 0), 0) +
+                           orderCombos.reduce((sum, c) => sum + Number(c.tax_amount || 0), 0) +
+                           orderProducts.reduce((sum, p) => sum + Number(p.tax_amount || 0), 0);
 
           const comboRev = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0), 0);
           const productRev = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0), 0);
           const leRev = Math.max(0, (o.total_price || 0) - comboRev - productRev);
 
+          const comboNet = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0) - Number(c.tax_amount || 0), 0);
+          const productNet = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0) - Number(p.tax_amount || 0), 0);
+          const orderNet = Math.max(0, (o.total_price || 0) - totalTax);
+          const leNet = Math.max(0, orderNet - comboNet - productNet);
+
           branchDetailMap[branchKey].revCombo += comboRev;
           branchDetailMap[branchKey].revProduct += productRev;
           branchDetailMap[branchKey].revLe += leRev;
+
+          branchDetailMap[branchKey].netCombo += comboNet;
+          branchDetailMap[branchKey].netProduct += productNet;
+          branchDetailMap[branchKey].netLe += leNet;
         }
       });
 
@@ -4009,6 +4027,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
             revLe: 0,
             revCombo: 0,
             revProduct: 0,
+            netRevenue: 0,
+            netLe: 0,
+            netCombo: 0,
+            netProduct: 0,
             shift: 'full',
             attendance: 'checked_in'
           };
@@ -4052,17 +4074,33 @@ export async function customerRoutes(fastify: FastifyInstance) {
           cc.doing = 'Đang thanh toán cho khách';
 
           if (o.order_state === 'Completed') {
+            const orderServices = comingServices.filter(cs => cs.order_id === o.id);
             const orderCombos = comingCombos.filter(c => Number(c.order_id) === o.id);
             const orderProducts = comingProducts.filter(p => Number(p.order_id) === o.id);
+
+            const totalTax = orderServices.reduce((sum, s) => sum + Number(s.tax_amount || 0), 0) +
+                             orderCombos.reduce((sum, c) => sum + Number(c.tax_amount || 0), 0) +
+                             orderProducts.reduce((sum, p) => sum + Number(p.tax_amount || 0), 0);
 
             const comboRev = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0), 0);
             const productRev = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0), 0);
             const leRev = Math.max(0, (o.total_price || 0) - comboRev - productRev);
 
+            const comboNet = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0) - Number(c.tax_amount || 0), 0);
+            const productNet = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0) - Number(p.tax_amount || 0), 0);
+            const orderNet = Math.max(0, (o.total_price || 0) - totalTax);
+            const leNet = Math.max(0, orderNet - comboNet - productNet);
+
             cc.revCombo += comboRev;
             cc.revProduct += productRev;
             cc.revLe += leRev;
             cc.revenue += o.total_price || 0;
+
+            cc.netCombo += comboNet;
+            cc.netProduct += productNet;
+            cc.netLe += leNet;
+            cc.netRevenue += orderNet;
+
             cc.combos += orderCombos.length;
           }
         }

@@ -23,7 +23,8 @@ import {
   Avatar,
   Drawer,
   Rate,
-  Tooltip
+  Tooltip,
+  Switch
 } from 'antd';
 import {
   CalendarOutlined,
@@ -121,6 +122,13 @@ interface ShopCCData {
   clients: number;
   combos: number;
   revenue: number;
+  revLe?: number;
+  revCombo?: number;
+  revProduct?: number;
+  netRevenue?: number;
+  netLe?: number;
+  netCombo?: number;
+  netProduct?: number;
   shift: 'sáng' | 'chiều' | 'full' | 'off';
   attendance: 'none' | 'checked_in' | 'checked_out' | 'late';
 }
@@ -138,6 +146,9 @@ interface BranchDetail {
   revLe: number;
   revCombo: number;
   revProduct: number;
+  netLe?: number;
+  netCombo?: number;
+  netProduct?: number;
   cc: ShopCCData[];
   cv: ShopCVData[];
   coming: ComingClientData[];
@@ -158,6 +169,7 @@ export default function TodayDashboard() {
   // Drawer states
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<BookingData | null>(null);
+  const [showTax, setShowTax] = useState(true);
 
   const openCustomerDrawer = (record: BookingData) => {
     setSelectedCustomer(record);
@@ -867,24 +879,44 @@ export default function TodayDashboard() {
         branchName: getBranchLabel(comingBranch)
       }));
 
-  const activeShopData = shopBranch === 'all'
-    ? {
-        revLe: Object.values(branchesData).reduce((sum, b) => sum + b.revLe, 0),
-        revCombo: Object.values(branchesData).reduce((sum, b) => sum + b.revCombo, 0),
-        revProduct: Object.values(branchesData).reduce((sum, b) => sum + b.revProduct, 0),
-        cc: Object.entries(branchesData).flatMap(([branchKey, b]) => 
-          b.cc.map(item => ({ ...item, branchName: getBranchLabel(branchKey) }))
-        ),
-        cv: Object.entries(branchesData).flatMap(([branchKey, b]) => 
-          b.cv.map(item => ({ ...item, branchName: getBranchLabel(branchKey) }))
-        ),
-        coming: []
-      }
-    : {
-        ...branchesData[shopBranch],
-        cc: branchesData[shopBranch].cc.map(item => ({ ...item, branchName: getBranchLabel(shopBranch) })),
-        cv: branchesData[shopBranch].cv.map(item => ({ ...item, branchName: getBranchLabel(shopBranch) }))
-      };
+  const activeShopData = React.useMemo(() => {
+    const raw = shopBranch === 'all'
+      ? {
+          revLe: Object.values(branchesData).reduce((sum, b) => sum + (b.revLe || 0), 0),
+          revCombo: Object.values(branchesData).reduce((sum, b) => sum + (b.revCombo || 0), 0),
+          revProduct: Object.values(branchesData).reduce((sum, b) => sum + (b.revProduct || 0), 0),
+          netLe: Object.values(branchesData).reduce((sum, b) => sum + (b.netLe || 0), 0),
+          netCombo: Object.values(branchesData).reduce((sum, b) => sum + (b.netCombo || 0), 0),
+          netProduct: Object.values(branchesData).reduce((sum, b) => sum + (b.netProduct || 0), 0),
+          cc: Object.entries(branchesData).flatMap(([branchKey, b]) => 
+            b.cc.map(item => ({ ...item, branchName: getBranchLabel(branchKey) }))
+          ),
+          cv: Object.entries(branchesData).flatMap(([branchKey, b]) => 
+            b.cv.map(item => ({ ...item, branchName: getBranchLabel(branchKey) }))
+          ),
+          coming: [] as any[]
+        }
+      : {
+          ...branchesData[shopBranch],
+          cc: (branchesData[shopBranch]?.cc || []).map(item => ({ ...item, branchName: getBranchLabel(shopBranch) })),
+          cv: (branchesData[shopBranch]?.cv || []).map(item => ({ ...item, branchName: getBranchLabel(shopBranch) }))
+        };
+
+    return {
+      revLe: showTax ? (raw.revLe || 0) : (raw.netLe || 0),
+      revCombo: showTax ? (raw.revCombo || 0) : (raw.netCombo || 0),
+      revProduct: showTax ? (raw.revProduct || 0) : (raw.netProduct || 0),
+      cc: (raw.cc || []).map((c: any) => ({
+        ...c,
+        revLe: showTax ? (c.revLe || 0) : (c.netLe || 0),
+        revCombo: showTax ? (c.revCombo || 0) : (c.netCombo || 0),
+        revProduct: showTax ? (c.revProduct || 0) : (c.netProduct || 0),
+        revenue: showTax ? (c.revenue || 0) : (c.netRevenue || 0)
+      })),
+      cv: raw.cv || [],
+      coming: raw.coming || []
+    };
+  }, [branchesData, shopBranch, showTax]);
 
   const bookingColumns = [
     {
@@ -1307,16 +1339,28 @@ export default function TodayDashboard() {
                     <span style={{ fontWeight: 'bold' }}>Vận Hành Chi Nhánh (Shop Control Center)</span>
                   </Space>
                   
-                  <Radio.Group 
-                    value={shopBranch} 
-                    onChange={(e) => setShopBranch(e.target.value)}
-                    buttonStyle="solid"
-                  >
-                    <Radio.Button value="all">ALL</Radio.Button>
-                    <Radio.Button value="detham">Đề Thám (DT)</Radio.Button>
-                    <Radio.Button value="pxl">Phan Xích Long (PXL)</Radio.Button>
-                    <Radio.Button value="estella">Estella Place (EP)</Radio.Button>
-                  </Radio.Group>
+                  <Space size="middle" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '13px', color: token.colorTextSecondary }}>Bao gồm thuế (VAT 8%)</span>
+                      <Switch 
+                        checked={showTax} 
+                        onChange={(checked) => setShowTax(checked)} 
+                        checkedChildren="Bật"
+                        unCheckedChildren="Tắt"
+                      />
+                    </div>
+                    
+                    <Radio.Group 
+                      value={shopBranch} 
+                      onChange={(e) => setShopBranch(e.target.value)}
+                      buttonStyle="solid"
+                    >
+                      <Radio.Button value="all">ALL</Radio.Button>
+                      <Radio.Button value="detham">Đề Thám (DT)</Radio.Button>
+                      <Radio.Button value="pxl">Phan Xích Long (PXL)</Radio.Button>
+                      <Radio.Button value="estella">Estella Place (EP)</Radio.Button>
+                    </Radio.Group>
+                  </Space>
                 </div>
               }
               style={{ borderColor: token.colorBorderSecondary }}
