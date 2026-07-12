@@ -171,6 +171,7 @@ export default function TodayDashboard() {
   
   // Tabs states
   const [bookingTab, setBookingTab] = useState<'combo' | 'oc' | 'other'>('combo');
+  const [bookingBranch, setBookingBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('all');
   const [comingBranch, setComingBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
   const [shopBranch, setShopBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
 
@@ -189,6 +190,10 @@ export default function TodayDashboard() {
       const persistedBookingTab = localStorage.getItem('today_booking_tab');
       if (persistedBookingTab !== null) {
         setBookingTab(persistedBookingTab as any);
+      }
+      const persistedBookingBranch = localStorage.getItem('today_booking_branch');
+      if (persistedBookingBranch !== null) {
+        setBookingBranch(persistedBookingBranch as any);
       }
       const persistedComingBranch = localStorage.getItem('today_coming_branch');
       if (persistedComingBranch !== null) {
@@ -209,6 +214,10 @@ export default function TodayDashboard() {
   useEffect(() => {
     localStorage.setItem('today_booking_tab', bookingTab);
   }, [bookingTab]);
+
+  useEffect(() => {
+    localStorage.setItem('today_booking_branch', bookingBranch);
+  }, [bookingBranch]);
 
   useEffect(() => {
     localStorage.setItem('today_coming_branch', comingBranch);
@@ -310,6 +319,24 @@ export default function TodayDashboard() {
     if (key === 'estella') return 'Estella';
     return '';
   };
+
+  const filteredBookingsCombo = React.useMemo(() => {
+    if (bookingBranch === 'all') return bookingsCombo;
+    const targetLabel = bookingBranch === 'detham' ? 'Đề Thám' : (bookingBranch === 'pxl' ? 'PXL' : 'Estella');
+    return bookingsCombo.filter(b => b.branchName === targetLabel);
+  }, [bookingsCombo, bookingBranch]);
+
+  const filteredBookingsOc = React.useMemo(() => {
+    if (bookingBranch === 'all') return bookingsOc;
+    const targetLabel = bookingBranch === 'detham' ? 'Đề Thám' : (bookingBranch === 'pxl' ? 'PXL' : 'Estella');
+    return bookingsOc.filter(b => b.branchName === targetLabel);
+  }, [bookingsOc, bookingBranch]);
+
+  const filteredBookingsOther = React.useMemo(() => {
+    if (bookingBranch === 'all') return bookingsOther;
+    const targetLabel = bookingBranch === 'detham' ? 'Đề Thám' : (bookingBranch === 'pxl' ? 'PXL' : 'Estella');
+    return bookingsOther.filter(b => b.branchName === targetLabel);
+  }, [bookingsOther, bookingBranch]);
 
   const activeComingList = React.useMemo(() => {
     const list = comingBranch === 'all'
@@ -735,10 +762,16 @@ export default function TodayDashboard() {
                 </Space>
               }
               extra={
-                <Badge 
-                  count={bookingsCombo.length + bookingsOther.length + bookingsOc.length} 
-                  style={{ backgroundColor: '#52c41a' }}
-                />
+                <Radio.Group 
+                  size="small" 
+                  value={bookingBranch} 
+                  onChange={(e) => setBookingBranch(e.target.value)}
+                >
+                  <Radio.Button value="all">ALL</Radio.Button>
+                  <Radio.Button value="detham">Đề Thám (DT)</Radio.Button>
+                  <Radio.Button value="pxl">PXL</Radio.Button>
+                  <Radio.Button value="estella">Estella (EP)</Radio.Button>
+                </Radio.Group>
               }
               style={{ height: '100%', borderColor: token.colorBorderSecondary }}
             >
@@ -748,10 +781,10 @@ export default function TodayDashboard() {
                 items={[
                   {
                     key: 'combo',
-                    label: `Combo (${bookingsCombo.length})`,
+                    label: `Combo (${filteredBookingsCombo.length})`,
                     children: (
                       <Table
-                        dataSource={bookingsCombo}
+                        dataSource={filteredBookingsCombo}
                         columns={bookingColumns}
                         size="small"
                         pagination={false}
@@ -767,10 +800,10 @@ export default function TodayDashboard() {
                   },
                   {
                     key: 'oc',
-                    label: `Telesales Executive (${bookingsOc.length})`,
+                    label: `Telesales Executive (${filteredBookingsOc.length})`,
                     children: (
                       <Table
-                        dataSource={bookingsOc}
+                        dataSource={filteredBookingsOc}
                         columns={bookingColumns}
                         size="small"
                         pagination={false}
@@ -786,10 +819,10 @@ export default function TodayDashboard() {
                   },
                   {
                     key: 'other',
-                    label: `Khác (${bookingsOther.length})`,
+                    label: `Khác (${filteredBookingsOther.length})`,
                     children: (
                       <Table
-                        dataSource={bookingsOther}
+                        dataSource={filteredBookingsOther}
                         columns={bookingColumns}
                         size="small"
                         pagination={false}
