@@ -39,7 +39,9 @@ import {
   InboxOutlined,
   SmileOutlined,
   EyeOutlined,
-  CloseOutlined
+  CloseOutlined,
+  BarChartOutlined,
+  PieChartOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
@@ -99,6 +101,7 @@ interface ComingClientData {
   promo: string | null;
   booker: string;
   channel?: string;
+  category?: string;
   cc: string;
   cv: string;
   service: string;
@@ -683,6 +686,27 @@ export default function TodayDashboard() {
   const comingCountEstella = branchesData.estella?.coming?.length || 0;
   const comingCountAll = comingCountDeTham + comingCountPxl + comingCountEstella;
 
+  const comingStats = React.useMemo(() => {
+    let combo = 0;
+    let oc = 0;
+    let other = 0;
+    const allComing = Object.keys(branchesData).flatMap(branchKey => branchesData[branchKey].coming || []);
+    allComing.forEach(item => {
+      if (item.category === 'combo') combo++;
+      else if (item.category === 'oc') oc++;
+      else other++;
+    });
+    return { combo, oc, other, total: allComing.length };
+  }, [branchesData]);
+
+  const totalRevenueData = React.useMemo(() => {
+    const revLe = Object.values(branchesData).reduce((sum, b) => sum + (showTax ? (b.revLe || 0) : (b.netLe || 0)), 0);
+    const revCombo = Object.values(branchesData).reduce((sum, b) => sum + (showTax ? (b.revCombo || 0) : (b.netCombo || 0)), 0);
+    const revProduct = Object.values(branchesData).reduce((sum, b) => sum + (showTax ? (b.revProduct || 0) : (b.netProduct || 0)), 0);
+    const total = revLe + revCombo + revProduct;
+    return { revLe, revCombo, revProduct, total };
+  }, [branchesData, showTax]);
+
   if (!selectedDate) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: themeMode === 'dark' ? '#141414' : '#ffffff' }}>
@@ -750,6 +774,305 @@ export default function TodayDashboard() {
       <Spin spinning={loading}>
         <Row gutter={[24, 24]}>
           
+          {/* OVERVIEW CHARTS ROW */}
+          <Col span={24}>
+            <Row gutter={[16, 16]} style={{ marginBottom: '8px' }}>
+              
+              {/* CHART 1: BOOKING TẠO HÔM NAY */}
+              <Col xs={24} sm={12} lg={6}>
+                <Card 
+                  size="small" 
+                  style={{ 
+                    background: token.colorBgContainer, 
+                    borderColor: token.colorBorderSecondary, 
+                    height: '160px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between' 
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
+                      <CalendarOutlined style={{ color: '#52c41a', marginRight: '6px' }} />
+                      Booking Tạo Hôm Nay
+                    </span>
+                    <strong style={{ fontSize: '14px', color: token.colorText }}>{allBookings.length}</strong>
+                  </div>
+                  
+                  {/* Stacked progress bar */}
+                  <div style={{ width: '100%', height: '8px', backgroundColor: themeMode === 'dark' ? '#303030' : '#f0f0f0', borderRadius: '4px', display: 'flex', overflow: 'hidden', margin: '12px 0 16px 0' }}>
+                    {allBookings.length > 0 ? (
+                      <>
+                        <Tooltip title={`Combo: ${bookingsCombo.length} (${Math.round((bookingsCombo.length / allBookings.length) * 100)}%)`}>
+                          <div style={{ width: `${(bookingsCombo.length / allBookings.length) * 100}%`, backgroundColor: '#D4A84B' }} />
+                        </Tooltip>
+                        <Tooltip title={`Telesales: ${bookingsOc.length} (${Math.round((bookingsOc.length / allBookings.length) * 100)}%)`}>
+                          <div style={{ width: `${(bookingsOc.length / allBookings.length) * 100}%`, backgroundColor: '#52C41A' }} />
+                        </Tooltip>
+                        <Tooltip title={`Khác: ${bookingsOther.length} (${Math.round((bookingsOther.length / allBookings.length) * 100)}%)`}>
+                          <div style={{ width: `${(bookingsOther.length / allBookings.length) * 100}%`, backgroundColor: '#1890FF' }} />
+                        </Tooltip>
+                      </>
+                    ) : (
+                      <div style={{ width: '100%', backgroundColor: themeMode === 'dark' ? '#434343' : '#d9d9d9' }} />
+                    )}
+                  </div>
+                  
+                  {/* Legends */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', fontSize: '11px' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#D4A84B', borderRadius: '50%' }} />
+                        Combo
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
+                        {bookingsCombo.length} <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({allBookings.length > 0 ? Math.round((bookingsCombo.length / allBookings.length) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#52C41A', borderRadius: '50%' }} />
+                        Telesales
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
+                        {bookingsOc.length} <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({allBookings.length > 0 ? Math.round((bookingsOc.length / allBookings.length) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#1890FF', borderRadius: '50%' }} />
+                        Khác
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
+                        {bookingsOther.length} <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({allBookings.length > 0 ? Math.round((bookingsOther.length / allBookings.length) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+
+              {/* CHART 2: LỊCH KHÁCH ĐẾN HÔM NAY (BY TYPE) */}
+              <Col xs={24} sm={12} lg={6}>
+                <Card 
+                  size="small" 
+                  style={{ 
+                    background: token.colorBgContainer, 
+                    borderColor: token.colorBorderSecondary, 
+                    height: '160px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between' 
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
+                      <PieChartOutlined style={{ color: '#1890ff', marginRight: '6px' }} />
+                      Cơ Cấu Khách Đến
+                    </span>
+                    <strong style={{ fontSize: '14px', color: token.colorText }}>{comingStats.total}</strong>
+                  </div>
+                  
+                  {/* Stacked progress bar */}
+                  <div style={{ width: '100%', height: '8px', backgroundColor: themeMode === 'dark' ? '#303030' : '#f0f0f0', borderRadius: '4px', display: 'flex', overflow: 'hidden', margin: '12px 0 16px 0' }}>
+                    {comingStats.total > 0 ? (
+                      <>
+                        <Tooltip title={`Combo: ${comingStats.combo} (${Math.round((comingStats.combo / comingStats.total) * 100)}%)`}>
+                          <div style={{ width: `${(comingStats.combo / comingStats.total) * 100}%`, backgroundColor: '#D4A84B' }} />
+                        </Tooltip>
+                        <Tooltip title={`Telesales: ${comingStats.oc} (${Math.round((comingStats.oc / comingStats.total) * 100)}%)`}>
+                          <div style={{ width: `${(comingStats.oc / comingStats.total) * 100}%`, backgroundColor: '#52C41A' }} />
+                        </Tooltip>
+                        <Tooltip title={`Khác: ${comingStats.other} (${Math.round((comingStats.other / comingStats.total) * 100)}%)`}>
+                          <div style={{ width: `${(comingStats.other / comingStats.total) * 100}%`, backgroundColor: '#1890FF' }} />
+                        </Tooltip>
+                      </>
+                    ) : (
+                      <div style={{ width: '100%', backgroundColor: themeMode === 'dark' ? '#434343' : '#d9d9d9' }} />
+                    )}
+                  </div>
+                  
+                  {/* Legends */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', fontSize: '11px' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#D4A84B', borderRadius: '50%' }} />
+                        Combo
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
+                        {comingStats.combo} <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({comingStats.total > 0 ? Math.round((comingStats.combo / comingStats.total) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#52C41A', borderRadius: '50%' }} />
+                        Telesales
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
+                        {comingStats.oc} <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({comingStats.total > 0 ? Math.round((comingStats.oc / comingStats.total) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#1890FF', borderRadius: '50%' }} />
+                        Khác
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
+                        {comingStats.other} <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({comingStats.total > 0 ? Math.round((comingStats.other / comingStats.total) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+
+              {/* CHART 3: LỊCH KHÁCH ĐẾN HÔM NAY (BY BRANCH) */}
+              <Col xs={24} sm={12} lg={6}>
+                <Card 
+                  size="small" 
+                  style={{ 
+                    background: token.colorBgContainer, 
+                    borderColor: token.colorBorderSecondary, 
+                    height: '160px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between' 
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
+                      <ShopOutlined style={{ color: '#722ed1', marginRight: '6px' }} />
+                      Chi Nhánh Khách Đến
+                    </span>
+                    <strong style={{ fontSize: '14px', color: token.colorText }}>{comingCountAll}</strong>
+                  </div>
+                  
+                  {/* Stacked progress bar */}
+                  <div style={{ width: '100%', height: '8px', backgroundColor: themeMode === 'dark' ? '#303030' : '#f0f0f0', borderRadius: '4px', display: 'flex', overflow: 'hidden', margin: '12px 0 16px 0' }}>
+                    {comingCountAll > 0 ? (
+                      <>
+                        <Tooltip title={`Đề Thám: ${comingCountDeTham} (${Math.round((comingCountDeTham / comingCountAll) * 100)}%)`}>
+                          <div style={{ width: `${(comingCountDeTham / comingCountAll) * 100}%`, backgroundColor: '#722ED1' }} />
+                        </Tooltip>
+                        <Tooltip title={`Estella: ${comingCountEstella} (${Math.round((comingCountEstella / comingCountAll) * 100)}%)`}>
+                          <div style={{ width: `${(comingCountEstella / comingCountAll) * 100}%`, backgroundColor: '#13C2C2' }} />
+                        </Tooltip>
+                        <Tooltip title={`PXL: ${comingCountPxl} (${Math.round((comingCountPxl / comingCountAll) * 100)}%)`}>
+                          <div style={{ width: `${(comingCountPxl / comingCountAll) * 100}%`, backgroundColor: '#EB2F96' }} />
+                        </Tooltip>
+                      </>
+                    ) : (
+                      <div style={{ width: '100%', backgroundColor: themeMode === 'dark' ? '#434343' : '#d9d9d9' }} />
+                    )}
+                  </div>
+                  
+                  {/* Legends */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', fontSize: '11px' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#722ED1', borderRadius: '50%' }} />
+                        Đề Thám
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
+                        {comingCountDeTham} <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({comingCountAll > 0 ? Math.round((comingCountDeTham / comingCountAll) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#13C2C2', borderRadius: '50%' }} />
+                        Estella (EP)
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
+                        {comingCountEstella} <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({comingCountAll > 0 ? Math.round((comingCountEstella / comingCountAll) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#EB2F96', borderRadius: '50%' }} />
+                        PXL
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText }}>
+                        {comingCountPxl} <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({comingCountAll > 0 ? Math.round((comingCountPxl / comingCountAll) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+
+              {/* CHART 4: REVENUE BY TYPE */}
+              <Col xs={24} sm={12} lg={6}>
+                <Card 
+                  size="small" 
+                  style={{ 
+                    background: token.colorBgContainer, 
+                    borderColor: token.colorBorderSecondary, 
+                    height: '160px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between' 
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
+                      <BarChartOutlined style={{ color: '#D4A84B', marginRight: '6px' }} />
+                      Doanh Thu Thực Tế
+                    </span>
+                    <strong style={{ fontSize: '13px', color: token.colorText }}>{totalRevenueData.total.toLocaleString('vi-VN')} đ</strong>
+                  </div>
+                  
+                  {/* Stacked progress bar */}
+                  <div style={{ width: '100%', height: '8px', backgroundColor: themeMode === 'dark' ? '#303030' : '#f0f0f0', borderRadius: '4px', display: 'flex', overflow: 'hidden', margin: '12px 0 16px 0' }}>
+                    {totalRevenueData.total > 0 ? (
+                      <>
+                        <Tooltip title={`Combo: ${totalRevenueData.revCombo.toLocaleString('vi-VN')} đ (${Math.round((totalRevenueData.revCombo / totalRevenueData.total) * 100)}%)`}>
+                          <div style={{ width: `${(totalRevenueData.revCombo / totalRevenueData.total) * 100}%`, backgroundColor: '#D4A84B' }} />
+                        </Tooltip>
+                        <Tooltip title={`Lẻ (Single): ${totalRevenueData.revLe.toLocaleString('vi-VN')} đ (${Math.round((totalRevenueData.revLe / totalRevenueData.total) * 100)}%)`}>
+                          <div style={{ width: `${(totalRevenueData.revLe / totalRevenueData.total) * 100}%`, backgroundColor: '#1890FF' }} />
+                        </Tooltip>
+                        <Tooltip title={`Sản Phẩm: ${totalRevenueData.revProduct.toLocaleString('vi-VN')} đ (${Math.round((totalRevenueData.revProduct / totalRevenueData.total) * 100)}%)`}>
+                          <div style={{ width: `${(totalRevenueData.revProduct / totalRevenueData.total) * 100}%`, backgroundColor: '#FA8C16' }} />
+                        </Tooltip>
+                      </>
+                    ) : (
+                      <div style={{ width: '100%', backgroundColor: themeMode === 'dark' ? '#434343' : '#d9d9d9' }} />
+                    )}
+                  </div>
+                  
+                  {/* Legends */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', fontSize: '11px' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#D4A84B', borderRadius: '50%' }} />
+                        Combo
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={totalRevenueData.revCombo.toLocaleString('vi-VN') + ' đ'}>
+                        {Math.round(totalRevenueData.revCombo / 1000)}k <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({totalRevenueData.total > 0 ? Math.round((totalRevenueData.revCombo / totalRevenueData.total) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#1890FF', borderRadius: '50%' }} />
+                        Lẻ (Single)
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={totalRevenueData.revLe.toLocaleString('vi-VN') + ' đ'}>
+                        {Math.round(totalRevenueData.revLe / 1000)}k <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({totalRevenueData.total > 0 ? Math.round((totalRevenueData.revLe / totalRevenueData.total) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: token.colorTextDescription }}>
+                        <span style={{ width: '6px', height: '6px', backgroundColor: '#FA8C16', borderRadius: '50%' }} />
+                        Sản Phẩm
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '2px', color: token.colorText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={totalRevenueData.revProduct.toLocaleString('vi-VN') + ' đ'}>
+                        {Math.round(totalRevenueData.revProduct / 1000)}k <span style={{ fontWeight: 'normal', fontSize: '10px', color: token.colorTextDescription }}>({totalRevenueData.total > 0 ? Math.round((totalRevenueData.revProduct / totalRevenueData.total) * 100) : 0}%)</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+
+            </Row>
+          </Col>
+
           {/* SECTION 1: BOOKING - CREATED TODAY */}
           <Col span={24}>
             <Card
