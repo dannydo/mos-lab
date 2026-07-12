@@ -3649,11 +3649,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const promoMap = new Map(promotions.map(p => [Number(p.id), p.name || p.promotionKey || `PROMO-${p.id}`]));
 
-      // Fetch staff profiles map
       const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-        SELECT user_id as userId, full_name as fullName
-        FROM \`user_profile\`
-        WHERE provider = 'Staff' AND is_disabled = 0
+        SELECT up.user_id as userId, up.full_name as fullName
+        FROM \`staff_profile\` sp
+        JOIN \`user_profile\` up ON sp.user_id = up.user_id
+        WHERE up.provider = 'Staff' AND up.is_disabled = 0
       `);
       const staffMap = new Map(staffProfiles.map(s => [Number(s.userId), s.fullName]));
 
