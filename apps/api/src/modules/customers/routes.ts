@@ -4139,21 +4139,56 @@ export async function customerRoutes(fastify: FastifyInstance) {
         shiftMap.set(Number(ws.user_id), ws);
       });
 
+      const getShiftType = (startTime: any, endTime: any): 'sáng' | 'chiều' | 'full' => {
+        if (!startTime) return 'full';
+        
+        let startStr = '';
+        if (typeof startTime === 'string') {
+          startStr = startTime;
+        } else if (startTime instanceof Date) {
+          startStr = startTime.toISOString().substr(11, 8);
+        } else if (startTime && typeof startTime === 'object' && startTime.toISOString) {
+          startStr = startTime.toISOString().substr(11, 8);
+        }
+
+        let endStr = '';
+        if (typeof endTime === 'string') {
+          endStr = endTime;
+        } else if (endTime instanceof Date) {
+          endStr = endTime.toISOString().substr(11, 8);
+        } else if (endTime && typeof endTime === 'object' && endTime.toISOString) {
+          endStr = endTime.toISOString().substr(11, 8);
+        }
+
+        if (startStr.startsWith('09:00') || startStr.startsWith('08:30')) {
+          if (endStr.startsWith('18:00') || endStr.startsWith('17:00')) {
+            return 'sáng';
+          }
+          return 'full';
+        } else if (startStr >= '10:30') {
+          return 'chiều';
+        }
+        return 'full';
+      };
+
       // Update CCs' shift, attendance, and doing from actual check-in records (workingShifts)
       Object.keys(branchDetailMap).forEach(bKey => {
         branchDetailMap[bKey].cc.forEach((cc: any) => {
           const wsRecord = shiftMap.get(cc.id);
+          
+          let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
+          const list = schedulesByUserId[cc.id] || [];
+          const todaySchedule = list.find(s => s.type === 'Weekday' && s.type_value === weekdayStr) ||
+                                list.find(s => s.type === 'Day' && s.type_value === 'All');
+          if (todaySchedule) {
+            shift = getShiftType(todaySchedule.start_time, todaySchedule.end_time);
+          }
+
+          let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
+          let doing = 'Nghỉ phép tuần'; // default if off
+
           if (wsRecord) {
-            let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
-            if (wsRecord.shift_start) {
-              const sTime = typeof wsRecord.shift_start === 'string' ? wsRecord.shift_start : new Date(wsRecord.shift_start).toISOString().substr(11, 8);
-              if (sTime === '09:00:00') shift = 'sáng';
-              else if (sTime === '14:00:00') shift = 'chiều';
-            }
-
-            let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
-            let doing = 'Chưa check-in';
-
+            shift = getShiftType(wsRecord.start_time, wsRecord.end_time);
             if (wsRecord.check_out_staff_task_id !== null) {
               attendance = 'checked_out';
               doing = 'Đã về';
@@ -4161,11 +4196,34 @@ export async function customerRoutes(fastify: FastifyInstance) {
               attendance = 'checked_in';
               doing = 'Trống (Sẵn sàng đón khách)';
             }
+          } else {
+            const weekOffs = weekOffsByUserId[cc.id] || [];
+            let isWeekOff = false;
+            if (weekOffs.length > 0) {
+              const sorted = [...weekOffs].sort((a, b) => b.cnt - a.cnt);
+              isWeekOff = String(sorted[0].weekday) === weekdayStr;
+            } else if (list.length > 0) {
+              const worksAll = list.some(s => s.type === 'Day' && s.type_value === 'All');
+              if (!worksAll) {
+                const workingWeekdays = list.filter(s => s.type === 'Weekday').map(s => s.type_value);
+                if (workingWeekdays.length > 0 && !workingWeekdays.includes(weekdayStr)) {
+                  isWeekOff = true;
+                }
+              }
+            }
 
-            cc.shift = shift;
-            cc.attendance = attendance;
-            cc.doing = doing;
+            const hasSpecificDayOff = offUserIds.has(cc.id);
+            if (isWeekOff || hasSpecificDayOff) {
+              shift = 'off';
+              doing = 'Nghỉ phép tuần';
+            } else {
+              doing = 'Chưa check-in';
+            }
           }
+
+          cc.shift = shift;
+          cc.attendance = attendance;
+          cc.doing = doing;
         });
       });
 
@@ -4196,25 +4254,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           const list = schedulesByUserId[cvId] || [];
           const todaySchedule = list.find(s => s.type === 'Weekday' && s.type_value === weekdayStr) ||
                                 list.find(s => s.type === 'Day' && s.type_value === 'All');
-          if (todaySchedule && todaySchedule.start_time) {
-            const startStr = typeof todaySchedule.start_time === 'string'
-              ? todaySchedule.start_time
-              : new Date(todaySchedule.start_time).toISOString().substr(11, 8);
-            const endStr = todaySchedule.end_time
-              ? (typeof todaySchedule.end_time === 'string'
-                ? todaySchedule.end_time
-                : new Date(todaySchedule.end_time).toISOString().substr(11, 8))
-              : '';
-            
-            if (startStr.startsWith('09:00:00')) {
-              if (endStr.startsWith('18:00:00') || endStr.startsWith('17:00:00')) {
-                shift = 'sáng';
-              } else {
-                shift = 'full';
-              }
-            } else if (startStr >= '11:00:00') {
-              shift = 'chiều';
-            }
+          if (todaySchedule) {
+            shift = getShiftType(todaySchedule.start_time, todaySchedule.end_time);
           }
         }
 
@@ -4222,12 +4263,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         let doing = isOff ? 'Nghỉ phép' : 'Chưa check-in';
 
         if (wsRecord) {
-          // If we have an actual check-in record, we can override or keep it
-          if (wsRecord.shift_start) {
-            const sTime = typeof wsRecord.shift_start === 'string' ? wsRecord.shift_start : new Date(wsRecord.shift_start).toISOString().substr(11, 8);
-            if (sTime === '09:00:00') shift = 'sáng';
-            else if (sTime === '14:00:00') shift = 'chiều';
-          }
+          shift = getShiftType(wsRecord.start_time, wsRecord.end_time);
           if (wsRecord.check_out_staff_task_id !== null) {
             attendance = 'checked_out';
             doing = 'Đã về';

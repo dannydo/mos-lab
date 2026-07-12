@@ -1,7 +1,7 @@
 'use client';
 
 import '../../suppress-warnings';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../../lib/api';
 import {
   Typography,
@@ -180,8 +180,15 @@ export default function TodayDashboard() {
   const [showTax, setShowTax] = useState(true);
 
   // Load persisted states on mount
+  const isMounted = useRef(false);
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const persistedDate = localStorage.getItem('today_selected_date');
+      if (persistedDate) {
+        setSelectedDate(dayjs(persistedDate));
+      } else {
+        setSelectedDate(dayjs());
+      }
       const persistedShowTax = localStorage.getItem('today_show_tax');
       if (persistedShowTax !== null) {
         setShowTax(persistedShowTax === 'true');
@@ -198,25 +205,40 @@ export default function TodayDashboard() {
       if (persistedShopBranch !== null) {
         setShopBranch(persistedShopBranch as any);
       }
+      isMounted.current = true;
     }
   }, []);
 
   // Save states to localStorage when they change
   useEffect(() => {
-    localStorage.setItem('today_show_tax', String(showTax));
+    if (isMounted.current) {
+      localStorage.setItem('today_show_tax', String(showTax));
+    }
   }, [showTax]);
 
   useEffect(() => {
-    localStorage.setItem('today_booking_filter', bookingFilter);
+    if (isMounted.current) {
+      localStorage.setItem('today_booking_filter', bookingFilter);
+    }
   }, [bookingFilter]);
 
   useEffect(() => {
-    localStorage.setItem('today_coming_branch', comingBranch);
+    if (isMounted.current) {
+      localStorage.setItem('today_coming_branch', comingBranch);
+    }
   }, [comingBranch]);
 
   useEffect(() => {
-    localStorage.setItem('today_shop_branch', shopBranch);
+    if (isMounted.current) {
+      localStorage.setItem('today_shop_branch', shopBranch);
+    }
   }, [shopBranch]);
+
+  useEffect(() => {
+    if (isMounted.current && selectedDate) {
+      localStorage.setItem('today_selected_date', selectedDate.format('YYYY-MM-DD'));
+    }
+  }, [selectedDate]);
 
   const openCustomerDrawer = (record: BookingData) => {
     setSelectedCustomer(record);
@@ -266,10 +288,7 @@ export default function TodayDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Initialize selectedDate on client mount to prevent timezone leak from SSR
-  useEffect(() => {
-    setSelectedDate(dayjs());
-  }, []);
+
 
   const fetchDashboardData = useCallback(async (date: dayjs.Dayjs) => {
     setLoading(true);
