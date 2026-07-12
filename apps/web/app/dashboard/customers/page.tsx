@@ -26,7 +26,8 @@ import {
   Row,
   Col,
   Spin,
-  Checkbox
+  Checkbox,
+  Tooltip
 } from 'antd';
 import { 
   SearchOutlined, 
@@ -49,6 +50,8 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../lib/api';
+import CustomerDetailDrawer from '../../../components/CustomerDetailDrawer';
+import BookingWizardDrawer from '../../../components/BookingWizardDrawer';
 import { Customer, BucketType } from '@mos-lab/shared';
 
 const { Title, Text } = Typography;
@@ -171,6 +174,8 @@ export default function CustomersPage() {
   const [history, setHistory] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
+  const [bookingWizardVisible, setBookingWizardVisible] = useState(false);
+  const [bookingInitialCustomer, setBookingInitialCustomer] = useState<any>(null);
 
   // Allocation History states
   const [historyDrawerVisible, setHistoryDrawerVisible] = useState(false);
@@ -932,19 +937,16 @@ export default function CustomersPage() {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 150,
+      width: 80,
       render: (_: any, record: Customer) => (
-        <Space size="middle">
+        <Tooltip title="Chi tiết khách hàng">
           <Button 
-            type="primary" 
-            ghost 
-            icon={<EyeOutlined />} 
+            type="text" 
+            shape="circle" 
+            icon={<EyeOutlined style={{ color: '#D4A84B' }} />} 
             onClick={() => openDetailModal(record)}
-            style={{ borderColor: '#D4A84B', color: '#D4A84B' }}
-          >
-            Chi tiết
-          </Button>
-        </Space>
+          />
+        </Tooltip>
       ),
     },
   ];
@@ -979,11 +981,19 @@ export default function CustomersPage() {
   return (
     <div>
       {contextHolder}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6" style={{ marginBottom: '24px' }}>
         <div>
           <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>Danh Sách Khách Hàng</Title>
           <Text style={{ color: token.colorTextDescription }}>Xem danh sách khách hàng và quản lý phân loại buckets real-time</Text>
         </div>
+        <Button 
+          type="primary" 
+          icon={<CalendarOutlined />} 
+          style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B', height: '38px', borderRadius: '6px', fontWeight: 'bold' }}
+          onClick={() => setBookingWizardVisible(true)}
+        >
+          Đặt lịch mới
+        </Button>
       </div>
 
       <Card style={{ background: token.colorBgContainer, border: `1px solid ${token.colorBorderSecondary}`, marginBottom: '24px' }}>
@@ -1368,87 +1378,33 @@ export default function CustomersPage() {
         </div>
       </Modal>
 
-      {/* CUSTOMER DETAIL MODAL */}
-      <Modal
-        title={
-          <span style={{ color: '#D4A84B', fontSize: '20px', fontWeight: 'bold' }}>
-            Thông Tin Chi Tiết Khách Hàng
-          </span>
-        }
+      {/* CUSTOMER DETAIL DRAWER (Redesigned Mockup 1 style) */}
+      <CustomerDetailDrawer
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setModalVisible(false)}>
-            Đóng
-          </Button>
-        ]}
-        width={750}
-        style={{ top: 50 }}
-      >
-        {selectedCustomer && (
-          <div>
-            <Descriptions bordered column={2} size="small" style={{ marginTop: '16px' }}>
-              <Descriptions.Item label="Mã KH" span={2}>
-                {selectedCustomer.id}
-              </Descriptions.Item>
-              <Descriptions.Item label="Tên khách">
-                <Space style={{ display: 'flex', alignItems: 'center' }}>
-                  <Avatar 
-                    src={selectedCustomer.avatar || undefined} 
-                    icon={<UserOutlined />} 
-                    style={{ 
-                      backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5', 
-                      color: '#D4A84B',
-                      border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
-                      flexShrink: 0
-                    }} 
-                  />
-                  <span>{selectedCustomer.name}</span>
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label="Số điện thoại">{selectedCustomer.phone}</Descriptions.Item>
-              <Descriptions.Item label="Email">{selectedCustomer.email || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Giới tính">{selectedCustomer.gender || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Ngày sinh">{selectedCustomer.dob || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Nhóm phân loại">
-                {selectedCustomer.bucket === 'COMBO_LIVE' && <Tag color="green">COMBO LIVE</Tag>}
-                {selectedCustomer.bucket === 'COMBO_DEAD' && <Tag color="red">COMBO DEAD</Tag>}
-                {selectedCustomer.bucket === 'SINGLE' && <Tag color="warning">SINGLE</Tag>}
-              </Descriptions.Item>
-            </Descriptions>
+        customerId={selectedCustomer?.id || null}
+        onClose={() => setModalVisible(false)}
+        onBookAppointment={(cust) => {
+          setModalVisible(false);
+          setBookingInitialCustomer({
+            id: cust.id,
+            name: cust.name,
+            phone: cust.phone,
+            bucket: cust.bucket
+          });
+          setBookingWizardVisible(true);
+        }}
+      />
 
-            {selectedCustomer.comboBalance && (
-              <>
-                <Divider orientation="left" style={{ color: '#D4A84B' }}>Trạng Thái Gói Combo</Divider>
-                <Descriptions bordered column={2} size="small">
-                  <Descriptions.Item label="Buổi Combo thường còn lại">
-                    <span className="font-bold text-green-500">{selectedCustomer.comboBalance.normalCount} buổi</span>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Buổi Combo bảo hành còn lại">
-                    <span className="font-bold text-green-500">{selectedCustomer.comboBalance.retainCount} buổi</span>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Ngày hết hạn bảo hành" span={2}>
-                    {selectedCustomer.comboBalance.expiryDate 
-                      ? new Date(selectedCustomer.comboBalance.expiryDate).toLocaleDateString('vi-VN') 
-                      : 'Không giới hạn'}
-                  </Descriptions.Item>
-                </Descriptions>
-              </>
-            )}
-
-            <Divider orientation="left" style={{ color: '#D4A84B' }}>Lịch Sử Đơn Hàng Gần Đây</Divider>
-            <Table
-              dataSource={history}
-              columns={historyColumns}
-              rowKey="id"
-              loading={modalLoading}
-              pagination={{ pageSize: 5 }}
-              size="small"
-              bordered
-            />
-          </div>
-        )}
-      </Modal>
+      {/* BOOKING WIZARD DRAWER WITH SLOTS MATRIX */}
+      <BookingWizardDrawer
+        open={bookingWizardVisible}
+        initialCustomer={bookingInitialCustomer}
+        onClose={() => {
+          setBookingWizardVisible(false);
+          setBookingInitialCustomer(null);
+        }}
+        onSuccess={() => fetchCustomers(1, pageSize, activeTab, searchQuery, sortField)}
+      />
 
       {/* ADVANCED FILTER DRAWER */}
       <Drawer

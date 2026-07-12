@@ -19,7 +19,8 @@ declare module '@fastify/jwt' {
 export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
   try {
     await request.jwtVerify();
-  } catch (err) {
+  } catch (err: any) {
+    request.log.error('JWT verification failed:', err.message, err.stack);
     reply.status(401).send({ error: 'Unauthorized', message: 'Token is missing or invalid' });
   }
 }

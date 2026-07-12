@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mockup 6 - Compact Grid Matrix (Light)</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --primary: #D4A84B;
+      --primary-hover: #B3862A;
+      --primary-light: #FDF9F0;
+      --bg: #F1F5F9;
+      --card-bg: #FFFFFF;
+      --text: #0F172A;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --red: #EF4444;
+      --red-light: #FEE2E2;
+      --green: #10B981;
+      --green-light: #D1FAE5;
+      --orange: #F59E0B;
+      --orange-light: #FEF3C7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #020617;
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      justify-content: flex-end;
+      overflow: hidden;
+    }
+
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      z-index: 10;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .drawer-container {
+      width: 80%;
+      max-width: 1100px;
+      height: 100%;
+      background: var(--bg);
+      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      animation: slideIn 0.3s ease-out;
+      z-index: 20;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .drawer-header {
+      padding: 16px 20px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .profile-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      border: 2px solid var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: var(--primary-hover);
+      font-size: 20px;
+    }
+
+    .customer-meta h2 {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Dense Grid Layout */
+    .drawer-content {
+      flex: 1;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .grid-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 250px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    /* Table styles inside grid */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    .table th {
+      text-align: left;
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 6px 8px;
+      background: var(--bg);
+    }
+
+    .table td {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Tag styles */
+    .tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .tag.green { background: var(--green-light); color: var(--green); }
+    .tag.red { background: var(--red-light); color: var(--red); }
+    .tag.orange { background: var(--orange-light); color: var(--orange); }
+
+    /* Info panels */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .stat-box {
+      background: var(--bg);
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .stat-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary-hover);
+    }
+
+    .stat-lbl {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="drawer-overlay">
+    <div class="drawer-container">
+      
+      <!-- Drawer Header -->
+      <div class="drawer-header">
+        <div class="profile-info">
+          <div class="avatar">L</div>
+          <div class="customer-meta">
+            <h2>Lưu <span style="color: var(--primary); font-size: 14px;">⭐⭐⭐⭐⭐</span></h2>
+            <div style="font-size: 12px; color: var(--text-muted); display: flex; gap: 12px; margin-top: 2px;">
+              <span>SĐT: 0989.687.579</span>
+              <span>Mã: 35962 (ID cũ: 285)</span>
+              <span>Nhóm: <strong style="color: var(--red);">COMBO_DEAD</strong></span>
+            </div>
+          </div>
+        </div>
+        <button class="close-btn"><i data-lucide="x" style="width: 20px; height: 20px;"></i></button>
+      </div>
+
+      <!-- Content Grid -->
+      <div class="drawer-content">
+        
+        <!-- Row 1 Left: Stats & Info -->
+        <div class="grid-card" style="grid-column: span 2; min-height: unset;">
+          <div class="card-title"><i data-lucide="info" style="width: 14px; height: 14px;"></i> Tổng quan & Chỉ số</div>
+          
+          <div class="stats-row">
+            <div class="stat-box">
+              <div class="stat-val">42.35M</div>
+              <div class="stat-lbl">LTV (Doanh thu)</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val">285</div>
+              <div class="stat-lbl">Tổng đặt lịch</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val" style="color: var(--orange);">3.00M</div>
+              <div class="stat-lbl">Ví Combo còn</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val" style="color: var(--red);">1 ngày</div>
+              <div class="stat-lbl">Chưa quay lại</div>
+            </div>
+          </div>
+
+          <div style="font-size: 12.5px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 4px; border-top: 1px solid var(--border); padding-top: 10px;">
+            <div><strong>Giới tính:</strong> Nữ</div>
+            <div><strong>Ngày sinh:</strong> 10-03-2023</div>
+            <div><strong>Gói đang chạy:</strong> New Flawless Mink 1110 (7+3)</div>
+          </div>
+        </div>
+
+        <!-- Row 2 Left: Bookings Table -->
+        <div class="grid-card">
+          <div class="card-title"><i data-lucide="calendar" style="width: 14px; height: 14px;"></i> Đặt lịch gần đây</div>
+          <div style="overflow-x: auto; flex: 1;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Ngày</th>
+                  <th>Dịch vụ</th>
+                  <th>Nhân viên</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>10/07/26</td>
+                  <td>Flawless Mink 1110</td>
+                  <td>Yến Vy</td>
+                  <td><span class="tag green">Booked</span></td>
+                </tr>
+                <tr>
+                  <td>19/06/26</td>
+                  <td>Flawless Mink 1110</td>
+                  <td>Yến Vy</td>
+                  <td><span class="tag green">Booked</span></td>
+                </tr>
+                <tr>
+                  <td>08/03/26</td>
+                  <td>Flawless Mink 1110</td>
+                  <td>Huyền N.</td>
+                  <td><span class="tag red">Cancel</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Row 2 Right: Calls & Notes Table -->
+        <div class="grid-card">
+          <div class="card-title"><i data-lucide="message-square" style="width: 14px; height: 14px;"></i> Ghi chú & CSKH</div>
+          <div style="overflow-x: auto; flex: 1;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Loại</th>
+                  <th>Nội dung</th>
+                  <th>Thời gian</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="background: var(--red-light);">
+                  <td><span class="tag red">Cảnh báo</span></td>
+                  <td style="font-weight: 600;">Chị chỉ Quấn được mi Tên Năm Nâu</td>
+                  <td>05/04/26</td>
+                </tr>
+                <tr style="background: var(--red-light);">
+                  <td><span class="tag red">Cảnh báo</span></td>
+                  <td style="font-weight: 600;">Chị nói QC KHÔNG CẦN GỌI CHỊ</td>
+                  <td>11/11/25</td>
+                </tr>
+                <tr>
+                  <td><span class="tag green">Call</span></td>
+                  <td>Đã nghe máy (15p 26s)</td>
+                  <td>26/09/25</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mockup 5 - Unified Activity Stream (Light)</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --primary: #D4A84B;
+      --primary-hover: #B3862A;
+      --primary-light: #FDF9F0;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text: #0F172A;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --red: #EF4444;
+      --red-light: #FEE2E2;
+      --green: #10B981;
+      --green-light: #D1FAE5;
+      --blue: #3B82F6;
+      --blue-light: #DBEAFE;
+      --orange: #F59E0B;
+      --orange-light: #FEF3C7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #020617;
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      justify-content: flex-end;
+      overflow: hidden;
+    }
+
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      z-index: 10;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .drawer-container {
+      width: 80%;
+      max-width: 1100px;
+      height: 100%;
+      background: var(--bg);
+      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      animation: slideIn 0.3s ease-out;
+      z-index: 20;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .drawer-header {
+      padding: 20px 24px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .profile-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      border: 2px solid var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: var(--primary-hover);
+      font-size: 24px;
+    }
+
+    .customer-meta h2 {
+      font-size: 22px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .customer-meta .sub-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drawer-content {
+      flex: 1;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+      padding: 24px;
+    }
+
+    .drawer-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .kpi-box {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .kpi-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary-hover);
+    }
+
+    .kpi-lbl {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* Stream Filters */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: var(--card-bg);
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .filter-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .filter-btn.active {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary-hover);
+    }
+
+    /* Unified Timeline Stream */
+    .stream {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .stream::before {
+      content: '';
+      position: absolute;
+      left: 39px;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .stream-group {
+      position: relative;
+    }
+
+    .date-divider {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: var(--bg);
+      padding: 2px 10px;
+      border-radius: 10px;
+      display: inline-block;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+
+    .stream-item {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .stream-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+
+    /* Types of badges */
+    .stream-badge.booking {
+      border-color: var(--green);
+      background: var(--green-light);
+      color: var(--green);
+    }
+
+    .stream-badge.call {
+      border-color: var(--blue);
+      background: var(--blue-light);
+      color: var(--blue);
+    }
+
+    .stream-badge.note {
+      border-color: var(--red);
+      background: var(--red-light);
+      color: var(--red);
+    }
+
+    .stream-body {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 16px;
+      flex: 1;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .stream-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .stream-title {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .stream-time {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="drawer-overlay">
+    <div class="drawer-container">
+      
+      <!-- Drawer Header -->
+      <div class="drawer-header">
+        <div class="profile-info">
+          <div class="avatar">L</div>
+          <div class="customer-meta">
+            <h2>Lưu <span style="color: var(--primary); font-size: 16px;">⭐⭐⭐⭐⭐</span></h2>
+            <div class="sub-info">
+              <span><i data-lucide="phone" style="width: 14px; height: 14px;"></i> 0989.687.579</span>
+              <span><i data-lucide="hash" style="width: 14px; height: 14px;"></i> KH: 35962 (ID cũ: 285)</span>
+            </div>
+          </div>
+        </div>
+        <button class="close-btn"><i data-lucide="x" style="width: 24px; height: 24px;"></i></button>
+      </div>
+
+      <!-- Drawer Content -->
+      <div class="drawer-content">
+        
+        <!-- Sidebar -->
+        <div class="drawer-sidebar">
+          <div class="card">
+            <div class="card-title"><i data-lucide="bar-chart-2" style="width: 15px; height: 15px;"></i> Chỉ số tổng quan</div>
+            <div class="kpi-grid">
+              <div class="kpi-box">
+                <div class="kpi-val">42.35M</div>
+                <div class="kpi-lbl">LTV</div>
+              </div>
+              <div class="kpi-box">
+                <div class="kpi-val">285</div>
+                <div class="kpi-lbl">Đặt lịch</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><i data-lucide="user" style="width: 15px; height: 15px;"></i> Thông tin cá nhân</div>
+            <div style="font-size: 13px; display: flex; flex-direction: column; gap: 8px;">
+              <div><strong style="color: var(--text-muted);">Ngày sinh:</strong> 10-03-2023</div>
+              <div><strong style="color: var(--text-muted);">Số ngày chưa về:</strong> <span style="color: var(--red); font-weight: 700;">1 ngày</span></div>
+              <div><strong style="color: var(--text-muted);">Nhóm phân loại:</strong> <span style="color: var(--red); font-weight: 700;">COMBO_DEAD</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main unified timeline -->
+        <div>
+          
+          <!-- Filter bar -->
+          <div class="filter-bar">
+            <button class="filter-btn active"><i data-lucide="list" style="width: 14px; height: 14px;"></i> Tất cả</button>
+            <button class="filter-btn"><i data-lucide="calendar" style="width: 14px; height: 14px;"></i> Đặt lịch</button>
+            <button class="filter-btn"><i data-lucide="phone" style="width: 14px; height: 14px;"></i> Cuộc gọi</button>
+            <button class="filter-btn"><i data-lucide="edit-3" style="width: 14px; height: 14px;"></i> Ghi chú</button>
+          </div>
+
+          <div class="stream">
+            
+            <!-- Group: Tháng 07/2026 -->
+            <div class="stream-group">
+              <span class="date-divider">Tháng 07, 2026</span>
+
+              <!-- Booking item -->
+              <div class="stream-item">
+                <div class="stream-badge booking"><i data-lucide="check" style="width: 16px; height: 16px;"></i></div>
+                <div class="stream-body">
+                  <div class="stream-header">
+                    <span class="stream-title">Đặt lịch: New Flawless Mink 1110 - Combo</span>
+                    <span class="stream-time">10/07/2026 14:30</span>
+                  </div>
+                  <div style="font-size: 12px; color: var(--text-muted);">KTV: Yến Vy | Estella Place</div>
+                  <div style="font-size: 13px; font-style: italic; background: var(--bg); padding: 8px; border-left: 3px solid var(--primary); margin-top: 8px;">
+                    "9/7 chị đi"
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group: Tháng 04/2026 -->
+            <div class="stream-group">
+              <span class="date-divider">Tháng 04, 2026</span>
+
+              <!-- Note item -->
+              <div class="stream-item">
+                <div class="stream-badge note"><i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i></div>
+                <div class="stream-body" style="border-color: var(--red); background: var(--red-light);">
+                  <div class="stream-header">
+                    <span class="stream-title" style="color: var(--red);">Ghi chú cảnh báo</span>
+                    <span class="stream-time">05/04/2026 09:49</span>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 600;">"Chị chỉ Quấn được mi Tên Năm Nâu"</div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">Tạo bởi: Admin Lâm Vy</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group: Tháng 09/2025 -->
+            <div class="stream-group">
+              <span class="date-divider">Tháng 09, 2025</span>
+
+              <!-- Call item -->
+              <div class="stream-item">
+                <div class="stream-badge call"><i data-lucide="phone-incoming" style="width: 16px; height: 16px;"></i></div>
+                <div class="stream-body">
+                  <div class="stream-header">
+                    <span class="stream-title">Cuộc gọi thành công (Đã nghe máy)</span>
+                    <span class="stream-time">26/09/2025 14:29</span>
+                  </div>
+                  <div style="font-size: 13px;">Thời lượng cuộc gọi: <strong>15 phút 26 giây</strong></div>
+                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Staff thực hiện: CSKH Team</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

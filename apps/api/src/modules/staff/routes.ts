@@ -48,7 +48,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
           emergencyContact: true,
           emergencyPhone: true,
           avatarUrl: true,
-          notes: true
+          notes: true,
+          legacyStaffId: true
         }
       });
 
@@ -99,7 +100,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
           emergencyContact: true,
           emergencyPhone: true,
           avatarUrl: true,
-          notes: true
+          notes: true,
+          legacyStaffId: true
         }
       });
 
@@ -134,7 +136,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
       emergencyContact,
       emergencyPhone,
       avatarUrl,
-      notes
+      notes,
+      legacyStaffId
     } = request.body as any;
 
     if (!username || !displayName) {
@@ -178,7 +181,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
           emergencyContact,
           emergencyPhone,
           avatarUrl,
-          notes
+          notes,
+          legacyStaffId: legacyStaffId ? parseInt(legacyStaffId, 10) : null
         }
       });
 
@@ -234,7 +238,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
       emergencyContact,
       emergencyPhone,
       avatarUrl,
-      notes
+      notes,
+      legacyStaffId
     } = request.body as any;
 
     try {
@@ -261,6 +266,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
       if (emergencyPhone !== undefined) updateData.emergencyPhone = emergencyPhone;
       if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
       if (notes !== undefined) updateData.notes = notes;
+      if (legacyStaffId !== undefined) {
+        updateData.legacyStaffId = legacyStaffId ? parseInt(legacyStaffId, 10) : null;
+      }
 
       // Handle password update if supplied
       if (password) {
@@ -374,6 +382,35 @@ export async function staffRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi hệ thống khi xóa nhân viên'
+      });
+    }
+  });
+
+  // GET /api/staff/legacy - Get list of legacy staff (Wings Lashes accounts)
+  fastify.get('/staff/legacy', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const legacyStaff = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT 
+          up.user_id as id, 
+          up.full_name as name, 
+          u.email as email,
+          (SELECT phone_number FROM user_contact WHERE user_id = up.user_id AND is_disabled = 0 LIMIT 1) as phone
+         FROM user_profile up
+         JOIN user u ON up.user_id = u.id
+         WHERE up.provider = 'Staff' AND up.is_disabled = 0 AND up.user_group_id > 1
+         ORDER BY up.full_name ASC`
+      );
+      return legacyStaff.map((row: any) => ({
+        id: Number(row.id),
+        name: row.name ? row.name.trim() : 'Unknown',
+        email: row.email || null,
+        phone: row.phone || null
+      }));
+    } catch (error: any) {
+      fastify.log.error('Fetch legacy staff error:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Lỗi hệ thống khi lấy danh sách tài khoản Wings Lashes'
       });
     }
   });

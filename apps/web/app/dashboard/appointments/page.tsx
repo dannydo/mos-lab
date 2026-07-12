@@ -22,7 +22,13 @@ import {
   Progress,
   Spin,
   Row,
-  Col
+  Col,
+  Popconfirm,
+  Tooltip,
+  Popover,
+  Checkbox,
+  Slider,
+  Divider
 } from 'antd';
 import {
   CalendarOutlined,
@@ -30,16 +36,21 @@ import {
   RightOutlined,
   UserOutlined,
   PhoneOutlined,
-  EyeOutlined
+  EyeOutlined,
+  CloseCircleOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../lib/api';
+import CustomerDetailDrawer from '../../../components/CustomerDetailDrawer';
+import BookingWizardDrawer from '../../../components/BookingWizardDrawer';
+import { RescheduleBookingModal } from '../../../components/RescheduleBookingModal';
 
 dayjs.extend(isoWeek);
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
 
 interface Appointment {
@@ -61,12 +72,61 @@ interface Appointment {
   netRevenue?: number;
   tipAmount?: number;
   bookingBonus?: number;
+  technicianId?: number | null;
+  storeId?: number | null;
+  branchName?: string;
+  technicianName?: string;
 }
 
 export default function AppointmentsPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Column configuration state
+  const defaultColumnConfig = {
+    customerName: { visible: true, width: 220, label: 'Khách hàng' },
+    customerPhone: { visible: true, width: 140, label: 'Số Điện Thoại' },
+    appointmentTime: { visible: true, width: 150, label: 'Thời Gian Hẹn' },
+    serviceName: { visible: true, width: 200, label: 'Dịch vụ chính' },
+    totalPrice: { visible: true, width: 130, label: 'Giá trị ước tính' },
+    netRevenue: { visible: true, width: 130, label: 'Doanh thu Net' },
+    tipAmount: { visible: true, width: 120, label: 'Tiền tips' },
+    bookingBonus: { visible: true, width: 130, label: 'Hoa hồng OC' },
+    bookingChannel: { visible: true, width: 120, label: 'Kênh đặt lịch' },
+    bookingNote: { visible: true, width: 220, label: 'Ghi chú đặt lịch' },
+    orderState: { visible: true, width: 120, label: 'Trạng thái' },
+  };
+
+  const [columnConfig, setColumnConfig] = useState<Record<string, { visible: boolean; width: number; label: string }>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('appointment_columns_config_v2');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          const merged = { ...defaultColumnConfig };
+          Object.keys(parsed).forEach(key => {
+            if (merged[key as keyof typeof defaultColumnConfig]) {
+              merged[key as keyof typeof defaultColumnConfig] = {
+                ...merged[key as keyof typeof defaultColumnConfig],
+                visible: parsed[key].visible,
+                width: parsed[key].width || merged[key as keyof typeof defaultColumnConfig].width
+              };
+            }
+          });
+          return merged;
+        } catch (e) {
+          return defaultColumnConfig;
+        }
+      }
+    }
+    return defaultColumnConfig;
+  });
+
+  const saveColumnConfig = (newConfig: typeof columnConfig) => {
+    setColumnConfig(newConfig);
+    localStorage.setItem('appointment_columns_config_v2', JSON.stringify(newConfig));
+  };
 
   // Filter states
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>(() => {
@@ -121,6 +181,10 @@ export default function AppointmentsPage() {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [detailModalLoading, setDetailModalLoading] = useState(false);
   const [customerHistory, setCustomerHistory] = useState<any[]>([]);
+  const [bookingWizardVisible, setBookingWizardVisible] = useState(false);
+  const [bookingInitialCustomer, setBookingInitialCustomer] = useState<any>(null);
+  const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
+  const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<any>(null);
 
   // Sync dateRange when viewMode or referenceDate changes
   useEffect(() => {
@@ -203,6 +267,19 @@ export default function AppointmentsPage() {
       setLoading(false);
     }
   }, [dateRange, activeTab, selectedStaffId, currentUser, currentPage, pageSize]);
+
+  const handleCancelBooking = async (orderId: number) => {
+    try {
+      await api.delete(`/customers/booking/${orderId}`);
+      message.success('Hủy lịch hẹn thành công!');
+      setAppointments([]);
+      setCurrentPage(1);
+      fetchAppointments();
+    } catch (err: any) {
+      console.error('[Cancel] Failed to cancel booking:', err);
+      message.error(err.response?.data?.message || 'Có lỗi xảy ra khi hủy lịch hẹn.');
+    }
+  };
 
   useEffect(() => {
     if (currentUser) {
@@ -390,7 +467,20 @@ export default function AppointmentsPage() {
       dataIndex: 'bookingNote',
       key: 'bookingNote',
       ellipsis: true,
-      render: (note: string | null) => note ? <span style={{ color: token.colorText }}>{note}</span> : <Text type="secondary" style={{ fontStyle: 'italic' }}>Không có</Text>
+      render: (note: string | null) => note ? (
+        <Paragraph 
+          ellipsis={{ rows: 2, tooltip: note }} 
+          style={{ 
+            color: themeMode === 'dark' ? token.colorText : token.colorText, 
+            margin: 0, 
+            maxWidth: '100%',
+            whiteSpace: 'normal',
+            wordBreak: 'break-word'
+          }}
+        >
+          {note}
+        </Paragraph>
+      ) : <Text type="secondary" style={{ fontStyle: 'italic' }}>Không có</Text>
     },
     {
       title: 'Trạng thái',
@@ -421,15 +511,57 @@ export default function AppointmentsPage() {
       key: 'action',
       width: 130,
       render: (record: Appointment) => (
-        <Button 
-          type="primary" 
-          ghost 
-          icon={<EyeOutlined />} 
-          onClick={() => openDetailModal(record.customerId)}
-          style={{ borderColor: '#D4A84B', color: '#D4A84B' }}
-        >
-          Chi tiết KH
-        </Button>
+        <Space size="middle">
+          <Tooltip title="Chi tiết khách hàng">
+            <Button 
+              type="text" 
+              shape="circle" 
+              icon={<EyeOutlined style={{ fontSize: '16px' }} />} 
+              onClick={() => openDetailModal(record.customerId)}
+              style={{ color: themeMode === 'dark' ? '#D4A84B' : '#D4A84B' }}
+            />
+          </Tooltip>
+          <Tooltip title="Dời lịch hẹn">
+            <Button
+              type="text"
+              shape="circle"
+              icon={<CalendarOutlined style={{ fontSize: '16px' }} />}
+              onClick={() => {
+                const bookingObj = {
+                  id: record.id,
+                  bookingDate: record.bookingDateStart ? dayjs(record.bookingDateStart).format('YYYY-MM-DD') : '',
+                  bookingTime: record.bookingDateStart ? dayjs(record.bookingDateStart).format('HH:mm') : '',
+                  branchName: record.branchName || (record.storeId === 1 ? 'Estella Place' : record.storeId === 2 ? 'De Tham' : 'Phan Xích Long'),
+                  technicianName: record.technicianName,
+                  technicianId: record.technicianId,
+                  bookingNote: record.bookingNote,
+                  customerName: record.customerName,
+                  customerPhone: record.customerPhone
+                };
+                setSelectedBookingForReschedule(bookingObj);
+                setRescheduleModalVisible(true);
+              }}
+              style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#4b5563' }}
+            />
+          </Tooltip>
+          <Tooltip title="Hủy lịch hẹn">
+            <Popconfirm
+              title="Xác nhận hủy lịch"
+              description="Anh/chị có chắc chắn muốn hủy lịch hẹn này không?"
+              okText="Có, Hủy lịch"
+              cancelText="Không"
+              onConfirm={() => handleCancelBooking(record.id)}
+              okButtonProps={{ danger: true }}
+            >
+              <Button
+                type="text"
+                shape="circle"
+                danger
+                icon={<CloseCircleOutlined style={{ fontSize: '16px' }} />}
+              />
+            </Popconfirm>
+          </Tooltip>
+        </Space>
       )
     }
   ];
@@ -548,32 +680,60 @@ export default function AppointmentsPage() {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 130,
+      width: 80,
       render: (record: Appointment) => (
-        <Button 
-          type="primary" 
-          ghost 
-          icon={<EyeOutlined />} 
-          onClick={() => openDetailModal(record.customerId)}
-          style={{ borderColor: '#D4A84B', color: '#D4A84B' }}
-        >
-          Chi tiết KH
-        </Button>
+        <Tooltip title="Chi tiết khách hàng">
+          <Button 
+            type="text" 
+            shape="circle" 
+            icon={<EyeOutlined style={{ fontSize: '16px' }} />} 
+            onClick={() => openDetailModal(record.customerId)}
+            style={{ color: themeMode === 'dark' ? '#D4A84B' : '#D4A84B' }}
+          />
+        </Tooltip>
       )
     }
   ];
 
-  const columns = activeTab === 'completed' ? completedColumns : pendingColumns;
+  const baseColumns = activeTab === 'completed' ? completedColumns : pendingColumns;
+  const columns = baseColumns
+    .filter(col => {
+      if (col.key === 'action') return true;
+      const config = columnConfig[col.key as string];
+      return config ? config.visible : true;
+    })
+    .map(col => {
+      const config = columnConfig[col.key as string];
+      if (config) {
+        return {
+          ...col,
+          width: config.width
+        };
+      }
+      return col;
+    });
+
+  const totalWidth = columns.reduce((sum, col) => sum + (Number(col.width) || 120), 0);
 
   return (
     <div>
       {/* HEADER SECTION */}
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4" style={{ marginBottom: '24px' }}>
-        <div>
-          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>Quản Lý Lịch Hẹn Của Tôi</Title>
-          <Text style={{ color: token.colorTextDescription }}>
-            Theo dõi và quản lý lịch hẹn của khách hàng đã được phân bổ cho bạn
-          </Text>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+          <div>
+            <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>Quản Lý Lịch Hẹn Của Tôi</Title>
+            <Text style={{ color: token.colorTextDescription }}>
+              Theo dõi và quản lý lịch hẹn của khách hàng đã được phân bổ cho bạn
+            </Text>
+          </div>
+          <Button 
+            type="primary" 
+            icon={<CalendarOutlined />} 
+            style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B', height: '38px', borderRadius: '6px', fontWeight: 'bold', marginTop: '4px' }}
+            onClick={() => setBookingWizardVisible(true)}
+          >
+            Đặt lịch mới
+          </Button>
         </div>
 
         {/* Date Filter & Staff Selection */}
@@ -658,6 +818,75 @@ export default function AppointmentsPage() {
                 }}
               />
             </div>
+
+            <Popover
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: 'bold' }}>Cấu hình hiển thị cột</span>
+                  <Button 
+                    type="link" 
+                    size="small" 
+                    onClick={() => saveColumnConfig(defaultColumnConfig)}
+                    style={{ padding: 0 }}
+                  >
+                    Khôi phục
+                  </Button>
+                </div>
+              }
+              trigger="click"
+              placement="bottomRight"
+              content={
+                <div className="custom-scrollbar" style={{ width: '300px', maxHeight: '400px' }}>
+                  {Object.entries(columnConfig)
+                    .filter(([key]) => {
+                      if (activeTab === 'completed') {
+                        return !['totalPrice', 'bookingNote'].includes(key);
+                      } else {
+                        return !['netRevenue', 'tipAmount', 'bookingBonus', 'serviceName'].includes(key);
+                      }
+                    })
+                    .map(([key, config]) => (
+                      <div key={key} style={{ marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Checkbox
+                            checked={config.visible}
+                            onChange={(e) => {
+                              saveColumnConfig({
+                                ...columnConfig,
+                                [key]: { ...config, visible: e.target.checked }
+                              });
+                            }}
+                          >
+                            <span style={{ fontWeight: '500' }}>{config.label}</span>
+                          </Checkbox>
+                          <span style={{ fontSize: '12px', color: token.colorTextDescription }}>
+                            {config.width}px
+                          </span>
+                        </div>
+                        {config.visible && (
+                          <div style={{ paddingLeft: '24px', marginTop: '4px' }}>
+                            <Slider
+                              min={80}
+                              max={400}
+                              step={10}
+                              value={config.width}
+                              onChange={(val) => {
+                                saveColumnConfig({
+                                  ...columnConfig,
+                                  [key]: { ...config, width: val }
+                                });
+                              }}
+                              tooltip={{ formatter: (v) => `${v}px` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              }
+            >
+              <Button icon={<SettingOutlined />} title="Cấu hình cột" />
+            </Popover>
           </Space>
         </div>
       </div>
@@ -894,6 +1123,8 @@ export default function AppointmentsPage() {
           size="small"
           loading={loading && appointments.length === 0}
           pagination={false}
+          scroll={{ x: totalWidth }}
+          tableLayout="fixed"
           style={{
             background: token.colorBgContainer,
             border: `1px solid ${token.colorBorderSecondary}`,
@@ -954,108 +1185,43 @@ export default function AppointmentsPage() {
         </div>
       </Card>
 
-      {/* CUSTOMER DETAIL MODAL */}
-      <Modal
-        title={
-          <span style={{ color: '#D4A84B', fontSize: '20px', fontWeight: 'bold' }}>
-            Thông Tin Chi Tiết Khách Hàng
-          </span>
-        }
+      {/* CUSTOMER DETAIL DRAWER (Redesigned Mockup 1 style) */}
+      <CustomerDetailDrawer
         open={detailModalVisible}
-        onCancel={() => setDetailModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setDetailModalVisible(false)}>
-            Đóng
-          </Button>
-        ]}
-        width={750}
-        loading={detailModalLoading}
-        style={{ top: 50 }}
-      >
-        {selectedCustomer && (
-          <div>
-            <Descriptions bordered column={2} size="small" style={{ marginTop: '16px' }}>
-              <Descriptions.Item label="Mã KH" span={2}>
-                {selectedCustomer.id}
-              </Descriptions.Item>
-              <Descriptions.Item label="Tên khách">
-                <Space style={{ display: 'flex', alignItems: 'center' }}>
-                  <Avatar 
-                    src={selectedCustomer.avatar || undefined} 
-                    icon={<UserOutlined />} 
-                    style={{ 
-                      backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5', 
-                      color: '#D4A84B',
-                      border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
-                      flexShrink: 0
-                    }} 
-                  />
-                  <span>{selectedCustomer.name}</span>
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label="Số điện thoại">{selectedCustomer.phone}</Descriptions.Item>
-              <Descriptions.Item label="Email">{selectedCustomer.email || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Giới tính">{selectedCustomer.gender || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Ngày sinh">{selectedCustomer.dob || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Nhóm phân loại">
-                {selectedCustomer.bucket === 'COMBO_LIVE' && <Tag color="green">COMBO LIVE</Tag>}
-                {selectedCustomer.bucket === 'COMBO_DEAD' && <Tag color="red">COMBO DEAD</Tag>}
-                {selectedCustomer.bucket === 'SINGLE' && <Tag color="orange">SINGLE</Tag>}
-              </Descriptions.Item>
-              
-              {selectedCustomer.bucket !== 'SINGLE' && selectedCustomer.comboBalance && (
-                <>
-                  <Descriptions.Item label="Số buổi thường còn lại">
-                    {selectedCustomer.comboBalance.normalCount} buổi
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Số buổi bảo hành còn lại">
-                    {selectedCustomer.comboBalance.retainCount} buổi
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Hạn dùng combo" span={2}>
-                    {selectedCustomer.comboBalance.expiryDate 
-                      ? dayjs(selectedCustomer.comboBalance.expiryDate).format('DD/MM/YYYY') 
-                      : 'Không giới hạn'}
-                  </Descriptions.Item>
-                </>
-              )}
-            </Descriptions>
+        customerId={selectedCustomer?.id || null}
+        onClose={() => setDetailModalVisible(false)}
+        onBookAppointment={(cust) => {
+          setDetailModalVisible(false);
+          setBookingInitialCustomer({
+            id: cust.id,
+            name: cust.name,
+            phone: cust.phone,
+            bucket: cust.bucket
+          });
+          setBookingWizardVisible(true);
+        }}
+      />
 
-            <Title level={4} style={{ color: '#D4A84B', marginTop: '24px', marginBottom: '12px' }}>
-              Lịch sử các buổi đã làm
-            </Title>
-            <Table
-              dataSource={customerHistory}
-              rowKey="id"
-              pagination={{ pageSize: 5 }}
-              size="small"
-              columns={[
-                {
-                  title: 'Mã Đơn',
-                  dataIndex: 'orderKey',
-                  key: 'orderKey',
-                },
-                {
-                  title: 'Ngày làm',
-                  dataIndex: 'dateCreated',
-                  key: 'dateCreated',
-                  render: (date: string) => dayjs(date).format('DD/MM/YYYY HH:mm'),
-                },
-                {
-                  title: 'Chi tiêu',
-                  dataIndex: 'totalPrice',
-                  key: 'totalPrice',
-                  render: (price: number) => formatVND(price),
-                },
-                {
-                  title: 'Kênh đặt',
-                  dataIndex: 'bookingChannel',
-                  key: 'bookingChannel',
-                }
-              ]}
-            />
-          </div>
-        )}
-      </Modal>
+      {/* BOOKING WIZARD DRAWER WITH SLOTS MATRIX */}
+      <BookingWizardDrawer
+        open={bookingWizardVisible}
+        initialCustomer={bookingInitialCustomer}
+        onClose={() => {
+          setBookingWizardVisible(false);
+          setBookingInitialCustomer(null);
+        }}
+        onSuccess={fetchAppointments}
+      />
+
+      <RescheduleBookingModal
+        open={rescheduleModalVisible}
+        booking={selectedBookingForReschedule}
+        onClose={() => {
+          setRescheduleModalVisible(false);
+          setSelectedBookingForReschedule(null);
+        }}
+        onSuccess={fetchAppointments}
+      />
     </div>
   );
 }

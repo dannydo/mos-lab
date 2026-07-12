@@ -15,7 +15,8 @@ import {
   LeftOutlined,
   RightOutlined,
   SolutionOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  ShareAltOutlined
 } from '@ant-design/icons';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
@@ -28,9 +29,29 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
   const searchParams = useSearchParams();
   const assignedStaffId = searchParams.get('assignedStaffId');
 
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
+
+  useEffect(() => {
+    const savedOpenKeys = localStorage.getItem('mos_menu_openKeys');
+    if (savedOpenKeys) {
+      setOpenKeys(JSON.parse(savedOpenKeys));
+    } else {
+      // Default to open 'customers-parent' if currently on a sub-route
+      const isCustomerRoute = pathname.includes('/dashboard/customers') || pathname.includes('/dashboard/referrals');
+      if (isCustomerRoute) {
+        setOpenKeys(['customers-parent']);
+      }
+    }
+  }, [pathname]);
+
+  const handleOpenChange = (keys: string[]) => {
+    setOpenKeys(keys);
+    localStorage.setItem('mos_menu_openKeys', JSON.stringify(keys));
+  };
+
   const getSelectedKey = () => {
     if (pathname.includes('/dashboard/customers')) {
-      return assignedStaffId === 'me' ? 'my-customers' : 'customers';
+      return assignedStaffId === 'me' ? 'my-customers' : 'customers-all';
     }
     if (pathname.includes('/dashboard/nyc')) return 'nyc';
     if (pathname.includes('/dashboard/appointments')) return 'my-appointments';
@@ -38,37 +59,45 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     if (pathname.includes('/dashboard/calls')) return 'calls';
     if (pathname.includes('/dashboard/kpi')) return 'kpi';
     if (pathname.includes('/dashboard/staff')) return 'staff';
-    return 'customers';
+    if (pathname.includes('/dashboard/referrals')) return 'referrals';
+    return 'customers-all';
   };
 
-  const menuItems = [];
+  const menuItems: any[] = [];
 
-  // Only show the "All Customers" and "Staff" tabs for admins
+  // Group customer pages into a SubMenu
+  const customerChildren: any[] = [];
+  
   if (userRole === 'admin') {
-    menuItems.push(
-      {
-        key: 'customers',
-        icon: <TeamOutlined />,
-        label: 'Khách hàng',
-        onClick: () => router.push('/dashboard/customers?assignedStaffId=all')
-      },
-      {
-        key: 'staff',
-        icon: <SolutionOutlined />,
-        label: 'Nhân sự (HR)',
-        onClick: () => router.push('/dashboard/staff')
-      }
-    );
+    customerChildren.push({
+      key: 'customers-all',
+      label: 'Tất cả KH',
+      onClick: () => router.push('/dashboard/customers?assignedStaffId=all')
+    });
   }
-
-  // Both roles get "My Customers", "Plans", "Calls", and "KPI"
-  menuItems.push(
+  
+  customerChildren.push(
     {
       key: 'my-customers',
-      icon: <UserOutlined />,
       label: 'KH của tôi',
       onClick: () => router.push('/dashboard/customers?assignedStaffId=me')
     },
+    {
+      key: 'referrals',
+      label: 'KH giới thiệu',
+      onClick: () => router.push('/dashboard/referrals')
+    }
+  );
+
+  menuItems.push({
+    key: 'customers-parent',
+    icon: <TeamOutlined />,
+    label: 'Khách hàng',
+    children: customerChildren
+  });
+
+  // Other menus for both roles
+  menuItems.push(
     {
       key: 'nyc',
       icon: <ClockCircleOutlined />,
@@ -101,11 +130,23 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     }
   );
 
+  // Staff menu (only for Admin) - Moved to the bottom
+  if (userRole === 'admin') {
+    menuItems.push({
+      key: 'staff',
+      icon: <SolutionOutlined />,
+      label: 'Nhân sự (HR)',
+      onClick: () => router.push('/dashboard/staff')
+    });
+  }
+
   return (
     <Menu
       theme={themeMode === 'dark' ? 'dark' : 'light'}
       mode="inline"
       selectedKeys={[getSelectedKey()]}
+      openKeys={openKeys}
+      onOpenChange={handleOpenChange}
       items={menuItems}
       style={{
         background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
@@ -119,6 +160,19 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('mos_sidebar_collapsed');
+    if (saved) {
+      setCollapsed(saved === 'true');
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    const nextVal = !collapsed;
+    setCollapsed(nextVal);
+    localStorage.setItem('mos_sidebar_collapsed', String(nextVal));
+  };
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState(false);
@@ -232,7 +286,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className="sidebar-toggle-container">
         <Button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={toggleSidebar}
           icon={collapsed ? <RightOutlined style={{ fontSize: '10px' }} /> : <LeftOutlined style={{ fontSize: '10px' }} />}
           className="sidebar-toggle-btn"
           style={{

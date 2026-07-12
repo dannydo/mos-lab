@@ -18,6 +18,7 @@ export interface Staff {
   emergencyPhone?: string | null;
   avatarUrl?: string | null;
   notes?: string | null;
+  legacyStaffId?: number | null;
 }
 
 export interface LoginRequest {

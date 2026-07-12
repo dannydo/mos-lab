@@ -28,6 +28,7 @@ model CrmStaff {
   emergencyPhone   String?   @map("emergency_phone") @db.VarChar(20)
   avatarUrl        String?   @map("avatar_url") @db.VarChar(255)
   notes            String?   @db.Text
+  legacyStaffId    Int?      @map("legacy_staff_id")
 
   customerAssignments CrmCustomerAssignment[]
   prevHistory         CrmAssignmentHistory[] @relation("PrevStaffHistory")

@@ -1048,15 +1048,61 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/customers/services
+  // Get list of active services from legacy core database
+  fastify.get('/customers/services', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string };
+    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập danh sách dịch vụ.' });
+    }
+    try {
+      const query = `
+        SELECT 
+          s.id,
+          sl.service_name as name,
+          sp.service_price as price,
+          s.duration_minute_standard as duration
+        FROM service s
+        JOIN service_language sl ON s.id = sl.service_id
+        LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0
+        WHERE s.is_disabled = 0 
+          AND s.is_temporary = 0
+          AND sl.language_id = 1
+        ORDER BY s.position ASC, s.id ASC
+      `;
+
+      const dbServices = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(query);
+      
+      const mappedServices = dbServices.map(s => ({
+        id: Number(s.id),
+        name: s.name,
+        price: s.price !== null && s.price !== undefined ? Number(s.price) : 0,
+        duration: s.duration !== null && s.duration !== undefined ? Number(s.duration) : 90
+      }));
+
+      const finalServices = [
+        { id: 0, name: 'Any Lashes / Any Services', price: 0, duration: 90 },
+        ...mappedServices
+      ];
+
+      return finalServices;
+    } catch (err) {
+      request.log.error(err, 'Failed to fetch services list');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tải danh sách dịch vụ từ hệ thống.' });
+    }
+  });
+
   // GET /api/customers/staff
   // Get list of active staff members
   fastify.get('/customers/staff', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string };
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
       return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập danh sách nhân viên.' });
     }
+    const { date } = request.query as { date?: string };
     try {
-      const staffList = await fastify.prisma.crm.crmStaff.findMany({
+      // 1. Fetch CRM Staff
+      const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
         where: { isActive: true },
         select: {
           id: true,
@@ -1066,10 +1112,709 @@ export async function customerRoutes(fastify: FastifyInstance) {
         },
         orderBy: { displayName: 'asc' }
       });
-      return staffList;
+
+      // 2. Fetch KTVs from legacy core tables
+      let mappedKTVs: any[] = [];
+
+      // Query active schedules to compute weekly off days
+      const allSchedules = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT user_id, type, type_value 
+         FROM staff_working_shift_schedule 
+         WHERE is_disabled = 0 AND user_id IS NOT NULL`
+      );
+      
+      const schedulesByUserId: { [uid: number]: any[] } = {};
+      for (const s of allSchedules) {
+        const uid = Number(s.user_id);
+        if (!schedulesByUserId[uid]) schedulesByUserId[uid] = [];
+        schedulesByUserId[uid].push(s);
+      }
+
+      // Query approved week-off requests from staff_day_off
+      const weekOffRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT from_user_id as userId, weekday, COUNT(*) as cnt
+         FROM staff_day_off
+         WHERE attribute_option_id = 110 AND request_state = 'Approved' AND from_user_id IS NOT NULL
+         GROUP BY from_user_id, weekday`
+      );
+
+      const weekOffsByUserId: { [uid: number]: { weekday: number, cnt: number }[] } = {};
+      for (const r of weekOffRows) {
+        const uid = Number(r.userId);
+        const day = Number(r.weekday);
+        const cnt = Number(r.cnt);
+        if (!weekOffsByUserId[uid]) weekOffsByUserId[uid] = [];
+        weekOffsByUserId[uid].push({ weekday: day, cnt });
+      }
+
+      const getKTVOffDays = (userId: number) => {
+        const weekOffs = weekOffsByUserId[userId] || [];
+        if (weekOffs.length > 0) {
+          const sorted = [...weekOffs].sort((a, b) => b.cnt - a.cnt);
+          return [String(sorted[0].weekday)];
+        }
+
+        const list = schedulesByUserId[userId] || [];
+        const worksAll = list.some(s => s.type === 'Day' && s.type_value === 'All');
+        if (worksAll) return [];
+        const workingWeekdays = list
+          .filter(s => s.type === 'Weekday')
+          .map(s => s.type_value);
+        if (workingWeekdays.length === 0) return [];
+        const allWeekdays = ['1', '2', '3', '4', '5', '6', '7'];
+        return allWeekdays.filter(w => !workingWeekdays.includes(w));
+      };
+
+      if (date) {
+        // Query scheduled KTVs for this date
+        const dayOfWeek = new Date(date).getDay();
+        const weekdayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
+
+        // First check if actual instantiated shifts exist for this date
+        const instantiatedShifts = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT DISTINCT sws.user_id, up.full_name, up.client_store_id, up.avatar
+           FROM staff_working_shift sws
+           JOIN user_profile up ON sws.user_id = up.user_id
+           WHERE sws.date = ? AND up.provider = 'Staff' AND up.user_group_id = 4 AND up.is_disabled = 0 AND up.is_leaved = 0 AND up.is_deleted = 0`,
+          date
+        );
+
+        let activeKTVs = instantiatedShifts;
+
+        if (activeKTVs.length === 0) {
+          // Fallback to schedule templates
+          const schedules = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `SELECT DISTINCT s.user_id, up.full_name, up.client_store_id, up.avatar
+             FROM staff_working_shift_schedule s
+             JOIN user_profile up ON s.user_id = up.user_id
+             WHERE s.is_disabled = 0 
+               AND up.provider = 'Staff' AND up.user_group_id = 4 AND up.is_disabled = 0 AND up.is_leaved = 0 AND up.is_deleted = 0
+               AND (s.type = 'Day' AND s.type_value = 'All' OR s.type = 'Weekday' AND s.type_value = ?)`,
+            weekdayStr
+          );
+
+          // Filter out KTVs who requested day-off
+          const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved'`,
+            date
+          );
+          const offUserIds = dayOffs.map(d => Number(d.from_user_id));
+
+          activeKTVs = schedules.filter(s => !offUserIds.includes(Number(s.user_id)));
+        }
+
+        mappedKTVs = activeKTVs.map((ktv) => {
+          const storeId = Number(ktv.client_store_id);
+          let storeNotes = 'Estella Place';
+          if (storeId === 6) storeNotes = 'De Tham';
+          if (storeId === 2) storeNotes = 'Phan Xích Long';
+
+          return {
+            id: Number(ktv.user_id),
+            username: `ktv_${ktv.full_name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+            displayName: ktv.full_name,
+            role: 'technician',
+            notes: storeNotes,
+            avatar: ktv.avatar,
+            offDays: getKTVOffDays(Number(ktv.user_id))
+          };
+        });
+      } else {
+        // General active KTVs
+        const activeKTVs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT DISTINCT user_id, full_name, client_store_id, avatar 
+           FROM user_profile 
+           WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0`
+        );
+
+        mappedKTVs = activeKTVs.map((ktv) => {
+          const storeId = Number(ktv.client_store_id);
+          let storeNotes = 'Estella Place';
+          if (storeId === 6) storeNotes = 'De Tham';
+          if (storeId === 2) storeNotes = 'Phan Xích Long';
+
+          return {
+            id: Number(ktv.user_id),
+            username: `ktv_${ktv.full_name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+            displayName: ktv.full_name,
+            role: 'technician',
+            notes: storeNotes,
+            avatar: ktv.avatar,
+            offDays: getKTVOffDays(Number(ktv.user_id))
+          };
+        });
+      }
+
+      return [...crmStaffList, ...mappedKTVs];
     } catch (error: any) {
       fastify.log.error('Get staff list error:', error);
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve staff list' });
+    }
+  });
+
+  // GET /api/customers/promotions
+  // Fetch active promotions for selection during booking
+  fastify.get('/customers/promotions', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const promotions = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT p.id, pl.promotion_name as name, p.promotion_key as promotionKey, p.discount_percentage as discountPercentage, p.discount_amount as discountAmount
+         FROM promotion p
+         LEFT JOIN promotion_language pl ON p.id = pl.promotion_id AND pl.language_id = 1
+         WHERE p.is_disabled = 0
+         ORDER BY p.id DESC`
+      );
+      return promotions.map(p => ({
+        id: Number(p.id),
+        name: p.name || p.promotionKey || `Khuyến mãi #${p.id}`,
+        promotionKey: p.promotionKey,
+        discountPercentage: Number(p.discountPercentage),
+        discountAmount: Number(p.discountAmount)
+      }));
+    } catch (error: any) {
+      fastify.log.error('Get promotions error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve promotions list' });
+    }
+  });
+
+  // GET /api/customers/referrals
+  // Get list of all customers who referred someone and their details (Optimized)
+  fastify.get('/customers/referrals', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      // 1. Fetch referrers summary
+      const referrers = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT 
+           up.referrer_user_id as referrerId,
+           r_up.full_name as referrerName,
+           COALESCE(r_uc.phone_number, '') as referrerPhone,
+           COUNT(*) as totalReferred
+         FROM user_profile up
+         INNER JOIN user r_u ON up.referrer_user_id = r_u.id
+         INNER JOIN user_profile r_up ON r_u.id = r_up.user_id
+         LEFT JOIN user_contact r_uc ON r_u.id = r_uc.user_id AND r_uc.is_disabled = 0
+         WHERE up.referrer_user_id IS NOT NULL AND up.is_deleted = 0
+         GROUP BY up.referrer_user_id
+         ORDER BY totalReferred DESC`
+      );
+
+      // 2. Fetch all referred friends at once
+      const referredFriends = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT 
+           u.id as referredId,
+           up.full_name as referredName,
+           COALESCE(uc.phone_number, '') as referredPhone,
+           u.date_created as dateCreated,
+           up.referrer_user_id as referrerId
+         FROM user u
+         INNER JOIN user_profile up ON u.id = up.user_id
+         LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
+         WHERE up.referrer_user_id IS NOT NULL AND up.is_deleted = 0
+         ORDER BY u.id DESC`
+      );
+
+      // 3. Fetch all referral transactions at once
+      const referralTxs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT user_id as referrerId, amount, tracking_key FROM user_balance_transaction 
+         WHERE template_id = 7 AND currency_id = 3`
+      );
+
+      // Map of referrerId -> Map of referredId -> rewardAmount
+      const referrerRewardMaps = new Map<number, Map<number, number>>();
+      // Map of referrerId -> totalRewardDiamonds
+      const referrerTotalRewards = new Map<number, number>();
+
+      for (const tx of referralTxs) {
+        const refId = Number(tx.referrerId);
+        try {
+          if (tx.tracking_key) {
+            const keyObj = JSON.parse(tx.tracking_key);
+            const referredId = Number(keyObj.user_id);
+            if (referredId && refId) {
+              const amt = Number(tx.amount);
+              
+              if (!referrerRewardMaps.has(refId)) {
+                referrerRewardMaps.set(refId, new Map<number, number>());
+              }
+              referrerRewardMaps.get(refId)!.set(referredId, amt);
+              
+              referrerTotalRewards.set(refId, (referrerTotalRewards.get(refId) || 0) + amt);
+            }
+          }
+        } catch (e) {
+          // ignore parsing error
+        }
+      }
+
+      // Map of referrerId -> Map of referredId -> friend_info (to collapse duplicate contacts)
+      const friendsGrouped = new Map<number, Map<number, any>>();
+
+      for (const rf of referredFriends) {
+        const refId = Number(rf.referrerId);
+        const friendId = Number(rf.referredId);
+        if (!refId || !friendId) continue;
+
+        if (!friendsGrouped.has(refId)) {
+          friendsGrouped.set(refId, new Map<number, any>());
+        }
+
+        const refMap = friendsGrouped.get(refId)!;
+        if (refMap.has(friendId)) {
+          const existing = refMap.get(friendId);
+          if (rf.referredPhone && !existing.phone.includes(rf.referredPhone)) {
+            existing.phone = existing.phone ? `${existing.phone}, ${rf.referredPhone}` : rf.referredPhone;
+          }
+        } else {
+          const refRewardMap = referrerRewardMaps.get(refId);
+          const rewardDiamonds = refRewardMap ? (refRewardMap.get(friendId) || 0) : 0;
+
+          refMap.set(friendId, {
+            id: friendId,
+            name: rf.referredName || 'Khách hàng',
+            phone: rf.referredPhone || '',
+            dateCreated: rf.dateCreated ? new Date(rf.dateCreated).toISOString() : null,
+            rewardDiamonds
+          });
+        }
+      }
+
+      const friendsMap = new Map<number, any[]>();
+      for (const [refId, refMap] of friendsGrouped.entries()) {
+        friendsMap.set(refId, Array.from(refMap.values()));
+      }
+
+      const result = referrers.map(r => {
+        const refId = Number(r.referrerId);
+        return {
+          referrerId: refId,
+          referrerName: r.referrerName || 'Khách hàng',
+          referrerPhone: r.referrerPhone || '',
+          totalReferred: Number(r.totalReferred),
+          totalRewardDiamonds: referrerTotalRewards.get(refId) || 0,
+          referredUsers: friendsMap.get(refId) || []
+        };
+      });
+
+      return result;
+    } catch (error: any) {
+      fastify.log.error('Get referrals list error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve referrals list' });
+    }
+  });
+
+    // POST /api/customers/booking
+  // Create a new booking (order and order_service) in the legacy core database
+  fastify.post('/customers/booking', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string; id: number; displayName?: string };
+    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
+    }
+
+    const {
+      customerId,
+      newCustomerName,
+      newCustomerPhone,
+      storeId,
+      storeName,
+      serviceId,
+      serviceName,
+      technicianId,
+      technicianName,
+      bookingDate,
+      bookingTime,
+      bookingChannel,
+      bookingNote,
+      promotionId,
+      referralPhone
+    } = request.body as any;
+
+    try {
+      // Find matching legacy user ID by CRM user (Direct link first, then exact name matching fallback)
+      let legacyStaffId: number | null = null;
+      const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
+        where: { id: user.id },
+        select: { legacyStaffId: true }
+      });
+      if (crmStaff?.legacyStaffId) {
+        legacyStaffId = crmStaff.legacyStaffId;
+      } else if (user.displayName) {
+        const legacyStaffs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT user_id, full_name FROM user_profile 
+           WHERE provider = 'Staff' AND is_disabled = 0
+           ORDER BY user_id ASC`
+        );
+        const exactMatch = legacyStaffs.find(
+          (s: any) => s.full_name?.trim() === user.displayName?.trim()
+        );
+        if (exactMatch) {
+          legacyStaffId = Number(exactMatch.user_id);
+        }
+      }
+
+      let validStaffId: number | null = null;
+      if (legacyStaffId) {
+        const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT id FROM user WHERE id = ? LIMIT 1`,
+          legacyStaffId
+        );
+        if (staffExists.length > 0) {
+          validStaffId = legacyStaffId;
+        }
+      }
+
+      // Check referrer phone
+      let referrerUserId: number | null = null;
+      if (referralPhone && referralPhone.trim()) {
+        const referrerContact = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT user_id FROM user_contact WHERE phone_number = ? AND is_disabled = 0 LIMIT 1`,
+          referralPhone.trim()
+        );
+        if (referrerContact.length > 0) {
+          referrerUserId = Number(referrerContact[0].user_id);
+        } else {
+          return reply.status(400).send({ 
+            error: 'Bad Request', 
+            message: `Không tìm thấy tài khoản người giới thiệu với SĐT: ${referralPhone}. Vui lòng kiểm tra lại.` 
+          });
+        }
+      }
+
+      let finalCustomerId = customerId;
+
+      // 1. If it's a new customer, create parent user, user_profile, and user_contact records
+      if (!finalCustomerId) {
+        // Insert parent user record
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `INSERT INTO user (created_staff_id, date_created) VALUES (?, NOW())`,
+          validStaffId
+        );
+
+        const lastInsertedUser = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT LAST_INSERT_ID() as id`
+        );
+        if (lastInsertedUser.length === 0 || !lastInsertedUser[0].id) {
+          throw new Error('Failed to create new user ID in legacy database.');
+        }
+        finalCustomerId = Number(lastInsertedUser[0].id);
+
+        const randPasscode = Math.random().toString(36).substring(2, 8);
+        const nameParts = (newCustomerName || 'Khách Hàng Mới').trim().split(/\s+/);
+        const lastName = nameParts[0] || '';
+        const firstName = nameParts.slice(1).join(' ') || '';
+
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `INSERT INTO user_profile (
+            user_id, client_id, client_business_id, user_group_id, passcode, provider, 
+            first_name, last_name, full_name, client_store_id, is_disabled, 
+            is_leaved, is_deleted, date_created, language_id, access_user_group_ids,
+            is_academy, is_temporary, referrer_user_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
+          finalCustomerId, 11, 1, 1, randPasscode, 'Client', firstName, lastName, newCustomerName, storeId, 0, 
+          0, 0, 1, '', 0, 0, referrerUserId
+        );
+
+        if (newCustomerPhone) {
+          await fastify.prisma.legacy.$executeRawUnsafe(
+            `INSERT INTO user_contact (user_id, phone_number, is_disabled, date_created)
+             VALUES (?, ?, 0, NOW())`,
+            finalCustomerId, newCustomerPhone
+          );
+        }
+      } else {
+        // If existing customer, update referrer if they don't have one yet
+        if (referrerUserId) {
+          await fastify.prisma.legacy.$executeRawUnsafe(
+            `UPDATE user_profile SET referrer_user_id = ? WHERE user_id = ? AND referrer_user_id IS NULL`,
+            referrerUserId, finalCustomerId
+          );
+        }
+      }
+
+      // 2. Query service price and standard duration
+      let finalServiceId = serviceId;
+      if (finalServiceId === 0) {
+        finalServiceId = 1; // Map to "Any - Lashes 2" to satisfy foreign key constraint
+      }
+
+      let srvPrice = 0;
+      let srvDuration = 90;
+      const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT s.duration_minute_standard as duration, sp.service_price as price
+         FROM service s
+         LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0
+         WHERE s.id = ? LIMIT 1`,
+        finalServiceId
+      );
+      if (srvInfo.length > 0) {
+        srvPrice = Number(srvInfo[0].price || 0);
+        srvDuration = Number(srvInfo[0].duration || 90);
+      }
+      
+      // If virtual service 0 was selected, keep the price 0 and duration 90
+      if (serviceId === 0) {
+        srvPrice = 0;
+        srvDuration = 90;
+      }
+
+      // Calculate promotional discount if promotionId is provided
+      let selectedPromoId: number | null = null;
+      let campaignId: number | null = null;
+      let discountAmount = 0;
+      let finalPrice = srvPrice;
+
+      if (promotionId) {
+        const promoRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT id, campaign_id, discount_percentage, discount_amount FROM promotion WHERE id = ? LIMIT 1`,
+          promotionId
+        );
+        if (promoRows.length > 0) {
+          selectedPromoId = Number(promoRows[0].id);
+          campaignId = promoRows[0].campaign_id ? Number(promoRows[0].campaign_id) : null;
+          const pct = Number(promoRows[0].discount_percentage || 0);
+          const amt = Number(promoRows[0].discount_amount || 0);
+          
+          if (pct > 0) {
+            discountAmount = Math.round((srvPrice * pct) / 100);
+          } else if (amt > 0) {
+            discountAmount = amt;
+          }
+          finalPrice = Math.max(0, srvPrice - discountAmount);
+        }
+      }
+
+      // 4. Calculate booking date start & end
+      const startStr = `${bookingDate} ${bookingTime}:00`;
+      const startDate = new Date(startStr);
+      const endDate = new Date(startDate.getTime() + srvDuration * 60 * 1000);
+
+      // Adjust date timezone for SQL representation
+      const mysqlStart = startDate.toISOString().slice(0, 19).replace('T', ' ');
+      const mysqlEnd = endDate.toISOString().slice(0, 19).replace('T', ' ');
+
+      // 5. Create the booking order
+      const orderKey = 'booking_' + Math.random().toString(36).substring(2, 12);
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `INSERT INTO \`order\` (
+          client_id, client_business_id, created_staff_id, order_key, client_store_id, 
+          user_id, currency_id, booking_note, booking_channels, booking_duration_minute, 
+          booking_date_start, booking_date_end, total_quantity, total_price, order_state, 
+          last_day_order_completed, combo_sale_required, is_new, is_debt, date_created, date_updated,
+          promotion_id, selected_promotion_id, campaign_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?)`,
+        11, 1, validStaffId, orderKey, storeId, finalCustomerId, 1, bookingNote || '', bookingChannel || 'FB', srvDuration,
+        mysqlStart, mysqlEnd, 1, finalPrice, 'Confirmed', 0, 0, 1, 0, selectedPromoId, selectedPromoId, campaignId
+      );
+
+      // Get inserted order ID
+      const insertedOrder = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT id FROM \`order\` WHERE order_key = ? LIMIT 1`,
+        orderKey
+      );
+      if (insertedOrder.length === 0) {
+        throw new Error('Failed to create booking order.');
+      }
+      const orderId = Number(insertedOrder[0].id);
+
+      // 5. Create order_service record
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `INSERT INTO order_service (
+          client_id, client_business_id, user_id, order_id, service_id, 
+          service_type, service_group, user_service_type, assigned_staff_id, booked_staff_id, 
+          duration_minute, quantity, service_price, discount_amount, paid_credit_amount, 
+          tax_amount, balance_price, upgrade_price, downgrade_price, refund_price, total_price, date_created
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        11, 1, finalCustomerId, orderId, finalServiceId, 'Normal', 'LashesTop', 'new', technicianId, technicianId,
+        srvDuration, 1, srvPrice, discountAmount, 0, 0, 0, 0, 0, 0, finalPrice
+      );
+
+      // 6. Update user's last_order_booking date
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `UPDATE user_profile SET last_order_booking = ? WHERE user_id = ?`,
+        mysqlStart, finalCustomerId
+      );
+
+      // 7. Check and assign customer to the logged-in CRM staff member if not already assigned
+      const existingAssignment = await fastify.prisma.crm.crmCustomerAssignment.findUnique({
+        where: { legacyUserId: finalCustomerId }
+      });
+
+      if (!existingAssignment) {
+        const crmStaffExists = await fastify.prisma.crm.crmStaff.findUnique({
+          where: { id: user.id }
+        });
+        
+        if (crmStaffExists) {
+          await fastify.prisma.crm.crmCustomerAssignment.create({
+            data: {
+              legacyUserId: finalCustomerId,
+              staffId: user.id,
+              assignedBy: user.id
+            }
+          });
+          
+          const batchId = `alloc_auto_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          await fastify.prisma.crm.crmAssignmentHistory.create({
+            data: {
+              batchId,
+              legacyUserId: finalCustomerId,
+              prevStaffId: null,
+              newStaffId: user.id,
+              assignedBy: user.id
+            }
+          });
+        }
+      }
+
+      return { success: true, orderId, customerId: finalCustomerId };
+    } catch (error: any) {
+      fastify.log.error('[Booking] Failed to create booking:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: error.message || 'Failed to create booking'
+      });
+    }
+  });
+
+  
+  // PUT /api/customers/booking/:id
+  // Reschedule an existing booking
+  fastify.put('/customers/booking/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string; id: number; displayName?: string };
+    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
+    }
+
+    const { id } = request.params as { id: string };
+    const orderId = parseInt(id, 10);
+    if (isNaN(orderId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'ID lịch hẹn không hợp lệ' });
+    }
+
+    const {
+      storeId,
+      storeName,
+      technicianId,
+      technicianName,
+      bookingDate,
+      bookingTime,
+      bookingNote
+    } = request.body as {
+      storeId: number;
+      storeName: string;
+      technicianId: number | null;
+      technicianName?: string;
+      bookingDate: string; // YYYY-MM-DD
+      bookingTime: string; // HH:mm
+      bookingNote?: string | null;
+    };
+
+    if (!storeId || !bookingDate || !bookingTime) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Các thông tin Chi nhánh, Ngày đặt và Khung giờ trống là bắt buộc'
+      });
+    }
+
+    try {
+      // 1. Fetch current order details (like duration and user_id)
+      const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT user_id, booking_duration_minute FROM \`order\` WHERE id = ?`,
+        orderId
+      );
+
+      if (existingOrders.length === 0) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy lịch hẹn trên hệ thống.' });
+      }
+
+      const order = existingOrders[0];
+      const duration = Number(order.booking_duration_minute) || 90;
+      const finalCustomerId = Number(order.user_id);
+
+      // 2. Calculate new dates
+      const startStr = `${bookingDate} ${bookingTime}:00`;
+      const startDate = new Date(startStr);
+      const endDate = new Date(startDate.getTime() + duration * 60 * 1000);
+
+      const mysqlStart = startDate.toISOString().slice(0, 19).replace('T', ' ');
+      const mysqlEnd = endDate.toISOString().slice(0, 19).replace('T', ' ');
+
+      // 3. Update order in legacy database
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `UPDATE \`order\` 
+         SET booking_date_start = ?, 
+             booking_date_end = ?, 
+             assigned_staff_id = ?, 
+             client_store_id = ?, 
+             booking_note = ?, 
+             date_updated = NOW()
+         WHERE id = ?`,
+        mysqlStart,
+        mysqlEnd,
+        technicianId || null,
+        storeId,
+        bookingNote || null,
+        orderId
+      );
+
+      // 4. Update order_service record KTV assignment
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `UPDATE order_service 
+         SET assigned_staff_id = ?, booked_staff_id = ? 
+         WHERE order_id = ?`,
+        technicianId || null,
+        technicianId || null,
+        orderId
+      );
+
+      // 5. Update user's last_order_booking date
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `UPDATE user_profile SET last_order_booking = ? WHERE user_id = ?`,
+        mysqlStart, finalCustomerId
+      );
+
+      return reply.send({ success: true, orderId });
+    } catch (err: any) {
+      fastify.log.error(err, 'Reschedule booking error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: err.message || 'Không thể dời lịch hẹn.' });
+    }
+  });
+
+  // DELETE /api/customers/booking/:id
+  // Cancel a booking (soft delete by setting order_state = 'Cancelled')
+  fastify.delete('/customers/booking/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string; id: number; displayName?: string };
+    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
+    }
+
+    const { id } = request.params as { id: string };
+    const orderId = parseInt(id, 10);
+    if (isNaN(orderId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'ID lịch hẹn không hợp lệ' });
+    }
+
+    try {
+      // 1. Fetch the order details first to verify existence
+      const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT id FROM \`order\` WHERE id = ?`,
+        orderId
+      );
+
+      if (existingOrders.length === 0) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy lịch hẹn trên hệ thống.' });
+      }
+
+      // 2. Perform soft delete / update status to 'Cancelled'
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `UPDATE \`order\` 
+         SET order_state = 'Cancelled', 
+             date_updated = NOW() 
+         WHERE id = ?`,
+        orderId
+      );
+
+      return reply.send({ success: true, orderId });
+    } catch (err: any) {
+      fastify.log.error(err, 'Cancel booking error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: err.message || 'Không thể hủy lịch hẹn.' });
     }
   });
 
@@ -1565,6 +2310,427 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/customers/:id/detailed
+  // Return complete detailed customer profile, stats, bookings, notes, and call logs
+  fastify.get('/customers/:id/detailed', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const customerId = parseInt(id, 10);
+    const user = request.user as { id: number; role: string };
+
+    if (isNaN(customerId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
+    }
+
+    try {
+      // 1. Authorization check & Fetch CRM Assignment for Online Consultant
+      const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
+        where: { legacyUserId: customerId },
+        include: { staff: true }
+      });
+      const onlineConsultantName = assigned?.staff?.displayName || 'Chưa phân bổ';
+
+      if (user.role !== 'admin') {
+        if (!assigned || assigned.staffId !== user.id) {
+          return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin chi tiết khách hàng này.' });
+        }
+      }
+
+      // 2. Fetch Customer Profile details
+      const customerSql = `
+        SELECT 
+          u.id, 
+          COALESCE(up.full_name, 'No Name') as name, 
+          up.avatar as avatar,
+          COALESCE(uc.phone_number, '') as phone, 
+          u.email,
+          u.gender,
+          u.date_of_birth as dob,
+          up.last_order_booking as lastVisit,
+          DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
+          CASE
+            WHEN usb.id IS NULL THEN 'SINGLE'
+            WHEN (usb.normal_count + usb.retain_count) > 0 AND (usb.date_expired IS NULL OR usb.date_expired > NOW()) THEN 'COMBO_LIVE'
+            ELSE 'COMBO_DEAD'
+          END as bucket,
+          usb.normal_count as normalCount,
+          usb.retain_count as retainCount,
+          usb.date_expired as expiryDate
+        FROM user u
+        LEFT JOIN user_profile up ON u.id = up.user_id
+        LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
+        LEFT JOIN user_service_balance usb ON u.id = usb.user_id
+        WHERE u.id = ?
+        LIMIT 1
+      `;
+      const customerResult = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(customerSql, customerId);
+      if (customerResult.length === 0) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Customer not found' });
+      }
+      const row = customerResult[0];
+
+      // 3. Fetch LTV and Total Visits
+      const ltvSql = `SELECT SUM(total_price) as totalSpent FROM \`order\` WHERE user_id = ? AND order_state = 'Completed'`;
+      const visitsSql = `SELECT COUNT(*) as totalVisits FROM \`order\` WHERE user_id = ? AND order_state = 'Completed'`;
+      const [ltvResult, visitsResult] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(ltvSql, customerId),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(visitsSql, customerId)
+      ]);
+
+      // 4. Calculate Average Visit Frequency (in days)
+      const bookingDatesResult = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT booking_date_start as date FROM \`order\` WHERE user_id = ? AND order_state = 'Completed' ORDER BY booking_date_start ASC`,
+        customerId
+      );
+      let avgFrequency = 0;
+      if (bookingDatesResult.length > 1) {
+        let totalDays = 0;
+        for (let i = 1; i < bookingDatesResult.length; i++) {
+          const prev = new Date(bookingDatesResult[i - 1].date).getTime();
+          const curr = new Date(bookingDatesResult[i].date).getTime();
+          totalDays += (curr - prev) / (1000 * 60 * 60 * 24);
+        }
+        avgFrequency = Number((totalDays / (bookingDatesResult.length - 1)).toFixed(1));
+      }
+
+      // 5. Fetch Combo Balances
+      const balanceSql = `
+        SELECT 
+          usb.id,
+          usb.service_id as serviceId,
+          usb.service_group as serviceGroup,
+          usb.normal_count as normalCount,
+          usb.retain_count as retainCount,
+          usb.date_expired as dateExpired,
+          usb.date_created as dateCreated,
+          s.service_key as serviceKey,
+          COALESCE(sl.service_name, s.service_key) as serviceName,
+          sp.normal_count as packageNormalCount,
+          sp.service_price_package_key as packageKey,
+          usb.total_normal_balance_amount as totalNormalBalanceAmount,
+          usb.total_retain_balance_amount as totalRetainBalanceAmount
+        FROM user_service_balance usb
+        LEFT JOIN service s ON usb.service_id = s.id
+        LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
+        LEFT JOIN service_price sp ON usb.service_price_id = sp.id
+        WHERE usb.user_id = ? AND (usb.normal_count > 0 OR usb.retain_count > 0)
+      `;
+      const comboBalances = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(balanceSql, customerId);
+
+      // Fetch Gem Balance and transactions
+      const gemBalanceRow = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT amount FROM user_balance WHERE user_id = ? AND currency_id = 3 LIMIT 1`,
+        customerId
+      );
+      const gemBalance = gemBalanceRow.length > 0 ? Number(gemBalanceRow[0].amount) : 0;
+
+      const gemTransactionsSql = `
+        SELECT 
+          ubt.id,
+          ubt.method,
+          ubt.amount,
+          ubt.balance,
+          ubt.description,
+          ubt.date_created as dateCreated,
+          up.full_name as staffName
+        FROM user_balance_transaction ubt
+        LEFT JOIN user_profile up ON ubt.created_staff_id = up.user_id
+        WHERE ubt.user_id = ? AND ubt.currency_id = 3
+        ORDER BY ubt.date_created DESC
+      `;
+      const gemTransactions = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(gemTransactionsSql, customerId);
+
+      // Fetch Referrer details (Who referred this customer)
+      const referrerRow = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT 
+           u.id, 
+           up.full_name as name, 
+           COALESCE(uc.phone_number, '') as phone
+         FROM user u
+         LEFT JOIN user_profile up ON u.id = up.user_id
+         LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
+         WHERE u.id = (SELECT referrer_user_id FROM user_profile WHERE user_id = ? LIMIT 1)
+         LIMIT 1`,
+        customerId
+      );
+      const referrer = referrerRow.length > 0 ? {
+        id: Number(referrerRow[0].id),
+        name: referrerRow[0].name,
+        phone: referrerRow[0].phone
+      } : null;
+
+      // Fetch Referred Users list (Who this customer referred)
+      const referredUsers = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT 
+           u.id, 
+           up.full_name as name, 
+           COALESCE(uc.phone_number, '') as phone,
+           u.date_created as dateCreated
+         FROM user u
+         LEFT JOIN user_profile up ON u.id = up.user_id
+         LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
+         WHERE up.referrer_user_id = ?
+         ORDER BY u.id DESC`,
+        customerId
+      );
+
+      // Fetch referral transactions for this user (where they acted as referrer)
+      const referralTxs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT amount, tracking_key FROM user_balance_transaction 
+         WHERE user_id = ? AND template_id = 7 AND currency_id = 3`,
+        customerId
+      );
+
+      // Map referred user ID to reward amount
+      const rewardMap = new Map<number, number>();
+      for (const tx of referralTxs) {
+        try {
+          if (tx.tracking_key) {
+            const keyObj = JSON.parse(tx.tracking_key);
+            const referredId = Number(keyObj.user_id);
+            if (referredId) {
+              rewardMap.set(referredId, Number(tx.amount));
+            }
+          }
+        } catch (e) {
+          // ignore parsing error
+        }
+      }
+
+      // Collapse duplicate contacts by user ID
+      const friendsGrouped = new Map<number, any>();
+      for (const ru of referredUsers) {
+        const friendId = Number(ru.id);
+        if (!friendId) continue;
+
+        if (friendsGrouped.has(friendId)) {
+          const existing = friendsGrouped.get(friendId);
+          if (ru.phone && !existing.phone.includes(ru.phone)) {
+            existing.phone = existing.phone ? `${existing.phone}, ${ru.phone}` : ru.phone;
+          }
+        } else {
+          friendsGrouped.set(friendId, {
+            id: friendId,
+            name: ru.name || 'Khách hàng',
+            phone: ru.phone || '',
+            dateCreated: ru.dateCreated ? new Date(ru.dateCreated).toISOString() : null,
+            rewardDiamonds: rewardMap.get(friendId) || 0
+          });
+        }
+      }
+
+      const formattedReferred = Array.from(friendsGrouped.values());
+
+      // 6. Fetch Bookings and order services
+      const bookingsSql = `
+        SELECT 
+          o.id,
+          o.order_key as orderKey,
+          o.booking_date_start as bookingDate,
+          o.booking_note as bookingNote,
+          o.order_state as orderState,
+          o.total_price as totalPrice,
+          o.assigned_staff_id as technicianId,
+          o.client_store_id as storeId,
+          COALESCE(csl.client_store_name, 'Estella Place') as branchName,
+          COALESCE(
+            (
+              SELECT up2.full_name 
+              FROM order_service os2 
+              LEFT JOIN user_profile up2 ON os2.assigned_staff_id = up2.user_id 
+              WHERE os2.order_id = o.id AND os2.assigned_staff_id IS NOT NULL AND os2.assigned_staff_id > 0
+              LIMIT 1
+            ),
+            up.full_name,
+            'Unknown'
+          ) as technicianName,
+          COALESCE(
+            (
+              SELECT up3.full_name 
+              FROM order_service os3 
+              LEFT JOIN user_profile up3 ON os3.check_in_staff_id = up3.user_id 
+              WHERE os3.order_id = o.id AND os3.check_in_staff_id IS NOT NULL AND os3.check_in_staff_id > 0
+              LIMIT 1
+            ),
+            'Unknown'
+          ) as ccInName,
+          COALESCE(
+            (
+              SELECT up4.full_name 
+              FROM order_service os4 
+              LEFT JOIN user_profile up4 ON os4.check_out_staff_id = up4.user_id 
+              WHERE os4.order_id = o.id AND os4.check_out_staff_id IS NOT NULL AND os4.check_out_staff_id > 0
+              LIMIT 1
+            ),
+            'Unknown'
+          ) as ccOutName,
+          COALESCE(
+            (
+              SELECT up5.full_name
+              FROM user_profile up5
+              WHERE up5.user_id = o.created_staff_id
+              LIMIT 1
+            ),
+            'Unknown'
+          ) as bookerName
+        FROM \`order\` o
+        LEFT JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
+        LEFT JOIN user_profile up ON o.assigned_staff_id = up.user_id
+        WHERE o.user_id = ?
+        ORDER BY o.booking_date_start DESC
+        LIMIT 50
+      `;
+      const servicesSql = `
+        SELECT 
+          os.order_id as orderId,
+          COALESCE(sl.service_name, s.service_key) as serviceName
+        FROM order_service os
+        LEFT JOIN service s ON os.service_id = s.id
+        LEFT JOIN service_language sl ON os.service_id = sl.service_id AND sl.language_id = 1
+        WHERE os.user_id = ?
+      `;
+
+      const [bookingsRaw, servicesRaw] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(bookingsSql, customerId),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(servicesSql, customerId)
+      ]);
+
+      // Map services to bookings
+      const servicesByOrderId = new Map<number, string[]>();
+      for (const s of servicesRaw) {
+        const list = servicesByOrderId.get(Number(s.orderId)) || [];
+        list.push(s.serviceName);
+        servicesByOrderId.set(Number(s.orderId), list);
+      }
+
+      const formattedBookings = bookingsRaw.map(b => ({
+        id: b.id,
+        orderKey: b.orderKey,
+        bookingDate: b.bookingDate ? new Date(b.bookingDate).toISOString() : null,
+        bookingNote: b.bookingNote || '',
+        orderState: b.orderState,
+        totalPrice: Number(b.totalPrice || 0),
+        branchName: b.branchName,
+        technicianName: b.technicianName,
+        ccInName: b.ccInName,
+        ccOutName: b.ccOutName,
+        bookerName: b.bookerName,
+        technicianId: b.technicianId ? Number(b.technicianId) : null,
+        storeId: b.storeId ? Number(b.storeId) : null,
+        services: servicesByOrderId.get(Number(b.id)) || []
+      }));
+
+      // 7. Fetch Notes from user_note
+      const notesSql = `
+        SELECT 
+          un.id,
+          un.note,
+          un.is_sticky as isSticky,
+          un.is_issue as isIssue,
+          un.date_created as dateCreated,
+          COALESCE(up.full_name, 'System') as staffName
+        FROM user_note un
+        LEFT JOIN user_profile up ON un.created_staff_id = up.user_id
+        WHERE un.user_id = ? AND un.is_disabled = 0
+        ORDER BY un.date_created DESC
+      `;
+      const notesRaw = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(notesSql, customerId);
+      const formattedNotes = notesRaw.map(n => ({
+        id: Number(n.id),
+        note: n.note || '',
+        isSticky: Boolean(n.isSticky),
+        isIssue: Boolean(n.isIssue),
+        dateCreated: n.dateCreated ? new Date(n.dateCreated).toISOString() : null,
+        staffName: n.staffName
+      }));
+
+      // 8. Fetch CRM Call Logs
+      const logs = await fastify.prisma.crm.crmCallLog.findMany({
+        where: { legacyUserId: customerId },
+        orderBy: { createdAt: 'desc' }
+      });
+      const staffIds = Array.from(new Set(logs.map(l => l.staffId)));
+      const staffList = await fastify.prisma.crm.crmStaff.findMany({
+        where: { id: { in: staffIds } },
+        select: { id: true, displayName: true }
+      });
+      const staffMap = new Map(staffList.map(s => [s.id, s.displayName]));
+      const formattedCalls = logs.map(log => ({
+        id: log.id,
+        planId: log.planId,
+        callType: log.callType,
+        callResult: log.callResult,
+        durationSec: log.durationSec,
+        note: log.note,
+        outcome: log.outcome,
+        callbackDate: log.callbackDate ? new Date(log.callbackDate).toISOString().split('T')[0] : null,
+        createdAt: log.createdAt.toISOString(),
+        staffName: staffMap.get(log.staffId) || 'Unknown Staff'
+      }));
+
+      const comboWalletBalance = comboBalances.reduce((sum, cb) => {
+        return sum + Number(cb.totalNormalBalanceAmount || 0) + Number(cb.totalRetainBalanceAmount || 0);
+      }, 0);
+
+      return {
+        customer: {
+          id: row.id,
+          name: row.name,
+          phone: row.phone,
+          email: row.email,
+          gender: row.gender,
+          dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
+          lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
+          daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
+          bucket: row.bucket,
+          avatar: row.avatar,
+          onlineConsultant: onlineConsultantName
+        },
+        stats: {
+          totalSpent: Number(ltvResult[0]?.totalSpent || 0),
+          totalVisits: Number(visitsResult[0]?.totalVisits || 0),
+          comboCount: Number(row.normalCount || 0) + Number(row.retainCount || 0),
+          comboWalletBalance: comboWalletBalance,
+          gemBalance: gemBalance,
+          avgFrequency: avgFrequency
+        },
+        comboBalances: comboBalances.map(cb => ({
+          id: Number(cb.id),
+          serviceId: cb.serviceId,
+          serviceGroup: cb.serviceGroup,
+          normalCount: Number(cb.normalCount),
+          retainCount: Number(cb.retainCount),
+          dateExpired: cb.dateExpired ? new Date(cb.dateExpired).toISOString() : null,
+          dateCreated: cb.dateCreated ? new Date(cb.dateCreated).toISOString() : null,
+          serviceKey: cb.serviceKey,
+          serviceName: cb.serviceName,
+          packageNormalCount: cb.packageNormalCount ? Number(cb.packageNormalCount) : null,
+          packageKey: cb.packageKey
+        })),
+        bookings: formattedBookings,
+        notes: formattedNotes,
+        calls: formattedCalls,
+        gemTransactions: gemTransactions.map(t => ({
+          id: Number(t.id),
+          method: t.method,
+          amount: Number(t.amount),
+          balance: Number(t.balance),
+          description: t.description || '',
+          dateCreated: t.dateCreated ? new Date(t.dateCreated).toISOString() : null,
+          staffName: t.staffName || 'Hệ thống'
+        })),
+        referrer: referrer,
+        referredUsers: formattedReferred
+      };
+
+    } catch (error: any) {
+      fastify.log.error('Get detailed customer error:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve detailed customer profile'
+      });
+    }
+  });
+
   // GET /api/customers/appointments
   // Get list of appointments for assigned customers
   fastify.get('/customers/appointments', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -1626,11 +2792,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
             staffLegacyId = Number(profiles[0].userId);
           }
         }
-        
-        // If staff selected but no corresponding legacy user found, return empty list
-        if (!staffLegacyId) {
-          return { data: [], total: 0 };
-        }
+      }
+
+      // Query assigned customer IDs for this staff
+      let assignedCustomerIds: number[] = [];
+      if (filterByStaff) {
+        const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+          where: { staffId: targetStaffId },
+          select: { legacyUserId: true }
+        });
+        assignedCustomerIds = assignments.map(a => Number(a.legacyUserId));
+      }
+
+      // If staff selected but no corresponding legacy user found AND no assigned customers, return empty list
+      if (filterByStaff && !staffLegacyId && assignedCustomerIds.length === 0) {
+        return { data: [], total: 0 };
       }
 
       // 2. Query total count matching filters
@@ -1641,13 +2817,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
       `;
       const countParams: any[] = [new Date(dateFrom), new Date(dateTo)];
 
-      if (filterByStaff && staffLegacyId) {
-        if (staffRole === 'oc') {
-          countSql += ` AND o.assigned_staff_id = ?`;
+      if (filterByStaff) {
+        if (assignedCustomerIds.length > 0) {
+          if (staffLegacyId) {
+            countSql += ` AND (o.user_id IN (${assignedCustomerIds.join(',')}) OR o.created_staff_id = ?)`;
+            countParams.push(staffLegacyId);
+          } else {
+            countSql += ` AND o.user_id IN (${assignedCustomerIds.join(',')})`;
+          }
         } else {
-          countSql += ` AND o.created_staff_id = ?`;
+          if (staffLegacyId) {
+            countSql += ` AND o.created_staff_id = ?`;
+            countParams.push(staffLegacyId);
+          } else {
+            countSql += ` AND 1=0`;
+          }
         }
-        countParams.push(staffLegacyId);
       }
 
       if (type === 'completed') {
@@ -1671,6 +2856,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           o.order_state as orderState,
           o.total_price as totalPrice,
           o.user_id as userId,
+          o.assigned_staff_id as technicianId,
+          o.client_store_id as storeId,
           COALESCE(up.full_name, 'No Name') as customerName,
           up.avatar as customerAvatar,
           (
@@ -1685,13 +2872,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const params: any[] = [new Date(dateFrom), new Date(dateTo)];
 
-      if (filterByStaff && staffLegacyId) {
-        if (staffRole === 'oc') {
-          sql += ` AND o.assigned_staff_id = ?`;
-          params.push(staffLegacyId);
+      if (filterByStaff) {
+        if (assignedCustomerIds.length > 0) {
+          if (staffLegacyId) {
+            sql += ` AND (o.user_id IN (${assignedCustomerIds.join(',')}) OR o.created_staff_id = ?)`;
+            params.push(staffLegacyId);
+          } else {
+            sql += ` AND o.user_id IN (${assignedCustomerIds.join(',')})`;
+          }
         } else {
-          sql += ` AND o.created_staff_id = ?`;
-          params.push(staffLegacyId);
+          if (staffLegacyId) {
+            sql += ` AND o.created_staff_id = ?`;
+            params.push(staffLegacyId);
+          } else {
+            sql += ` AND 1=0`;
+          }
         }
       }
 
@@ -1991,7 +3186,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           discountPercent: Number(discountPercent || 0),
           netRevenue: Number(netRevenue || 0),
           tipAmount: Number(tipAmount || 0),
-          bookingBonus: Number(bookingBonus || 0)
+          bookingBonus: Number(bookingBonus || 0),
+          technicianId: row.technicianId ? Number(row.technicianId) : null,
+          storeId: row.storeId ? Number(row.storeId) : null
         };
       });
 
@@ -2024,6 +3221,190 @@ export async function customerRoutes(fastify: FastifyInstance) {
         error: 'Internal Server Error', 
         message: error.message || 'Failed to retrieve appointments' 
       });
+    }
+  });
+
+  // GET /api/customers/booking-slots
+  // Calculate slot available matrix based on core shift tables and wingsctrl_appointments
+  fastify.get('/customers/booking-slots', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { date, storeName, technicianId } = request.query as {
+      date?: string;
+      storeName?: string;
+      technicianId?: string;
+    };
+
+    if (!date || !storeName) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'date and storeName are required' });
+    }
+
+    try {
+      const storeNameToIdMap: { [name: string]: number } = {
+        'De Tham': 6,
+        'Estella Place': 16,
+        'Phan Xích Long': 2,
+        'PXL': 2
+      };
+      const storeId = storeNameToIdMap[storeName] || 6;
+
+      // 1. Fetch Roster from core shift tables
+      let roster: any[] = [];
+      const dayOfWeek = new Date(date).getDay();
+      const weekdayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
+
+      // Check if actual instantiated shifts exist for this date and store
+      const instantiatedShifts = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT sws.user_id, CAST(sws.start_time AS CHAR) as start_time_str, CAST(sws.end_time AS CHAR) as end_time_str, up.full_name
+         FROM staff_working_shift sws
+         JOIN user_profile up ON sws.user_id = up.user_id
+         WHERE sws.date = ? AND sws.client_store_id = ? AND up.provider = 'Staff' AND up.user_group_id = 4 AND up.is_disabled = 0 AND up.is_leaved = 0 AND up.is_deleted = 0`,
+        date, storeId
+      );
+
+      if (instantiatedShifts.length > 0) {
+        roster = instantiatedShifts.map(s => ({
+          staff_name: s.full_name,
+          shift_start: s.start_time_str,
+          shift_end: s.end_time_str
+        }));
+      } else {
+        // Fall back to schedule templates
+        const schedules = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT s.user_id, s.type, s.type_value, CAST(s.start_time AS CHAR) as start_time_str, CAST(s.end_time AS CHAR) as end_time_str, up.full_name
+           FROM staff_working_shift_schedule s
+           JOIN user_profile up ON s.user_id = up.user_id
+           WHERE s.is_disabled = 0 
+             AND (s.client_store_id = ? OR ((s.client_store_id = 4 OR s.client_store_id IS NULL) AND up.client_store_id = ?))
+             AND up.provider = 'Staff' AND up.user_group_id = 4 AND up.is_disabled = 0 AND up.is_leaved = 0 AND up.is_deleted = 0`,
+          storeId, storeId
+        );
+
+        // Filter schedules matching today's weekday / all days
+        const matchedSchedules = schedules.filter(s => {
+          if (s.type === 'Day' && s.type_value === 'All') return true;
+          if (s.type === 'Weekday' && s.type_value === weekdayStr) return true;
+          return false;
+        });
+
+        // Filter out KTVs who requested day-off
+        const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved'`,
+          date
+        );
+        const offUserIds = dayOffs.map(d => Number(d.from_user_id));
+
+        roster = matchedSchedules
+          .filter(s => !offUserIds.includes(Number(s.user_id)))
+          .map(s => ({
+            staff_name: s.full_name,
+            shift_start: s.start_time_str,
+            shift_end: s.end_time_str
+          }));
+      }
+
+      // If technicianId is provided, filter the roster to only contain that KTV
+      if (technicianId) {
+        const ktvProfile = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
+          parseInt(technicianId, 10)
+        );
+        if (ktvProfile.length > 0) {
+          const ktvFullName = ktvProfile[0].full_name;
+          roster = roster.filter(r => r.staff_name === ktvFullName);
+        } else {
+          const staff = await fastify.prisma.crm.crmStaff.findUnique({
+            where: { id: parseInt(technicianId, 10) }
+          });
+          if (staff) {
+            roster = roster.filter(r => r.staff_name === staff.displayName);
+          }
+        }
+      }
+
+      // 2. Fetch Appointments
+      let apptsQuery = `SELECT time_start, duration 
+                        FROM wingsctrl_appointments 
+                        WHERE store = ? AND DATE(time_start) = ? AND status != 'cancelled'`;
+      let apptsParams: any[] = [storeName, date];
+
+      if (technicianId) {
+        const ktvProfile = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
+          parseInt(technicianId, 10)
+        );
+        if (ktvProfile.length > 0) {
+          const ktvFullName = ktvProfile[0].full_name;
+          apptsQuery += ` AND specialist_name = ?`;
+          apptsParams.push(ktvFullName);
+        } else {
+          const staff = await fastify.prisma.crm.crmStaff.findUnique({
+            where: { id: parseInt(technicianId, 10) }
+          });
+          if (staff) {
+            apptsQuery += ` AND specialist_name = ?`;
+            apptsParams.push(staff.displayName);
+          }
+        }
+      }
+
+      const appointments = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(apptsQuery, ...apptsParams);
+
+      // 3. Generate slots (09:00 to 20:00, every 15m)
+      const matrix: { [time: string]: { available: number; roster: number } } = {};
+      let current = new Date(`${date}T09:00:00Z`);
+      const end = new Date(`${date}T20:15:00Z`);
+
+      while (current < end) {
+        const timeStr = current.toISOString().split('T')[1].slice(0, 5);
+
+        // Calculate active roster count at this slot time
+        const activeRoster = roster.filter(r => {
+          let rStart = '';
+          if (r.shift_start instanceof Date) {
+            rStart = r.shift_start.toISOString().split('T')[1].slice(0, 5);
+          } else if (typeof r.shift_start === 'string') {
+            rStart = r.shift_start.slice(0, 5);
+          } else if (r.shift_start && typeof r.shift_start.toISOString === 'function') {
+            rStart = r.shift_start.toISOString().split('T')[1].slice(0, 5);
+          }
+
+          let rEnd = '';
+          if (r.shift_end instanceof Date) {
+            rEnd = r.shift_end.toISOString().split('T')[1].slice(0, 5);
+          } else if (typeof r.shift_end === 'string') {
+            rEnd = r.shift_end.slice(0, 5);
+          } else if (r.shift_end && typeof r.shift_end.toISOString === 'function') {
+            rEnd = r.shift_end.toISOString().split('T')[1].slice(0, 5);
+          }
+
+          return rStart <= timeStr && timeStr < rEnd;
+        });
+
+        // Calculate active appointments at this slot time
+        const activeAppointments = appointments.filter(a => {
+          const aStartStr = new Date(a.time_start).toISOString().split('T')[1].slice(0, 5);
+          const aStart = new Date(a.time_start);
+          const aEnd = new Date(aStart.getTime() + a.duration * 60000);
+          const aEndStr = aEnd.toISOString().split('T')[1].slice(0, 5);
+          return aStartStr <= timeStr && timeStr < aEndStr;
+        });
+
+        const rosterCount = activeRoster.length;
+        const bookedCount = activeAppointments.length;
+        const available = rosterCount - bookedCount;
+
+        matrix[timeStr] = {
+          available,
+          roster: rosterCount
+        };
+
+        // Advance by 15 mins
+        current = new Date(current.getTime() + 15 * 60000);
+      }
+
+      return matrix;
+    } catch (error: any) {
+      fastify.log.error('Calculate booking slots error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to calculate booking slots' });
     }
   });
 

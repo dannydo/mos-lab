@@ -24,7 +24,9 @@ import {
   Row,
   Col,
   Spin,
-  Timeline
+  Timeline,
+  Drawer,
+  Tooltip
 } from 'antd';
 import {
   SearchOutlined,
@@ -39,11 +41,17 @@ import {
   PlusCircleOutlined,
   MinusCircleOutlined,
   BookOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  RiseOutlined,
+  InfoCircleOutlined,
+  InboxOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../lib/api';
 import CallLogModal from '../../../components/CallLogModal';
+import CustomerDetailDrawer from '../../../components/CustomerDetailDrawer';
+import BookingWizardDrawer from '../../../components/BookingWizardDrawer';
 import { Customer } from '@mos-lab/shared';
 
 const { Title, Text } = Typography;
@@ -72,6 +80,30 @@ const TAB_KEYS = [
 export default function NycCampaignPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+
+  const getMostFrequentDay = (bookings: any[]) => {
+    if (!bookings || bookings.length === 0) return 'N/A';
+    const dayCounts = Array(7).fill(0);
+    const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+    
+    bookings.forEach(b => {
+      if (b.bookingDate) {
+        const day = new Date(b.bookingDate).getDay();
+        dayCounts[day]++;
+      }
+    });
+    
+    let maxIndex = 0;
+    let maxVal = 0;
+    dayCounts.forEach((val, idx) => {
+      if (val > maxVal) {
+        maxVal = val;
+        maxIndex = idx;
+      }
+    });
+    
+    return maxVal > 0 ? `${dayNames[maxIndex]} (${maxVal} lần)` : 'N/A';
+  };
 
   const [currentUser, setCurrentUser] = useState<any>(() => {
     if (typeof window !== 'undefined') {
@@ -105,6 +137,13 @@ export default function NycCampaignPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
+  useEffect(() => {
+    const saved = localStorage.getItem('mos_nyc_pageSize');
+    if (saved) {
+      setPageSize(Number(saved));
+    }
+  }, []);
+
   // Stats Counters
   const [tabCounts, setTabCounts] = useState<Record<string, number>>({});
   const [touchpointCounts, setTouchpointCounts] = useState<Record<string, number>>({});
@@ -122,6 +161,8 @@ export default function NycCampaignPage() {
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [callModalVisible, setCallModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [bookingWizardVisible, setBookingWizardVisible] = useState(false);
+  const [bookingInitialCustomer, setBookingInitialCustomer] = useState<any>(null);
 
   // Resizable Modal States
   const [modalWidth, setModalWidth] = useState<number>(() => {
@@ -227,6 +268,7 @@ export default function NycCampaignPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [orderHistory, setOrderHistory] = useState<any[]>([]);
   const [callHistory, setCallHistory] = useState<any[]>([]);
+  const [detailedData, setDetailedData] = useState<any>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [dailyPlanList, setDailyPlanList] = useState<number[]>([]); // Track planned user IDs for today
 
@@ -486,26 +528,9 @@ export default function NycCampaignPage() {
     fetchCustomerList();
   };
 
-  const handleOpenDetailModal = async (customer: Customer) => {
+  const handleOpenDetailModal = (customer: Customer) => {
     setSelectedCustomer(customer);
     setDetailModalVisible(true);
-    setHistoryLoading(true);
-    setOrderHistory([]);
-    setCallHistory([]);
-
-    try {
-      const [historyRes, callRes] = await Promise.all([
-        api.get(`/customers/${customer.id}/history`),
-        api.get(`/calls/${customer.id}`)
-      ]);
-      setOrderHistory(historyRes.data);
-      setCallHistory(callRes.data);
-    } catch (error) {
-      console.error('Failed to fetch details history:', error);
-      message.error('Không thể tải lịch sử chi tiết khách hàng.');
-    } finally {
-      setHistoryLoading(false);
-    }
   };
 
   // Settings Configuration (Admin only)
@@ -670,7 +695,7 @@ export default function NycCampaignPage() {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 250,
+      width: 210,
       render: (_: any, record: Customer) => {
         const isPlanned = dailyPlanList.includes(record.id);
         return (
@@ -695,14 +720,14 @@ export default function NycCampaignPage() {
             >
               Gọi
             </Button>
-            <Button
-              type="default"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => handleOpenDetailModal(record)}
-            >
-              Chi tiết
-            </Button>
+            <Tooltip title="Chi tiết khách hàng">
+              <Button
+                type="text"
+                shape="circle"
+                icon={<EyeOutlined style={{ color: '#D4A84B' }} />}
+                onClick={() => handleOpenDetailModal(record)}
+              />
+            </Tooltip>
           </Space>
         );
       }
@@ -751,6 +776,14 @@ export default function NycCampaignPage() {
           </Text>
         </div>
         <Space wrap>
+          <Button 
+            type="primary" 
+            icon={<CalendarOutlined />} 
+            style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B', fontWeight: 'bold' }}
+            onClick={() => setBookingWizardVisible(true)}
+          >
+            Đặt lịch mới
+          </Button>
           {currentUser?.role === 'admin' && (
             <>
               <Select
@@ -1032,6 +1065,7 @@ export default function NycCampaignPage() {
           onChange: (page, size) => {
             setCurrentPage(page);
             setPageSize(size);
+            localStorage.setItem('mos_nyc_pageSize', String(size));
           },
           style: { marginTop: '16px' }
         }}
@@ -1052,128 +1086,34 @@ export default function NycCampaignPage() {
         customerName={selectedPlanInfo?.customerName || ''}
       />
 
-      {/* CUSTOMER DETAIL MODAL */}
-      <Modal
-        title={
-          <span style={{ color: '#D4A84B', fontSize: '20px', fontWeight: 'bold' }}>
-            <UserOutlined /> Chi Tiết Khách Hàng Campaign NYC
-          </span>
-        }
+      {/* CUSTOMER DETAIL DRAWER (Redesigned Mockup 1 style) */}
+      <CustomerDetailDrawer
         open={detailModalVisible}
-        onCancel={() => setDetailModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setDetailModalVisible(false)}>
-            Đóng
-          </Button>
-        ]}
-        width={800}
-        style={{ top: 40 }}
-      >
-        {selectedCustomer && (
-          <div>
-            <Descriptions bordered column={2} size="small" style={{ marginTop: '16px' }}>
-              <Descriptions.Item label="Mã KH" span={2}>{selectedCustomer.id}</Descriptions.Item>
-              <Descriptions.Item label="Tên khách">
-                <Space style={{ display: 'flex', alignItems: 'center' }}>
-                  <Avatar
-                    src={selectedCustomer.avatar || undefined}
-                    icon={<UserOutlined />}
-                    style={{
-                      backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5',
-                      color: '#D4A84B',
-                      border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
-                      flexShrink: 0
-                    }}
-                  />
-                  <span>{selectedCustomer.name}</span>
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label="Số điện thoại">{selectedCustomer.phone}</Descriptions.Item>
-              <Descriptions.Item label="Email">{selectedCustomer.email || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Giới tính">{selectedCustomer.gender || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Ngày sinh">{selectedCustomer.dob || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Số ngày chưa quay lại">
-                <strong style={{ color: '#FF4D4F' }}>{selectedCustomer.daysSinceLastVisit || 0} ngày</strong>
-              </Descriptions.Item>
-              <Descriptions.Item label="Nhóm phân loại">
-                <Tag color="warning">{selectedCustomer.bucket}</Tag>
-              </Descriptions.Item>
-            </Descriptions>
+        customerId={selectedCustomer?.id || null}
+        onClose={() => setDetailModalVisible(false)}
+        onBookAppointment={(cust) => {
+          setDetailModalVisible(false);
+          setBookingInitialCustomer({
+            id: cust.id,
+            name: cust.name,
+            phone: cust.phone,
+            bucket: cust.bucket
+          });
+          setBookingWizardVisible(true);
+        }}
+      />
 
-            <Tabs
-              defaultActiveKey="calls"
-              style={{ marginTop: '20px' }}
-              items={[
-                {
-                  key: 'calls',
-                  label: 'Nhật ký cuộc gọi chăm sóc',
-                  children: (
-                    <div style={{ maxHeight: '300px', overflowY: 'auto', padding: '10px 5px' }}>
-                      <Spin spinning={historyLoading}>
-                        {callHistory.length === 0 ? (
-                          <div style={{ textAlign: 'center', padding: '20px 0', color: token.colorTextDescription }}>
-                            Chưa có lịch sử cuộc gọi nào cho khách hàng này.
-                          </div>
-                        ) : (
-                          <Timeline mode="left" style={{ marginTop: '10px' }}>
-                            {callHistory.map((log: any) => {
-                              let statusColor = 'blue';
-                              if (log.callResult === 'NO_ANSWER') statusColor = 'red';
-                              if (log.outcome === 'BOOKED') statusColor = 'green';
-                              if (log.outcome === 'CALL_BACK') statusColor = 'orange';
+      {/* BOOKING WIZARD DRAWER WITH SLOTS MATRIX */}
+      <BookingWizardDrawer
+        open={bookingWizardVisible}
+        initialCustomer={bookingInitialCustomer}
+        onClose={() => {
+          setBookingWizardVisible(false);
+          setBookingInitialCustomer(null);
+        }}
+        onSuccess={fetchCustomerList}
+      />
 
-                              return (
-                                <Timeline.Item
-                                  key={log.id}
-                                  color={statusColor}
-                                  label={new Date(log.createdAt).toLocaleString('vi-VN')}
-                                >
-                                  <div>
-                                    <strong>{log.staffName}</strong>: {' '}
-                                    <Tag color={log.callResult === 'ANSWERED' ? 'green' : 'red'}>
-                                      {log.callResult === 'ANSWERED' ? 'Đã nghe máy' : 'Gọi nhỡ'}
-                                    </Tag>
-                                    {log.outcome && log.outcome !== 'PENDING' && (
-                                      <Tag color="gold">{log.outcome}</Tag>
-                                    )}
-                                    <div style={{ marginTop: '4px', fontStyle: 'italic', fontSize: '13px', color: token.colorTextSecondary }}>
-                                      Ghi chú: {log.note || 'Không có'}
-                                    </div>
-                                    {log.callbackDate && (
-                                      <div style={{ fontSize: '12px', color: '#fa8c16', marginTop: '2px' }}>
-                                        <CalendarOutlined /> Hẹn gọi lại vào: {new Date(log.callbackDate).toLocaleDateString('vi-VN')}
-                                      </div>
-                                    )}
-                                  </div>
-                                </Timeline.Item>
-                              );
-                            })}
-                          </Timeline>
-                        )}
-                      </Spin>
-                    </div>
-                  )
-                },
-                {
-                  key: 'orders',
-                  label: 'Lịch sử đơn hàng',
-                  children: (
-                    <Table
-                      dataSource={orderHistory}
-                      columns={orderColumns}
-                      rowKey="id"
-                      loading={historyLoading}
-                      pagination={{ pageSize: 5 }}
-                      size="small"
-                      bordered
-                    />
-                  )
-                }
-              ]}
-            />
-          </div>
-        )}
-      </Modal>
 
       {/* SETTINGS TEMPLATES CONFIG MODAL (Admin only) */}
       <Modal

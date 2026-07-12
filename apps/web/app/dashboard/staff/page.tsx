@@ -92,6 +92,29 @@ export default function StaffPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [rolesLoading, setRolesLoading] = useState(false);
+  const [legacyStaffList, setLegacyStaffList] = useState<{ id: number; name: string; phone?: string | null; email?: string | null }[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('mos_staff_pageSize');
+    if (saved) {
+      setPageSize(Number(saved));
+    }
+  }, []);
+
+  const fetchLegacyStaff = useCallback(async () => {
+    try {
+      const res = await api.get('/staff/legacy');
+      setLegacyStaffList(res.data);
+    } catch (err) {
+      console.error('Fetch legacy staff error:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLegacyStaff();
+  }, [fetchLegacyStaff]);
 
   useEffect(() => {
     const stored = localStorage.getItem('mos_user');
@@ -182,14 +205,16 @@ export default function StaffPage() {
         emergencyContact: staff.emergencyContact,
         emergencyPhone: staff.emergencyPhone,
         notes: staff.notes,
-        password: ''
+        password: '',
+        legacyStaffId: staff.legacyStaffId || null
       });
     } else {
       staffForm.resetFields();
       staffForm.setFieldsValue({
         role: roles[0]?.key || 'telesales',
         isActive: true,
-        gender: 'Other'
+        gender: 'Other',
+        legacyStaffId: null
       });
     }
     setIsStaffModalOpen(true);
@@ -695,7 +720,17 @@ export default function StaffPage() {
                   columns={staffColumns}
                   rowKey="id"
                   loading={loading}
-                  pagination={{ pageSize: 10, showSizeChanger: true }}
+                  pagination={{
+                    current: currentPage,
+                    pageSize: pageSize,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    onChange: (page, size) => {
+                      setCurrentPage(page);
+                      setPageSize(size);
+                      localStorage.setItem('mos_staff_pageSize', String(size));
+                    }
+                  }}
                   style={{
                     background: themeMode === 'dark' ? '#141414' : '#fff'
                   }}
@@ -750,6 +785,7 @@ export default function StaffPage() {
           layout="vertical"
           onFinish={handleStaffSubmit}
           style={{ marginTop: '20px' }}
+          autoComplete="off"
         >
           <StaffTabsContent 
             themeMode={themeMode}
@@ -759,6 +795,7 @@ export default function StaffPage() {
             form={staffForm}
             roles={roles}
             onCancel={() => setIsStaffModalOpen(false)}
+            legacyStaffList={legacyStaffList}
           />
         </Form>
       </Modal>
@@ -985,6 +1022,15 @@ export default function StaffPage() {
               </Descriptions.Item>
               <Descriptions.Item label="Email liên hệ">{selectedStaff.email || <Text type="secondary" italic>Chưa khai báo</Text>}</Descriptions.Item>
               <Descriptions.Item label="Số điện thoại">{selectedStaff.phone || <Text type="secondary" italic>Chưa khai báo</Text>}</Descriptions.Item>
+              <Descriptions.Item label="Tài khoản Wings Lashes">
+                {selectedStaff.legacyStaffId ? (
+                  <Text style={{ fontWeight: '500', color: token.colorPrimary }}>
+                    {legacyStaffList.find(s => s.id === selectedStaff.legacyStaffId)?.name || `ID: ${selectedStaff.legacyStaffId}`}
+                  </Text>
+                ) : (
+                  <Text type="secondary" italic>Chưa liên kết (Tự động đối khớp bằng tên)</Text>
+                )}
+              </Descriptions.Item>
             </Descriptions>
 
             {/* HR specific data */}
@@ -1058,7 +1104,8 @@ function StaffTabsContent({
   submitting, 
   form, 
   roles,
-  onCancel 
+  onCancel,
+  legacyStaffList
 }: { 
   themeMode: string; 
   token: any; 
@@ -1066,7 +1113,8 @@ function StaffTabsContent({
   submitting: boolean; 
   form: any; 
   roles: Role[];
-  onCancel: () => void 
+  onCancel: () => void;
+  legacyStaffList: { id: number; name: string; phone?: string | null; email?: string | null }[];
 }) {
   const [activeTab, setActiveTab] = useState('account');
 
@@ -1128,6 +1176,7 @@ function StaffTabsContent({
                 <Input 
                   placeholder="nguyenvan@gmail.com hoặc nguyenvan" 
                   prefix={<UserOutlined style={{ color: '#888' }} />}
+                  autoComplete="new-username"
                 />
               </Form.Item>
             </Col>
@@ -1137,7 +1186,7 @@ function StaffTabsContent({
                 label={<Text style={{ color: token.colorText }}>Tên hiển thị</Text>}
                 rules={[{ required: true, message: 'Vui lòng nhập tên hiển thị!' }]}
               >
-                <Input placeholder="Nguyễn Văn A" />
+                <Input placeholder="Nguyễn Văn A" autoComplete="off" />
               </Form.Item>
             </Col>
           </Row>
@@ -1171,6 +1220,7 @@ function StaffTabsContent({
                 <Input.Password 
                   placeholder={editingStaff ? "Nhập mật khẩu mới để reset" : "Nhập mật khẩu tài khoản"} 
                   prefix={<LockOutlined style={{ color: '#888' }} />}
+                  autoComplete="new-password"
                 />
               </Form.Item>
             </Col>
@@ -1185,6 +1235,30 @@ function StaffTabsContent({
                 extra="Nhân viên được phép đăng nhập vào hệ thống CRM khi trạng thái hoạt động."
               >
                 <Switch checkedChildren="Hoạt động" unCheckedChildren="Tạm khóa" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item
+                name="legacyStaffId"
+                label={
+                  <Space>
+                    <Text style={{ color: token.colorText }}>Liên kết Tài khoản Wings Lashes (Legacy)</Text>
+                    <Tooltip title="Chọn tài khoản Wings Lashes để liên kết danh nghĩa Booker/KTV khi đặt lịch và thống kê doanh thu.">
+                      <InfoCircleOutlined style={{ color: '#888' }} />
+                    </Tooltip>
+                  </Space>
+                }
+              >
+                <Select placeholder="Chọn tài khoản Wings Lashes liên kết" allowClear showSearch optionFilterProp="children">
+                  {legacyStaffList.map((item) => (
+                    <Option key={item.id} value={item.id}>
+                      {item.name} {item.phone ? ` - ${item.phone}` : ''} {item.email ? ` - ${item.email}` : ''} (ID: {item.id})
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
           </Row>
