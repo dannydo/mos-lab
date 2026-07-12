@@ -78,6 +78,10 @@ interface BookingData {
   historyDate?: string;
   historyStatus?: string;
   historyNote?: string;
+  branchName?: string;
+  bookingDateTime?: string;
+  requestedCv?: string;
+  bookingNote?: string;
 }
 
 interface ComingClientData {
@@ -363,6 +367,12 @@ export default function TodayDashboard() {
       render: (t: string) => <Text type="secondary">{t}</Text>
     },
     {
+      title: 'Booker',
+      dataIndex: 'booker',
+      key: 'booker',
+      render: (b: string) => <span style={{ fontWeight: 500 }}>{b}</span>
+    },
+    {
       title: 'Khách hàng',
       key: 'customer',
       render: (_: any, record: BookingData) => (
@@ -390,6 +400,12 @@ export default function TodayDashboard() {
       render: (t: string) => <Text type="secondary">{t}</Text>
     },
     {
+      title: 'Chi nhánh',
+      dataIndex: 'branchName',
+      key: 'branchName',
+      render: (b: string) => <Tag color="cyan" style={{ fontWeight: 'bold' }}>{b || 'Đề Thám'}</Tag>
+    },
+    {
       title: 'Nhóm',
       dataIndex: 'group',
       key: 'group',
@@ -406,10 +422,31 @@ export default function TodayDashboard() {
       render: (p: string | null) => p ? <Tag color="pink" style={{ fontSize: '10px' }}>{p}</Tag> : <Text type="secondary">-</Text>
     },
     {
-      title: 'Booker',
-      dataIndex: 'booker',
-      key: 'booker',
-      render: (b: string) => <span style={{ fontWeight: 500 }}>{b}</span>
+      title: 'Ngày & Giờ đặt lịch',
+      dataIndex: 'bookingDateTime',
+      key: 'bookingDateTime',
+      render: (t: string) => <strong style={{ color: '#D4A84B' }}>{t}</strong>
+    },
+    {
+      title: 'Requested CV',
+      dataIndex: 'requestedCv',
+      key: 'requestedCv',
+      render: (cv: string) => <Tag color={cv === 'Chưa phân công' ? 'default' : 'blue'}>{cv}</Tag>
+    },
+    {
+      title: 'Booking Notes',
+      dataIndex: 'bookingNote',
+      key: 'bookingNote',
+      render: (note: string) => (
+        <div style={{ 
+          maxWidth: '200px', 
+          overflow: 'hidden', 
+          textOverflow: 'ellipsis', 
+          whiteSpace: 'nowrap' 
+        }} title={note}>
+          {note || <Text type="secondary">-</Text>}
+        </div>
+      )
     },
     {
       title: 'Action',

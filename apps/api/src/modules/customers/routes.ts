@@ -3720,6 +3720,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const bookingsOc: any[] = [];
       const bookingsOther: any[] = [];
 
+      const formatBookingDateTime = (d: Date | null) => {
+        if (!d) return 'N/A';
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} ${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`;
+      };
+
       bookingsOrders.forEach((o, index) => {
         const uProfile = profileMap.get(o.user_id);
         const phone = contactMap.get(o.user_id) || '';
@@ -3740,6 +3746,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const pId = firstPromoSv?.promotion_id || o.promotion_id || o.selected_promotion_id;
         const promoName = pId ? (promoMap.get(Number(pId)) || `PROMO-${pId}`) : null;
 
+        const firstCvStaffId = o.assigned_staff_id || (orderSvs.length > 0 ? orderSvs.find(cs => cs.assigned_staff_id !== null)?.assigned_staff_id : null);
+        const cvRequested = firstCvStaffId ? (staffMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên') : 'Chưa phân công';
+
         const record = {
           key: String(o.id),
           customer: name,
@@ -3748,6 +3757,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
           group,
           promo: promoName,
           booker,
+          branchName: o.client_store_id === 2 ? 'PXL' : (o.client_store_id === 16 ? 'Estella' : 'Đề Thám'),
+          bookingDateTime: formatBookingDateTime(o.booking_date_start),
+          requestedCv: cvRequested,
+          bookingNote: o.booking_note || '',
           createdTime: new Date(o.date_created).toLocaleTimeString('vi-VN', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false }),
           avatarColor: ['#1890ff', '#722ed1', '#f5222d', '#fa8c16', '#52c41a', '#13c2c2', '#eb2f96'][index % 7],
           code: String(o.id),
