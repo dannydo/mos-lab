@@ -3760,6 +3760,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       // Group rosters by branch & role
+      const refTime = new Date();
+      const normalizeName = (name: string) => (name || '').trim().toLowerCase();
+      const staffNameToIdMap = new Map<string, number>();
+      staffProfiles.forEach(s => {
+        if (s.fullName) {
+          staffNameToIdMap.set(normalizeName(s.fullName), Number(s.userId));
+        }
+      });
+
       rosters.forEach(r => {
         let bKey = 'detham';
         const storeLower = (r.store || '').toLowerCase();
@@ -3768,34 +3777,120 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         const role = (r.staff_role || '').toLowerCase();
         const staffName = r.staff_name;
+        const normName = normalizeName(staffName);
+        const staffId = staffNameToIdMap.get(normName);
         const isOff = r.is_off === 1;
 
         let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
         if (isOff) shift = 'off';
-        else if (r.shift_start === '09:00:00') shift = 'sáng';
-        else if (r.shift_start === '14:00:00') shift = 'chiều';
+        else if (r.shift_start) {
+          const sTime = typeof r.shift_start === 'string' ? r.shift_start : new Date(r.shift_start).toISOString().substr(11, 8);
+          if (sTime === '09:00:00') shift = 'sáng';
+          else if (sTime === '14:00:00') shift = 'chiều';
+        }
 
         const attendance = isOff ? 'none' : 'checked_in';
 
         if (role === 'cc' || role === 'consultant') {
+          // CC
+          const bookedOrders = comingOrders.filter(o => {
+            if (staffId && o.created_staff_id === staffId) return true;
+            const bookerName = staffMap.get(Number(o.created_staff_id));
+            return bookerName && normalizeName(bookerName) === normName;
+          });
+
+          let rev = 0;
+          let combosCount = 0;
+          bookedOrders.forEach(o => {
+            rev += o.total_price || 0;
+            const userBal = balanceMap.get(o.user_id) || [];
+            const activeCombo = userBal.find(b => b.normal_count > 0 && (!b.date_expired || new Date(b.date_expired) > new Date()));
+            if (activeCombo) {
+              combosCount++;
+            }
+          });
+
           branchDetailMap[bKey].cc.push({
             name: staffName,
             doing: isOff ? 'Nghỉ phép' : 'Đang hỗ trợ khách hàng',
-            clients: isOff ? 0 : 5 + (staffName.length % 5),
-            combos: isOff ? 0 : (staffName.length % 3),
-            revenue: isOff ? 0 : (5 + (staffName.length % 5)) * 1200000,
+            clients: isOff ? 0 : bookedOrders.length,
+            combos: isOff ? 0 : combosCount,
+            revenue: isOff ? 0 : rev,
             shift,
             attendance
           });
         } else {
           // CV
+          const staffOrders = comingOrders.filter(o => {
+            if (staffId && o.assigned_staff_id === staffId) return true;
+            const assignedName = staffMap.get(Number(o.assigned_staff_id));
+            if (assignedName && normalizeName(assignedName) === normName) return true;
+            const orderSvs = comingServices.filter(cs => cs.order_id === o.id);
+            for (const cs of orderSvs) {
+              if (staffId && cs.assigned_staff_id === staffId) return true;
+              const csAssignedName = staffMap.get(Number(cs.assigned_staff_id));
+              if (csAssignedName && normalizeName(csAssignedName) === normName) return true;
+            }
+            return false;
+          });
+
+          let doing = isOff ? 'Nghỉ phép' : 'Đang trống';
+          let status: 'available' | 'busy' = 'available';
+
+          if (!isOff) {
+            // Find active order
+            const activeOrder = staffOrders.find(o => {
+              if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
+              if (!o.booking_date_start || !o.booking_date_end) return false;
+              const start = new Date(o.booking_date_start as Date);
+              const end = new Date(o.booking_date_end as Date);
+              return refTime >= start && refTime <= end;
+            });
+
+            if (activeOrder) {
+              const custProfile = comingProfileMap.get(activeOrder.user_id);
+              const custName = custProfile?.fullName ? custProfile.fullName.trim() : 'Khách hàng';
+              const parts = custName.split(' ');
+              const shortCustName = parts.length > 2 ? parts.slice(-2).join(' ') : custName;
+
+              const orderSvs = comingServices.filter(cs => cs.order_id === activeOrder.id);
+              const svName = orderSvs.length > 0 ? (serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ') : 'Dịch vụ';
+
+              const start = new Date(activeOrder.booking_date_start as Date);
+              const end = new Date(activeOrder.booking_date_end as Date);
+              const totalMin = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
+              const elapsedMin = Math.max(0, Math.min(totalMin, Math.round((refTime.getTime() - start.getTime()) / 60000)));
+
+              doing = `[${elapsedMin}/${totalMin}] ${shortCustName}: ${svName}`;
+              status = 'busy';
+            } else {
+              // Find next upcoming order
+              const upcoming = staffOrders
+                .filter(o => {
+                  if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
+                  if (!o.booking_date_start) return false;
+                  return new Date(o.booking_date_start as Date) > refTime;
+                })
+                .sort((a, b) => new Date(a.booking_date_start as Date).getTime() - new Date(b.booking_date_start as Date).getTime());
+
+              if (upcoming.length > 0) {
+                const nextOrder = upcoming[0];
+                const nextStart = new Date(nextOrder.booking_date_start as Date);
+                const timeStr = nextStart.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+                const orderSvs = comingServices.filter(cs => cs.order_id === nextOrder.id);
+                const svName = orderSvs.length > 0 ? (serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ') : 'Dịch vụ';
+                doing = `Chờ khách: ${svName} (${timeStr})`;
+              }
+            }
+          }
+
           branchDetailMap[bKey].cv.push({
             name: staffName,
-            doing: isOff ? 'Nghỉ phép' : 'Đang thực hiện dịch vụ',
-            clients: isOff ? 0 : 2 + (staffName.length % 4),
+            doing,
+            clients: isOff ? 0 : staffOrders.length,
             shift,
             attendance,
-            status: isOff ? 'available' : 'busy'
+            status
           });
         }
       });
