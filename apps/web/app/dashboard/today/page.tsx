@@ -1329,7 +1329,7 @@ export default function TodayDashboard() {
                     Phân Phối Doanh Thu Hôm Nay (Revenue Breakdown)
                   </div>
                   <Row gutter={[16, 16]}>
-                    <Col xs={24} md={8}>
+                    <Col xs={24} sm={12} md={6}>
                       <Card size="small" style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
                         <span style={{ fontSize: '11px', color: token.colorTextDescription }}>Doanh Thu Dịch Vụ Lẻ</span>
                         <div style={{ fontSize: '20px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}>
@@ -1338,7 +1338,7 @@ export default function TodayDashboard() {
                       </Card>
                     </Col>
                     
-                    <Col xs={24} md={8}>
+                    <Col xs={24} sm={12} md={6}>
                       <Card size="small" style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
                         <span style={{ fontSize: '11px', color: '#D4A84B' }}>Doanh Thu Combo (Gói)</span>
                         <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#D4A84B', marginTop: '4px' }}>
@@ -1347,11 +1347,20 @@ export default function TodayDashboard() {
                       </Card>
                     </Col>
 
-                    <Col xs={24} md={8}>
+                    <Col xs={24} sm={12} md={6}>
                       <Card size="small" style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
                         <span style={{ fontSize: '11px', color: '#52c41a' }}>Doanh Thu Sản Phẩm</span>
                         <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#52c41a', marginTop: '4px' }}>
                           {activeShopData.revProduct.toLocaleString('vi-VN')} đ
+                        </div>
+                      </Card>
+                    </Col>
+
+                    <Col xs={24} sm={12} md={6}>
+                      <Card size="small" style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
+                        <span style={{ fontSize: '11px', color: '#1890ff', fontWeight: 'bold' }}>Tổng Doanh Thu</span>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff', marginTop: '4px' }}>
+                          {(activeShopData.revLe + activeShopData.revCombo + activeShopData.revProduct).toLocaleString('vi-VN')} đ
                         </div>
                       </Card>
                     </Col>
