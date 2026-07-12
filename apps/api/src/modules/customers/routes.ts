@@ -3529,12 +3529,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
     // booking_date_only needs timezone-naive date at UTC midnight
     const bookingDateOnlyDate = new Date(targetDateStr + 'T00:00:00.000Z');
 
-    // startOfDay and endOfDay needs timezone offset adjustment for GMT+7
+    // Since database datetimes are local and Prisma reads them as UTC,
+    // we query using timezone-naive start/end bounds directly
     const startOfDay = new Date(targetDateStr + 'T00:00:00.000Z');
-    startOfDay.setUTCHours(startOfDay.getUTCHours() - 7);
-
     const endOfDay = new Date(targetDateStr + 'T23:59:59.999Z');
-    endOfDay.setUTCHours(endOfDay.getUTCHours() - 7);
 
     const toActualDate = (dbDate: Date | null | undefined) => {
       if (!dbDate) return new Date(0);
@@ -3642,7 +3640,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           group,
           promo: o.promotion_id ? `PROMO-${o.promotion_id}` : null,
           booker,
-          createdTime: new Date(o.date_created).toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false }),
+          createdTime: new Date(o.date_created).toLocaleTimeString('vi-VN', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false }),
           avatarColor: ['#1890ff', '#722ed1', '#f5222d', '#fa8c16', '#52c41a', '#13c2c2', '#eb2f96'][index % 7],
           code: String(o.id),
           email,
@@ -3660,7 +3658,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           historyCcIn: booker,
           historyCcOut: booker,
           historyBooker: booker,
-          historyDate: new Date(o.date_created).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+          historyDate: new Date(o.date_created).toLocaleString('vi-VN', { timeZone: 'UTC' }),
           historyStatus: o.order_state === 'Completed' ? 'Hoàn thành' : 'Đã xác nhận',
           historyNote: o.booking_note || ''
         };
