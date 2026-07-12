@@ -4187,12 +4187,42 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         // Check actual check-in/out record (workingShifts)
         const wsRecord = shiftMap.get(cvId);
-        let shift: 'sáng' | 'chiều' | 'full' | 'off' = isOff ? 'off' : 'full';
+        
+        let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
+        if (isOff) {
+          shift = 'off';
+        } else {
+          // Determine scheduled shift from staff_working_shift_schedule
+          const list = schedulesByUserId[cvId] || [];
+          const todaySchedule = list.find(s => s.type === 'Weekday' && s.type_value === weekdayStr) ||
+                                list.find(s => s.type === 'Day' && s.type_value === 'All');
+          if (todaySchedule && todaySchedule.start_time) {
+            const startStr = typeof todaySchedule.start_time === 'string'
+              ? todaySchedule.start_time
+              : new Date(todaySchedule.start_time).toISOString().substr(11, 8);
+            const endStr = todaySchedule.end_time
+              ? (typeof todaySchedule.end_time === 'string'
+                ? todaySchedule.end_time
+                : new Date(todaySchedule.end_time).toISOString().substr(11, 8))
+              : '';
+            
+            if (startStr.startsWith('09:00:00')) {
+              if (endStr.startsWith('18:00:00') || endStr.startsWith('17:00:00')) {
+                shift = 'sáng';
+              } else {
+                shift = 'full';
+              }
+            } else if (startStr >= '11:00:00') {
+              shift = 'chiều';
+            }
+          }
+        }
+
         let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
         let doing = isOff ? 'Nghỉ phép' : 'Chưa check-in';
 
         if (wsRecord) {
-          // If we have an actual check-in record, they are working!
+          // If we have an actual check-in record, we can override or keep it
           if (wsRecord.shift_start) {
             const sTime = typeof wsRecord.shift_start === 'string' ? wsRecord.shift_start : new Date(wsRecord.shift_start).toISOString().substr(11, 8);
             if (sTime === '09:00:00') shift = 'sáng';
@@ -4223,7 +4253,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         let status: 'available' | 'busy' = 'available';
 
-        if (!isOff && attendance !== 'checked_out') {
+        if (!isOff && attendance === 'checked_in') {
           // Find active order
           const activeOrder = staffOrders.find(o => {
             if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
@@ -4264,10 +4294,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
               const timeStr = formatDbTime(nextOrder.booking_date_start);
               const orderSvs = comingServices.filter(cs => cs.order_id === nextOrder.id);
               const svName = orderSvs.length > 0 ? (serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ') : 'Dịch vụ';
-                doing = `Chờ khách: ${svName} (${timeStr})`;
-              }
+              doing = `Chờ khách: ${svName} (${timeStr})`;
             }
           }
+        }
 
         branchDetailMap[bKey].cv.push({
           name: cv.fullName.trim(),
