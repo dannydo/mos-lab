@@ -3543,6 +3543,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
     };
 
     try {
+      // Get active Telesales/OC names from CRM database
+      const crmTelesales = await fastify.prisma.crm.crmStaff.findMany({
+        where: { role: 'telesales', isActive: true },
+        select: { displayName: true }
+      });
+      const telesalesNames = new Set(crmTelesales.map(s => s.displayName.trim().toLowerCase()));
       // 1. Query bookings created today
       const bookingsOrders = await fastify.prisma.legacy.order.findMany({
         where: {
@@ -3592,6 +3598,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const staffMap = new Map(staffProfiles.map(s => [Number(s.userId), s.fullName]));
 
       const bookingsCombo: any[] = [];
+      const bookingsOc: any[] = [];
       const bookingsOther: any[] = [];
 
       bookingsOrders.forEach((o, index) => {
@@ -3640,7 +3647,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
           historyNote: o.booking_note || ''
         };
 
-        if (group === 'combo_live') {
+        const isOc = telesalesNames.has(booker.trim().toLowerCase());
+        if (isOc) {
+          bookingsOc.push(record);
+        } else if (group === 'combo_live') {
           bookingsCombo.push(record);
         } else {
           bookingsOther.push(record);
@@ -4166,6 +4176,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.send({
         branchesData: branchDetailMap,
         bookingsCombo,
+        bookingsOc,
         bookingsOther
       });
 

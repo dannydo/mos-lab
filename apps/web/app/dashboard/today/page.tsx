@@ -594,6 +594,7 @@ export default function TodayDashboard() {
     }
   ]);
 
+  const [bookingsOc, setBookingsOc] = useState<BookingData[]>([]);
   const [bookingsOther, setBookingsOther] = useState<BookingData[]>([
     {
       key: '1',
@@ -828,6 +829,7 @@ export default function TodayDashboard() {
       const data = response.data;
       setBranchesData(data.branchesData);
       setBookingsCombo(data.bookingsCombo);
+      setBookingsOc(data.bookingsOc || []);
       setBookingsOther(data.bookingsOther);
     } catch (err) {
       console.error('Fetch dashboard today error:', err);
@@ -1205,7 +1207,7 @@ export default function TodayDashboard() {
               }
               extra={
                 <Badge 
-                  count={bookingsCombo.length + bookingsOther.length} 
+                  count={bookingsCombo.length + bookingsOther.length + bookingsOc.length} 
                   style={{ backgroundColor: '#52c41a' }}
                 />
               }
@@ -1221,6 +1223,20 @@ export default function TodayDashboard() {
                     children: (
                       <Table
                         dataSource={bookingsCombo}
+                        columns={bookingColumns}
+                        size="small"
+                        pagination={false}
+                        bordered
+                        className="antd-custom-table"
+                      />
+                    )
+                  },
+                  {
+                    key: 'oc',
+                    label: `Telesales Executive (${bookingsOc.length})`,
+                    children: (
+                      <Table
+                        dataSource={bookingsOc}
                         columns={bookingColumns}
                         size="small"
                         pagination={false}
