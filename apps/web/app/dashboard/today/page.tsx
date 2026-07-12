@@ -188,6 +188,7 @@ interface ComingClientData {
   email?: string;
   ltv?: string;
   price?: number;
+  tax?: number;
   bookingsCount?: number;
   diamonds?: number;
   frequency?: string;
@@ -888,6 +889,32 @@ export default function TodayDashboard() {
     return { revLe, revCombo, revProduct, total };
   }, [branchesData, showTax]);
 
+  const categoryRevenueData = React.useMemo(() => {
+    let revCombo = 0;
+    let revTele = 0;
+    let revOther = 0;
+
+    const allComing = Object.keys(branchesData).flatMap(branchKey => branchesData[branchKey].coming || []);
+    allComing.forEach(item => {
+      if (item.status === 'completed') {
+        const rawPrice = item.price || 0;
+        const tax = item.tax || 0;
+        const price = showTax ? rawPrice : Math.max(0, rawPrice - tax);
+
+        if (item.category === 'combo') {
+          revCombo += price;
+        } else if (item.category === 'oc') {
+          revTele += price;
+        } else {
+          revOther += price;
+        }
+      }
+    });
+
+    const total = revCombo + revTele + revOther;
+    return { revCombo, revTele, revOther, total };
+  }, [branchesData, showTax]);
+
   if (!selectedDate) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: themeMode === 'dark' ? '#141414' : '#ffffff' }}>
@@ -1131,7 +1158,7 @@ export default function TodayDashboard() {
                 </Card>
               </Col>
 
-              {/* CHART 4: REVENUE BY TYPE */}
+              {/* CHART 4: REVENUE BY TYPE & BY CUSTOMER GROUP */}
               <Col xs={24} sm={24} lg={8}>
                 <Card 
                   size="small" 
@@ -1149,53 +1176,73 @@ export default function TodayDashboard() {
                       <BarChartOutlined style={{ color: '#D4A84B', marginRight: '6px' }} />
                       Doanh Thu Thực Tế
                     </span>
-                    <strong style={{ fontSize: '14px', color: token.colorText }}>{totalRevenueData.total.toLocaleString('vi-VN')} đ</strong>
+                    <strong style={{ fontSize: '14px', color: token.colorText }} title={`Tổng cộng: ${totalRevenueData.total.toLocaleString('vi-VN')} đ`}>
+                      {totalRevenueData.total.toLocaleString('vi-VN')} đ
+                    </strong>
                   </div>
 
                   <Row gutter={16} style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                    {/* Left Column: Donut Chart */}
-                    <Col span={10} style={{ display: 'flex', justifyContent: 'center' }}>
-                      <DonutChart 
-                        total={totalRevenueData.total}
-                        centerLabel={formatCenterRevenue(totalRevenueData.total)}
-                        centerSubLabel="doanh thu"
-                        themeMode={themeMode}
-                        segments={[
-                          { value: totalRevenueData.revCombo, color: '#D4A84B', label: 'Combo' },
-                          { value: totalRevenueData.revLe, color: '#1890FF', label: 'Lẻ' },
-                          { value: totalRevenueData.revProduct, color: '#FA8C16', label: 'Sản Phẩm' }
-                        ]}
-                      />
+                    {/* Left Column: Nhóm sản phẩm */}
+                    <Col span={12} style={{ display: 'flex', flexDirection: 'column', borderRight: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`, paddingRight: '8px' }}>
+                      <div style={{ fontSize: '11px', color: token.colorTextDescription, fontWeight: 500, marginBottom: '6px' }}>Nhóm sản phẩm</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <DonutChart 
+                          total={totalRevenueData.total}
+                          centerLabel={formatCenterRevenue(totalRevenueData.total)}
+                          centerSubLabel="doanh thu"
+                          themeMode={themeMode}
+                          segments={[
+                            { value: totalRevenueData.revCombo, color: '#D4A84B', label: 'Combo' },
+                            { value: totalRevenueData.revLe, color: '#1890FF', label: 'Lẻ' },
+                            { value: totalRevenueData.revProduct, color: '#FA8C16', label: 'Sản phẩm' }
+                          ]}
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, overflow: 'hidden' }}>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Combo: ${totalRevenueData.revCombo.toLocaleString('vi-VN')} đ`}>
+                            <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#D4A84B', borderRadius: '50%', marginRight: '3px' }} />
+                            Combo: <strong>{formatCenterRevenue(totalRevenueData.revCombo)}</strong>
+                          </div>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Lẻ (Single): ${totalRevenueData.revLe.toLocaleString('vi-VN')} đ`}>
+                            <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#1890FF', borderRadius: '50%', marginRight: '3px' }} />
+                            Lẻ: <strong>{formatCenterRevenue(totalRevenueData.revLe)}</strong>
+                          </div>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Sản phẩm: ${totalRevenueData.revProduct.toLocaleString('vi-VN')} đ`}>
+                            <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#FA8C16', borderRadius: '50%', marginRight: '3px' }} />
+                            SP: <strong>{formatCenterRevenue(totalRevenueData.revProduct)}</strong>
+                          </div>
+                        </div>
+                      </div>
                     </Col>
-                    
-                    {/* Right Column: Legends stacked vertically */}
-                    <Col span={14} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: token.colorTextDescription }}>
-                          <span style={{ width: '5px', height: '5px', backgroundColor: '#D4A84B', borderRadius: '50%' }} />
-                          Combo
+
+                    {/* Right Column: Nhóm khách */}
+                    <Col span={12} style={{ display: 'flex', flexDirection: 'column', paddingLeft: '8px' }}>
+                      <div style={{ fontSize: '11px', color: token.colorTextDescription, fontWeight: 500, marginBottom: '6px' }}>Nhóm khách</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <DonutChart 
+                          total={categoryRevenueData.total}
+                          centerLabel={formatCenterRevenue(categoryRevenueData.total)}
+                          centerSubLabel="doanh thu"
+                          themeMode={themeMode}
+                          segments={[
+                            { value: categoryRevenueData.revCombo, color: '#D4A84B', label: 'Combo' },
+                            { value: categoryRevenueData.revTele, color: '#52C41A', label: 'Tele' },
+                            { value: categoryRevenueData.revOther, color: '#1890FF', label: 'Khác' }
+                          ]}
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, overflow: 'hidden' }}>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Combo: ${categoryRevenueData.revCombo.toLocaleString('vi-VN')} đ`}>
+                            <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#D4A84B', borderRadius: '50%', marginRight: '3px' }} />
+                            Combo: <strong>{formatCenterRevenue(categoryRevenueData.revCombo)}</strong>
+                          </div>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Tele: ${categoryRevenueData.revTele.toLocaleString('vi-VN')} đ`}>
+                            <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#52C41A', borderRadius: '50%', marginRight: '3px' }} />
+                            Tele: <strong>{formatCenterRevenue(categoryRevenueData.revTele)}</strong>
+                          </div>
+                          <div style={{ fontSize: '10px', whiteSpace: 'nowrap' }} title={`Khác: ${categoryRevenueData.revOther.toLocaleString('vi-VN')} đ`}>
+                            <span style={{ display: 'inline-block', width: '5px', height: '5px', backgroundColor: '#1890FF', borderRadius: '50%', marginRight: '3px' }} />
+                            Khác: <strong>{formatCenterRevenue(categoryRevenueData.revOther)}</strong>
+                          </div>
                         </div>
-                        <strong style={{ color: token.colorText }}>
-                          {Math.round(totalRevenueData.revCombo / 1000).toLocaleString('vi-VN')}k <span style={{ fontWeight: 'normal', color: token.colorTextDescription }}>({totalRevenueData.total > 0 ? Math.round((totalRevenueData.revCombo / totalRevenueData.total) * 100) : 0}%)</span>
-                        </strong>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: token.colorTextDescription }}>
-                          <span style={{ width: '5px', height: '5px', backgroundColor: '#1890FF', borderRadius: '50%' }} />
-                          Lẻ (Single)
-                        </div>
-                        <strong style={{ color: token.colorText }}>
-                          {Math.round(totalRevenueData.revLe / 1000).toLocaleString('vi-VN')}k <span style={{ fontWeight: 'normal', color: token.colorTextDescription }}>({totalRevenueData.total > 0 ? Math.round((totalRevenueData.revLe / totalRevenueData.total) * 100) : 0}%)</span>
-                        </strong>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: token.colorTextDescription }}>
-                          <span style={{ width: '5px', height: '5px', backgroundColor: '#FA8C16', borderRadius: '50%' }} />
-                          Sản phẩm
-                        </div>
-                        <strong style={{ color: token.colorText }}>
-                          {Math.round(totalRevenueData.revProduct / 1000).toLocaleString('vi-VN')}k <span style={{ fontWeight: 'normal', color: token.colorTextDescription }}>({totalRevenueData.total > 0 ? Math.round((totalRevenueData.revProduct / totalRevenueData.total) * 100) : 0}%)</span>
-                        </strong>
                       </div>
                     </Col>
                   </Row>

@@ -4138,6 +4138,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
         }
 
+        const orderServices = comingServices.filter(cs => cs.order_id === o.id);
+        const orderCombos = comingCombos.filter(c => Number(c.order_id) === o.id);
+        const orderProducts = comingProducts.filter(p => Number(p.order_id) === o.id);
+
+        const totalTax = orderServices.reduce((sum, s) => sum + Number(s.tax_amount || 0), 0) +
+                         orderCombos.reduce((sum, c) => sum + Number(c.tax_amount || 0), 0) +
+                         orderProducts.reduce((sum, p) => sum + Number(p.tax_amount || 0), 0);
+
         const firstPromoSv = orderSvs.find(cs => cs.promotion_id !== null && cs.promotion_id !== undefined);
         const pId = firstPromoSv?.promotion_id || o.promotion_id || o.selected_promotion_id;
         const promoName = pId ? (promoMap.get(Number(pId)) || `PROMO-${pId}`) : null;
@@ -4166,6 +4174,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           email: uProfile?.email || '',
           ltv: (o.total_price || 0).toLocaleString('vi-VN') + ' đ',
           price: Number(o.total_price || 0),
+          tax: Number(totalTax || 0),
           bookingsCount: 1,
           diamonds: 50,
           frequency: 'N/A',
@@ -4179,14 +4188,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
         branchDetailMap[branchKey].coming.push(comingItem);
 
         if (o.order_state === 'Completed') {
-          const orderServices = comingServices.filter(cs => cs.order_id === o.id);
-          const orderCombos = comingCombos.filter(c => Number(c.order_id) === o.id);
-          const orderProducts = comingProducts.filter(p => Number(p.order_id) === o.id);
-
-          const totalTax = orderServices.reduce((sum, s) => sum + Number(s.tax_amount || 0), 0) +
-                           orderCombos.reduce((sum, c) => sum + Number(c.tax_amount || 0), 0) +
-                           orderProducts.reduce((sum, p) => sum + Number(p.tax_amount || 0), 0);
-
           const comboRev = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0), 0);
           const productRev = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0), 0);
           const leRev = Math.max(0, (o.total_price || 0) - comboRev - productRev);
