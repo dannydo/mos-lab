@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="vi" class="light-theme">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hôm Nay - Wings Lashes Operations Control</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            DEFAULT: '#D4A84B',
+                            hover: '#C2973A',
+                            light: 'rgba(212, 168, 75, 0.1)',
+                            border: 'rgba(212, 168, 75, 0.3)'
+                        },
+                        darkBg: '#0A0A0A',
+                        darkCard: '#141414',
+                        darkBorder: '#262626'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .light-theme ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+        }
+        .dark-theme ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+        .glass-card {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-darkBg dark:text-gray-100 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-white/80 dark:bg-darkCard/80 border-b border-gray-200 dark:border-darkBorder glass-card transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gold flex items-center justify-center font-bold text-black shadow-md shadow-gold/20">
+                    WL
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-gray-900 dark:text-white">WINGS LASHES</h1>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Operations Control Center</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex flex-col text-right">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Thời gian thực tế</span>
+                    <span id="live-time" class="text-sm font-semibold text-gold">15:29:02 - 12/07/2026</span>
+                </div>
+                
+                <button onclick="toggleTheme()" class="p-2.5 rounded-xl border border-gray-200 dark:border-darkBorder hover:bg-gray-100 dark:hover:bg-darkBg text-gray-600 dark:text-gray-300 transition-all cursor-pointer">
+                    <i id="theme-icon" class="fa-solid fa-moon text-lg text-blue-500 dark:text-yellow-400"></i>
+                </button>
+                
+                <div class="flex items-center gap-2 border-l border-gray-200 dark:border-darkBorder pl-4">
+                    <div class="w-9 h-9 rounded-full bg-gold flex items-center justify-center text-black font-semibold text-sm">
+                        DD
+                    </div>
+                    <span class="text-sm font-medium hidden sm:inline">Danny Do</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <!-- Top Title Panel -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-yellow-50 to-amber-100/50 dark:from-zinc-900 dark:to-zinc-900/60 p-6 rounded-2xl border border-gold/20 shadow-sm">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-gold"></i>
+                    Bảng Vận Hành Ngày Hôm Nay (Today Dashboard)
+                </h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Cập nhật thời gian thực lịch đặt mới, luồng khách đến và hiệu năng chi tiết từng đội nhóm.
+                </p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="refreshData()" class="px-4 py-2 bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-zinc-800 text-xs font-semibold rounded-lg border border-gray-200 dark:border-darkBorder shadow-sm transition-all flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-arrows-rotate"></i> Làm mới dữ liệu
+                </button>
+            </div>
+        </div>
+
+        <!-- ROW 1: BOOKING & COMING -->
+        <div class="flex flex-col gap-8">
+            
+            <!-- SECTION 1: BOOKING (CREATED TODAY) -->
+            <section class="bg-white dark:bg-darkCard border border-gray-200 dark:border-darkBorder rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-darkBorder bg-gray-50/50 dark:bg-zinc-900/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="space-y-1">
+                        <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-ticket text-emerald-500"></i>
+                            Booking Đặt Hôm Nay (Created Today)
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Danh sách khách hàng đã tạo lịch đặt trong ngày hôm nay.</p>
+                    </div>
+                    
+                    <!-- Booking Tabs -->
+                    <div class="flex p-1 bg-gray-100 dark:bg-zinc-900/80 rounded-lg border border-gray-200 dark:border-zinc-800">
+                        <button onclick="switchBookingTab('combo')" id="btn-book-combo" class="px-3 py-1.5 text-xs font-bold rounded transition-all bg-white dark:bg-darkCard text-gold shadow-sm cursor-pointer">
+                            Combo (<span id="count-book-combo">2</span>)
+                        </button>
+                        <button onclick="switchBookingTab('other')" id="btn-book-other" class="px-3 py-1.5 text-xs font-bold rounded transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+                            Khác (<span id="count-book-other">7</span>)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-6 flex-grow">
+                    <!-- Tab Combo Content -->
+                    <div id="booking-combo-content" class="space-y-4">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left">
+                                <thead class="text-gray-500 dark:text-gray-400 uppercase font-semibold border-b border-gray-200 dark:border-darkBorder pb-2">
+                                    <tr>
+                                        <th class="py-2.5">Khách hàng</th>
+                                        <th class="py-2.5">SĐT</th>
+                                        <th class="py-2.5">Nhóm</th>
+                                        <th class="py-2.5">Promo</th>
+                                        <th class="py-2.5">Booker</th>
+                                        <th class="py-2.5">Created At</th>
+                                        <th class="py-2.5 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="booking-combo-body" class="divide-y divide-gray-100 dark:divide-zinc-800/80">
+                                    <!-- Dynamic Combo bookings -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab Other Content (Hidden by default) -->
+                    <div id="booking-other-content" class="space-y-4 hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left">
+                                <thead class="text-gray-500 dark:text-gray-400 uppercase font-semibold border-b border-gray-200 dark:border-darkBorder pb-2">
+                                    <tr>
+                                        <th class="py-2.5">Khách hàng</th>
+                                        <th class="py-2.5">SĐT</th>
+                                        <th class="py-2.5">Nhóm</th>
+                                        <th class="py-2.5">Promo</th>
+                                        <th class="py-2.5">Booker</th>
+                                        <th class="py-2.5">Created At</th>
+                                        <th class="py-2.5 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: COMING (ARRIVING TODAY) -->
+            <section class="bg-white dark:bg-darkCard border border-gray-200 dark:border-darkBorder rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-darkBorder bg-gray-50/50 dark:bg-zinc-900/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="space-y-1">
+                        <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-person-walking-arrow-right text-blue-500"></i>
+                            Khách Đến Hôm Nay (Coming Today)
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Danh sách khách hàng có lịch thực hiện dịch vụ hôm nay.</p>
+                    </div>
+                    
+                    <!-- Coming Tabs -->
+                    <div class="flex p-1 bg-gray-100 dark:bg-zinc-900/80 rounded-lg border border-gray-200 dark:border-zinc-800">
+                        <button onclick="switchComingTab('all')" id="btn-come-all" class="px-3 py-1.5 text-xs font-bold rounded transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+                            ALL
+                        </button>
+                        <button onclick="switchComingTab('detham')" id="btn-come-detham" class="px-3 py-1.5 text-xs font-bold rounded transition-all bg-white dark:bg-darkCard text-gold shadow-sm cursor-pointer">
+                            Đề Thám (DT)
+                        </button>
+                        <button onclick="switchComingTab('pxl')" id="btn-come-pxl" class="px-3 py-1.5 text-xs font-bold rounded transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+                            PXL
+                        </button>
+                        <button onclick="switchComingTab('estella')" id="btn-come-estella" class="px-3 py-1.5 text-xs font-bold rounded transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+                            Estella (EP)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-6 flex-grow">
+                    <!-- Dynamic lists depending on branch selected -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left">
+                            <thead class="text-gray-500 dark:text-gray-400 uppercase font-semibold border-b border-gray-200 dark:border-darkBorder pb-2">
+                                <tr>
+                                    <th class="py-2.5">Giờ Hẹn</th>
+                                    <th class="py-2.5">Chi nhánh</th>
+                                    <th class="py-2.5">Khách Hàng</th>
+                                    <th class="py-2.5">SĐT</th>
+                                    <th class="py-2.5">Nhóm</th>
+                                    <th class="py-2.5">Promo</th>
+                                    <th class="py-2.5">Booker</th>
+                                    <th class="py-2.5">CC phụ trách</th>
+                                    <th class="py-2.5">Chuyên Viên (CV)</th>
+                                    <th class="py-2.5">Trạng Thái</th>
+                                    <th class="py-2.5 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coming-table-body" class="divide-y divide-gray-100 dark:divide-zinc-800/80">
+                                <!-- Loaded dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ROW 2: SHOP CONTROL -->
+        <section class="bg-white dark:bg-darkCard border border-gray-200 dark:border-darkBorder rounded-2xl shadow-sm overflow-hidden">
+            <!-- Header and Branch selector -->
+            <div class="px-6 py-5 border-b border-gray-200 dark:border-darkBorder bg-gray-50/50 dark:bg-zinc-900/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-store text-gold"></i>
+                        Vận Hành Chi Nhánh (Shop Control & Performance)
+                    </h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Xem trạng thái chi tiết hoạt động trong ngày của CC, CV và doanh thu phân loại.</p>
+                </div>
+                
+                <!-- Shop Control Tabs -->
+                <div class="flex p-1 bg-gray-100 dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-darkBorder">
+                    <button onclick="switchShop('all')" id="tab-shop-all" class="px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                        ALL
+                    </button>
+                    <button onclick="switchShop('detham')" id="tab-shop-detham" class="px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer bg-white dark:bg-darkCard text-gold shadow-sm">
+                        Đề Thám (DT)
+                    </button>
+                    <button onclick="switchShop('pxl')" id="tab-shop-pxl" class="px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                        Phan Xích Long (PXL)
+                    </button>
+                    <button onclick="switchShop('estella')" id="tab-shop-estella" class="px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                        Estella Place (EP)
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-8">
+                <!-- Doanh thu breakdown cards (3 types) -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase text-gray-400 dark:text-gray-500 tracking-wider mb-4 flex items-center gap-1.5">
+                        <i class="fa-solid fa-chart-line text-gold"></i> Phân Loại Doanh Thu Hôm Nay (Revenue Breakdown)
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Lẻ Revenue -->
+                        <div class="bg-gray-50 dark:bg-zinc-900/50 border border-gray-200/50 dark:border-zinc-800 p-5 rounded-2xl flex items-center justify-between">
+                            <div class="space-y-1">
+                                <span class="text-xs text-gray-500 dark:text-gray-400 block font-medium">Doanh Thu Dịch Vụ Lẻ</span>
+                                <span id="rev-le" class="text-2xl font-black text-gray-900 dark:text-white tracking-tight">12,500,000 đ</span>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-scissors"></i>
+                            </div>
+                        </div>
+
+                        <!-- Combo Revenue -->
+                        <div class="bg-gold-light border border-gold-border p-5 rounded-2xl flex items-center justify-between">
+                            <div class="space-y-1">
+                                <span class="text-xs text-amber-700 dark:text-gold block font-medium">Doanh Thu Bán Combo</span>
+                                <span id="rev-combo" class="text-2xl font-black text-gold tracking-tight">18,000,000 đ</span>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-gold/20 text-gold flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-box-open"></i>
+                            </div>
+                        </div>
+
+                        <!-- Product Revenue -->
+                        <div class="bg-gray-50 dark:bg-zinc-900/50 border border-gray-200/50 dark:border-zinc-800 p-5 rounded-2xl flex items-center justify-between">
+                            <div class="space-y-1">
+                                <span class="text-xs text-gray-500 dark:text-gray-400 block font-medium">Doanh Thu Sản Phẩm (Bán Kèm)</span>
+                                <span id="rev-product" class="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">2,000,000 đ</span>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-pump-soap"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CC and CV detailed tables inside Shop control -->
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    
+                    <!-- CV Column -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
+                                <i class="fa-solid fa-hands-sparkles text-gold"></i>
+                                [CV] Chuyên viên đang làm gì? Bao nhiêu khách?
+                            </h4>
+                            <span class="text-[10px] bg-gold/10 text-gold px-2 py-0.5 rounded font-bold">Kỹ Thuật Viên</span>
+                        </div>
+                        <div class="overflow-x-auto border border-gray-200 dark:border-darkBorder rounded-xl bg-white dark:bg-darkCard">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-gray-50 dark:bg-zinc-900 text-gray-600 dark:text-gray-400 uppercase font-semibold border-b border-gray-200 dark:border-darkBorder">
+                                    <tr>
+                                        <th class="p-3">Ca</th>
+                                        <th class="p-3">Tên CV</th>
+                                        <th class="p-3">Chi nhánh</th>
+                                        <th class="p-3">Đang làm gì?</th>
+                                        <th class="p-3 text-center">Khách Hôm Nay</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="shop-cv-body" class="divide-y divide-gray-100 dark:divide-zinc-800">
+                                    <!-- Dynamic CV rows loaded by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- CC Column -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
+                                <i class="fa-solid fa-user-tie text-gold"></i>
+                                [CC] Client Consultant đang làm gì? Bao nhiêu khách?
+                            </h4>
+                            <span class="text-[10px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded font-bold">Tư Vấn Khách</span>
+                        </div>
+                        <div class="overflow-x-auto border border-gray-200 dark:border-darkBorder rounded-xl bg-white dark:bg-darkCard">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-gray-50 dark:bg-zinc-900 text-gray-600 dark:text-gray-400 uppercase font-semibold border-b border-gray-200 dark:border-darkBorder">
+                                    <tr>
+                                        <th class="p-3">Ca</th>
+                                        <th class="p-3">Tên CC</th>
+                                        <th class="p-3">Chi nhánh</th>
+                                        <th class="p-3">Đang làm gì?</th>
+                                        <th class="p-3 text-center">Khách Hôm Nay</th>
+                                        <th class="p-3 text-center">Combo Bán</th>
+                                        <th class="p-3 text-right">Doanh Số Ngày</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="shop-cc-body" class="divide-y divide-gray-100 dark:divide-zinc-800">
+                                    <!-- Dynamic CC rows loaded by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-darkCard border-t border-gray-200 dark:border-darkBorder py-6 mt-12 transition-all">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-gray-500 dark:text-gray-400">
+            &copy; 2026 Wings Lashes - Hệ thống quản lý & báo cáo hiệu năng vận hành thời gian thực.
+        </div>
+    </footer>
+
+    <!-- Interactive JS to manage Shop switching and Theme mode -->
+    <script>
+        // Mock data for "Coming Today" list of customers by branch
+        const comingData = {
+            detham: [
+                { time: "15:30", name: "Trần Thị Mai", phone: "0901234567", group: "combo live", groupClass: "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-gold", promo: "PROMO20", booker: "App Online", cc: "Nguyễn Minh Thuỷ", cv: "Lý Mỹ Linh", status: "Chờ đến", statusClass: "text-amber-500 bg-amber-500/10 border border-amber-500/20", initials: "TM", bg: "bg-blue-500", details: { ltv: "4.800.000 đ", bookings: 8, diamonds: "💎 48", dob: "1994-08-15", classification: "COMBO LIVE", daysAway: "3 ngày trước", favoriteDay: "Thứ Bảy", oc: "Nguyễn Minh Thuỷ", service: "Dặm mi Volume (Combo)", note: "Khách VIP, thích mi dầy.", code: "52001", email: "mai.tran@gmail.com" } },
+                { time: "16:00", name: "Ngô Mỹ Dung", phone: "0934567890", group: "single", groupClass: "bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400", promo: "-", booker: "Zalo Chatbot", cc: "Phạm Khánh Ly", cv: "Trần Hoàng Anh", status: "Xác nhận", statusClass: "text-blue-500 bg-blue-500/10 border border-blue-500/20", initials: "MD", bg: "bg-purple-500", details: { ltv: "800.000 đ", bookings: 2, diamonds: "💎 8", dob: "1997-12-05", classification: "SINGLE", daysAway: "15 ngày trước", favoriteDay: "Chủ Nhật", oc: "Phạm Khánh Ly", service: "Nối mi Classic mới (Lẻ)", note: "Thích kiểu nhẹ nhàng tự nhiên.", code: "52002", email: "dung.ngo@gmail.com" } },
+                { time: "16:30", name: "Phạm Hà Giang", phone: "0987654321", group: "single", groupClass: "bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400", promo: "COMBO50", booker: "Facebook Page", cc: "Trần Bảo Ngọc", cv: "Nghỉ phép", status: "Chờ đổi CV", statusClass: "text-red-500 bg-red-500/10 border border-red-500/20", initials: "HG", bg: "bg-orange-500", details: { ltv: "1.200.000 đ", bookings: 3, diamonds: "💎 12", dob: "1995-03-22", classification: "SINGLE", daysAway: "7 ngày trước", favoriteDay: "Thứ Tư", oc: "Trần Bảo Ngọc", service: "Uốn mi Collagen (Lẻ)", note: "Từng bị dị ứng keo nối.", code: "52003", email: "giang.pham@gmail.com" } },
+                { time: "15:00", name: "Nguyễn Thị Đào", phone: "0911223344", group: "combo dead", groupClass: "bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-400", promo: "-", booker: "Call Center", cc: "Nguyễn Minh Thuỷ", cv: "Lý Mỹ Linh", status: "Đang làm", statusClass: "text-emerald-500 bg-emerald-500/10 border border-emerald-500/20", initials: "NĐ", bg: "bg-pink-500", details: { ltv: "2.500.000 đ", bookings: 5, diamonds: "💎 25", dob: "1991-11-30", classification: "SINGLE", daysAway: "10 ngày trước", favoriteDay: "Thứ Sáu", oc: "Nguyễn Minh Thuỷ", service: "Nối mi thiết kế (Lẻ)", note: "Khách quen từ năm 2024.", code: "52004", email: "dao.nguyen@gmail.com" } }
+            ],
+            pxl: [
+                { time: "15:45", name: "Hoàng Kim Chi", phone: "0944556677", group: "combo live", groupClass: "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-gold", promo: "PROMO20", booker: "App Online", cc: "Lê Cẩm Tú", cv: "Phùng Mỹ Tâm", status: "Chờ đến", statusClass: "text-amber-500 bg-amber-500/10 border border-amber-500/20", initials: "KC", bg: "bg-indigo-500", details: { ltv: "3.200.000 đ", bookings: 6, diamonds: "💎 32", dob: "1996-05-18", classification: "COMBO LIVE", daysAway: "5 ngày trước", favoriteDay: "Thứ Tư", oc: "Lê Cẩm Tú", service: "Nối mi Volume mới (Combo)", code: "53001", email: "chi.hoang@gmail.com" } },
+                { time: "16:15", name: "Trần Bảo Thy", phone: "0907788990", group: "single", groupClass: "bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400", promo: "-", booker: "Instagram Page", cc: "Nguyễn Quỳnh Chi", cv: "Trịnh Gia Linh", status: "Xác nhận", statusClass: "text-blue-500 bg-blue-500/10 border border-blue-500/20", initials: "BT", bg: "bg-purple-500", details: { ltv: "600.000 đ", bookings: 1, diamonds: "💎 6", dob: "2000-09-12", classification: "SINGLE", daysAway: "N/A", favoriteDay: "Thứ Sáu", oc: "Nguyễn Quỳnh Chi", service: "Uốn mi Collagen (Lẻ)", code: "53002", email: "thy.tran@gmail.com" } },
+                { time: "15:10", name: "Lê Thu Giang", phone: "0918899001", group: "combo live", groupClass: "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-gold", promo: "-", booker: "Zalo Chatbot", cc: "Lê Cẩm Tú", cv: "Phùng Mỹ Tâm", status: "Đang làm", statusClass: "text-emerald-500 bg-emerald-500/10 border border-emerald-500/20", initials: "TG", bg: "bg-teal-500", details: { ltv: "2.100.000 đ", bookings: 4, diamonds: "💎 21", dob: "1993-01-25", classification: "COMBO LIVE", daysAway: "8 ngày trước", favoriteDay: "Thứ Hai", oc: "Lê Cẩm Tú", service: "Dặm mi Classic", code: "53003", email: "giang.le@gmail.com" } }
+            ],
+            estella: [
+                { time: "15:30", name: "Phạm Phương Thảo", phone: "0977889900", group: "combo live", groupClass: "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-gold", promo: "COMBO15", booker: "App Online", cc: "Lâm Nhã Phương", cv: "Nguyễn Thuỳ Lâm", status: "Đang làm", statusClass: "text-emerald-500 bg-emerald-500/10 border border-emerald-500/20", initials: "PT", bg: "bg-rose-500", details: { ltv: "5.500.000 đ", bookings: 10, diamonds: "💎 55", dob: "1992-07-08", classification: "COMBO LIVE", daysAway: "2 ngày trước", favoriteDay: "Thứ Sáu", oc: "Lâm Nhã Phương", service: "Nối mi Volume mới (Combo)", code: "54001", email: "thao.pham@gmail.com" } },
+                { time: "16:00", name: "Tô Minh Thư", phone: "0933221100", group: "single", groupClass: "bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400", promo: "-", booker: "Call Center", cc: "Đinh Hoài An", cv: "Bùi Kiều Vy", status: "Xác nhận", statusClass: "text-blue-500 bg-blue-500/10 border border-blue-500/20", initials: "MT", bg: "bg-orange-500", details: { ltv: "1.800.000 đ", bookings: 4, diamonds: "💎 18", dob: "1998-04-19", classification: "SINGLE", daysAway: "6 ngày trước", favoriteDay: "Thứ Ba", oc: "Đinh Hoài An", service: "Dặm mi thiết kế", code: "54002", email: "thu.to@gmail.com" } },
+                { time: "17:00", name: "Nguyễn Lan Khuê", phone: "0988001122", group: "single", groupClass: "bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400", promo: "-", booker: "Facebook Page", cc: "Tống Khánh Vân", cv: "Mai Hồng Ngọc", status: "Chờ đến", statusClass: "text-amber-500 bg-amber-500/10 border border-amber-500/20", initials: "LK", bg: "bg-pink-500", details: { ltv: "900.000 đ", bookings: 2, diamonds: "💎 9", dob: "1995-10-10", classification: "SINGLE", daysAway: "12 ngày trước", favoriteDay: "Thứ Năm", oc: "Tống Khánh Vân", service: "Nối mi Classic mới", code: "54003", email: "khue.nguyen@gmail.com" } },
+                { time: "17:30", name: "Phùng Minh Hằng", phone: "0911559922", group: "single", groupClass: "bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400", promo: "PROMO10", booker: "App Online", cc: "Lâm Nhã Phương", cv: "Cao Thanh Hằng", status: "Chờ đến", statusClass: "text-amber-500 bg-amber-500/10 border border-amber-500/20", initials: "MH", bg: "bg-green-500", details: { ltv: "1.400.000 đ", bookings: 3, diamonds: "💎 14", dob: "1999-02-28", classification: "SINGLE", daysAway: "9 ngày trước", favoriteDay: "Thứ Sáu", oc: "Lâm Nhã Phương", service: "Chăm sóc mi và uốn mi", code: "54004", email: "hang.phung@gmail.com" } }
+            ]
+        };
+
+        // Mock data for the 3 shops (Shop operations)
+        const shopData = {
+            detham: {
+                revLe: "12,500,000 đ",
+                revCombo: "18,000,000 đ",
+                revProduct: "2,000,000 đ",
+                cc: [
+                    { name: "Nguyễn Minh Thuỷ", doing: "Đang tư vấn KH mới (Trần Thị Mai)", clients: 12, combos: 3, revenue: "18,000,000 đ", shift: 'sáng', attendance: 'checked_in' },
+                    { name: "Phạm Khánh Ly", doing: "Đang gọi điện CSKH cũ", clients: 10, combos: 1, revenue: "9,500,000 đ", shift: 'chiều', attendance: 'late' },
+                    { name: "Trần Bảo Ngọc", doing: "Trống (Đang hỗ trợ thu ngân)", clients: 6, combos: 1, revenue: "5,000,000 đ", shift: 'full', attendance: 'checked_out' },
+                    { name: "Lê Thu Trang", doing: "Nghỉ phép tuần", clients: 0, combos: 0, revenue: "0 đ", shift: 'off', attendance: 'none' }
+                ],
+                cv: [
+                    { name: "Lý Mỹ Linh", doing: "Đang nối mi Volume (Khách Nguyễn Thị Đào)", clients: 5, shift: 'sáng', attendance: 'checked_in', status: "busy" },
+                    { name: "Trần Hoàng Anh", doing: "Trống (Chờ khách 16:00)", clients: 4, shift: 'sáng', attendance: 'checked_in', status: "available" },
+                    { name: "Vũ Phương Thanh", doing: "Đang uốn mi Collagen", clients: 2, shift: 'chiều', attendance: 'late', status: "busy" },
+                    { name: "Đỗ Thuỳ Dung", doing: "Trống (Chờ nhận ca tiếp theo)", clients: 1, shift: 'chiều', attendance: 'checked_in', status: "available" },
+                    { name: "Phạm Thị Hoa", doing: "Nghỉ phép tuần", clients: 0, shift: 'off', attendance: 'none', status: "available" }
+                ]
+            },
+            pxl: {
+                revLe: "9,800,000 đ",
+                revCombo: "12,000,000 đ",
+                revProduct: "3,000,000 đ",
+                cc: [
+                    { name: "Lê Cẩm Tú", doing: "Đang chốt sale combo mới", clients: 9, combos: 2, revenue: "12,000,000 đ", shift: 'sáng', attendance: 'checked_in' },
+                    { name: "Nguyễn Quỳnh Chi", doing: "Đang tư vấn KH lẻ nâng cấp combo", clients: 8, combos: 1, revenue: "7,800,000 đ", shift: 'chiều', attendance: 'checked_in' },
+                    { name: "Hoàng Thanh Hà", doing: "Trống ca", clients: 4, combos: 0, revenue: "5,000,000 đ", shift: 'full', attendance: 'checked_out' },
+                    { name: "Đặng Mỹ Linh", doing: "Nghỉ phép tuần", clients: 0, combos: 0, revenue: "0 đ", shift: 'off', attendance: 'none' }
+                ],
+                cv: [
+                    { name: "Đặng Hồng Nhung", doing: "Trống (Đang ăn nhẹ ca lỡ)", clients: 3, shift: 'sáng', attendance: 'checked_in', status: "available" },
+                    { name: "Phùng Mỹ Tâm", doing: "Đang dặm mi Classic (Khách Lê Thu Giang)", clients: 4, shift: 'sáng', attendance: 'checked_in', status: "busy" },
+                    { name: "Trịnh Gia Linh", doing: "Trống (Chờ khách 16:15)", clients: 2, shift: 'chiều', attendance: 'checked_in', status: "available" },
+                    { name: "Nguyễn Bích Ngọc", doing: "Nghỉ phép tuần", clients: 0, shift: 'off', attendance: 'none', status: "available" }
+                ]
+            },
+            estella: {
+                revLe: "15,200,000 đ",
+                revCombo: "24,000,000 đ",
+                revProduct: "6,000,000 đ",
+                cc: [
+                    { name: "Lâm Nhã Phương", doing: "Đang hỗ trợ khách ký hợp đồng combo", clients: 15, combos: 4, revenue: "22,500,000 đ", shift: 'sáng', attendance: 'checked_in' },
+                    { name: "Đinh Hoài An", doing: "Đang kiểm tra hồ sơ khách hàng ngày", clients: 12, combos: 3, revenue: "16,200,000 đ", shift: 'chiều', attendance: 'checked_in' },
+                    { name: "Tống Khánh Vân", doing: "Đang tư vấn chăm sóc sau nối mi", clients: 9, combos: 1, revenue: "6,500,000 đ", shift: 'full', attendance: 'checked_out' },
+                    { name: "Bùi Ngọc Ánh", doing: "Nghỉ phép tuần", clients: 0, combos: 0, revenue: "0 đ", shift: 'off', attendance: 'none' }
+                ],
+                cv: [
+                    { name: "Nguyễn Thuỳ Lâm", doing: "Đang nối mi Volume (Khách P. Phương Thảo)", clients: 6, shift: 'sáng', attendance: 'checked_in', status: "busy" },
+                    { name: "Cao Thanh Hằng", doing: "Đang uốn mi Collagen nâng tông", clients: 4, shift: 'sáng', attendance: 'checked_in', status: "busy" },
+                    { name: "Mai Hồng Ngọc", doing: "Trống (Chờ khách 17:00)", clients: 3, shift: 'chiều', attendance: 'checked_in', status: "available" },
+                    { name: "Bùi Kiều Vy", doing: "Đang kiểm tra dụng cụ mi", clients: 2, shift: 'chiều', attendance: 'checked_in', status: "busy" },
+                    { name: "Trần Diệu Linh", doing: "Nghỉ phép tuần", clients: 0, shift: 'off', attendance: 'none', status: "available" }
+                ]
+            }
+        };
+
+        // UI Tabs & Views management
+        let activeComingBranch = 'detham';
+        let activeShopBranch = 'detham';
+
+        // Switch Booking (Created Today) Tabs
+        function switchBookingTab(tab) {
+            const btnCombo = document.getElementById("btn-book-combo");
+            const btnOther = document.getElementById("btn-book-other");
+            const contentCombo = document.getElementById("booking-combo-content");
+            const contentOther = document.getElementById("booking-other-content");
+
+            if (tab === 'combo') {
+                btnCombo.className = "px-3 py-1.5 text-xs font-bold rounded transition-all bg-white dark:bg-darkCard text-gold shadow-sm cursor-pointer";
+                btnOther.className = "px-3 py-1.5 text-xs font-bold rounded transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer";
+                contentCombo.classList.remove("hidden");
+                contentOther.classList.add("hidden");
+            } else {
+                btnOther.className = "px-3 py-1.5 text-xs font-bold rounded transition-all bg-white dark:bg-darkCard text-gold shadow-sm cursor-pointer";
+                btnCombo.className = "px-3 py-1.5 text-xs font-bold rounded transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer";
+                contentOther.classList.remove("hidden");
+                contentCombo.classList.add("hidden");
+            }
+        }
+
+        // Switch Coming (Arriving Today) Tabs
+        function switchComingTab(branchId) {
+            activeComingBranch = branchId;
+            const branches = ['all', 'detham', 'pxl', 'estella'];
+            branches.forEach(b => {
+                const btn = document.getElementById(`btn-come-${b}`);
+                if (b === branchId) {
+                    btn.className = "px-3 py-1.5 text-xs font-bold rounded transition-all bg-white dark:bg-darkCard text-gold shadow-sm cursor-pointer";
+                } else {
+                    btn.className = "px-3 py-1.5 text-xs font-bold rounded transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer";
+                }
+            });
+            renderComingTable();
+        }
+
+        function renderComingTable() {
+            const tableBody = document.getElementById("coming-table-body");
+            tableBody.innerHTML = "";
+            
+            let list = [];
+            if (activeComingBranch === 'all') {
+                ['detham', 'pxl', 'estella'].forEach(branchKey => {
+                    const branchName = branchKey === 'detham' ? 'Đề Thám' : (branchKey === 'pxl' ? 'PXL' : 'Estella');
+                    comingData[branchKey].forEach(item => {
+                        list.push({ ...item, branchName });
+                    });
+                });
+            } else {
+                const branchName = activeComingBranch === 'detham' ? 'Đề Thám' : (activeComingBranch === 'pxl' ? 'PXL' : 'Estella');
+                comingData[activeComingBranch].forEach(item => {
+                    list.push({ ...item, branchName });
+                });
+            }
+
+            list.forEach(item => {
+                const row = document.createElement("tr");
+                row.className = "hover:bg-gray-50/50 dark:hover:bg-zinc-900/20 border-b border-gray-100 dark:border-zinc-800/50";
+                row.innerHTML = `
+                    <td class="py-3 font-semibold text-gold">${item.time}</td>
+                    <td class="py-3"><span class="px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-400 font-bold text-[9px]">${item.branchName}</span></td>
+                    <td class="py-3 font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full ${item.bg} text-white font-bold flex items-center justify-center text-[10px]">${item.initials}</div>
+                        ${item.name}
+                    </td>
+                    <td class="py-3 text-gray-600 dark:text-gray-400">${item.phone}</td>
+                    <td class="py-3">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${item.groupClass}">${item.group}</span>
+                    </td>
+                    <td class="py-3">
+                        ${item.promo !== '-' ? `<span class="px-1.5 py-0.5 rounded bg-pink-100 dark:bg-pink-950 text-pink-800 dark:text-pink-400 font-bold text-[9px]">${item.promo}</span>` : `<span class="text-gray-400 dark:text-gray-500">-</span>`}
+                    </td>
+                    <td class="py-3 text-gray-600 dark:text-gray-400 font-medium">${item.booker}</td>
+                    <td class="py-3 font-semibold text-blue-600 dark:text-blue-400">${item.cc}</td>
+                    <td class="py-3">
+                        <span class="px-2 py-0.5 rounded font-bold text-[10px] ${item.cv === 'Nghỉ phép' ? 'text-red-600 bg-red-100 dark:bg-red-950/50 dark:text-red-400' : 'text-blue-600 bg-blue-100 dark:bg-blue-950/50 dark:text-blue-400'}">${item.cv}</span>
+                    </td>
+                    <td class="py-3">
+                        <span class="px-2 py-0.5 rounded-full font-bold text-[10px] ${item.statusClass}">${item.status}</span>
+                    </td>
+                    <td class="py-3 text-right">
+                        <button class="text-gold hover:text-gold-hover text-sm cursor-pointer" onclick="showCustomerDrawer('${item.name}')">
+                            <i class="fa-solid fa-eye text-base"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Switch Shop Control Tabs
+        function switchShop(branchId) {
+            activeShopBranch = branchId;
+            const branches = ['all', 'detham', 'pxl', 'estella'];
+            branches.forEach(b => {
+                const btn = document.getElementById(`tab-shop-${b}`);
+                if (b === branchId) {
+                    btn.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer bg-white dark:bg-darkCard text-gold shadow-sm";
+                } else {
+                    btn.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white";
+                }
+            });
+
+            let data;
+            if (branchId === 'all') {
+                let totalRevLe = 0;
+                let totalRevCombo = 0;
+                let totalRevProduct = 0;
+                let ccList = [];
+                let cvList = [];
+
+                ['detham', 'pxl', 'estella'].forEach(bKey => {
+                    const branchName = bKey === 'detham' ? 'Đề Thám' : (bKey === 'pxl' ? 'PXL' : 'Estella');
+                    const bData = shopData[bKey];
+                    
+                    totalRevLe += parseInt(bData.revLe.replace(/[^0-9]/g, ''), 10) || 0;
+                    totalRevCombo += parseInt(bData.revCombo.replace(/[^0-9]/g, ''), 10) || 0;
+                    totalRevProduct += parseInt(bData.revProduct.replace(/[^0-9]/g, ''), 10) || 0;
+
+                    bData.cc.forEach(cc => {
+                        ccList.push({ ...cc, branchName });
+                    });
+                    bData.cv.forEach(cv => {
+                        cvList.push({ ...cv, branchName });
+                    });
+                });
+
+                data = {
+                    revLe: totalRevLe.toLocaleString('vi-VN') + " đ",
+                    revCombo: totalRevCombo.toLocaleString('vi-VN') + " đ",
+                    revProduct: totalRevProduct.toLocaleString('vi-VN') + " đ",
+                    cc: ccList,
+                    cv: cvList
+                };
+            } else {
+                const branchName = branchId === 'detham' ? 'Đề Thám' : (branchId === 'pxl' ? 'PXL' : 'Estella');
+                data = {
+                    revLe: shopData[branchId].revLe,
+                    revCombo: shopData[branchId].revCombo,
+                    revProduct: shopData[branchId].revProduct,
+                    cc: shopData[branchId].cc.map(cc => ({ ...cc, branchName })),
+                    cv: shopData[branchId].cv.map(cv => ({ ...cv, branchName }))
+                };
+            }
+            
+            // Update revenue breakdown
+            document.getElementById("rev-le").innerText = data.revLe;
+            document.getElementById("rev-combo").innerText = data.revCombo;
+            document.getElementById("rev-product").innerText = data.revProduct;
+
+            const getShiftAndAttendanceHTML = (shift, attendance) => {
+                if (shift === 'off') {
+                    return `
+                        <span class="inline-flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 font-medium cursor-help" title="Nghỉ phép tuần">
+                            <span class="w-1.5 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
+                            Off
+                        </span>
+                    `;
+                }
+                let shiftText = shift === 'sáng' ? 'Sáng' : (shift === 'chiều' ? 'Chiều' : 'Full');
+                
+                let attText = '';
+                let dotColorClass = '';
+                if (attendance === 'checked_in') {
+                    attText = 'Đã check-in';
+                    dotColorClass = 'bg-emerald-500';
+                } else if (attendance === 'checked_out') {
+                    attText = 'Đã check-out';
+                    dotColorClass = 'bg-zinc-400 dark:bg-zinc-500';
+                } else if (attendance === 'late') {
+                    attText = 'Đi trễ';
+                    dotColorClass = 'bg-red-500';
+                } else {
+                    attText = 'Chưa check-in';
+                    dotColorClass = 'bg-amber-500';
+                }
+                return `
+                    <span class="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-zinc-400 font-medium cursor-help" title="Ca ${shiftText} - ${attText}">
+                        <span class="w-1.5 h-1.5 rounded-full ${dotColorClass}"></span>
+                        ${shiftText}
+                    </span>
+                `;
+            };
+
+            // Load CC table
+            const ccBody = document.getElementById("shop-cc-body");
+            ccBody.innerHTML = "";
+            data.cc.forEach(cc => {
+                const row = document.createElement("tr");
+                row.className = "hover:bg-gray-50/50 dark:hover:bg-zinc-900/20 border-b border-gray-100 dark:border-zinc-800/50";
+                row.innerHTML = `
+                    <td class="p-3">${getShiftAndAttendanceHTML(cc.shift, cc.attendance)}</td>
+                    <td class="p-3 font-bold text-gray-900 dark:text-white">${cc.name}</td>
+                    <td class="p-3"><span class="px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-400 font-bold text-[9px]">${cc.branchName}</span></td>
+                    <td class="p-3 text-gray-600 dark:text-gray-400 font-medium">${cc.doing}</td>
+                    <td class="p-3 text-center font-bold text-gray-800 dark:text-gray-200">${cc.clients} KH</td>
+                    <td class="p-3 text-center font-bold text-emerald-600 dark:text-emerald-400">${cc.combos} Combo</td>
+                    <td class="p-3 text-right font-bold text-gold">${cc.revenue}</td>
+                `;
+                ccBody.appendChild(row);
+            });
+
+            // Load CV table
+            const cvBody = document.getElementById("shop-cv-body");
+            cvBody.innerHTML = "";
+            data.cv.forEach(cv => {
+                const row = document.createElement("tr");
+                row.className = "hover:bg-gray-50/50 dark:hover:bg-zinc-900/20 border-b border-gray-100 dark:border-zinc-800/50";
+                
+                const statusColor = cv.status === 'busy' 
+                    ? 'text-amber-500 bg-amber-500/10 border border-amber-500/20' 
+                    : 'text-emerald-500 bg-emerald-500/10 border border-emerald-500/20';
+                
+                row.innerHTML = `
+                    <td class="p-3">${getShiftAndAttendanceHTML(cv.shift, cv.attendance)}</td>
+                    <td class="p-3 font-bold text-gray-900 dark:text-white">${cv.name}</td>
+                    <td class="p-3"><span class="px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-400 font-bold text-[9px]">${cv.branchName}</span></td>
+                    <td class="p-3">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold ${statusColor}">
+                            <span class="w-1.5 h-1.5 rounded-full ${cv.status === 'busy' ? 'bg-amber-500' : 'bg-emerald-500'}"></span>
+                            ${cv.doing}
+                        </span>
+                    </td>
+                    <td class="p-3 text-center font-bold text-gray-800 dark:text-gray-200">${cv.clients} khách</td>
+                `;
+                cvBody.appendChild(row);
+            });
+        }
+
+        // Theme toggle logic
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById("theme-icon");
+            if (html.classList.contains("light-theme")) {
+                html.classList.remove("light-theme");
+                html.classList.add("dark-theme");
+                html.classList.add("dark");
+                themeIcon.className = "fa-solid fa-sun text-lg text-yellow-400";
+                localStorage.setItem("mos_themeMode", "dark");
+            } else {
+                html.classList.remove("dark-theme");
+                html.classList.remove("dark");
+                html.classList.add("light-theme");
+                themeIcon.className = "fa-solid fa-moon text-lg text-blue-500";
+                localStorage.setItem("mos_themeMode", "light");
+            }
+        }
+
+        // Apply saved theme on load
+        const savedTheme = localStorage.getItem("mos_themeMode") || "light";
+        if (savedTheme === "dark") {
+            document.documentElement.classList.remove("light-theme");
+            document.documentElement.classList.add("dark-theme");
+            document.documentElement.classList.add("dark");
+            document.getElementById("theme-icon").className = "fa-solid fa-sun text-lg text-yellow-400";
+        }
+
+        // Data arrays for Bookings
+        const bookingsCombo = [
+            { key: '1', name: 'Trần Thị Mai', phone: '0901234567', group: 'combo live', groupClass: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-gold', promo: '-', booker: 'CS Mai Anh', time: '09:45', bg: 'bg-blue-500', initials: 'TM', details: { ltv: "15.000.000 đ", bookings: 4, diamonds: "💎 120", dob: "1994-08-15", classification: "COMBO LIVE", daysAway: "0 ngày (hôm nay)", favoriteDay: "Thứ Bảy (2 lần)", oc: "CS Mai Anh", service: "Dặm mi Volume (Combo)", note: "Gia hạn thêm gói 5 buổi. Khách đi xe máy.", code: "51833", email: "mai.tran@gmail.com" } },
+            { key: '2', name: 'Hoàng Kim Chi', phone: '0918765432', group: 'combo live', groupClass: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-gold', promo: 'WL50', booker: 'CS Thu Thảo', time: '08:30', bg: 'bg-purple-500', initials: 'KC', details: { ltv: "24.000.000 đ", bookings: 10, diamonds: "💎 250", dob: "1990-11-20", classification: "COMBO LIVE", daysAway: "1 ngày", favoriteDay: "Thứ Tư (4 lần)", oc: "CS Thu Thảo", service: "Nối mi Volume mới (Combo)", note: "Buổi thứ 10. Tư vấn nâng cấp Combo 10 buổi mới.", code: "52092", email: "chi.hoang@yahoo.com" } }
+        ];
+
+        const bookingsOther = [
+            { key: '1', name: 'Lê Thuỳ Trang', phone: '0933334444', group: 'combo dead', groupClass: 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-400', promo: '-', booker: 'OC Quỳnh Chi', time: '14:20', bg: 'bg-red-500', initials: 'LT', details: { ltv: "5.000.000 đ", bookings: 5, diamonds: "💎 10", dob: "1997-03-24", classification: "SINGLE", daysAway: "45 ngày", favoriteDay: "Thứ Hai (2 lần)", oc: "OC Quỳnh Chi", service: "Nối mi Volume mới", note: "Combo cũ đã hết hạn. Đang tư vấn chốt combo mới.", code: "49822", email: "trangle@gmail.com" } },
+            { key: '2', name: 'Nguyễn Minh Anh', phone: '0944455566', group: 'combo dead', groupClass: 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-400', promo: 'COMBONEW', booker: 'OC Mỹ Linh', time: '11:15', bg: 'bg-orange-500', initials: 'MA', details: { ltv: "8.000.000 đ", bookings: 8, diamonds: "💎 40", dob: "1992-05-12", classification: "SINGLE", daysAway: "30 ngày", favoriteDay: "Thứ Năm (3 lần)", oc: "OC Mỹ Linh", service: "Uốn mi Collagen", note: "Nhắc khách combo cũ đã hết hạn.", code: "50119", email: "minhanh@gmail.com" } },
+            { key: '3', name: 'Võ Mỹ Linh', phone: '0955566677', group: 'single', groupClass: 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400', promo: '-', booker: 'Hotline System', time: '15:05', bg: 'bg-green-500', initials: 'ML', details: { ltv: "1.200.000 đ", bookings: 1, diamonds: "💎 10", dob: "1999-12-05", classification: "SINGLE", daysAway: "15 ngày", favoriteDay: "Thứ Sáu (1 lần)", oc: "Hotline Agent", service: "Nối mi Classic mới", note: "Khách mới gọi hotline đặt lịch.", code: "52219", email: "mylinh@gmail.com" } },
+            { key: '4', name: 'Phạm Phương Thảo', phone: '0966677788', group: 'single', groupClass: 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400', promo: 'INTRO20', booker: 'Walk-in Cashier', time: '13:50', bg: 'bg-teal-500', initials: 'PT', details: { ltv: "3.500.000 đ", bookings: 3, diamonds: "💎 35", dob: "1995-07-18", classification: "SINGLE", daysAway: "10 ngày", favoriteDay: "Thứ Ba (1 lần)", oc: "CS Combo Care", service: "Uốn mi Collagen", note: "Khách vãng lai vào tiệm.", code: "51330", email: "thaopham@gmail.com" } },
+            { key: '5', name: 'Nguyễn Khánh Vy', phone: '0977788899', group: 'single', groupClass: 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400', promo: '-', booker: 'Web Portal', time: '10:10', bg: 'bg-pink-500', initials: 'KV', details: { ltv: "0 đ", bookings: 1, diamonds: "💎 0", dob: "2001-09-02", classification: "SINGLE", daysAway: "2 ngày", favoriteDay: "Thứ Sáu (1 lần)", oc: "None", service: "Dặm mi Volume lẻ", note: "Đặt online qua website.", code: "52310", email: "khanhvy@gmail.com" } },
+            { key: '6', name: 'Đỗ Thảo Nguyên', phone: '0988899900', group: 'single', groupClass: 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400', promo: '-', booker: 'Hotline System', time: '09:12', bg: 'bg-yellow-500', initials: 'TN', details: { ltv: "2.400.000 đ", bookings: 2, diamonds: "💎 20", dob: "1996-02-14", classification: "SINGLE", daysAway: "5 ngày", favoriteDay: "Thứ Năm (1 lần)", oc: "Hotline Agent", service: "Nối mi thiết kế độc quyền", note: "Đặt qua hotline.", code: "51888", email: "thaonguyen@gmail.com" } },
+            { key: '7', name: 'Tạ Linh Chi', phone: '0909988776', group: 'single', groupClass: 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400', promo: 'PROMO10', booker: 'Zalo Chatbot', time: '08:45', bg: 'bg-orange-600', initials: 'LC', details: { ltv: "1.500.000 đ", bookings: 1, diamonds: "💎 15", dob: "1998-06-30", classification: "SINGLE", daysAway: "8 ngày", favoriteDay: "Thứ Bảy (1 lần)", oc: "None", service: "Gói dưỡng mi cao cấp", note: "Đặt qua Zalo OA tự động.", code: "52002", email: "linhchi@gmail.com" } }
+        ];
+
+        // Default "Bảo" details as in the screenshot
+        const baoDetails = {
+            name: "Bảo",
+            phone: "0904157267",
+            code: "52380",
+            email: "user52380@orb.local",
+            ltv: "0 đ",
+            bookings: 1,
+            diamonds: "💎 50",
+            frequency: "N/A",
+            gender: "N/A",
+            dob: "2026-04-11",
+            classification: "SINGLE",
+            daysAway: "2 ngày",
+            favoriteDay: "Thứ Sáu (1 lần)",
+            oc: "Danny Wings",
+            service: "New Flawless Mink 1110",
+            note: "Ghi chú đặt lịch: 10/7 gọi ĐXN đi chung với chị Phương 9/7 chị dời 8/7 đã ib nhắc lịch 5/7 c book, nối mới, đi 2 tính 1, đi với c Julia (0945951706), NHẮC LỊCH SỚM 1 NGÀY GIÚP ELM"
+        };
+
+        // Render Booking tables
+        function renderBookingTables() {
+            const renderRow = (item) => `
+                <tr class="hover:bg-gray-50/50 dark:hover:bg-zinc-900/20 border-b border-gray-100 dark:border-zinc-800/50">
+                    <td class="py-3 font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full ${item.bg} text-white font-bold flex items-center justify-center text-[10px]">${item.initials}</div>
+                        ${item.name}
+                    </td>
+                    <td class="py-3 text-gray-600 dark:text-gray-400">${item.phone}</td>
+                    <td class="py-3">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${item.groupClass}">${item.group}</span>
+                    </td>
+                    <td class="py-3">
+                        ${item.promo !== '-' ? `<span class="px-1.5 py-0.5 rounded bg-pink-100 dark:bg-pink-950 text-pink-800 dark:text-pink-400 font-bold text-[9px]">${item.promo}</span>` : `<span class="text-gray-400 dark:text-gray-500">-</span>`}
+                    </td>
+                    <td class="py-3 text-gray-600 dark:text-gray-400 font-medium">${item.booker}</td>
+                    <td class="py-3 text-gray-400 dark:text-gray-500">${item.time}</td>
+                    <td class="py-3 text-right">
+                        <button class="text-gold hover:text-gold-hover text-sm cursor-pointer" onclick="showCustomerDrawer('${item.name}')">
+                            <i class="fa-solid fa-eye text-base"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+
+            document.getElementById("booking-combo-body").innerHTML = bookingsCombo.map(renderRow).join('');
+            document.getElementById("booking-other-body").innerHTML = bookingsOther.map(renderRow).join('');
+        }
+
+        // Show/Hide Customer Detail Drawer
+        function toggleCustomerDrawer(show) {
+            const drawer = document.getElementById("customer-drawer");
+            const panel = document.getElementById("drawer-panel");
+            if (show) {
+                drawer.classList.remove("hidden");
+                setTimeout(() => {
+                    panel.classList.remove("translate-x-full");
+                }, 50);
+            } else {
+                panel.classList.add("translate-x-full");
+                setTimeout(() => {
+                    drawer.classList.add("hidden");
+                }, 500);
+            }
+        }
+
+        function showCustomerDrawer(customerName) {
+            let data = null;
+            // Search in combo
+            data = bookingsCombo.find(b => b.name === customerName);
+            if (!data) {
+                // Search in other
+                data = bookingsOther.find(b => b.name === customerName);
+            }
+            
+            const details = data ? data.details : baoDetails;
+            const name = data ? data.name : customerName;
+            const phone = data ? data.phone : "0904157267";
+            const initials = data ? data.initials : name.split(' ').pop()?.substring(0,2).toUpperCase();
+
+            // Populate drawer
+            document.getElementById("drawer-name").innerText = name;
+            document.getElementById("drawer-phone").innerText = phone;
+            document.getElementById("drawer-code").innerText = details.code || "52380";
+            document.getElementById("drawer-email").innerText = details.email || "user@orb.local";
+            document.getElementById("drawer-avatar").innerText = initials;
+            
+            document.getElementById("drawer-ltv").innerText = details.ltv;
+            document.getElementById("drawer-total-bookings").innerText = details.bookings;
+            document.getElementById("drawer-diamonds").innerText = details.diamonds;
+            document.getElementById("drawer-frequency").innerText = details.frequency || "N/A";
+            
+            document.getElementById("drawer-gender").innerText = details.gender || "N/A";
+            document.getElementById("drawer-dob").innerText = details.dob;
+            document.getElementById("drawer-classification").innerText = details.classification;
+            document.getElementById("drawer-days-away").innerText = details.daysAway;
+            document.getElementById("drawer-favorite-day").innerText = details.favoriteDay;
+            document.getElementById("drawer-oc").innerText = details.oc;
+            
+            document.getElementById("drawer-history-service").innerText = details.service;
+            document.getElementById("drawer-history-note").innerText = details.note;
+            
+            // Adjust classification tag styling
+            const classificationTag = document.getElementById("drawer-classification");
+            if (details.classification === "COMBO LIVE") {
+                classificationTag.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-gold";
+            } else if (details.classification === "SINGLE") {
+                classificationTag.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-400";
+            } else {
+                classificationTag.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-400";
+            }
+
+            toggleCustomerDrawer(true);
+        }
+
+        // Force startup renders
+        renderBookingTables();
+        switchComingTab('detham');
+        switchShop('detham');
+
+        // Simple live dynamic clock updates
+        function updateClock() {
+            const clockEl = document.getElementById("live-time");
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+            const dateStr = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
+            clockEl.innerText = `${timeStr} - ${dateStr}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Refresh Data simulator
+        function refreshData() {
+            const spin = document.createElement('div');
+            spin.className = "fixed inset-0 bg-black/50 z-50 flex items-center justify-center text-white font-bold text-lg";
+            spin.innerHTML = '<div class="bg-darkCard p-6 rounded-2xl border border-gold/30 flex flex-col items-center gap-3"><i class="fa-solid fa-arrows-rotate animate-spin text-3xl text-gold"></i> Đang tải dữ liệu thực tế...</div>';
+            document.body.appendChild(spin);
+            
+            setTimeout(() => {
+                document.body.removeChild(spin);
+                // randomise some revenue numbers to simulate refresh
+                const randomRev = (base) => (base + Math.floor(Math.random() * 2000000)).toLocaleString('vi-VN') + " đ";
+                shopData.detham.revLe = randomRev(12000000);
+                shopData.pxl.revLe = randomRev(9000000);
+                shopData.estella.revLe = randomRev(14000000);
+                
+                switchShop(activeShopBranch);
+            }, 800);
+        }
+    </script>
+
+    <!-- Customer Detail Drawer Overlay -->
+    <div id="customer-drawer" class="fixed inset-0 z-50 overflow-hidden hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+        <div class="absolute inset-0 overflow-hidden">
+            <!-- Background backdrop -->
+            <div class="absolute inset-0 bg-black/50 transition-opacity" onclick="toggleCustomerDrawer(false)"></div>
+            
+            <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+                <div class="pointer-events-auto w-screen max-w-5xl transform transition ease-in-out duration-500 sm:duration-700 translate-x-full" id="drawer-panel">
+                    <div class="flex h-full flex-col bg-white dark:bg-darkCard shadow-2xl border-l border-gray-200 dark:border-darkBorder">
+                        <!-- Drawer Header -->
+                        <div class="px-6 py-5 border-b border-gray-200 dark:border-darkBorder flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <button onclick="toggleCustomerDrawer(false)" class="p-1 rounded-full text-gray-400 hover:text-gray-500 cursor-pointer">
+                                    <i class="fa-solid fa-xmark text-lg"></i>
+                                </button>
+                                <div class="w-12 h-12 rounded-full bg-gold/10 text-gold flex items-center justify-center font-bold text-lg border border-gold/20" id="drawer-avatar">
+                                    B
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="text-base font-bold text-gray-900 dark:text-white" id="drawer-name">Bảo</h3>
+                                        <span class="flex text-amber-400 text-xs">
+                                            <i class="fa-solid fa-star"></i>
+                                            <i class="fa-solid fa-star"></i>
+                                            <i class="fa-solid fa-star"></i>
+                                            <i class="fa-solid fa-star"></i>
+                                            <i class="fa-regular fa-star-half-stroke"></i>
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                        <i class="fa-solid fa-phone text-[10px] mr-1"></i> <span id="drawer-phone">0904157267</span> &nbsp;|&nbsp; 
+                                        <strong>Mã KH:</strong> <span id="drawer-code">52380</span> &nbsp;|&nbsp; 
+                                        <strong>Email:</strong> <span id="drawer-email">user52380@orb.local</span>
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <button class="px-4 py-2 bg-gold hover:bg-yellow-600 text-black text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                                <i class="fa-solid fa-calendar-plus"></i> Đặt Lịch Hẹn
+                            </button>
+                        </div>
+                        
+                        <!-- Drawer Body (Two Columns) -->
+                        <div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 dark:bg-darkBg">
+                            <!-- Left column: metrics & personal info -->
+                            <div class="space-y-6 md:col-span-1">
+                                <!-- CHỈ SỐ TÍCH LUỸ -->
+                                <div class="bg-white dark:bg-darkCard p-4 rounded-xl border border-gray-200 dark:border-darkBorder space-y-3">
+                                    <h4 class="text-xs font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-darkBorder pb-2">
+                                        📈 CHỈ SỐ TÍCH LUỸ
+                                    </h4>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div class="bg-gray-50 dark:bg-zinc-900/50 p-2.5 rounded-lg text-center">
+                                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block">LTV (Doanh thu)</span>
+                                            <span class="text-sm font-bold text-gray-900 dark:text-white" id="drawer-ltv">0 đ</span>
+                                        </div>
+                                        <div class="bg-gray-50 dark:bg-zinc-900/50 p-2.5 rounded-lg text-center">
+                                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block">Tổng đặt lịch</span>
+                                            <span class="text-sm font-bold text-gray-900 dark:text-white" id="drawer-total-bookings">1</span>
+                                        </div>
+                                        <div class="bg-gray-50 dark:bg-zinc-900/50 p-2.5 rounded-lg text-center">
+                                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block">Kim cương còn lại</span>
+                                            <span class="text-sm font-bold text-blue-500" id="drawer-diamonds">💎 50</span>
+                                        </div>
+                                        <div class="bg-gray-50 dark:bg-zinc-900/50 p-2.5 rounded-lg text-center">
+                                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block">Tần suất (Avg)</span>
+                                            <span class="text-sm font-bold text-gray-900 dark:text-white" id="drawer-frequency">N/A</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- THÔNG TIN CÁ NHÂN -->
+                                <div class="bg-white dark:bg-darkCard p-4 rounded-xl border border-gray-200 dark:border-darkBorder space-y-3">
+                                    <h4 class="text-xs font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-darkBorder pb-2">
+                                        👤 THÔNG TIN CÁ NHÂN
+                                    </h4>
+                                    <div class="space-y-2 text-xs">
+                                        <div class="flex justify-between"><span class="text-gray-500">Giới tính:</span> <span class="font-medium" id="drawer-gender">N/A</span></div>
+                                        <div class="flex justify-between"><span class="text-gray-500">Ngày sinh:</span> <span class="font-medium" id="drawer-dob">2026-04-11</span></div>
+                                        <div class="flex justify-between items-center"><span class="text-gray-500">Nhóm phân loại:</span> <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-gold" id="drawer-classification">SINGLE</span></div>
+                                        <div class="flex justify-between"><span class="text-gray-500">Số ngày chưa quay lại:</span> <span class="font-bold text-red-500" id="drawer-days-away">2 ngày</span></div>
+                                        <div class="flex justify-between"><span class="text-gray-500">Thứ hay đi nhất:</span> <span class="font-medium text-amber-500" id="drawer-favorite-day">Thứ Sáu (1 lần)</span></div>
+                                        <div class="flex justify-between"><span class="text-gray-500">Phụ trách (OC):</span> <span class="font-bold text-blue-500" id="drawer-oc">Danny Wings</span></div>
+                                    </div>
+                                </div>
+
+                                <!-- GÓI DỊCH VỤ ĐANG CHẠY -->
+                                <div class="bg-white dark:bg-darkCard p-4 rounded-xl border border-gray-200 dark:border-darkBorder space-y-2">
+                                    <h4 class="text-xs font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-darkBorder pb-2">
+                                        📦 GÓI DỊCH VỤ ĐANG CHẠY
+                                    </h4>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 text-center py-2" id="drawer-combos-running">Không có gói combo nào đang chạy.</p>
+                                </div>
+
+                                <!-- GIỚI THIỆU KHÁCH HÀNG -->
+                                <div class="bg-white dark:bg-darkCard p-4 rounded-xl border border-gray-200 dark:border-darkBorder space-y-3 text-xs">
+                                    <h4 class="text-xs font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-darkBorder pb-2">
+                                        🔗 GIỚI THIỆU KHÁCH HÀNG
+                                    </h4>
+                                    <div>
+                                        <span class="text-[10px] text-gray-400 block">ĐƯỢC GIỚI THIỆU BỞI</span>
+                                        <span class="font-medium" id="drawer-referred-by">Tự đăng ký (Không có người giới thiệu)</span>
+                                    </div>
+                                    <div class="pt-2 border-t border-gray-100 dark:border-darkBorder">
+                                        <span class="text-[10px] text-gray-400 block" id="drawer-referred-list-title">DANH SÁCH ĐÃ GIỚI THIỆU (0)</span>
+                                        <span class="text-gray-400" id="drawer-referred-list">Chưa giới thiệu khách hàng nào.</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right column: detailed tabs for History, notes, calls -->
+                            <div class="space-y-6 md:col-span-2 bg-white dark:bg-darkCard p-6 rounded-xl border border-gray-200 dark:border-darkBorder flex flex-col">
+                                <!-- Sub Tabs -->
+                                <div class="flex border-b border-gray-200 dark:border-darkBorder pb-3 gap-6 text-xs font-bold">
+                                    <button class="text-gold border-b-2 border-gold pb-2 -mb-3.5">
+                                        Lịch sử đặt lịch (1)
+                                    </button>
+                                    <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 pb-2">
+                                        Nhật ký ghi chú (0)
+                                    </button>
+                                    <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 pb-2">
+                                        Lịch sử cuộc gọi (3)
+                                    </button>
+                                </div>
+                                
+                                <!-- Tab Content (Lịch sử đặt lịch) -->
+                                <div class="pt-6 flex-grow space-y-6">
+                                    <div class="flex gap-4">
+                                        <!-- Timeline node indicator -->
+                                        <div class="flex flex-col items-center">
+                                            <div class="w-3.5 h-3.5 rounded-full border-2 border-emerald-500 bg-white dark:bg-darkCard flex items-center justify-center">
+                                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                            </div>
+                                            <div class="w-0.5 h-full bg-gray-200 dark:bg-zinc-800 mt-2"></div>
+                                        </div>
+                                        
+                                        <!-- Timeline Content -->
+                                        <div class="flex-grow space-y-3">
+                                            <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                                <div>
+                                                    <h5 class="font-bold text-gray-900 dark:text-white text-sm" id="drawer-history-service">New Flawless Mink 1110</h5>
+                                                    <p class="text-gray-400 dark:text-gray-500 mt-0.5" id="drawer-history-meta">
+                                                        CN: <strong>Estella Place</strong> &nbsp;|&nbsp; 
+                                                        CV: <strong>Cẩm Tiên</strong>
+                                                    </p>
+                                                    <p class="text-gray-400 dark:text-gray-500 mt-0.5" id="drawer-history-staff">
+                                                        CC IN: <strong>Yến Vy</strong> &nbsp;|&nbsp; 
+                                                        CC OUT: <strong>Yến Vy</strong> &nbsp;|&nbsp; 
+                                                        BK: <strong>Bích Phượng</strong>
+                                                    </p>
+                                                </div>
+                                                <div class="text-right">
+                                                    <span id="drawer-history-date" class="text-gray-500 dark:text-gray-400 block font-medium">T6, 21:45:00 10/7/2026</span>
+                                                    <span class="inline-block mt-1 px-2.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 font-bold text-[10px]">Hoàn thành</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Booking Note Box -->
+                                            <div class="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-xl border-l-4 border-gold text-xs leading-relaxed text-gray-600 dark:text-gray-300 italic" id="drawer-history-note">
+                                                Ghi chú đặt lịch: 10/7 gọi ĐXN đi chung với chị Phương 9/7 chị dời 8/7 đã ib nhắc lịch 5/7 c book, nối mới, đi 2 tính 1, đi với c Julia (0945951706), NHẮC LỊCH SỚM 1 NGÀY GIÚP ELM
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

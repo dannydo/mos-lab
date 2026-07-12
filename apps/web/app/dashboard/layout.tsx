@@ -50,6 +50,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
   };
 
   const getSelectedKey = () => {
+    if (pathname.includes('/dashboard/today')) return 'today';
     if (pathname.includes('/dashboard/customers')) {
       return assignedStaffId === 'me' ? 'my-customers' : 'customers-all';
     }
@@ -88,6 +89,13 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
       onClick: () => router.push('/dashboard/referrals')
     }
   );
+
+  menuItems.push({
+    key: 'today',
+    icon: <ClockCircleOutlined />,
+    label: 'Hôm nay',
+    onClick: () => router.push('/dashboard/today')
+  });
 
   menuItems.push({
     key: 'customers-parent',
