@@ -927,6 +927,12 @@ export default function TodayDashboard() {
       render: (_: any, __: any, index: number) => <Text type="secondary">{index + 1}</Text>
     },
     {
+      title: 'Created At',
+      dataIndex: 'createdTime',
+      key: 'createdTime',
+      render: (t: string) => <Text type="secondary">{t}</Text>
+    },
+    {
       title: 'Khách hàng',
       key: 'customer',
       render: (_: any, record: BookingData) => (
@@ -974,12 +980,6 @@ export default function TodayDashboard() {
       dataIndex: 'booker',
       key: 'booker',
       render: (b: string) => <span style={{ fontWeight: 500 }}>{b}</span>
-    },
-    {
-      title: 'Created At',
-      dataIndex: 'createdTime',
-      key: 'createdTime',
-      render: (t: string) => <Text type="secondary">{t}</Text>
     },
     {
       title: 'Action',

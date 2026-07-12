@@ -3520,9 +3520,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // GET /api/dashboard/today - Real operational data for the "today" dashboard
   fastify.get('/dashboard/today', { preHandler: [requireAuth] }, async (request, reply) => {
     const { date } = request.query as { date?: string };
-    const targetDateStr = date || new Date().toLocaleDateString('en-CA');
+    const getVnDateStr = () => {
+      const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' });
+      return formatter.format(new Date());
+    };
+    const targetDateStr = date || getVnDateStr();
+    
+    // booking_date_only needs timezone-naive date at UTC midnight
+    const bookingDateOnlyDate = new Date(targetDateStr + 'T00:00:00.000Z');
+
+    // startOfDay and endOfDay needs timezone offset adjustment for GMT+7
     const startOfDay = new Date(targetDateStr + 'T00:00:00.000Z');
+    startOfDay.setUTCHours(startOfDay.getUTCHours() - 7);
+
     const endOfDay = new Date(targetDateStr + 'T23:59:59.999Z');
+    endOfDay.setUTCHours(endOfDay.getUTCHours() - 7);
 
     const toActualDate = (dbDate: Date | null | undefined) => {
       if (!dbDate) return new Date(0);
@@ -3630,7 +3642,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           group,
           promo: o.promotion_id ? `PROMO-${o.promotion_id}` : null,
           booker,
-          createdTime: new Date(o.date_created).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }),
+          createdTime: new Date(o.date_created).toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false }),
           avatarColor: ['#1890ff', '#722ed1', '#f5222d', '#fa8c16', '#52c41a', '#13c2c2', '#eb2f96'][index % 7],
           code: String(o.id),
           email,
@@ -3648,7 +3660,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           historyCcIn: booker,
           historyCcOut: booker,
           historyBooker: booker,
-          historyDate: new Date(o.date_created).toLocaleString('vi-VN'),
+          historyDate: new Date(o.date_created).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
           historyStatus: o.order_state === 'Completed' ? 'Hoàn thành' : 'Đã xác nhận',
           historyNote: o.booking_note || ''
         };
@@ -3667,7 +3679,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const comingOrders = await fastify.prisma.legacy.order.findMany({
         where: {
           OR: [
-            { booking_date_only: startOfDay },
+            { booking_date_only: bookingDateOnlyDate },
             { booking_date_start: { gte: startOfDay, lte: endOfDay } }
           ],
           order_state: { not: 'Cancelled' }
