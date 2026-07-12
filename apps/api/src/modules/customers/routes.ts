@@ -3543,9 +3543,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
     };
 
     try {
-      // Get active Telesales/OC names from CRM database
+      // Get active Telesales/OC names from CRM database (including Tâm Nguyễn who also does telesales)
       const crmTelesales = await fastify.prisma.crm.crmStaff.findMany({
-        where: { role: 'telesales', isActive: true },
+        where: {
+          OR: [
+            { role: 'telesales' },
+            { displayName: { in: ['Tâm Nguyễn'] } }
+          ],
+          isActive: true
+        },
         select: { displayName: true }
       });
       const telesalesNames = new Set(crmTelesales.map(s => s.displayName.trim().toLowerCase()));
