@@ -3577,7 +3577,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
         orderBy: { date_created: 'desc' }
       });
 
-      const userIds = Array.from(new Set(bookingsOrders.map(o => o.user_id)));
+      // 2. Query coming today
+      const comingOrders = await fastify.prisma.legacy.order.findMany({
+        where: {
+          OR: [
+            { booking_date_only: bookingDateOnlyDate },
+            { booking_date_start: { gte: startOfDay, lte: endOfDay } }
+          ],
+          order_state: { not: 'Cancelled' }
+        },
+        orderBy: { booking_date_start: 'asc' }
+      });
+
+      const userIds = Array.from(new Set([
+        ...bookingsOrders.map(o => o.user_id),
+        ...comingOrders.map(o => o.user_id)
+      ]));
       
       const userProfiles = userIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT up.user_id as userId, up.full_name as fullName, up.avatar, u.email, u.gender, u.date_of_birth as dob
@@ -3596,14 +3611,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
         where: { user_id: { in: userIds } }
       }) : [];
 
+      const balanceIds = userBalances.map(b => b.id);
+      const userBalanceTransactions = balanceIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT usbt.*, o.booking_date_start as o_booking_date_start
+        FROM user_service_balance_transaction usbt
+        LEFT JOIN \`order\` o ON o.id = usbt.order_id
+        WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
+      `) : [];
+
       const profileMap = new Map(userProfiles.map(p => [Number(p.userId), p]));
       const contactMap = new Map(userContacts.map(c => [Number(c.userId), c.phoneNumber]));
-      const balanceMap = new Map<number, any[]>();
-      userBalances.forEach(b => {
-        const list = balanceMap.get(b.user_id) || [];
-        list.push(b);
-        balanceMap.set(b.user_id, list);
-      });
 
       // Fetch staff profiles map
       const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -3612,6 +3629,65 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE provider = 'Staff' AND is_disabled = 0
       `);
       const staffMap = new Map(staffProfiles.map(s => [Number(s.userId), s.fullName]));
+
+      // Exact legacy PHP combo active helper function
+      const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
+        const bTime = bookingDateStart || orderCreatedDate;
+        const userBals = userBalances.filter(b => b.user_id === userId);
+        
+        for (const usb of userBals) {
+          // Condition 1: usb.date_created < booking_date_start
+          if (new Date(usb.date_created) >= new Date(bTime)) {
+            continue;
+          }
+
+          // Get all transactions for this balance before this booking
+          const txnsBefore = userBalanceTransactions.filter(t => 
+            t.user_service_balance_id === usb.id && 
+            new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+          );
+
+          // Order them desc by time, then id desc
+          txnsBefore.sort((a, b) => {
+            const timeA = new Date(a.o_booking_date_start || a.date_created).getTime();
+            const timeB = new Date(b.o_booking_date_start || b.date_created).getTime();
+            if (timeA !== timeB) return timeB - timeA;
+            return b.id - a.id;
+          });
+
+          const lastTxnBefore = txnsBefore[0];
+
+          // Condition 2: date_expired at that time is null or >= booking_date_start
+          const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
+          const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
+
+          // Condition 3: count left at that time > 0
+          let countLeft = 0;
+          if (lastTxnBefore) {
+            countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
+          } else {
+            // If no transaction before, calculate based on current count + all transactions that used sessions after or at the booking
+            const txnsAfterOrAt = userBalanceTransactions.filter(t => 
+              t.user_service_balance_id === usb.id && 
+              new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
+            );
+            
+            let usedAfter = 0;
+            txnsAfterOrAt.forEach(t => {
+              if (t.used_staff_id !== null) {
+                usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
+              }
+            });
+
+            countLeft = usb.normal_count + usb.retain_count + usedAfter;
+          }
+
+          if (isNotExpired && countLeft > 0) {
+            return true;
+          }
+        }
+        return false;
+      };
 
       const bookingsCombo: any[] = [];
       const bookingsOc: any[] = [];
@@ -3625,13 +3701,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const dob = uProfile?.dob ? new Date(uProfile.dob).toLocaleDateString('en-CA') : 'N/A';
         const gender = uProfile?.gender || 'N/A';
 
-        // Check active combo at the time of booking
-        const userBal = balanceMap.get(o.user_id) || [];
-        const activeCombo = userBal.find(b => 
-          new Date(b.date_created) <= new Date(o.date_created) && 
-          (!b.date_expired || new Date(b.date_expired) > new Date(o.date_created))
-        );
-        const group = activeCombo ? 'combo_live' : (userBal.length > 0 ? 'combo_dead' : 'single');
+        // Check active combo using exact legacy logic
+        const hasLiveCombo = checkHasLiveCombo(o.user_id, o.booking_date_start, o.date_created);
+        const userBal = userBalances.filter(b => b.user_id === o.user_id);
+        const group = hasLiveCombo ? 'combo_live' : (userBal.length > 0 ? 'combo_dead' : 'single');
 
         const booker = staffMap.get(Number(o.created_staff_id)) || o.booking_channels || 'System';
 
@@ -3674,18 +3747,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
         } else {
           bookingsOther.push(record);
         }
-      });
-
-      // 3. Query coming today
-      const comingOrders = await fastify.prisma.legacy.order.findMany({
-        where: {
-          OR: [
-            { booking_date_only: bookingDateOnlyDate },
-            { booking_date_start: { gte: startOfDay, lte: endOfDay } }
-          ],
-          order_state: { not: 'Cancelled' }
-        },
-        orderBy: { booking_date_start: 'asc' }
       });
 
       const comingOrderIds = comingOrders.map(o => o.id);
@@ -3813,8 +3874,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (o.client_store_id === 2) branchKey = 'pxl';
         else if (o.client_store_id === 16) branchKey = 'estella';
 
-        const uProfile = comingProfileMap.get(o.user_id);
-        const phone = comingContactMap.get(o.user_id) || '';
+        const uProfile = profileMap.get(o.user_id);
+        const phone = contactMap.get(o.user_id) || '';
         const name = uProfile?.fullName || 'Khách hàng';
 
         const orderSvs = comingServices.filter(cs => cs.order_id === o.id);
@@ -3835,12 +3896,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           ccName = staffMap.get(Number(checkInStaffId)) || 'Tư vấn viên';
         }
 
-        const userBal = balanceMap.get(o.user_id) || [];
-        const activeCombo = userBal.find(b => 
-          new Date(b.date_created) <= new Date(o.date_created) && 
-          (!b.date_expired || new Date(b.date_expired) > new Date(o.date_created))
-        );
-        const group = activeCombo ? 'combo_live' : (userBal.length > 0 ? 'combo_dead' : 'single');
+        const hasLiveCombo = checkHasLiveCombo(o.user_id, o.booking_date_start, o.date_created);
+        const userBal = userBalances.filter(b => b.user_id === o.user_id);
+        const group = hasLiveCombo ? 'combo_live' : (userBal.length > 0 ? 'combo_dead' : 'single');
 
         let status: 'arrived' | 'confirmed' | 'pending' | 'late' = 'pending';
         if (o.order_state === 'Completed') {
