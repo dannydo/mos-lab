@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Drawer,
   Spin,
@@ -57,6 +57,54 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<any>(null);
   const [isGemModalOpen, setIsGemModalOpen] = useState(false);
   const [isComboModalOpen, setIsComboModalOpen] = useState(false);
+
+  // Resizable drawer states and hooks
+  const [isDragging, setIsDragging] = useState(false);
+  const [drawerWidth, setDrawerWidth] = useState(1100);
+  const widthRef = React.useRef(drawerWidth);
+
+  useEffect(() => {
+    widthRef.current = drawerWidth;
+  }, [drawerWidth]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('customer_detail_drawer_width');
+      if (saved) {
+        setDrawerWidth(parseInt(saved, 10));
+      }
+    }
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = window.innerWidth - e.clientX;
+      const minWidth = 500;
+      const maxWidth = window.innerWidth * 0.95;
+      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+      setDrawerWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      localStorage.setItem('customer_detail_drawer_width', String(widthRef.current));
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   const gemColumns = [
     {
@@ -338,7 +386,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         )
       }
       placement="right"
-      width={1100}
+      width={drawerWidth}
       open={open}
       onClose={onClose}
       styles={{
@@ -352,6 +400,24 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         }
       }}
     >
+      {/* Drag handle for resizable drawer */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: '6px',
+          cursor: 'ew-resize',
+          zIndex: 10000,
+          background: isDragging ? '#D4A84B' : 'transparent',
+          borderLeft: isDragging ? '2px solid #D4A84B' : 'none',
+          transition: 'background 0.2s',
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)'; }}
+        onMouseLeave={(e) => { if (!isDragging) e.currentTarget.style.background = 'transparent'; }}
+      />
       <Spin spinning={loading}>
         {customer && (
           <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
