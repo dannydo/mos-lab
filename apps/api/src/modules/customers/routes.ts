@@ -3676,10 +3676,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
           // Condition 3: count left at that time > 0
           let countLeft = 0;
-          if (lastTxnBefore) {
+          if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
             countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
           } else {
-            // If no transaction before, calculate based on current count + all transactions that used sessions after or at the booking
+            // If no transaction before or counts are null, calculate based on current count + all transactions that used sessions after or at the booking
             const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
               new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
             );
@@ -3691,7 +3691,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
               }
             });
 
-            countLeft = usb.normal_count + usb.retain_count + usedAfter;
+            countLeft = (usb.normal_count || 0) + (usb.retain_count || 0) + usedAfter;
           }
 
           if (isNotExpired && countLeft > 0) {
