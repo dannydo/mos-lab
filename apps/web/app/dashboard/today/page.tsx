@@ -1487,11 +1487,32 @@ export default function TodayDashboard() {
                             render: (n) => <Tag color="success">{n} Combo</Tag>
                           },
                           {
+                            title: '$ Combo',
+                            dataIndex: 'revCombo',
+                            key: 'revCombo',
+                            align: 'right',
+                            render: (r: number) => <span style={{ color: '#D4A84B' }}>{(r || 0).toLocaleString('vi-VN')} đ</span>
+                          },
+                          {
+                            title: '$ Single',
+                            dataIndex: 'revLe',
+                            key: 'revLe',
+                            align: 'right',
+                            render: (r: number) => <span style={{ color: token.colorTextDescription }}>{(r || 0).toLocaleString('vi-VN')} đ</span>
+                          },
+                          {
+                            title: '$ Product',
+                            dataIndex: 'revProduct',
+                            key: 'revProduct',
+                            align: 'right',
+                            render: (r: number) => <span style={{ color: '#52c41a' }}>{(r || 0).toLocaleString('vi-VN')} đ</span>
+                          },
+                          {
                             title: 'Doanh số ngày',
                             dataIndex: 'revenue',
                             key: 'revenue',
                             align: 'right',
-                            render: (r: number) => <strong style={{ color: '#D4A84B' }}>{r.toLocaleString('vi-VN')} đ</strong>
+                            render: (r: number) => <strong style={{ color: '#1890ff' }}>{(r || 0).toLocaleString('vi-VN')} đ</strong>
                           }
                         ]}
                         className="antd-custom-table"

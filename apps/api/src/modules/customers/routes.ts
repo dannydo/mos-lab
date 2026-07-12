@@ -3783,6 +3783,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           clients: 0,
           combos: 0,
           revenue: 0,
+          revLe: 0,
+          revCombo: 0,
+          revProduct: 0,
           shift: 'off',
           attendance: 'none'
         });
@@ -4003,6 +4006,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
             clients: 0,
             combos: 0,
             revenue: 0,
+            revLe: 0,
+            revCombo: 0,
+            revProduct: 0,
             shift: 'full',
             attendance: 'checked_in'
           };
@@ -4044,11 +4050,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
           cc.shift = 'full';
           cc.attendance = 'checked_in';
           cc.doing = 'Đang thanh toán cho khách';
-          cc.revenue += o.total_price || 0;
 
-          // Check if this order contains a combo sale
-          const orderCombos = comingCombos.filter(c => Number(c.order_id) === o.id);
-          cc.combos += orderCombos.length;
+          if (o.order_state === 'Completed') {
+            const orderCombos = comingCombos.filter(c => Number(c.order_id) === o.id);
+            const orderProducts = comingProducts.filter(p => Number(p.order_id) === o.id);
+
+            const comboRev = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0), 0);
+            const productRev = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0), 0);
+            const leRev = Math.max(0, (o.total_price || 0) - comboRev - productRev);
+
+            cc.revCombo += comboRev;
+            cc.revProduct += productRev;
+            cc.revLe += leRev;
+            cc.revenue += o.total_price || 0;
+            cc.combos += orderCombos.length;
+          }
         }
       });
 
