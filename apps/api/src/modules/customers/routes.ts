@@ -3914,11 +3914,72 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Roster data
-      const rosters = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-        SELECT * FROM \`wingsctrl_roster\`
-        WHERE \`roster_date\` = ? AND \`is_active\` = 1
-      `, targetDateStr);
+      // 1. Query schedules for weekly off calculations
+      const allSchedules = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT user_id, type, type_value 
+         FROM staff_working_shift_schedule 
+         WHERE is_disabled = 0 AND user_id IS NOT NULL`
+      );
+      
+      const schedulesByUserId: { [uid: number]: any[] } = {};
+      for (const s of allSchedules) {
+        const uid = Number(s.user_id);
+        if (!schedulesByUserId[uid]) schedulesByUserId[uid] = [];
+        schedulesByUserId[uid].push(s);
+      }
+
+      // 2. Query approved week-off requests
+      const weekOffRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT from_user_id as userId, weekday, COUNT(*) as cnt
+         FROM staff_day_off
+         WHERE attribute_option_id = 110 AND request_state = 'Approved' AND from_user_id IS NOT NULL
+         GROUP BY from_user_id, weekday`
+      );
+
+      const weekOffsByUserId: { [uid: number]: { weekday: number, cnt: number }[] } = {};
+      for (const r of weekOffRows) {
+        const uid = Number(r.userId);
+        const day = Number(r.weekday);
+        const cnt = Number(r.cnt);
+        if (!weekOffsByUserId[uid]) weekOffsByUserId[uid] = [];
+        weekOffsByUserId[uid].push({ weekday: day, cnt });
+      }
+
+      const getKTVOffDays = (userId: number) => {
+        const weekOffs = weekOffsByUserId[userId] || [];
+        if (weekOffs.length > 0) {
+          const sorted = [...weekOffs].sort((a, b) => b.cnt - a.cnt);
+          return [String(sorted[0].weekday)];
+        }
+
+        const list = schedulesByUserId[userId] || [];
+        const worksAll = list.some(s => s.type === 'Day' && s.type_value === 'All');
+        if (worksAll) return [];
+        const workingWeekdays = list
+          .filter(s => s.type === 'Weekday')
+          .map(s => s.type_value);
+        if (workingWeekdays.length === 0) return [];
+        const allWeekdays = ['1', '2', '3', '4', '5', '6', '7'];
+        return allWeekdays.filter(w => !workingWeekdays.includes(w));
+      };
+
+      // 3. Query specific day-offs for target date
+      const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT from_user_id FROM staff_day_off 
+         WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved' AND from_user_id IS NOT NULL`,
+        targetDateStr
+      );
+      const offUserIds = new Set(dayOffs.map(d => Number(d.from_user_id)));
+
+      // 4. Query active CVs (technicians)
+      const activeCvs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT user_id as userId, full_name as fullName, client_store_id as storeId
+        FROM \`user_profile\`
+        WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0
+      `);
+
+      const dayOfWeek = new Date(targetDateStr).getDay();
+      const weekdayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
 
       const branchDetailMap: Record<string, any> = {
         detham: { revLe: 0, revCombo: 0, revProduct: 0, netLe: 0, netCombo: 0, netProduct: 0, cc: [], cv: [], coming: [] },
@@ -3944,29 +4005,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
           netProduct: 0,
           shift: 'off',
           attendance: 'none'
-        });
-      });
-
-      // Pre-populate active CVs (technicians) for each branch
-      const activeCvs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-        SELECT user_id as userId, full_name as fullName, client_store_id as storeId
-        FROM \`user_profile\`
-        WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0
-      `);
-
-      activeCvs.forEach(cv => {
-        const storeId = Number(cv.storeId);
-        let bKey = 'estella';
-        if (storeId === 6) bKey = 'detham';
-        else if (storeId === 2) bKey = 'pxl';
-
-        branchDetailMap[bKey].cv.push({
-          name: cv.fullName.trim(),
-          doing: 'Nghỉ phép',
-          clients: 0,
-          shift: 'off',
-          attendance: 'none',
-          status: 'available'
         });
       });
 
@@ -4088,17 +4126,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       });
 
-      // Group rosters by branch & role
       const refTime = new Date();
       const normalizeName = (name: string) => (name || '').trim().toLowerCase();
-      const staffNameToIdMap = new Map<string, number>();
-      staffProfiles.forEach(s => {
-        if (s.fullName) {
-          staffNameToIdMap.set(normalizeName(s.fullName), Number(s.userId));
-        }
-      });
 
-      // Fetch working shifts for today to determine actual check-in/out presence
+      // Fetch working shifts for today
       const workingShifts = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT * FROM \`staff_working_shift\` WHERE \`date\` = ?
       `, targetDateStr);
@@ -4108,157 +4139,144 @@ export async function customerRoutes(fastify: FastifyInstance) {
         shiftMap.set(Number(ws.user_id), ws);
       });
 
-      rosters.forEach(r => {
-        let bKey = 'detham';
-        const storeLower = (r.store || '').toLowerCase();
-        if (storeLower.includes('pxl') || storeLower.includes('phan xích long')) bKey = 'pxl';
-        else if (storeLower.includes('estella')) bKey = 'estella';
-
-        const role = (r.staff_role || '').toLowerCase();
-        const staffName = r.staff_name;
-        const normName = normalizeName(staffName);
-        const staffId = staffNameToIdMap.get(normName);
-        const isOff = r.is_off === 1;
-
-        let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
-        if (isOff) shift = 'off';
-        else if (r.shift_start) {
-          const sTime = typeof r.shift_start === 'string' ? r.shift_start : new Date(r.shift_start).toISOString().substr(11, 8);
-          if (sTime === '09:00:00') shift = 'sáng';
-          else if (sTime === '14:00:00') shift = 'chiều';
-        }
-
-        const wsRecord = staffId ? shiftMap.get(staffId) : null;
-        let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
-        let doing = 'Chưa check-in';
-
-        if (isOff) {
-          attendance = 'none';
-          doing = 'Nghỉ phép';
-        } else {
+      // Update CCs' shift, attendance, and doing from actual check-in records (workingShifts)
+      Object.keys(branchDetailMap).forEach(bKey => {
+        branchDetailMap[bKey].cc.forEach((cc: any) => {
+          const wsRecord = shiftMap.get(cc.id);
           if (wsRecord) {
+            let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
+            if (wsRecord.shift_start) {
+              const sTime = typeof wsRecord.shift_start === 'string' ? wsRecord.shift_start : new Date(wsRecord.shift_start).toISOString().substr(11, 8);
+              if (sTime === '09:00:00') shift = 'sáng';
+              else if (sTime === '14:00:00') shift = 'chiều';
+            }
+
+            let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
+            let doing = 'Chưa check-in';
+
             if (wsRecord.check_out_staff_task_id !== null) {
               attendance = 'checked_out';
               doing = 'Đã về';
             } else if (wsRecord.check_in_staff_task_id !== null) {
               attendance = 'checked_in';
-              doing = 'Đang trống';
-            } else {
-              attendance = 'none';
-              doing = 'Chưa check-in';
+              doing = 'Trống (Sẵn sàng đón khách)';
             }
-          } else {
-            attendance = 'none';
-            doing = 'Chưa check-in';
+
+            cc.shift = shift;
+            cc.attendance = attendance;
+            cc.doing = doing;
+          }
+        });
+      });
+
+      // Calculate and populate Chuyên viên (CV) list for each branch
+      activeCvs.forEach(cv => {
+        const storeId = Number(cv.storeId);
+        let bKey = 'estella';
+        if (storeId === 6) bKey = 'detham';
+        else if (storeId === 2) bKey = 'pxl';
+
+        const cvId = Number(cv.userId);
+        const normName = normalizeName(cv.fullName);
+
+        // Check if weekly off or specific day off
+        const offDays = getKTVOffDays(cvId);
+        const isWeeklyOff = offDays.includes(weekdayStr);
+        const hasSpecificDayOff = offUserIds.has(cvId);
+        const isOff = isWeeklyOff || hasSpecificDayOff;
+
+        // Check actual check-in/out record (workingShifts)
+        const wsRecord = shiftMap.get(cvId);
+        let shift: 'sáng' | 'chiều' | 'full' | 'off' = isOff ? 'off' : 'full';
+        let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
+        let doing = isOff ? 'Nghỉ phép' : 'Chưa check-in';
+
+        if (wsRecord) {
+          // If we have an actual check-in record, they are working!
+          if (wsRecord.shift_start) {
+            const sTime = typeof wsRecord.shift_start === 'string' ? wsRecord.shift_start : new Date(wsRecord.shift_start).toISOString().substr(11, 8);
+            if (sTime === '09:00:00') shift = 'sáng';
+            else if (sTime === '14:00:00') shift = 'chiều';
+          }
+          if (wsRecord.check_out_staff_task_id !== null) {
+            attendance = 'checked_out';
+            doing = 'Đã về';
+          } else if (wsRecord.check_in_staff_task_id !== null) {
+            attendance = 'checked_in';
+            doing = 'Đang trống';
           }
         }
 
-        // If CC, find pre-populated and update
-        const ccList = Object.keys(branchDetailMap).flatMap(k => branchDetailMap[k].cc);
-        const ccObj = ccList.find(c => c.id === staffId || normalizeName(c.name) === normName);
-        if (ccObj) {
-          ccObj.shift = shift;
-          ccObj.attendance = attendance;
-          ccObj.doing = doing;
-        }
-
-        // CV
+        // Get orders assigned to this CV
         const staffOrders = comingOrders.filter(o => {
-            if (staffId && o.assigned_staff_id === staffId) return true;
-            const assignedName = staffMap.get(Number(o.assigned_staff_id));
-            if (assignedName && normalizeName(assignedName) === normName) return true;
-            const orderSvs = comingServices.filter(cs => cs.order_id === o.id);
-            for (const cs of orderSvs) {
-              if (staffId && cs.assigned_staff_id === staffId) return true;
-              const csAssignedName = staffMap.get(Number(cs.assigned_staff_id));
-              if (csAssignedName && normalizeName(csAssignedName) === normName) return true;
-            }
-            return false;
+          if (o.assigned_staff_id === cvId) return true;
+          const assignedName = staffMap.get(Number(o.assigned_staff_id));
+          if (assignedName && normalizeName(assignedName) === normName) return true;
+          const orderSvs = comingServices.filter(cs => cs.order_id === o.id);
+          for (const cs of orderSvs) {
+            if (cs.assigned_staff_id === cvId) return true;
+            const csAssignedName = staffMap.get(Number(cs.assigned_staff_id));
+            if (csAssignedName && normalizeName(csAssignedName) === normName) return true;
+          }
+          return false;
+        });
+
+        let status: 'available' | 'busy' = 'available';
+
+        if (!isOff && attendance !== 'checked_out') {
+          // Find active order
+          const activeOrder = staffOrders.find(o => {
+            if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
+            if (!o.booking_date_start || !o.booking_date_end) return false;
+            const start = toActualDate(o.booking_date_start);
+            const end = toActualDate(o.booking_date_end);
+            return refTime >= start && refTime <= end;
           });
 
-          let status: 'available' | 'busy' = 'available';
+          if (activeOrder) {
+            const custProfile = comingProfileMap.get(activeOrder.user_id);
+            const custName = custProfile?.fullName ? custProfile.fullName.trim() : 'Khách hàng';
+            const parts = custName.split(' ');
+            const shortCustName = parts.length > 2 ? parts.slice(-2).join(' ') : custName;
 
-          if (!isOff && attendance !== 'checked_out') {
-            // Find active order
-            const activeOrder = staffOrders.find(o => {
-              if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
-              if (!o.booking_date_start || !o.booking_date_end) return false;
-              const start = toActualDate(o.booking_date_start);
-              const end = toActualDate(o.booking_date_end);
-              return refTime >= start && refTime <= end;
-            });
+            const orderSvs = comingServices.filter(cs => cs.order_id === activeOrder.id);
+            const svName = orderSvs.length > 0 ? (serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ') : 'Dịch vụ';
 
-            if (activeOrder) {
-              const custProfile = comingProfileMap.get(activeOrder.user_id);
-              const custName = custProfile?.fullName ? custProfile.fullName.trim() : 'Khách hàng';
-              const parts = custName.split(' ');
-              const shortCustName = parts.length > 2 ? parts.slice(-2).join(' ') : custName;
+            const start = toActualDate(activeOrder.booking_date_start);
+            const end = toActualDate(activeOrder.booking_date_end);
+            const totalMin = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
+            const elapsedMin = Math.max(0, Math.min(totalMin, Math.round((refTime.getTime() - start.getTime()) / 60000)));
 
-              const orderSvs = comingServices.filter(cs => cs.order_id === activeOrder.id);
+            doing = `[${elapsedMin}/${totalMin}] ${shortCustName}: ${svName}`;
+            status = 'busy';
+          } else {
+            // Find next upcoming order
+            const upcoming = staffOrders
+              .filter(o => {
+                if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
+                if (!o.booking_date_start) return false;
+                return toActualDate(o.booking_date_start) > refTime;
+              })
+              .sort((a, b) => toActualDate(a.booking_date_start).getTime() - toActualDate(b.booking_date_start).getTime());
+
+            if (upcoming.length > 0) {
+              const nextOrder = upcoming[0];
+              const timeStr = formatDbTime(nextOrder.booking_date_start);
+              const orderSvs = comingServices.filter(cs => cs.order_id === nextOrder.id);
               const svName = orderSvs.length > 0 ? (serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ') : 'Dịch vụ';
-
-              const start = toActualDate(activeOrder.booking_date_start);
-              const end = toActualDate(activeOrder.booking_date_end);
-              const totalMin = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
-              const elapsedMin = Math.max(0, Math.min(totalMin, Math.round((refTime.getTime() - start.getTime()) / 60000)));
-
-              doing = `[${elapsedMin}/${totalMin}] ${shortCustName}: ${svName}`;
-              status = 'busy';
-            } else {
-              // Find next upcoming order
-              const upcoming = staffOrders
-                .filter(o => {
-                  if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
-                  if (!o.booking_date_start) return false;
-                  return toActualDate(o.booking_date_start) > refTime;
-                })
-                .sort((a, b) => toActualDate(a.booking_date_start).getTime() - toActualDate(b.booking_date_start).getTime());
-
-              if (upcoming.length > 0) {
-                const nextOrder = upcoming[0];
-                const timeStr = formatDbTime(nextOrder.booking_date_start);
-                const orderSvs = comingServices.filter(cs => cs.order_id === nextOrder.id);
-                const svName = orderSvs.length > 0 ? (serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ') : 'Dịch vụ';
                 doing = `Chờ khách: ${svName} (${timeStr})`;
               }
             }
           }
 
-        // Find if this CV was already pre-populated under any branch
-        let cvObj: any = null;
-        Object.keys(branchDetailMap).forEach(k => {
-          const foundIdx = branchDetailMap[k].cv.findIndex((c: any) => normalizeName(c.name) === normName);
-          if (foundIdx !== -1) {
-            cvObj = branchDetailMap[k].cv[foundIdx];
-            if (k !== bKey) {
-              // Remove from old branch
-              branchDetailMap[k].cv.splice(foundIdx, 1);
-            }
-          }
+        branchDetailMap[bKey].cv.push({
+          name: cv.fullName.trim(),
+          doing,
+          clients: isOff ? 0 : staffOrders.length,
+          shift,
+          attendance,
+          status
         });
-
-        if (cvObj) {
-          cvObj.doing = doing;
-          cvObj.clients = isOff ? 0 : staffOrders.length;
-          cvObj.shift = shift;
-          cvObj.attendance = attendance;
-          cvObj.status = status;
-        } else {
-          cvObj = {
-            name: staffName,
-            doing,
-            clients: isOff ? 0 : staffOrders.length,
-            shift,
-            attendance,
-            status
-          };
-        }
-
-        // Ensure CV is in correct target branch list
-        const exists = branchDetailMap[bKey].cv.some((c: any) => normalizeName(c.name) === normName);
-        if (!exists) {
-          branchDetailMap[bKey].cv.push(cvObj);
-        }
       });
 
       // Helper function to find and move CC to their active branch today
