@@ -3524,6 +3524,24 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const startOfDay = new Date(targetDateStr + 'T00:00:00.000Z');
     const endOfDay = new Date(targetDateStr + 'T23:59:59.999Z');
 
+    const toActualDate = (dbDate: Date | null | undefined) => {
+      if (!dbDate) return new Date(0);
+      return new Date(Date.UTC(
+        dbDate.getUTCFullYear(),
+        dbDate.getUTCMonth(),
+        dbDate.getUTCDate(),
+        dbDate.getUTCHours(),
+        dbDate.getUTCMinutes(),
+        dbDate.getUTCSeconds()
+      ) - 7 * 3600 * 1000);
+    };
+
+    const formatDbTime = (dbDate: Date | null | undefined) => {
+      if (!dbDate) return '00:00';
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return `${pad(dbDate.getUTCHours())}:${pad(dbDate.getUTCMinutes())}`;
+    };
+
     try {
       // 1. Query bookings created today
       const bookingsOrders = await fastify.prisma.legacy.order.findMany({
@@ -3790,7 +3808,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           status = 'arrived';
         } else if (o.order_state === 'Confirmed' || o.order_state === 'New') {
           const now = new Date();
-          if (o.booking_date_start && new Date(o.booking_date_start) < new Date(now.getTime() - 15 * 60000)) {
+          const actualStart = toActualDate(o.booking_date_start);
+          if (o.booking_date_start && actualStart < new Date(now.getTime() - 15 * 60000)) {
             status = 'late';
           } else {
             status = 'confirmed';
@@ -3799,7 +3818,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         const comingItem = {
           key: String(o.id),
-          time: o.booking_date_start ? new Date(o.booking_date_start).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '00:00',
+          time: formatDbTime(o.booking_date_start),
           customer: name,
           avatar: uProfile?.avatar || null,
           phone,
@@ -3894,8 +3913,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
             const activeOrder = staffOrders.find(o => {
               if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
               if (!o.booking_date_start || !o.booking_date_end) return false;
-              const start = new Date(o.booking_date_start as Date);
-              const end = new Date(o.booking_date_end as Date);
+              const start = toActualDate(o.booking_date_start);
+              const end = toActualDate(o.booking_date_end);
               return refTime >= start && refTime <= end;
             });
 
@@ -3908,8 +3927,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
               const orderSvs = comingServices.filter(cs => cs.order_id === activeOrder.id);
               const svName = orderSvs.length > 0 ? (serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ') : 'Dịch vụ';
 
-              const start = new Date(activeOrder.booking_date_start as Date);
-              const end = new Date(activeOrder.booking_date_end as Date);
+              const start = toActualDate(activeOrder.booking_date_start);
+              const end = toActualDate(activeOrder.booking_date_end);
               const totalMin = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
               const elapsedMin = Math.max(0, Math.min(totalMin, Math.round((refTime.getTime() - start.getTime()) / 60000)));
 
@@ -3921,14 +3940,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 .filter(o => {
                   if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
                   if (!o.booking_date_start) return false;
-                  return new Date(o.booking_date_start as Date) > refTime;
+                  return toActualDate(o.booking_date_start) > refTime;
                 })
-                .sort((a, b) => new Date(a.booking_date_start as Date).getTime() - new Date(b.booking_date_start as Date).getTime());
+                .sort((a, b) => toActualDate(a.booking_date_start).getTime() - toActualDate(b.booking_date_start).getTime());
 
               if (upcoming.length > 0) {
                 const nextOrder = upcoming[0];
-                const nextStart = new Date(nextOrder.booking_date_start as Date);
-                const timeStr = nextStart.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+                const timeStr = formatDbTime(nextOrder.booking_date_start);
                 const orderSvs = comingServices.filter(cs => cs.order_id === nextOrder.id);
                 const svName = orderSvs.length > 0 ? (serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ') : 'Dịch vụ';
                 doing = `Chờ khách: ${svName} (${timeStr})`;
