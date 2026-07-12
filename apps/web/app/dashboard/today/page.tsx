@@ -170,8 +170,7 @@ export default function TodayDashboard() {
   const [liveClock, setLiveClock] = useState('');
   
   // Tabs states
-  const [bookingTab, setBookingTab] = useState<'combo' | 'oc' | 'other'>('combo');
-  const [bookingBranch, setBookingBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('all');
+  const [bookingFilter, setBookingFilter] = useState<'all' | 'combo' | 'oc' | 'other'>('all');
   const [comingBranch, setComingBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
   const [shopBranch, setShopBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
 
@@ -187,13 +186,9 @@ export default function TodayDashboard() {
       if (persistedShowTax !== null) {
         setShowTax(persistedShowTax === 'true');
       }
-      const persistedBookingTab = localStorage.getItem('today_booking_tab');
-      if (persistedBookingTab !== null) {
-        setBookingTab(persistedBookingTab as any);
-      }
-      const persistedBookingBranch = localStorage.getItem('today_booking_branch');
-      if (persistedBookingBranch !== null) {
-        setBookingBranch(persistedBookingBranch as any);
+      const persistedBookingFilter = localStorage.getItem('today_booking_filter');
+      if (persistedBookingFilter !== null) {
+        setBookingFilter(persistedBookingFilter as any);
       }
       const persistedComingBranch = localStorage.getItem('today_coming_branch');
       if (persistedComingBranch !== null) {
@@ -212,12 +207,8 @@ export default function TodayDashboard() {
   }, [showTax]);
 
   useEffect(() => {
-    localStorage.setItem('today_booking_tab', bookingTab);
-  }, [bookingTab]);
-
-  useEffect(() => {
-    localStorage.setItem('today_booking_branch', bookingBranch);
-  }, [bookingBranch]);
+    localStorage.setItem('today_booking_filter', bookingFilter);
+  }, [bookingFilter]);
 
   useEffect(() => {
     localStorage.setItem('today_coming_branch', comingBranch);
@@ -320,23 +311,17 @@ export default function TodayDashboard() {
     return '';
   };
 
-  const filteredBookingsCombo = React.useMemo(() => {
-    if (bookingBranch === 'all') return bookingsCombo;
-    const targetLabel = bookingBranch === 'detham' ? 'Đề Thám' : (bookingBranch === 'pxl' ? 'PXL' : 'Estella');
-    return bookingsCombo.filter(b => b.branchName === targetLabel);
-  }, [bookingsCombo, bookingBranch]);
+  const allBookings = React.useMemo(() => {
+    const combined = [...bookingsCombo, ...bookingsOc, ...bookingsOther];
+    return combined.sort((a, b) => Number(b.key) - Number(a.key));
+  }, [bookingsCombo, bookingsOc, bookingsOther]);
 
-  const filteredBookingsOc = React.useMemo(() => {
-    if (bookingBranch === 'all') return bookingsOc;
-    const targetLabel = bookingBranch === 'detham' ? 'Đề Thám' : (bookingBranch === 'pxl' ? 'PXL' : 'Estella');
-    return bookingsOc.filter(b => b.branchName === targetLabel);
-  }, [bookingsOc, bookingBranch]);
-
-  const filteredBookingsOther = React.useMemo(() => {
-    if (bookingBranch === 'all') return bookingsOther;
-    const targetLabel = bookingBranch === 'detham' ? 'Đề Thám' : (bookingBranch === 'pxl' ? 'PXL' : 'Estella');
-    return bookingsOther.filter(b => b.branchName === targetLabel);
-  }, [bookingsOther, bookingBranch]);
+  const filteredBookings = React.useMemo(() => {
+    if (bookingFilter === 'all') return allBookings;
+    if (bookingFilter === 'combo') return bookingsCombo;
+    if (bookingFilter === 'oc') return bookingsOc;
+    return bookingsOther;
+  }, [bookingFilter, allBookings, bookingsCombo, bookingsOc, bookingsOther]);
 
   const activeComingList = React.useMemo(() => {
     const list = comingBranch === 'all'
@@ -764,79 +749,29 @@ export default function TodayDashboard() {
               extra={
                 <Radio.Group 
                   size="small" 
-                  value={bookingBranch} 
-                  onChange={(e) => setBookingBranch(e.target.value)}
+                  value={bookingFilter} 
+                  onChange={(e) => setBookingFilter(e.target.value)}
                 >
-                  <Radio.Button value="all">ALL</Radio.Button>
-                  <Radio.Button value="detham">Đề Thám (DT)</Radio.Button>
-                  <Radio.Button value="pxl">PXL</Radio.Button>
-                  <Radio.Button value="estella">Estella (EP)</Radio.Button>
+                  <Radio.Button value="all">ALL ({allBookings.length})</Radio.Button>
+                  <Radio.Button value="combo">Combo ({bookingsCombo.length})</Radio.Button>
+                  <Radio.Button value="oc">Telesales ({bookingsOc.length})</Radio.Button>
+                  <Radio.Button value="other">Khác ({bookingsOther.length})</Radio.Button>
                 </Radio.Group>
               }
               style={{ height: '100%', borderColor: token.colorBorderSecondary }}
             >
-              <Tabs 
-                activeKey={bookingTab} 
-                onChange={(k: any) => setBookingTab(k)}
-                items={[
-                  {
-                    key: 'combo',
-                    label: `Combo (${filteredBookingsCombo.length})`,
-                    children: (
-                      <Table
-                        dataSource={filteredBookingsCombo}
-                        columns={bookingColumns}
-                        size="small"
-                        pagination={false}
-                        bordered
-                        className="antd-custom-table"
-                        rowClassName={(record) => {
-                          if (record.status === 'completed') return 'coming-row-completed';
-                          if (record.status === 'late') return 'coming-row-late';
-                          return '';
-                        }}
-                      />
-                    )
-                  },
-                  {
-                    key: 'oc',
-                    label: `Telesales Executive (${filteredBookingsOc.length})`,
-                    children: (
-                      <Table
-                        dataSource={filteredBookingsOc}
-                        columns={bookingColumns}
-                        size="small"
-                        pagination={false}
-                        bordered
-                        className="antd-custom-table"
-                        rowClassName={(record) => {
-                          if (record.status === 'completed') return 'coming-row-completed';
-                          if (record.status === 'late') return 'coming-row-late';
-                          return '';
-                        }}
-                      />
-                    )
-                  },
-                  {
-                    key: 'other',
-                    label: `Khác (${filteredBookingsOther.length})`,
-                    children: (
-                      <Table
-                        dataSource={filteredBookingsOther}
-                        columns={bookingColumns}
-                        size="small"
-                        pagination={false}
-                        bordered
-                        className="antd-custom-table"
-                        rowClassName={(record) => {
-                          if (record.status === 'completed') return 'coming-row-completed';
-                          if (record.status === 'late') return 'coming-row-late';
-                          return '';
-                        }}
-                      />
-                    )
-                  }
-                ]}
+              <Table
+                dataSource={filteredBookings}
+                columns={bookingColumns}
+                size="small"
+                pagination={false}
+                bordered
+                className="antd-custom-table"
+                rowClassName={(record) => {
+                  if (record.status === 'completed') return 'coming-row-completed';
+                  if (record.status === 'late') return 'coming-row-late';
+                  return '';
+                }}
               />
             </Card>
           </Col>
