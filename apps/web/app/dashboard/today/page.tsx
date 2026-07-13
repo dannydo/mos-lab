@@ -919,7 +919,7 @@ export default function TodayDashboard() {
 
   if (!selectedDate) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: themeMode === 'dark' ? '#141414' : '#ffffff' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: themeMode === 'dark' ? '#0b0f19' : '#ffffff' }}>
         <Spin size="large" />
       </div>
     );
@@ -938,9 +938,9 @@ export default function TodayDashboard() {
           flexWrap: 'wrap',
           gap: '16px',
           padding: '16px 24px',
-          background: themeMode === 'dark' ? '#141414' : '#fffbe6',
+          background: themeMode === 'dark' ? '#111827' : '#fffbe6',
           borderRadius: '12px',
-          border: `1px solid ${themeMode === 'dark' ? '#303030' : '#ffd666'}`
+          border: `1px solid ${themeMode === 'dark' ? '#1f2937' : '#ffd666'}`
         }}
       >
         <div>
@@ -1423,7 +1423,7 @@ export default function TodayDashboard() {
                   </div>
                   <Row gutter={[16, 16]}>
                     <Col xs={24} sm={12} md={6}>
-                      <Card size="small" style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
+                      <Card size="small" style={{ background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
                         <span style={{ fontSize: '11px', color: token.colorTextDescription }}>Doanh Thu Dịch Vụ Lẻ</span>
                         <div style={{ fontSize: '20px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}>
                           {activeShopData.revLe.toLocaleString('vi-VN')} đ
@@ -1432,7 +1432,7 @@ export default function TodayDashboard() {
                     </Col>
                     
                     <Col xs={24} sm={12} md={6}>
-                      <Card size="small" style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
+                      <Card size="small" style={{ background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
                         <span style={{ fontSize: '11px', color: '#D4A84B' }}>Doanh Thu Combo (Gói)</span>
                         <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#D4A84B', marginTop: '4px' }}>
                           {activeShopData.revCombo.toLocaleString('vi-VN')} đ
@@ -1441,7 +1441,7 @@ export default function TodayDashboard() {
                     </Col>
 
                     <Col xs={24} sm={12} md={6}>
-                      <Card size="small" style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
+                      <Card size="small" style={{ background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
                         <span style={{ fontSize: '11px', color: '#52c41a' }}>Doanh Thu Sản Phẩm</span>
                         <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#52c41a', marginTop: '4px' }}>
                           {activeShopData.revProduct.toLocaleString('vi-VN')} đ
@@ -1450,7 +1450,7 @@ export default function TodayDashboard() {
                     </Col>
 
                     <Col xs={24} sm={12} md={6}>
-                      <Card size="small" style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
+                      <Card size="small" style={{ background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5', border: `1px solid ${token.colorBorderSecondary}` }}>
                         <span style={{ fontSize: '11px', color: '#1890ff', fontWeight: 'bold' }}>Tổng Doanh Thu</span>
                         <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff', marginTop: '4px' }}>
                           {(activeShopData.revLe + activeShopData.revCombo + activeShopData.revProduct).toLocaleString('vi-VN')} đ

@@ -59,8 +59,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             colorInfo: '#D4A84B',
             borderRadius: 6,
             fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            colorBgContainer: !mounted || themeMode === 'dark' ? '#141414' : '#ffffff',
-            colorBgLayout: !mounted || themeMode === 'dark' ? '#121212' : '#f5f7fa',
+            colorBgContainer: !mounted || themeMode === 'dark' ? '#111827' : '#ffffff',
+            colorBgLayout: !mounted || themeMode === 'dark' ? '#0b0f19' : '#f5f7fa',
           },
         }}
       >
