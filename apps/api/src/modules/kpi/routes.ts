@@ -984,11 +984,24 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       }
 
       let totalBooked = 0;
+      if (legacyUserIds.length > 0) {
+        const bookedOrders = await fastify.prisma.legacy.order.findMany({
+          where: {
+            created_staff_id: { in: legacyUserIds },
+            date_created: { gte: start, lte: end },
+            order_state: { not: 'Cancelled' }
+          },
+          select: {
+            id: true
+          }
+        });
+        totalBooked = bookedOrders.length;
+      }
+
       let totalCheckin = 0;
       let totalEarnings = 0;
 
       Object.values(salaries).forEach(s => {
-        totalBooked += s.doneCount + s.missedCount;
         totalCheckin += s.doneCount;
         totalEarnings += s.totalSalary;
       });
@@ -1120,6 +1133,25 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         });
       }
 
+      const bookedCountMap = new Map<number, number>();
+      if (legacyUserIds.length > 0) {
+        const bookedOrders = await fastify.prisma.legacy.order.findMany({
+          where: {
+            created_staff_id: { in: legacyUserIds },
+            date_created: { gte: start, lte: end },
+            order_state: { not: 'Cancelled' }
+          },
+          select: {
+            created_staff_id: true
+          }
+        });
+
+        bookedOrders.forEach((o: any) => {
+          const uid = Number(o.created_staff_id);
+          bookedCountMap.set(uid, (bookedCountMap.get(uid) || 0) + 1);
+        });
+      }
+
       // Fetch happy logs to calculate happy calls count per staff
       const happyLogs = await fastify.prisma.crm.crmCallLog.findMany({
         where: {
@@ -1175,7 +1207,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           totalSalary: 5500000
         };
 
-        const totalBooked = salary.doneCount + salary.missedCount;
+        const totalBooked = legacyUserId ? bookedCountMap.get(legacyUserId) || 0 : 0;
         const totalPlanned = totalBooked;
         const totalCalled = callStats.totalCalled;
         const totalAnswered = callStats.totalAnswered;
