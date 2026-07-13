@@ -676,14 +676,19 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   {[0.25, 0.5, 0.75, 1.0].map(level => {
                     const pts = getPentagonPoints(RADAR_CENTER_X, RADAR_CENTER_Y, RADAR_MAX_R * level);
                     const ptsStr = pointsToString(pts);
+                    const isOuter = level === 1.0;
                     return (
                       <polygon 
                         key={level} 
                         points={ptsStr} 
                         fill="none" 
-                        stroke={themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'} 
-                        strokeWidth="0.5" 
-                        strokeDasharray={level < 1 ? '2.5,2.5' : 'none'} 
+                        stroke={
+                          isOuter
+                            ? (themeMode === 'dark' ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.35)')
+                            : (themeMode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)')
+                        } 
+                        strokeWidth={isOuter ? '1.5' : '0.75'} 
+                        strokeDasharray={isOuter ? 'none' : '3,3'} 
                       />
                     );
                   })}

@@ -20,6 +20,7 @@ import {
 } from '@ant-design/icons';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
+import TelesalesDashboardModal from '../../components/TelesalesDashboardModal';
 
 const { Header, Sider, Content } = Layout;
 
@@ -168,6 +169,8 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [isDashboardVisible, setIsDashboardVisible] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState('TN');
 
   useEffect(() => {
     const saved = localStorage.getItem('mos_sidebar_collapsed');
@@ -248,6 +251,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         key: 'role',
         label: `Vai trò: ${user?.role?.toUpperCase()}`,
         disabled: true
+      },
+      {
+        type: 'divider' as const
+      },
+      {
+        key: 'telesales_dashboard',
+        icon: <BarChartOutlined className="text-gold" />,
+        label: 'KPI Đội Telesales',
+        onClick: () => {
+          setSelectedMemberId('DD');
+          setIsDashboardVisible(true);
+        }
       },
       {
         type: 'divider' as const
@@ -362,6 +377,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </Button>
               </Tag>
             )}
+            {/* Online User Avatar Bubbles Stack */}
+            <div style={{ display: 'flex', alignItems: 'center', marginRight: '16px' }} className="flex-shrink-0">
+              {[
+                { id: 'TN', name: 'Thanh Ngân', color: 'linear-gradient(135deg, #EC4899, #DB2777)' },
+                { id: 'HM', name: 'Hoài My', color: 'linear-gradient(135deg, #A855F7, #9333EA)' },
+                { id: 'VT', name: 'Vũ Thảo', color: 'linear-gradient(135deg, #06B6D4, #0891B2)' },
+                { id: 'KL', name: 'Kim Loan', color: 'linear-gradient(135deg, #10B981, #059669)' },
+                { id: 'TH', name: 'Thu Hà', color: 'linear-gradient(135deg, #F97316, #EA580C)' }
+              ].map((m, idx) => (
+                <div 
+                  key={m.id}
+                  onClick={() => {
+                    setSelectedMemberId(m.id);
+                    setIsDashboardVisible(true);
+                  }}
+                  className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 cursor-pointer hover:scale-110 hover:z-30 transition-all shadow-sm avatar-breath shrink-0 flex-shrink-0 select-none"
+                  style={{ background: m.color, zIndex: 10 - idx, marginLeft: idx > 0 ? '-10px' : '0', borderColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}
+                  title={m.name}
+                >
+                  {m.id}
+                  <span 
+                    className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 flex items-center justify-center"
+                    style={{ borderColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}
+                  >
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  </span>
+                </div>
+              ))}
+            </div>
+
             <Button 
               type="text" 
               icon={themeMode === 'dark' ? <SunOutlined style={{ color: '#FAAD14' }} /> : <MoonOutlined style={{ color: '#1890ff' }} />} 
@@ -399,6 +444,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Content>
       </Layout>
 
+      <TelesalesDashboardModal 
+        visible={isDashboardVisible} 
+        onClose={() => setIsDashboardVisible(false)} 
+        initialMemberId={selectedMemberId} 
+      />
+
       <style jsx global>{`
         /* Override Ant Design dark sidebar menu hover/select colors */
         .antd-custom-menu .ant-menu-item-selected {
@@ -430,6 +481,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .ant-layout-sider:hover + .sidebar-toggle-container .sidebar-toggle-btn,
         .sidebar-toggle-container:hover .sidebar-toggle-btn {
           opacity: 1 !important;
+        }
+
+        /* Avatar gentle breathing animation */
+        @keyframes avatarBreath {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        .avatar-breath {
+          animation: avatarBreath 3s infinite ease-in-out;
         }
       `}</style>
     </Layout>
