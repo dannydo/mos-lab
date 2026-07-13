@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, message, Spin, Segmented } from 'antd';
+import { Button, message, Spin, Segmented, Checkbox, Select } from 'antd';
 import {
   PhoneOutlined,
   CustomerServiceOutlined,
@@ -538,56 +538,75 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     return (
                       <div 
                         key={staff.id} 
-                        className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-all ${
-                          isChecked 
-                            ? (themeMode === 'dark' ? 'border-amber-500/50 bg-amber-500/5' : 'border-amber-500/30 bg-amber-50/50')
-                            : (themeMode === 'dark' ? 'border-white/5 hover:bg-white/[0.02]' : 'border-slate-100 hover:bg-slate-50')
-                        }`}
                         onClick={() => toggleStaffSelection(staff.id)}
+                        className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                          isChecked 
+                            ? (themeMode === 'dark' 
+                                ? 'border-gold/30 bg-gold/5 shadow-[0_4px_12px_rgba(212,168,75,0.08)]' 
+                                : 'border-gold/25 bg-gold/[0.03] shadow-[0_4px_10px_rgba(212,168,75,0.05)]')
+                            : (themeMode === 'dark' 
+                                ? 'border-white/[0.04] bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.03]' 
+                                : 'border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-slate-50')
+                        }`}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <input 
-                            type="checkbox" 
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <Checkbox 
                             checked={isChecked}
-                            onChange={() => {}} // Handled by div onClick
-                            className="rounded accent-[#D4A84B] shrink-0"
-                            onClick={(e) => e.stopPropagation()} // Prevent double trigger
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={() => toggleStaffSelection(staff.id)}
+                            className="shrink-0 scale-105"
                           />
-                          <div className="flex flex-col min-w-0 flex-1">
-                            <span className={`text-xs font-semibold truncate ${themeMode === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                          <div className="flex flex-col min-w-0 flex-1 select-none">
+                            <span className={`text-xs font-bold truncate transition-colors ${
+                              isChecked 
+                                ? (themeMode === 'dark' ? 'text-gold' : 'text-amber-800')
+                                : (themeMode === 'dark' ? 'text-gray-200' : 'text-gray-800')
+                            }`}>
                               {staff.displayName || staff.username}
                             </span>
-                            <span className={`text-[9px] ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'} uppercase font-bold tracking-wider`}>
+                            <span className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${
+                              isChecked
+                                ? (themeMode === 'dark' ? 'text-gold/60' : 'text-amber-700/60')
+                                : (themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400')
+                            }`}>
                               {staff.role === 'telesales' ? 'Telesales Executive' : staff.role}
                             </span>
                           </div>
                         </div>
 
                         {isAdmin ? (
-                          <select
-                            value={staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2}
-                            onChange={(e) => {
-                              const newLevel = parseInt(e.target.value, 10);
-                              setStaffLevels(prev => ({
-                                ...prev,
-                                [String(staff.id)]: newLevel
-                              }));
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className={`text-xs rounded border px-1 py-0.5 outline-none font-bold shrink-0 cursor-pointer ${
-                              themeMode === 'dark'
-                                ? 'bg-black border-white/10 text-white'
-                                : 'bg-white border-gray-300 text-gray-700'
-                            }`}
-                          >
-                            {LEVEL_PRESETS.map((p, idx) => (
-                              <option key={idx} value={idx}>{p.emoji} {p.name}</option>
-                            ))}
-                          </select>
+                          <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+                            <Select
+                              value={staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2}
+                              onChange={(val) => {
+                                setStaffLevels(prev => ({
+                                  ...prev,
+                                  [String(staff.id)]: val
+                                }));
+                              }}
+                              size="small"
+                              style={{ width: 110 }}
+                              variant="filled"
+                              options={LEVEL_PRESETS.map((p, idx) => ({
+                                value: idx,
+                                label: (
+                                  <span className="flex items-center gap-1.5 font-semibold text-xs select-none">
+                                    <span className="text-sm">{p.emoji}</span>
+                                    <span>{p.name}</span>
+                                  </span>
+                                )
+                              }))}
+                            />
+                          </div>
                         ) : (
-                          <span className="text-xs shrink-0 select-none">
-                            {LEVEL_PRESETS[staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2]?.emoji || '🐥'}
-                          </span>
+                          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${
+                            themeMode === 'dark'
+                              ? 'bg-white/[0.03] border-white/5 text-gray-300'
+                              : 'bg-slate-100 border-slate-200/60 text-slate-600'
+                          }`}>
+                            <span className="text-xs">{LEVEL_PRESETS[staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2]?.emoji || '🐥'}</span>
+                            <span>{LEVEL_PRESETS[staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2]?.name || 'Chick'}</span>
+                          </div>
                         )}
                       </div>
                     );
