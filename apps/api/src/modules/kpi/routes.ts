@@ -881,6 +881,63 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/kpi/staff-levels
+  fastify.get('/kpi/staff-levels', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const config = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'STAFF_TARGET_LEVELS' }
+      });
+      if (!config) {
+        return {};
+      }
+      return JSON.parse(config.value);
+    } catch (err: any) {
+      fastify.log.error(err as any, 'Get staff levels error');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Lỗi tải danh sách cấp độ nhân sự.'
+      });
+    }
+  });
+
+  // POST /api/kpi/staff-levels (Admin only)
+  fastify.post('/kpi/staff-levels', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string };
+    if (user.role !== 'admin') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Chỉ quản trị viên mới có quyền cấu hình cấp độ mục tiêu nhân sự.'
+      });
+    }
+
+    const levelsMap = request.body as any;
+    if (!levelsMap || typeof levelsMap !== 'object') {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Cấu hình cấp độ không hợp lệ.'
+      });
+    }
+
+    try {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: 'STAFF_TARGET_LEVELS' },
+        update: { value: JSON.stringify(levelsMap) },
+        create: {
+          key: 'STAFF_TARGET_LEVELS',
+          value: JSON.stringify(levelsMap)
+        }
+      });
+
+      return { success: true, message: 'Đã cập nhật cấp độ mục tiêu nhân sự thành công.' };
+    } catch (err: any) {
+      fastify.log.error(err as any, 'Update staff levels error');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Lỗi lưu cấp độ mục tiêu nhân sự.'
+      });
+    }
+  });
+
   // GET /api/kpi/summary
   fastify.get('/kpi/summary', { preHandler: [requireAuth] }, async (request, reply) => {
     const { startDate, endDate, staffId, role } = request.query as { 

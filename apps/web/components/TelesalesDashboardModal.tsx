@@ -83,6 +83,15 @@ function getMemberData(memberId: string, period: string): Record<string, number>
   };
 }
 
+const LEVEL_PRESETS = [
+  { emoji: '🥚', name: 'Egg', done: 100, booked: 125, happy: 500, pickups: 625, calls: 2083 },
+  { emoji: '🐣', name: 'Hatching', done: 150, booked: 188, happy: 750, pickups: 938, calls: 3125 },
+  { emoji: '🐥', name: 'Chick', done: 225, booked: 281, happy: 1125, pickups: 1406, calls: 4688 },
+  { emoji: '🐔', name: 'Chicken', done: 325, booked: 406, happy: 1625, pickups: 2031, calls: 6771 },
+  { emoji: '🍗', name: 'Drumstick', done: 450, booked: 563, happy: 2250, pickups: 2813, calls: 9375 },
+  { emoji: '👼', name: 'Angel', done: 600, booked: 750, happy: 3000, pickups: 3750, calls: 12500 }
+];
+
 export default function TelesalesDashboardModal({ visible, onClose, initialMemberId = 'TN' }: TelesalesDashboardModalProps) {
   const { themeMode } = useTheme();
   const modalContainerRef = useRef<HTMLDivElement | null>(null);
@@ -97,6 +106,27 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const [selectedStaffIds, setSelectedStaffIds] = useState<number[]>([]);
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [staffLevels, setStaffLevels] = useState<Record<string, number>>({});
+
+  const getMemberTarget = (memberId: string, periodId: string): Record<string, number> => {
+    const levelIdx = staffLevels[String(memberId)] !== undefined ? staffLevels[String(memberId)] : 2;
+    const preset = LEVEL_PRESETS[levelIdx] || LEVEL_PRESETS[2];
+    
+    let divisor = 1;
+    if (periodId === 'today' || periodId === 'yesterday') {
+      divisor = 25;
+    } else if (periodId === 'this_week' || periodId === 'last_week') {
+      divisor = 4;
+    }
+    
+    return {
+      calls: Math.round(preset.calls / divisor),
+      pickups: Math.round(preset.pickups / divisor),
+      happy: Math.round(preset.happy / divisor),
+      booked: Math.round(preset.booked / divisor),
+      done: Math.round(preset.done / divisor),
+    };
+  };
 
   const [targets, setTargets] = useState<Record<string, Record<string, number>>>({
     today: { calls: 80, pickups: 50, happy: 20, booked: 15, done: 10 },
@@ -147,6 +177,20 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
       localStorage.setItem('telesales_dashboard_period_id', currentPeriodId);
     }
   }, [currentPeriodId]);
+
+  useEffect(() => {
+    if (visible) {
+      const fetchStaffLevels = async () => {
+        try {
+          const res = await api.get('/kpi/staff-levels');
+          setStaffLevels(res.data || {});
+        } catch (err) {
+          console.error('Failed to fetch staff levels:', err);
+        }
+      };
+      fetchStaffLevels();
+    }
+  }, [visible, refreshCounter]);
 
   useEffect(() => {
     if (!visible) return;
@@ -302,11 +346,19 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
     );
   };
 
-  const saveVisibleStaff = () => {
-    localStorage.setItem('telesales_dashboard_visible_staff', JSON.stringify(selectedStaffIds));
-    setIsConfigOpen(false);
-    message.success('Đã cập nhật danh sách nhân sự trên bảng xếp hạng!');
-    setRefreshCounter(prev => prev + 1);
+  const saveVisibleStaff = async () => {
+    try {
+      localStorage.setItem('telesales_dashboard_visible_staff', JSON.stringify(selectedStaffIds));
+      if (isAdmin) {
+        await api.post('/kpi/staff-levels', staffLevels);
+      }
+      setIsConfigOpen(false);
+      message.success('Đã cập nhật danh sách nhân sự và mục tiêu cấp độ!');
+      setRefreshCounter(prev => prev + 1);
+    } catch (err) {
+      console.error('Failed to save staff levels:', err);
+      message.error('Lỗi khi lưu cấp độ mục tiêu.');
+    }
   };
 
   useEffect(() => {
@@ -347,7 +399,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const activePerformance = activeMember.perf || getMemberData(activeMember.id, currentPeriodId);
   const activeMetricConfig = metricConfigs.find(m => m.key === currentMetricKey) || metricConfigs[0];
   const activeValue = activePerformance[currentMetricKey];
-  const activeTarget = targets[currentPeriodId][currentMetricKey];
+  const activeMemberTargets = getMemberTarget(activeMember.id, currentPeriodId);
+  const activeTarget = activeMemberTargets[currentMetricKey];
   const activePercent = activeTarget > 0 ? Math.min(Math.round((activeValue / activeTarget) * 100), 100) : 0;
 
   // Donut values
@@ -485,28 +538,57 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     return (
                       <div 
                         key={staff.id} 
-                        className={`flex items-center gap-2.5 p-2 rounded-lg border cursor-pointer transition-all ${
+                        className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-all ${
                           isChecked 
                             ? (themeMode === 'dark' ? 'border-amber-500/50 bg-amber-500/5' : 'border-amber-500/30 bg-amber-50/50')
                             : (themeMode === 'dark' ? 'border-white/5 hover:bg-white/[0.02]' : 'border-slate-100 hover:bg-slate-50')
                         }`}
                         onClick={() => toggleStaffSelection(staff.id)}
                       >
-                        <input 
-                          type="checkbox" 
-                          checked={isChecked}
-                          onChange={() => {}} // Handled by div onClick
-                          className="rounded accent-[#D4A84B]"
-                          onClick={(e) => e.stopPropagation()} // Prevent double trigger
-                        />
-                        <div className="flex flex-col min-w-0">
-                          <span className={`text-xs font-semibold truncate ${themeMode === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                            {staff.displayName || staff.username}
-                          </span>
-                          <span className={`text-[9px] ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'} uppercase font-bold tracking-wider`}>
-                            {staff.role === 'telesales' ? 'Telesales Executive' : staff.role}
-                          </span>
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked}
+                            onChange={() => {}} // Handled by div onClick
+                            className="rounded accent-[#D4A84B] shrink-0"
+                            onClick={(e) => e.stopPropagation()} // Prevent double trigger
+                          />
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span className={`text-xs font-semibold truncate ${themeMode === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                              {staff.displayName || staff.username}
+                            </span>
+                            <span className={`text-[9px] ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'} uppercase font-bold tracking-wider`}>
+                              {staff.role === 'telesales' ? 'Telesales Executive' : staff.role}
+                            </span>
+                          </div>
                         </div>
+
+                        {isAdmin ? (
+                          <select
+                            value={staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2}
+                            onChange={(e) => {
+                              const newLevel = parseInt(e.target.value, 10);
+                              setStaffLevels(prev => ({
+                                ...prev,
+                                [String(staff.id)]: newLevel
+                              }));
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`text-xs rounded border px-1 py-0.5 outline-none font-bold shrink-0 cursor-pointer ${
+                              themeMode === 'dark'
+                                ? 'bg-black border-white/10 text-white'
+                                : 'bg-white border-gray-300 text-gray-700'
+                            }`}
+                          >
+                            {LEVEL_PRESETS.map((p, idx) => (
+                              <option key={idx} value={idx}>{p.emoji} {p.name}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-xs shrink-0 select-none">
+                            {LEVEL_PRESETS[staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2]?.emoji || '🐥'}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
@@ -545,8 +627,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
 
   const dataPoints = metricConfigs.map((mc, i) => {
     const val = activePerformance[mc.key];
-    const target = targets[currentPeriodId][mc.key];
-    const ratio = Math.min(val / target, 1);
+    const target = activeMemberTargets[mc.key];
+    const ratio = target > 0 ? Math.min(val / target, 1) : 0;
     return polarToXY(RADAR_CENTER_X, RADAR_CENTER_Y, RADAR_MAX_R * ratio, RADAR_ANGLES[i]);
   });
 
@@ -749,7 +831,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
               <div className="grid grid-cols-5 gap-2 mt-1.5 flex-shrink-0">
                 {metricConfigs.map(mc => {
                   const val = activePerformance[mc.key];
-                  const target = targets[currentPeriodId][mc.key];
+                  const target = activeMemberTargets[mc.key];
                   const actualPct = target > 0 ? Math.round((val / target) * 100) : 0;
                   const barPct = Math.min(actualPct, 100);
                   const isActive = currentMetricKey === mc.key;
@@ -817,7 +899,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   {podiumOrder.map((member, idx) => {
                     if (!member) return null;
                     const val = member.value;
-                    const target = targets[currentPeriodId][currentMetricKey];
+                    const memberTargets = getMemberTarget(member.id, currentPeriodId);
+                    const target = memberTargets[currentMetricKey];
                     const pct = target > 0 ? Math.round((val / target) * 100) : 0;
                     const isSelected = member.id === currentMemberId;
                     const rank = idx === 0 ? 2 : (idx === 1 ? 1 : 3);
@@ -866,7 +949,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 {/* Ranks 4-7 horizontal cards list */}
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   {remaining.map((m, i) => {
-                    const target = targets[currentPeriodId][currentMetricKey];
+                    const memberTargets = getMemberTarget(m.id, currentPeriodId);
+                    const target = memberTargets[currentMetricKey];
                     const pct = target > 0 ? Math.round((m.value / target) * 100) : 0;
                     const isSelected = m.id === currentMemberId;
                     return (
@@ -1104,7 +1188,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
               <div className="grid grid-cols-5 gap-2 mt-1 flex-shrink-0">
                 {metricConfigs.map(mc => {
                   const val = activePerformance[mc.key];
-                  const target = targets[currentPeriodId][mc.key];
+                  const target = activeMemberTargets[mc.key];
                   const actualPct = target > 0 ? Math.round((val / target) * 100) : 0;
                   const barPct = Math.min(actualPct, 100);
                   const isActive = currentMetricKey === mc.key;
@@ -1201,8 +1285,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                             const pts100 = RADAR_ANGLES.map(a => polarToXY(cx, cy, maxR, a));
                             const pts50 = RADAR_ANGLES.map(a => polarToXY(cx, cy, maxR * 0.5, a));
                             const perf = member.perf;
+                            const memberTargets = getMemberTarget(member.id, currentPeriodId);
                             const dataPts = metrics.map((m, i) => {
-                              const t = targets[currentPeriodId][m];
+                              const t = memberTargets[m];
                               const ratio = t > 0 ? Math.min(perf[m] / t, 1) : 0;
                               return polarToXY(cx, cy, maxR * ratio, RADAR_ANGLES[i]);
                             });
@@ -1237,7 +1322,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 {/* Ranks 4-7 horizontal cards list */}
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   {remainingBack.map((m, i) => {
-                    const target = targets[currentPeriodId]['done'];
+                    const memberTargets = getMemberTarget(m.id, currentPeriodId);
+                    const target = memberTargets['done'];
                     const pct = target > 0 ? Math.round((m.value / target) * 100) : 0;
                     const isSelected = m.id === currentMemberId;
                     
@@ -1246,7 +1332,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     const metrics = ['calls', 'pickups', 'happy', 'booked', 'done'];
                     const segmentsHtml = metrics.map((metricKey, mtIdx) => {
                       const itemVal = m.perf[metricKey];
-                      const itemTgt = targets[currentPeriodId][metricKey];
+                      const itemTgt = memberTargets[metricKey];
                       const itemPct = itemTgt > 0 ? Math.min(Math.round((itemVal / itemTgt) * 100), 100) : 0;
                       return (
                         <div key={metricKey} className={`flex-1 h-1 rounded overflow-hidden ${themeMode === 'dark' ? 'bg-white/10' : 'bg-gray-200'}`}>
