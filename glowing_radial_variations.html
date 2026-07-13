@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glowing Radial KPI Card - 10 Variations</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind Config to support custom fonts and styles -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            outfit: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            gold: {
+              DEFAULT: '#D4A84B',
+              light: '#E6C275',
+              dark: '#B8902F',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #050811;
+      color: #f3f4f6;
+    }
+    .font-outfit {
+      font-family: 'Outfit', sans-serif;
+    }
+  </style>
+</head>
+<body class="p-6 md:p-12 transition-colors duration-300">
+
+  <!-- Title Section -->
+  <div class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-white/10 pb-6">
+    <div>
+      <h1 class="text-3xl md:text-4xl font-outfit font-black tracking-tight bg-gradient-to-r from-blue-400 via-indigo-300 to-gold bg-clip-text text-transparent">
+        10 Glowing Ring Variations (Type 3.6)
+      </h1>
+      <p class="text-sm text-gray-400 mt-2">
+        Các phiên bản tinh chỉnh mẫu phát sáng 3.6 với các kiểu hiển thị số liệu `52 / 80` (chữ nhỏ phong cách 3.7/3.9).
+      </p>
+    </div>
+    
+    <!-- Theme Switcher -->
+    <div class="flex bg-white/5 p-1 rounded-xl border border-white/10 shrink-0">
+      <button onclick="setTheme('dark')" id="btn-dark" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-blue-600 text-white">
+        Dark Theme
+      </button>
+      <button onclick="setTheme('light')" id="btn-light" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white">
+        Light Theme
+      </button>
+    </div>
+  </div>
+
+  <!-- Showcase Grid -->
+  <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+
+    <!-- VARIATION 1: Compact Inline Split (52 / 80 on same line, small /80) -->
+    <div class="card-container flex flex-col justify-between">
+      <div class="mb-2 text-xs font-bold text-gray-500 uppercase tracking-widest">4.1. Inline Muted Slash</div>
+      <div class="card-inner w-full min-h-[160px] rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/10 to-transparent p-4 flex items-center gap-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-blue-500/10">
+        <!-- Left Side: Glowing Ring -->
+        <div class="relative w-14 h-14 flex items-center justify-center shrink-0 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-white/5" stroke-width="2.5"></circle>
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-blue-500" stroke-width="3" stroke-dasharray="65, 100" stroke-linecap="round"></circle>
+          </svg>
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        </div>
+        <!-- Right Side -->
+        <div class="flex-1 min-w-0">
+          <span class="text-[10px] font-black uppercase text-blue-400 tracking-wider font-outfit block mb-1">Calls</span>
+          <div class="flex items-baseline gap-1.5 leading-none">
+            <span class="text-3xl font-outfit font-black text-white">52</span>
+            <span class="text-xs font-semibold text-gray-500">/ 80</span>
+          </div>
+          <div class="mt-2 text-[9px] text-blue-300 font-extrabold">65% Hoàn thành</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIATION 2: Stacked Label Target (52 over /80 badge) -->
+    <div class="card-container flex flex-col justify-between">
+      <div class="mb-2 text-xs font-bold text-gray-500 uppercase tracking-widest">4.2. Stacked Pill Target</div>
+      <div class="card-inner w-full min-h-[160px] rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/10 to-transparent p-4 flex items-center gap-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-blue-500/10">
+        <!-- Left Side -->
+        <div class="relative w-14 h-14 flex items-center justify-center shrink-0 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-white/5" stroke-width="2.5"></circle>
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-blue-500" stroke-width="3" stroke-dasharray="65, 100" stroke-linecap="round"></circle>
+          </svg>
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        </div>
+        <!-- Right Side -->
+        <div class="flex-1 min-w-0">
+          <span class="text-[10px] font-black uppercase text-blue-400 tracking-wider font-outfit block mb-0.5">Calls</span>
+          <div class="text-3xl font-outfit font-black text-white leading-none">52</div>
+          <div class="mt-2 flex items-center gap-1.5">
+            <span class="text-[8px] font-extrabold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">Target: 80</span>
+            <span class="text-[9px] font-bold text-gray-500">65%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIATION 3: Right-Aligned Tag Target (Target floating top right) -->
+    <div class="card-container flex flex-col justify-between">
+      <div class="mb-2 text-xs font-bold text-gray-500 uppercase tracking-widest">3.3. Tag Top Right</div>
+      <div class="card-inner w-full min-h-[160px] rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/10 to-transparent p-4 flex items-center gap-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-blue-500/10 relative">
+        <!-- Target Badge in upper right corner -->
+        <span class="absolute top-3 right-3 text-[9px] font-mono text-gray-500">/ 80 limit</span>
+        
+        <!-- Left Side -->
+        <div class="relative w-14 h-14 flex items-center justify-center shrink-0 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-white/5" stroke-width="2.5"></circle>
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-blue-500" stroke-width="3" stroke-dasharray="65, 100" stroke-linecap="round"></circle>
+          </svg>
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        </div>
+        <!-- Right Side -->
+        <div class="flex-1 min-w-0">
+          <span class="text-[10px] font-black uppercase text-blue-400 tracking-wider font-outfit block mb-1">Calls</span>
+          <div class="text-3xl font-outfit font-black text-white leading-none">52</div>
+          <span class="text-[9px] font-bold text-blue-400 mt-1 block">65% Completed</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIATION 4: Subscript Target (Small lower-aligned target) -->
+    <div class="card-container flex flex-col justify-between">
+      <div class="mb-2 text-xs font-bold text-gray-500 uppercase tracking-widest">4.4. Muted Subscript</div>
+      <div class="card-inner w-full min-h-[160px] rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/10 to-transparent p-4 flex items-center gap-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-blue-500/10">
+        <!-- Left Side -->
+        <div class="relative w-14 h-14 flex items-center justify-center shrink-0 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-white/5" stroke-width="2.5"></circle>
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-blue-500" stroke-width="3" stroke-dasharray="65, 100" stroke-linecap="round"></circle>
+          </svg>
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        </div>
+        <!-- Right Side -->
+        <div class="flex-1 min-w-0">
+          <span class="text-[10px] font-black uppercase text-blue-400 tracking-wider font-outfit block mb-1">Calls</span>
+          <div class="flex items-end gap-1 leading-none">
+            <span class="text-4xl font-outfit font-black text-white">52</span>
+            <span class="text-[10px] font-bold text-gray-500 mb-1">/ 80</span>
+          </div>
+          <span class="text-[9px] font-bold text-blue-300/80 block mt-2">Đạt 65%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIATION 5: Neon Translucent Accent -->
+    <div class="card-container flex flex-col justify-between">
+      <div class="mb-2 text-xs font-bold text-gray-500 uppercase tracking-widest">4.5. Neon Translucent</div>
+      <div class="card-inner w-full min-h-[160px] rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/10 to-transparent p-4 flex items-center gap-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-blue-500/10">
+        <!-- Left Side -->
+        <div class="relative w-14 h-14 flex items-center justify-center shrink-0 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-white/5" stroke-width="2.5"></circle>
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-blue-500" stroke-width="3" stroke-dasharray="65, 100" stroke-linecap="round"></circle>
+          </svg>
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        </div>
+        <!-- Right Side: Glowing white value with highly transparent /80 -->
+        <div class="flex-1 min-w-0">
+          <span class="text-[10px] font-black uppercase text-blue-400 tracking-wider font-outfit block mb-1">Calls</span>
+          <div class="text-3xl font-outfit font-black text-white tracking-tight leading-none">
+            52<span class="text-sm font-normal text-white/30 ml-1">/ 80</span>
+          </div>
+          <span class="text-[9px] font-semibold text-gray-500 block mt-2">Hôm nay: <span class="text-blue-300">65% đạt</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIATION 6: Mini Progress Spark Header -->
+    <div class="card-container flex flex-col justify-between mt-6">
+      <div class="mb-2 text-xs font-bold text-gray-500 uppercase tracking-widest">4.6. Spark Target Title</div>
+      <div class="card-inner w-full min-h-[160px] rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/10 to-transparent p-4 flex items-center gap-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-blue-500/10">
+        <!-- Left Side -->
+        <div class="relative w-14 h-14 flex items-center justify-center shrink-0 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-white/5" stroke-width="2.5"></circle>
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-blue-500" stroke-width="3" stroke-dasharray="65, 100" stroke-linecap="round"></circle>
+          </svg>
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        </div>
+        <!-- Right Side -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-black uppercase text-blue-400 tracking-wider font-outfit">Calls</span>
+            <span class="text-[9px] font-bold text-gray-500">Mục tiêu: 80</span>
+          </div>
+          <div class="text-3xl font-outfit font-black text-white leading-none mt-1">52</div>
+          <!-- Tiny bottom progress line -->
+          <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden mt-3">
+            <div class="bg-blue-500 h-full rounded-full" style="width: 65%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIATION 7: Mono Grid Detail -->
+    <div class="card-container flex flex-col justify-between mt-6">
+      <div class="mb-2 text-xs font-bold text-gray-500 uppercase tracking-widest">4.7. Mono Split Detail</div>
+      <div class="card-inner w-full min-h-[160px] rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/10 to-transparent p-4 flex items-center gap-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-blue-500/10">
+        <!-- Left Side -->
+        <div class="relative w-14 h-14 flex items-center justify-center shrink-0 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-white/5" stroke-width="2.5"></circle>
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-blue-500" stroke-width="3" stroke-dasharray="65, 100" stroke-linecap="round"></circle>
+          </svg>
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        </div>
+        <!-- Right Side -->
+        <div class="flex-1 min-w-0 font-mono">
+          <span class="text-[9px] text-blue-400 block mb-1">SYS_CALL_KPI</span>
+          <div class="text-2xl font-black text-white leading-none">52<span class="text-[10px] text-gray-600">/80</span></div>
+          <div class="mt-2 text-[8px] text-gray-500 flex items-center justify-between">
+            <span>RATIO: 65%</span>
+            <span>LEFT: 28</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIATION 8: Diagonal Slash Divide -->
+    <div class="card-container flex flex-col justify-between mt-6">
+      <div class="mb-2 text-xs font-bold text-gray-500 uppercase tracking-widest">4.8. Diagonal Slash</div>
+      <div class="card-inner w-full min-h-[160px] rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/10 to-transparent p-4 flex items-center gap-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-blue-500/10">
+        <!-- Left Side -->
+        <div class="relative w-14 h-14 flex items-center justify-center shrink-0 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-white/5" stroke-width="2.5"></circle>
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-blue-500" stroke-width="3" stroke-dasharray="65, 100" stroke-linecap="round"></circle>
+          </svg>
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        </div>
+        <!-- Right Side: Big 52 separated by colored diagonal line from small 80 -->
+        <div class="flex-1 min-w-0">
+          <span class="text-[10px] font-black uppercase text-blue-400 tracking-wider font-outfit block mb-1">Calls</span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-3xl font-outfit font-black text-white leading-none">52</span>
+            <!-- Diagonal slash line -->
+            <span class="w-[1.5px] h-6 bg-blue-500/30 transform rotate-12 shrink-0"></span>
+            <span class="text-xs font-extrabold text-gray-500">80</span>
+          </div>
+          <span class="text-[9px] font-bold text-blue-300 block mt-2">Đạt 65% chỉ tiêu</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIATION 9: Micro Progress Percent Subtitle (65% in small brackets next to target) -->
+    <div class="card-container flex flex-col justify-between mt-6">
+      <div class="mb-2 text-xs font-bold text-gray-500 uppercase tracking-widest">4.9. Percentage Subtitle</div>
+      <div class="card-inner w-full min-h-[160px] rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/10 to-transparent p-4 flex items-center gap-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-blue-500/10">
+        <!-- Left Side -->
+        <div class="relative w-14 h-14 flex items-center justify-center shrink-0 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-white/5" stroke-width="2.5"></circle>
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-blue-500" stroke-width="3" stroke-dasharray="65, 100" stroke-linecap="round"></circle>
+          </svg>
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        </div>
+        <!-- Right Side -->
+        <div class="flex-1 min-w-0">
+          <span class="text-[10px] font-black uppercase text-blue-400 tracking-wider font-outfit block mb-0.5">Calls</span>
+          <div class="text-3xl font-outfit font-black text-white leading-none">52</div>
+          <div class="text-[9px] font-semibold text-gray-500 mt-2 flex items-center gap-1">
+            <span>/ 80 mục tiêu</span>
+            <span class="text-blue-400 font-extrabold">(65%)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIATION 10: Circular Micro Tag Overlay -->
+    <div class="card-container flex flex-col justify-between mt-6">
+      <div class="mb-2 text-xs font-bold text-gray-500 uppercase tracking-widest">4.10. Micro Circle Badge</div>
+      <div class="card-inner w-full min-h-[160px] rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/10 to-transparent p-4 flex items-center gap-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-blue-500/10 relative">
+        <!-- Small circular badge floating in the top right -->
+        <div class="absolute top-3 right-3 w-8 h-8 rounded-full bg-blue-500/10 border border-blue-500/25 flex flex-col items-center justify-center leading-none text-[8px] font-black text-blue-300 font-mono">
+          <span>80</span>
+        </div>
+        
+        <!-- Left Side -->
+        <div class="relative w-14 h-14 flex items-center justify-center shrink-0 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-white/5" stroke-width="2.5"></circle>
+            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" class="text-blue-500" stroke-width="3" stroke-dasharray="65, 100" stroke-linecap="round"></circle>
+          </svg>
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        </div>
+        <!-- Right Side -->
+        <div class="flex-1 min-w-0">
+          <span class="text-[10px] font-black uppercase text-blue-400 tracking-wider font-outfit block mb-1">Calls</span>
+          <div class="text-3xl font-outfit font-black text-white leading-none">52</div>
+          <span class="text-[9px] font-bold text-blue-300 block mt-2">65% Hoàn thành</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="max-w-7xl mx-auto mt-16 text-center text-xs text-gray-600 border-t border-white/5 pt-8">
+    MOS-LAB Teleboarding UI Mockup Sandbox. Designed with high precision.
+  </div>
+
+  <!-- Javascript for switching theme dynamically -->
+  <script>
+    function setTheme(mode) {
+      const btnDark = document.getElementById('btn-dark');
+      const btnLight = document.getElementById('btn-light');
+      const body = document.body;
+      const cardInners = document.querySelectorAll('.card-inner');
+      const labelTxs = document.querySelectorAll('.card-container > div:first-child');
+      
+      if (mode === 'light') {
+        body.classList.remove('bg-[#050811]', 'text-gray-100');
+        body.classList.add('bg-slate-50', 'text-slate-800');
+        
+        btnLight.classList.remove('text-gray-400');
+        btnLight.classList.add('bg-blue-600', 'text-white');
+        btnDark.classList.remove('bg-blue-600', 'text-white');
+        btnDark.classList.add('text-gray-500', 'hover:text-slate-800');
+        
+        cardInners.forEach(c => {
+          c.classList.remove('bg-white/[0.02]', 'bg-[#160a10]', 'bg-white/[0.01]', 'bg-[#061410]/80');
+          c.classList.add('bg-white', 'shadow-sm', 'shadow-slate-100');
+          
+          // adjust text colors
+          c.querySelectorAll('.text-white').forEach(el => {
+            el.classList.remove('text-white');
+            el.classList.add('text-slate-800');
+          });
+          
+          c.querySelectorAll('.text-gray-400').forEach(el => {
+            el.classList.remove('text-gray-400');
+            el.classList.add('text-slate-500');
+          });
+          
+          c.querySelectorAll('.text-gray-200').forEach(el => {
+            el.classList.remove('text-gray-200');
+            el.classList.add('text-slate-700');
+          });
+        });
+        
+        labelTxs.forEach(lbl => {
+          lbl.classList.remove('text-gray-500');
+          lbl.classList.add('text-slate-400');
+        });
+      } else {
+        body.classList.remove('bg-slate-50', 'text-slate-800');
+        body.classList.add('bg-[#050811]', 'text-gray-100');
+        
+        btnDark.classList.remove('text-gray-500', 'hover:text-slate-800');
+        btnDark.classList.add('bg-blue-600', 'text-white');
+        btnLight.classList.remove('bg-blue-600', 'text-white');
+        btnLight.classList.add('text-gray-400', 'hover:text-white');
+        
+        cardInners.forEach(c => {
+          c.classList.remove('bg-white', 'shadow-sm', 'shadow-slate-100');
+          c.classList.add('bg-white/[0.02]');
+          
+          c.querySelectorAll('.text-slate-800').forEach(el => {
+            el.classList.remove('text-slate-800');
+            el.classList.add('text-white');
+          });
+          
+          c.querySelectorAll('.text-slate-500').forEach(el => {
+            el.classList.remove('text-slate-500');
+            el.classList.add('text-gray-400');
+          });
+          
+          c.querySelectorAll('.text-slate-700').forEach(el => {
+            el.classList.remove('text-slate-700');
+            el.classList.add('text-gray-200');
+          });
+        });
+        
+        labelTxs.forEach(lbl => {
+          lbl.classList.remove('text-slate-400');
+          lbl.classList.add('text-gray-500');
+        });
+      }
+    }
+  </script>
+</body>
+</html>

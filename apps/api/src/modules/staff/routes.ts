@@ -3,13 +3,15 @@ import bcrypt from 'bcrypt';
 import { requireAuth, requireRole } from '../../middlewares/auth.js';
 
 export async function staffRoutes(fastify: FastifyInstance) {
-  // GET /api/staff - Get all staff members (Admin only)
-  fastify.get('/staff', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
+  // GET /api/staff - Get all staff members (Admin gets full fields, others get basic public fields)
+  fastify.get('/staff', { preHandler: [requireAuth] }, async (request, reply) => {
     const { role, isActive, search } = request.query as {
       role?: string;
       isActive?: string;
       search?: string;
     };
+
+    const currentUser = request.user as { role: string };
 
     try {
       const whereClause: any = {};
@@ -29,30 +31,35 @@ export async function staffRoutes(fastify: FastifyInstance) {
         ];
       }
 
+      const selectFields: any = {
+        id: true,
+        username: true,
+        displayName: true,
+        role: true,
+        isActive: true,
+        avatarUrl: true,
+        lastActiveAt: true
+      };
+
+      if (currentUser.role === 'admin') {
+        selectFields.createdAt = true;
+        selectFields.email = true;
+        selectFields.phone = true;
+        selectFields.joinedAt = true;
+        selectFields.birthDate = true;
+        selectFields.gender = true;
+        selectFields.address = true;
+        selectFields.emergencyContact = true;
+        selectFields.emergencyPhone = true;
+        selectFields.notes = true;
+        selectFields.legacyStaffId = true;
+        selectFields.lastLoginAt = true;
+      }
+
       const staff = await fastify.prisma.crm.crmStaff.findMany({
         where: whereClause,
         orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          role: true,
-          isActive: true,
-          createdAt: true,
-          email: true,
-          phone: true,
-          joinedAt: true,
-          birthDate: true,
-          gender: true,
-          address: true,
-          emergencyContact: true,
-          emergencyPhone: true,
-          avatarUrl: true,
-          notes: true,
-          legacyStaffId: true,
-          lastLoginAt: true,
-          lastActiveAt: true
-        }
+        select: selectFields
       });
 
       return staff;

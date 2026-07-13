@@ -1016,15 +1016,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   // GET /api/kpi/leaderboard
   fastify.get('/kpi/leaderboard', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { id: number; role: string };
-    
-    if (user.role !== 'admin') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Chỉ quản trị viên mới có quyền xem bảng xếp hạng.'
-      });
-    }
 
-    const { startDate, endDate, role } = request.query as { startDate?: string; endDate?: string; role?: string };
+    const { startDate, endDate, role, staffIds } = request.query as { startDate?: string; endDate?: string; role?: string; staffIds?: string };
     const startStr = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
     const endStr = endDate || new Date().toLocaleDateString('en-CA');
 
@@ -1063,17 +1056,28 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             answerRate: 0,
             bookingRate: 0,
             checkinRate: 0,
-            totalEarnings: sal.totalSalary,
-            salary: sal
+            totalEarnings: user.role === 'admin' ? sal.totalSalary : 0,
+            salary: user.role === 'admin' ? sal : null
           };
         });
 
-        leaderboard.sort((a, b) => b.totalEarnings - a.totalEarnings);
+        if (user.role === 'admin') {
+          leaderboard.sort((a, b) => b.totalEarnings - a.totalEarnings);
+        } else {
+          leaderboard.sort((a, b) => b.totalCheckin - a.totalCheckin);
+        }
         return leaderboard;
       }
 
+      const staffWhere: any = { isActive: true };
+      if (staffIds && staffIds.trim() !== '') {
+        staffWhere.id = { in: staffIds.split(',').map(Number).filter(n => !isNaN(n)) };
+      } else {
+        staffWhere.role = role || 'telesales';
+      }
+
       const staffList = await fastify.prisma.crm.crmStaff.findMany({
-        where: { role: 'telesales', isActive: true },
+        where: staffWhere,
         select: { id: true, displayName: true, username: true }
       });
 
@@ -1116,6 +1120,40 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         });
       }
 
+      // Fetch happy logs to calculate happy calls count per staff
+      const happyLogs = await fastify.prisma.crm.crmCallLog.findMany({
+        where: {
+          createdAt: { gte: start, lte: new Date(end.getTime() + 24 * 60 * 60 * 1000) },
+          planId: { not: null }
+        },
+        select: { staffId: true, planId: true }
+      });
+
+      const staffPlanIdsMap = new Map<number, number[]>();
+      happyLogs.forEach(log => {
+        if (log.planId) {
+          const list = staffPlanIdsMap.get(log.staffId) || [];
+          list.push(log.planId);
+          staffPlanIdsMap.set(log.staffId, list);
+        }
+      });
+
+      const allPlanIds = Array.from(new Set(happyLogs.map(l => l.planId as number)));
+      const happyPlans = allPlanIds.length > 0 ? await fastify.prisma.crm.crmDailyPlan.findMany({
+        where: {
+          id: { in: allPlanIds },
+          bucket: 'happy'
+        },
+        select: { id: true }
+      }) : [];
+      const happyPlanIdsSet = new Set(happyPlans.map(p => p.id));
+
+      const staffHappyCountMap = new Map<number, number>();
+      staffPlanIdsMap.forEach((planIds, staffId) => {
+        const count = planIds.filter(pid => happyPlanIdsSet.has(pid)).length;
+        staffHappyCountMap.set(staffId, count);
+      });
+
       const leaderboard = [];
 
       for (const staff of staffList) {
@@ -1146,6 +1184,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         const bookingRate = totalAnswered > 0 ? Math.round((totalBooked / totalAnswered) * 100) : 0;
         const checkinRate = totalBooked > 0 ? Math.round((salary.doneCount / totalBooked) * 100) : 0;
 
+        const totalHappy = staffHappyCountMap.get(staff.id) || 0;
+
         leaderboard.push({
           staffId: staff.id,
           displayName: staff.displayName,
@@ -1153,17 +1193,22 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           totalPlanned,
           totalCalled,
           totalAnswered,
+          totalHappy,
           totalBooked,
           totalCheckin: salary.doneCount,
           answerRate,
           bookingRate,
           checkinRate,
-          totalEarnings: salary.totalSalary,
-          salary
+          totalEarnings: user.role === 'admin' ? salary.totalSalary : 0,
+          salary: user.role === 'admin' ? salary : null
         });
       }
 
-      leaderboard.sort((a, b) => b.totalEarnings - a.totalEarnings);
+      if (user.role === 'admin') {
+        leaderboard.sort((a, b) => b.totalEarnings - a.totalEarnings);
+      } else {
+        leaderboard.sort((a, b) => b.totalCheckin - a.totalCheckin);
+      }
       return leaderboard;
     } catch (err: any) {
       fastify.log.error(err as any, 'Leaderboard KPI error');

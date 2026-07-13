@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Button, message } from 'antd';
+import React, { useState, useEffect, useRef } from 'react';
+import { Button, message, Spin, Segmented } from 'antd';
 import {
   PhoneOutlined,
   CustomerServiceOutlined,
@@ -14,9 +14,12 @@ import {
   TrophyOutlined,
   SaveOutlined,
   DownOutlined,
-  UpOutlined
+  UpOutlined,
+  LoadingOutlined
 } from '@ant-design/icons';
 import { useTheme } from '../context/ThemeContext';
+import dayjs from 'dayjs';
+import api from '../lib/api';
 
 interface TelesalesDashboardModalProps {
   visible: boolean;
@@ -82,11 +85,18 @@ function getMemberData(memberId: string, period: string): Record<string, number>
 
 export default function TelesalesDashboardModal({ visible, onClose, initialMemberId = 'TN' }: TelesalesDashboardModalProps) {
   const { themeMode } = useTheme();
+  const modalContainerRef = useRef<HTMLDivElement | null>(null);
+  const [modalSize, setModalSize] = useState<{ width: string; height: string } | null>(null);
   const [currentMemberId, setCurrentMemberId] = useState(initialMemberId);
   const [currentPeriodId, setCurrentPeriodId] = useState('today');
   const [currentMetricKey, setCurrentMetricKey] = useState('calls');
   const [isFlipped, setIsFlipped] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [configTab, setConfigTab] = useState<'target' | 'staff'>('target');
+  const [systemStaff, setSystemStaff] = useState<any[]>([]);
+  const [selectedStaffIds, setSelectedStaffIds] = useState<number[]>([]);
+  const [refreshCounter, setRefreshCounter] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [targets, setTargets] = useState<Record<string, Record<string, number>>>({
     today: { calls: 80, pickups: 50, happy: 20, booked: 15, done: 10 },
@@ -106,9 +116,51 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
     last_month: false
   });
 
+  const [dbMembers, setDbMembers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('mos_user');
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          setIsAdmin(parsed.role === 'admin');
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      const savedWidth = localStorage.getItem('telesales_modal_width');
+      const savedHeight = localStorage.getItem('telesales_modal_height');
+      if (savedWidth && savedHeight) {
+        setModalSize({ width: savedWidth, height: savedHeight });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+    const container = modalContainerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          localStorage.setItem('telesales_modal_width', `${Math.round(width)}px`);
+          localStorage.setItem('telesales_modal_height', `${Math.round(height)}px`);
+        }
+      }
+    });
+
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+    };
+  }, [visible]);
+
   useEffect(() => {
     if (visible) {
-      setCurrentMemberId(initialMemberId);
       setIsFlipped(false);
       setIsConfigOpen(false);
       setExpandedSections(prev => {
@@ -119,12 +171,160 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
         return next;
       });
     }
-  }, [visible, initialMemberId]);
+  }, [visible, currentPeriodId]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const fetchLeaderboard = async () => {
+      setLoading(true);
+      try {
+        const now = dayjs();
+        let start = now;
+        let end = now;
+
+        if (currentPeriodId === 'today') {
+          start = now.startOf('day');
+          end = now.endOf('day');
+        } else if (currentPeriodId === 'yesterday') {
+          start = now.subtract(1, 'day').startOf('day');
+          end = now.subtract(1, 'day').endOf('day');
+        } else if (currentPeriodId === 'this_week') {
+          start = now.startOf('isoWeek');
+          end = now.endOf('day');
+        } else if (currentPeriodId === 'last_week') {
+          start = now.subtract(1, 'week').startOf('isoWeek');
+          end = now.subtract(1, 'week').endOf('isoWeek');
+        } else if (currentPeriodId === 'this_month') {
+          start = now.startOf('month');
+          end = now.endOf('day');
+        } else if (currentPeriodId === 'last_month') {
+          start = now.subtract(1, 'month').startOf('month');
+          end = now.subtract(1, 'month').endOf('month');
+        }
+
+        const saved = localStorage.getItem('telesales_dashboard_visible_staff');
+        const savedIds = saved ? JSON.parse(saved) : [];
+
+        const params: any = {
+          startDate: start.format('YYYY-MM-DD'),
+          endDate: end.format('YYYY-MM-DD')
+        };
+
+        if (savedIds.length > 0) {
+          params.staffIds = savedIds.join(',');
+        } else {
+          params.role = 'telesales';
+        }
+
+        const res = await api.get('/kpi/leaderboard', { params });
+        const list = res.data || [];
+        
+        const stylesPreset = [
+          { color: '#EC4899', gradient: 'linear-gradient(135deg, #EC4899, #DB2777)', textColor: 'text-pink-400', borderColor: 'border-pink-400', hoverGlow: 'shadow-pink-500/20' },
+          { color: '#A855F7', gradient: 'linear-gradient(135deg, #A855F7, #9333EA)', textColor: 'text-purple-400', borderColor: 'border-purple-400', hoverGlow: 'shadow-purple-500/20' },
+          { color: '#06B6D4', gradient: 'linear-gradient(135deg, #06B6D4, #0891B2)', textColor: 'text-cyan-400', borderColor: 'border-cyan-400', hoverGlow: 'shadow-cyan-500/20' },
+          { color: '#10B981', gradient: 'linear-gradient(135deg, #10B981, #059669)', textColor: 'text-emerald-400', borderColor: 'border-emerald-400', hoverGlow: 'shadow-emerald-500/20' },
+          { color: '#F97316', gradient: 'linear-gradient(135deg, #F97316, #EA580C)', textColor: 'text-orange-400', borderColor: 'border-orange-400', hoverGlow: 'shadow-orange-500/20' },
+          { color: '#D4A84B', gradient: 'linear-gradient(135deg, #D4A84B, #B8902F)', textColor: 'text-gold', borderColor: 'border-gold', hoverGlow: 'shadow-gold/20' },
+          { color: '#3B82F6', gradient: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', textColor: 'text-blue-400', borderColor: 'border-blue-400', hoverGlow: 'shadow-blue-500/20' },
+          { color: '#EF4444', gradient: 'linear-gradient(135deg, #EF4444, #B91C1C)', textColor: 'text-red-400', borderColor: 'border-red-400', hoverGlow: 'shadow-red-500/20' }
+        ];
+
+        const mappedMembers = list.map((item: any, idx: number) => {
+          const initials = item.displayName
+            ? item.displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+            : item.username?.slice(0, 2).toUpperCase() || '??';
+
+          const style = stylesPreset[idx % stylesPreset.length];
+
+          return {
+            id: String(item.staffId),
+            name: item.displayName || item.username,
+            initials,
+            ...style,
+            teamRole: item.role === 'admin' ? 'Telesales Manager' : 'Telesales Executive',
+            perf: {
+              calls: item.totalCalled || 0,
+              pickups: item.totalAnswered || 0,
+              happy: item.totalHappy || 0,
+              booked: item.totalBooked || 0,
+              done: item.totalCheckin || 0
+            }
+          };
+        });
+
+        setDbMembers(mappedMembers);
+
+        if (mappedMembers.length > 0) {
+          const found = mappedMembers.find((m: any) => m.id === currentMemberId || m.initials === currentMemberId);
+          if (!found) {
+            const initialFound = mappedMembers.find((m: any) => m.id === initialMemberId || m.initials === initialMemberId);
+            setCurrentMemberId(initialFound ? initialFound.id : mappedMembers[0].id);
+          } else {
+            setCurrentMemberId(found.id);
+          }
+        }
+      } catch (err: any) {
+        console.error('Fetch telesales leaderboard error:', err);
+        message.error('Không thể tải dữ liệu bảng xếp hạng telesales');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [visible, currentPeriodId, initialMemberId, refreshCounter]);
+
+  const toggleStaffSelection = (id: number) => {
+    setSelectedStaffIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const saveVisibleStaff = () => {
+    localStorage.setItem('telesales_dashboard_visible_staff', JSON.stringify(selectedStaffIds));
+    setIsConfigOpen(false);
+    message.success('Đã cập nhật danh sách nhân sự trên bảng xếp hạng!');
+    setRefreshCounter(prev => prev + 1);
+  };
+
+  useEffect(() => {
+    if (visible && isConfigOpen) {
+      const saved = localStorage.getItem('telesales_dashboard_visible_staff');
+      if (saved) {
+        setSelectedStaffIds(JSON.parse(saved));
+      }
+
+      const fetchStaffList = async () => {
+        try {
+          const res = await api.get('/customers/staff');
+          const list = res.data || [];
+          const filtered = list.filter((s: any) => s.role !== 'technician');
+          setSystemStaff(filtered);
+          
+          if (!saved) {
+            const telesalesIds = filtered.filter((s: any) => s.role === 'telesales').map((s: any) => s.id);
+            setSelectedStaffIds(telesalesIds);
+          }
+        } catch (err) {
+          console.error('Failed to fetch staff list:', err);
+        }
+      };
+      fetchStaffList();
+    }
+  }, [visible, isConfigOpen]);
 
   if (!visible) return null;
 
-  const activeMember = members.find(m => m.id === currentMemberId) || members[0];
-  const activePerformance = getMemberData(currentMemberId, currentPeriodId);
+  const currentMembersList = dbMembers.length > 0 ? dbMembers : members.map(m => ({
+    ...m,
+    initials: m.id,
+    perf: getMemberData(m.id, currentPeriodId)
+  }));
+
+  const activeMember = currentMembersList.find((m: any) => m.id === currentMemberId || m.initials === currentMemberId) || currentMembersList[0];
+  const activePerformance = activeMember.perf || getMemberData(activeMember.id, currentPeriodId);
   const activeMetricConfig = metricConfigs.find(m => m.key === currentMetricKey) || metricConfigs[0];
   const activeValue = activePerformance[currentMetricKey];
   const activeTarget = targets[currentPeriodId][currentMetricKey];
@@ -136,9 +336,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const strokeDashoffset = circumference - (activePercent / 100) * circumference;
 
   // Impersonating Member Grid sorted by current metric
-  const rankings = members.map(m => ({
+  const rankings = currentMembersList.map((m: any) => ({
     ...m,
-    value: getMemberData(m.id, currentPeriodId)[currentMetricKey]
+    value: m.perf ? m.perf[currentMetricKey] : getMemberData(m.id, currentPeriodId)[currentMetricKey]
   })).sort((a, b) => b.value - a.value);
 
   const top3 = rankings.slice(0, 3);
@@ -146,14 +346,168 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const podiumOrder = [top3[1], top3[0], top3[2]]; // order 2nd, 1st, 3rd
 
   // Back side rankings (sorted by Done deal)
-  const backRankings = members.map(m => ({
+  const backRankings = currentMembersList.map((m: any) => ({
     ...m,
-    value: getMemberData(m.id, currentPeriodId)['done'],
-    perf: getMemberData(m.id, currentPeriodId)
+    value: m.perf ? m.perf['done'] : getMemberData(m.id, currentPeriodId)['done'],
+    perf: m.perf || getMemberData(m.id, currentPeriodId)
   })).sort((a, b) => b.value - a.value);
   const top3Back = backRankings.slice(0, 3);
   const remainingBack = backRankings.slice(3);
   const podiumOrderBack = [top3Back[1], top3Back[0], top3Back[2]];
+
+  const renderConfigPanel = () => {
+    return (
+      <div 
+        className={`absolute top-0 right-0 h-full w-[280px] border-l flex flex-col z-30 transition-transform duration-300 ${
+          themeMode === 'dark' 
+            ? 'bg-[#141414] border-white/10' 
+            : 'bg-white border-slate-200'
+        } ${isConfigOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        <div className={`flex items-center justify-between px-4 py-3 border-b ${themeMode === 'dark' ? 'border-white/5' : 'border-gray-200'}`}>
+          <div>
+            <h3 className={`text-sm font-bold ${themeMode === 'dark' ? 'text-white' : 'text-gray-900'}`}>Cấu hình</h3>
+            <p className="text-[9px] text-gold font-medium mt-0.5">Bảng xếp hạng & Mục tiêu</p>
+          </div>
+          <Button type="text" icon={<CloseOutlined className="text-xs" />} onClick={() => setIsConfigOpen(false)} className="flex items-center justify-center w-6 h-6 p-0 rounded-lg hover:bg-neutral-500/10" />
+        </div>
+        
+        <div className="px-3 pt-3 flex-shrink-0">
+          <Segmented
+            block
+            value={configTab}
+            onChange={(val) => setConfigTab(val as 'target' | 'staff')}
+            options={[
+              { label: 'Mục tiêu', value: 'target' },
+              { label: 'Nhân sự', value: 'staff' }
+            ]}
+            style={{
+              backgroundColor: themeMode === 'dark' ? '#1f1f1f' : '#f0f0f0',
+              color: themeMode === 'dark' ? '#fff' : '#000',
+            }}
+          />
+        </div>
+
+        {configTab === 'target' ? (
+          <>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {periods.map(p => {
+                const isCurrent = p.id === currentPeriodId;
+                const isExpanded = expandedSections[p.id];
+                const t = targets[p.id];
+                return (
+                  <div 
+                    key={p.id} 
+                    className={`rounded-xl border overflow-hidden ${
+                      themeMode === 'dark' 
+                        ? 'bg-white/[0.02] border-white/5' 
+                        : 'bg-slate-50 border-gray-200'
+                    }`}
+                  >
+                    <button 
+                      onClick={() => toggleConfigSection(p.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 transition-all ${
+                        themeMode === 'dark' ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-xs font-bold ${themeMode === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.label}</span>
+                        {isCurrent && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-gold/20 text-gold font-bold">Hiện tại</span>}
+                      </div>
+                      {isExpanded ? <UpOutlined className="text-[8px] text-gray-400" /> : <DownOutlined className="text-[8px] text-gray-400" />}
+                    </button>
+                    
+                    <div className="transition-all duration-300 overflow-hidden" style={{ maxHeight: isExpanded ? '230px' : '0px' }}>
+                      <div className="px-3 pb-3 pt-1 space-y-2">
+                        {metricConfigs.map(m => (
+                          <div key={m.key} className="flex items-center justify-between">
+                            <span className={`text-[10px] font-semibold ${themeMode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{m.icon} {m.label}</span>
+                            <input 
+                              type="number"
+                              className={`w-16 h-6 rounded-md border text-center text-xs font-bold focus:border-gold/50 outline-none ${
+                                themeMode === 'dark' 
+                                  ? 'bg-black/30 border-white/10 text-white' 
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                              value={t[m.key]}
+                              min="1"
+                              onChange={e => handleTargetChange(p.id, m.key, e.target.value)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className={`p-3 border-t ${themeMode === 'dark' ? 'border-white/5 bg-black/20' : 'border-gray-200 bg-gray-50'}`}>
+              <Button 
+                type="primary" 
+                icon={<SaveOutlined />} 
+                onClick={saveTargets}
+                className="w-full bg-gradient-to-r from-gold to-goldDark hover:from-goldLight border-none text-black font-bold h-9 rounded-xl shadow-md shadow-gold/10 flex items-center justify-center gap-1.5"
+              >
+                Lưu cấu hình
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto p-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <p className={`text-[10px] ${themeMode === 'dark' ? 'text-gray-400' : 'text-gray-500'} mb-2`}>
+                  Chọn nhân viên hiển thị trên bảng xếp hạng (Mặc định lọc theo vai trò Telesales):
+                </p>
+                <div className="space-y-1.5 max-h-[420px] overflow-y-auto pr-1">
+                  {systemStaff.map((staff: any) => {
+                    const isChecked = selectedStaffIds.includes(staff.id);
+                    return (
+                      <div 
+                        key={staff.id} 
+                        className={`flex items-center gap-2.5 p-2 rounded-lg border cursor-pointer transition-all ${
+                          isChecked 
+                            ? (themeMode === 'dark' ? 'border-amber-500/50 bg-amber-500/5' : 'border-amber-500/30 bg-amber-50/50')
+                            : (themeMode === 'dark' ? 'border-white/5 hover:bg-white/[0.02]' : 'border-slate-100 hover:bg-slate-50')
+                        }`}
+                        onClick={() => toggleStaffSelection(staff.id)}
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked}
+                          onChange={() => {}} // Handled by div onClick
+                          className="rounded accent-[#D4A84B]"
+                          onClick={(e) => e.stopPropagation()} // Prevent double trigger
+                        />
+                        <div className="flex flex-col min-w-0">
+                          <span className={`text-xs font-semibold truncate ${themeMode === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                            {staff.displayName || staff.username}
+                          </span>
+                          <span className={`text-[9px] ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'} uppercase font-bold tracking-wider`}>
+                            {staff.role === 'telesales' ? 'Telesales Executive' : staff.role}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className={`p-3 border-t ${themeMode === 'dark' ? 'border-white/5 bg-black/20' : 'border-gray-200 bg-gray-50'}`}>
+              <Button 
+                type="primary" 
+                icon={<SaveOutlined />} 
+                onClick={saveVisibleStaff}
+                className="w-full bg-gradient-to-r from-gold to-goldDark hover:from-goldLight border-none text-black font-bold h-9 rounded-xl shadow-md shadow-gold/10 flex items-center justify-center gap-1.5"
+              >
+                Cập nhật nhân sự
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
 
   // Radar chart drawing values
   const RADAR_CENTER_X = 290;
@@ -206,10 +560,21 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
       className="fixed inset-0 z-[1010] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300" 
       onClick={onClose}
     >
-      {/* Outer Modal Container: Taller size, no inner card scroll, auto fitting */}
+      {/* Outer Modal Container: Resizable & size-persistent layout */}
       <div 
-        className="w-full max-w-[780px] h-[92vh] min-h-[820px] max-h-[920px] relative transition-transform duration-500" 
-        style={{ perspective: '1500px' }}
+        ref={modalContainerRef}
+        className="w-full relative transition-transform duration-500" 
+        style={{ 
+          perspective: '1500px',
+          resize: 'both',
+          overflow: 'hidden',
+          minWidth: '600px',
+          minHeight: '780px',
+          maxWidth: '95vw',
+          maxHeight: '95vh',
+          width: modalSize ? modalSize.width : '780px',
+          height: modalSize ? modalSize.height : '88vh',
+        }}
         onClick={e => e.stopPropagation()}
       >
         <div className={`relative w-full h-full transition-transform duration-700 ease-in-out ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`} style={{ transformStyle: 'preserve-3d' }}>
@@ -226,7 +591,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             <div className={`flex items-center justify-between p-4 border-b transition-colors ${themeMode === 'dark' ? 'border-white/5 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/40'}`}>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-black/10" style={{ background: activeMember.gradient }}>
-                  {activeMember.id}
+                  {activeMember.initials}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -252,13 +617,15 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   className="hover:bg-gold/10 flex items-center justify-center w-8 h-8 rounded-lg"
                   title="Xoay lật sang biểu đồ Radar"
                 />
-                <Button 
-                  type="text"
-                  icon={<SettingOutlined className="text-gold" />}
-                  onClick={() => setIsConfigOpen(true)}
-                  className="hover:bg-gold/10 flex items-center justify-center w-8 h-8 rounded-lg"
-                  title="Cấu hình Target"
-                />
+                {isAdmin && (
+                  <Button 
+                    type="text"
+                    icon={<SettingOutlined className="text-gold" />}
+                    onClick={() => setIsConfigOpen(true)}
+                    className="hover:bg-gold/10 flex items-center justify-center w-8 h-8 rounded-lg"
+                    title="Cấu hình Target & Nhân sự"
+                  />
+                )}
                 <Button 
                   type="text"
                   icon={<CloseOutlined className={themeMode === 'dark' ? 'text-gray-400 hover:text-red-500' : 'text-slate-500 hover:text-red-500'} />}
@@ -269,7 +636,12 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             </div>
 
             {/* Main Area */}
-            <div className="flex-1 p-5 flex flex-col justify-between overflow-hidden">
+            <div className="flex-1 p-5 flex flex-col justify-between overflow-hidden relative">
+              {loading && (
+                <div className="absolute inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center rounded-b-2xl">
+                  <Spin indicator={<LoadingOutlined style={{ fontSize: 28, color: '#D4A84B' }} spin />} />
+                </div>
+              )}
               {/* Timeline (V3C4 Dots) */}
               <div className={`border p-3 rounded-2xl ${themeMode === 'dark' ? 'border-neutral-800 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/30'}`}>
                 <div className="flex items-center justify-between mb-2.5 px-2">
@@ -356,34 +728,55 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 {metricConfigs.map(mc => {
                   const val = activePerformance[mc.key];
                   const target = targets[currentPeriodId][mc.key];
-                  const pct = target > 0 ? Math.min(Math.round((val / target) * 100), 100) : 0;
+                  const actualPct = target > 0 ? Math.round((val / target) * 100) : 0;
+                  const barPct = Math.min(actualPct, 100);
                   const isActive = currentMetricKey === mc.key;
                   const Icon = mc.antIcon;
                   return (
                     <div 
                       key={mc.key}
                       onClick={() => setCurrentMetricKey(mc.key)}
-                      className={`rounded-xl p-2.5 text-center cursor-pointer transition-all duration-300 border ${
+                      className={`rounded-2xl p-2.5 flex items-center gap-2.5 cursor-pointer transition-all duration-300 border ${
                         isActive 
                           ? (themeMode === 'dark' 
-                              ? 'bg-slate-800/80 border-slate-700 shadow-lg shadow-black/30' 
-                              : 'bg-white border-slate-200 shadow-md shadow-slate-100')
+                              ? 'border-transparent' 
+                              : 'border-transparent')
                           : (themeMode === 'dark' 
-                              ? 'bg-white/[0.01] border-transparent hover:bg-white/[0.04]' 
-                              : 'bg-slate-50/50 border-transparent hover:bg-slate-100')
+                              ? 'border-white/5 hover:border-white/10' 
+                              : 'border-slate-100 hover:border-slate-200/80')
                       }`}
-                      style={isActive ? { borderLeft: `3px solid ${mc.color}`, boxShadow: `0 8px 20px ${mc.color}15` } : {}}
+                      style={{
+                        background: isActive 
+                          ? (themeMode === 'dark' ? `linear-gradient(135deg, ${mc.color}15, rgba(255,255,255,0.01))` : `linear-gradient(135deg, ${mc.color}08, #ffffff)`)
+                          : (themeMode === 'dark' ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)'),
+                        boxShadow: isActive ? `0 10px 25px -5px ${mc.color}25, 0 8px 10px -6px ${mc.color}25` : 'none',
+                        borderLeft: isActive ? `3.5px solid ${mc.color}` : undefined
+                      }}
                     >
-                      <div className="flex items-center justify-center gap-1.5 text-[9px] font-bold tracking-tight mb-1 select-none" style={{ color: mc.color }}>
-                        <Icon className="text-[10px] shrink-0" />
-                        <span className="truncate">{mc.label}</span>
+                      {/* Left Side: Glowing Radial Ring with Icon */}
+                      <div 
+                        className="relative w-11 h-11 flex items-center justify-center shrink-0 rounded-full transition-all duration-300"
+                        style={{
+                          boxShadow: `0 0 15px ${mc.color}35`,
+                        }}
+                      >
+                        <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                          <circle cx="18" cy="18" r="16" fill="none" stroke={themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} strokeWidth="2.5"></circle>
+                          <circle cx="18" cy="18" r="16" fill="none" stroke={mc.color} strokeWidth="3" strokeDasharray="100" strokeDashoffset={100 - barPct} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.8s ease' }}></circle>
+                        </svg>
+                        <Icon className="text-sm relative z-10" style={{ color: mc.color, fontSize: '15px' }} />
                       </div>
-                      <div className="text-base font-black tracking-tight" style={{ color: mc.color }}>{val}</div>
-                      <div className={`text-[8px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>/ {target}</div>
-                      <div className={`mt-1.5 h-1 rounded-full overflow-hidden ${themeMode === 'dark' ? 'bg-white/10' : 'bg-slate-200/80'}`}>
-                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: mc.color }}></div>
+
+                      {/* Right Side: Info with Diagonal Slash */}
+                      <div className="flex-1 min-w-0 text-left">
+                        <span className="text-[10px] font-black uppercase tracking-wider block mb-0.5 font-outfit" style={{ color: mc.color }}>{mc.label}</span>
+                        <div className="flex items-center gap-1.5 leading-none mt-1 select-none">
+                          <span className={`text-2xl font-outfit font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{val}</span>
+                          <span className="w-[1.5px] h-5 transform rotate-12 shrink-0" style={{ backgroundColor: `${mc.color}45` }}></span>
+                          <span className={`text-xs font-extrabold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{target}</span>
+                        </div>
+                        <span className="text-[9px] font-black uppercase block mt-2" style={{ color: mc.color }}>ĐẠT: {actualPct}%</span>
                       </div>
-                      <div className="text-[8px] font-extrabold mt-1" style={{ color: mc.color }}>{pct}%</div>
                     </div>
                   );
                 })}
@@ -422,11 +815,11 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white mb-1 border-2 ${
                             isSelected ? 'border-gold shadow-lg shadow-gold/30 scale-105' : (themeMode === 'dark' ? 'border-slate-800' : 'border-white')
                           }`} style={{ background: member.gradient }}>
-                            {member.id}
+                            {member.initials}
                           </div>
-                          <div className={`text-[9px] font-black truncate w-full px-1 ${themeMode === 'dark' ? 'text-gray-300' : 'text-slate-700'}`}>{member.name}</div>
-                          <div className="text-xs font-black" style={{ color }}>{val}</div>
-                          <div className={`text-[8px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{pct}%</div>
+                          <div className={`text-[10px] font-black truncate w-full px-1 ${themeMode === 'dark' ? 'text-gray-300' : 'text-slate-700'}`}>{member.name}</div>
+                          <div className="text-sm font-black" style={{ color }}>{val}</div>
+                          <div className={`text-[9px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{pct}%</div>
                         </div>
                         <div 
                           className="w-full rounded-t-xl flex items-end justify-center pb-1.5 transition-all duration-500 shadow-inner" 
@@ -447,9 +840,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     );
                   })}
                 </div>
-
-                {/* Ranks 4-6 horizontal cards list */}
-                <div className="grid grid-cols-3 gap-2 mt-2">
+ 
+                {/* Ranks 4-7 horizontal cards list */}
+                <div className="grid grid-cols-2 gap-2 mt-2">
                   {remaining.map((m, i) => {
                     const target = targets[currentPeriodId][currentMetricKey];
                     const pct = target > 0 ? Math.round((m.value / target) * 100) : 0;
@@ -458,17 +851,17 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       <div 
                         key={m.id}
                         onClick={() => setCurrentMemberId(m.id)}
-                        className={`flex items-center gap-2 p-1.5 rounded-lg border text-left cursor-pointer transition-all ${
+                        className={`flex items-center gap-2.5 p-2 rounded-xl border text-left cursor-pointer transition-all ${
                           isSelected 
-                            ? 'bg-gold/15 border-gold/30 shadow-sm' 
+                            ? 'bg-gold/15 border-gold/40 shadow-sm' 
                             : (themeMode === 'dark' ? 'bg-white/[0.02] border-transparent hover:bg-white/5' : 'bg-slate-50 border-transparent hover:bg-slate-100')
                         }`}
                       >
-                        <span className={`text-[8px] font-bold w-3 text-center ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>#{i + 4}</span>
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ background: m.gradient }}>{m.id}</div>
+                        <span className={`text-[11px] font-bold w-4 text-center ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>#{i + 4}</span>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm" style={{ background: m.gradient }}>{m.initials}</div>
                         <div className="flex-1 min-w-0">
-                          <span className={`text-[9px] font-bold block truncate ${themeMode === 'dark' ? 'text-gray-300' : 'text-slate-700'}`}>{m.name}</span>
-                          <span className="text-[10px] font-black block leading-none mt-0.5" style={{ color: activeMetricConfig.color }}>{m.value} <span className={`text-[8px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>({pct}%)</span></span>
+                          <span className={`text-xs font-bold block truncate ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`}>{m.name}</span>
+                          <span className="text-xs font-black block leading-none mt-1" style={{ color: activeMetricConfig.color }}>{m.value} <span className={`text-[10px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>({pct}%)</span></span>
                         </div>
                       </div>
                     );
@@ -478,83 +871,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             </div>
 
             {/* Target Config Panel Slide-in (Front Side) */}
-            <div 
-              className={`absolute top-0 right-0 h-full w-[280px] border-l flex flex-col z-30 transition-transform duration-300 ${
-                themeMode === 'dark' 
-                  ? 'bg-[#141414] border-white/10' 
-                  : 'bg-white border-slate-200'
-              } ${isConfigOpen ? 'translate-x-0' : 'translate-x-full'}`}
-            >
-              <div className={`flex items-center justify-between px-4 py-3 border-b ${themeMode === 'dark' ? 'border-white/5' : 'border-gray-200'}`}>
-                <div>
-                  <h3 className={`text-sm font-bold ${themeMode === 'dark' ? 'text-white' : 'text-gray-900'}`}>Cấu hình Target</h3>
-                  <p className="text-[9px] text-gold font-medium mt-0.5">Tập thiết lập chu kỳ</p>
-                </div>
-                <Button type="text" icon={<CloseOutlined className="text-xs" />} onClick={() => setIsConfigOpen(false)} className="flex items-center justify-center" />
-              </div>
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {periods.map(p => {
-                  const isCurrent = p.id === currentPeriodId;
-                  const isExpanded = expandedSections[p.id];
-                  const t = targets[p.id];
-                  return (
-                    <div 
-                      key={p.id} 
-                      className={`rounded-xl border overflow-hidden ${
-                        themeMode === 'dark' 
-                          ? 'bg-white/[0.02] border-white/5' 
-                          : 'bg-slate-50 border-gray-200'
-                      }`}
-                    >
-                      <button 
-                        onClick={() => toggleConfigSection(p.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2 transition-all ${
-                          themeMode === 'dark' ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-xs font-bold ${themeMode === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.label}</span>
-                          {isCurrent && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-gold/20 text-gold font-bold">Hiện tại</span>}
-                        </div>
-                        {isExpanded ? <UpOutlined className="text-[8px] text-gray-400" /> : <DownOutlined className="text-[8px] text-gray-400" />}
-                      </button>
-                      
-                      {/* Fixed height transition container */}
-                      <div className="transition-all duration-300 overflow-hidden" style={{ maxHeight: isExpanded ? '230px' : '0px' }}>
-                        <div className="px-3 pb-3 pt-1 space-y-2">
-                          {metricConfigs.map(m => (
-                            <div key={m.key} className="flex items-center justify-between">
-                              <span className={`text-[10px] font-semibold ${themeMode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{m.icon} {m.label}</span>
-                              <input 
-                                type="number"
-                                className={`w-16 h-6 rounded-md border text-center text-xs font-bold focus:border-gold/50 outline-none ${
-                                  themeMode === 'dark' 
-                                    ? 'bg-black/30 border-white/10 text-white' 
-                                    : 'bg-white border-gray-300 text-gray-900'
-                                }`}
-                                value={t[m.key]}
-                                min="1"
-                                onChange={e => handleTargetChange(p.id, m.key, e.target.value)}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className={`p-3 border-t ${themeMode === 'dark' ? 'border-white/5 bg-black/20' : 'border-gray-200 bg-gray-50'}`}>
-                <Button 
-                  type="primary" 
-                  icon={<SaveOutlined />} 
-                  onClick={saveTargets}
-                  className="w-full bg-gradient-to-r from-gold to-goldDark hover:from-goldLight border-none text-black font-bold h-9 rounded-xl shadow-md shadow-gold/10"
-                >
-                  Lưu cấu hình
-                </Button>
-              </div>
-            </div>
+            {renderConfigPanel()}
           </div>
 
           {/* ============================== BACK FACE (RADAR VIEW - V3E) ============================== */}
@@ -569,7 +886,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             <div className={`flex items-center justify-between p-4 border-b transition-colors ${themeMode === 'dark' ? 'border-white/5 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/40'}`}>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-black/10" style={{ background: activeMember.gradient }}>
-                  {activeMember.id}
+                  {activeMember.initials}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -595,13 +912,15 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   className="hover:bg-gold/10 flex items-center justify-center w-8 h-8 rounded-lg"
                   title="Xoay lật sang biểu đồ Donut"
                 />
-                <Button 
-                  type="text"
-                  icon={<SettingOutlined className="text-gold" />}
-                  onClick={() => setIsConfigOpen(true)}
-                  className="hover:bg-gold/10 flex items-center justify-center w-8 h-8 rounded-lg"
-                  title="Cấu hình Target"
-                />
+                {isAdmin && (
+                  <Button 
+                    type="text"
+                    icon={<SettingOutlined className="text-gold" />}
+                    onClick={() => setIsConfigOpen(true)}
+                    className="hover:bg-gold/10 flex items-center justify-center w-8 h-8 rounded-lg"
+                    title="Cấu hình Target & Nhân sự"
+                  />
+                )}
                 <Button 
                   type="text"
                   icon={<CloseOutlined className={themeMode === 'dark' ? 'text-gray-400 hover:text-red-500' : 'text-slate-500 hover:text-red-500'} />}
@@ -612,7 +931,12 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             </div>
 
             {/* Main Area */}
-            <div className="flex-1 p-5 flex flex-col justify-between overflow-hidden">
+            <div className="flex-1 p-5 flex flex-col justify-between overflow-hidden relative">
+              {loading && (
+                <div className="absolute inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center rounded-b-2xl">
+                  <Spin indicator={<LoadingOutlined style={{ fontSize: 28, color: '#D4A84B' }} spin />} />
+                </div>
+              )}
               {/* Timeline (V3C4 Dots) */}
               <div className={`border p-3 rounded-2xl ${themeMode === 'dark' ? 'border-neutral-800 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/30'}`}>
                 <div className="flex items-center justify-between mb-2.5 px-2">
@@ -759,30 +1083,55 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 {metricConfigs.map(mc => {
                   const val = activePerformance[mc.key];
                   const target = targets[currentPeriodId][mc.key];
-                  const pct = target > 0 ? Math.min(Math.round((val / target) * 100), 100) : 0;
+                  const actualPct = target > 0 ? Math.round((val / target) * 100) : 0;
+                  const barPct = Math.min(actualPct, 100);
                   const isActive = currentMetricKey === mc.key;
                   const Icon = mc.antIcon;
                   return (
                     <div 
                       key={mc.key}
                       onClick={() => setCurrentMetricKey(mc.key)}
-                      className={`rounded-xl p-2.5 text-center cursor-pointer transition-all duration-250 border ${
+                      className={`rounded-2xl p-2.5 flex items-center gap-2.5 cursor-pointer transition-all duration-300 border ${
                         isActive 
-                          ? (themeMode === 'dark' ? 'bg-white/[0.08] ring-1' : 'bg-slate-50 ring-1')
-                          : (themeMode === 'dark' ? 'bg-white/[0.02] border-transparent hover:bg-white/5' : 'bg-slate-50/50 border-transparent hover:bg-slate-100')
+                          ? (themeMode === 'dark' 
+                              ? 'border-transparent' 
+                              : 'border-transparent')
+                          : (themeMode === 'dark' 
+                              ? 'border-white/5 hover:border-white/10' 
+                              : 'border-slate-100 hover:border-slate-200/80')
                       }`}
-                      style={isActive ? { borderColor: mc.color, boxShadow: `0 0 8px ${mc.color}20` } : {}}
+                      style={{
+                        background: isActive 
+                          ? (themeMode === 'dark' ? `linear-gradient(135deg, ${mc.color}15, rgba(255,255,255,0.01))` : `linear-gradient(135deg, ${mc.color}08, #ffffff)`)
+                          : (themeMode === 'dark' ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)'),
+                        boxShadow: isActive ? `0 10px 25px -5px ${mc.color}25, 0 8px 10px -6px ${mc.color}25` : 'none',
+                        borderLeft: isActive ? `3.5px solid ${mc.color}` : undefined
+                      }}
                     >
-                      <div className="flex items-center justify-center gap-1.5 text-[9px] font-bold tracking-tight mb-1 select-none" style={{ color: mc.color }}>
-                        <Icon className="text-[10px] shrink-0" />
-                        <span className="truncate">{mc.label}</span>
+                      {/* Left Side: Glowing Radial Ring with Icon */}
+                      <div 
+                        className="relative w-11 h-11 flex items-center justify-center shrink-0 rounded-full transition-all duration-300"
+                        style={{
+                          boxShadow: `0 0 15px ${mc.color}35`,
+                        }}
+                      >
+                        <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                          <circle cx="18" cy="18" r="16" fill="none" stroke={themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} strokeWidth="2.5"></circle>
+                          <circle cx="18" cy="18" r="16" fill="none" stroke={mc.color} strokeWidth="3" strokeDasharray="100" strokeDashoffset={100 - barPct} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.8s ease' }}></circle>
+                        </svg>
+                        <Icon className="text-sm relative z-10" style={{ color: mc.color, fontSize: '15px' }} />
                       </div>
-                      <div className="text-sm font-extrabold" style={{ color: mc.color }}>{val}</div>
-                      <div className={`text-[8px] ${themeMode === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>/ {target}</div>
-                      <div className={`mt-1.5 h-1 rounded-full overflow-hidden ${themeMode === 'dark' ? 'bg-white/10' : 'bg-gray-200'}`}>
-                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: mc.color }}></div>
+
+                      {/* Right Side: Info with Diagonal Slash */}
+                      <div className="flex-1 min-w-0 text-left">
+                        <span className="text-[10px] font-black uppercase tracking-wider block mb-0.5 font-outfit" style={{ color: mc.color }}>{mc.label}</span>
+                        <div className="flex items-center gap-1.5 leading-none mt-1 select-none">
+                          <span className={`text-2xl font-outfit font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{val}</span>
+                          <span className="w-[1.5px] h-5 transform rotate-12 shrink-0" style={{ backgroundColor: `${mc.color}45` }}></span>
+                          <span className={`text-xs font-extrabold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{target}</span>
+                        </div>
+                        <span className="text-[9px] font-black uppercase block mt-2" style={{ color: mc.color }}>ĐẠT: {actualPct}%</span>
                       </div>
-                      <div className="text-[8px] font-bold mt-1" style={{ color: mc.color }}>{pct}%</div>
                     </div>
                   );
                 })}
@@ -817,9 +1166,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white mb-1 border-2 ${
                             isSelected ? 'border-gold shadow-lg shadow-gold/20 scale-105' : (themeMode === 'dark' ? 'border-white/10' : 'border-gray-300')
                           }`} style={{ background: member.gradient }}>
-                            {member.id}
+                            {member.initials}
                           </div>
-                          <div className={`text-[9px] font-bold truncate w-full px-1 ${themeMode === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{member.name}</div>
+                          <div className={`text-[10px] font-black truncate w-full px-1 ${themeMode === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{member.name}</div>
                           
                           {/* Mini Radar chart SVG inside podium back side columns */}
                           <svg id={`miniRadar-Back-New-${member.id}`} viewBox="0 0 60 60" className="w-[32px] h-[32px] my-0.5 opacity-80" ref={el => {
@@ -843,7 +1192,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                             `;
                           }}></svg>
 
-                          <div className={`text-xs font-extrabold ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{val}</div>
+                          <div className={`text-sm font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{val}</div>
                         </div>
                         <div 
                           className="w-full rounded-t-lg transition-all duration-500 flex items-end justify-center pb-1"
@@ -863,8 +1212,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   })}
                 </div>
 
-                {/* Ranks 4-6 horizontal cards list */}
-                <div className="grid grid-cols-3 gap-2 mt-2">
+                {/* Ranks 4-7 horizontal cards list */}
+                <div className="grid grid-cols-2 gap-2 mt-2">
                   {remainingBack.map((m, i) => {
                     const target = targets[currentPeriodId]['done'];
                     const pct = target > 0 ? Math.round((m.value / target) * 100) : 0;
@@ -888,17 +1237,17 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       <div 
                         key={m.id}
                         onClick={() => setCurrentMemberId(m.id)}
-                        className={`flex items-center gap-2 p-1.5 rounded-lg border text-left cursor-pointer transition-all ${
+                        className={`flex items-center gap-2.5 p-2 rounded-xl border text-left cursor-pointer transition-all ${
                           isSelected 
                             ? 'bg-gold/15 border-gold/35 shadow-sm' 
                             : (themeMode === 'dark' ? 'bg-white/[0.02] border-transparent hover:bg-white/5' : 'bg-slate-50 border-transparent hover:bg-slate-100')
                         }`}
                       >
-                        <span className={`text-[8px] font-bold w-3 text-center ${themeMode === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>#{i + 4}</span>
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ background: m.gradient }}>{m.id}</div>
+                        <span className={`text-[11px] font-bold w-4 text-center ${themeMode === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>#{i + 4}</span>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm" style={{ background: m.gradient }}>{m.initials}</div>
                         <div className="flex-1 min-w-0">
-                          <span className={`text-[9px] font-semibold block truncate ${themeMode === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{m.name}</span>
-                          <div className="flex gap-0.5 mt-1.5 w-16">
+                          <span className={`text-xs font-bold block truncate ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`}>{m.name}</span>
+                          <div className="flex gap-0.5 mt-1.5 w-20">
                             {segmentsHtml}
                           </div>
                         </div>
@@ -910,85 +1259,16 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             </div>
 
             {/* Target Config Panel Slide-in (Back Side) */}
-            <div 
-              className={`absolute top-0 right-0 h-full w-[280px] border-l flex flex-col z-30 transition-transform duration-300 ${
-                themeMode === 'dark' 
-                  ? 'bg-[#141414] border-white/10' 
-                  : 'bg-white border-slate-200'
-              } ${isConfigOpen ? 'translate-x-0' : 'translate-x-full'}`}
-            >
-              <div className={`flex items-center justify-between px-4 py-3 border-b ${themeMode === 'dark' ? 'border-white/5' : 'border-gray-200'}`}>
-                <div>
-                  <h3 className={`text-sm font-bold ${themeMode === 'dark' ? 'text-white' : 'text-gray-900'}`}>Cấu hình Target</h3>
-                  <p className="text-[9px] text-gold font-medium mt-0.5">Tập thiết lập chu kỳ</p>
-                </div>
-                <Button type="text" icon={<CloseOutlined className="text-xs" />} onClick={() => setIsConfigOpen(false)} className="flex items-center justify-center" />
-              </div>
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {periods.map(p => {
-                  const isCurrent = p.id === currentPeriodId;
-                  const isExpanded = expandedSections[p.id];
-                  const t = targets[p.id];
-                  return (
-                    <div 
-                      key={p.id} 
-                      className={`rounded-xl border overflow-hidden ${
-                        themeMode === 'dark' 
-                          ? 'bg-white/[0.02] border-white/5' 
-                          : 'bg-slate-50 border-gray-200'
-                      }`}
-                    >
-                      <button 
-                        onClick={() => toggleConfigSection(p.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2 transition-all ${
-                          themeMode === 'dark' ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-xs font-bold ${themeMode === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.label}</span>
-                          {isCurrent && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-gold/20 text-gold font-bold">Hiện tại</span>}
-                        </div>
-                        {isExpanded ? <UpOutlined className="text-[8px] text-gray-400" /> : <DownOutlined className="text-[8px] text-gray-400" />}
-                      </button>
-                      
-                      {/* Fixed height transition container */}
-                      <div className="transition-all duration-300 overflow-hidden" style={{ maxHeight: isExpanded ? '230px' : '0px' }}>
-                        <div className="px-3 pb-3 pt-1 space-y-2">
-                          {metricConfigs.map(m => (
-                            <div key={m.key} className="flex items-center justify-between">
-                              <span className={`text-[10px] font-semibold ${themeMode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{m.icon} {m.label}</span>
-                              <input 
-                                type="number"
-                                className={`w-16 h-6 rounded-md border text-center text-xs font-bold focus:border-gold/50 outline-none ${
-                                  themeMode === 'dark' 
-                                    ? 'bg-black/30 border-white/10 text-white' 
-                                    : 'bg-white border-gray-300 text-gray-900'
-                                }`}
-                                value={t[m.key]}
-                                min="1"
-                                onChange={e => handleTargetChange(p.id, m.key, e.target.value)}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className={`p-3 border-t ${themeMode === 'dark' ? 'border-white/5 bg-black/20' : 'border-gray-200 bg-gray-50'}`}>
-                <Button 
-                  type="primary" 
-                  icon={<SaveOutlined />} 
-                  onClick={saveTargets}
-                  className="w-full bg-gradient-to-r from-gold to-goldDark hover:from-goldLight border-none text-black font-bold h-9 rounded-xl shadow-md shadow-gold/10"
-                >
-                  Lưu cấu hình
-                </Button>
-              </div>
-            </div>
+            {renderConfigPanel()}
           </div>
 
+        </div>
+        {/* Drag resize handle visual indicator */}
+        <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 pointer-events-none z-[1050] flex items-end justify-end opacity-40">
+          <svg className="w-3 h-3 text-gold" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <line x1="8" y1="2" x2="2" y2="8" />
+            <line x1="8" y1="5" x2="5" y2="8" />
+          </svg>
         </div>
       </div>
     </div>
