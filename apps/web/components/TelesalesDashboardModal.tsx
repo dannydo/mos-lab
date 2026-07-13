@@ -777,8 +777,13 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
               )}
               {/* Timeline (V3C4 Dots) */}
               <div className={`border p-3 rounded-2xl ${themeMode === 'dark' ? 'border-neutral-800 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/30'}`}>
-                <div className="flex items-center justify-between mb-2.5 px-2">
+                <div className="flex items-center justify-between mb-2 px-2">
                   <span className={`text-[9px] font-extrabold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>← Trước</span>
+                  <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
+                    themeMode === 'dark' ? 'bg-white/5 border-white/10 text-gold' : 'bg-slate-100 border-slate-200 text-amber-800'
+                  }`}>
+                    <span>{activePreset.emoji} {activePreset.name}</span>
+                  </div>
                   <span className={`text-[9px] font-extrabold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>Hiện tại / Tương lai →</span>
                 </div>
                 <div className="relative flex items-center justify-center py-1">
@@ -1089,8 +1094,13 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
               )}
               {/* Timeline (V3C4 Dots) */}
               <div className={`border p-3 rounded-2xl ${themeMode === 'dark' ? 'border-neutral-800 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/30'}`}>
-                <div className="flex items-center justify-between mb-2.5 px-2">
+                <div className="flex items-center justify-between mb-2 px-2">
                   <span className={`text-[9px] font-bold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>← Trước</span>
+                  <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
+                    themeMode === 'dark' ? 'bg-white/5 border-white/10 text-gold' : 'bg-slate-100 border-slate-200 text-amber-800'
+                  }`}>
+                    <span>{activePreset.emoji} {activePreset.name}</span>
+                  </div>
                   <span className={`text-[9px] font-bold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>Hiện tại / Tương lai →</span>
                 </div>
                 <div className="relative flex items-center justify-center py-1">
