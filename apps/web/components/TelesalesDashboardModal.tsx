@@ -527,91 +527,89 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
           </>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto p-3 flex flex-col justify-between">
-              <div className="space-y-2">
-                <p className={`text-[10px] ${themeMode === 'dark' ? 'text-gray-400' : 'text-gray-500'} mb-2`}>
-                  Chọn nhân viên hiển thị trên bảng xếp hạng (Mặc định lọc theo vai trò Telesales):
-                </p>
-                <div className="space-y-1.5 max-h-[420px] overflow-y-auto pr-1">
-                  {systemStaff.map((staff: any) => {
-                    const isChecked = selectedStaffIds.includes(staff.id);
-                    return (
-                      <div 
-                        key={staff.id} 
-                        onClick={() => toggleStaffSelection(staff.id)}
-                        className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
-                          isChecked 
-                            ? (themeMode === 'dark' 
-                                ? 'border-gold/30 bg-gold/5 shadow-[0_4px_12px_rgba(212,168,75,0.08)]' 
-                                : 'border-gold/25 bg-gold/[0.03] shadow-[0_4px_10px_rgba(212,168,75,0.05)]')
-                            : (themeMode === 'dark' 
-                                ? 'border-white/[0.04] bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.03]' 
-                                : 'border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-slate-50')
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <Checkbox 
-                            checked={isChecked}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={() => toggleStaffSelection(staff.id)}
-                            className="shrink-0 scale-105"
-                          />
-                          <div className="flex flex-col min-w-0 flex-1 select-none">
-                            <span className={`text-xs font-bold truncate transition-colors ${
-                              isChecked 
-                                ? (themeMode === 'dark' ? 'text-gold' : 'text-amber-800')
-                                : (themeMode === 'dark' ? 'text-gray-200' : 'text-gray-800')
-                            }`}>
-                              {staff.displayName || staff.username}
-                            </span>
-                            <span className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${
-                              isChecked
-                                ? (themeMode === 'dark' ? 'text-gold/60' : 'text-amber-700/60')
-                                : (themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400')
-                            }`}>
-                              {staff.role === 'telesales' ? 'Telesales Executive' : staff.role}
-                            </span>
-                          </div>
-                        </div>
-
-                        {isAdmin ? (
-                          <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
-                            <Select
-                              value={staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2}
-                              onChange={(val) => {
-                                setStaffLevels(prev => ({
-                                  ...prev,
-                                  [String(staff.id)]: val
-                                }));
-                              }}
-                              size="small"
-                              style={{ width: 110 }}
-                              variant="filled"
-                              options={LEVEL_PRESETS.map((p, idx) => ({
-                                value: idx,
-                                label: (
-                                  <span className="flex items-center gap-1.5 font-semibold text-xs select-none">
-                                    <span className="text-sm">{p.emoji}</span>
-                                    <span>{p.name}</span>
-                                  </span>
-                                )
-                              }))}
-                            />
-                          </div>
-                        ) : (
-                          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${
-                            themeMode === 'dark'
-                              ? 'bg-white/[0.03] border-white/5 text-gray-300'
-                              : 'bg-slate-100 border-slate-200/60 text-slate-600'
+            <div className="flex-1 flex flex-col min-h-0 p-3">
+              <p className={`text-[10px] ${themeMode === 'dark' ? 'text-gray-400' : 'text-gray-500'} mb-2 shrink-0`}>
+                Chọn nhân viên hiển thị trên bảng xếp hạng (Mặc định lọc theo vai trò Telesales):
+              </p>
+              <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 custom-scrollbar min-h-0">
+                {systemStaff.map((staff: any) => {
+                  const isChecked = selectedStaffIds.includes(staff.id);
+                  return (
+                    <div 
+                      key={staff.id} 
+                      onClick={() => toggleStaffSelection(staff.id)}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                        isChecked 
+                          ? (themeMode === 'dark' 
+                              ? 'border-gold/30 bg-gold/5 shadow-[0_4px_12px_rgba(212,168,75,0.08)]' 
+                              : 'border-gold/25 bg-gold/[0.03] shadow-[0_4px_10px_rgba(212,168,75,0.05)]')
+                          : (themeMode === 'dark' 
+                              ? 'border-white/[0.04] bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.03]' 
+                              : 'border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-slate-50')
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Checkbox 
+                          checked={isChecked}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={() => toggleStaffSelection(staff.id)}
+                          className="shrink-0 scale-105"
+                        />
+                        <div className="flex flex-col min-w-0 flex-1 select-none">
+                          <span className={`text-xs font-bold truncate transition-colors ${
+                            isChecked 
+                              ? (themeMode === 'dark' ? 'text-gold' : 'text-amber-800')
+                              : (themeMode === 'dark' ? 'text-gray-200' : 'text-gray-800')
                           }`}>
-                            <span className="text-xs">{LEVEL_PRESETS[staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2]?.emoji || '🐥'}</span>
-                            <span>{LEVEL_PRESETS[staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2]?.name || 'Chick'}</span>
-                          </div>
-                        )}
+                            {staff.displayName || staff.username}
+                          </span>
+                          <span className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${
+                            isChecked
+                              ? (themeMode === 'dark' ? 'text-gold/60' : 'text-amber-700/60')
+                              : (themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400')
+                          }`}>
+                            {staff.role === 'telesales' ? 'Telesales Executive' : staff.role}
+                          </span>
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      {isAdmin ? (
+                        <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+                          <Select
+                            value={staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2}
+                            onChange={(val) => {
+                              setStaffLevels(prev => ({
+                                ...prev,
+                                [String(staff.id)]: val
+                              }));
+                            }}
+                            size="small"
+                            style={{ width: 110 }}
+                            variant="filled"
+                            options={LEVEL_PRESETS.map((p, idx) => ({
+                              value: idx,
+                              label: (
+                                <span className="flex items-center gap-1.5 font-semibold text-xs select-none">
+                                  <span className="text-sm">{p.emoji}</span>
+                                  <span>{p.name}</span>
+                                </span>
+                              )
+                            }))}
+                          />
+                        </div>
+                      ) : (
+                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${
+                          themeMode === 'dark'
+                            ? 'bg-white/[0.03] border-white/5 text-gray-300'
+                            : 'bg-slate-100 border-slate-200/60 text-slate-600'
+                        }`}>
+                          <span className="text-xs">{LEVEL_PRESETS[staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2]?.emoji || '🐥'}</span>
+                          <span>{LEVEL_PRESETS[staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2]?.name || 'Chick'}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <div className={`p-3 border-t ${themeMode === 'dark' ? 'border-white/5 bg-black/20' : 'border-gray-200 bg-gray-50'}`}>
