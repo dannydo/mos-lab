@@ -135,8 +135,18 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
       if (savedWidth && savedHeight) {
         setModalSize({ width: savedWidth, height: savedHeight });
       }
+      const savedPeriod = localStorage.getItem('telesales_dashboard_period_id');
+      if (savedPeriod) {
+        setCurrentPeriodId(savedPeriod);
+      }
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('telesales_dashboard_period_id', currentPeriodId);
+    }
+  }, [currentPeriodId]);
 
   useEffect(() => {
     if (!visible) return;
@@ -776,18 +786,18 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           <circle cx="18" cy="18" r="16" fill="none" stroke={themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} strokeWidth="2.5"></circle>
                           <circle cx="18" cy="18" r="16" fill="none" stroke={mc.color} strokeWidth="3" strokeDasharray="100" strokeDashoffset={100 - barPct} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.8s ease' }}></circle>
                         </svg>
-                        <Icon className="text-sm relative z-10" style={{ color: mc.color, fontSize: '15px' }} />
+                        <Icon className="text-sm relative z-10" style={{ color: mc.color, fontSize: '22px' }} />
                       </div>
 
                       {/* Right Side: Info with Diagonal Slash */}
                       <div className="flex-1 min-w-0 text-left">
-                        <span className="text-[10px] font-black uppercase tracking-wider block mb-0.5 font-outfit" style={{ color: mc.color }}>{mc.label}</span>
-                        <div className="flex items-center gap-1.5 leading-none mt-1 select-none">
+                        <span className="text-[10px] font-black uppercase tracking-wider block font-outfit" style={{ color: mc.color }}>{mc.label}</span>
+                        <div className="flex items-center gap-1.5 leading-none mt-0 select-none">
                           <span className={`text-2xl font-outfit font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{val}</span>
                           <span className="w-[1.5px] h-5 transform rotate-12 shrink-0" style={{ backgroundColor: `${mc.color}45` }}></span>
                           <span className={`text-xs font-extrabold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{target}</span>
                         </div>
-                        <span className="text-[9px] font-black uppercase block mt-2" style={{ color: mc.color }}>ĐẠT: {actualPct}%</span>
+                        <span className="text-[9px] font-black uppercase block mt-0.5" style={{ color: mc.color }}>ĐẠT: {actualPct}%</span>
                       </div>
                     </div>
                   );
@@ -854,7 +864,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 </div>
  
                 {/* Ranks 4-7 horizontal cards list */}
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="grid grid-cols-3 gap-2 mt-2">
                   {remaining.map((m, i) => {
                     const target = targets[currentPeriodId][currentMetricKey];
                     const pct = target > 0 ? Math.round((m.value / target) * 100) : 0;
@@ -1131,18 +1141,18 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           <circle cx="18" cy="18" r="16" fill="none" stroke={themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} strokeWidth="2.5"></circle>
                           <circle cx="18" cy="18" r="16" fill="none" stroke={mc.color} strokeWidth="3" strokeDasharray="100" strokeDashoffset={100 - barPct} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.8s ease' }}></circle>
                         </svg>
-                        <Icon className="text-sm relative z-10" style={{ color: mc.color, fontSize: '15px' }} />
+                        <Icon className="text-sm relative z-10" style={{ color: mc.color, fontSize: '22px' }} />
                       </div>
 
                       {/* Right Side: Info with Diagonal Slash */}
                       <div className="flex-1 min-w-0 text-left">
-                        <span className="text-[10px] font-black uppercase tracking-wider block mb-0.5 font-outfit" style={{ color: mc.color }}>{mc.label}</span>
-                        <div className="flex items-center gap-1.5 leading-none mt-1 select-none">
+                        <span className="text-[10px] font-black uppercase tracking-wider block font-outfit" style={{ color: mc.color }}>{mc.label}</span>
+                        <div className="flex items-center gap-1.5 leading-none mt-0 select-none">
                           <span className={`text-2xl font-outfit font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{val}</span>
                           <span className="w-[1.5px] h-5 transform rotate-12 shrink-0" style={{ backgroundColor: `${mc.color}45` }}></span>
                           <span className={`text-xs font-extrabold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{target}</span>
                         </div>
-                        <span className="text-[9px] font-black uppercase block mt-2" style={{ color: mc.color }}>ĐẠT: {actualPct}%</span>
+                        <span className="text-[9px] font-black uppercase block mt-0.5" style={{ color: mc.color }}>ĐẠT: {actualPct}%</span>
                       </div>
                     </div>
                   );
@@ -1225,7 +1235,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 </div>
 
                 {/* Ranks 4-7 horizontal cards list */}
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="grid grid-cols-3 gap-2 mt-2">
                   {remainingBack.map((m, i) => {
                     const target = targets[currentPeriodId]['done'];
                     const pct = target > 0 ? Math.round((m.value / target) * 100) : 0;
