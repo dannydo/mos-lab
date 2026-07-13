@@ -1483,6 +1483,7 @@ export default function TodayDashboard() {
                         rowClassName={(record) => (record.shift === 'off' || record.attendance === 'checked_out') ? 'opacity-40 pointer-events-none' : ''}
                         pagination={false}
                         size="small"
+                        scroll={{ x: 'max-content' }}
                         columns={[
                           {
                             title: 'Ca',
@@ -1543,6 +1544,7 @@ export default function TodayDashboard() {
                         rowClassName={(record) => (record.shift === 'off' || record.attendance === 'checked_out') ? 'opacity-40 pointer-events-none' : ''}
                         pagination={false}
                         size="small"
+                        scroll={{ x: 'max-content' }}
                         columns={[
                           {
                             title: 'Ca',
