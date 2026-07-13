@@ -190,7 +190,10 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
 
         const balanceIds = userBalances.map(b => b.id);
         const userBalanceTransactions = balanceIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-          SELECT usbt.*, o.booking_date_start as o_booking_date_start
+          SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
+                 usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
+                 usbt.retain_count, usbt.used_staff_id, usbt.order_id,
+                 o.booking_date_start as o_booking_date_start
           FROM user_service_balance_transaction usbt
           LEFT JOIN \`order\` o ON o.id = usbt.order_id
           WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
@@ -649,7 +652,10 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
         const balanceIds = userBalances.map(b => b.id);
         const userBalanceTransactions = balanceIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-          SELECT usbt.*, o.booking_date_start as o_booking_date_start
+          SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
+                 usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
+                 usbt.retain_count, usbt.used_staff_id, usbt.order_id,
+                 o.booking_date_start as o_booking_date_start
           FROM user_service_balance_transaction usbt
           LEFT JOIN \`order\` o ON o.id = usbt.order_id
           WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
@@ -1447,7 +1453,10 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
         const balanceIds = userBalances.map(b => b.id);
         const userBalanceTransactions = balanceIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-          SELECT usbt.*, o.booking_date_start as o_booking_date_start
+          SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
+                 usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
+                 usbt.retain_count, usbt.used_staff_id, usbt.order_id,
+                 o.booking_date_start as o_booking_date_start
           FROM user_service_balance_transaction usbt
           LEFT JOIN \`order\` o ON o.id = usbt.order_id
           WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})

@@ -53,6 +53,24 @@ const periods = [
   { id: 'this_month', label: 'Tháng này' }
 ];
 
+const radialCoords = [
+  { x: 0, y: -60 },   // Index 0: Top
+  { x: 52, y: -30 },  // Index 1: Top-Right
+  { x: 52, y: 30 },   // Index 2: Bottom-Right
+  { x: 0, y: 60 },    // Index 3: Bottom
+  { x: -52, y: 30 },  // Index 4: Bottom-Left
+  { x: -52, y: -30 }  // Index 5: Top-Left
+];
+
+const periodPositions: Record<string, string> = {
+  last_month: '5%',
+  last_week: '20%',
+  yesterday: '35%',
+  today: '65%',
+  this_week: '80%',
+  this_month: '95%'
+};
+
 const baseDataToday: Record<string, Record<string, number>> = {
   TN: { calls: 62, pickups: 41, happy: 17, booked: 12, done: 8 },
   DD: { calls: 55, pickups: 36, happy: 14, booked: 10, done: 7 },
@@ -107,9 +125,36 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [staffLevels, setStaffLevels] = useState<Record<string, number>>({});
+  const [isRadialOpen, setIsRadialOpen] = useState(false);
+
+  const getMemberLevelIdx = (memberId: string | number): number => {
+    const idStr = String(memberId);
+    
+    // Find member to retrieve both their initials and database ID
+    const member = dbMembers.find((m: any) => String(m.id) === idStr || String(m.initials) === idStr)
+      || members.find((m: any) => String(m.id) === idStr || String(m.initials) === idStr);
+    
+    if (!member) {
+      if (staffLevels[idStr] !== undefined) {
+        return Number(staffLevels[idStr]);
+      }
+      return 2; // Default to Chick
+    }
+
+    const numericId = String(member.id);
+    const initials = String(member.initials || member.id);
+
+    if (staffLevels[numericId] !== undefined) {
+      return Number(staffLevels[numericId]);
+    }
+    if (staffLevels[initials] !== undefined) {
+      return Number(staffLevels[initials]);
+    }
+    return 2; // Default to Chick
+  };
 
   const getMemberTarget = (memberId: string, periodId: string): Record<string, number> => {
-    const levelIdx = staffLevels[String(memberId)] !== undefined ? staffLevels[String(memberId)] : 2;
+    const levelIdx = getMemberLevelIdx(memberId);
     const preset = LEVEL_PRESETS[levelIdx] || LEVEL_PRESETS[2];
     
     let divisor = 1;
@@ -403,7 +448,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const activeTarget = activeMemberTargets[currentMetricKey];
   const activePercent = activeTarget > 0 ? Math.min(Math.round((activeValue / activeTarget) * 100), 100) : 0;
 
-  const activeLevelIdx = staffLevels[String(activeMember.id)] !== undefined ? staffLevels[String(activeMember.id)] : 2;
+  const activeLevelIdx = getMemberLevelIdx(activeMember.id);
   const activePreset = LEVEL_PRESETS[activeLevelIdx] || LEVEL_PRESETS[2];
   const activePresetKey = currentMetricKey as 'done' | 'booked' | 'happy' | 'pickups' | 'calls';
   const dailyTarget = Math.round(activePreset[activePresetKey] / 25);
@@ -419,6 +464,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
       ...staffLevels,
       [String(activeMember.id)]: newLevelIdx
     };
+    if (activeMember.initials) {
+      updatedLevels[String(activeMember.initials)] = newLevelIdx;
+    }
     setStaffLevels(updatedLevels);
     try {
       await api.post('/kpi/staff-levels', updatedLevels);
@@ -618,12 +666,21 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       {isAdmin ? (
                         <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
                           <Select
-                            value={staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2}
+                            value={getMemberLevelIdx(staff.id)}
                             onChange={(val) => {
-                              setStaffLevels(prev => ({
-                                ...prev,
-                                [String(staff.id)]: val
-                              }));
+                              setStaffLevels(prev => {
+                                const next = {
+                                  ...prev,
+                                  [String(staff.id)]: val
+                                };
+                                const initials = staff.displayName
+                                  ? staff.displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                                  : staff.username?.slice(0, 2).toUpperCase();
+                                if (initials) {
+                                  next[String(initials)] = val;
+                                }
+                                return next;
+                              });
                             }}
                             size="small"
                             style={{ width: 110 }}
@@ -645,8 +702,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                             ? 'bg-white/[0.03] border-white/5 text-gray-300'
                             : 'bg-slate-100 border-slate-200/60 text-slate-600'
                         }`}>
-                          <span className="text-xs">{LEVEL_PRESETS[staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2]?.emoji || '🐥'}</span>
-                          <span>{LEVEL_PRESETS[staffLevels[String(staff.id)] !== undefined ? staffLevels[String(staff.id)] : 2]?.name || 'Chick'}</span>
+                          <span className="text-xs">{LEVEL_PRESETS[getMemberLevelIdx(staff.id)]?.emoji || '🐥'}</span>
+                          <span>{LEVEL_PRESETS[getMemberLevelIdx(staff.id)]?.name || 'Chick'}</span>
                         </div>
                       )}
                     </div>
@@ -759,11 +816,6 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 <div>
                   <div className="flex items-center gap-2">
                     <span className={`font-bold text-base md:text-lg tracking-tight ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{activeMember.name}</span>
-                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${
-                      themeMode === 'dark' ? 'bg-white/5 border-white/10 text-gold' : 'bg-slate-100 border-slate-200 text-amber-800'
-                    }`}>
-                      <span>{activePreset.emoji} {activePreset.name}</span>
-                    </div>
                     <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-gold/15 text-gold font-extrabold border border-gold/25 shadow-sm">Telesales</span>
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -810,53 +862,116 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   <Spin indicator={<LoadingOutlined style={{ fontSize: 28, color: '#D4A84B' }} spin />} />
                 </div>
               )}
-              {/* Timeline (V3C4 Dots) */}
-              <div className={`border p-3 rounded-2xl ${themeMode === 'dark' ? 'border-neutral-800 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/30'}`}>
-                <div className="flex items-center justify-between mb-2.5 px-2">
-                  <span className={`text-[9px] font-extrabold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>← Trước</span>
-                  <span className={`text-[9px] font-extrabold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>Hiện tại / Tương lai →</span>
-                </div>
-                <div className="relative flex items-center justify-center py-1">
-                  <div className={`absolute top-1/2 left-[8%] right-[8%] h-[2px] ${themeMode === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} style={{ transform: 'translateY(-50%)' }}></div>
+              {/* Timeline (Aurora Glow Border Capsule) */}
+              <div className="mt-5 w-full py-4 relative">
+                <div className="relative flex items-center justify-center py-6 h-20">
+                  {/* Timeline Track Line (z-index 0) */}
+                  <div className={`absolute top-1/2 left-[4%] right-[4%] h-[2px] z-0 ${themeMode === 'dark' ? 'bg-slate-800/80' : 'bg-slate-200/80'}`} style={{ transform: 'translateY(-50%)' }}></div>
                   
-                  {/* Crosshair (The Golden Orb Selector) */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center">
-                    <div className={`w-[2px] h-[6px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
+                  {/* Crosshair (The Golden Orb Radial Selector - 50% larger: w-12 h-12) */}
+                  <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${isRadialOpen ? 'z-[9999]' : 'z-30'}`}>
+                    <div className={`w-[2px] h-[10px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
                     
                     {isAdmin ? (
-                      <Dropdown 
-                        menu={levelMenuProps} 
-                        trigger={['click']}
-                        placement="bottom"
-                      >
+                      <div className="relative flex items-center justify-center">
+                        {/* Radial Options Panel */}
+                        {isRadialOpen && (
+                          <>
+                            {/* Backdrop overlay to capture clicks and close */}
+                            <div 
+                              className="fixed inset-0 z-[9998] cursor-default" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsRadialOpen(false);
+                              }}
+                            />
+                            
+                            {/* Option buttons */}
+                            <div className="absolute z-[9999] pointer-events-none">
+                              {LEVEL_PRESETS.map((preset, idx) => {
+                                const coord = radialCoords[idx];
+                                const isCurrent = idx === activeLevelIdx;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`absolute w-9 h-9 rounded-full border flex items-center justify-center cursor-pointer pointer-events-auto transition-all duration-300 hover:scale-115 ${
+                                      themeMode === 'dark'
+                                        ? isCurrent
+                                          ? 'bg-gold/15 shadow-[0_0_12px_rgba(212,163,75,0.35)] text-white font-bold'
+                                          : 'bg-neutral-900 text-gray-300 hover:text-white'
+                                        : isCurrent
+                                          ? 'bg-gold/10 shadow-[0_2px_8px_rgba(212,163,75,0.25)] text-slate-800 font-bold'
+                                          : 'bg-white text-slate-600 hover:text-slate-900'
+                                    }`}
+                                    style={{
+                                      transform: `translate(-50%, -50%) translate(${coord.x}px, ${coord.y}px)`,
+                                      borderColor: isCurrent
+                                        ? '#D4A84B'
+                                        : (themeMode === 'dark'
+                                          ? 'rgba(255, 255, 255, 0.08)'
+                                          : 'rgba(148, 163, 184, 0.25)')
+                                    }}
+                                    title={preset.name}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateLevel(idx);
+                                      setIsRadialOpen(false);
+                                    }}
+                                  >
+                                    <span className="text-base leading-none">{preset.emoji}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
+
+                        {/* Center Orb Trigger (48px - 50% larger than 32px) */}
                         <div 
-                          className={`w-8 h-8 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 ${
-                            themeMode === 'dark'
-                              ? 'bg-neutral-900/90 border-gold/60 shadow-[0_0_10px_rgba(212,163,75,0.2)] hover:border-gold hover:shadow-[0_0_15px_rgba(212,163,75,0.5)] hover:scale-110'
-                              : 'bg-white border-gold/70 shadow-[0_2px_8px_rgba(212,163,75,0.15)] hover:border-gold hover:shadow-[0_4px_12px_rgba(212,163,75,0.3)] hover:scale-110'
+                          className={`w-12 h-12 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 z-50 ${
+                            isRadialOpen
+                              ? 'scale-110 shadow-[0_0_20px_rgba(212,163,75,0.5)] bg-gold/10'
+                              : themeMode === 'dark'
+                                ? 'bg-neutral-900/90 shadow-[0_0_10px_rgba(212,163,75,0.15)] hover:shadow-[0_0_18px_rgba(212,163,75,0.45)] hover:scale-110'
+                                : 'bg-white shadow-[0_2px_8px_rgba(212,163,75,0.1)] hover:shadow-[0_4px_12px_rgba(212,163,75,0.25)] hover:scale-110'
                           }`}
-                          title={`Cấp độ mục tiêu hiện tại: ${activePreset.name} (Click để thay đổi)`}
+                          style={{
+                            borderColor: isRadialOpen
+                              ? '#D4A84B'
+                              : (themeMode === 'dark' ? 'rgba(212, 163, 75, 0.3)' : 'rgba(212, 163, 75, 0.25)')
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsRadialOpen(!isRadialOpen);
+                          }}
+                          title={`Cấp độ mục tiêu hiện tại: ${activePreset.name} (Click để đổi nhanh)`}
                         >
-                          <span className="text-base leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                          <span className="text-2xl leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
                         </div>
-                      </Dropdown>
+                      </div>
                     ) : (
                       <div 
-                        className={`w-8 h-8 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
+                        className={`w-12 h-12 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
                           themeMode === 'dark'
-                            ? 'bg-neutral-900/90 border-gold/40 shadow-[0_0_8px_rgba(212,163,75,0.1)]'
-                            : 'bg-white border-gold/50 shadow-[0_2px_6px_rgba(212,163,75,0.1)]'
+                            ? 'bg-neutral-900 shadow-[0_0_8px_rgba(212,163,75,0.1)]'
+                            : 'bg-white shadow-[0_2px_6px_rgba(212,163,75,0.08)]'
                         }`}
+                        style={{
+                          borderColor: themeMode === 'dark' ? 'rgba(212, 163, 75, 0.2)' : 'rgba(212, 163, 75, 0.2)'
+                        }}
                       >
-                        <span className="text-base leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                        <span className="text-2xl leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
                       </div>
                     )}
 
-                    <div className={`w-[2px] h-[6px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
+                    <div className={`w-[2px] h-[10px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
                   </div>
-                  <div className="relative flex items-center justify-between w-full px-[4%]">
+
+                  {/* Redesigned Pill Nodes (#9 Aurora Glow Border Capsule) */}
+                  <div className="absolute inset-0 w-full h-full pointer-events-none">
                     {periods.map(p => {
                       const isActive = p.id === currentPeriodId;
+                      const leftPos = periodPositions[p.id];
                       let periodTgt = monthlyTarget;
                       if (p.id === 'today' || p.id === 'yesterday') {
                         periodTgt = dailyTarget;
@@ -865,25 +980,44 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       }
 
                       return (
-                        <div key={p.id} className="flex flex-col items-center cursor-pointer select-none" style={{ width: '16%' }} onClick={() => setCurrentPeriodId(p.id)}>
+                        <div 
+                          key={p.id} 
+                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center cursor-pointer select-none" 
+                          style={{ left: leftPos }}
+                          onClick={() => setCurrentPeriodId(p.id)}
+                        >
+                          {/* Glow Wrapper */}
                           <div 
-                            className={`w-3.5 h-3.5 rounded-full transition-all duration-300 relative flex items-center justify-center border-2 ${
+                            className={`p-[1.2px] rounded-full transition-all duration-300 flex items-center justify-center ${
                               isActive 
-                                ? 'bg-gradient-to-r from-amber-500 to-yellow-400 border-white dark:border-[#121212] scale-110' 
-                                : `${themeMode === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700' : 'bg-slate-300 border-white hover:bg-slate-400'}`
+                                ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 shadow-[0_0_12px_rgba(236,72,153,0.35)] scale-105 z-20' 
+                                : `${themeMode === 'dark' ? 'bg-neutral-800' : 'bg-slate-200'} z-10 hover:scale-105`
                             }`}
-                            style={isActive ? { boxShadow: '0 0 12px rgba(245,158,11,0.6)' } : {}}
                           >
-                            {isActive && <span className="absolute inset-0 rounded-full bg-amber-500 animate-ping opacity-50"></span>}
+                            {/* Inner Capsule (opaque solid background to block line behind it) */}
+                            <div 
+                              className={`rounded-full px-3 py-1 flex flex-col items-center min-w-[76px] ${
+                                themeMode === 'dark'
+                                  ? isActive
+                                    ? 'bg-neutral-950 text-white'
+                                    : 'bg-neutral-900 text-gray-400 hover:text-white'
+                                  : isActive
+                                    ? 'bg-white text-slate-900 font-bold'
+                                    : 'bg-slate-50 text-slate-500 hover:bg-white hover:text-slate-900'
+                              }`}
+                            >
+                              <span className="text-[9px] font-extrabold tracking-tight leading-none">{p.label}</span>
+                              <span 
+                                className={`text-[8px] font-extrabold mt-0.5 leading-none ${
+                                  isActive 
+                                    ? 'text-pink-500' 
+                                    : `${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
+                                }`}
+                              >
+                                {periodTgt}
+                              </span>
+                            </div>
                           </div>
-                          <span className={`text-[9px] mt-1.5 font-bold text-center leading-tight transition-colors flex flex-col items-center ${
-                            isActive 
-                              ? 'text-amber-500' 
-                              : `${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
-                          }`}>
-                            <span>{p.label}</span>
-                            <span className={`text-[8px] font-extrabold mt-0.5 ${isActive ? 'text-gold' : 'opacity-65'}`}>{periodTgt}</span>
-                          </span>
                         </div>
                       );
                     })}
@@ -1106,11 +1240,6 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 <div>
                   <div className="flex items-center gap-2">
                     <span className={`font-bold text-base md:text-lg tracking-tight ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{activeMember.name}</span>
-                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${
-                      themeMode === 'dark' ? 'bg-white/5 border-white/10 text-gold' : 'bg-slate-100 border-slate-200 text-amber-800'
-                    }`}>
-                      <span>{activePreset.emoji} {activePreset.name}</span>
-                    </div>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold/15 text-gold font-bold border border-gold/20">Telesales</span>
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -1152,58 +1281,116 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
 
             {/* Main Area */}
             <div className="flex-1 p-5 flex flex-col justify-between overflow-hidden relative">
-              {loading && (
-                <div className="absolute inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center rounded-b-2xl">
-                  <Spin indicator={<LoadingOutlined style={{ fontSize: 28, color: '#D4A84B' }} spin />} />
-                </div>
-              )}
-              {/* Timeline (V3C4 Dots) */}
-              <div className={`border p-3 rounded-2xl ${themeMode === 'dark' ? 'border-neutral-800 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/30'}`}>
-                <div className="flex items-center justify-between mb-2.5 px-2">
-                  <span className={`text-[9px] font-bold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>← Trước</span>
-                  <span className={`text-[9px] font-bold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>Hiện tại / Tương lai →</span>
-                </div>
-                <div className="relative flex items-center justify-center py-1">
-                  <div className={`absolute top-1/2 left-[8%] right-[8%] h-[2px] ${themeMode === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} style={{ transform: 'translateY(-50%)' }}></div>
+                        {/* Timeline (Aurora Glow Border Capsule) */}
+              <div className="mt-5 w-full py-4 relative">
+                <div className="relative flex items-center justify-center py-6 h-20">
+                  {/* Timeline Track Line (z-index 0) */}
+                  <div className={`absolute top-1/2 left-[4%] right-[4%] h-[2px] z-0 ${themeMode === 'dark' ? 'bg-slate-800/80' : 'bg-slate-200/80'}`} style={{ transform: 'translateY(-50%)' }}></div>
                   
-                  {/* Crosshair (The Golden Orb Selector) */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center">
-                    <div className={`w-[2px] h-[6px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
+                  {/* Crosshair (The Golden Orb Radial Selector - 50% larger: w-12 h-12) */}
+                  <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${isRadialOpen ? 'z-[9999]' : 'z-30'}`}>
+                    <div className={`w-[2px] h-[10px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
                     
                     {isAdmin ? (
-                      <Dropdown 
-                        menu={levelMenuProps} 
-                        trigger={['click']}
-                        placement="bottom"
-                      >
+                      <div className="relative flex items-center justify-center">
+                        {/* Radial Options Panel */}
+                        {isRadialOpen && (
+                          <>
+                            {/* Backdrop overlay to capture clicks and close */}
+                            <div 
+                              className="fixed inset-0 z-[9998] cursor-default" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsRadialOpen(false);
+                              }}
+                            />
+                            
+                            {/* Option buttons */}
+                            <div className="absolute z-[9999] pointer-events-none">
+                              {LEVEL_PRESETS.map((preset, idx) => {
+                                const coord = radialCoords[idx];
+                                const isCurrent = idx === activeLevelIdx;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`absolute w-9 h-9 rounded-full border flex items-center justify-center cursor-pointer pointer-events-auto transition-all duration-300 hover:scale-115 ${
+                                      themeMode === 'dark'
+                                        ? isCurrent
+                                          ? 'bg-gold/15 shadow-[0_0_12px_rgba(212,163,75,0.35)] text-white font-bold'
+                                          : 'bg-neutral-900 text-gray-300 hover:text-white'
+                                        : isCurrent
+                                          ? 'bg-gold/10 shadow-[0_2px_8px_rgba(212,163,75,0.25)] text-slate-800 font-bold'
+                                          : 'bg-white text-slate-600 hover:text-slate-900'
+                                    }`}
+                                    style={{
+                                      transform: `translate(-50%, -50%) translate(${coord.x}px, ${coord.y}px)`,
+                                      borderColor: isCurrent
+                                        ? '#D4A84B'
+                                        : (themeMode === 'dark'
+                                          ? 'rgba(255, 255, 255, 0.08)'
+                                          : 'rgba(148, 163, 184, 0.25)')
+                                    }}
+                                    title={preset.name}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateLevel(idx);
+                                      setIsRadialOpen(false);
+                                    }}
+                                  >
+                                    <span className="text-base leading-none">{preset.emoji}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
+
+                        {/* Center Orb Trigger (48px - 50% larger than 32px) */}
                         <div 
-                          className={`w-8 h-8 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 ${
-                            themeMode === 'dark'
-                              ? 'bg-neutral-900/90 border-gold/60 shadow-[0_0_10px_rgba(212,163,75,0.2)] hover:border-gold hover:shadow-[0_0_15px_rgba(212,163,75,0.5)] hover:scale-110'
-                              : 'bg-white border-gold/70 shadow-[0_2px_8px_rgba(212,163,75,0.15)] hover:border-gold hover:shadow-[0_4px_12px_rgba(212,163,75,0.3)] hover:scale-110'
+                          className={`w-12 h-12 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 z-50 ${
+                            isRadialOpen
+                              ? 'scale-110 shadow-[0_0_20px_rgba(212,163,75,0.5)] bg-gold/10'
+                              : themeMode === 'dark'
+                                ? 'bg-neutral-900/90 shadow-[0_0_10px_rgba(212,163,75,0.15)] hover:shadow-[0_0_18px_rgba(212,163,75,0.45)] hover:scale-110'
+                                : 'bg-white shadow-[0_2px_8px_rgba(212,163,75,0.1)] hover:shadow-[0_4px_12px_rgba(212,163,75,0.25)] hover:scale-110'
                           }`}
-                          title={`Cấp độ mục tiêu hiện tại: ${activePreset.name} (Click để thay đổi)`}
+                          style={{
+                            borderColor: isRadialOpen
+                              ? '#D4A84B'
+                              : (themeMode === 'dark' ? 'rgba(212, 163, 75, 0.3)' : 'rgba(212, 163, 75, 0.25)')
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsRadialOpen(!isRadialOpen);
+                          }}
+                          title={`Cấp độ mục tiêu hiện tại: ${activePreset.name} (Click để đổi nhanh)`}
                         >
-                          <span className="text-base leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                          <span className="text-2xl leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
                         </div>
-                      </Dropdown>
+                      </div>
                     ) : (
                       <div 
-                        className={`w-8 h-8 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
+                        className={`w-12 h-12 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
                           themeMode === 'dark'
-                            ? 'bg-neutral-900/90 border-gold/40 shadow-[0_0_8px_rgba(212,163,75,0.1)]'
-                            : 'bg-white border-gold/50 shadow-[0_2px_6px_rgba(212,163,75,0.1)]'
+                            ? 'bg-neutral-900 shadow-[0_0_8px_rgba(212,163,75,0.1)]'
+                            : 'bg-white shadow-[0_2px_6px_rgba(212,163,75,0.08)]'
                         }`}
+                        style={{
+                          borderColor: themeMode === 'dark' ? 'rgba(212, 163, 75, 0.2)' : 'rgba(212, 163, 75, 0.2)'
+                        }}
                       >
-                        <span className="text-base leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                        <span className="text-2xl leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
                       </div>
                     )}
 
-                    <div className={`w-[2px] h-[6px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
+                    <div className={`w-[2px] h-[10px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
                   </div>
-                  <div className="relative flex items-center justify-between w-full px-[4%]">
+
+                  {/* Redesigned Pill Nodes (#9 Aurora Glow Border Capsule) */}
+                  <div className="absolute inset-0 w-full h-full pointer-events-none">
                     {periods.map(p => {
                       const isActive = p.id === currentPeriodId;
+                      const leftPos = periodPositions[p.id];
                       let periodTgt = monthlyTarget;
                       if (p.id === 'today' || p.id === 'yesterday') {
                         periodTgt = dailyTarget;
@@ -1212,25 +1399,44 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       }
 
                       return (
-                        <div key={p.id} className="flex flex-col items-center cursor-pointer select-none" style={{ width: '16%' }} onClick={() => setCurrentPeriodId(p.id)}>
+                        <div 
+                          key={p.id} 
+                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center cursor-pointer select-none" 
+                          style={{ left: leftPos }}
+                          onClick={() => setCurrentPeriodId(p.id)}
+                        >
+                          {/* Glow Wrapper */}
                           <div 
-                            className={`w-3.5 h-3.5 rounded-full transition-all duration-300 relative flex items-center justify-center border-2 ${
+                            className={`p-[1.2px] rounded-full transition-all duration-300 flex items-center justify-center ${
                               isActive 
-                                ? 'bg-gradient-to-r from-amber-500 to-yellow-400 border-white dark:border-[#121212] scale-110' 
-                                : `${themeMode === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700' : 'bg-slate-300 border-white hover:bg-slate-400'}`
+                                ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 shadow-[0_0_12px_rgba(236,72,153,0.35)] scale-105 z-20' 
+                                : `${themeMode === 'dark' ? 'bg-neutral-800' : 'bg-slate-200'} z-10 hover:scale-105`
                             }`}
-                            style={isActive ? { boxShadow: '0 0 12px rgba(245,158,11,0.6)' } : {}}
                           >
-                            {isActive && <span className="absolute inset-0 rounded-full bg-amber-500 animate-ping opacity-50"></span>}
+                            {/* Inner Capsule (opaque solid background to block line behind it) */}
+                            <div 
+                              className={`rounded-full px-3 py-1 flex flex-col items-center min-w-[76px] ${
+                                themeMode === 'dark'
+                                  ? isActive
+                                    ? 'bg-neutral-950 text-white'
+                                    : 'bg-neutral-900 text-gray-400 hover:text-white'
+                                  : isActive
+                                    ? 'bg-white text-slate-900 font-bold'
+                                    : 'bg-slate-50 text-slate-500 hover:bg-white hover:text-slate-900'
+                              }`}
+                            >
+                              <span className="text-[9px] font-extrabold tracking-tight leading-none">{p.label}</span>
+                              <span 
+                                className={`text-[8px] font-extrabold mt-0.5 leading-none ${
+                                  isActive 
+                                    ? 'text-pink-500' 
+                                    : `${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
+                                }`}
+                              >
+                                {periodTgt}
+                              </span>
+                            </div>
                           </div>
-                          <span className={`text-[9px] mt-1.5 font-bold text-center leading-tight transition-colors flex flex-col items-center ${
-                            isActive 
-                              ? 'text-amber-500' 
-                              : `${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
-                          }`}>
-                            <span>{p.label}</span>
-                            <span className={`text-[8px] font-extrabold mt-0.5 ${isActive ? 'text-gold' : 'opacity-65'}`}>{periodTgt}</span>
-                          </span>
                         </div>
                       );
                     })}

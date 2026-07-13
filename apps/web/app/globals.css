@@ -10,6 +10,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-gold: #D4A84B;
+  --color-goldDark: #B8902F;
+  --color-goldLight: #F3D27E;
 }
 
 @media (prefers-color-scheme: dark) {
