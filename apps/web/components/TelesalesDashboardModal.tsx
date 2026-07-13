@@ -871,9 +871,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       >
                         <span className={`text-[11px] font-bold w-4 text-center ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>#{i + 4}</span>
                         <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm" style={{ background: m.gradient }}>{m.initials}</div>
-                        <div className="flex-1 min-w-0">
-                          <span className={`text-xs font-bold block truncate ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`}>{m.name}</span>
-                          <span className="text-xs font-black block leading-none mt-1" style={{ color: activeMetricConfig.color }}>{m.value} <span className={`text-[10px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>({pct}%)</span></span>
+                        <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                          <span className={`text-xs font-bold truncate ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`}>{m.name}</span>
+                          <span className="text-xs font-black shrink-0" style={{ color: activeMetricConfig.color }}>{m.value} <span className={`text-[10px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>({pct}%)</span></span>
                         </div>
                       </div>
                     );
@@ -1257,9 +1257,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       >
                         <span className={`text-[11px] font-bold w-4 text-center ${themeMode === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>#{i + 4}</span>
                         <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm" style={{ background: m.gradient }}>{m.initials}</div>
-                        <div className="flex-1 min-w-0">
-                          <span className={`text-xs font-bold block truncate ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`}>{m.name}</span>
-                          <div className="flex gap-0.5 mt-1.5 w-20">
+                        <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                          <span className={`text-xs font-bold truncate ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`}>{m.name}</span>
+                          <div className="flex gap-0.5 shrink-0 w-20">
                             {segmentsHtml}
                           </div>
                         </div>
