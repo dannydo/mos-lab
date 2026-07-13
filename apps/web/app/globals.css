@@ -19,12 +19,21 @@
   }
 }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 .light-theme {
   color-scheme: light;
+  --background: #f5f7fa;
+  --foreground: #171717;
 }
 
 .dark-theme {
   color-scheme: dark;
+  --background: #0b0f19;
+  --foreground: #ededed;
 }
 
 body {

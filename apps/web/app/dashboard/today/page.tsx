@@ -989,7 +989,7 @@ export default function TodayDashboard() {
             <Row gutter={[16, 16]} style={{ marginBottom: '8px' }}>
               
               {/* CHART 1: BOOKING TẠO HÔM NAY (COMBINED TYPE & BRANCH) */}
-              <Col xs={24} sm={24} lg={8}>
+              <Col xs={24} sm={24} md={24} lg={24} xl={8}>
                 <Card 
                   size="small" 
                   style={{ 
@@ -1074,7 +1074,7 @@ export default function TodayDashboard() {
               </Col>
 
               {/* CHART 2 & 3 COMBINED: PHÂN TÍCH KHÁCH ĐẾN HÔM NAY */}
-              <Col xs={24} sm={24} lg={8}>
+              <Col xs={24} sm={24} md={24} lg={24} xl={8}>
                 <Card 
                   size="small" 
                   style={{ 
@@ -1161,7 +1161,7 @@ export default function TodayDashboard() {
               </Col>
 
               {/* CHART 4: REVENUE BY TYPE & BY CUSTOMER GROUP */}
-              <Col xs={24} sm={24} lg={8}>
+              <Col xs={24} sm={24} md={24} lg={24} xl={8}>
                 <Card 
                   size="small" 
                   style={{ 
@@ -1303,6 +1303,7 @@ export default function TodayDashboard() {
                 size="small"
                 pagination={false}
                 bordered
+                scroll={{ x: 'max-content' }}
                 className="antd-custom-table"
                 rowClassName={(record) => {
                   if (record.status === 'completed') return 'coming-row-completed';
@@ -1361,6 +1362,7 @@ export default function TodayDashboard() {
                 size="small"
                 pagination={false}
                 bordered
+                scroll={{ x: 'max-content' }}
                 className="antd-custom-table"
                 rowClassName={(record) => {
                   if (record.status === 'completed') return 'coming-row-completed';

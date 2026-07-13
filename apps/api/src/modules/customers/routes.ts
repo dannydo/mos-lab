@@ -4346,40 +4346,41 @@ export async function customerRoutes(fastify: FastifyInstance) {
             shift = getShiftType(todaySchedule.start_time, todaySchedule.end_time);
           }
 
+          const weekOffs = weekOffsByUserId[cc.id] || [];
+          let isWeekOff = false;
+          if (weekOffs.length > 0) {
+            const sorted = [...weekOffs].sort((a, b) => b.cnt - a.cnt);
+            isWeekOff = String(sorted[0].weekday) === weekdayStr;
+          } else if (list.length > 0) {
+            const worksAll = list.some(s => s.type === 'Day' && s.type_value === 'All');
+            if (!worksAll) {
+              const workingWeekdays = list.filter(s => s.type === 'Weekday').map(s => s.type_value);
+              if (workingWeekdays.length > 0 && !workingWeekdays.includes(weekdayStr)) {
+                isWeekOff = true;
+              }
+            }
+          }
+
+          const hasSpecificDayOff = offUserIds.has(cc.id);
+          const isOffCC = isWeekOff || hasSpecificDayOff;
+
+          if (isOffCC) {
+            shift = 'off';
+          }
+
           let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
-          let doing = 'Nghỉ phép tuần'; // default if off
+          let doing = isOffCC ? 'Nghỉ phép tuần' : 'Chưa check-in';
 
           if (wsRecord) {
-            shift = getShiftType(wsRecord.start_time, wsRecord.end_time);
+            if (!isOffCC || wsRecord.check_in_staff_task_id !== null) {
+              shift = getShiftType(wsRecord.start_time, wsRecord.end_time);
+            }
             if (wsRecord.check_out_staff_task_id !== null) {
               attendance = 'checked_out';
               doing = 'Đã về';
             } else if (wsRecord.check_in_staff_task_id !== null) {
               attendance = 'checked_in';
               doing = 'Trống (Sẵn sàng đón khách)';
-            }
-          } else {
-            const weekOffs = weekOffsByUserId[cc.id] || [];
-            let isWeekOff = false;
-            if (weekOffs.length > 0) {
-              const sorted = [...weekOffs].sort((a, b) => b.cnt - a.cnt);
-              isWeekOff = String(sorted[0].weekday) === weekdayStr;
-            } else if (list.length > 0) {
-              const worksAll = list.some(s => s.type === 'Day' && s.type_value === 'All');
-              if (!worksAll) {
-                const workingWeekdays = list.filter(s => s.type === 'Weekday').map(s => s.type_value);
-                if (workingWeekdays.length > 0 && !workingWeekdays.includes(weekdayStr)) {
-                  isWeekOff = true;
-                }
-              }
-            }
-
-            const hasSpecificDayOff = offUserIds.has(cc.id);
-            if (isWeekOff || hasSpecificDayOff) {
-              shift = 'off';
-              doing = 'Nghỉ phép tuần';
-            } else {
-              doing = 'Chưa check-in';
             }
           }
 
@@ -4399,33 +4400,36 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const cvId = Number(cv.userId);
         const normName = normalizeName(cv.fullName);
 
-        // Check if weekly off or specific day off
-        const offDays = getKTVOffDays(cvId);
-        const isWeeklyOff = offDays.includes(weekdayStr);
-        const hasSpecificDayOff = offUserIds.has(cvId);
-        const isOff = isWeeklyOff || hasSpecificDayOff;
+         // Check if weekly off or specific day off
+         const offDays = getKTVOffDays(cvId);
+         const isWeeklyOff = offDays.includes(weekdayStr);
+         const hasSpecificDayOff = offUserIds.has(cvId);
+         const isOff = isWeeklyOff || hasSpecificDayOff;
 
-        // Check actual check-in/out record (workingShifts)
-        const wsRecord = shiftMap.get(cvId);
-        
-        let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
-        if (isOff) {
-          shift = 'off';
-        } else {
-          // Determine scheduled shift from staff_working_shift_schedule
-          const list = schedulesByUserId[cvId] || [];
-          const todaySchedule = list.find(s => s.type === 'Weekday' && s.type_value === weekdayStr) ||
-                                list.find(s => s.type === 'Day' && s.type_value === 'All');
-          if (todaySchedule) {
-            shift = getShiftType(todaySchedule.start_time, todaySchedule.end_time);
-          }
-        }
-
-        let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
-        let doing = isOff ? 'Nghỉ phép' : 'Chưa check-in';
+         // Check actual check-in/out record (workingShifts)
+         const wsRecord = shiftMap.get(cvId);
+         
+         let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
+         if (isOff) {
+           shift = 'off';
+         } else {
+           // Determine scheduled shift from staff_working_shift_schedule
+           const list = schedulesByUserId[cvId] || [];
+           const todaySchedule = list.find(s => s.type === 'Weekday' && s.type_value === weekdayStr) ||
+                                 list.find(s => s.type === 'Day' && s.type_value === 'All');
+           if (todaySchedule) {
+             shift = getShiftType(todaySchedule.start_time, todaySchedule.end_time);
+           }
+         }
+         
+ 
+         let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
+         let doing = isOff ? 'Nghỉ phép' : 'Chưa check-in';
 
         if (wsRecord) {
-          shift = getShiftType(wsRecord.start_time, wsRecord.end_time);
+           if (!isOff || wsRecord.check_in_staff_task_id !== null) {
+             shift = getShiftType(wsRecord.start_time, wsRecord.end_time);
+           }
           if (wsRecord.check_out_staff_task_id !== null) {
             attendance = 'checked_out';
             doing = 'Đã về';
@@ -4496,6 +4500,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
             }
           }
         }
+
+
 
         branchDetailMap[bKey].cv.push({
           name: cv.fullName.trim(),
