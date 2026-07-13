@@ -877,11 +877,14 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     key: 'bookings',
                     label: `Lịch sử đặt lịch (${bookings.length})`,
                     children: (
-                      <div style={{
-                        maxHeight: 'calc(100vh - 240px)',
-                        overflowY: 'auto',
-                        padding: '10px 4px 10px 10px'
-                      }}>
+                      <div 
+                        className="custom-scrollbar"
+                        style={{
+                          maxHeight: 'calc(100vh - 240px)',
+                          overflowY: 'auto',
+                          padding: '10px 4px 10px 10px'
+                        }}
+                      >
                         {bookings.length > 0 ? (
                           <Timeline
                             items={bookings.map((b: any) => {
@@ -1003,11 +1006,14 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     key: 'notes',
                     label: `Nhật ký ghi chú (${notes.length})`,
                     children: (
-                      <div style={{
-                        maxHeight: 'calc(100vh - 240px)',
-                        overflowY: 'auto',
-                        padding: '10px 4px 10px 10px'
-                      }}>
+                      <div 
+                        className="custom-scrollbar"
+                        style={{
+                          maxHeight: 'calc(100vh - 240px)',
+                          overflowY: 'auto',
+                          padding: '10px 4px 10px 10px'
+                        }}
+                      >
                         {notes.length > 0 ? (
                           <Timeline
                             items={notes.map((n: any) => {
@@ -1072,11 +1078,14 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     key: 'calls',
                     label: `Lịch sử cuộc gọi (${calls.length})`,
                     children: (
-                      <div style={{
-                        maxHeight: 'calc(100vh - 240px)',
-                        overflowY: 'auto',
-                        padding: '10px 4px 10px 10px'
-                      }}>
+                      <div 
+                        className="custom-scrollbar"
+                        style={{
+                          maxHeight: 'calc(100vh - 240px)',
+                          overflowY: 'auto',
+                          padding: '10px 4px 10px 10px'
+                        }}
+                      >
                         {calls.length > 0 ? (
                           <Timeline
                             items={calls.map((c: any) => {
