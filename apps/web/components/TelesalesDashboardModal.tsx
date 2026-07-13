@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, message, Spin, Segmented, Checkbox, Select } from 'antd';
+import { Button, message, Spin, Segmented, Checkbox, Select, Dropdown } from 'antd';
 import {
   PhoneOutlined,
   CustomerServiceOutlined,
@@ -410,6 +410,41 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const weeklyTarget = Math.round(activePreset[activePresetKey] / 4);
   const monthlyTarget = activePreset[activePresetKey];
 
+  const handleUpdateLevel = async (newLevelIdx: number) => {
+    if (!isAdmin) {
+      message.error('Bạn không có quyền thay đổi mục tiêu cấp độ.');
+      return;
+    }
+    const updatedLevels = {
+      ...staffLevels,
+      [String(activeMember.id)]: newLevelIdx
+    };
+    setStaffLevels(updatedLevels);
+    try {
+      await api.post('/kpi/staff-levels', updatedLevels);
+      message.success(`Đã cập nhật mục tiêu của ${activeMember.name} thành ${LEVEL_PRESETS[newLevelIdx].emoji} ${LEVEL_PRESETS[newLevelIdx].name}`);
+      setRefreshCounter(prev => prev + 1);
+    } catch (err) {
+      console.error('Failed to update member level directly:', err);
+      message.error('Lỗi khi lưu cấp độ mục tiêu.');
+    }
+  };
+
+  const levelMenuItems = LEVEL_PRESETS.map((preset, idx) => ({
+    key: String(idx),
+    label: (
+      <div className="flex items-center gap-2 px-1 py-0.5">
+        <span className="text-base">{preset.emoji}</span>
+        <span className="font-semibold text-xs">{preset.name}</span>
+      </div>
+    ),
+  }));
+
+  const levelMenuProps = {
+    items: levelMenuItems,
+    onClick: ({ key }: { key: string }) => handleUpdateLevel(Number(key)),
+  };
+
   // Donut values
   const r = 85;
   const circumference = 2 * Math.PI * r; // ~534
@@ -777,18 +812,48 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
               )}
               {/* Timeline (V3C4 Dots) */}
               <div className={`border p-3 rounded-2xl ${themeMode === 'dark' ? 'border-neutral-800 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/30'}`}>
-                <div className="flex items-center justify-between mb-2 px-2">
+                <div className="flex items-center justify-between mb-2.5 px-2">
                   <span className={`text-[9px] font-extrabold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>← Trước</span>
-                  <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
-                    themeMode === 'dark' ? 'bg-white/5 border-white/10 text-gold' : 'bg-slate-100 border-slate-200 text-amber-800'
-                  }`}>
-                    <span>{activePreset.emoji} {activePreset.name}</span>
-                  </div>
                   <span className={`text-[9px] font-extrabold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>Hiện tại / Tương lai →</span>
                 </div>
                 <div className="relative flex items-center justify-center py-1">
                   <div className={`absolute top-1/2 left-[8%] right-[8%] h-[2px] ${themeMode === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} style={{ transform: 'translateY(-50%)' }}></div>
-                  <div className={`absolute top-1/2 left-1/2 w-[2px] h-4 ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`} style={{ transform: 'translate(-50%, -50%)' }}></div>
+                  
+                  {/* Crosshair (The Golden Orb Selector) */}
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center">
+                    <div className={`w-[2px] h-[6px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
+                    
+                    {isAdmin ? (
+                      <Dropdown 
+                        menu={levelMenuProps} 
+                        trigger={['click']}
+                        placement="bottom"
+                      >
+                        <div 
+                          className={`w-8 h-8 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 ${
+                            themeMode === 'dark'
+                              ? 'bg-neutral-900/90 border-gold/60 shadow-[0_0_10px_rgba(212,163,75,0.2)] hover:border-gold hover:shadow-[0_0_15px_rgba(212,163,75,0.5)] hover:scale-110'
+                              : 'bg-white border-gold/70 shadow-[0_2px_8px_rgba(212,163,75,0.15)] hover:border-gold hover:shadow-[0_4px_12px_rgba(212,163,75,0.3)] hover:scale-110'
+                          }`}
+                          title={`Cấp độ mục tiêu hiện tại: ${activePreset.name} (Click để thay đổi)`}
+                        >
+                          <span className="text-base leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                        </div>
+                      </Dropdown>
+                    ) : (
+                      <div 
+                        className={`w-8 h-8 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
+                          themeMode === 'dark'
+                            ? 'bg-neutral-900/90 border-gold/40 shadow-[0_0_8px_rgba(212,163,75,0.1)]'
+                            : 'bg-white border-gold/50 shadow-[0_2px_6px_rgba(212,163,75,0.1)]'
+                        }`}
+                      >
+                        <span className="text-base leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                      </div>
+                    )}
+
+                    <div className={`w-[2px] h-[6px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
+                  </div>
                   <div className="relative flex items-center justify-between w-full px-[4%]">
                     {periods.map(p => {
                       const isActive = p.id === currentPeriodId;
@@ -1094,18 +1159,48 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
               )}
               {/* Timeline (V3C4 Dots) */}
               <div className={`border p-3 rounded-2xl ${themeMode === 'dark' ? 'border-neutral-800 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/30'}`}>
-                <div className="flex items-center justify-between mb-2 px-2">
+                <div className="flex items-center justify-between mb-2.5 px-2">
                   <span className={`text-[9px] font-bold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>← Trước</span>
-                  <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
-                    themeMode === 'dark' ? 'bg-white/5 border-white/10 text-gold' : 'bg-slate-100 border-slate-200 text-amber-800'
-                  }`}>
-                    <span>{activePreset.emoji} {activePreset.name}</span>
-                  </div>
                   <span className={`text-[9px] font-bold uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>Hiện tại / Tương lai →</span>
                 </div>
                 <div className="relative flex items-center justify-center py-1">
                   <div className={`absolute top-1/2 left-[8%] right-[8%] h-[2px] ${themeMode === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} style={{ transform: 'translateY(-50%)' }}></div>
-                  <div className={`absolute top-1/2 left-1/2 w-[2px] h-4 ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`} style={{ transform: 'translate(-50%, -50%)' }}></div>
+                  
+                  {/* Crosshair (The Golden Orb Selector) */}
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center">
+                    <div className={`w-[2px] h-[6px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
+                    
+                    {isAdmin ? (
+                      <Dropdown 
+                        menu={levelMenuProps} 
+                        trigger={['click']}
+                        placement="bottom"
+                      >
+                        <div 
+                          className={`w-8 h-8 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 ${
+                            themeMode === 'dark'
+                              ? 'bg-neutral-900/90 border-gold/60 shadow-[0_0_10px_rgba(212,163,75,0.2)] hover:border-gold hover:shadow-[0_0_15px_rgba(212,163,75,0.5)] hover:scale-110'
+                              : 'bg-white border-gold/70 shadow-[0_2px_8px_rgba(212,163,75,0.15)] hover:border-gold hover:shadow-[0_4px_12px_rgba(212,163,75,0.3)] hover:scale-110'
+                          }`}
+                          title={`Cấp độ mục tiêu hiện tại: ${activePreset.name} (Click để thay đổi)`}
+                        >
+                          <span className="text-base leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                        </div>
+                      </Dropdown>
+                    ) : (
+                      <div 
+                        className={`w-8 h-8 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
+                          themeMode === 'dark'
+                            ? 'bg-neutral-900/90 border-gold/40 shadow-[0_0_8px_rgba(212,163,75,0.1)]'
+                            : 'bg-white border-gold/50 shadow-[0_2px_6px_rgba(212,163,75,0.1)]'
+                        }`}
+                      >
+                        <span className="text-base leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                      </div>
+                    )}
+
+                    <div className={`w-[2px] h-[6px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
+                  </div>
                   <div className="relative flex items-center justify-between w-full px-[4%]">
                     {periods.map(p => {
                       const isActive = p.id === currentPeriodId;
