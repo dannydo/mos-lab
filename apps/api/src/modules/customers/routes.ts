@@ -2404,10 +2404,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
           ubt.amount,
           ubt.balance,
           ubt.description,
+          ubt.template_id as templateId,
           ubt.date_created as dateCreated,
-          up.full_name as staffName
+          up.full_name as staffName,
+          o.booking_date_start as bookingDateStart,
+          up_referred.full_name as referredName
         FROM user_balance_transaction ubt
         LEFT JOIN user_profile up ON ubt.created_staff_id = up.user_id
+        LEFT JOIN \`order\` o ON 
+          ubt.tracking_key IS NOT NULL AND 
+          JSON_VALID(ubt.tracking_key) AND 
+          o.id = CAST(JSON_UNQUOTE(JSON_EXTRACT(ubt.tracking_key, '$.order_id')) AS UNSIGNED)
+        LEFT JOIN user_profile up_referred ON 
+          ubt.tracking_key IS NOT NULL AND 
+          JSON_VALID(ubt.tracking_key) AND 
+          up_referred.user_id = CAST(JSON_UNQUOTE(JSON_EXTRACT(ubt.tracking_key, '$.user_id')) AS UNSIGNED)
         WHERE ubt.user_id = ? AND ubt.currency_id = 3
         ORDER BY ubt.date_created DESC
       `;
@@ -2684,15 +2695,85 @@ export async function customerRoutes(fastify: FastifyInstance) {
         bookings: formattedBookings,
         notes: formattedNotes,
         calls: formattedCalls,
-        gemTransactions: gemTransactions.map(t => ({
-          id: Number(t.id),
-          method: t.method,
-          amount: Number(t.amount),
-          balance: Number(t.balance),
-          description: t.description || '',
-          dateCreated: t.dateCreated ? new Date(t.dateCreated).toISOString() : null,
-          staffName: t.staffName || 'Hệ thống'
-        })),
+        gemTransactions: (() => {
+          const formatDate = (dateInput: any) => {
+            if (!dateInput) return '';
+            const d = new Date(dateInput);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+          };
+
+          const formatGemDescription = (trans: any) => {
+            if (trans.description && trans.description.trim()) {
+              return trans.description;
+            }
+
+            const tid = trans.templateId;
+            const amt = Number(trans.amount || 0);
+
+            switch (tid) {
+              case 6:
+                return 'Cám ơn đã sử dụng dịch vụ tại Wings (Lần đầu)';
+              case 7:
+                return trans.referredName 
+                  ? `Thưởng giới thiệu bạn ${trans.referredName.trim()}` 
+                  : 'Bạn vừa nhận được kim cương từ việc giới thiệu bạn';
+              case 8:
+                return trans.bookingDateStart 
+                  ? `Thanh toán lịch hẹn ngày ${formatDate(trans.bookingDateStart)}` 
+                  : 'Bạn vừa sử dụng kim cương cho dịch vụ';
+              case 12:
+                return 'Đăng ký thành công chương trình giới thiệu nhận Kim Cương';
+              case 17:
+                return 'Trừ kim cương do khách hàng phản hồi cần điều chỉnh (Fix)';
+              case 22:
+              case 28:
+                return trans.staffName 
+                  ? `Nhận kim cương từ nhân viên ${trans.staffName}` 
+                  : 'Nhận kim cương từ cửa hàng';
+              case 29:
+                return 'Chuyển kim cương cho tài khoản khác';
+              case 58:
+                return 'Mua gói Combo dịch vụ';
+              case 60:
+                if (trans.bookingDateStart) {
+                  return `Tích lũy từ lịch hẹn ngày ${formatDate(trans.bookingDateStart)}`;
+                }
+                return 'Tích lũy từ lịch hẹn hoàn thành';
+              case 91:
+                return 'Trừ kim cương từ phản hồi khiếu nại';
+              case 92:
+              case 93:
+                return 'Khấu trừ tài khoản quyết toán định kỳ';
+              case 99:
+                return 'Thưởng hoàn thành nhiệm vụ nhân viên';
+              case 102:
+                return 'Hoàn lại kim cương giao dịch';
+              case 160:
+                return 'Tham gia chương trình/game tích điểm';
+              case 164:
+                return 'Thưởng hoàn thành game tích điểm';
+              case 168:
+                return 'Thưởng khách hàng quay lại sớm';
+              case 198:
+                return 'Quà tặng chúc mừng sinh nhật';
+              default:
+                return amt < 0 ? 'Giao dịch trừ kim cương' : 'Tích lũy kim cương';
+            }
+          };
+
+          return gemTransactions.map(t => ({
+            id: Number(t.id),
+            method: t.method,
+            amount: Number(t.amount),
+            balance: Number(t.balance),
+            description: formatGemDescription(t),
+            dateCreated: t.dateCreated ? new Date(t.dateCreated).toISOString() : null,
+            staffName: t.staffName || 'Hệ thống'
+          }));
+        })(),
         referrer: referrer,
         referredUsers: formattedReferred
       };
