@@ -539,7 +539,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     }
 
     const start = new Date(date_from + 'T00:00:00.000Z');
-    const end = new Date(date_to + 'T00:00:00.000Z');
+    const end = new Date(date_to + 'T23:59:59.999Z');
 
     try {
       const config = await getSalaryConfig(fastify);
@@ -904,7 +904,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     const endStr = endDate || new Date().toLocaleDateString('en-CA');
 
     const start = new Date(startStr + 'T00:00:00.000Z');
-    const end = new Date(endStr + 'T00:00:00.000Z');
+    const end = new Date(endStr + 'T23:59:59.999Z');
 
     try {
       if (role === 'oc' || role === 'consultant') {
@@ -1022,7 +1022,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     const endStr = endDate || new Date().toLocaleDateString('en-CA');
 
     const start = new Date(startStr + 'T00:00:00.000Z');
-    const end = new Date(endStr + 'T00:00:00.000Z');
+    const end = new Date(endStr + 'T23:59:59.999Z');
 
     try {
       if (role === 'oc' || role === 'consultant') {
@@ -1255,7 +1255,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     const endStr = endDate || new Date().toLocaleDateString('en-CA');
 
     const start = new Date(startStr + 'T00:00:00.000Z');
-    const end = new Date(endStr + 'T00:00:00.000Z');
+    const end = new Date(endStr + 'T23:59:59.999Z');
 
     try {
       const config = await getSalaryConfig(fastify);
@@ -1529,7 +1529,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     const endStr = endDate || new Date().toLocaleDateString('en-CA');
 
     const start = new Date(startStr + 'T00:00:00.000Z');
-    const end = new Date(endStr + 'T00:00:00.000Z');
+    const end = new Date(endStr + 'T23:59:59.999Z');
 
     try {
       const logs = await fastify.prisma.crm.crmCallLog.findMany({
