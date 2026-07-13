@@ -403,6 +403,13 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const activeTarget = activeMemberTargets[currentMetricKey];
   const activePercent = activeTarget > 0 ? Math.min(Math.round((activeValue / activeTarget) * 100), 100) : 0;
 
+  const activeLevelIdx = staffLevels[String(activeMember.id)] !== undefined ? staffLevels[String(activeMember.id)] : 2;
+  const activePreset = LEVEL_PRESETS[activeLevelIdx] || LEVEL_PRESETS[2];
+  const activePresetKey = currentMetricKey as 'done' | 'booked' | 'happy' | 'pickups' | 'calls';
+  const dailyTarget = Math.round(activePreset[activePresetKey] / 25);
+  const weeklyTarget = Math.round(activePreset[activePresetKey] / 4);
+  const monthlyTarget = activePreset[activePresetKey];
+
   // Donut values
   const r = 85;
   const circumference = 2 * Math.PI * r; // ~534
@@ -717,6 +724,11 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 <div>
                   <div className="flex items-center gap-2">
                     <span className={`font-bold text-base md:text-lg tracking-tight ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{activeMember.name}</span>
+                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${
+                      themeMode === 'dark' ? 'bg-white/5 border-white/10 text-gold' : 'bg-slate-100 border-slate-200 text-amber-800'
+                    }`}>
+                      <span>{activePreset.emoji} {activePreset.name}</span>
+                    </div>
                     <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-gold/15 text-gold font-extrabold border border-gold/25 shadow-sm">Telesales</span>
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -796,6 +808,31 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       );
                     })}
                   </div>
+                </div>
+              </div>
+
+              {/* Target Preset Level breakdown bar */}
+              <div className={`flex items-center justify-center gap-6 py-2 px-4 rounded-xl border ${
+                themeMode === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50 border-slate-100'
+              } mx-6 mb-1 text-[11px] font-semibold shrink-0`}>
+                <span className={themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}>
+                  🎯 Chỉ tiêu {activeMetricConfig.label} ({activePreset.emoji} {activePreset.name}):
+                </span>
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-1">
+                    <span className="opacity-60">Daily:</span>
+                    <span className="font-extrabold text-gold">{dailyTarget}</span>
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-white/10"></span>
+                  <span className="flex items-center gap-1">
+                    <span className="opacity-60">Weekly:</span>
+                    <span className="font-extrabold text-gold">{weeklyTarget}</span>
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-white/10"></span>
+                  <span className="flex items-center gap-1">
+                    <span className="opacity-60">Monthly:</span>
+                    <span className="font-extrabold text-gold">{monthlyTarget}</span>
+                  </span>
                 </div>
               </div>
 
@@ -1014,6 +1051,11 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 <div>
                   <div className="flex items-center gap-2">
                     <span className={`font-bold text-base md:text-lg tracking-tight ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{activeMember.name}</span>
+                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${
+                      themeMode === 'dark' ? 'bg-white/5 border-white/10 text-gold' : 'bg-slate-100 border-slate-200 text-amber-800'
+                    }`}>
+                      <span>{activePreset.emoji} {activePreset.name}</span>
+                    </div>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold/15 text-gold font-bold border border-gold/20">Telesales</span>
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -1093,6 +1135,31 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       );
                     })}
                   </div>
+                </div>
+              </div>
+
+              {/* Target Preset Level breakdown bar */}
+              <div className={`flex items-center justify-center gap-6 py-2 px-4 rounded-xl border ${
+                themeMode === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50 border-slate-100'
+              } mx-6 mb-1 text-[11px] font-semibold shrink-0`}>
+                <span className={themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}>
+                  🎯 Chỉ tiêu {activeMetricConfig.label} ({activePreset.emoji} {activePreset.name}):
+                </span>
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-1">
+                    <span className="opacity-60">Daily:</span>
+                    <span className="font-extrabold text-gold">{dailyTarget}</span>
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-white/10"></span>
+                  <span className="flex items-center gap-1">
+                    <span className="opacity-60">Weekly:</span>
+                    <span className="font-extrabold text-gold">{weeklyTarget}</span>
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-white/10"></span>
+                  <span className="flex items-center gap-1">
+                    <span className="opacity-60">Monthly:</span>
+                    <span className="font-extrabold text-gold">{monthlyTarget}</span>
+                  </span>
                 </div>
               </div>
 
