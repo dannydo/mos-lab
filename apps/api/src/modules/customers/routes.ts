@@ -2710,7 +2710,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
               return trans.description;
             }
 
-            const tid = trans.templateId;
+            const tid = trans.templateId ? Number(trans.templateId) : null;
             const amt = Number(trans.amount || 0);
 
             switch (tid) {
