@@ -12,6 +12,7 @@ import { callRoutes } from './modules/calls/routes.js';
 import { kpiRoutes } from './modules/kpi/routes.js';
 import { staffRoutes } from './modules/staff/routes.js';
 import { rolesRoutes } from './modules/roles/routes.js';
+import { tableConfigRoutes } from './modules/table-config/routes.js';
 
 // Load environment variables
 dotenv.config();
@@ -66,6 +67,7 @@ const start = async () => {
     await server.register(kpiRoutes, { prefix: '/api' });
     await server.register(staffRoutes, { prefix: '/api' });
     await server.register(rolesRoutes, { prefix: '/api' });
+    await server.register(tableConfigRoutes, { prefix: '/api' });
 
     const port = Number(process.env.PORT) || 3001;
     await server.listen({ port, host: '0.0.0.0' });

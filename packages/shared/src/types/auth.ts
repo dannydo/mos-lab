@@ -19,6 +19,8 @@ export interface Staff {
   avatarUrl?: string | null;
   notes?: string | null;
   legacyStaffId?: number | null;
+  lastLoginAt?: string | null;
+  lastActiveAt?: string | null;
 }
 
 export interface LoginRequest {

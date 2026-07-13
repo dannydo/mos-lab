@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Users V3D - Horizontal Bar Race + Donut + Podium</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        gold: '#D4A84B',
+        darkBg: '#0A0A0A',
+        darkCard: '#141414',
+        darkBorder: '#262626',
+      },
+      fontFamily: {
+        jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+      }
+    }
+  }
+}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+  /* ===== BREATHING + PULSE ANIMATIONS ===== */
+  @keyframes breathing {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(212, 168, 75, 0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(212, 168, 75, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(212, 168, 75, 0); }
+  }
+  @keyframes float-bubble {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-3px); }
+  }
+  .bubble-breathing {
+    animation: breathing 3s ease-in-out infinite, pulse-ring 2.5s ease-out infinite;
+  }
+  .bubble-float {
+    animation: float-bubble 4s ease-in-out infinite;
+  }
+  .bubble-float:nth-child(2) { animation-delay: 0.3s; }
+  .bubble-float:nth-child(3) { animation-delay: 0.6s; }
+  .bubble-float:nth-child(4) { animation-delay: 0.9s; }
+
+  /* ===== MODAL ANIMATIONS ===== */
+  @keyframes modal-in {
+    from { opacity: 0; transform: scale(0.92) translateY(12px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes modal-out {
+    from { opacity: 1; transform: scale(1) translateY(0); }
+    to { opacity: 0; transform: scale(0.92) translateY(12px); }
+  }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+  .modal-overlay {
+    animation: fade-in 0.25s ease-out forwards;
+  }
+  .modal-overlay.closing {
+    animation: fade-out 0.2s ease-in forwards;
+  }
+  .modal-content {
+    animation: modal-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .modal-overlay.closing .modal-content {
+    animation: modal-out 0.2s ease-in forwards;
+  }
+
+  /* ===== GLASS CARD ===== */
+  .glass-card {
+    background: rgba(20, 20, 20, 0.85);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .light .glass-card {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  /* ===== BAR RACE ANIMATION ===== */
+  @keyframes bar-fill {
+    from { width: 0%; }
+  }
+  .bar-animated {
+    animation: bar-fill 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  /* ===== DONUT ANIMATION ===== */
+  @keyframes donut-fill {
+    from { stroke-dasharray: 0 100; }
+  }
+  .donut-animated {
+    animation: donut-fill 1s ease-out forwards;
+  }
+
+  /* ===== SHIMMER EFFECT ===== */
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  .shimmer-gold {
+    background: linear-gradient(
+      90deg,
+      rgba(212, 168, 75, 0.15) 0%,
+      rgba(212, 168, 75, 0.35) 25%,
+      rgba(212, 168, 75, 0.5) 50%,
+      rgba(212, 168, 75, 0.35) 75%,
+      rgba(212, 168, 75, 0.15) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2.5s ease-in-out infinite;
+  }
+
+  /* ===== PODIUM GRADIENT ANIMATION ===== */
+  @keyframes podium-gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .podium-gradient-animate {
+    background-size: 200% 200%;
+    animation: podium-gradient 4s ease-in-out infinite;
+  }
+
+  /* ===== COUNT BADGE ANIMATION ===== */
+  @keyframes badge-pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .badge-pop { animation: badge-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+  /* ===== TAB CONTENT FADE ===== */
+  @keyframes content-fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .content-animate {
+    animation: content-fade-in 0.3s ease-out forwards;
+  }
+
+  /* ===== SCROLLBAR ===== */
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(212, 168, 75, 0.3); border-radius: 10px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(212, 168, 75, 0.5); }
+
+  /* ===== MINI BAR ANIMATION ===== */
+  @keyframes mini-bar-fill {
+    from { width: 0%; }
+  }
+  .mini-bar-animated {
+    animation: mini-bar-fill 0.8s ease-out forwards;
+  }
+
+  /* ===== LIGHT THEME OVERRIDES ===== */
+  .light body, .light { background-color: #f8f8f8; color: #1a1a1a; }
+</style>
+</head>
+<body class="bg-darkBg text-white min-h-screen font-jakarta transition-colors duration-300">
+
+<!-- ==================== HEADER ==================== -->
+<header class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-darkBorder dark:border-darkBorder">
+  <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+    <!-- Left: Logo -->
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center font-extrabold text-black text-sm shadow-lg shadow-gold/20">
+        WL
+      </div>
+      <span class="text-sm font-semibold text-white/70 dark:text-white/70 hidden sm:block">Workspace</span>
+    </div>
+
+    <!-- Right: Bubble Stack + Count + Clock + Toggle + DD -->
+    <div class="flex items-center gap-4">
+      <!-- Bubble Stack -->
+      <div class="flex items-center cursor-pointer" id="bubbleStack" onclick="openModal()">
+        <div class="flex -space-x-2.5">
+          <div class="bubble-float">
+            <img src="https://ui-avatars.com/api/?name=Thy&background=3b82f6&color=fff&size=32&rounded=true&bold=true&font-size=0.4" 
+                 class="w-8 h-8 rounded-full border-2 border-darkBg dark:border-darkBg ring-2 ring-emerald-400/50 bubble-breathing" alt="">
+          </div>
+          <div class="bubble-float">
+            <img src="https://ui-avatars.com/api/?name=Trang&background=8b5cf6&color=fff&size=32&rounded=true&bold=true&font-size=0.4" 
+                 class="w-8 h-8 rounded-full border-2 border-darkBg dark:border-darkBg ring-2 ring-emerald-400/50 bubble-breathing" alt="">
+          </div>
+          <div class="bubble-float">
+            <img src="https://ui-avatars.com/api/?name=Ngoc&background=10b981&color=fff&size=32&rounded=true&bold=true&font-size=0.4" 
+                 class="w-8 h-8 rounded-full border-2 border-darkBg dark:border-darkBg ring-2 ring-emerald-400/50 bubble-breathing" alt="">
+          </div>
+          <div class="bubble-float">
+            <div class="w-8 h-8 rounded-full border-2 border-darkBg dark:border-darkBg bg-darkCard flex items-center justify-center">
+              <span class="text-[10px] font-bold text-white/60">+3</span>
+            </div>
+          </div>
+        </div>
+        <!-- Count Badge -->
+        <div class="ml-2 badge-pop">
+          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-lg shadow-emerald-500/30">
+            6
+          </span>
+        </div>
+      </div>
+
+      <!-- Separator -->
+      <div class="w-px h-6 bg-white/10"></div>
+
+      <!-- Clock -->
+      <div class="flex items-center gap-1.5 text-white/50 text-xs">
+        <i class="fa-regular fa-clock text-[10px]"></i>
+        <span id="headerClock">--:--</span>
+      </div>
+
+      <!-- Theme Toggle -->
+      <button onclick="toggleTheme()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all duration-200 group">
+        <i class="fa-solid fa-moon text-xs text-white/40 group-hover:text-gold transition-colors dark-icon"></i>
+        <i class="fa-solid fa-sun text-xs text-white/40 group-hover:text-gold transition-colors light-icon hidden"></i>
+      </button>
+
+      <!-- DD Avatar -->
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center text-[11px] font-bold text-black cursor-pointer hover:shadow-lg hover:shadow-gold/20 transition-shadow">
+        DD
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== DEMO TRIGGER ==================== -->
+<div class="pt-20 flex flex-col items-center justify-center min-h-screen gap-4">
+  <p class="text-white/30 text-sm">Click the bubble stack above or</p>
+  <button onclick="openModal()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-gold to-yellow-600 text-black font-bold text-sm hover:shadow-xl hover:shadow-gold/25 transition-all duration-300 hover:scale-[1.02] active:scale-95">
+    <i class="fa-solid fa-eye mr-2"></i> Open V3D Modal
+  </button>
+  <p class="text-white/20 text-xs mt-2">V3D: Horizontal Bar Race + Donut Summary + Podium</p>
+</div>
+
+<!-- ==================== MODAL ==================== -->
+<div id="modalOverlay" class="modal-overlay fixed inset-0 z-[100] hidden items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);" onclick="handleOverlayClick(event)">
+  <div class="modal-content w-full max-w-[820px] max-h-[90vh] glass-card rounded-2xl shadow-2xl shadow-black/40 overflow-hidden flex flex-col">
+
+    <!-- ===== MODAL HEADER ===== -->
+    <div class="px-5 py-4 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <!-- Avatar -->
+        <div class="relative">
+          <img id="modalAvatar" src="" class="w-10 h-10 rounded-full border-2 border-gold/30" alt="">
+          <div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-darkCard"></div>
+        </div>
+        <!-- Info -->
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="modalName" class="font-bold text-sm text-white"></span>
+            <span class="px-2 py-0.5 rounded-md bg-gold/10 text-gold text-[10px] font-semibold tracking-wide uppercase">Telesales</span>
+          </div>
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+            <span class="text-[11px] text-emerald-400/80">Đang hoạt động</span>
+          </div>
+        </div>
+      </div>
+      <!-- Close -->
+      <button onclick="closeModal()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all group">
+        <i class="fa-solid fa-xmark text-white/40 group-hover:text-white text-sm"></i>
+      </button>
+    </div>
+
+    <!-- ===== TABS ===== -->
+    <div class="px-5 pt-3 flex-shrink-0">
+      <div class="flex gap-1 bg-white/5 rounded-xl p-1 w-fit">
+        <button onclick="switchTab('today')" data-tab="today" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200">
+          Hôm nay
+        </button>
+        <button onclick="switchTab('week')" data-tab="week" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200">
+          Tuần này
+        </button>
+        <button onclick="switchTab('month')" data-tab="month" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200">
+          Tháng này
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== SCROLLABLE BODY ===== -->
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-5" id="modalBody">
+
+      <!-- SECTION 1: Overall Progress - Mini Donuts -->
+      <div>
+        <h3 class="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3">
+          <i class="fa-solid fa-chart-pie mr-1.5 text-gold/60"></i>Overall Progress
+        </h3>
+        <div class="flex items-center justify-between gap-2" id="donutRow">
+          <!-- 5 donuts rendered by JS -->
+        </div>
+      </div>
+
+      <!-- SECTION 2: Chi tiết - Horizontal Bar Race -->
+      <div>
+        <h3 class="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3">
+          <i class="fa-solid fa-bars-progress mr-1.5 text-gold/60"></i>Chi tiết
+        </h3>
+        <div class="space-y-3" id="barRaceContainer">
+          <!-- 5 bars rendered by JS -->
+        </div>
+      </div>
+
+      <!-- SECTION 3: Leaderboard -->
+      <div>
+        <h3 class="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3">
+          <i class="fa-solid fa-trophy mr-1.5 text-gold/60"></i>Bảng xếp hạng
+        </h3>
+
+        <!-- Podium #2 - #1 - #3 -->
+        <div class="flex items-end justify-center gap-3 mb-4" id="podiumContainer">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- #4-6 rows -->
+        <div class="space-y-2" id="remainingRows">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== DATA ====================
+const members = [
+  { id: 1, name: 'Thy',   initials: 'TH', color: '#3b82f6', avatar: 'Thy' },
+  { id: 2, name: 'Trang', initials: 'TR', color: '#8b5cf6', avatar: 'Trang' },
+  { id: 3, name: 'Ngọc',  initials: 'NG', color: '#10b981', avatar: 'Ngoc' },
+  { id: 4, name: 'Hạnh',  initials: 'HA', color: '#f43f5e', avatar: 'Hanh' },
+  { id: 5, name: 'Linh',  initials: 'LI', color: '#06b6d4', avatar: 'Linh' },
+  { id: 6, name: 'Mai',   initials: 'MA', color: '#f97316', avatar: 'Mai' },
+];
+
+const metrics = [
+  { key: 'calls',   label: 'Số cuộc gọi',    icon: 'fa-phone',          color: '#3b82f6', gradientFrom: '#2563eb', gradientTo: '#60a5fa' },
+  { key: 'pickup',  label: 'Số pickup',       icon: 'fa-phone-volume',   color: '#10b981', gradientFrom: '#059669', gradientTo: '#34d399' },
+  { key: 'happy',   label: 'Số happy call',   icon: 'fa-face-smile',     color: '#f59e0b', gradientFrom: '#d97706', gradientTo: '#fbbf24' },
+  { key: 'booked',  label: 'Số booked',       icon: 'fa-calendar-check', color: '#8b5cf6', gradientFrom: '#7c3aed', gradientTo: '#a78bfa' },
+  { key: 'done',    label: 'Số done',         icon: 'fa-circle-check',   color: '#D4A84B', gradientFrom: '#b8942f', gradientTo: '#e8c76b' },
+];
+
+const sampleData = {
+  today: {
+    1: { calls: [45, 60], pickup: [28, 40], happy: [12, 20], booked: [8, 12], done: [5, 8] },
+    2: { calls: [52, 60], pickup: [35, 40], happy: [18, 20], booked: [10, 12], done: [7, 8] },
+    3: { calls: [38, 60], pickup: [22, 40], happy: [9, 20], booked: [6, 12], done: [3, 8] },
+    4: { calls: [30, 60], pickup: [18, 40], happy: [7, 20], booked: [4, 12], done: [2, 8] },
+    5: { calls: [41, 60], pickup: [25, 40], happy: [11, 20], booked: [7, 12], done: [4, 8] },
+    6: { calls: [35, 60], pickup: [20, 40], happy: [8, 20], booked: [5, 12], done: [3, 8] },
+  },
+  week: {
+    1: { calls: [210, 300], pickup: [140, 200], happy: [65, 100], booked: [42, 60], done: [28, 40] },
+    2: { calls: [260, 300], pickup: [175, 200], happy: [88, 100], booked: [52, 60], done: [35, 40] },
+    3: { calls: [185, 300], pickup: [110, 200], happy: [48, 100], booked: [30, 60], done: [18, 40] },
+    4: { calls: [155, 300], pickup: [90, 200], happy: [38, 100], booked: [22, 60], done: [12, 40] },
+    5: { calls: [200, 300], pickup: [130, 200], happy: [58, 100], booked: [36, 60], done: [22, 40] },
+    6: { calls: [170, 300], pickup: [100, 200], happy: [42, 100], booked: [25, 60], done: [15, 40] },
+  },
+  month: {
+    1: { calls: [820, 1200], pickup: [550, 800], happy: [260, 400], booked: [168, 240], done: [110, 160] },
+    2: { calls: [1050, 1200], pickup: [700, 800], happy: [350, 400], booked: [210, 240], done: [142, 160] },
+    3: { calls: [720, 1200], pickup: [430, 800], happy: [190, 400], booked: [115, 240], done: [72, 160] },
+    4: { calls: [600, 1200], pickup: [350, 800], happy: [150, 400], booked: [85, 240], done: [48, 160] },
+    5: { calls: [780, 1200], pickup: [500, 800], happy: [230, 400], booked: [140, 240], done: [88, 160] },
+    6: { calls: [660, 1200], pickup: [390, 800], happy: [170, 400], booked: [100, 240], done: [60, 160] },
+  }
+};
+
+let currentTab = 'today';
+let selectedMember = members[0];
+
+// ==================== CLOCK ====================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('headerClock').textContent = 
+    now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ==================== THEME ====================
+function toggleTheme() {
+  const html = document.documentElement;
+  html.classList.toggle('dark');
+  html.classList.toggle('light');
+  const isDark = html.classList.contains('dark');
+  document.querySelector('.dark-icon').classList.toggle('hidden', !isDark);
+  document.querySelector('.light-icon').classList.toggle('hidden', isDark);
+  document.body.classList.toggle('bg-darkBg', isDark);
+  document.body.classList.toggle('text-white', isDark);
+  document.body.classList.toggle('bg-gray-50', !isDark);
+  document.body.classList.toggle('text-gray-900', !isDark);
+}
+
+// ==================== MODAL ====================
+function openModal(memberId) {
+  selectedMember = members.find(m => m.id === (memberId || 1)) || members[0];
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.remove('hidden', 'closing');
+  overlay.classList.add('flex');
+  
+  // Set header
+  document.getElementById('modalAvatar').src = 
+    `https://ui-avatars.com/api/?name=${selectedMember.avatar}&background=${selectedMember.color.replace('#','')}&color=fff&size=80&rounded=true&bold=true&font-size=0.38`;
+  document.getElementById('modalName').textContent = selectedMember.name;
+  
+  switchTab('today');
+}
+
+function closeModal() {
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.add('closing');
+  setTimeout(() => {
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex', 'closing');
+  }, 200);
+}
+
+function handleOverlayClick(e) {
+  if (e.target === e.currentTarget) closeModal();
+}
+
+// ==================== TAB SWITCH ====================
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    const isActive = btn.dataset.tab === tab;
+    btn.classList.toggle('bg-gold', isActive);
+    btn.classList.toggle('text-black', isActive);
+    btn.classList.toggle('shadow-lg', isActive);
+    btn.classList.toggle('shadow-gold/20', isActive);
+    btn.classList.toggle('text-white/50', !isActive);
+    btn.classList.toggle('hover:text-white/80', !isActive);
+    btn.classList.toggle('hover:bg-white/5', !isActive);
+  });
+  renderContent();
+}
+
+// ==================== RENDER CONTENT ====================
+function renderContent() {
+  const data = sampleData[currentTab][selectedMember.id];
+  renderDonuts(data);
+  renderBarRace(data);
+  renderLeaderboard();
+}
+
+// ==================== MINI DONUTS ====================
+function renderDonuts(data) {
+  const container = document.getElementById('donutRow');
+  container.innerHTML = '';
+  
+  metrics.forEach((m, i) => {
+    const [current, target] = data[m.key];
+    const pct = Math.round((current / target) * 100);
+    const circumference = 2 * Math.PI * 15.9155; // r=15.9155 for viewBox 36
+    const dashArray = (pct / 100) * circumference;
+    
+    const div = document.createElement('div');
+    div.className = 'flex flex-col items-center gap-1 flex-1 content-animate';
+    div.style.animationDelay = `${i * 0.08}s`;
+    div.innerHTML = `
+      <div class="relative w-[62px] h-[62px]">
+        <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
+          <circle cx="18" cy="18" r="15.9155" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="3"/>
+          <circle cx="18" cy="18" r="15.9155" fill="none" stroke="${m.color}" stroke-width="3" 
+                  stroke-dasharray="${dashArray} ${circumference}" stroke-linecap="round"
+                  class="donut-animated" style="animation-delay: ${i * 0.1}s; opacity: 0.9;"/>
+        </svg>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span class="text-[11px] font-bold" style="color: ${m.color}">${pct}%</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <i class="fa-solid ${m.icon} text-[8px]" style="color: ${m.color}"></i>
+        <span class="text-[9px] text-white/40 font-medium truncate max-w-[60px]">${m.label.replace('Số ', '')}</span>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ==================== HORIZONTAL BAR RACE ====================
+function renderBarRace(data) {
+  const container = document.getElementById('barRaceContainer');
+  container.innerHTML = '';
+
+  metrics.forEach((m, i) => {
+    const [current, target] = data[m.key];
+    const pct = Math.min(Math.round((current / target) * 100), 100);
+    
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-3 content-animate';
+    row.style.animationDelay = `${i * 0.06}s`;
+    
+    row.innerHTML = `
+      <!-- Icon + Label -->
+      <div class="flex items-center gap-2 w-[110px] flex-shrink-0">
+        <div class="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0" style="background: ${m.color}15;">
+          <i class="fa-solid ${m.icon} text-[10px]" style="color: ${m.color}"></i>
+        </div>
+        <span class="text-[11px] font-medium text-white/60 truncate">${m.label}</span>
+      </div>
+      <!-- Bar Track -->
+      <div class="flex-1 h-3 rounded-full bg-white/[0.04] overflow-hidden relative">
+        <div class="bar-animated h-full rounded-full relative overflow-hidden" 
+             style="width: ${pct}%; animation-delay: ${i * 0.1}s; background: linear-gradient(90deg, ${m.gradientFrom}, ${m.gradientTo});">
+          <!-- Subtle shine -->
+          <div class="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent"></div>
+        </div>
+      </div>
+      <!-- Value + Badge -->
+      <div class="flex items-center gap-2 flex-shrink-0 w-[100px] justify-end">
+        <span class="text-[11px] text-white/50 font-medium">${current}<span class="text-white/25">/${target}</span></span>
+        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${pct >= 80 ? 'bg-emerald-500/15 text-emerald-400' : pct >= 50 ? 'bg-amber-500/15 text-amber-400' : 'bg-red-500/15 text-red-400'}">
+          ${pct}%
+        </span>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// ==================== LEADERBOARD ====================
+function renderLeaderboard() {
+  const tabData = sampleData[currentTab];
+  
+  // Rank by 'done' metric
+  const ranked = members.map(m => {
+    const d = tabData[m.id];
+    return { ...m, done: d.done[0], doneTarget: d.done[1], donePct: Math.round((d.done[0] / d.done[1]) * 100) };
+  }).sort((a, b) => b.done - a.done);
+  
+  const maxDone = ranked[0].done;
+  
+  // Podium: #2, #1, #3
+  const podiumOrder = [ranked[1], ranked[0], ranked[2]];
+  const podiumContainer = document.getElementById('podiumContainer');
+  podiumContainer.innerHTML = '';
+  
+  const podiumHeights = { 0: 'h-20', 1: 'h-28', 2: 'h-16' }; // #2, #1, #3
+  const podiumLabels = ['#2', '#1', '#3'];
+  const podiumBorders = [
+    'border-gray-400/30',
+    'border-gold/40',
+    'border-amber-700/30'
+  ];
+  const podiumBgs = [
+    'bg-gradient-to-t from-gray-500/10 to-gray-400/5',
+    '',
+    'bg-gradient-to-t from-amber-800/10 to-amber-700/5'
+  ];
+  
+  podiumOrder.forEach((member, idx) => {
+    const isFirst = idx === 1;
+    const div = document.createElement('div');
+    div.className = 'flex flex-col items-center gap-2 content-animate';
+    div.style.animationDelay = `${idx * 0.1}s`;
+    
+    const avatarSize = isFirst ? 'w-12 h-12' : 'w-10 h-10';
+    const avatarRing = isFirst ? 'ring-2 ring-gold/50' : 'ring-1 ring-white/10';
+    
+    div.innerHTML = `
+      <!-- Avatar -->
+      <div class="relative">
+        <img src="https://ui-avatars.com/api/?name=${member.avatar}&background=${member.color.replace('#','')}&color=fff&size=80&rounded=true&bold=true&font-size=0.38" 
+             class="${avatarSize} rounded-full ${avatarRing}" alt="">
+        ${isFirst ? '<div class="absolute -top-2 left-1/2 -translate-x-1/2 text-sm">👑</div>' : ''}
+      </div>
+      <span class="text-[11px] font-semibold text-white/80">${member.name}</span>
+      <span class="text-[10px] font-bold" style="color: ${member.color}">${member.done} done</span>
+      <!-- Podium Block -->
+      <div class="w-24 ${podiumHeights[idx]} rounded-t-lg border ${podiumBorders[idx]} ${podiumBgs[idx]} ${isFirst ? 'shimmer-gold podium-gradient-animate' : ''} flex flex-col items-center justify-center relative overflow-hidden">
+        <span class="text-lg font-extrabold ${isFirst ? 'text-gold' : 'text-white/30'}">${podiumLabels[idx]}</span>
+        <span class="text-[9px] text-white/25 font-medium">${member.donePct}%</span>
+      </div>
+    `;
+    podiumContainer.appendChild(div);
+  });
+  
+  // Rows #4-6
+  const remaining = ranked.slice(3);
+  const rowsContainer = document.getElementById('remainingRows');
+  rowsContainer.innerHTML = '';
+  
+  remaining.forEach((member, idx) => {
+    const rank = idx + 4;
+    const barWidth = maxDone > 0 ? Math.round((member.done / maxDone) * 100) : 0;
+    
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04] content-animate';
+    row.style.animationDelay = `${(idx + 3) * 0.08}s`;
+    
+    row.innerHTML = `
+      <!-- Rank -->
+      <span class="text-[11px] font-bold text-white/20 w-5 text-center">${rank}</span>
+      <!-- Avatar -->
+      <img src="https://ui-avatars.com/api/?name=${member.avatar}&background=${member.color.replace('#','')}&color=fff&size=64&rounded=true&bold=true&font-size=0.38" 
+           class="w-8 h-8 rounded-full ring-1 ring-white/10" alt="">
+      <!-- Name -->
+      <span class="text-[12px] font-semibold text-white/70 w-14 truncate">${member.name}</span>
+      <!-- Mini Comparison Bar -->
+      <div class="flex-1 h-2 rounded-full bg-white/[0.04] overflow-hidden">
+        <div class="mini-bar-animated h-full rounded-full" 
+             style="width: ${barWidth}%; background: linear-gradient(90deg, ${member.color}80, ${member.color}); animation-delay: ${idx * 0.15}s;"></div>
+      </div>
+      <!-- Done count -->
+      <span class="text-[11px] font-bold text-white/40 w-14 text-right">${member.done} <span class="text-white/20 font-normal">done</span></span>
+    `;
+    rowsContainer.appendChild(row);
+  });
+}
+
+// ==================== KEYBOARD ====================
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+
+</body>
+</html>

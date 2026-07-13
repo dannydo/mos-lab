@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telesales Dashboard Popup - Thiết kế Khổng lồ & Đa tính năng</title>
+  <style>
+    :root {
+      --bg-dark: #09090b;
+      --card-dark: #121214;
+      --border-dark: #27272a;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      
+      /* Accent Gradients */
+      --grad-primary: linear-gradient(135deg, #8b5cf6, #3b82f6);
+      --grad-success: linear-gradient(135deg, #10b981, #059669);
+      --grad-warning: linear-gradient(135deg, #fbbf24, #d97706);
+      --grad-danger: linear-gradient(135deg, #f43f5e, #e11d48);
+      
+      --wings-gold: #fbbf24;
+      --glass-bg: rgba(30, 41, 59, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      overflow: auto;
+    }
+
+    /* Outer Wrapper representing the web app page behind */
+    .app-background {
+      width: 100%;
+      max-width: 1200px;
+      height: 800px;
+      background-color: #0c0e12;
+      border: 1px solid var(--border-dark);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    /* Top Navigation bar */
+    .app-header {
+      height: 64px;
+      background-color: #121620;
+      border-bottom: 1px solid var(--border-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--wings-gold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: #8b5cf6;
+      color: white;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 2px solid var(--wings-gold);
+    }
+
+    /* Dimmed overlay for the modal popup background */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    /* THE HUGE POPUP WINDOW */
+    .huge-popup-card {
+      width: 900px;
+      height: 620px;
+      background-color: #121318;
+      border: 1.5px solid rgba(251, 191, 36, 0.4); /* Gold brand border accent */
+      border-radius: 28px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(251, 191, 36, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalFadeIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* Card Top Header Section */
+    .popup-header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, #181920 0%, #121318 100%);
+    }
+
+    .profile-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .large-profile-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-color: #8b5cf6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: bold;
+      color: white;
+      border: 3px solid #10b981; /* Pulsing presence ring */
+      position: relative;
+    }
+
+    .large-profile-circle::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background-color: #10b981;
+      border: 2.5px solid #121318;
+    }
+
+    .user-info-text h3 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .user-info-text p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Target summary on the header right */
+    .header-summary-goal {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(251, 191, 36, 0.08);
+      border: 1px dashed rgba(251, 191, 36, 0.3);
+      padding: 10px 16px;
+      border-radius: 16px;
+    }
+
+    .circular-progress-svg {
+      width: 44px;
+      height: 44px;
+      transform: rotate(-90deg);
+    }
+
+    /* Navigation tabs (3 items as requested) */
+    .popup-tabs-bar {
+      display: flex;
+      background-color: #16181f;
+      border-bottom: 1px solid var(--border-dark);
+      padding: 0 32px;
+    }
+
+    .popup-tab-item {
+      padding: 16px 24px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .popup-tab-item:hover {
+      color: white;
+    }
+
+    .popup-tab-item.active {
+      color: var(--wings-gold);
+      border-bottom-color: var(--wings-gold);
+    }
+
+    /* Tab content viewport */
+    .popup-content-body {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+      background-color: #0f1013;
+    }
+
+    .tab-pane {
+      display: none;
+      animation: tabFadeIn 0.25s ease-in-out;
+    }
+
+    .tab-pane.active {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Dashboard Widgets / Cards */
+    .widget-card {
+      background-color: #16181f;
+      border: 1px solid var(--border-dark);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .widget-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--wings-gold);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Funnel layout */
+    .funnel-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-top: 10px;
+    }
+
+    .funnel-stage {
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    /* Streaks & Leaderboard components */
+    .streak-fire-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 16px 0;
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 70%);
+    }
+
+    .fire-emoji {
+      font-size: 48px;
+      animation: fireWobble 1.5s infinite ease-in-out;
+    }
+
+    @keyframes fireWobble {
+      0%, 100% { transform: scale(1) rotate(-3deg); }
+      50% { transform: scale(1.1) rotate(3deg); filter: drop-shadow(0 0 10px #f43f5e); }
+    }
+
+    .leader-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .leader-row.top-user {
+      background-color: rgba(251, 191, 36, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+
+    /* Commission list */
+    .commission-calc-box {
+      background-color: #0f1013;
+      border: 1px solid var(--border-dark);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 13px;
+    }
+
+    .calc-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    /* Quests checklist */
+    .quest-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .quest-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--border-dark);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .quest-checkbox.done {
+      background-color: var(--green-success);
+      border-color: var(--green-success);
+      color: black;
+      font-weight: bold;
+    }
+
+    .quest-content {
+      flex: 1;
+    }
+
+    .quest-title {
+      font-weight: 600;
+    }
+
+    .quest-reward {
+      font-size: 10px;
+      color: var(--wings-gold);
+      margin-top: 2px;
+    }
+
+    /* Popup Footer bottom controls */
+    .popup-footer {
+      padding: 20px 32px;
+      border-top: 1px solid var(--border-dark);
+      background-color: #121318;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-help-text {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .popup-close-btn {
+      background: linear-gradient(135deg, #fbbf24, #d97706);
+      color: black;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.25);
+      transition: all 0.2s;
+    }
+
+    .popup-close-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(251, 191, 36, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Outer background frame -->
+  <div class="app-background">
+    <div class="app-header">
+      <div class="brand-title">
+        <span style="font-size: 20px;">🪶</span>
+        <span>WINGS LASHES CRM</span>
+      </div>
+      <!-- User trigger -->
+      <div class="header-user-avatar" onclick="openModalPopup()">
+        TN
+      </div>
+    </div>
+    
+    <!-- Workspace background grid simulation -->
+    <div style="flex:1; display:flex; flex-direction:column; padding: 24px; gap: 16px; opacity: 0.15; pointer-events: none;">
+      <div style="width:100%; height:40px; background:#fff; border-radius:6px;"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; flex:1;">
+        <div style="background:#fff; border-radius:8px;"></div>
+        <div style="background:#fff; border-radius:8px;"></div>
+        <div style="background:#fff; border-radius:8px;"></div>
+      </div>
+    </div>
+
+    <!-- Modal dim overlay -->
+    <div class="modal-overlay" id="modalOverlay">
+      
+      <!-- THE HUGE POPUP WINDOW -->
+      <div class="huge-popup-card">
+        
+        <!-- Header area -->
+        <div class="popup-header">
+          <div class="profile-meta">
+            <div class="large-profile-circle">
+              TN
+            </div>
+            <div class="user-info-text">
+              <h3>Tâm Nguyễn (Telesales)</h3>
+              <p>Senior Booker Coordinator • tam.nguyen@wingslashes.com</p>
+            </div>
+          </div>
+          
+          <div class="header-summary-goal">
+            <div>
+              <span style="font-size: 10px; color: var(--text-muted); display: block; text-transform: uppercase;">Tiến độ tháng 7</span>
+              <span style="font-size: 14px; font-weight: bold; color: var(--wings-gold);">165 / 200 Booking</span>
+            </div>
+            <svg class="circular-progress-svg">
+              <circle cx="22" cy="22" r="18" stroke="#27272a" stroke-width="4" fill="transparent"/>
+              <circle cx="22" cy="22" r="18" stroke="var(--wings-gold)" stroke-width="4" fill="transparent"
+                      stroke-dasharray="113" stroke-dashoffset="20"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 3 Tab Navigation menu -->
+        <div class="popup-tabs-bar">
+          <div class="popup-tab-item active" id="tab0" onclick="switchPopupTab(0)">
+            <span>📊</span> HIỆU SUẤT & PHỄU GỌI
+          </div>
+          <div class="popup-tab-item" id="tab1" onclick="switchPopupTab(1)">
+            <span>🏆</span> BẢNG ĐẤU & THÀNH TÍCH
+          </div>
+          <div class="popup-tab-item" id="tab2" onclick="switchPopupTab(2)">
+            <span>💵</span> LƯƠNG THƯỞNG & NHIỆM VỤ
+          </div>
+        </div>
+
+        <!-- Scrollable content area -->
+        <div class="popup-content-body">
+          
+          <!-- TAB 1 CONTENT PANE -->
+          <div class="tab-pane active" id="pane0">
+            <!-- Left Widget -->
+            <div class="widget-card">
+              <div class="widget-title">📊 HIỆU SUẤT CHU KỲ</div>
+              
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <div>
+                  <div style="display:flex; justify-content:space-between; font-size:12px;">
+                    <span>Hôm nay:</span> <strong>8 / 10 đơn (80%)</strong>
+                  </div>
+                  <div class="kpi-progress-bar"><div class="kpi-fill" style="width: 80%; background: var(--grad-success);"></div></div>
+                </div>
+                
+                <div>
+                  <div style="display:flex; justify-content:space-between; font-size:12px;">
+                    <span>Tuần này:</span> <strong>38 / 50 đơn (76%)</strong>
+                  </div>
+                  <div class="kpi-progress-bar"><div class="kpi-fill" style="width: 76%; background: var(--grad-primary);"></div></div>
+                </div>
+
+                <div>
+                  <div style="display:flex; justify-content:space-between; font-size:12px;">
+                    <span>Tháng này:</span> <strong>165 / 200 đơn (82.5%)</strong>
+                  </div>
+                  <div class="kpi-progress-bar"><div class="kpi-fill" style="width: 82.5%; background: var(--grad-warning);"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Widget -->
+            <div class="widget-card">
+              <div class="widget-title">⏳ PHỄU CHUYỂN ĐỔI CUỘC GỌI</div>
+              <div class="funnel-container">
+                <div class="funnel-stage" style="background: rgba(139, 92, 246, 0.2); border-left: 4px solid #8b5cf6; width: 100%;">
+                  <span>📞 Tổng đã gọi:</span><strong>215 cuộc (100%)</strong>
+                </div>
+                <div class="funnel-stage" style="background: rgba(59, 130, 246, 0.2); border-left: 4px solid #3b82f6; width: 85%;">
+                  <span>🗣️ Khách bắt máy:</span><strong>172 cuộc (80.0%)</strong>
+                </div>
+                <div class="funnel-stage" style="background: rgba(16, 185, 129, 0.2); border-left: 4px solid #10b981; width: 70%;">
+                  <span>📅 Chốt Booking:</span><strong>38 đơn (22.0%)</strong>
+                </div>
+                <div style="font-size:11px; text-align:center; color: var(--text-muted); margin-top:4px;">
+                  Hiệu suất chuyển đổi trung bình ca trực: <strong style="color: var(--green-success);">22.09%</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2 CONTENT PANE -->
+          <div class="tab-pane" id="pane1">
+            <!-- Left Widget -->
+            <div class="widget-card">
+              <div class="widget-title">🔥 CHUỖI BÙNG NỔ DOANH SỐ</div>
+              <div class="streak-fire-panel">
+                <div class="fire-emoji">🔥</div>
+                <span style="font-size: 26px; font-weight: 800; color: #f43f5e; margin-top: 10px;">5 Ngày Đạt Target</span>
+                <span style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Duy trì chuỗi tối thiểu 7 ngày để mở khóa Hệ số thưởng 1.2x</span>
+              </div>
+              
+              <div style="background-color: rgba(255,255,255,0.02); border-radius: 8px; padding: 12px; font-size:11px; margin-top: 8px;">
+                🎖️ Huy hiệu hiện tại: <strong>Mắt Thần (1000 cuộc gọi)</strong> và <strong>Chiến thần Telesales</strong>.
+              </div>
+            </div>
+
+            <!-- Right Widget -->
+            <div class="widget-card">
+              <div class="widget-title">🥇 BẢNG XẾP HẠNG THI ĐUA</div>
+              
+              <div class="leader-row">
+                <span>🥇 1. Bảo Hân (Leader)</span>
+                <strong>185 đơn</strong>
+              </div>
+              <div class="leader-row top-user">
+                <span>🥈 2. Tâm Nguyễn (Bạn)</span>
+                <strong style="color: var(--wings-gold);">165 đơn</strong>
+              </div>
+              <div class="leader-row">
+                <span>🥉 3. Danny Wings</span>
+                <strong>142 đơn</strong>
+              </div>
+
+              <div style="font-size:11px; color: var(--text-muted); text-align:center; margin-top:16px; border-top:1px dashed var(--border-dark); padding-top:12px;">
+                Khoảng cách đến vị trí Top 1: <strong style="color: var(--wings-gold);">20 đơn</strong>. Cố lên bạn ơi!
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3 CONTENT PANE -->
+          <div class="tab-pane" id="pane2">
+            <!-- Left Widget -->
+            <div class="widget-card">
+              <div class="widget-title">💵 ƯỚC TÍNH HOA HỒNG & LƯƠNG</div>
+              
+              <div class="commission-calc-box">
+                <div class="calc-row"><span>Lương cứng ca trực:</span> <strong>5,500,000đ</strong></div>
+                <div class="calc-row"><span>Hoa hồng Booker (38 đơn):</span> <strong>3,300,000đ</strong></div>
+                <div class="calc-row"><span>Hoa hồng gia hạn (18 đơn):</span> <strong>1,440,000đ</strong></div>
+                <div class="calc-row" style="color: var(--wings-gold);"><span>Hệ số chuỗi Streak (1.2x):</span> <strong>+948,000đ</strong></div>
+                
+                <hr style="border:0; border-top:1px dashed var(--border-dark); margin: 12px 0 8px;">
+                
+                <div class="calc-row" style="font-size: 16px; font-weight: bold;">
+                  <span>Lương tạm tính:</span>
+                  <span style="color: var(--green-success);">11,188,000đ</span>
+                </div>
+              </div>
+              
+              <div style="font-size: 9px; color: var(--text-muted); margin-top: 8px;">
+                *Dữ liệu hoa hồng được cập nhật nội bộ, kiểm tra chính xác qua API xuất lương CRM.
+              </div>
+            </div>
+
+            <!-- Right Widget -->
+            <div class="widget-card">
+              <div class="widget-title">📋 NHIỆM VỤ NGÀY PHẤN ĐẤU</div>
+              
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="quest-item">
+                  <div class="quest-checkbox done">✓</div>
+                  <div class="quest-content">
+                    <div class="quest-title">Gọi tối thiểu 40 khách hàng</div>
+                    <div class="quest-reward">+20,000đ vào quỹ ngày</div>
+                  </div>
+                </div>
+
+                <div class="quest-item">
+                  <div class="quest-checkbox done">✓</div>
+                  <div class="quest-content">
+                    <div class="quest-title">Đạt tối thiểu 5 đơn Booker mới</div>
+                    <div class="quest-reward">+50,000đ vào quỹ ngày</div>
+                  </div>
+                </div>
+
+                <div class="quest-item">
+                  <div class="quest-checkbox">☐</div>
+                  <div class="quest-content" style="opacity: 0.5;">
+                    <div class="quest-title">Gia hạn thành công 10 gói chăm sóc</div>
+                    <div class="quest-reward">+100,000đ vào quỹ ngày</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer actions -->
+        <div class="popup-footer">
+          <div class="footer-help-text">
+            *Dữ liệu thuộc cổng thông tin nội bộ của Wings Lashes. Trực thuộc ban quản trị Danny Do.
+          </div>
+          <button class="popup-close-btn" onclick="closeModalPopup()">Hoàn tất & Đóng</button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Tab switching routing
+    function switchPopupTab(index) {
+      // Deactivate all tab labels & panes
+      for (let i = 0; i < 3; i++) {
+        document.getElementById(`tab${i}`).classList.remove('active');
+        document.getElementById(`pane${i}`).classList.remove('active');
+      }
+      
+      // Activate selected
+      document.getElementById(`tab${index}`).classList.add('active');
+      document.getElementById(`pane${index}`).classList.add('active');
+    }
+
+    // Modal control triggers
+    function openModalPopup() {
+      document.getElementById('modalOverlay').style.display = 'flex';
+    }
+
+    function closeModalPopup() {
+      document.getElementById('modalOverlay').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

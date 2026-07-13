@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark-theme dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WL - Online Users V3 - Radial Progress & Podium</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { jakarta: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: {
+            gold: '#D4A84B',
+            darkBg: '#0A0A0A',
+            darkCard: '#141414',
+            darkBorder: '#262626',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- FontAwesome 6.4 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* ── Glass Card ── */
+    .glass-card {
+      background: rgba(20, 20, 20, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .light-theme .glass-card {
+      background: rgba(255, 255, 255, 0.65);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    /* ── Breathing animation ── */
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .avatar-breathe { animation: breathe 3s ease-in-out infinite; }
+
+    /* ── Green pulse dot ── */
+    @keyframes pulse-green {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+      70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+    .pulse-dot {
+      animation: pulse-green 2s ease-in-out infinite;
+    }
+
+    /* ── Modal animation ── */
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(0.9) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-animate { animation: modal-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    /* ── Donut transition ── */
+    .donut-progress {
+      transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── Overlay ── */
+    .overlay {
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .light-theme .overlay {
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    /* ── Scrollbar ── */
+    .popup-body::-webkit-scrollbar { width: 4px; }
+    .popup-body::-webkit-scrollbar-track { background: transparent; }
+    .popup-body::-webkit-scrollbar-thumb { background: #333; border-radius: 99px; }
+    .light-theme .popup-body::-webkit-scrollbar-thumb { background: #ccc; }
+
+    /* ── Light theme overrides ── */
+    .light-theme body { background: #f5f5f5; color: #1a1a1a; }
+  </style>
+</head>
+
+<body class="bg-darkBg dark:bg-darkBg text-white dark:text-white font-jakarta min-h-screen transition-colors duration-300">
+  <!-- ═══════════════════════════════════════════ HEADER ═══════════════════════════════════════════ -->
+  <header class="glass-card sticky top-0 z-50 px-4 sm:px-6 py-3 flex items-center justify-between">
+    <!-- Left: Logo -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center font-extrabold text-sm text-black tracking-wide shadow-lg shadow-gold/20">
+        WL
+      </div>
+      <div class="hidden sm:block">
+        <h1 class="text-sm font-bold tracking-wide text-white dark:text-white .light-theme &:text-gray-900">WINGS LASHES</h1>
+        <p class="text-[10px] text-gray-400 dark:text-gray-500">Telesales Dashboard</p>
+      </div>
+    </div>
+
+    <!-- Right: Online bubbles → Time → Toggle → DD -->
+    <div class="flex items-center gap-3">
+      <!-- Online Bubble Stack -->
+      <div class="flex items-center cursor-pointer" id="bubbleStack" onclick="openModal()">
+        <!-- Overlapping avatars -->
+        <div class="flex -space-x-2.5">
+          <div class="relative avatar-breathe" style="animation-delay: 0s;">
+            <div class="w-8 h-8 rounded-full bg-rose-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg ring-0">TN</div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
+          </div>
+          <div class="relative avatar-breathe" style="animation-delay: 0.5s;">
+            <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg">HM</div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
+          </div>
+          <div class="relative avatar-breathe" style="animation-delay: 1s;">
+            <div class="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg">VT</div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
+          </div>
+          <div class="relative avatar-breathe" style="animation-delay: 1.5s;">
+            <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg">KL</div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
+          </div>
+          <div class="relative avatar-breathe" style="animation-delay: 2s;">
+            <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg">TH</div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
+          </div>
+        </div>
+        <!-- Count badge -->
+        <div class="ml-1.5 px-2 py-0.5 rounded-full bg-green-500/15 border border-green-500/30 text-green-400 text-[10px] font-semibold flex items-center gap-1">
+          <span class="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+          6
+        </div>
+      </div>
+
+      <!-- Time -->
+      <div class="hidden sm:flex items-center gap-1.5 text-xs text-gray-400">
+        <i class="fa-regular fa-clock text-[10px]"></i>
+        <span id="headerTime">12:54</span>
+      </div>
+
+      <!-- Divider -->
+      <div class="w-px h-6 bg-darkBorder dark:bg-darkBorder"></div>
+
+      <!-- Theme Toggle -->
+      <button id="themeToggle" onclick="toggleTheme()" class="w-8 h-8 rounded-lg bg-darkCard dark:bg-darkCard border border-darkBorder dark:border-darkBorder flex items-center justify-center text-gray-400 hover:text-gold transition-colors">
+        <i class="fa-solid fa-moon text-sm" id="themeIcon"></i>
+      </button>
+
+      <!-- DD User -->
+      <div class="relative avatar-breathe" style="animation-delay: 0.3s;">
+        <div class="w-9 h-9 rounded-full bg-gold flex items-center justify-center text-[12px] font-bold text-black border-2 border-gold ring-2 ring-gold/40 cursor-pointer" onclick="openModal()">DD</div>
+        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════ MODAL OVERLAY ═══════════════════════════════════════ -->
+  <div id="modalOverlay" class="fixed inset-0 z-[100] overlay hidden items-center justify-center p-4" onclick="closeModal(event)">
+    <div id="modalContent" class="w-full max-w-[800px] max-h-[90vh] rounded-2xl bg-darkCard dark:bg-darkCard border border-darkBorder dark:border-darkBorder shadow-2xl shadow-black/40 flex flex-col modal-animate" onclick="event.stopPropagation()">
+
+      <!-- ── Modal Header ── -->
+      <div class="flex items-center justify-between px-5 pt-5 pb-3">
+        <div class="flex items-center gap-3">
+          <!-- Avatar -->
+          <div class="w-[52px] h-[52px] rounded-full bg-rose-500 flex items-center justify-center text-lg font-bold text-white shadow-lg shadow-rose-500/20">
+            TN
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-bold text-white dark:text-white" id="modalName">Thanh Nga</h2>
+              <span class="px-2 py-0.5 rounded-md bg-gold/15 text-gold text-[10px] font-semibold border border-gold/20">Telesales</span>
+            </div>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span class="w-2 h-2 bg-green-500 rounded-full pulse-dot"></span>
+              <span class="text-[11px] text-green-400 font-medium">Đang online</span>
+            </div>
+          </div>
+        </div>
+        <!-- Close -->
+        <button onclick="closeModalDirect()" class="w-8 h-8 rounded-lg bg-white/5 dark:bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- ── Tabs ── -->
+      <div class="px-5 pb-3">
+        <div class="inline-flex rounded-xl bg-white/5 dark:bg-white/5 p-1 gap-1">
+          <button class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="today" onclick="switchTab('today')">Hôm nay</button>
+          <button class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="week" onclick="switchTab('week')">Tuần này</button>
+          <button class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="month" onclick="switchTab('month')">Tháng này</button>
+        </div>
+      </div>
+
+      <!-- ── Scrollable Body ── -->
+      <div class="popup-body flex-1 overflow-y-auto px-5 pb-5">
+        <!-- KPI Radial Donuts -->
+        <div class="flex flex-wrap justify-center gap-4 sm:gap-6 mb-6" id="donutContainer">
+          <!-- Donuts rendered by JS -->
+        </div>
+
+        <!-- Divider -->
+        <div class="w-full h-px bg-darkBorder dark:bg-darkBorder mb-5"></div>
+
+        <!-- ── Leaderboard ── -->
+        <div class="mb-2">
+          <h3 class="text-sm font-bold text-white dark:text-white flex items-center gap-2 mb-5">
+            <span class="text-lg">🏆</span> Bảng Xếp Hạng Team Telesales
+          </h3>
+
+          <!-- TOP 3 PODIUM -->
+          <div class="flex items-end justify-center gap-3 sm:gap-4 mb-6" id="podiumSection">
+            <!-- #2 - Left -->
+            <div class="flex flex-col items-center">
+              <div class="relative mb-2">
+                <div class="w-12 h-12 rounded-full bg-gold flex items-center justify-center text-sm font-bold text-black border-2 border-gold ring-2 ring-gold/30 shadow-lg shadow-gold/20">DD</div>
+                <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-[9px] font-bold text-gray-700 dark:text-gray-200">2</span>
+              </div>
+              <p class="text-[11px] font-semibold text-gold mb-0.5">Danny Do</p>
+              <p class="text-[10px] text-gray-400">Done: <span class="text-white font-semibold">5</span></p>
+              <div class="w-20 sm:w-24 rounded-t-xl mt-2 flex items-end justify-center" style="height: 120px; background: linear-gradient(to top, rgba(156,163,175,0.15), rgba(156,163,175,0.05)); border: 1px solid rgba(156,163,175,0.3); border-bottom: none;">
+                <span class="text-2xl font-extrabold text-gray-400/60 mb-3">2</span>
+              </div>
+            </div>
+
+            <!-- #1 - Center (tallest) -->
+            <div class="flex flex-col items-center">
+              <div class="text-xl mb-1">👑</div>
+              <div class="relative mb-2">
+                <div class="w-14 h-14 rounded-full bg-rose-500 flex items-center justify-center text-base font-bold text-white border-2 border-gold ring-2 ring-gold/40 shadow-lg shadow-gold/30">TN</div>
+                <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gold flex items-center justify-center text-[9px] font-bold text-black">1</span>
+              </div>
+              <p class="text-[11px] font-semibold text-white mb-0.5">Thanh Nga</p>
+              <p class="text-[10px] text-gray-400">Done: <span class="text-gold font-semibold">7</span></p>
+              <div class="w-20 sm:w-24 rounded-t-xl mt-2 flex items-end justify-center" style="height: 160px; background: linear-gradient(to top, rgba(212,168,75,0.2), rgba(212,168,75,0.05)); border: 1px solid rgba(212,168,75,0.4); border-bottom: none;">
+                <span class="text-2xl font-extrabold text-gold/60 mb-3">1</span>
+              </div>
+            </div>
+
+            <!-- #3 - Right -->
+            <div class="flex flex-col items-center">
+              <div class="relative mb-2">
+                <div class="w-12 h-12 rounded-full bg-sky-500 flex items-center justify-center text-sm font-bold text-white border-2 border-orange-400 ring-2 ring-orange-400/30 shadow-lg shadow-orange-400/20">HM</div>
+                <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-orange-400 flex items-center justify-center text-[9px] font-bold text-black">3</span>
+              </div>
+              <p class="text-[11px] font-semibold text-white mb-0.5">Hoài My</p>
+              <p class="text-[10px] text-gray-400">Done: <span class="text-white font-semibold">5</span></p>
+              <div class="w-20 sm:w-24 rounded-t-xl mt-2 flex items-end justify-center" style="height: 100px; background: linear-gradient(to top, rgba(251,146,60,0.15), rgba(251,146,60,0.05)); border: 1px solid rgba(251,146,60,0.3); border-bottom: none;">
+                <span class="text-2xl font-extrabold text-orange-400/60 mb-3">3</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Podium Base Line -->
+          <div class="w-full max-w-sm mx-auto h-px bg-darkBorder mb-4"></div>
+
+          <!-- Remaining #4, #5, #6 -->
+          <div class="space-y-2 max-w-md mx-auto">
+            <!-- #4 -->
+            <div class="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.04]">
+              <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-gray-400">4</span>
+              <div class="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-[10px] font-bold text-white">VT</div>
+              <span class="flex-1 text-xs font-medium text-white dark:text-white">Vân Trang</span>
+              <span class="text-xs text-gray-400">Done: <span class="text-white font-semibold">4</span></span>
+            </div>
+            <!-- #5 -->
+            <div class="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.04]">
+              <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-gray-400">5</span>
+              <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] font-bold text-white">KL</div>
+              <span class="flex-1 text-xs font-medium text-white dark:text-white">Kim Liên</span>
+              <span class="text-xs text-gray-400">Done: <span class="text-white font-semibold">3</span></span>
+            </div>
+            <!-- #6 -->
+            <div class="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.04]">
+              <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-gray-400">6</span>
+              <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-[10px] font-bold text-white">TH</div>
+              <span class="flex-1 text-xs font-medium text-white dark:text-white">Thu Hà</span>
+              <span class="text-xs text-gray-400">Done: <span class="text-white font-semibold">2</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ MAIN CONTENT (behind modal) ═══════════════════════════════════════════ -->
+  <main class="flex items-center justify-center min-h-[calc(100vh-60px)] px-4">
+    <div class="text-center">
+      <p class="text-gray-500 text-sm mb-2">Click on avatar bubbles or DD to open the popup</p>
+      <button onclick="openModal()" class="px-5 py-2.5 rounded-xl bg-gold text-black text-sm font-semibold hover:bg-gold/90 transition-colors shadow-lg shadow-gold/20">
+        <i class="fa-solid fa-eye mr-2"></i>Open Popup
+      </button>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════ JAVASCRIPT ═══════════════════════════════════════════ -->
+  <script>
+    // ── Data ──
+    const kpiData = {
+      today: [
+        { label: 'Calls', current: 45, target: 80, color: '#3b82f6' },
+        { label: 'Pickups', current: 28, target: 50, color: '#10b981' },
+        { label: 'Happy', current: 12, target: 20, color: '#f59e0b' },
+        { label: 'Booked', current: 8, target: 15, color: '#8b5cf6' },
+        { label: 'Done', current: 5, target: 10, color: '#D4A84B' },
+      ],
+      week: [
+        { label: 'Calls', current: 180, target: 400, color: '#3b82f6' },
+        { label: 'Pickups', current: 120, target: 250, color: '#10b981' },
+        { label: 'Happy', current: 55, target: 100, color: '#f59e0b' },
+        { label: 'Booked', current: 35, target: 75, color: '#8b5cf6' },
+        { label: 'Done', current: 22, target: 50, color: '#D4A84B' },
+      ],
+      month: [
+        { label: 'Calls', current: 650, target: 1600, color: '#3b82f6' },
+        { label: 'Pickups', current: 420, target: 1000, color: '#10b981' },
+        { label: 'Happy', current: 195, target: 400, color: '#f59e0b' },
+        { label: 'Booked', current: 130, target: 300, color: '#8b5cf6' },
+        { label: 'Done', current: 85, target: 200, color: '#D4A84B' },
+      ],
+    };
+
+    const CIRCUMFERENCE = 2 * Math.PI * 50; // ≈ 314.16
+    let currentTab = 'today';
+
+    // ── Render Donuts ──
+    function renderDonuts(tab) {
+      const container = document.getElementById('donutContainer');
+      const data = kpiData[tab];
+
+      // On first render, build the HTML
+      if (!container.children.length) {
+        container.innerHTML = data.map((d, i) => {
+          const pct = d.current / d.target;
+          const offset = CIRCUMFERENCE * (1 - pct);
+          return `
+            <div class="flex flex-col items-center">
+              <svg viewBox="0 0 120 120" class="w-[90px] h-[90px] sm:w-[100px] sm:h-[100px]">
+                <!-- bg circle -->
+                <circle cx="60" cy="60" r="50" fill="none" stroke="${d.color}" stroke-opacity="0.12" stroke-width="10" />
+                <!-- progress circle -->
+                <circle id="donut-${i}" class="donut-progress" cx="60" cy="60" r="50" fill="none"
+                  stroke="${d.color}" stroke-width="10" stroke-linecap="round"
+                  stroke-dasharray="${CIRCUMFERENCE}" stroke-dashoffset="${offset}"
+                  transform="rotate(-90 60 60)" />
+                <!-- center text -->
+                <text x="60" y="56" text-anchor="middle" class="fill-current" style="fill: ${d.color}; font-size: 20px; font-weight: 700; font-family: 'Plus Jakarta Sans';">${d.current}</text>
+                <text x="60" y="72" text-anchor="middle" style="fill: #888; font-size: 10px; font-family: 'Plus Jakarta Sans';">${Math.round(pct * 100)}%</text>
+              </svg>
+              <p class="text-[11px] font-semibold mt-1" style="color: ${d.color}">${d.label}</p>
+              <p class="text-[10px] text-gray-500" id="donut-info-${i}">${d.current} / ${d.target}</p>
+            </div>
+          `;
+        }).join('');
+      } else {
+        // Animate update
+        data.forEach((d, i) => {
+          const pct = d.current / d.target;
+          const offset = CIRCUMFERENCE * (1 - pct);
+          const circle = document.getElementById(`donut-${i}`);
+          if (circle) {
+            circle.setAttribute('stroke-dashoffset', offset);
+          }
+          // Update center text via SVG
+          const svg = circle?.closest('svg');
+          if (svg) {
+            const texts = svg.querySelectorAll('text');
+            if (texts[0]) texts[0].textContent = d.current;
+            if (texts[1]) texts[1].textContent = Math.round(pct * 100) + '%';
+          }
+          // Update info
+          const info = document.getElementById(`donut-info-${i}`);
+          if (info) info.textContent = `${d.current} / ${d.target}`;
+        });
+      }
+    }
+
+    // ── Tab Switching ──
+    function switchTab(tab) {
+      currentTab = tab;
+      // Update tab styles
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.dataset.tab === tab) {
+          btn.classList.add('bg-gold', 'text-black', 'shadow-lg', 'shadow-gold/25');
+          btn.classList.remove('text-gray-400', 'hover:text-white');
+        } else {
+          btn.classList.remove('bg-gold', 'text-black', 'shadow-lg', 'shadow-gold/25');
+          btn.classList.add('text-gray-400', 'hover:text-white');
+        }
+      });
+      renderDonuts(tab);
+    }
+
+    // ── Modal Open/Close ──
+    function openModal() {
+      const overlay = document.getElementById('modalOverlay');
+      const content = document.getElementById('modalContent');
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      // Re-trigger animation
+      content.classList.remove('modal-animate');
+      void content.offsetWidth; // force reflow
+      content.classList.add('modal-animate');
+      // Init
+      switchTab(currentTab);
+    }
+
+    function closeModal(e) {
+      if (e.target === document.getElementById('modalOverlay')) {
+        closeModalDirect();
+      }
+    }
+
+    function closeModalDirect() {
+      const overlay = document.getElementById('modalOverlay');
+      overlay.classList.add('hidden');
+      overlay.classList.remove('flex');
+      // Reset donuts so they re-render fresh next time
+      document.getElementById('donutContainer').innerHTML = '';
+    }
+
+    // ── Theme Toggle ──
+    let isDark = true;
+    function toggleTheme() {
+      isDark = !isDark;
+      const html = document.documentElement;
+      const icon = document.getElementById('themeIcon');
+      const body = document.body;
+
+      if (isDark) {
+        html.className = 'dark-theme dark';
+        icon.className = 'fa-solid fa-moon text-sm';
+        body.classList.remove('bg-gray-50', 'text-gray-900');
+        body.classList.add('bg-darkBg', 'text-white');
+      } else {
+        html.className = 'light-theme';
+        icon.className = 'fa-solid fa-sun text-sm';
+        body.classList.remove('bg-darkBg', 'text-white');
+        body.classList.add('bg-gray-50', 'text-gray-900');
+      }
+
+      // Update border colors on bubble avatars
+      const borderClass = isDark ? 'border-darkBg' : 'border-gray-50';
+      document.querySelectorAll('.avatar-breathe .rounded-full').forEach(el => {
+        el.classList.remove('border-darkBg', 'border-gray-50');
+        el.classList.add(borderClass);
+      });
+    }
+
+    // ── Clock ──
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('headerTime').textContent = `${h}:${m}`;
+    }
+    updateClock();
+    setInterval(updateClock, 30000);
+
+    // ── Keyboard: ESC to close modal ──
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModalDirect();
+    });
+  </script>
+</body>
+</html>

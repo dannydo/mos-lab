@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V3C4 – Toggle Timeline + Inline Editable Targets</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        gold: '#D4A84B',
+        goldLight: '#e8c97a',
+        goldDark: '#b8912f',
+        darkBg: '#0f1117',
+        darkCard: '#1a1d27',
+        darkBorder: '#2a2d3a',
+        darkHover: '#252836',
+      },
+      fontFamily: { jakarta: ['"Plus Jakarta Sans"', 'sans-serif'] },
+    }
+  }
+}
+</script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+
+/* Glass Card */
+.glass-card {
+  background: linear-gradient(135deg, rgba(26,29,39,0.95), rgba(26,29,39,0.85));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(212,168,75,0.08);
+  border-radius: 16px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a2d3a; border-radius: 4px; }
+
+/* Bubble Stack */
+.bubble-stack { display: flex; align-items: center; }
+.bubble-stack .bubble {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid #1a1d27;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #fff;
+  margin-left: -8px; cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  position: relative; z-index: 1;
+}
+.bubble-stack .bubble:first-child { margin-left: 0; }
+.bubble-stack .bubble:hover { transform: translateY(-4px) scale(1.15); z-index: 10; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px); z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; visibility: hidden;
+  transition: all 0.3s ease;
+}
+.modal-overlay.active { opacity: 1; visibility: visible; }
+.modal-content {
+  transform: scale(0.9); opacity: 0;
+  transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.modal-overlay.active .modal-content { transform: scale(1); opacity: 1; }
+
+/* Donut */
+.donut-ring { transition: stroke-dasharray 0.8s cubic-bezier(0.4,0,0.2,1); }
+
+/* Podium bar */
+.podium-bar {
+  border-radius: 8px 8px 0 0;
+  transition: height 0.6s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+  min-width: 100%;
+}
+.podium-bar::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; border-radius: 8px 8px 0 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+}
+
+/* Crown bounce */
+@keyframes crownBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.crown-bounce { animation: crownBounce 2s ease-in-out infinite; }
+
+/* Pulse glow */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 4px rgba(212,168,75,0.4); }
+  50% { box-shadow: 0 0 12px rgba(212,168,75,0.8); }
+}
+.pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+
+/* Timeline */
+.timeline-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #4a4d5a; cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+}
+.timeline-dot.active {
+  width: 14px; height: 14px;
+  background: #D4A84B;
+  box-shadow: 0 0 12px rgba(212,168,75,0.6);
+  transform: translateY(-2px);
+}
+.timeline-dot:hover:not(.active) {
+  width: 10px; height: 10px;
+  background: #6b6e7a;
+}
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: linear-gradient(135deg, #D4A84B, #b8912f);
+  color: #0f1117; padding: 10px 24px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; z-index: 200;
+  opacity: 0; transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 4px 20px rgba(212,168,75,0.3);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Mini card edit input */
+.target-input {
+  background: rgba(15,17,23,0.8);
+  border: 1px solid rgba(212,168,75,0.3);
+  border-radius: 4px;
+  color: #D4A84B;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+  padding: 2px 4px;
+  width: 52px;
+  outline: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: border-color 0.2s;
+}
+.target-input:focus {
+  border-color: #D4A84B;
+  box-shadow: 0 0 6px rgba(212,168,75,0.2);
+}
+
+/* Edit button */
+.edit-toggle-btn {
+  width: 26px; height: 26px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s;
+  font-size: 11px; border: 1px solid rgba(212,168,75,0.2);
+  background: rgba(212,168,75,0.08);
+  color: #D4A84B;
+}
+.edit-toggle-btn:hover {
+  background: rgba(212,168,75,0.15);
+  border-color: rgba(212,168,75,0.4);
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER BAR -->
+<header class="fixed top-0 left-0 right-0 z-50 px-4 py-2" style="background:linear-gradient(180deg,rgba(15,17,23,0.98),rgba(15,17,23,0.92));">
+  <div class="max-w-5xl mx-auto flex items-center justify-between">
+    <!-- Left: Logo + Bubbles -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 cursor-pointer" onclick="openModal()">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-goldDark flex items-center justify-center">
+          <span class="text-darkBg font-extrabold text-xs">WL</span>
+        </div>
+        <span class="text-xs font-semibold text-gray-400 hidden sm:block">Workspace</span>
+      </div>
+      <div class="bubble-stack" id="bubbleStack"></div>
+      <div id="countBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer" 
+           style="background:rgba(212,168,75,0.15);color:#D4A84B;border:1px solid rgba(212,168,75,0.2);"
+           onclick="openModal()"></div>
+    </div>
+    <!-- Right: Clock + Toggle + DD -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 text-gray-500">
+        <i class="fa-regular fa-clock text-[10px]"></i>
+        <span id="headerClock" class="text-[11px] font-medium tabular-nums"></span>
+      </div>
+      <button onclick="openModal()" class="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110"
+              style="background:rgba(212,168,75,0.1);border:1px solid rgba(212,168,75,0.15);">
+        <i class="fa-solid fa-chart-pie text-[11px] text-gold"></i>
+      </button>
+      <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg" style="background:rgba(212,168,75,0.08);border:1px solid rgba(212,168,75,0.12);">
+        <div class="w-5 h-5 rounded-full bg-gradient-to-br from-gold to-goldDark flex items-center justify-center">
+          <span class="text-darkBg text-[8px] font-bold">DD</span>
+        </div>
+        <span class="text-[11px] font-semibold text-gold">DD</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- MODAL OVERLAY -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal-content w-full max-w-[780px] mx-4" onclick="event.stopPropagation()">
+    <div class="glass-card p-5 relative overflow-hidden">
+      <!-- Decorative glow -->
+      <div class="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-10" style="background:radial-gradient(circle,#D4A84B,transparent 70%);"></div>
+
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center border border-gold/10">
+            <i class="fa-solid fa-users text-gold text-sm"></i>
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-white">Hoạt động Team</h2>
+            <p class="text-[10px] text-gray-500">Realtime dashboard</p>
+          </div>
+        </div>
+        <button onclick="closeModal()" class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/5 transition-all">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <!-- CHANGE 1: TOGGLE TIMELINE -->
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[10px] text-gray-500 font-medium tracking-wide uppercase">← Trước</span>
+          <span class="text-[10px] text-gray-500 font-medium tracking-wide uppercase">Hiện tại →</span>
+        </div>
+        <div class="relative flex items-center justify-center py-3">
+          <!-- Timeline Line -->
+          <div class="absolute top-1/2 left-[8%] right-[8%] h-[2px] bg-darkBorder" style="transform:translateY(-50%);"></div>
+          <!-- Center divider -->
+          <div class="absolute top-1/2 left-1/2 w-[2px] h-5 bg-darkBorder" style="transform:translate(-50%,-50%);border-radius:1px;"></div>
+          <!-- Dots Container -->
+          <div class="relative flex items-center justify-between w-full px-[6%]" id="timelineDots">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content: Donut + Metrics + Podium -->
+      <div class="flex gap-4 mb-4">
+        <!-- Left: Donut Chart -->
+        <div class="flex-shrink-0 flex flex-col items-center justify-center">
+          <div class="relative" style="width:200px;height:200px;">
+            <svg viewBox="0 0 200 200" class="w-full h-full" style="transform:rotate(-90deg);">
+              <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(42,45,58,0.5)" stroke-width="14"/>
+              <g id="donutSegments"></g>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="donutTotal" class="text-3xl font-extrabold text-white tabular-nums">0</span>
+              <span class="text-[10px] text-gray-500 font-medium mt-0.5">Tổng KPI</span>
+              <span id="donutPeriodLabel" class="text-[9px] text-gold/60 font-medium mt-0.5">Hôm nay</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Metric Pills + Podium -->
+        <div class="flex-1 flex flex-col min-w-0">
+          <!-- Metric Pills -->
+          <div class="grid grid-cols-3 gap-1.5 mb-3" id="metricPills"></div>
+
+          <!-- Podium -->
+          <div class="flex-1 flex items-end justify-center gap-6" style="min-height:280px;padding-top:90px;" id="podiumContainer">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- CHANGE 3: TARGET CONFIG - INLINE EDITABLE -->
+      <div class="relative">
+        <!-- Section header -->
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-gray-500 font-medium">Target cho:</span>
+            <span id="targetPeriodLabel" class="text-[10px] text-gold font-semibold">Hôm nay</span>
+          </div>
+          <button class="edit-toggle-btn" id="editToggleBtn" onclick="toggleEditMode()">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+        </div>
+        <!-- Mini Summary Cards -->
+        <div class="grid grid-cols-6 gap-1.5" id="miniCards"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">✓ Đã cập nhật target!</div>
+
+<script>
+// ============== DATA ==============
+const members = [
+  { id: 'TN', name: 'Thảo Nguyên', color: '#D4A84B', gradient: 'linear-gradient(135deg,#D4A84B,#b8912f)' },
+  { id: 'HM', name: 'Hoàng Minh', color: '#6C9CFC', gradient: 'linear-gradient(135deg,#6C9CFC,#4a7ae8)' },
+  { id: 'VT', name: 'Vân Trang', color: '#F472B6', gradient: 'linear-gradient(135deg,#F472B6,#db2777)' },
+  { id: 'KL', name: 'Khánh Linh', color: '#34D399', gradient: 'linear-gradient(135deg,#34D399,#059669)' },
+  { id: 'TH', name: 'Trung Hiếu', color: '#A78BFA', gradient: 'linear-gradient(135deg,#A78BFA,#7c3aed)' },
+  { id: 'DD', name: 'Danny Do', color: '#FB923C', gradient: 'linear-gradient(135deg,#FB923C,#ea580c)' },
+];
+
+const metrics = [
+  { key: 'calls', label: 'Gọi điện', icon: 'fa-phone', color: '#6C9CFC' },
+  { key: 'tours', label: 'Dẫn tour', icon: 'fa-route', color: '#34D399' },
+  { key: 'deals', label: 'Chốt deal', icon: 'fa-handshake', color: '#D4A84B' },
+  { key: 'followups', label: 'Follow-up', icon: 'fa-reply', color: '#F472B6' },
+  { key: 'meetings', label: 'Họp', icon: 'fa-calendar', color: '#A78BFA' },
+  { key: 'reports', label: 'Báo cáo', icon: 'fa-file-lines', color: '#FB923C' },
+];
+
+const periods = [
+  { id: 'lastMonth', label: 'Tháng trước', group: 'past' },
+  { id: 'lastWeek', label: 'Tuần trước', group: 'past' },
+  { id: 'yesterday', label: 'Hôm qua', group: 'past' },
+  { id: 'today', label: 'Hôm nay', group: 'current' },
+  { id: 'thisWeek', label: 'Tuần này', group: 'current' },
+  { id: 'thisMonth', label: 'Tháng này', group: 'current' },
+];
+
+// Base data for "today"
+const baseToday = { TN: 52, DD: 45, HM: 42, VT: 38, KL: 34, TH: 28 };
+
+// Generate data per period
+function generateData(period) {
+  let multiplier = 1;
+  switch(period) {
+    case 'today': multiplier = 1; break;
+    case 'yesterday': multiplier = 0.92; break; // slightly less
+    case 'thisWeek': multiplier = 5; break;
+    case 'lastWeek': multiplier = 4; break;
+    case 'thisMonth': multiplier = 20; break;
+    case 'lastMonth': multiplier = 18; break;
+  }
+
+  const yesterdayCalls = { TN: 48, DD: 40, HM: 38, VT: 34, KL: 30, TH: 26 };
+  const baseCalls = period === 'yesterday' ? yesterdayCalls : baseToday;
+  
+  const result = {};
+  members.forEach(m => {
+    const base = baseCalls[m.id] || baseToday[m.id];
+    let c;
+    if (period === 'yesterday') {
+      c = base;
+    } else if (period === 'today') {
+      c = baseToday[m.id];
+    } else {
+      c = Math.round(baseToday[m.id] * multiplier);
+    }
+    result[m.id] = {
+      calls: c,
+      tours: Math.round(c * 0.3),
+      deals: Math.round(c * 0.12),
+      followups: Math.round(c * 0.45),
+      meetings: Math.round(c * 0.15),
+      reports: Math.round(c * 0.08),
+    };
+  });
+  return result;
+}
+
+// Targets (editable, per period key)
+const defaultTargets = {
+  today:     { calls: 50, tours: 15, deals: 6, followups: 22, meetings: 8, reports: 4 },
+  yesterday: { calls: 50, tours: 15, deals: 6, followups: 22, meetings: 8, reports: 4 },
+  thisWeek:  { calls: 250, tours: 75, deals: 30, followups: 110, meetings: 40, reports: 20 },
+  lastWeek:  { calls: 250, tours: 75, deals: 30, followups: 110, meetings: 40, reports: 20 },
+  thisMonth: { calls: 1000, tours: 300, deals: 120, followups: 450, meetings: 160, reports: 80 },
+  lastMonth: { calls: 1000, tours: 300, deals: 120, followups: 450, meetings: 160, reports: 80 },
+};
+// Deep clone for mutability
+const targets = JSON.parse(JSON.stringify(defaultTargets));
+
+// ============== STATE ==============
+let currentPeriod = 'today';
+let isEditMode = false;
+
+// ============== INIT ==============
+function init() {
+  renderBubbles();
+  renderTimeline();
+  updateClock();
+  setInterval(updateClock, 1000);
+  updateAll();
+}
+
+// ============== CLOCK ==============
+function updateClock() {
+  const now = new Date();
+  document.getElementById('headerClock').textContent = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// ============== BUBBLES ==============
+function renderBubbles() {
+  const stack = document.getElementById('bubbleStack');
+  stack.innerHTML = members.filter(m => m.id !== 'DD').map(m =>
+    `<div class="bubble" style="background:${m.gradient};" title="${m.name}" onclick="openModal()">${m.id}</div>`
+  ).join('');
+  document.getElementById('countBadge').innerHTML = `<i class="fa-solid fa-users" style="margin-right:3px;font-size:8px;"></i>${members.length} online`;
+}
+
+// ============== TIMELINE ==============
+function renderTimeline() {
+  const container = document.getElementById('timelineDots');
+  container.innerHTML = periods.map((p, i) => {
+    const isActive = p.id === currentPeriod;
+    return `
+      <div class="flex flex-col items-center" style="width:16%;cursor:pointer;" onclick="selectPeriod('${p.id}')">
+        <div class="timeline-dot ${isActive ? 'active pulse-glow' : ''}" data-period="${p.id}"></div>
+        <span class="text-[10px] mt-2 font-medium text-center leading-tight ${isActive ? 'text-gold' : 'text-gray-500'}" style="min-height:24px;">${p.label}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectPeriod(periodId) {
+  currentPeriod = periodId;
+  isEditMode = false;
+  renderTimeline();
+  updateAll();
+}
+
+// ============== UPDATE ALL ==============
+function updateAll() {
+  const data = generateData(currentPeriod);
+  const periodLabel = periods.find(p => p.id === currentPeriod).label;
+
+  document.getElementById('donutPeriodLabel').textContent = periodLabel;
+  document.getElementById('targetPeriodLabel').textContent = periodLabel;
+
+  renderDonut(data);
+  renderMetricPills(data);
+  renderPodium(data);
+  renderMiniCards(data);
+  updateEditButton();
+}
+
+// ============== DONUT ==============
+function renderDonut(data) {
+  const totals = members.map(m => {
+    const d = data[m.id];
+    return Object.values(d).reduce((a, b) => a + b, 0);
+  });
+  const grandTotal = totals.reduce((a, b) => a + b, 0);
+  document.getElementById('donutTotal').textContent = grandTotal;
+
+  const circumference = 2 * Math.PI * 85;
+  let offset = 0;
+  const segments = members.map((m, i) => {
+    const pct = grandTotal > 0 ? totals[i] / grandTotal : 0;
+    const len = pct * circumference;
+    const gap = 3;
+    const seg = `<circle class="donut-ring" cx="100" cy="100" r="85" fill="none"
+      stroke="${m.color}" stroke-width="14" stroke-linecap="round"
+      stroke-dasharray="${Math.max(0, len - gap)} ${circumference - Math.max(0, len - gap) + gap}"
+      stroke-dashoffset="${-offset}" style="transition:all 0.8s cubic-bezier(0.4,0,0.2,1);"/>`;
+    offset += len;
+    return seg;
+  });
+  document.getElementById('donutSegments').innerHTML = segments.join('');
+}
+
+// ============== METRIC PILLS ==============
+function renderMetricPills(data) {
+  const container = document.getElementById('metricPills');
+  container.innerHTML = metrics.map(mt => {
+    const total = members.reduce((s, m) => s + data[m.id][mt.key], 0);
+    const target = targets[currentPeriod][mt.key];
+    const pct = target > 0 ? Math.min(100, Math.round((total / (target * members.length)) * 100)) : 0;
+    return `
+      <div class="rounded-lg px-2 py-1.5 flex items-center gap-1.5" style="background:${mt.color}10;border:1px solid ${mt.color}15;">
+        <i class="fa-solid ${mt.icon} text-[9px]" style="color:${mt.color};"></i>
+        <span class="text-[10px] font-semibold text-gray-300">${total}</span>
+        <span class="text-[9px] text-gray-600">/${target * members.length}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============== PODIUM ==============
+function renderPodium(data) {
+  // Sort by total calls descending
+  const sorted = [...members].sort((a, b) => data[b.id].calls - data[a.id].calls);
+  const top3 = sorted.slice(0, 3);
+  // Display order: #2, #1, #3
+  const displayOrder = [top3[1], top3[0], top3[2]];
+  const barHeights = { 0: 90, 1: 120, 2: 65 }; // index in displayOrder: #2=90, #1=120, #3=65
+  const ranks = [2, 1, 3];
+  const avatarSizes = ['w-10 h-10', 'w-12 h-12', 'w-10 h-10'];
+  const barColors = [
+    'linear-gradient(180deg, rgba(108,156,252,0.4), rgba(108,156,252,0.1))',
+    'linear-gradient(180deg, rgba(212,168,75,0.5), rgba(212,168,75,0.15))',
+    'linear-gradient(180deg, rgba(52,211,153,0.35), rgba(52,211,153,0.1))',
+  ];
+
+  const container = document.getElementById('podiumContainer');
+  container.innerHTML = displayOrder.map((m, i) => {
+    const d = data[m.id];
+    const total = Object.values(d).reduce((a, b) => a + b, 0);
+    const rank = ranks[i];
+    const h = barHeights[i];
+    return `
+      <div class="flex flex-col items-center" style="width:100px;">
+        <!-- Crown -->
+        <div class="mb-1" style="height:20px;">
+          ${rank === 1 ? '<i class="fa-solid fa-crown text-gold text-sm crown-bounce"></i>' : 
+            rank === 2 ? '<i class="fa-solid fa-medal text-blue-400 text-xs"></i>' : 
+            '<i class="fa-solid fa-award text-emerald-400 text-xs"></i>'}
+        </div>
+        <!-- Avatar -->
+        <div class="${avatarSizes[i]} rounded-full flex items-center justify-center text-white font-bold text-xs mb-1" 
+             style="background:${m.gradient};border:2px solid rgba(255,255,255,0.15);">
+          ${m.id}
+        </div>
+        <!-- Name -->
+        <span class="text-[11px] font-semibold text-gray-300 mb-0.5 text-center truncate w-full">${m.name}</span>
+        <!-- Value -->
+        <span class="text-[13px] font-extrabold text-white tabular-nums mb-2">${total}</span>
+        <!-- Podium Bar -->
+        <div class="podium-bar w-full flex items-end justify-center" style="height:${h}px;background:${barColors[i]};border:1px solid rgba(255,255,255,0.05);">
+          <span class="text-lg font-extrabold mb-3" style="color:rgba(255,255,255,0.15);">#${rank}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============== MINI CARDS (Inline Editable) ==============
+function renderMiniCards(data) {
+  const container = document.getElementById('miniCards');
+  container.innerHTML = metrics.map((mt, idx) => {
+    const total = members.reduce((s, m) => s + data[m.id][mt.key], 0);
+    const target = targets[currentPeriod][mt.key];
+    const teamTarget = target * members.length;
+    const pct = teamTarget > 0 ? Math.min(100, Math.round((total / teamTarget) * 100)) : 0;
+
+    if (isEditMode) {
+      return `
+        <div class="rounded-lg px-2 py-2 flex flex-col gap-1" style="background:rgba(42,45,58,0.4);border:1px solid ${mt.color}20;">
+          <div class="flex items-center gap-1">
+            <div class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${mt.color};"></div>
+            <span class="text-[9px] text-gray-500 truncate">${mt.label}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[12px] font-bold text-white tabular-nums">${total}</span>
+            <div class="flex items-center gap-0.5">
+              <span class="text-[9px] text-gray-600">/</span>
+              <input type="number" class="target-input" 
+                     value="${target}" 
+                     data-metric="${mt.key}" 
+                     data-period="${currentPeriod}"
+                     onchange="updateTarget(this)"
+                     onclick="this.select()">
+              <span class="text-[8px] text-gray-600">×6</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="rounded-lg px-2 py-2 flex flex-col gap-1" style="background:rgba(42,45,58,0.4);border:1px solid ${mt.color}20;">
+          <div class="flex items-center gap-1">
+            <div class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${mt.color};"></div>
+            <span class="text-[9px] text-gray-500 truncate">${mt.label}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[12px] font-bold text-white tabular-nums">${total}</span>
+            <span class="text-[9px] text-gray-500">/${teamTarget}</span>
+          </div>
+          <div class="w-full h-1 rounded-full overflow-hidden" style="background:rgba(42,45,58,0.8);">
+            <div class="h-full rounded-full transition-all duration-700" style="width:${pct}%;background:${mt.color};"></div>
+          </div>
+          <span class="text-[9px] font-semibold text-right tabular-nums" style="color:${mt.color};">${pct}%</span>
+        </div>
+      `;
+    }
+  }).join('');
+}
+
+function updateEditButton() {
+  const btn = document.getElementById('editToggleBtn');
+  if (isEditMode) {
+    btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+    btn.style.background = 'rgba(52,211,153,0.15)';
+    btn.style.borderColor = 'rgba(52,211,153,0.3)';
+    btn.style.color = '#34D399';
+  } else {
+    btn.innerHTML = '<i class="fa-solid fa-pen-to-square"></i>';
+    btn.style.background = 'rgba(212,168,75,0.08)';
+    btn.style.borderColor = 'rgba(212,168,75,0.2)';
+    btn.style.color = '#D4A84B';
+  }
+}
+
+function toggleEditMode() {
+  if (isEditMode) {
+    // Saving
+    isEditMode = false;
+    showToast();
+    updateAll();
+  } else {
+    isEditMode = true;
+    updateAll();
+  }
+}
+
+function updateTarget(input) {
+  const metricKey = input.dataset.metric;
+  const period = input.dataset.period;
+  const val = parseInt(input.value) || 0;
+  targets[period][metricKey] = val;
+  // Live update donut & pills
+  const data = generateData(currentPeriod);
+  renderDonut(data);
+  renderMetricPills(data);
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ============== MODAL ==============
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('active');
+  updateAll();
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ============== START ==============
+init();
+
+// Auto-open modal on load for demo
+setTimeout(() => openModal(), 400);
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 'use client';
 
 import '../suppress-warnings';
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useCallback } from 'react';
 import { Layout, Menu, Button, Avatar, Space, Dropdown, theme, message, Tag } from 'antd';
 import {
   UserOutlined,
@@ -21,6 +21,8 @@ import {
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
 import TelesalesDashboardModal from '../../components/TelesalesDashboardModal';
+import dayjs from 'dayjs';
+import api from '../../lib/api';
 
 const { Header, Sider, Content } = Layout;
 
@@ -171,6 +173,61 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false);
   const [isDashboardVisible, setIsDashboardVisible] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('TN');
+  const [onlineMembers, setOnlineMembers] = useState<any[]>([]);
+
+  const fetchOnlineStaff = useCallback(async () => {
+    try {
+      const res = await api.get('/staff');
+      const list = res.data || [];
+      const now = dayjs();
+      
+      const filtered = list.filter((m: any) => {
+        const isUserActive = m.isActive === true || m.isActive === 1 || m.isActive === '1';
+        const isOnline = !!(m.lastActiveAt && now.diff(dayjs(m.lastActiveAt), 'minute') < 5);
+        
+        const storedUserStr = typeof window !== 'undefined' ? localStorage.getItem('mos_user') : null;
+        let currentUserId = '';
+        if (storedUserStr) {
+          try {
+            currentUserId = JSON.parse(storedUserStr).id;
+          } catch (_) {}
+        }
+        return isUserActive && isOnline && m.id !== currentUserId;
+      });
+      
+      const mapped = filtered.map((m: any) => {
+        const initials = m.displayName
+          ? m.displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+          : m.username?.slice(0, 2).toUpperCase() || '??';
+        
+        const memberColorMap: Record<string, string> = {
+          TN: 'linear-gradient(135deg, #EC4899, #DB2777)',
+          HM: 'linear-gradient(135deg, #A855F7, #9333EA)',
+          VT: 'linear-gradient(135deg, #06B6D4, #0891B2)',
+          KL: 'linear-gradient(135deg, #10B981, #059669)',
+          TH: 'linear-gradient(135deg, #F97316, #EA580C)',
+          DD: 'linear-gradient(135deg, #D4A84B, #B8902F)'
+        };
+        
+        return {
+          id: m.id,
+          initials: initials,
+          name: m.displayName || m.username,
+          color: memberColorMap[initials] || 'linear-gradient(135deg, #6B7280, #4B5563)'
+        };
+      });
+      
+      setOnlineMembers(mapped);
+    } catch (err) {
+      console.error('Fetch online staff error:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOnlineStaff();
+    const interval = setInterval(fetchOnlineStaff, 25000);
+    return () => clearInterval(interval);
+  }, [fetchOnlineStaff]);
 
   useEffect(() => {
     const saved = localStorage.getItem('mos_sidebar_collapsed');
@@ -378,34 +435,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Tag>
             )}
             {/* Online User Avatar Bubbles Stack */}
-            <div style={{ display: 'flex', alignItems: 'center', marginRight: '16px' }} className="flex-shrink-0">
-              {[
-                { id: 'TN', name: 'Thanh Ngân', color: 'linear-gradient(135deg, #EC4899, #DB2777)' },
-                { id: 'HM', name: 'Hoài My', color: 'linear-gradient(135deg, #A855F7, #9333EA)' },
-                { id: 'VT', name: 'Vũ Thảo', color: 'linear-gradient(135deg, #06B6D4, #0891B2)' },
-                { id: 'KL', name: 'Kim Loan', color: 'linear-gradient(135deg, #10B981, #059669)' },
-                { id: 'TH', name: 'Thu Hà', color: 'linear-gradient(135deg, #F97316, #EA580C)' }
-              ].map((m, idx) => (
-                <div 
-                  key={m.id}
-                  onClick={() => {
-                    setSelectedMemberId(m.id);
-                    setIsDashboardVisible(true);
-                  }}
-                  className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 cursor-pointer hover:scale-110 hover:z-30 transition-all shadow-sm avatar-breath shrink-0 flex-shrink-0 select-none"
-                  style={{ background: m.color, zIndex: 10 - idx, marginLeft: idx > 0 ? '-10px' : '0', borderColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}
-                  title={m.name}
-                >
-                  {m.id}
-                  <span 
-                    className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 flex items-center justify-center"
-                    style={{ borderColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}
+            {onlineMembers.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', marginRight: '16px' }} className="flex-shrink-0">
+                {onlineMembers.map((m, idx) => (
+                  <div 
+                    key={m.id}
+                    onClick={() => {
+                      setSelectedMemberId(m.initials);
+                      setIsDashboardVisible(true);
+                    }}
+                    className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 cursor-pointer hover:scale-110 hover:z-30 transition-all shadow-sm avatar-breath shrink-0 flex-shrink-0 select-none"
+                    style={{ background: m.color, zIndex: 20 - idx, marginLeft: idx > 0 ? '-10px' : '0', borderColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}
+                    title={m.name}
                   >
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  </span>
-                </div>
-              ))}
-            </div>
+                    {m.initials}
+                    <span 
+                      className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 flex items-center justify-center"
+                      style={{ borderColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}
+                    >
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <Button 
               type="text" 

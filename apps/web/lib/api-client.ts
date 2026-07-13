@@ -12,7 +12,8 @@ import {
   CreateCallRequest,
   KPISummary,
   CustomerWeeklyProgress,
-  UserRole
+  UserRole,
+  ColumnConfig
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -224,6 +225,21 @@ export const apiClient = {
     },
     delete: async (id: number): Promise<{ success: boolean }> => {
       const response = await api.delete(`/saved-filters/${id}`);
+      return response.data;
+    }
+  },
+
+  tableConfig: {
+    get: async (tableId: string): Promise<{ userConfig: ColumnConfig[] | null; defaultConfig: ColumnConfig[] | null }> => {
+      const response = await api.get(`/table-config/${tableId}`);
+      return response.data;
+    },
+    save: async (tableId: string, columns: ColumnConfig[], saveAsDefault?: boolean): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post(`/table-config/${tableId}`, { columns, saveAsDefault });
+      return response.data;
+    },
+    reset: async (tableId: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post(`/table-config/${tableId}/reset`);
       return response.data;
     }
   }

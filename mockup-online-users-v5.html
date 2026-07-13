@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark-theme dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WingsLashes CRM - Online Users V5</title>
+  <meta name="description" content="Premium Glassmorphism Online Users Dashboard - WingsLashes CRM">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwindcss.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gold: '#D4A84B',
+            darkBg: '#0A0A0A',
+            darkCard: '#141414',
+            darkBorder: '#262626',
+          },
+          fontFamily: {
+            jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.4s, color 0.4s; }
+
+    /* ===== THEME BACKGROUNDS ===== */
+    .dark-theme body { background: #0A0A0A; color: #e5e5e5; }
+    .light-theme body { background: #f8f9fc; color: #1a1a2e; }
+
+    /* ===== FLOAT ANIMATION FOR ORBS ===== */
+    @keyframes floatOrb {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(-8px); }
+    }
+
+    /* ===== BOUNCE IN FOR MODAL ===== */
+    @keyframes bounceIn {
+      0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+      60% { transform: scale(1.02) translateY(-4px); opacity: 1; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    @keyframes bounceOut {
+      0% { transform: scale(1) translateY(0); opacity: 1; }
+      100% { transform: scale(0.85) translateY(30px); opacity: 0; }
+    }
+
+    /* ===== GRADIENT BORDER ROTATION ===== */
+    @keyframes rotateBorder {
+      0% { --angle: 0deg; }
+      100% { --angle: 360deg; }
+    }
+    @property --angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+
+    /* ===== BLOB ANIMATION ===== */
+    @keyframes blobFloat1 {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(40px, -30px) scale(1.1); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+    @keyframes blobFloat2 {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-35px, 25px) scale(0.9); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+    @keyframes blobFloat3 {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(20px, 40px) scale(1.05); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+
+    /* ===== TROPHY BOUNCE ===== */
+    @keyframes trophyBounce {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-4px) rotate(-5deg); }
+      50% { transform: translateY(0) rotate(0deg); }
+      75% { transform: translateY(-2px) rotate(3deg); }
+    }
+
+    /* ===== STAGGER APPEAR ===== */
+    @keyframes slideInUp {
+      0% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    /* ===== PULSE GLOW ===== */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 8px rgba(74, 222, 128, 0.4), 0 0 16px rgba(74, 222, 128, 0.2); }
+      50% { box-shadow: 0 0 14px rgba(74, 222, 128, 0.6), 0 0 28px rgba(74, 222, 128, 0.3); }
+    }
+
+    /* ===== ONLINE RING ===== */
+    .online-ring {
+      position: absolute; bottom: -1px; right: -1px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #22c55e;
+      border: 2px solid #0A0A0A;
+      animation: pulseGlow 2s infinite;
+    }
+    .light-theme .online-ring { border-color: #f8f9fc; }
+
+    /* ===== GLASSMORPHISM PILL ===== */
+    .glass-pill {
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-radius: 9999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 8px 16px;
+    }
+    .dark-theme .glass-pill { background: rgba(255,255,255,0.07); }
+    .light-theme .glass-pill { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.08); }
+
+    /* ===== ORB STYLES ===== */
+    .orb {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 12px;
+      cursor: pointer;
+      position: relative;
+      animation: floatOrb 3s infinite alternate ease-in-out;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .orb:hover { transform: scale(1.15) !important; }
+    .orb.orb-dd {
+      width: 40px; height: 40px; font-size: 13px;
+      border: 2px solid #D4A84B;
+    }
+
+    /* ===== MODAL OVERLAY ===== */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      display: none; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-backdrop {
+      position: absolute; inset: 0;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .dark-theme .modal-backdrop { background: rgba(0,0,0,0.5); }
+    .light-theme .modal-backdrop { background: rgba(255,255,255,0.4); }
+
+    /* ===== ANIMATED GRADIENT BORDER WRAPPER ===== */
+    .gradient-border-wrapper {
+      position: relative; z-index: 1;
+      max-width: 780px; width: 100%;
+      border-radius: 20px;
+      padding: 2px;
+      background: conic-gradient(from var(--angle, 0deg), #D4A84B, #f43f5e, #8b5cf6, #3b82f6, #D4A84B);
+      animation: rotateBorder 4s linear infinite;
+    }
+    .modal-inner {
+      border-radius: 18px;
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .dark-theme .modal-inner { background: rgba(20,20,20,0.92); }
+    .light-theme .modal-inner { background: rgba(255,255,255,0.92); }
+
+    .modal-content-wrap {
+      position: relative; z-index: 2;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      padding: 28px;
+      border-radius: 18px;
+    }
+
+    /* ===== BLOBS ===== */
+    .blob {
+      position: absolute; border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.3;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .light-theme .blob { opacity: 0.15; }
+
+    /* ===== GLASS KPI CARD ===== */
+    .glass-card {
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 20px;
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: default;
+    }
+    .dark-theme .glass-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .light-theme .glass-card {
+      background: rgba(0,0,0,0.03);
+      border: 1px solid rgba(0,0,0,0.07);
+    }
+    .glass-card:hover {
+      transform: translateY(-2px);
+    }
+    .dark-theme .glass-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .light-theme .glass-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
+
+    /* ===== LEADERBOARD CARD ===== */
+    .lb-card {
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: flex; align-items: center; gap: 14px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: slideInUp 0.5s ease-out forwards;
+      opacity: 0;
+    }
+    .dark-theme .lb-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .light-theme .lb-card {
+      background: rgba(0,0,0,0.02);
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+    .lb-card:hover { transform: translateX(4px); }
+
+    /* ===== #1 ANIMATED BORDER ===== */
+    .lb-first-wrapper {
+      padding: 2px;
+      border-radius: 16px;
+      background: conic-gradient(from var(--angle, 0deg), #D4A84B, #f43f5e, #8b5cf6, #3b82f6, #D4A84B);
+      animation: rotateBorder 4s linear infinite;
+    }
+    .lb-first-wrapper .lb-card {
+      border: none;
+      border-radius: 14px;
+    }
+
+    /* ===== DD HIGHLIGHTED ===== */
+    .lb-dd-wrapper {
+      padding: 2px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #D4A84B, #f59e0b, #D4A84B);
+    }
+    .lb-dd-wrapper .lb-card {
+      border: none;
+      border-radius: 14px;
+    }
+
+    /* ===== STAT BADGE ===== */
+    .stat-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 11px; font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* ===== TAB PILLS ===== */
+    .tab-container {
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-radius: 12px;
+      padding: 4px;
+      display: inline-flex; gap: 4px;
+    }
+    .dark-theme .tab-container { background: rgba(255,255,255,0.06); }
+    .light-theme .tab-container { background: rgba(0,0,0,0.04); }
+
+    .tab-btn {
+      padding: 8px 20px;
+      border-radius: 10px;
+      border: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: transparent;
+    }
+    .dark-theme .tab-btn { color: #9ca3af; }
+    .light-theme .tab-btn { color: #6b7280; }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #D4A84B, #f59e0b);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(212,168,75,0.3);
+    }
+    .light-theme .tab-btn.active { color: #1a1a2e; }
+
+    /* ===== PROGRESS BAR GLOW ===== */
+    .progress-fill { transition: width 0.6s ease-out; }
+
+    /* ===== THEME TOGGLE ===== */
+    .theme-toggle {
+      width: 48px; height: 26px;
+      border-radius: 9999px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+      border: none;
+    }
+    .dark-theme .theme-toggle { background: #262626; }
+    .light-theme .theme-toggle { background: #e5e7eb; }
+    .theme-toggle .toggle-dot {
+      position: absolute; top: 3px;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      transition: left 0.3s, background 0.3s;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+    }
+    .dark-theme .theme-toggle .toggle-dot { left: 25px; background: #D4A84B; color: #0A0A0A; }
+    .light-theme .theme-toggle .toggle-dot { left: 3px; background: #f59e0b; color: #fff; }
+
+    /* ===== CLOSE BUTTON ===== */
+    .close-btn {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .dark-theme .close-btn { background: rgba(255,255,255,0.08); color: #9ca3af; }
+    .light-theme .close-btn { background: rgba(0,0,0,0.06); color: #6b7280; }
+    .close-btn:hover {
+      background: rgba(239,68,68,0.2); color: #ef4444;
+      box-shadow: 0 0 12px rgba(239,68,68,0.3);
+    }
+
+    /* ===== SCROLLBAR ===== */
+    .modal-scroll::-webkit-scrollbar { width: 4px; }
+    .dark-theme .modal-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+    .dark-theme .modal-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .light-theme .modal-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); }
+    .light-theme .modal-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
+
+    /* ===== HEADER ===== */
+    .header-glass {
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .dark-theme .header-glass { background: rgba(10,10,10,0.8); }
+    .light-theme .header-glass { background: rgba(255,255,255,0.8); border-bottom-color: rgba(0,0,0,0.06); }
+  </style>
+</head>
+<body class="font-jakarta min-h-screen">
+
+  <!-- ===== HEADER ===== -->
+  <header class="header-glass sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+      <!-- Left: Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center text-white font-extrabold text-sm shadow-lg shadow-gold/20">
+          WL
+        </div>
+        <div>
+          <h1 class="text-sm font-bold dark:text-white text-gray-900 leading-tight">WingsLashes CRM</h1>
+          <p class="text-[11px] dark:text-gray-500 text-gray-400">Premium Dashboard</p>
+        </div>
+      </div>
+
+      <!-- Right: Orbs + Time + Toggle + DD -->
+      <div class="flex items-center gap-4">
+        <!-- Glowing Orbs Pill -->
+        <div class="glass-pill flex items-center gap-3" id="orbsContainer">
+          <!-- TN -->
+          <div class="orb" style="background:linear-gradient(135deg,#fb7185,#e11d48); color:#fff; box-shadow:0 0 15px rgba(244,63,94,0.5); animation-delay:0s;" onclick="openPopup('tn')" title="Thanh Nga">
+            TN
+            <span class="online-ring"></span>
+          </div>
+          <!-- HM -->
+          <div class="orb" style="background:linear-gradient(135deg,#38bdf8,#0284c7); color:#fff; box-shadow:0 0 15px rgba(56,189,248,0.5); animation-delay:0.4s;" onclick="openPopup('hm')" title="Hoài My">
+            HM
+            <span class="online-ring"></span>
+          </div>
+          <!-- VT -->
+          <div class="orb" style="background:linear-gradient(135deg,#a78bfa,#7c3aed); color:#fff; box-shadow:0 0 15px rgba(139,92,246,0.5); animation-delay:0.8s;" onclick="openPopup('vt')" title="Vân Trang">
+            VT
+            <span class="online-ring"></span>
+          </div>
+          <!-- KL -->
+          <div class="orb" style="background:linear-gradient(135deg,#34d399,#059669); color:#fff; box-shadow:0 0 15px rgba(16,185,129,0.5); animation-delay:1.2s;" onclick="openPopup('kl')" title="Kim Liên">
+            KL
+            <span class="online-ring"></span>
+          </div>
+          <!-- TH -->
+          <div class="orb" style="background:linear-gradient(135deg,#fb923c,#ea580c); color:#fff; box-shadow:0 0 15px rgba(251,146,60,0.5); animation-delay:1.6s;" onclick="openPopup('th')" title="Thu Hà">
+            TH
+            <span class="online-ring"></span>
+          </div>
+        </div>
+
+        <!-- Live Clock -->
+        <div class="hidden sm:flex items-center gap-2 text-xs dark:text-gray-400 text-gray-500 font-medium">
+          <i class="fa-regular fa-clock"></i>
+          <span id="liveClock">12:54</span>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle" title="Toggle Theme">
+          <div class="toggle-dot">
+            <i class="fa-solid fa-moon dark:block hidden" style="font-size:10px"></i>
+            <i class="fa-solid fa-sun hidden dark:hidden" style="font-size:10px"></i>
+          </div>
+        </button>
+
+        <!-- DD - Current User -->
+        <div class="orb orb-dd" style="background:linear-gradient(135deg,#D4A84B,#b8860b); color:#fff; box-shadow:0 0 18px rgba(212,168,75,0.5); animation-delay:2s;" onclick="openPopup('dd')" title="Danny Do">
+          DD
+          <span class="online-ring"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== MAIN CONTENT PLACEHOLDER ===== -->
+  <main class="max-w-7xl mx-auto px-6 py-16 text-center">
+    <div class="space-y-4">
+      <p class="text-6xl">✨</p>
+      <h2 class="text-2xl font-bold dark:text-white text-gray-900">Premium Glassmorphism Dashboard</h2>
+      <p class="dark:text-gray-500 text-gray-400 text-sm max-w-md mx-auto">Click any glowing avatar orb in the header to view their KPI stats and team leaderboard.</p>
+      <div class="flex justify-center gap-2 mt-6">
+        <span class="inline-flex items-center gap-1.5 text-xs dark:text-gray-500 text-gray-400"><span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>6 online</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== MODAL OVERLAY ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-backdrop" onclick="closePopup()"></div>
+    <div class="gradient-border-wrapper" id="modalWrapper" style="animation: bounceIn 0.4s ease-out forwards;">
+      <div class="modal-inner">
+        <!-- Decorative Blobs -->
+        <div class="blob" style="width:250px;height:250px;top:-60px;right:-60px;background:linear-gradient(135deg,#D4A84B,#f43f5e);animation:blobFloat1 15s infinite alternate;"></div>
+        <div class="blob" style="width:200px;height:200px;bottom:-40px;left:-40px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);animation:blobFloat2 18s infinite alternate;"></div>
+        <div class="blob" style="width:150px;height:150px;top:40%;left:50%;background:linear-gradient(135deg,#10b981,#06b6d4);animation:blobFloat3 12s infinite alternate;"></div>
+
+        <div class="modal-content-wrap modal-scroll" style="max-height:85vh;overflow-y:auto;">
+          <!-- Close Button -->
+          <div class="flex justify-end mb-2">
+            <button class="close-btn" onclick="closePopup()"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <!-- Popup Header -->
+          <div class="flex items-center gap-4 mb-6" id="popupHeader">
+            <!-- Avatar -->
+            <div id="popupAvatar" class="w-14 h-14 rounded-full flex items-center justify-center text-white font-extrabold text-lg relative" style="box-shadow: 0 0 20px rgba(212,168,75,0.5);">
+              DD
+              <span class="online-ring" style="width:16px;height:16px;bottom:0;right:0;border-width:2.5px;"></span>
+            </div>
+            <div>
+              <h3 id="popupName" class="text-xl font-bold dark:text-white text-gray-900">Danny Do</h3>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gradient-to-r from-gold to-amber-500 text-white">Telesales</span>
+                <span class="inline-flex items-center gap-1.5 text-[11px] dark:text-green-400 text-green-600 font-medium">
+                  <span class="w-2 h-2 rounded-full bg-green-500 inline-block" style="box-shadow:0 0 6px rgba(74,222,128,0.6)"></span>
+                  Online
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="flex justify-center mb-6">
+            <div class="tab-container">
+              <button class="tab-btn active" onclick="switchTab('today',this)">
+                <i class="fa-regular fa-calendar-day mr-1.5"></i>Hôm nay
+              </button>
+              <button class="tab-btn" onclick="switchTab('week',this)">
+                <i class="fa-regular fa-calendar-week mr-1.5"></i>Tuần
+              </button>
+              <button class="tab-btn" onclick="switchTab('month',this)">
+                <i class="fa-regular fa-calendar mr-1.5"></i>Tháng
+              </button>
+            </div>
+          </div>
+
+          <!-- KPI Cards -->
+          <div id="kpiGrid" class="mb-8">
+            <!-- Filled by JS -->
+          </div>
+
+          <!-- Leaderboard -->
+          <div class="mb-2">
+            <h4 class="text-base font-bold dark:text-white text-gray-900 mb-4 flex items-center gap-2">
+              <span style="animation: trophyBounce 2s infinite; display:inline-block;">🏆</span>
+              Bảng Xếp Hạng Team Telesales
+            </h4>
+            <div id="leaderboard" class="space-y-3">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== DATA =====
+    const usersData = {
+      tn: { name: 'Thanh Nga', initials: 'TN', gradient: 'linear-gradient(135deg,#fb7185,#e11d48)', glowColor: 'rgba(244,63,94,0.5)',
+        today: [52,35,15,10,7], week: [210,140,65,42,28], month: [780,520,230,155,100],
+        targets: { today: [80,50,20,15,10], week: [400,250,100,75,50], month: [1600,1000,400,300,200] }
+      },
+      dd: { name: 'Danny Do', initials: 'DD', gradient: 'linear-gradient(135deg,#D4A84B,#b8860b)', glowColor: 'rgba(212,168,75,0.5)',
+        today: [45,28,12,8,5], week: [180,120,55,35,22], month: [650,420,195,130,85],
+        targets: { today: [80,50,20,15,10], week: [400,250,100,75,50], month: [1600,1000,400,300,200] }
+      },
+      hm: { name: 'Hoài My', initials: 'HM', gradient: 'linear-gradient(135deg,#38bdf8,#0284c7)', glowColor: 'rgba(56,189,248,0.5)',
+        today: [42,26,11,7,5], week: [170,110,50,30,20], month: [620,400,180,120,78],
+        targets: { today: [80,50,20,15,10], week: [400,250,100,75,50], month: [1600,1000,400,300,200] }
+      },
+      vt: { name: 'Vân Trang', initials: 'VT', gradient: 'linear-gradient(135deg,#a78bfa,#7c3aed)', glowColor: 'rgba(139,92,246,0.5)',
+        today: [38,22,9,6,4], week: [155,95,42,26,18], month: [560,350,155,100,65],
+        targets: { today: [80,50,20,15,10], week: [400,250,100,75,50], month: [1600,1000,400,300,200] }
+      },
+      kl: { name: 'Kim Liên', initials: 'KL', gradient: 'linear-gradient(135deg,#34d399,#059669)', glowColor: 'rgba(16,185,129,0.5)',
+        today: [35,20,8,5,3], week: [140,85,38,22,14], month: [510,320,140,88,55],
+        targets: { today: [80,50,20,15,10], week: [400,250,100,75,50], month: [1600,1000,400,300,200] }
+      },
+      th: { name: 'Thu Hà', initials: 'TH', gradient: 'linear-gradient(135deg,#fb923c,#ea580c)', glowColor: 'rgba(251,146,60,0.5)',
+        today: [30,18,7,4,2], week: [120,72,32,18,10], month: [440,270,115,70,40],
+        targets: { today: [80,50,20,15,10], week: [400,250,100,75,50], month: [1600,1000,400,300,200] }
+      }
+    };
+
+    const metrics = [
+      { label: 'Số cuộc gọi', icon: 'fa-phone', color: '#3b82f6', key: 'C' },
+      { label: 'Số pickup', icon: 'fa-phone-volume', color: '#10b981', key: 'P' },
+      { label: 'Số happy call', icon: 'fa-face-smile', color: '#f59e0b', key: 'H' },
+      { label: 'Số booked', icon: 'fa-calendar-check', color: '#8b5cf6', key: 'B' },
+      { label: 'Số done', icon: 'fa-circle-check', color: '#D4A84B', key: 'D' }
+    ];
+
+    const leaderboard = [
+      { id: 'tn', rank: 1 },
+      { id: 'dd', rank: 2 },
+      { id: 'hm', rank: 3 },
+      { id: 'vt', rank: 4 },
+      { id: 'kl', rank: 5 },
+      { id: 'th', rank: 6 }
+    ];
+
+    let currentUser = 'dd';
+    let currentTab = 'today';
+
+    // ===== THEME TOGGLE =====
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.contains('dark-theme');
+      if (isDark) {
+        html.className = 'light-theme';
+      } else {
+        html.className = 'dark-theme dark';
+      }
+      updateToggleIcons();
+    }
+
+    function updateToggleIcons() {
+      const isDark = document.documentElement.classList.contains('dark-theme');
+      const dot = document.querySelector('.toggle-dot');
+      dot.innerHTML = isDark
+        ? '<i class="fa-solid fa-moon" style="font-size:10px"></i>'
+        : '<i class="fa-solid fa-sun" style="font-size:10px"></i>';
+    }
+
+    // ===== LIVE CLOCK =====
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2,'0');
+      const m = String(now.getMinutes()).padStart(2,'0');
+      const s = String(now.getSeconds()).padStart(2,'0');
+      document.getElementById('liveClock').textContent = `${h}:${m}:${s}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // ===== OPEN POPUP =====
+    function openPopup(userId) {
+      currentUser = userId;
+      currentTab = 'today';
+      const user = usersData[userId];
+
+      // Set header
+      const avatar = document.getElementById('popupAvatar');
+      avatar.style.background = user.gradient;
+      avatar.style.boxShadow = `0 0 20px ${user.glowColor}`;
+      avatar.textContent = '';
+      avatar.innerHTML = user.initials + '<span class="online-ring" style="width:16px;height:16px;bottom:0;right:0;border-width:2.5px;"></span>';
+      document.getElementById('popupName').textContent = user.name;
+
+      // Reset tabs
+      document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === 0);
+      });
+
+      renderKPI(userId, 'today');
+      renderLeaderboard(userId);
+
+      // Show modal
+      const overlay = document.getElementById('modalOverlay');
+      const wrapper = document.getElementById('modalWrapper');
+      overlay.classList.add('active');
+      wrapper.style.animation = 'none';
+      void wrapper.offsetWidth; // trigger reflow
+      wrapper.style.animation = 'bounceIn 0.4s ease-out forwards';
+    }
+
+    // ===== CLOSE POPUP =====
+    function closePopup() {
+      const overlay = document.getElementById('modalOverlay');
+      const wrapper = document.getElementById('modalWrapper');
+      wrapper.style.animation = 'bounceOut 0.25s ease-in forwards';
+      setTimeout(() => {
+        overlay.classList.remove('active');
+      }, 250);
+    }
+
+    // ===== SWITCH TAB =====
+    function switchTab(tab, btn) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderKPI(currentUser, tab);
+    }
+
+    // ===== RENDER KPI =====
+    function renderKPI(userId, period) {
+      const user = usersData[userId];
+      const values = user[period];
+      const targets = user.targets[period];
+      const isDark = document.documentElement.classList.contains('dark-theme');
+
+      let html = '<div class="flex flex-wrap justify-center gap-4">';
+      metrics.forEach((m, i) => {
+        const val = values[i];
+        const target = targets[i];
+        const pct = Math.min(Math.round((val / target) * 100), 100);
+        const colorRgb = hexToRgb(m.color);
+
+        html += `
+          <div class="glass-card" style="width:220px; flex-shrink:0;">
+            <div class="flex items-start justify-between mb-3">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:${m.color}20; box-shadow:0 0 12px ${m.color}30;">
+                <i class="fa-solid ${m.icon}" style="color:${m.color};font-size:16px;"></i>
+              </div>
+              <span class="text-[11px] font-bold" style="color:${m.color}">${pct}%</span>
+            </div>
+            <p class="text-[11px] dark:text-gray-500 text-gray-400 font-medium mb-1">${m.label}</p>
+            <p class="text-[28px] font-extrabold dark:text-white text-gray-900 leading-none mb-3">${val}</p>
+            <div class="w-full h-1.5 rounded-full ${isDark ? 'bg-white/10' : 'bg-black/5'} overflow-hidden">
+              <div class="progress-fill h-full rounded-full" style="width:${pct}%;background:${m.color};box-shadow:0 0 8px ${m.color}60;"></div>
+            </div>
+            <div class="flex justify-between mt-2">
+              <span class="text-[11px] dark:text-gray-600 text-gray-400">Mục tiêu: ${target}</span>
+              <span class="text-[11px] font-semibold" style="color:${m.color}">${val}/${target}</span>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      document.getElementById('kpiGrid').innerHTML = html;
+
+      // Animate progress bars
+      setTimeout(() => {
+        document.querySelectorAll('.progress-fill').forEach(bar => {
+          const w = bar.style.width;
+          bar.style.width = '0%';
+          setTimeout(() => { bar.style.width = w; }, 50);
+        });
+      }, 10);
+    }
+
+    // ===== RENDER LEADERBOARD =====
+    function renderLeaderboard(activeUserId) {
+      const isDark = document.documentElement.classList.contains('dark-theme');
+      let html = '';
+
+      leaderboard.forEach((entry, idx) => {
+        const user = usersData[entry.id];
+        const vals = user.today;
+        const rankEmoji = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : `<span class="text-sm dark:text-gray-500 text-gray-400 font-bold w-6 text-center">${entry.rank}</span>`;
+        const isFirst = entry.rank === 1;
+        const isDD = entry.id === 'dd';
+        const delay = idx * 0.1;
+
+        const badges = metrics.map((m, mi) => {
+          return `<span class="stat-badge" style="background:${m.color}18;color:${m.color};">${m.key}:${vals[mi]}</span>`;
+        }).join('');
+
+        const cardInner = `
+          <div class="lb-card" style="animation-delay:${delay}s;">
+            <div class="text-xl w-8 text-center flex-shrink-0">${typeof rankEmoji === 'string' && rankEmoji.startsWith('<') ? rankEmoji : `<span>${rankEmoji}</span>`}</div>
+            <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0" style="background:${user.gradient};box-shadow:0 0 10px ${user.glowColor};">
+              ${user.initials}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold dark:text-white text-gray-900 truncate">${user.name}</span>
+                ${isDD ? '<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gold/20 text-gold">Bạn</span>' : ''}
+              </div>
+              <div class="flex flex-wrap gap-1.5 mt-1.5">
+                ${badges}
+              </div>
+            </div>
+          </div>
+        `;
+
+        if (isFirst) {
+          html += `<div class="lb-first-wrapper">${cardInner}</div>`;
+        } else if (isDD) {
+          html += `<div class="lb-dd-wrapper">${cardInner}</div>`;
+        } else {
+          html += cardInner;
+        }
+      });
+
+      document.getElementById('leaderboard').innerHTML = html;
+
+      // Trigger stagger animation
+      setTimeout(() => {
+        document.querySelectorAll('.lb-card').forEach(card => {
+          card.style.opacity = ''; // let animation handle it
+        });
+      }, 50);
+    }
+
+    // ===== UTILITY =====
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? `${parseInt(result[1],16)},${parseInt(result[2],16)},${parseInt(result[3],16)}` : '255,255,255';
+    }
+
+    // ===== KEYBOARD CLOSE =====
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePopup();
+    });
+
+    // Init toggle icons
+    updateToggleIcons();
+  </script>
+</body>
+</html>

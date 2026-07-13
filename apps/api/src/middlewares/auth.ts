@@ -16,9 +16,32 @@ declare module '@fastify/jwt' {
   }
 }
 
+const throttleCache = new Map<number, number>();
+
 export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
   try {
     await request.jwtVerify();
+    
+    // Asynchronously update lastActiveAt once per minute
+    const user = request.user;
+    if (user && user.id) {
+      const now = Date.now();
+      const lastUpdated = throttleCache.get(user.id) || 0;
+      if (now - lastUpdated > 60000) { // 60 seconds throttle
+        throttleCache.set(user.id, now);
+        
+        /**
+         * DATABASE SCHEMA REFERENCE:
+         * We update the CrmStaff model's lastActiveAt field (apps/api/prisma/crm.prisma)
+         */
+        request.server.prisma.crm.crmStaff.update({
+          where: { id: user.id },
+          data: { lastActiveAt: new Date() }
+        }).catch(err => {
+          request.log.error('Failed to update lastActiveAt in middleware:', err);
+        });
+      }
+    }
   } catch (err: any) {
     request.log.error('JWT verification failed:', err.message, err.stack);
     reply.status(401).send({ error: 'Unauthorized', message: 'Token is missing or invalid' });

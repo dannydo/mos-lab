@@ -4,3 +4,4 @@ export * from './types/plan';
 export * from './types/call';
 export * from './types/kpi';
 export * from './constants';
+export * from './types/table-config';

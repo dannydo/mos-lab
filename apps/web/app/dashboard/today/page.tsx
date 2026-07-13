@@ -24,7 +24,8 @@ import {
   Drawer,
   Rate,
   Tooltip,
-  Switch
+  Switch,
+  Select
 } from 'antd';
 import {
   CalendarOutlined,
@@ -41,11 +42,15 @@ import {
   EyeOutlined,
   CloseOutlined,
   BarChartOutlined,
-  PieChartOutlined
+  PieChartOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
 import CustomerDetailDrawer from '../../../components/CustomerDetailDrawer';
+import { useTableConfig } from '../../../hooks/useTableConfig';
+import { TableConfigDrawer } from '../../../components/TableConfigDrawer';
+import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
 
 const { Title, Text } = Typography;
 
@@ -267,6 +272,12 @@ export default function TodayDashboard() {
   const { token } = theme.useToken();
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
+
+  // Auto-refresh states
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(60); // default to 60s
+  const [countdown, setCountdown] = useState(60);
+  const [silentLoading, setSilentLoading] = useState(false);
   
   // Tabs states
   const [bookingFilter, setBookingFilter] = useState<'all' | 'combo' | 'oc' | 'other'>('all');
@@ -313,6 +324,18 @@ export default function TodayDashboard() {
       if (persistedShopBranch !== null) {
         setShopBranch(persistedShopBranch as any);
       }
+      const persistedAutoRefresh = localStorage.getItem('today_auto_refresh');
+      if (persistedAutoRefresh !== null) {
+        setAutoRefresh(persistedAutoRefresh === 'true');
+      }
+      const persistedRefreshInterval = localStorage.getItem('today_refresh_interval');
+      if (persistedRefreshInterval !== null) {
+        const parsed = parseInt(persistedRefreshInterval, 10);
+        if (!isNaN(parsed)) {
+          setRefreshInterval(parsed);
+          setCountdown(parsed);
+        }
+      }
     }
   }, []);
 
@@ -356,8 +379,12 @@ export default function TodayDashboard() {
 
 
 
-  const fetchDashboardData = useCallback(async (date: dayjs.Dayjs) => {
-    setLoading(true);
+  const fetchDashboardData = useCallback(async (date: dayjs.Dayjs, isSilent = false) => {
+    if (!isSilent) {
+      setLoading(true);
+    } else {
+      setSilentLoading(true);
+    }
     try {
       const dateStr = date.format('YYYY-MM-DD');
       const response = await api.get('/dashboard/today', {
@@ -370,9 +397,15 @@ export default function TodayDashboard() {
       setBookingsOther(data.bookingsOther);
     } catch (err) {
       console.error('Fetch dashboard today error:', err);
-      message.error('Lỗi khi tải dữ liệu vận hành thực tế!');
+      if (!isSilent) {
+        message.error('Lỗi khi tải dữ liệu vận hành thực tế!');
+      }
     } finally {
-      setLoading(false);
+      if (!isSilent) {
+        setLoading(false);
+      } else {
+        setSilentLoading(false);
+      }
     }
   }, []);
 
@@ -382,10 +415,58 @@ export default function TodayDashboard() {
     }
   }, [selectedDate, fetchDashboardData]);
 
+  // Auto-refresh countdown & visibility handler
+  useEffect(() => {
+    if (!autoRefresh || !selectedDate) return;
+    
+    // Only auto refresh if target date is today
+    const isToday = selectedDate.isSame(dayjs(), 'day');
+    if (!isToday) return;
+
+    let timer: any;
+    
+    const tick = () => {
+      if (document.visibilityState !== 'visible') {
+        // Do not countdown or fetch if tab is hidden
+        return;
+      }
+      setCountdown(prev => {
+        if (prev <= 1) {
+          fetchDashboardData(selectedDate, true);
+          return refreshInterval;
+        }
+        return prev - 1;
+      });
+    };
+
+    timer = setInterval(tick, 1000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Immediately fetch data on focus to ensure accuracy and reset countdown
+        fetchDashboardData(selectedDate, true);
+        setCountdown(refreshInterval);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [autoRefresh, selectedDate, refreshInterval, fetchDashboardData]);
+
+  // Reset countdown if selectedDate changes or refreshInterval changes
+  useEffect(() => {
+    setCountdown(refreshInterval);
+  }, [selectedDate, refreshInterval]);
+
   const handleRefresh = async () => {
     if (selectedDate) {
       await fetchDashboardData(selectedDate);
       message.success('Đã làm mới dữ liệu vận hành từ cơ sở dữ liệu!');
+      setCountdown(refreshInterval);
     }
   };
 
@@ -731,6 +812,28 @@ export default function TodayDashboard() {
     }
   ];
 
+  const {
+    loading: bookingConfigLoading,
+    columns: bookingConfigColumns,
+    rawConfig: bookingRawConfig,
+    configVisible: bookingConfigVisible,
+    openConfig: openBookingConfig,
+    closeConfig: closeBookingConfig,
+    saveConfig: saveBookingConfig,
+    resetConfig: resetBookingConfig,
+  } = useTableConfig('today_booking_table', bookingColumns);
+
+  const {
+    loading: comingConfigLoading,
+    columns: comingConfigColumns,
+    rawConfig: comingRawConfig,
+    configVisible: comingConfigVisible,
+    openConfig: openComingConfig,
+    closeConfig: closeComingConfig,
+    saveConfig: saveComingConfig,
+    resetConfig: resetComingConfig,
+  } = useTableConfig('today_coming_table', comingColumns);
+
   const renderComingStatus = (status: 'completed' | 'serving' | 'arrived' | 'confirmed' | 'pending' | 'late') => {
     switch (status) {
       case 'completed':
@@ -952,7 +1055,7 @@ export default function TodayDashboard() {
           </Text>
         </div>
         
-        <Space size="middle">
+        <Space size="middle" style={{ flexWrap: 'wrap' }}>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '11px', color: token.colorTextDescription }}>Thời gian thực tế</div>
             <RealtimeClock />
@@ -972,12 +1075,54 @@ export default function TodayDashboard() {
           />
           <Button 
             type="primary" 
-            icon={<SyncOutlined spin={loading} />} 
+            icon={<SyncOutlined spin={loading || silentLoading} />} 
             onClick={handleRefresh}
             style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000000', fontWeight: 'bold' }}
           >
             Làm mới
           </Button>
+
+          {selectedDate?.isSame(dayjs(), 'day') && (
+            <>
+              <Divider type="vertical" style={{ height: '32px', borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9' }} />
+              <Space size="small">
+                <Switch 
+                  checked={autoRefresh} 
+                  onChange={(checked) => {
+                    setAutoRefresh(checked);
+                    localStorage.setItem('today_auto_refresh', String(checked));
+                  }} 
+                  size="small"
+                />
+                <span style={{ 
+                  fontSize: '12px', 
+                  color: themeMode === 'dark' ? '#a6a6a6' : '#595959', 
+                  minWidth: '70px', 
+                  display: 'inline-block',
+                  fontVariantNumeric: 'tabular-nums'
+                }}>
+                  Auto: {autoRefresh ? `${countdown}s` : 'Tắt'}
+                </span>
+                {autoRefresh && (
+                  <Select
+                    size="small"
+                    value={refreshInterval}
+                    style={{ width: '75px' }}
+                    onChange={(val) => {
+                      setRefreshInterval(val);
+                      localStorage.setItem('today_refresh_interval', String(val));
+                    }}
+                    options={[
+                      { value: 10, label: '10s' },
+                      { value: 15, label: '15s' },
+                      { value: 30, label: '30s' },
+                      { value: 60, label: '60s' },
+                    ]}
+                  />
+                )}
+              </Space>
+            </>
+          )}
         </Space>
       </div>
 
@@ -1261,6 +1406,14 @@ export default function TodayDashboard() {
                 <Space>
                   <CalendarOutlined style={{ color: '#52c41a' }} />
                   <span style={{ fontWeight: 'bold' }}>Booking Tạo Hôm Nay (Created Today)</span>
+                  <Tooltip title="Cấu hình hiển thị cột">
+                    <Button 
+                      type="text" 
+                      size="small"
+                      icon={<SettingOutlined style={{ color: token.colorTextDescription }} />} 
+                      onClick={openBookingConfig}
+                    />
+                  </Tooltip>
                 </Space>
               }
               extra={
@@ -1299,7 +1452,13 @@ export default function TodayDashboard() {
             >
               <Table
                 dataSource={filteredBookings}
-                columns={bookingColumns}
+                columns={bookingConfigColumns}
+                loading={bookingConfigLoading}
+                components={{
+                  header: {
+                    cell: ResizableHeaderCell
+                  }
+                }}
                 size="small"
                 pagination={false}
                 bordered
@@ -1320,6 +1479,14 @@ export default function TodayDashboard() {
                 <Space>
                   <TeamOutlined style={{ color: '#1890ff' }} />
                   <span style={{ fontWeight: 'bold' }}>Lịch Khách Đến Hôm Nay (Coming Today)</span>
+                  <Tooltip title="Cấu hình hiển thị cột">
+                    <Button 
+                      type="text" 
+                      size="small"
+                      icon={<SettingOutlined style={{ color: token.colorTextDescription }} />} 
+                      onClick={openComingConfig}
+                    />
+                  </Tooltip>
                 </Space>
               }
               extra={
@@ -1358,7 +1525,13 @@ export default function TodayDashboard() {
             >
               <Table
                 dataSource={activeComingList}
-                columns={comingColumns}
+                columns={comingConfigColumns}
+                loading={comingConfigLoading}
+                components={{
+                  header: {
+                    cell: ResizableHeaderCell
+                  }
+                }}
                 size="small"
                 pagination={false}
                 bordered
@@ -1631,6 +1804,25 @@ export default function TodayDashboard() {
         open={drawerVisible}
         customerId={selectedCustomer?.customerId || null}
         onClose={() => setDrawerVisible(false)}
+      />
+
+      {/* Table Header Config Drawers */}
+      <TableConfigDrawer
+        visible={bookingConfigVisible}
+        onClose={closeBookingConfig}
+        title="Cấu hình cột Booking Tạo Hôm Nay"
+        columns={bookingRawConfig}
+        onSave={saveBookingConfig}
+        onReset={resetBookingConfig}
+      />
+
+      <TableConfigDrawer
+        visible={comingConfigVisible}
+        onClose={closeComingConfig}
+        title="Cấu hình cột Khách Đến Hôm Nay"
+        columns={comingRawConfig}
+        onSave={saveComingConfig}
+        onReset={resetComingConfig}
       />
     </div>
   );

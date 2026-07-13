@@ -47,15 +47,24 @@ export async function authRoutes(fastify: FastifyInstance) {
       // Sign JWT
       const token = fastify.jwt.sign(payload, { expiresIn: '7d' });
 
+      // Update lastLoginAt and lastActiveAt
+      const now = new Date();
+      const updatedStaff = await fastify.prisma.crm.crmStaff.update({
+        where: { id: staff.id },
+        data: { lastLoginAt: now, lastActiveAt: now }
+      });
+
       const response: LoginResponse = {
         token,
         user: {
-          id: staff.id,
-          username: staff.username,
-          displayName: staff.displayName,
-          role: staff.role as any,
-          isActive: staff.isActive,
-          createdAt: staff.createdAt.toISOString()
+          id: updatedStaff.id,
+          username: updatedStaff.username,
+          displayName: updatedStaff.displayName,
+          role: updatedStaff.role as any,
+          isActive: updatedStaff.isActive,
+          createdAt: updatedStaff.createdAt.toISOString(),
+          lastLoginAt: updatedStaff.lastLoginAt ? updatedStaff.lastLoginAt.toISOString() : null,
+          lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null
         }
       };
 
@@ -180,16 +189,25 @@ export async function authRoutes(fastify: FastifyInstance) {
       // Sign JWT
       const token = fastify.jwt.sign(payload, { expiresIn: '7d' });
 
+      // Update lastLoginAt and lastActiveAt
+      const now = new Date();
+      const updatedStaff = await fastify.prisma.crm.crmStaff.update({
+        where: { id: staff.id },
+        data: { lastLoginAt: now, lastActiveAt: now }
+      });
+
       const response: LoginResponse = {
         token,
         user: {
-          id: staff.id,
-          username: staff.username,
-          displayName: staff.displayName,
-          role: staff.role as any,
-          isActive: staff.isActive,
-          avatarUrl: staff.avatarUrl,
-          createdAt: staff.createdAt.toISOString()
+          id: updatedStaff.id,
+          username: updatedStaff.username,
+          displayName: updatedStaff.displayName,
+          role: updatedStaff.role as any,
+          isActive: updatedStaff.isActive,
+          avatarUrl: updatedStaff.avatarUrl,
+          createdAt: updatedStaff.createdAt.toISOString(),
+          lastLoginAt: updatedStaff.lastLoginAt ? updatedStaff.lastLoginAt.toISOString() : null,
+          lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null
         }
       };
 
@@ -227,7 +245,9 @@ export async function authRoutes(fastify: FastifyInstance) {
           role: staff.role as any,
           isActive: staff.isActive,
           avatarUrl: staff.avatarUrl,
-          createdAt: staff.createdAt.toISOString()
+          createdAt: staff.createdAt.toISOString(),
+          lastLoginAt: staff.lastLoginAt ? staff.lastLoginAt.toISOString() : null,
+          lastActiveAt: staff.lastActiveAt ? staff.lastActiveAt.toISOString() : null
         }
       };
     } catch (error: any) {

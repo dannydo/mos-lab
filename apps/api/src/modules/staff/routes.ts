@@ -49,7 +49,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
           emergencyPhone: true,
           avatarUrl: true,
           notes: true,
-          legacyStaffId: true
+          legacyStaffId: true,
+          lastLoginAt: true,
+          lastActiveAt: true
         }
       });
 
@@ -101,7 +103,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
           emergencyPhone: true,
           avatarUrl: true,
           notes: true,
-          legacyStaffId: true
+          legacyStaffId: true,
+          lastLoginAt: true,
+          lastActiveAt: true
         }
       });
 

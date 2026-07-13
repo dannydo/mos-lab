@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wingslashes — Online Users V3C1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#D4A84B',
+                        darkBg: '#0A0A0A',
+                        darkCard: '#141414',
+                        darkBorder: '#262626',
+                    },
+                    fontFamily: {
+                        jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(212,168,75,0.3); border-radius: 3px; }
+
+        /* Breathing animation for bubbles */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+        .bubble-breathe { animation: breathe 3s ease-in-out infinite; }
+        .bubble-breathe:nth-child(2) { animation-delay: 0.5s; }
+        .bubble-breathe:nth-child(3) { animation-delay: 1s; }
+        .bubble-breathe:nth-child(4) { animation-delay: 1.5s; }
+        .bubble-breathe:nth-child(5) { animation-delay: 2s; }
+
+        /* Pulse dot */
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+        .pulse-dot { animation: pulseDot 2s ease-in-out infinite; }
+
+        /* Modal animations */
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes modalFadeOut {
+            from { opacity: 1; transform: scale(1) translateY(0); }
+            to { opacity: 0; transform: scale(0.9) translateY(20px); }
+        }
+        .modal-enter { animation: modalFadeIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .modal-exit { animation: modalFadeOut 0.25s ease-in forwards; }
+
+        @keyframes backdropIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .backdrop-enter { animation: backdropIn 0.3s ease forwards; }
+
+        /* Donut animation */
+        @keyframes donutDraw {
+            from { stroke-dashoffset: var(--circumference); }
+        }
+        .donut-animate { animation: donutDraw 1s ease-out forwards; }
+
+        /* Toast animation */
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to { opacity: 0; transform: translateY(20px) scale(0.95); }
+        }
+        .toast-enter { animation: toastIn 0.35s ease forwards; }
+        .toast-exit { animation: toastOut 0.3s ease forwards; }
+
+        /* Slide down config */
+        @keyframes slideDown {
+            from { opacity: 0; max-height: 0; transform: translateY(-10px); }
+            to { opacity: 1; max-height: 400px; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+            from { opacity: 1; max-height: 400px; transform: translateY(0); }
+            to { opacity: 0; max-height: 0; transform: translateY(-10px); }
+        }
+        .config-slide-down { animation: slideDown 0.35s ease forwards; overflow: hidden; }
+        .config-slide-up { animation: slideUp 0.25s ease forwards; overflow: hidden; }
+
+        /* Glass card */
+        .glass-card {
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .light .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0,0,0,0.08);
+        }
+
+        /* Podium bars */
+        @keyframes growUp {
+            from { height: 0; }
+        }
+        .podium-bar { animation: growUp 0.6s ease-out forwards; }
+        .podium-bar-delay-1 { animation-delay: 0.1s; }
+        .podium-bar-delay-2 { animation-delay: 0.2s; }
+
+        /* Avatar ring animation */
+        @keyframes ringPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(212,168,75,0.4); }
+            50% { box-shadow: 0 0 0 4px rgba(212,168,75,0.1); }
+        }
+        .avatar-ring { animation: ringPulse 3s ease-in-out infinite; }
+
+        /* Config input styling */
+        .config-input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            text-align: right;
+            width: 80px;
+            border-radius: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+        .config-input:focus {
+            border-color: #D4A84B;
+            outline: none;
+        }
+        .config-input::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+        html:not(.dark) .config-input {
+            background: rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.12);
+            color: #1a1a1a;
+        }
+        html:not(.dark) .config-input::placeholder {
+            color: rgba(0,0,0,0.3);
+        }
+
+        /* Number input - hide spinners */
+        .config-input::-webkit-outer-spin-button,
+        .config-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .config-input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-darkBg dark:bg-darkBg bg-gray-50 text-white dark:text-white text-gray-800 font-jakarta min-h-screen transition-colors duration-300">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-50 glass-card border-b border-darkBorder dark:border-darkBorder border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+            <!-- Left: Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #D4A84B, #B8902F);">
+                    <span class="text-white font-extrabold text-lg">W</span>
+                </div>
+                <span class="text-lg font-bold bg-gradient-to-r from-gold to-yellow-300 bg-clip-text text-transparent hidden sm:block">Wingslashes</span>
+            </div>
+
+            <!-- Right: Bubbles + Clock + Theme + Avatar -->
+            <div class="flex items-center gap-4">
+                <!-- Bubble Stack -->
+                <div class="flex items-center -space-x-2" id="bubbleStack">
+                    <!-- Bubbles rendered by JS -->
+                </div>
+                <!-- Count badge -->
+                <div class="ml-1 bg-gold/20 text-gold text-xs font-bold px-2 py-0.5 rounded-full">6</div>
+
+                <!-- Live Clock -->
+                <div class="hidden sm:flex items-center gap-1.5 text-sm font-medium dark:text-gray-400 text-gray-500">
+                    <i class="fas fa-clock text-gold/60 text-xs"></i>
+                    <span id="liveClock">--:--:--</span>
+                </div>
+
+                <!-- Theme Toggle -->
+                <button id="themeToggle" class="w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-gold/10 transition-colors" title="Toggle theme">
+                    <i class="fas fa-sun text-gold text-sm dark:hidden"></i>
+                    <i class="fas fa-moon text-gold text-sm hidden dark:inline"></i>
+                </button>
+
+                <!-- DD Avatar -->
+                <div class="w-9 h-9 rounded-full border-2 border-gold flex items-center justify-center font-bold text-sm avatar-ring" style="background: linear-gradient(135deg, #D4A84B, #B8902F);">
+                    DD
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Modal Backdrop -->
+    <div id="modalBackdrop" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4" onclick="handleBackdropClick(event)">
+        <!-- Modal Content -->
+        <div id="modalContent" class="w-full max-w-[780px] max-h-[90vh] overflow-y-auto rounded-2xl glass-card border border-darkBorder dark:border-darkBorder border-gray-200 shadow-2xl">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-5 border-b border-white/5 dark:border-white/5 border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div id="modalAvatar" class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white"></div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span id="modalName" class="font-bold text-lg"></span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-gold/15 text-gold font-medium">Telesales</span>
+                            <span class="relative flex h-2.5 w-2.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                            </span>
+                        </div>
+                        <div class="text-xs dark:text-gray-500 text-gray-400 mt-0.5 flex items-center gap-1">
+                            <i class="fas fa-clock text-[10px]"></i>
+                            <span id="modalClock">--:--:--</span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-red-500/20 hover:text-red-400 transition-colors">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-5">
+                <!-- Time Tabs (2 rows) + Config Gear -->
+                <div class="mb-5">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex-1">
+                            <!-- Segmented pill container -->
+                            <div class="inline-flex flex-col rounded-xl dark:bg-white/[0.03] bg-gray-100 p-1 gap-0">
+                                <!-- Row 1: Current periods -->
+                                <div class="flex gap-0.5" id="tabRow1">
+                                    <button class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="today">Hôm nay</button>
+                                    <button class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="this_week">Tuần này</button>
+                                    <button class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="this_month">Tháng này</button>
+                                </div>
+                                <!-- Subtle divider -->
+                                <div class="mx-2 my-0.5 border-t dark:border-white/[0.06] border-gray-200"></div>
+                                <!-- Row 2: Past periods -->
+                                <div class="flex gap-0.5" id="tabRow2">
+                                    <button class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="yesterday">Hôm qua</button>
+                                    <button class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="last_week">Tuần trước</button>
+                                    <button class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="last_month">Tháng trước</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Gear icon -->
+                        <button id="configToggleBtn" onclick="toggleConfig()" class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-gold/10 transition-colors mt-1" title="Cấu hình Target">
+                            <i class="fas fa-gear text-sm dark:text-gray-400 text-gray-500"></i>
+                        </button>
+                    </div>
+
+                    <!-- Config Panel (hidden by default) -->
+                    <div id="configPanel" class="hidden mt-3">
+                        <div class="rounded-xl dark:bg-white/[0.03] bg-gray-50 border dark:border-white/[0.06] border-gray-200 p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <i class="fas fa-gear text-gold text-sm"></i>
+                                <span class="text-sm font-semibold">Cấu hình Target cho <span id="configMemberName" class="text-gold"></span></span>
+                                <span class="text-xs dark:text-gray-500 text-gray-400">— <span id="configPeriodLabel"></span></span>
+                            </div>
+                            <div class="space-y-2.5" id="configRows">
+                                <!-- Rows rendered by JS -->
+                            </div>
+                            <div class="flex items-center gap-2 mt-4">
+                                <button onclick="saveConfig()" class="px-4 py-1.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90" style="background: linear-gradient(135deg, #D4A84B, #B8902F);">
+                                    <i class="fas fa-check mr-1.5 text-xs"></i>Lưu Target
+                                </button>
+                                <button onclick="toggleConfig()" class="px-4 py-1.5 rounded-lg text-sm font-medium dark:bg-white/5 bg-gray-200 dark:text-gray-400 text-gray-600 hover:bg-white/10 transition-colors">
+                                    Hủy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Donut + Metric Pills -->
+                <div class="flex flex-col items-center mb-5">
+                    <!-- SVG Donut -->
+                    <div class="relative" style="width:200px;height:200px;">
+                        <svg id="donutSvg" width="200" height="200" viewBox="0 0 200 200">
+                            <!-- Background circle -->
+                            <circle cx="100" cy="100" r="85" fill="none" stroke-width="16" class="dark:stroke-white/[0.06] stroke-gray-200"></circle>
+                            <!-- Progress circle -->
+                            <circle id="donutProgress" cx="100" cy="100" r="85" fill="none" stroke-width="16" stroke-linecap="round"
+                                transform="rotate(-90 100 100)"
+                                style="transition: stroke-dashoffset 0.8s ease, stroke 0.3s ease;"></circle>
+                        </svg>
+                        <!-- Center text -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span id="donutValue" class="text-3xl font-extrabold"></span>
+                            <span id="donutLabel" class="text-xs dark:text-gray-500 text-gray-400 mt-0.5"></span>
+                            <span id="donutPercent" class="text-sm font-bold mt-0.5"></span>
+                        </div>
+                    </div>
+
+                    <!-- Metric Selector Pills -->
+                    <div class="flex flex-wrap justify-center gap-2 mt-4" id="metricPills">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Mini Summary Cards -->
+                <div class="grid grid-cols-5 gap-2 mb-5" id="miniCards">
+                    <!-- Rendered by JS -->
+                </div>
+
+                <!-- Podium Leaderboard -->
+                <div class="mt-2">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i class="fas fa-trophy text-gold text-sm"></i>
+                        <span class="text-sm font-bold">Bảng xếp hạng</span>
+                        <span id="podiumMetricLabel" class="text-xs dark:text-gray-500 text-gray-400"></span>
+                    </div>
+                    <div class="flex justify-center items-end gap-4" style="min-height:250px;overflow:visible;" id="podiumContainer">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] hidden">
+        <div class="px-4 py-2.5 rounded-xl glass-card border border-gold/20 shadow-lg flex items-center gap-2">
+            <i class="fas fa-check-circle text-green-400 text-sm"></i>
+            <span class="text-sm font-medium" id="toastMessage"></span>
+        </div>
+    </div>
+
+    <script>
+    // ===================== DATA =====================
+    const members = [
+        { id: 'TN', name: 'Thanh Ngân', color: '#EC4899', gradient: 'linear-gradient(135deg, #EC4899, #DB2777)' },
+        { id: 'HM', name: 'Hoài My', color: '#A855F7', gradient: 'linear-gradient(135deg, #A855F7, #9333EA)' },
+        { id: 'VT', name: 'Vũ Thảo', color: '#06B6D4', gradient: 'linear-gradient(135deg, #06B6D4, #0891B2)' },
+        { id: 'KL', name: 'Kim Loan', color: '#10B981', gradient: 'linear-gradient(135deg, #10B981, #059669)' },
+        { id: 'TH', name: 'Thu Hà', color: '#F97316', gradient: 'linear-gradient(135deg, #F97316, #EA580C)' },
+        { id: 'DD', name: 'Đăng Đô', color: '#D4A84B', gradient: 'linear-gradient(135deg, #D4A84B, #B8902F)' },
+    ];
+
+    const metricConfigs = [
+        { key: 'calls', label: 'Calls', icon: '📞', color: '#3B82F6' },
+        { key: 'pickups', label: 'Pickups', icon: '📱', color: '#8B5CF6' },
+        { key: 'happy', label: 'Happy', icon: '😊', color: '#F59E0B' },
+        { key: 'booked', label: 'Booked', icon: '📅', color: '#10B981' },
+        { key: 'done', label: 'Done', icon: '✅', color: '#EF4444' },
+    ];
+
+    const tabLabels = {
+        today: 'Hôm nay', this_week: 'Tuần này', this_month: 'Tháng này',
+        yesterday: 'Hôm qua', last_week: 'Tuần trước', last_month: 'Tháng trước'
+    };
+
+    // Targets per period (admin-editable)
+    const targets = {
+        today: { calls: 80, pickups: 50, happy: 20, booked: 15, done: 10 },
+        this_week: { calls: 400, pickups: 250, happy: 100, booked: 75, done: 50 },
+        this_month: { calls: 1600, pickups: 1000, happy: 400, booked: 300, done: 200 },
+        yesterday: { calls: 80, pickups: 50, happy: 20, booked: 15, done: 10 },
+        last_week: { calls: 400, pickups: 250, happy: 100, booked: 75, done: 50 },
+        last_month: { calls: 1600, pickups: 1000, happy: 400, booked: 300, done: 200 },
+    };
+
+    // Base data for "today" (TN is highest)
+    const baseDataToday = {
+        TN: { calls: 62, pickups: 41, happy: 17, booked: 12, done: 8 },
+        DD: { calls: 55, pickups: 36, happy: 14, booked: 10, done: 7 },
+        HM: { calls: 48, pickups: 30, happy: 12, booked: 8, done: 5 },
+        VT: { calls: 43, pickups: 27, happy: 10, booked: 7, done: 4 },
+        KL: { calls: 38, pickups: 22, happy: 8, booked: 5, done: 3 },
+        TH: { calls: 33, pickups: 18, happy: 6, booked: 4, done: 2 },
+    };
+
+    // Past period base data
+    const baseDataYesterday = {
+        TN: { calls: 40, pickups: 25, happy: 10, booked: 6, done: 4 },
+        DD: { calls: 35, pickups: 22, happy: 8, booked: 5, done: 3 },
+        HM: { calls: 30, pickups: 18, happy: 7, booked: 4, done: 2 },
+        VT: { calls: 27, pickups: 15, happy: 6, booked: 3, done: 2 },
+        KL: { calls: 23, pickups: 12, happy: 5, booked: 3, done: 1 },
+        TH: { calls: 20, pickups: 10, happy: 4, booked: 2, done: 1 },
+    };
+
+    // Multipliers for current periods
+    const periodMultipliers = { today: 1, this_week: 5, this_month: 20 };
+    // Multipliers for past periods
+    const pastMultipliers = { yesterday: 1, last_week: 4, last_month: 16 };
+
+    function getMemberData(memberId, period) {
+        if (['today', 'this_week', 'this_month'].includes(period)) {
+            const base = baseDataToday[memberId];
+            const m = periodMultipliers[period];
+            return {
+                calls: base.calls * m,
+                pickups: base.pickups * m,
+                happy: base.happy * m,
+                booked: base.booked * m,
+                done: base.done * m,
+            };
+        } else {
+            const base = baseDataYesterday[memberId];
+            const m = pastMultipliers[period];
+            return {
+                calls: base.calls * m,
+                pickups: base.pickups * m,
+                happy: base.happy * m,
+                booked: base.booked * m,
+                done: base.done * m,
+            };
+        }
+    }
+
+    // ===================== STATE =====================
+    let currentMember = null;
+    let currentTab = 'today';
+    let currentMetric = 'calls';
+    let configVisible = false;
+
+    // ===================== HEADER =====================
+    function renderBubbles() {
+        const stack = document.getElementById('bubbleStack');
+        stack.innerHTML = '';
+        members.forEach((m, i) => {
+            const bubble = document.createElement('div');
+            bubble.className = 'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white cursor-pointer bubble-breathe relative hover:scale-110 hover:z-20 transition-transform border-2 dark:border-darkBg border-white';
+            bubble.style.background = m.gradient;
+            bubble.style.zIndex = 10 - i;
+            bubble.textContent = m.id;
+            bubble.title = m.name;
+            bubble.onclick = () => openModal(m.id);
+
+            // Pulse dot
+            const dot = document.createElement('span');
+            dot.className = 'absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 dark:border-darkBg border-white pulse-dot';
+            bubble.appendChild(dot);
+
+            stack.appendChild(bubble);
+        });
+    }
+
+    // Live clock
+    function updateClock() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        const s = String(now.getSeconds()).padStart(2, '0');
+        const str = `${h}:${m}:${s}`;
+        document.getElementById('liveClock').textContent = str;
+        const mc = document.getElementById('modalClock');
+        if (mc) mc.textContent = str;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Theme toggle
+    document.getElementById('themeToggle').addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+    });
+
+    // ===================== MODAL =====================
+    function openModal(memberId) {
+        currentMember = members.find(m => m.id === memberId);
+        if (!currentMember) return;
+
+        const backdrop = document.getElementById('modalBackdrop');
+        const content = document.getElementById('modalContent');
+
+        // Set header
+        document.getElementById('modalAvatar').style.background = currentMember.gradient;
+        document.getElementById('modalAvatar').textContent = currentMember.id;
+        document.getElementById('modalName').textContent = currentMember.name;
+
+        // Reset
+        currentTab = 'today';
+        currentMetric = 'calls';
+        configVisible = false;
+        document.getElementById('configPanel').classList.add('hidden');
+        document.getElementById('configPanel').className = 'hidden mt-3';
+
+        // Show modal
+        backdrop.classList.remove('hidden');
+        backdrop.classList.add('flex', 'backdrop-enter');
+        content.classList.remove('modal-exit');
+        content.classList.add('modal-enter');
+
+        renderTabs();
+        renderMetricPills();
+        renderAll();
+    }
+
+    function closeModal() {
+        const backdrop = document.getElementById('modalBackdrop');
+        const content = document.getElementById('modalContent');
+        content.classList.remove('modal-enter');
+        content.classList.add('modal-exit');
+        setTimeout(() => {
+            backdrop.classList.add('hidden');
+            backdrop.classList.remove('flex', 'backdrop-enter');
+        }, 250);
+    }
+
+    function handleBackdropClick(e) {
+        if (e.target === document.getElementById('modalBackdrop')) closeModal();
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    // ===================== TABS =====================
+    function renderTabs() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            const tab = btn.dataset.tab;
+            if (tab === currentTab) {
+                btn.className = 'tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-gold/15 text-gold';
+            } else {
+                btn.className = 'tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 dark:text-gray-400 text-gray-500 hover:bg-white/5 dark:hover:bg-white/5 hover:bg-gray-200';
+            }
+        });
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentTab = btn.dataset.tab;
+            renderTabs();
+            renderAll();
+            if (configVisible) renderConfigPanel();
+        });
+    });
+
+    // ===================== METRIC PILLS =====================
+    function renderMetricPills() {
+        const container = document.getElementById('metricPills');
+        container.innerHTML = '';
+        metricConfigs.forEach(mc => {
+            const btn = document.createElement('button');
+            const isActive = currentMetric === mc.key;
+            btn.className = `flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                isActive
+                    ? 'text-white shadow-lg'
+                    : 'dark:bg-white/[0.04] bg-gray-100 dark:text-gray-400 text-gray-500 hover:bg-white/10 dark:hover:bg-white/10 hover:bg-gray-200'
+            }`;
+            if (isActive) {
+                btn.style.background = mc.color;
+                btn.style.boxShadow = `0 4px 15px ${mc.color}33`;
+            }
+            btn.innerHTML = `<span>${mc.icon}</span><span>${mc.label}</span>`;
+            btn.onclick = () => { currentMetric = mc.key; renderMetricPills(); renderAll(); };
+            container.appendChild(btn);
+        });
+    }
+
+    // ===================== RENDER ALL =====================
+    function renderAll() {
+        if (!currentMember) return;
+        renderDonut();
+        renderMiniCards();
+        renderPodium();
+    }
+
+    // ===================== DONUT =====================
+    function renderDonut() {
+        const data = getMemberData(currentMember.id, currentTab);
+        const mc = metricConfigs.find(m => m.key === currentMetric);
+        const value = data[currentMetric];
+        const target = targets[currentTab][currentMetric];
+        const pct = Math.min((value / target) * 100, 100);
+
+        const r = 85;
+        const circumference = 2 * Math.PI * r;
+        const offset = circumference - (pct / 100) * circumference;
+
+        const circle = document.getElementById('donutProgress');
+        circle.setAttribute('r', r);
+        circle.setAttribute('stroke', mc.color);
+        circle.style.strokeDasharray = circumference;
+        circle.style.strokeDashoffset = offset;
+        circle.style.setProperty('--circumference', circumference);
+
+        // Force re-animation
+        circle.classList.remove('donut-animate');
+        void circle.offsetWidth;
+        circle.classList.add('donut-animate');
+
+        document.getElementById('donutValue').textContent = value;
+        document.getElementById('donutValue').style.color = mc.color;
+        document.getElementById('donutLabel').textContent = `/ ${target} ${mc.label}`;
+        document.getElementById('donutPercent').textContent = `${Math.round(pct)}%`;
+        document.getElementById('donutPercent').style.color = mc.color;
+    }
+
+    // ===================== MINI CARDS =====================
+    function renderMiniCards() {
+        const container = document.getElementById('miniCards');
+        container.innerHTML = '';
+        const data = getMemberData(currentMember.id, currentTab);
+
+        metricConfigs.forEach(mc => {
+            const value = data[mc.key];
+            const target = targets[currentTab][mc.key];
+            const pct = Math.min(Math.round((value / target) * 100), 100);
+            const isActive = currentMetric === mc.key;
+
+            const card = document.createElement('div');
+            card.className = `rounded-xl p-2.5 text-center cursor-pointer transition-all duration-200 ${
+                isActive
+                    ? 'ring-1 dark:bg-white/[0.06] bg-white shadow-sm'
+                    : 'dark:bg-white/[0.03] bg-gray-50 hover:bg-white/[0.06] dark:hover:bg-white/[0.06] hover:bg-white'
+            }`;
+            if (isActive) card.style.ringColor = mc.color;
+            card.style.borderColor = isActive ? mc.color : 'transparent';
+            if (isActive) card.style.boxShadow = `0 0 0 1px ${mc.color}40`;
+
+            card.innerHTML = `
+                <div class="text-base mb-0.5">${mc.icon}</div>
+                <div class="text-lg font-extrabold" style="color:${mc.color}">${value}</div>
+                <div class="text-[10px] dark:text-gray-500 text-gray-400">/ ${target}</div>
+                <div class="mt-1.5 h-1 rounded-full dark:bg-white/10 bg-gray-200 overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-700" style="width:${pct}%;background:${mc.color}"></div>
+                </div>
+                <div class="text-[10px] font-semibold mt-1" style="color:${mc.color}">${pct}%</div>
+            `;
+            card.onclick = () => { currentMetric = mc.key; renderMetricPills(); renderAll(); };
+            container.appendChild(card);
+        });
+    }
+
+    // ===================== PODIUM =====================
+    function renderPodium() {
+        const container = document.getElementById('podiumContainer');
+        container.innerHTML = '';
+        const mc = metricConfigs.find(m => m.key === currentMetric);
+        document.getElementById('podiumMetricLabel').textContent = `— ${mc.icon} ${mc.label}`;
+
+        // Get all members' data for this metric & period, sort descending
+        const rankings = members.map(m => ({
+            ...m,
+            value: getMemberData(m.id, currentTab)[currentMetric]
+        })).sort((a, b) => b.value - a.value);
+
+        // Top 3
+        const top3 = rankings.slice(0, 3);
+        // Podium order: #2 left, #1 center, #3 right
+        const podiumOrder = [top3[1], top3[0], top3[2]];
+        const maxHeights = [110, 140, 85]; // #2, #1, #3
+        const barBgs = [
+            'linear-gradient(to top, rgba(192,192,192,0.15), rgba(192,192,192,0.05))',
+            'linear-gradient(to top, rgba(212,168,75,0.2), rgba(212,168,75,0.05))',
+            'linear-gradient(to top, rgba(205,127,50,0.15), rgba(205,127,50,0.05))',
+        ];
+        const rankLabels = ['🥈', '🥇', '🥉'];
+        const delays = ['podium-bar-delay-1', '', 'podium-bar-delay-2'];
+
+        podiumOrder.forEach((member, idx) => {
+            if (!member) return;
+            const target = targets[currentTab][currentMetric];
+            const pct = Math.min(Math.round((member.value / target) * 100), 100);
+
+            const col = document.createElement('div');
+            col.className = 'flex flex-col items-center';
+            col.style.width = '90px';
+
+            col.innerHTML = `
+                <div class="flex flex-col items-center mb-3" style="z-index:10;position:relative;">
+                    <div class="text-lg mb-1">${rankLabels[idx]}</div>
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white mb-1.5 border-2 ${idx === 1 ? 'border-gold' : 'dark:border-white/20 border-gray-300'}" style="background:${member.gradient}">${member.id}</div>
+                    <div class="text-xs font-semibold dark:text-gray-300 text-gray-600 text-center truncate w-full">${member.name}</div>
+                    <div class="text-sm font-extrabold mt-0.5" style="color:${mc.color}">${member.value}</div>
+                    <div class="text-[10px] dark:text-gray-500 text-gray-400">${pct}%</div>
+                </div>
+                <div class="w-full rounded-t-xl podium-bar ${delays[idx]} flex items-end justify-center pb-2" style="height:${maxHeights[idx]}px;background:${barBgs[idx]};border:1px solid rgba(255,255,255,0.06);border-bottom:none;overflow:visible;">
+                    <span class="text-2xl">${rankLabels[idx]}</span>
+                </div>
+            `;
+
+            container.appendChild(col);
+        });
+
+        // Remaining rankings below
+        if (rankings.length > 3) {
+            const remaining = rankings.slice(3);
+            const listWrap = document.createElement('div');
+            listWrap.className = 'w-full mt-4 border-t dark:border-white/[0.06] border-gray-200 pt-3';
+
+            remaining.forEach((m, i) => {
+                const target = targets[currentTab][currentMetric];
+                const pct = Math.min(Math.round((m.value / target) * 100), 100);
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-3 py-2 px-1';
+                row.innerHTML = `
+                    <span class="text-xs font-bold dark:text-gray-500 text-gray-400 w-5 text-center">#${i + 4}</span>
+                    <div class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style="background:${m.gradient}">${m.id}</div>
+                    <span class="text-xs font-medium flex-1 dark:text-gray-300 text-gray-600">${m.name}</span>
+                    <span class="text-sm font-bold" style="color:${mc.color}">${m.value}</span>
+                    <span class="text-[10px] dark:text-gray-500 text-gray-400 w-10 text-right">${pct}%</span>
+                `;
+                listWrap.appendChild(row);
+            });
+
+            // We need the podium area and the rest list to be in a column layout
+            // Wrap everything properly
+            const wrapper = document.createElement('div');
+            wrapper.className = 'w-full flex flex-col items-center';
+
+            // Move podium columns into a flex row inside wrapper
+            const podiumRow = document.createElement('div');
+            podiumRow.className = 'flex justify-center items-end gap-4';
+            podiumRow.style.minHeight = '250px';
+            podiumRow.style.overflow = 'visible';
+
+            while (container.firstChild) {
+                podiumRow.appendChild(container.firstChild);
+            }
+
+            wrapper.appendChild(podiumRow);
+            wrapper.appendChild(listWrap);
+            container.appendChild(wrapper);
+        }
+    }
+
+    // ===================== CONFIG PANEL =====================
+    function toggleConfig() {
+        const panel = document.getElementById('configPanel');
+        if (configVisible) {
+            panel.classList.remove('config-slide-down');
+            panel.classList.add('config-slide-up');
+            setTimeout(() => {
+                panel.classList.add('hidden');
+                panel.classList.remove('config-slide-up');
+            }, 250);
+            configVisible = false;
+        } else {
+            panel.classList.remove('hidden', 'config-slide-up');
+            panel.classList.add('config-slide-down');
+            configVisible = true;
+            renderConfigPanel();
+        }
+    }
+
+    function renderConfigPanel() {
+        if (!currentMember) return;
+        document.getElementById('configMemberName').textContent = currentMember.name;
+        document.getElementById('configPeriodLabel').textContent = tabLabels[currentTab];
+
+        const container = document.getElementById('configRows');
+        container.innerHTML = '';
+
+        metricConfigs.forEach(mc => {
+            const currentTarget = targets[currentTab][mc.key];
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between';
+            row.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-base">${mc.icon}</span>
+                    <span class="text-sm font-medium dark:text-gray-300 text-gray-600">${mc.label}</span>
+                </div>
+                <input type="number" class="config-input" id="configInput_${mc.key}" value="${currentTarget}" placeholder="${currentTarget}" min="1">
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    function saveConfig() {
+        metricConfigs.forEach(mc => {
+            const input = document.getElementById(`configInput_${mc.key}`);
+            const val = parseInt(input.value);
+            if (!isNaN(val) && val > 0) {
+                targets[currentTab][mc.key] = val;
+            }
+        });
+        renderAll();
+        showToast('Đã lưu target thành công!');
+        toggleConfig();
+    }
+
+    // ===================== TOAST =====================
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        const msg = document.getElementById('toastMessage');
+        msg.textContent = message;
+        toast.classList.remove('hidden');
+        toast.firstElementChild.classList.remove('toast-exit');
+        toast.firstElementChild.classList.add('toast-enter');
+
+        setTimeout(() => {
+            toast.firstElementChild.classList.remove('toast-enter');
+            toast.firstElementChild.classList.add('toast-exit');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 300);
+        }, 2000);
+    }
+
+    // ===================== INIT =====================
+    renderBubbles();
+    </script>
+</body>
+</html>

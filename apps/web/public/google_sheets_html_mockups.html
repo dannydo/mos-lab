@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Sheets Inspired Header Mockups - 10 Thiết kế Giao diện</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-dark: #1e293b;
+      --border-dark: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      /* Google Sheets Specific Palette */
+      --google-blue: #1a73e8;
+      --google-green: #0f9d58;
+      --google-yellow: #f4b400;
+      --google-red: #db4437;
+      
+      /* User Editor Pastel Colors */
+      --user-pink: #ec4899;
+      --user-purple: #a855f7;
+      --user-cyan: #06b6d4;
+      --user-orange: #f97316;
+      --user-me: #eab308; /* Golden/Yellow for "Me" */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Google Sans", Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 320px;
+      background-color: #0b0f19;
+      border-right: 1px solid var(--border-dark);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .sidebar-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border-dark);
+      background: linear-gradient(135deg, var(--google-blue), var(--google-green));
+      color: #fff;
+    }
+
+    .sidebar-header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .sidebar-header p {
+      font-size: 11px;
+      opacity: 0.8;
+      font-weight: 600;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    .nav-list {
+      list-style: none;
+      overflow-y: auto;
+      flex: 1;
+      padding: 12px;
+    }
+
+    .nav-item {
+      padding: 12px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-item:hover {
+      background-color: rgba(26, 115, 232, 0.08);
+      border-color: rgba(26, 115, 232, 0.2);
+    }
+
+    .nav-item.active {
+      background-color: var(--google-blue);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .nav-index {
+      font-size: 10px;
+      background-color: rgba(255, 255, 255, 0.15);
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .nav-title {
+      font-size: 13px;
+      flex: 1;
+      line-height: 1.3;
+    }
+
+    /* Main Preview Container */
+    .preview-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background-color: #0d121f;
+      position: relative;
+    }
+
+    .preview-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border-dark);
+      background-color: #0f1626;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preview-info h2 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .preview-info p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Simulated CRM App Header Viewport */
+    .viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      background: radial-gradient(circle at center, #1e293b 0%, #0d121f 100%);
+    }
+
+    .simulated-header {
+      width: 95%;
+      max-width: 950px;
+      height: 64px;
+      background-color: #1e293b;
+      border: 1px solid var(--border-dark);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sheets-icon {
+      width: 24px;
+      height: 24px;
+      background-color: var(--google-green);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: white;
+      font-weight: bold;
+    }
+
+    .doc-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* Right Section Area aligned in Google Style */
+    .right-header-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Base Google Sheets Avatar Style */
+    .g-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      border: 2px solid #1e293b;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.15s ease;
+    }
+
+    .g-avatar:hover {
+      transform: scale(1.1);
+      z-index: 10 !important;
+    }
+
+    .g-avatar.me {
+      box-shadow: 0 0 0 2px var(--user-me);
+    }
+
+    .g-avatar.me::after {
+      content: 'Bạn';
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 7px;
+      background-color: var(--user-me);
+      color: #000;
+      padding: 0px 4px;
+      border-radius: 4px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    /* Design 1: Classic Sheets Row */
+    .design-sheets-row {
+      display: flex;
+      align-items: center;
+    }
+    .design-sheets-row .g-avatar {
+      margin-left: -4px;
+    }
+
+    /* Design 2: Editor Color Ring */
+    .design-color-ring {
+      display: flex;
+      gap: 4px;
+    }
+    .design-color-ring .g-avatar {
+      border-width: 2.5px;
+    }
+
+    /* Design 3: Expandable Pill */
+    .design-expand-pill {
+      display: flex;
+      align-items: center;
+      background-color: rgba(255,255,255,0.06);
+      border: 1px solid var(--border-dark);
+      padding: 3px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      font-size: 12px;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .design-expand-pill:hover {
+      background-color: rgba(255,255,255,0.1);
+    }
+
+    /* Design 4: Chat Button & Avatar Combo */
+    .design-chat-combo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chat-bubble-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: rgba(255,255,255,0.06);
+      border: 1px solid var(--border-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      position: relative;
+    }
+    .chat-bubble-btn:hover {
+      background-color: rgba(255,255,255,0.1);
+      color: white;
+    }
+    .chat-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      background-color: var(--google-red);
+      color: white;
+      font-size: 8px;
+      font-weight: bold;
+      border-radius: 50%;
+      width: 12px;
+      height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Design 5: Follow Cursor Arrow Indicator */
+    .design-follow-cursor {
+      display: flex;
+      gap: 8px;
+    }
+    .cursor-arrow-indicator {
+      position: absolute;
+      bottom: -6px;
+      right: -6px;
+      background-color: var(--google-blue);
+      border-radius: 50%;
+      width: 14px;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      color: white;
+      border: 1px solid #1e293b;
+    }
+
+    /* Design 6: Google Meet Quick Huddle button */
+    .design-meet-huddle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .meet-huddle-btn {
+      background-color: rgba(26, 115, 232, 0.15);
+      border: 1px solid rgba(26, 115, 232, 0.3);
+      color: var(--google-blue);
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .meet-huddle-btn:hover {
+      background-color: var(--google-blue);
+      color: white;
+    }
+
+    /* Design 7: Share Config Button Style */
+    .design-share-layout {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .google-share-btn {
+      background-color: var(--google-blue);
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 18px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+      transition: background 0.15s;
+    }
+    .google-share-btn:hover {
+      background-color: #1557b0;
+    }
+
+    /* Design 8: Initials Only with Soft Google Themes */
+    .design-google-initials {
+      display: flex;
+      align-items: center;
+    }
+    .design-google-initials .g-avatar {
+      margin-left: -5px;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* Design 9: Popover Hover Card Simulation */
+    .design-hover-popover-stack {
+      display: flex;
+      position: relative;
+    }
+    .simulated-popover-card {
+      position: absolute;
+      top: 36px;
+      right: 0;
+      width: 260px;
+      background-color: #1e293b;
+      border: 1px solid var(--border-dark);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      z-index: 100;
+      display: none;
+    }
+    .popover-header {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .popover-btn {
+      width: 100%;
+      padding: 6px;
+      background-color: var(--google-blue);
+      border: none;
+      color: white;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* Design 10: Material Elevation Capsule */
+    .design-material-capsule {
+      background-color: #0f172a;
+      border: 1px solid var(--border-dark);
+      padding: 3px 8px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    /* Details Panel */
+    .details-panel {
+      padding: 24px;
+      background-color: #0b0f19;
+      border-top: 1px solid var(--border-dark);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .details-panel h3 {
+      font-size: 16px;
+      color: var(--google-blue);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .google-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-top: 8px;
+      background-color: rgba(26, 115, 232, 0.15);
+      color: var(--google-blue);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>GOOGLE SHEETS</h1>
+      <p>10 Header Mockup (with 'Me')</p>
+    </div>
+    <ul class="nav-list" id="navList">
+      <!-- Generated dynamically -->
+    </ul>
+  </div>
+
+  <!-- Main Viewport -->
+  <div class="preview-container">
+    <div class="preview-header">
+      <div class="preview-info">
+        <h2 id="conceptTitle">Tên thiết kế</h2>
+        <p id="conceptDesc">Mô tả ngắn gọn.</p>
+      </div>
+      <div class="google-badge" id="conceptBadge">
+        GOOGLE WORKSPACE STYLE (WITH ME)
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="simulated-header">
+        <div class="brand-section">
+          <div class="sheets-icon">📊</div>
+          <div class="doc-title" id="documentTitle">Bảng điều khiển CRM - Booker Admin</div>
+        </div>
+        
+        <!-- Target Area where the mockup will load -->
+        <div class="right-header-controls" id="mockupTarget">
+          <!-- Interactive Mockup Loads Here -->
+        </div>
+
+        <!-- Popover detailed card simulation (used for Design 9) -->
+        <div class="simulated-popover-card" id="hoverPopoverCard">
+          <div class="popover-header">
+            <div class="g-avatar me" style="background-color: var(--user-me); width: 36px; height: 36px; line-height: 32px;">DD</div>
+            <div style="text-align: left;">
+              <span style="font-weight: bold; font-size: 13px; display: block;">Danny Do (Tôi)</span>
+              <span style="font-size: 10px; color: var(--text-muted);">danhdo@gmail.com</span>
+            </div>
+          </div>
+          <div style="font-size: 11px; margin-bottom: 8px; color: var(--text-muted);">
+            Trực tuyến: <strong>Đang xem Cấu hình HR</strong>
+          </div>
+          <button class="popover-btn">Mở thiết lập tài khoản</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Description Details -->
+    <div class="details-panel">
+      <h3>Cơ sở thiết kế (UX / UI Design rationale)</h3>
+      <p id="conceptDetails">Đang tải...</p>
+    </div>
+  </div>
+
+  <script>
+    const concepts = [
+      {
+        id: 1,
+        title: "1. Classic G-Sheets Avatar Row (Chuỗi cổ điển)",
+        desc: "Thiết kế kinh điển của Google Sheets với avatar của tôi xếp cuối cùng trong nhóm.",
+        details: "Tập hợp các avatar đè nhẹ lên nhau (-4px). Avatar của bạn (Me - DD) được xếp ở vị trí cuối cùng kèm một đường viền đặc trưng đứt đoạn hoặc nét vàng mảnh để làm nổi bật vị trí tài khoản đăng nhập chính.",
+        html: `
+          <div class="design-sheets-row">
+            <div class="g-avatar" style="background-color: var(--google-blue); z-index: 4;">DW</div>
+            <div class="g-avatar" style="background-color: var(--user-pink); z-index: 3;">TN</div>
+            <div class="g-avatar" style="background-color: var(--google-green); z-index: 2;">BH</div>
+            <div class="g-avatar me" style="background-color: var(--user-me); z-index: 1;">DD</div>
+          </div>
+        `
+      },
+      {
+        id: 2,
+        title: "2. Editor Active Ring Color (Viền màu định danh)",
+        desc: "Bao gồm bạn (với viền vàng chủ đạo) cùng các thành viên có màu định danh riêng.",
+        details: "Mỗi người dùng chỉnh sửa chung có một màu sắc con trỏ riêng. Bạn (Danny Do) được gán màu vàng hoàng gia, các thành viên khác gán màu Hồng, Cyan, Cam. Giúp phân biệt rõ ai đang mở những sheet nào.",
+        html: `
+          <div class="design-color-ring">
+            <div class="g-avatar me" style="background-color: #2e3e60; border-color: var(--user-me);">DD</div>
+            <div class="g-avatar" style="background-color: #2e3e60; border-color: var(--user-pink);">DW</div>
+            <div class="g-avatar" style="background-color: #2e3e60; border-color: var(--user-cyan);">TN</div>
+            <div class="g-avatar" style="background-color: #2e3e60; border-color: var(--user-orange);">BH</div>
+          </div>
+        `
+      },
+      {
+        id: 3,
+        title: "3. Minimalist Stats Capsule (Viên thuốc thu gọn)",
+        desc: "Viên thuốc trạng thái hiển thị 'Tôi + 3 người khác' online.",
+        details: "Trực quan hóa lượng người online dưới dạng 'Tôi và 3 người khác'. Khi click vào pill này, danh sách đầy đủ bao gồm cả bạn và các Telesales sẽ mở rộng ra.",
+        html: `
+          <div class="design-expand-pill" onclick="alert('Đã mở rộng danh sách: Bạn, Danny Wings, Tâm Nguyễn, Bảo Hân!')">
+            <span style="color: var(--google-green);">🟢</span>
+            <span style="font-weight: 600;">Bạn + 3 người khác</span>
+          </div>
+        `
+      },
+      {
+        id: 4,
+        title: "4. Collaborative Chat Hub Combo (Tích hợp nút Chat)",
+        desc: "Kèm theo nút trò chuyện nhanh, tích hợp đầy đủ avatar của bạn.",
+        details: "Nút chat nhanh đặt sát bên nhóm avatar. Bạn (DD) nằm ở vị trí đầu tiên hoặc cuối cùng trong nhóm online để dễ dàng nhận biết sự hiện diện của mình trong phòng chat.",
+        html: `
+          <div class="design-sheets-row" style="gap: 8px;">
+            <div class="design-sheets-row">
+              <div class="g-avatar me" style="background-color: var(--user-me);">DD</div>
+              <div class="g-avatar" style="background-color: var(--google-blue);">DW</div>
+              <div class="g-avatar" style="background-color: var(--user-pink);">TN</div>
+            </div>
+            <div class="chat-bubble-btn">
+              💬 <span class="chat-badge">1</span>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 5,
+        title: "5. Follow Cursor Arrow Indicator (Định hướng trang)",
+        desc: "Hiển thị vị trí của bạn cùng con trỏ định hướng của các Booker khác.",
+        details: "Mỗi avatar có một mũi tên con trỏ định hướng tương ứng với trang họ đang làm việc. Con trỏ của bạn (DD) có màu vàng hoàng gia ghi 'Đang ở HR Staff'.",
+        html: `
+          <div class="design-follow-cursor">
+            <div class="g-avatar me" style="background-color: var(--user-me);">
+              DD
+              <span class="cursor-arrow-indicator" style="background-color: var(--user-me); font-size: 6px;">🧭</span>
+            </div>
+            <div class="g-avatar" style="background-color: var(--google-blue);">
+              DW
+              <span class="cursor-arrow-indicator" style="background-color: var(--user-pink); font-size: 6px;">🧭</span>
+            </div>
+            <div class="g-avatar" style="background-color: var(--google-green);">
+              TN
+              <span class="cursor-arrow-indicator" style="background-color: var(--user-cyan); font-size: 6px;">🧭</span>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 6,
+        title: "6. Quick Huddle Camera Button (Phòng họp nhanh)",
+        desc: "Nút camera họp trực tiếp (Google Meet style) đặt cạnh nhóm avatar bao gồm bạn.",
+        details: "Giúp bạn (Leader) nhanh chóng bắt đầu cuộc gọi video trực tuyến với những nhân sự đang làm việc. Bạn sẽ thấy avatar của mình được xếp chung trong tổ đội sẵn sàng kết nối.",
+        html: `
+          <div class="design-meet-huddle">
+            <div class="design-sheets-row" style="margin-right: 4px;">
+              <div class="g-avatar me" style="background-color: var(--user-me);">DD</div>
+              <div class="g-avatar" style="background-color: var(--google-blue);">DW</div>
+              <div class="g-avatar" style="background-color: var(--user-pink);">TN</div>
+            </div>
+            <div class="meet-huddle-btn" onclick="alert('Đang gọi nhanh cho: Danny Wings, Tâm Nguyễn!')">
+              📹 Gọi nhanh
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 7,
+        title: "7. Google Sheets 'Share' Button (Nút chia sẻ)",
+        desc: "Layout Share & Avatar Stack kinh điển của G-Suite có chứa 'Me'.",
+        details: "Cấu trúc kinh điển: [Avatar nhóm có Bạn] + [Nút Chia sẻ xanh]. Tạo cảm giác quen thuộc tuyệt đối cho những ai thường xuyên làm việc trên Google Docs/Sheets.",
+        html: `
+          <div class="design-share-layout">
+            <div class="design-sheets-row">
+              <div class="g-avatar me" style="background-color: var(--user-me);">DD</div>
+              <div class="g-avatar" style="background-color: var(--google-blue);">DW</div>
+              <div class="g-avatar" style="background-color: var(--user-pink);">TN</div>
+            </div>
+            <button class="google-share-btn" onclick="alert('Đang mở cài đặt chia sẻ phân quyền!')">
+              🔒 Chia sẻ
+            </button>
+          </div>
+        `
+      },
+      {
+        id: 8,
+        title: "8. Soft Pastel Initials (Chữ viết tắt pastel)",
+        desc: "Avatar viết tắt DD màu pastel vàng đồng bộ với bảng màu pastel của Google.",
+        details: "Avatar của bạn hiển thị chữ 'DD' (Danny Do) hoặc 'ME' được sơn tông màu pastel vàng sang trọng, hài hòa cùng các gam màu nhã nhặn khác của Telesales.",
+        html: `
+          <div class="design-google-initials">
+            <div class="g-avatar me" style="background-color: #f59e0b; border-color: #1e293b;">DD</div>
+            <div class="g-avatar" style="background-color: #3b82f6; border-color: #1e293b;">DW</div>
+            <div class="g-avatar" style="background-color: #ec4899; border-color: #1e293b;">TN</div>
+          </div>
+        `
+      },
+      {
+        id: 9,
+        title: "9. G-Sheets Popover Hover Card (Thẻ chi tiết hover)",
+        desc: "Click vào avatar của bạn để mở thẻ cá nhân có mác 'Tôi' (Me).",
+        details: "Khi di chuột hoặc click vào avatar 'DD', hệ thống sẽ mở ra Popover ghi rõ 'Danny Do (Tôi)' cùng địa chỉ danhdo@gmail.com, vai trò ADMIN và vị trí hoạt động hiện tại của bạn.",
+        html: `
+          <div class="design-hover-popover-stack">
+            <div class="g-avatar me" style="background-color: var(--user-me);" onclick="toggleSimulatedPopover()">DD</div>
+            <div style="font-size: 11px; align-self: center; margin-left: 8px; color: var(--text-muted);">[Bấm vào avatar để xem Card]</div>
+          </div>
+        `
+      },
+      {
+        id: 10,
+        title: "10. Flat Material Elevation Capsule (Khối nang Material)",
+        desc: "Hộp capsule tối giản chứa cả avatar của bạn và các Telesales đang hoạt động.",
+        details: "Khung đóng gói Material Design bảo bọc cả avatar của bạn và đồng nghiệp, ngăn cách sắc sảo với các khu vực điều hướng hệ thống khác.",
+        html: `
+          <div class="design-material-capsule">
+            <span style="font-size: 10px; color: var(--text-muted); font-weight: bold; margin-left: 4px;">ONLINE</span>
+            <div class="design-sheets-row">
+              <div class="g-avatar me" style="background-color: var(--user-me);">DD</div>
+              <div class="g-avatar" style="background-color: var(--google-blue);">DW</div>
+              <div class="g-avatar" style="background-color: var(--user-pink);">TN</div>
+            </div>
+          </div>
+        `
+      }
+    ];
+
+    // Populate Sidebar
+    const navList = document.getElementById('navList');
+    concepts.forEach((concept, index) => {
+      const li = document.createElement('li');
+      li.className = `nav-item ${index === 0 ? 'active' : ''}`;
+      li.innerHTML = `
+        <span class="nav-index">${concept.id}</span>
+        <span class="nav-title">${concept.title.split('. ')[1]}</span>
+      `;
+      li.onclick = () => selectConcept(index);
+      navList.appendChild(li);
+    });
+
+    // Select Concept Logic
+    function selectConcept(index) {
+      // Toggle nav active states
+      const items = document.querySelectorAll('.nav-item');
+      items.forEach((item, idx) => {
+        if (idx === index) item.classList.add('active');
+        else item.classList.remove('active');
+      });
+
+      const selected = concepts[index];
+      document.getElementById('conceptTitle').innerText = selected.title;
+      document.getElementById('conceptDesc').innerText = selected.desc;
+      document.getElementById('conceptDetails').innerText = selected.details;
+      document.getElementById('mockupTarget').innerHTML = selected.html;
+
+      // Close popover simulation card by default
+      const popoverCard = document.getElementById('hoverPopoverCard');
+      popoverCard.style.display = 'none';
+
+      // Customize title display for Design 7 to feel like Google Sheets
+      const docTitle = document.getElementById('documentTitle');
+      if (selected.id === 7) {
+        docTitle.innerText = "Bảng Tính Lương Booker & KPIs - Đã khóa chỉnh sửa";
+      } else {
+        docTitle.innerText = "Bảng điều khiển CRM - Booker Admin";
+      }
+    }
+
+    // Toggle popover card simulation (for Design 9)
+    function toggleSimulatedPopover() {
+      const popoverCard = document.getElementById('hoverPopoverCard');
+      if (popoverCard.style.display === 'block') {
+        popoverCard.style.display = 'none';
+      } else {
+        popoverCard.style.display = 'block';
+      }
+    }
+
+    // Initialize first concept
+    selectConcept(0);
+  </script>
+</body>
+</html>

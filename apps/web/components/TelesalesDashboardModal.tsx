@@ -37,8 +37,8 @@ const metricConfigs = [
   { key: 'calls', label: 'Calls', icon: '📞', color: '#3B82F6', gradId: 'callsGrad', antIcon: PhoneOutlined, bgGradient: 'from-blue-600 to-cyan-400', shadowGlow: 'shadow-blue-500/20', lightBg: 'bg-blue-50/70 text-blue-600 border-blue-100', darkBg: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
   { key: 'pickups', label: 'Pickups', icon: '📱', color: '#8B5CF6', gradId: 'pickupsGrad', antIcon: CustomerServiceOutlined, bgGradient: 'from-purple-600 to-fuchsia-400', shadowGlow: 'shadow-purple-500/20', lightBg: 'bg-purple-50/70 text-purple-600 border-purple-100', darkBg: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
   { key: 'happy', label: 'Happy Call', icon: '😊', color: '#F59E0B', gradId: 'happyGrad', antIcon: SmileOutlined, bgGradient: 'from-amber-500 to-orange-400', shadowGlow: 'shadow-amber-500/20', lightBg: 'bg-amber-50/70 text-amber-600 border-amber-100', darkBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-  { key: 'booked', label: 'Booked', icon: '📅', color: '#10B981', gradId: 'bookedGrad', antIcon: CalendarOutlined, bgGradient: 'from-emerald-600 to-teal-400', shadowGlow: 'shadow-emerald-500/20', lightBg: 'bg-emerald-50/70 text-emerald-600 border-emerald-100', darkBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
-  { key: 'done', label: 'Done Deal', icon: '✅', color: '#EF4444', gradId: 'doneGrad', antIcon: CheckCircleOutlined, bgGradient: 'from-rose-600 to-red-400', shadowGlow: 'shadow-rose-500/20', lightBg: 'bg-rose-50/70 text-rose-600 border-rose-100', darkBg: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
+  { key: 'booked', label: 'Booked', icon: '📅', color: '#F97316', gradId: 'bookedGrad', antIcon: CalendarOutlined, bgGradient: 'from-orange-500 to-amber-500', shadowGlow: 'shadow-orange-500/20', lightBg: 'bg-orange-50/70 text-orange-600 border-orange-100', darkBg: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+  { key: 'done', label: 'Done Deal', icon: '✅', color: '#10B981', gradId: 'doneGrad', antIcon: CheckCircleOutlined, bgGradient: 'from-emerald-600 to-teal-400', shadowGlow: 'shadow-emerald-500/20', lightBg: 'bg-emerald-50/70 text-emerald-600 border-emerald-100', darkBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
 ];
 
 const periods = [
@@ -324,12 +324,12 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                         <stop offset="100%" stopColor="#FBBF24" />
                       </linearGradient>
                       <linearGradient id="bookedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#10B981" />
-                        <stop offset="100%" stopColor="#34D399" />
+                        <stop offset="0%" stopColor="#F97316" />
+                        <stop offset="100%" stopColor="#FBBF24" />
                       </linearGradient>
                       <linearGradient id="doneGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#EF4444" />
-                        <stop offset="100%" stopColor="#F87171" />
+                        <stop offset="0%" stopColor="#10B981" />
+                        <stop offset="100%" stopColor="#34D399" />
                       </linearGradient>
                     </defs>
                     <circle cx="100" cy="100" r={r} fill="none" strokeWidth="14" className={themeMode === 'dark' ? 'stroke-white/5' : 'stroke-slate-100'}></circle>
@@ -349,29 +349,6 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   </div>
                 </div>
 
-                {/* Metric Selector Pills (Dramatically enhanced styling with gradients) */}
-                <div className="flex flex-wrap justify-center gap-1.5 mt-4">
-                  {metricConfigs.map(mc => {
-                    const isActive = currentMetricKey === mc.key;
-                    const Icon = mc.antIcon;
-                    return (
-                      <button 
-                        key={mc.key}
-                        onClick={() => setCurrentMetricKey(mc.key)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-extrabold transition-all duration-300 border ${
-                          isActive 
-                            ? `text-white bg-gradient-to-r ${mc.bgGradient} border-transparent shadow-lg ${mc.shadowGlow} scale-105` 
-                            : `${themeMode === 'dark' 
-                                ? 'bg-white/5 text-slate-300 border-white/5 hover:bg-white/10 hover:text-white' 
-                                : 'bg-slate-50 text-slate-600 border-slate-200/50 hover:bg-slate-100 hover:text-slate-900'}`
-                        }`}
-                      >
-                        <Icon className="text-[10px]" />
-                        <span>{mc.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
 
               {/* Mini Summary Cards (Vibrant gradients, shadows and tint backdrops) */}
@@ -397,7 +374,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       }`}
                       style={isActive ? { borderLeft: `3px solid ${mc.color}`, boxShadow: `0 8px 20px ${mc.color}15` } : {}}
                     >
-                      <div className="text-xs mb-0.5" style={{ color: mc.color }}><Icon /></div>
+                      <div className="flex items-center justify-center gap-1.5 text-[9px] font-bold tracking-tight mb-1 select-none" style={{ color: mc.color }}>
+                        <Icon className="text-[10px] shrink-0" />
+                        <span className="truncate">{mc.label}</span>
+                      </div>
                       <div className="text-base font-black tracking-tight" style={{ color: mc.color }}>{val}</div>
                       <div className={`text-[8px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>/ {target}</div>
                       <div className={`mt-1.5 h-1 rounded-full overflow-hidden ${themeMode === 'dark' ? 'bg-white/10' : 'bg-slate-200/80'}`}>
@@ -793,7 +773,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       }`}
                       style={isActive ? { borderColor: mc.color, boxShadow: `0 0 8px ${mc.color}20` } : {}}
                     >
-                      <div className="text-xs mb-0.5" style={{ color: mc.color }}><Icon /></div>
+                      <div className="flex items-center justify-center gap-1.5 text-[9px] font-bold tracking-tight mb-1 select-none" style={{ color: mc.color }}>
+                        <Icon className="text-[10px] shrink-0" />
+                        <span className="truncate">{mc.label}</span>
+                      </div>
                       <div className="text-sm font-extrabold" style={{ color: mc.color }}>{val}</div>
                       <div className={`text-[8px] ${themeMode === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>/ {target}</div>
                       <div className={`mt-1.5 h-1 rounded-full overflow-hidden ${themeMode === 'dark' ? 'bg-white/10' : 'bg-gray-200'}`}>
@@ -842,7 +825,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           <svg id={`miniRadar-Back-New-${member.id}`} viewBox="0 0 60 60" className="w-[32px] h-[32px] my-0.5 opacity-80" ref={el => {
                             if (!el) return;
                             const cx = 30, cy = 30, maxR = 20;
-                            const colors = ['#3b82f6', '#8B5CF6', '#F59E0B', '#10B981', '#EF4444'];
+                            const colors = ['#3b82f6', '#8B5CF6', '#F59E0B', '#F97316', '#10B981'];
                             const metrics = ['calls', 'pickups', 'happy', 'booked', 'done'];
                             const pts100 = RADAR_ANGLES.map(a => polarToXY(cx, cy, maxR, a));
                             const pts50 = RADAR_ANGLES.map(a => polarToXY(cx, cy, maxR * 0.5, a));
@@ -888,7 +871,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     const isSelected = m.id === currentMemberId;
                     
                     // Segment bars calculations
-                    const colors = ['#3b82f6', '#8B5CF6', '#F59E0B', '#10B981', '#EF4444'];
+                    const colors = ['#3b82f6', '#8B5CF6', '#F59E0B', '#F97316', '#10B981'];
                     const metrics = ['calls', 'pickups', 'happy', 'booked', 'done'];
                     const segmentsHtml = metrics.map((metricKey, mtIdx) => {
                       const itemVal = m.perf[metricKey];

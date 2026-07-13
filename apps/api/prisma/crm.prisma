@@ -29,6 +29,8 @@ model CrmStaff {
   avatarUrl        String?   @map("avatar_url") @db.VarChar(255)
   notes            String?   @db.Text
   legacyStaffId    Int?      @map("legacy_staff_id")
+  lastLoginAt      DateTime? @map("last_login_at") @db.DateTime(0)
+  lastActiveAt     DateTime? @map("last_active_at") @db.DateTime(0)
 
   customerAssignments CrmCustomerAssignment[]
   prevHistory         CrmAssignmentHistory[] @relation("PrevStaffHistory")

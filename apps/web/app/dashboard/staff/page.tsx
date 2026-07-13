@@ -376,19 +376,22 @@ export default function StaffPage() {
         const initials = record.displayName
           ? record.displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
           : '??';
+        const isOnline = !!(record.lastActiveAt && dayjs().diff(dayjs(record.lastActiveAt), 'minute') < 5);
         return (
           <Space>
-            <Avatar 
-              src={record.avatarUrl || undefined}
-              icon={!record.avatarUrl ? <UserOutlined /> : undefined}
-              style={{ 
-                backgroundColor: token.colorPrimary, 
-                color: '#000',
-                fontWeight: '600'
-              }}
-            >
-              {initials}
-            </Avatar>
+            <Badge dot={isOnline} status="success" offset={[-2, 28]}>
+              <Avatar 
+                src={record.avatarUrl || undefined}
+                icon={!record.avatarUrl ? <UserOutlined /> : undefined}
+                style={{ 
+                  backgroundColor: token.colorPrimary, 
+                  color: '#000',
+                  fontWeight: '600'
+                }}
+              >
+                {initials}
+              </Avatar>
+            </Badge>
             <div>
               <Text style={{ fontWeight: 600, display: 'block', color: token.colorText }}>
                 {record.displayName}
@@ -441,6 +444,69 @@ export default function StaffPage() {
       dataIndex: 'joinedAt',
       key: 'joinedAt',
       render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY') : <Text type="secondary" italic style={{ fontSize: '12px' }}>Chưa thiết lập</Text>
+    },
+    {
+      title: 'Đăng nhập cuối',
+      key: 'lastLogin',
+      render: (_: any, record: Staff) => {
+        if (!record.lastLoginAt) {
+          return (
+            <Text type="secondary" italic style={{ fontSize: '12px' }}>
+              Chưa đăng nhập
+            </Text>
+          );
+        }
+
+        const lastLogin = dayjs(record.lastLoginAt);
+        const lastActive = record.lastActiveAt ? dayjs(record.lastActiveAt) : null;
+        const now = dayjs();
+        
+        let lastLoginStr = '';
+        if (lastLogin.isSame(now, 'day')) {
+          lastLoginStr = `Hôm nay ${lastLogin.format('HH:mm')}`;
+        } else if (lastLogin.isSame(now.subtract(1, 'day'), 'day')) {
+          lastLoginStr = `Hôm qua ${lastLogin.format('HH:mm')}`;
+        } else {
+          lastLoginStr = lastLogin.format('DD/MM/YYYY HH:mm');
+        }
+
+        // Relative time for active status
+        const isOnline = !!(lastActive && now.diff(lastActive, 'minute') < 5);
+        let activeStatusText = '';
+        if (isOnline) {
+          activeStatusText = 'Đang hoạt động';
+        } else if (lastActive) {
+          const diffMin = now.diff(lastActive, 'minute');
+          if (diffMin < 60) {
+            activeStatusText = `${diffMin} phút trước`;
+          } else {
+            const diffHr = now.diff(lastActive, 'hour');
+            if (diffHr < 24) {
+              activeStatusText = `${diffHr} giờ trước`;
+            } else {
+              const diffDay = now.diff(lastActive, 'day');
+              activeStatusText = `${diffDay} ngày trước`;
+            }
+          }
+        }
+
+        return (
+          <div style={{ fontSize: '13px' }}>
+            <div style={{ fontWeight: '500', color: token.colorText }}>
+              {lastLoginStr}
+            </div>
+            {isOnline ? (
+              <Tag color="success" style={{ fontSize: '10px', marginTop: '4px', height: '18px', lineHeight: '16px' }}>
+                Online
+              </Tag>
+            ) : activeStatusText ? (
+              <Text type="secondary" style={{ fontSize: '11px', display: 'block', marginTop: '2px' }}>
+                Hoạt động: {activeStatusText}
+              </Text>
+            ) : null}
+          </div>
+        );
+      }
     },
     {
       title: 'Trạng thái',
