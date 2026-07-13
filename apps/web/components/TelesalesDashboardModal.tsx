@@ -787,6 +787,13 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   <div className="relative flex items-center justify-between w-full px-[4%]">
                     {periods.map(p => {
                       const isActive = p.id === currentPeriodId;
+                      let periodTgt = monthlyTarget;
+                      if (p.id === 'today' || p.id === 'yesterday') {
+                        periodTgt = dailyTarget;
+                      } else if (p.id === 'this_week' || p.id === 'last_week') {
+                        periodTgt = weeklyTarget;
+                      }
+
                       return (
                         <div key={p.id} className="flex flex-col items-center cursor-pointer select-none" style={{ width: '16%' }} onClick={() => setCurrentPeriodId(p.id)}>
                           <div 
@@ -799,40 +806,18 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           >
                             {isActive && <span className="absolute inset-0 rounded-full bg-amber-500 animate-ping opacity-50"></span>}
                           </div>
-                          <span className={`text-[9px] mt-1.5 font-bold text-center leading-tight transition-colors ${
+                          <span className={`text-[9px] mt-1.5 font-bold text-center leading-tight transition-colors flex flex-col items-center ${
                             isActive 
                               ? 'text-amber-500' 
                               : `${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
-                          }`}>{p.label}</span>
+                          }`}>
+                            <span>{p.label}</span>
+                            <span className={`text-[8px] font-extrabold mt-0.5 ${isActive ? 'text-gold' : 'opacity-65'}`}>{periodTgt}</span>
+                          </span>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              </div>
-
-              {/* Target Preset Level breakdown bar */}
-              <div className={`flex items-center justify-center gap-6 py-2 px-4 rounded-xl border ${
-                themeMode === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50 border-slate-100'
-              } mx-6 mb-1 text-[11px] font-semibold shrink-0`}>
-                <span className={themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}>
-                  🎯 Chỉ tiêu {activeMetricConfig.label} ({activePreset.emoji} {activePreset.name}):
-                </span>
-                <div className="flex items-center gap-4">
-                  <span className="flex items-center gap-1">
-                    <span className="opacity-60">Daily:</span>
-                    <span className="font-extrabold text-gold">{dailyTarget}</span>
-                  </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-white/10"></span>
-                  <span className="flex items-center gap-1">
-                    <span className="opacity-60">Weekly:</span>
-                    <span className="font-extrabold text-gold">{weeklyTarget}</span>
-                  </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-white/10"></span>
-                  <span className="flex items-center gap-1">
-                    <span className="opacity-60">Monthly:</span>
-                    <span className="font-extrabold text-gold">{monthlyTarget}</span>
-                  </span>
                 </div>
               </div>
 
@@ -1114,6 +1099,13 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   <div className="relative flex items-center justify-between w-full px-[4%]">
                     {periods.map(p => {
                       const isActive = p.id === currentPeriodId;
+                      let periodTgt = monthlyTarget;
+                      if (p.id === 'today' || p.id === 'yesterday') {
+                        periodTgt = dailyTarget;
+                      } else if (p.id === 'this_week' || p.id === 'last_week') {
+                        periodTgt = weeklyTarget;
+                      }
+
                       return (
                         <div key={p.id} className="flex flex-col items-center cursor-pointer select-none" style={{ width: '16%' }} onClick={() => setCurrentPeriodId(p.id)}>
                           <div 
@@ -1126,40 +1118,18 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           >
                             {isActive && <span className="absolute inset-0 rounded-full bg-amber-500 animate-ping opacity-50"></span>}
                           </div>
-                          <span className={`text-[9px] mt-1.5 font-bold text-center leading-tight transition-colors ${
+                          <span className={`text-[9px] mt-1.5 font-bold text-center leading-tight transition-colors flex flex-col items-center ${
                             isActive 
                               ? 'text-amber-500' 
                               : `${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
-                          }`}>{p.label}</span>
+                          }`}>
+                            <span>{p.label}</span>
+                            <span className={`text-[8px] font-extrabold mt-0.5 ${isActive ? 'text-gold' : 'opacity-65'}`}>{periodTgt}</span>
+                          </span>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              </div>
-
-              {/* Target Preset Level breakdown bar */}
-              <div className={`flex items-center justify-center gap-6 py-2 px-4 rounded-xl border ${
-                themeMode === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50 border-slate-100'
-              } mx-6 mb-1 text-[11px] font-semibold shrink-0`}>
-                <span className={themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}>
-                  🎯 Chỉ tiêu {activeMetricConfig.label} ({activePreset.emoji} {activePreset.name}):
-                </span>
-                <div className="flex items-center gap-4">
-                  <span className="flex items-center gap-1">
-                    <span className="opacity-60">Daily:</span>
-                    <span className="font-extrabold text-gold">{dailyTarget}</span>
-                  </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-white/10"></span>
-                  <span className="flex items-center gap-1">
-                    <span className="opacity-60">Weekly:</span>
-                    <span className="font-extrabold text-gold">{weeklyTarget}</span>
-                  </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-white/10"></span>
-                  <span className="flex items-center gap-1">
-                    <span className="opacity-60">Monthly:</span>
-                    <span className="font-extrabold text-gold">{monthlyTarget}</span>
-                  </span>
                 </div>
               </div>
 
