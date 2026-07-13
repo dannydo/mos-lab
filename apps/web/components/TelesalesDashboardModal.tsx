@@ -145,10 +145,20 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const { width, height } = entry.contentRect;
+        const rect = entry.target.getBoundingClientRect();
+        const width = Math.round(rect.width);
+        const height = Math.round(rect.height);
         if (width > 0 && height > 0) {
-          localStorage.setItem('telesales_modal_width', `${Math.round(width)}px`);
-          localStorage.setItem('telesales_modal_height', `${Math.round(height)}px`);
+          const wStr = `${width}px`;
+          const hStr = `${height}px`;
+          localStorage.setItem('telesales_modal_width', wStr);
+          localStorage.setItem('telesales_modal_height', hStr);
+          setModalSize(prev => {
+            if (prev && prev.width === wStr && prev.height === hStr) {
+              return prev;
+            }
+            return { width: wStr, height: hStr };
+          });
         }
       }
     });
@@ -563,7 +573,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
       {/* Outer Modal Container: Resizable & size-persistent layout */}
       <div 
         ref={modalContainerRef}
-        className="w-full relative transition-transform duration-500" 
+        className={`relative transition-transform duration-500 ${
+          modalSize ? 'w-auto h-auto' : 'w-full max-w-[780px] h-[92vh] min-h-[820px] max-h-[920px]'
+        }`} 
         style={{ 
           perspective: '1500px',
           resize: 'both',
@@ -572,8 +584,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
           minHeight: '780px',
           maxWidth: '95vw',
           maxHeight: '95vh',
-          width: modalSize ? modalSize.width : '780px',
-          height: modalSize ? modalSize.height : '88vh',
+          width: modalSize ? modalSize.width : undefined,
+          height: modalSize ? modalSize.height : undefined,
         }}
         onClick={e => e.stopPropagation()}
       >
