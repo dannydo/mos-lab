@@ -30,7 +30,8 @@ import {
   SearchOutlined,
   ClockCircleOutlined,
   SmileOutlined,
-  InboxOutlined
+  InboxOutlined,
+  HeartFilled
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
@@ -46,9 +47,9 @@ interface BookingWizardDrawerProps {
 }
 
 const STORES = [
-  { id: 1, name: 'Estella Place' },
-  { id: 2, name: 'De Tham' },
-  { id: 3, name: 'Phan Xích Long' }
+  { id: 16, name: 'Estella Place' },
+  { id: 6, name: 'De Tham' },
+  { id: 2, name: 'Phan Xích Long' }
 ];
 
 const FALLBACK_SERVICES = [
@@ -122,6 +123,113 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   // Availability matrix state (based on database calculations)
   const [slotMatrix, setSlotMatrix] = useState<{ [time: string]: { available: number; roster: number } }>({});
   const [loadingSlots, setLoadingSlots] = useState(false);
+
+  // Favorite technicians state
+  const [favoriteTechs, setFavoriteTechs] = useState<string[]>([]);
+  const [comboBalances, setComboBalances] = useState<any[]>([]);
+  const [suggestedServices, setSuggestedServices] = useState<string[]>([]);
+  const [suggestedBranch, setSuggestedBranch] = useState<any>(null);
+
+  const hasActiveLowerLashCombo = (balances: any[]) => {
+    return balances.some(cb => {
+      const isCountActive = (cb.normalCount || 0) + (cb.retainCount || 0) > 0;
+      const isExpired = cb.dateExpired ? new Date(cb.dateExpired) < new Date() : false;
+      const name = (cb.serviceName || '').toLowerCase();
+      const isLower = name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
+      return isCountActive && !isExpired && isLower;
+    });
+  };
+
+  const hasActiveUpperLashCombo = (balances: any[]) => {
+    return balances.some(cb => {
+      const isCountActive = (cb.normalCount || 0) + (cb.retainCount || 0) > 0;
+      const isExpired = cb.dateExpired ? new Date(cb.dateExpired) < new Date() : false;
+      const name = (cb.serviceName || '').toLowerCase();
+      const isUpper = name.includes('trên') || name.includes('volume') || name.includes('classic') || name.includes('lashes') || name.includes('katun') || name.includes('mi ');
+      const isLower = name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
+      return isCountActive && !isExpired && isUpper && !isLower;
+    });
+  };
+
+  const checkAndAppendLowerLashNote = (note: string, balances: any[]) => {
+    if (hasActiveLowerLashCombo(balances) && hasActiveUpperLashCombo(balances)) {
+      const suffix = '(Có gói mi dưới)';
+      if (!note.includes('mi dưới') && !note.includes('mi duoi')) {
+        return note ? `${note.trim()} ${suffix}` : suffix;
+      }
+    }
+    return note;
+  };
+
+  useEffect(() => {
+    if (selectedCustomer?.id) {
+      api.get(`/customers/${selectedCustomer.id}/detailed`)
+        .then(res => {
+          const bookings = res.data.bookings || [];
+          const balances = res.data.comboBalances || [];
+          setComboBalances(balances);
+
+          const techCounts: { [key: string]: number } = {};
+          bookings.forEach((b: any) => {
+            const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
+            if (isCompleted && b.technicianName && b.technicianName !== 'Unknown' && b.technicianName !== 'Kỹ thuật viên') {
+              const name = b.technicianName.trim();
+              if (!name.includes('(Đã nghỉ)')) {
+                techCounts[name] = (techCounts[name] || 0) + 1;
+              }
+            }
+          });
+          const sorted = Object.entries(techCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+          setFavoriteTechs(sorted.slice(0, 2).map(t => t.name));
+
+          // Count services in completed bookings
+          const srvCounts: { [key: string]: number } = {};
+          bookings.forEach((b: any) => {
+            const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
+            if (isCompleted && b.services) {
+              b.services.forEach((sName: string) => {
+                srvCounts[sName] = (srvCounts[sName] || 0) + 1;
+              });
+            }
+          });
+          const sortedSrvs = Object.entries(srvCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+          setSuggestedServices(sortedSrvs.slice(0, 1).map(s => s.name));
+
+          // Count branches in bookings
+          const branchCounts: { [key: number]: number } = {};
+          bookings.forEach((b: any) => {
+            const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
+            if (isCompleted && b.storeId) {
+              const sId = Number(b.storeId);
+              branchCounts[sId] = (branchCounts[sId] || 0) + 1;
+            }
+          });
+          const sortedBranches = Object.entries(branchCounts)
+            .map(([id, count]) => ({ id: Number(id), count }))
+            .sort((a, b) => b.count - a.count);
+          if (sortedBranches.length > 0) {
+            const topStoreId = sortedBranches[0].id;
+            const matchedStore = STORES.find(s => s.id === topStoreId);
+            if (matchedStore) {
+              setSuggestedBranch(matchedStore);
+              if (!selectedCN) {
+                setSelectedCN(matchedStore);
+              }
+            }
+          }
+        })
+        .catch(err => console.error('Failed to fetch favorite technicians:', err));
+    } else {
+      setFavoriteTechs([]);
+      setComboBalances([]);
+      setSuggestedServices([]);
+      setSuggestedBranch(null);
+    }
+  }, [selectedCustomer]);
 
   useEffect(() => {
     if (open) {
@@ -323,6 +431,11 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     return groups;
   };
 
+  const getFavoriteKTVs = () => {
+    const ktvs = staffList.filter(s => s.role === 'technician' || s.role === 'specialist' || s.notes?.includes('KTV'));
+    return ktvs.filter(staff => favoriteTechs.includes(staff.displayName?.trim()));
+  };
+
   const handleCreateBooking = async () => {
     if (!selectedCN) {
       message.error('Vui lòng chọn chi nhánh');
@@ -355,7 +468,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
         bookingDate: bookingDate.format('YYYY-MM-DD'),
         bookingTime: selectedSlot,
         bookingChannel,
-        bookingNote,
+        bookingNote: checkAndAppendLowerLashNote(bookingNote, comboBalances),
         promotionId: selectedPromotion?.id || null,
         referralPhone: referralPhone ? referralPhone.trim() : null
       };
@@ -458,6 +571,65 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
               </div>
             </Card>
 
+            {/* Favorite Stylist Suggestion Section */}
+            {favoriteTechs.length > 0 && getFavoriteKTVs().length > 0 && (
+              <div style={{ marginTop: '8px' }}>
+                <div style={{ 
+                  fontWeight: 'bold', 
+                  fontSize: '13px', 
+                  color: '#db2777', 
+                  marginBottom: '8px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px' 
+                }}>
+                  <HeartFilled style={{ color: '#db2777' }} /> GỢI Ý CHUYÊN VIÊN ƯA THÍCH CỦA KHÁCH
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {getFavoriteKTVs().map((staff: any) => {
+                    const isSelected = selectedCV?.id === staff.id;
+                    return (
+                      <Card
+                        key={`fav-${staff.id}`}
+                        hoverable
+                        size="small"
+                        styles={{ body: { padding: '12px 16px' } }}
+                        style={{
+                          borderColor: isSelected ? '#db2777' : (themeMode === 'dark' ? '#4f1a30' : '#fbcfe8'),
+                          backgroundColor: isSelected 
+                            ? (themeMode === 'dark' ? 'rgba(219, 39, 119, 0.15)' : 'rgba(219, 39, 119, 0.05)') 
+                            : (themeMode === 'dark' ? '#1e293b' : '#ffffff'),
+                          boxShadow: isSelected ? '0 0 0 1px #db2777' : 'none',
+                          transition: 'all 0.2s'
+                        }}
+                        onClick={() => selectCVOption(staff)}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <Avatar src={staff.avatar || staff.avatarUrl || undefined} icon={<UserOutlined />} style={{ backgroundColor: '#db2777' }} />
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ fontWeight: 'bold', color: token.colorText }}>{staff.displayName}</div>
+                                <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>Ưa thích nhất</Tag>
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
+                                Chi nhánh: {staff.notes || 'Khác'}
+                                {staff.offDays && staff.offDays.length > 0 && (
+                                  <span style={{ color: '#ef4444', marginLeft: '8px', fontWeight: 'bold' }}>
+                                    | {getOffDaysText(staff.offDays)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div style={{ marginTop: '8px', marginBottom: '8px', fontWeight: 'bold', fontSize: '13px', color: '#888' }}>
               HOẶC CHỌN CHUYÊN VIÊN YÊU CẦU
             </div>
@@ -511,7 +683,12 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                             <Avatar src={staff.avatar || staff.avatarUrl || undefined} icon={<UserOutlined />} style={{ backgroundColor: '#D4A84B' }} />
                             <div>
-                              <div style={{ fontWeight: 'bold', color: token.colorText }}>{staff.displayName}</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ fontWeight: 'bold', color: token.colorText }}>{staff.displayName}</div>
+                                {favoriteTechs.includes(staff.displayName?.trim()) && (
+                                  <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>Ưa thích</Tag>
+                                )}
+                              </div>
                               <div style={{ fontSize: '12px', color: '#888' }}>
                                 Vai trò: Chuyên viên
                                 {staff.offDays && staff.offDays.length > 0 && (
@@ -567,6 +744,22 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                     }}
                   >
                     <span>{s.name}</span>
+                    {suggestedBranch?.id === s.id && (
+                      <Tag 
+                        color={isSelected ? "magenta" : "orange"} 
+                        style={{ 
+                          marginLeft: '6px', 
+                          marginRight: 0, 
+                          fontSize: '10px', 
+                          padding: '0 6px',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        💖 Hay đi
+                      </Tag>
+                    )}
                   </div>
                 );
               })}
@@ -678,6 +871,88 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                   : `${s.name} - ${s.price.toLocaleString('vi-VN')}đ (${s.duration} phút)`
               }))}
             />
+
+            {/* Favorite Service Suggestion */}
+            {suggestedServices.length > 0 && (
+              <div style={{ marginTop: '6px', fontSize: '12px' }}>
+                <span style={{ color: '#fa8c16', fontWeight: 'bold' }}>⭐ Dòng mi khách hay đi nhất: </span>
+                {suggestedServices.map(sName => {
+                  return (
+                    <span 
+                      key={sName}
+                      style={{ 
+                        color: themeMode === 'dark' ? '#ffa940' : '#d87a16', 
+                        textDecoration: 'underline', 
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        marginLeft: '4px'
+                      }}
+                      onClick={() => {
+                        const matchedSrv = services.find(s => s.name.toLowerCase() === sName.toLowerCase());
+                        if (matchedSrv) {
+                          setSelectedService(matchedSrv);
+                          message.success(`Đã chọn dòng mi hay dùng: ${matchedSrv.name}`);
+                        } else {
+                          message.info(`Hay đi: ${sName}`);
+                        }
+                      }}
+                    >
+                      {sName}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Active Combo Balances Suggestions */}
+            {comboBalances.filter((cb: any) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0).length > 0 && (
+              <div style={{ marginTop: '8px', marginBottom: '12px' }}>
+                <div style={{ fontSize: '12px', color: '#db2777', fontWeight: 'bold', marginBottom: '6px' }}>
+                  🎁 GÓI COMBO ĐANG CHẠY (CLICK ĐỂ CHỌN NHANH DÒNG MI):
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {comboBalances
+                    .filter((cb: any) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0)
+                    .map((cb: any) => {
+                      return (
+                        <div 
+                          key={cb.id}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: `1px solid ${themeMode === 'dark' ? '#4f1a30' : '#fbcfe8'}`,
+                            background: themeMode === 'dark' ? 'rgba(219, 39, 119, 0.1)' : 'rgba(219, 39, 119, 0.03)',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            color: token.colorText,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}
+                          onClick={() => {
+                            const cleanName = cb.serviceName.split('(')[0].trim().toLowerCase();
+                            const matchedSrv = services.find(s => s.name.toLowerCase().includes(cleanName) || cleanName.includes(s.name.toLowerCase()));
+                            if (matchedSrv) {
+                              setSelectedService(matchedSrv);
+                              message.success(`Đã chọn dòng mi từ Combo: ${matchedSrv.name}`);
+                            } else {
+                              message.info(`Gói combo: ${cb.serviceName}`);
+                            }
+                          }}
+                        >
+                          <div>
+                            <span style={{ fontWeight: 'bold' }}>{cb.serviceName}</span>
+                            <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                              Còn lại: {cb.normalCount || 0} mới | {cb.retainCount || 0} dặm
+                            </div>
+                          </div>
+                          <Tag color="magenta" style={{ margin: 0, fontSize: '10px' }}>Chọn</Tag>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Promotion & Referral Section */}

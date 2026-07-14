@@ -34,6 +34,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/api';
 import { RescheduleBookingModal } from './RescheduleBookingModal';
+import BookingWizardDrawer from './BookingWizardDrawer';
 
 interface CustomerDetailDrawerProps {
   open: boolean;
@@ -57,6 +58,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<any>(null);
   const [isGemModalOpen, setIsGemModalOpen] = useState(false);
   const [isComboModalOpen, setIsComboModalOpen] = useState(false);
+  const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
 
   // Resizable drawer states and hooks
   const [isDragging, setIsDragging] = useState(false);
@@ -422,6 +424,30 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     return maxVal > 0 ? `${dayNames[maxIndex]} (${maxVal} lần)` : 'N/A';
   };
 
+  const getFavoriteTechnicians = (bookings: any[]) => {
+    if (!bookings || bookings.length === 0) return 'Chưa có';
+    const techCounts: { [key: string]: number } = {};
+    
+    bookings.forEach(b => {
+      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
+      if (isCompleted && b.technicianName && b.technicianName !== 'Unknown' && b.technicianName !== 'Kỹ thuật viên') {
+        const name = b.technicianName.trim();
+        if (!name.includes('(Đã nghỉ)')) {
+          techCounts[name] = (techCounts[name] || 0) + 1;
+        }
+      }
+    });
+
+    const sortedTechs = Object.entries(techCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    if (sortedTechs.length === 0) return 'Chưa có';
+
+    const top2 = sortedTechs.slice(0, 2);
+    return top2.map(t => `${t.name} (${t.count} lần)`).join(', ');
+  };
+
   const customer = data?.customer;
   const stats = data?.stats;
   const comboBalances = data?.comboBalances || [];
@@ -500,20 +526,24 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                 </div>
               </div>
             </div>
-            {onBookAppointment && (
-              <Button
-                type="primary"
-                icon={<CalendarOutlined />}
-                style={{
-                  background: '#D4A84B',
-                  borderColor: '#D4A84B',
-                  fontWeight: 'bold'
-                }}
-                onClick={() => onBookAppointment(customer)}
-              >
-                Đặt Lịch Hẹn
-              </Button>
-            )}
+            <Button
+              type="primary"
+              icon={<CalendarOutlined />}
+              style={{
+                background: '#D4A84B',
+                borderColor: '#D4A84B',
+                fontWeight: 'bold'
+              }}
+              onClick={() => {
+                if (onBookAppointment) {
+                  onBookAppointment(customer);
+                } else {
+                  setBookingWizardOpen(true);
+                }
+              }}
+            >
+              Đặt Lịch Hẹn
+            </Button>
           </div>
         )
       }
@@ -669,6 +699,12 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     <span style={{ color: '#888' }}>Thứ hay đi nhất:</span>
                     <span style={{ fontWeight: 'bold', color: '#fa8c16' }}>
                       {getMostFrequentDay(bookings)}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#888' }}>CV ưa thích:</span>
+                    <span style={{ fontWeight: 'bold', color: themeMode === 'dark' ? '#f472b6' : '#db2777' }}>
+                      {getFavoriteTechnicians(bookings)}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -980,7 +1016,8 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                                             setSelectedBookingForReschedule({
                                               ...b,
                                               customerName: customer?.name || 'Khách Hàng',
-                                              customerPhone: customer?.phone || ''
+                                              customerPhone: customer?.phone || '',
+                                              customerId: customer?.id
                                             });
                                             setRescheduleModalVisible(true);
                                           }}
@@ -1317,6 +1354,22 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
           locale={{ emptyText: 'Không có lịch sử mua combo nào.' }}
         />
       </Modal>
+      {bookingWizardOpen && (
+        <BookingWizardDrawer
+          open={bookingWizardOpen}
+          onClose={() => setBookingWizardOpen(false)}
+          onSuccess={() => {
+            setBookingWizardOpen(false);
+            fetchDetails();
+          }}
+          initialCustomer={{
+            id: customer.id,
+            name: customer.name,
+            phone: customer.phone,
+            bucket: customer.bucket
+          }}
+        />
+      )}
     </Drawer>
   );
 };

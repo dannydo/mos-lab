@@ -233,7 +233,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
             const lastTxnBefore = txnsBefore[0];
 
             const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-            const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
+            const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
             let countLeft = 0;
             if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
@@ -695,7 +695,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             const lastTxnBefore = txnsBefore[0];
 
             const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-            const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
+            const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
             let countLeft = 0;
             if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
@@ -1496,7 +1496,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             const lastTxnBefore = txnsBefore[0];
 
             const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-            const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
+            const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
             let countLeft = 0;
             if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {

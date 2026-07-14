@@ -204,8 +204,8 @@ export async function planRoutes(fastify: FastifyInstance) {
 
       // 4. Fetch order checkins in this week for these users
       // Formulate week range in YYYY-MM-DD
-      const startStr = monday.toISOString().split('T')[0];
-      const endStr = sunday.toISOString().split('T')[0];
+      const startStr = monday.toLocaleDateString('en-CA');
+      const endStr = sunday.toLocaleDateString('en-CA');
       const ordersQuery = `
         SELECT id, user_id, date_created
         FROM \`order\`
@@ -278,11 +278,11 @@ export async function planRoutes(fastify: FastifyInstance) {
         const dailyActivities = Array.from({ length: 7 }).map((_, idx) => {
           const currentDate = new Date(monday);
           currentDate.setDate(monday.getDate() + idx);
-          const dateStr = currentDate.toISOString().split('T')[0];
+          const dateStr = currentDate.toLocaleDateString('en-CA');
 
           // Check if there was a call on this date
           const dateCallLogs = callLogs.filter(cl => {
-            const clDateStr = new Date(cl.createdAt).toISOString().split('T')[0];
+            const clDateStr = new Date(cl.createdAt).toLocaleDateString('en-CA');
             return cl.legacyUserId === uid && clDateStr === dateStr;
           });
 
@@ -291,7 +291,7 @@ export async function planRoutes(fastify: FastifyInstance) {
 
           // Check checkin
           const dateOrders = ordersData.filter(o => {
-            const oDateStr = new Date(o.date_created).toISOString().split('T')[0];
+            const oDateStr = new Date(o.date_created).toLocaleDateString('en-CA');
             return Number(o.user_id) === uid && oDateStr === dateStr;
           });
 

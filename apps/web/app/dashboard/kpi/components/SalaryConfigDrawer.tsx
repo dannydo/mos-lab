@@ -160,7 +160,7 @@ export default function SalaryConfigDrawer({ open, onClose, onSaveSuccess }: Sal
 
   return (
     <Drawer
-      title={<strong>Cấu Hình Công Thức Lương & Thưởng Online Consultant</strong>}
+      title={<strong>Cấu Hình Công Thức Lương & Thưởng Telesales</strong>}
       placement="right"
       width={600}
       onClose={onClose}

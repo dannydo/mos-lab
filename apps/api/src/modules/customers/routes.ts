@@ -1556,9 +1556,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const startDate = new Date(startStr);
       const endDate = new Date(startDate.getTime() + srvDuration * 60 * 1000);
 
-      // Adjust date timezone for SQL representation
-      const mysqlStart = startDate.toISOString().slice(0, 19).replace('T', ' ');
-      const mysqlEnd = endDate.toISOString().slice(0, 19).replace('T', ' ');
+      // Adjust date timezone for SQL representation using timezone-naive local format
+      const formatLocalMySQL = (date: Date) => {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      };
+      const mysqlStart = formatLocalMySQL(startDate);
+      const mysqlEnd = formatLocalMySQL(endDate);
 
       // 5. Create the booking order
       const orderKey = 'booking_' + Math.random().toString(36).substring(2, 12);
@@ -1571,7 +1575,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           promotion_id, selected_promotion_id, campaign_id
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?)`,
         11, 1, validStaffId, orderKey, storeId, finalCustomerId, 1, bookingNote || '', bookingChannel || 'FB', srvDuration,
-        mysqlStart, mysqlEnd, 1, finalPrice, 'Confirmed', 0, 0, 1, 0, selectedPromoId, selectedPromoId, campaignId
+        mysqlStart, mysqlEnd, 1, finalPrice, 'New', 0, 0, 1, 0, selectedPromoId, selectedPromoId, campaignId
       );
 
       // Get inserted order ID
@@ -1666,7 +1670,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       technicianName,
       bookingDate,
       bookingTime,
-      bookingNote
+      bookingNote,
+      serviceId
     } = request.body as {
       storeId: number;
       storeName: string;
@@ -1675,6 +1680,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       bookingDate: string; // YYYY-MM-DD
       bookingTime: string; // HH:mm
       bookingNote?: string | null;
+      serviceId?: number | null;
     };
 
     if (!storeId || !bookingDate || !bookingTime) {
@@ -1687,7 +1693,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     try {
       // 1. Fetch current order details (like duration and user_id)
       const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-        `SELECT user_id, booking_duration_minute FROM \`order\` WHERE id = ?`,
+        `SELECT user_id, booking_duration_minute, total_price FROM \`order\` WHERE id = ?`,
         orderId
       );
 
@@ -1696,18 +1702,46 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       const order = existingOrders[0];
-      const duration = Number(order.booking_duration_minute) || 90;
       const finalCustomerId = Number(order.user_id);
 
-      // 2. Calculate new dates
+      // 2. Fetch service price & duration if serviceId is provided
+      let srvPrice = 0;
+      let srvDuration = 90;
+      let finalServiceId = serviceId;
+      if (finalServiceId !== undefined && finalServiceId !== null) {
+        if (finalServiceId === 0) {
+          finalServiceId = 1; // Map to "Any - Lashes 2"
+        }
+        const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT s.duration_minute_standard as duration, sp.service_price as price
+           FROM service s
+           LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0
+           WHERE s.id = ? LIMIT 1`,
+          finalServiceId
+        );
+        if (srvInfo.length > 0) {
+          srvPrice = Number(srvInfo[0].price || 0);
+          srvDuration = Number(srvInfo[0].duration || 90);
+        }
+      }
+
+      const duration = (serviceId !== undefined && serviceId !== null) ? srvDuration : (Number(order.booking_duration_minute) || 90);
+      const totalPrice = (serviceId !== undefined && serviceId !== null) ? srvPrice : Number(order.total_price || 0);
+
+      // 3. Calculate new dates
       const startStr = `${bookingDate} ${bookingTime}:00`;
       const startDate = new Date(startStr);
       const endDate = new Date(startDate.getTime() + duration * 60 * 1000);
 
-      const mysqlStart = startDate.toISOString().slice(0, 19).replace('T', ' ');
-      const mysqlEnd = endDate.toISOString().slice(0, 19).replace('T', ' ');
+      // Adjust date timezone for SQL representation using timezone-naive local format
+      const formatLocalMySQL = (date: Date) => {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      };
+      const mysqlStart = formatLocalMySQL(startDate);
+      const mysqlEnd = formatLocalMySQL(endDate);
 
-      // 3. Update order in legacy database
+      // 4. Update order in legacy database
       await fastify.prisma.legacy.$executeRawUnsafe(
         `UPDATE \`order\` 
          SET booking_date_start = ?, 
@@ -1715,6 +1749,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
              assigned_staff_id = ?, 
              client_store_id = ?, 
              booking_note = ?, 
+             booking_duration_minute = ?,
+             total_price = ?,
+             order_state = 'New',
              date_updated = NOW()
          WHERE id = ?`,
         mysqlStart,
@@ -1722,18 +1759,38 @@ export async function customerRoutes(fastify: FastifyInstance) {
         technicianId || null,
         storeId,
         bookingNote || null,
+        duration,
+        totalPrice,
         orderId
       );
 
-      // 4. Update order_service record KTV assignment
-      await fastify.prisma.legacy.$executeRawUnsafe(
-        `UPDATE order_service 
-         SET assigned_staff_id = ?, booked_staff_id = ? 
-         WHERE order_id = ?`,
-        technicianId || null,
-        technicianId || null,
-        orderId
-      );
+      // 5. Update order_service record KTV assignment & service details
+      if (serviceId !== undefined && serviceId !== null) {
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `UPDATE order_service 
+           SET service_id = ?,
+               duration_minute = ?,
+               service_price = ?,
+               assigned_staff_id = ?, 
+               booked_staff_id = ? 
+           WHERE order_id = ?`,
+          finalServiceId,
+          duration,
+          totalPrice,
+          technicianId || null,
+          technicianId || null,
+          orderId
+        );
+      } else {
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `UPDATE order_service 
+           SET assigned_staff_id = ?, booked_staff_id = ? 
+           WHERE order_id = ?`,
+          technicianId || null,
+          technicianId || null,
+          orderId
+        );
+      }
 
       // 5. Update user's last_order_booking date
       await fastify.prisma.legacy.$executeRawUnsafe(
@@ -2565,11 +2622,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       
       const staffIdArray = Array.from(staffUserIds);
       const staffProfiles = staffIdArray.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-        SELECT user_id as userId, full_name as fullName
+        SELECT user_id as userId, full_name as fullName, is_disabled as isDisabled, is_leaved as isLeaved
         FROM user_profile
         WHERE user_id IN (${staffIdArray.join(',')})
       `) : [];
       const staffNamesMap = new Map<number, string>(staffProfiles.map(s => [Number(s.userId), s.fullName]));
+      const staffInactiveMap = new Map<number, boolean>(
+        staffProfiles.map(s => [Number(s.userId), s.isDisabled === 1 || s.isDisabled === true || s.isLeaved === 1 || s.isLeaved === true])
+      );
 
       // Map services to bookings
       const servicesByOrderId = new Map<number, string[]>();
@@ -2580,7 +2640,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       const formattedBookings = bookingsRaw.map(b => {
-        const orderSvs = orderServicesDetails.filter(os => os.order_id === b.id);
+        const orderSvs = orderServicesDetails.filter(os => Number(os.order_id) === Number(b.id));
         const checkInStaffId = orderSvs.find(os => os.check_in_staff_id)?.check_in_staff_id;
         const checkOutStaffId = orderSvs.find(os => os.check_out_staff_id)?.check_out_staff_id;
         const firstCvStaffId = b.technicianId || orderSvs.find(os => os.assigned_staff_id)?.assigned_staff_id;
@@ -2588,16 +2648,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return {
           id: b.id,
           orderKey: b.orderKey,
-          bookingDate: b.bookingDate ? new Date(b.bookingDate).toISOString() : null,
+          bookingDate: b.bookingDate ? new Date(b.bookingDate).toISOString().replace('Z', '+07:00') : null,
           bookingNote: b.bookingNote || '',
           orderState: b.orderState,
           totalPrice: Number(b.totalPrice || 0),
           branchName: b.branchName,
-          technicianName: firstCvStaffId ? (staffNamesMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên') : (b.assignedTechnicianName || 'Unknown'),
+          technicianName: (() => {
+            if (!firstCvStaffId) return b.assignedTechnicianName || 'Unknown';
+            const name = staffNamesMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên';
+            const isInactive = staffInactiveMap.get(Number(firstCvStaffId));
+            return isInactive ? `${name} (Đã nghỉ)` : name;
+          })(),
           ccInName: checkInStaffId ? (staffNamesMap.get(Number(checkInStaffId)) || 'Tư vấn viên') : 'Unknown',
           ccOutName: checkOutStaffId ? (staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên') : 'Unknown',
           bookerName: b.createdStaffId ? (staffNamesMap.get(Number(b.createdStaffId)) || 'Unknown') : 'Unknown',
-          technicianId: b.technicianId ? Number(b.technicianId) : null,
+          technicianId: firstCvStaffId ? Number(firstCvStaffId) : null,
           storeId: b.storeId ? Number(b.storeId) : null,
           services: servicesByOrderId.get(Number(b.id)) || []
         };
@@ -2699,9 +2764,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           const formatDate = (dateInput: any) => {
             if (!dateInput) return '';
             const d = new Date(dateInput);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
+            const day = String(d.getUTCDate()).padStart(2, '0');
+            const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const year = d.getUTCFullYear();
             return `${day}/${month}/${year}`;
           };
 
@@ -3104,7 +3169,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           const lastTxnBefore = txnsBefore[0];
 
           const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-          const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
+          const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
           let countLeft = 0;
           if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
@@ -3321,8 +3386,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return {
           id: Number(row.id),
           orderKey: row.orderKey,
-          bookingDateStart: row.bookingDateStart ? new Date(row.bookingDateStart).toISOString() : null,
-          bookingDateEnd: row.bookingDateEnd ? new Date(row.bookingDateEnd).toISOString() : null,
+          bookingDateStart: row.bookingDateStart ? new Date(row.bookingDateStart).toISOString().replace('Z', '+07:00') : null,
+          bookingDateEnd: row.bookingDateEnd ? new Date(row.bookingDateEnd).toISOString().replace('Z', '+07:00') : null,
           bookingNote: row.bookingNote,
           bookingChannel: row.bookingChannel,
           orderState: row.orderState,
@@ -3850,7 +3915,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
           // Condition 2: date_expired at that time is null or >= booking_date_start
           const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-          const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
+          const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
           // Condition 3: count left at that time > 0
           let countLeft = 0;

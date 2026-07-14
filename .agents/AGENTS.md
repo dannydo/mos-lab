@@ -96,3 +96,15 @@
 * **Micro-animations:** Thêm hiệu ứng transition nhẹ nhàng khi hover vào các thẻ card, nút bấm hoặc dòng trong bảng để giao diện có cảm giác "sống động" và phản hồi tốt.
 * **Không dùng hình ảnh giữ chỗ (placeholders):** Sử dụng biểu tượng SVG chất lượng cao hoặc sinh ảnh thực tế bằng công cụ AI nếu cần minh họa.
 
+---
+
+# External Server Details (Image & AI Server)
+*Đây là thông tin cấu hình máy chủ dùng để lưu trữ ảnh và xử lý tác vụ AI phát hiện tiếng cười (Laughter Detection) cho dự án Wings Lashes.*
+
+*   **IP:** `75.119.148.205`
+*   **Port:** `22`
+*   **User:** `root`
+*   **Password:** `qyRUPgRjsV26FYD6qcUe`
+*   **Ghi chú:** Máy chủ chạy Ubuntu 20.04 LTS, có 31GB RAM trống và 8 vCPUs (AMD EPYC). Không được hỏi lại người dùng thông tin này.
+
+

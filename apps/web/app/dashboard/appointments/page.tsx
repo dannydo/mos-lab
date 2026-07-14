@@ -530,12 +530,13 @@ export default function AppointmentsPage() {
                   id: record.id,
                   bookingDate: record.bookingDateStart ? dayjs(record.bookingDateStart).format('YYYY-MM-DD') : '',
                   bookingTime: record.bookingDateStart ? dayjs(record.bookingDateStart).format('HH:mm') : '',
-                  branchName: record.branchName || (record.storeId === 1 ? 'Estella Place' : record.storeId === 2 ? 'De Tham' : 'Phan Xích Long'),
+                  branchName: record.branchName || (record.storeId === 16 ? 'Estella Place' : record.storeId === 6 ? 'De Tham' : 'Phan Xích Long'),
                   technicianName: record.technicianName,
                   technicianId: record.technicianId,
                   bookingNote: record.bookingNote,
                   customerName: record.customerName,
-                  customerPhone: record.customerPhone
+                  customerPhone: record.customerPhone,
+                  customerId: record.customerId
                 };
                 setSelectedBookingForReschedule(bookingObj);
                 setRescheduleModalVisible(true);
