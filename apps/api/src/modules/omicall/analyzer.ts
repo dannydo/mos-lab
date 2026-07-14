@@ -9,7 +9,7 @@ async function fetchRecordingUrl(callUuid: string): Promise<string | null> {
   if (!apiKey || (apiKey === 'mock_omicall_api_key_for_dev' && process.env.NODE_ENV !== 'production')) {
     // Return mock wav recording for testing (DEV only)
     console.warn('[DEV MODE] Using mock recording URL for laughter detection testing');
-    return `https://raw.githubusercontent.com/benedikt-bartscherer/laughter-detection/master/data/web_examples/audio/obama_laugh.wav`;
+    return `https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.wav`;
   }
 
   try {
