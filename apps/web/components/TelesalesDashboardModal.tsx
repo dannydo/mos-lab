@@ -1000,7 +1000,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           >
                             {/* Inner Capsule (opaque solid background to block line behind it) */}
                             <div 
-                              className={`rounded-full px-4 py-1.5 flex flex-col items-center min-w-[80px] ${
+                              className={`rounded-full px-2.5 py-1.5 flex flex-col items-center min-w-[84px] ${
                                 themeMode === 'dark'
                                   ? isActive
                                     ? 'bg-neutral-955 text-pink-400'
@@ -1022,7 +1022,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               </span>
                               {/* Bottom Label (Period Name) - Smaller */}
                               <span 
-                                className={`text-[9px] mt-0.5 leading-none ${
+                                className={`text-[9px] mt-0.5 leading-none whitespace-nowrap ${
                                   isActive 
                                     ? `font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}` 
                                     : `font-medium opacity-85 ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
@@ -1433,7 +1433,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           >
                             {/* Inner Capsule (opaque solid background to block line behind it) */}
                             <div 
-                              className={`rounded-full px-4 py-1.5 flex flex-col items-center min-w-[80px] ${
+                              className={`rounded-full px-2.5 py-1.5 flex flex-col items-center min-w-[84px] ${
                                 themeMode === 'dark'
                                   ? isActive
                                     ? 'bg-neutral-955 text-pink-400'
@@ -1455,7 +1455,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               </span>
                               {/* Bottom Label (Period Name) - Smaller */}
                               <span 
-                                className={`text-[9px] mt-0.5 leading-none ${
+                                className={`text-[9px] mt-0.5 leading-none whitespace-nowrap ${
                                   isActive 
                                     ? `font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}` 
                                     : `font-medium opacity-85 ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
