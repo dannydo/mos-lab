@@ -54,12 +54,12 @@ const periods = [
 ];
 
 const radialCoords = [
-  { x: 0, y: -60 },   // Index 0: Top
-  { x: 52, y: -30 },  // Index 1: Top-Right
-  { x: 52, y: 30 },   // Index 2: Bottom-Right
-  { x: 0, y: 60 },    // Index 3: Bottom
-  { x: -52, y: 30 },  // Index 4: Bottom-Left
-  { x: -52, y: -30 }  // Index 5: Top-Left
+  { x: 0, y: -78 },   // Index 0: Top (originally -60)
+  { x: 68, y: -39 },  // Index 1: Top-Right (originally 52, -30)
+  { x: 68, y: 39 },   // Index 2: Bottom-Right (originally 52, 30)
+  { x: 0, y: 78 },    // Index 3: Bottom (originally 60)
+  { x: -68, y: 39 },  // Index 4: Bottom-Left (originally -52, 30)
+  { x: -68, y: -39 }  // Index 5: Top-Left (originally -52, -30)
 ];
 
 const periodPositions: Record<string, string> = {
@@ -856,7 +856,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             </div>
 
             {/* Main Area */}
-            <div className="flex-1 p-5 flex flex-col justify-between overflow-hidden relative">
+            <div className={`flex-1 p-5 flex flex-col justify-between relative ${isRadialOpen ? 'overflow-visible' : 'overflow-hidden'}`}>
               {loading && (
                 <div className="absolute inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center rounded-b-2xl">
                   <Spin indicator={<LoadingOutlined style={{ fontSize: 28, color: '#D4A84B' }} spin />} />
@@ -868,7 +868,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   {/* Timeline Track Line (z-index 0) */}
                   <div className={`absolute top-1/2 left-[4%] right-[4%] h-[2px] z-0 ${themeMode === 'dark' ? 'bg-slate-800/80' : 'bg-slate-200/80'}`} style={{ transform: 'translateY(-50%)' }}></div>
                   
-                  {/* Crosshair (The Golden Orb Radial Selector - 50% larger: w-12 h-12) */}
+                  {/* Crosshair (The Golden Orb Radial Selector - Scaled 30% larger: w-16 h-16) */}
                   <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${isRadialOpen ? 'z-[9999]' : 'z-30'}`}>
                     <div className={`w-[2px] h-[10px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
                     
@@ -886,7 +886,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               }}
                             />
                             
-                            {/* Option buttons */}
+                            {/* Option buttons (Scaled: w-12 h-12, emoji: text-xl, with outer translation wrapper to enable smooth hover zoom and glow) */}
                             <div className="absolute z-[9999] pointer-events-none">
                               {LEVEL_PRESETS.map((preset, idx) => {
                                 const coord = radialCoords[idx];
@@ -894,31 +894,35 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                                 return (
                                   <div
                                     key={idx}
-                                    className={`absolute w-9 h-9 rounded-full border flex items-center justify-center cursor-pointer pointer-events-auto transition-all duration-300 hover:scale-115 ${
-                                      themeMode === 'dark'
-                                        ? isCurrent
-                                          ? 'bg-gold/15 shadow-[0_0_12px_rgba(212,163,75,0.35)] text-white font-bold'
-                                          : 'bg-neutral-900 text-gray-300 hover:text-white'
-                                        : isCurrent
-                                          ? 'bg-gold/10 shadow-[0_2px_8px_rgba(212,163,75,0.25)] text-slate-800 font-bold'
-                                          : 'bg-white text-slate-600 hover:text-slate-900'
-                                    }`}
+                                    className="absolute pointer-events-auto"
                                     style={{
                                       transform: `translate(-50%, -50%) translate(${coord.x}px, ${coord.y}px)`,
-                                      borderColor: isCurrent
-                                        ? '#D4A84B'
-                                        : (themeMode === 'dark'
-                                          ? 'rgba(255, 255, 255, 0.08)'
-                                          : 'rgba(148, 163, 184, 0.25)')
-                                    }}
-                                    title={preset.name}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleUpdateLevel(idx);
-                                      setIsRadialOpen(false);
                                     }}
                                   >
-                                    <span className="text-base leading-none">{preset.emoji}</span>
+                                    <div
+                                      className={`w-12 h-12 rounded-full border flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-115 ${
+                                        themeMode === 'dark'
+                                          ? isCurrent
+                                            ? 'bg-gold/15 shadow-[0_0_15px_rgba(212,163,75,0.45)] text-white font-bold'
+                                            : 'bg-neutral-900/90 shadow-[0_0_8px_rgba(212,163,75,0.15)] hover:shadow-[0_0_15px_rgba(212,163,75,0.35)] text-gray-300 hover:text-white'
+                                          : isCurrent
+                                            ? 'bg-gold/10 shadow-[0_2px_12px_rgba(212,163,75,0.3)] text-slate-800 font-bold'
+                                            : 'bg-white shadow-[0_2px_6px_rgba(212,163,75,0.12)] hover:shadow-[0_4px_12px_rgba(212,163,75,0.25)] text-slate-600 hover:text-slate-900'
+                                      }`}
+                                      style={{
+                                        borderColor: isCurrent
+                                          ? '#D4A84B'
+                                          : 'rgba(212, 163, 75, 0.2)'
+                                      }}
+                                      title={preset.name}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUpdateLevel(idx);
+                                        setIsRadialOpen(false);
+                                      }}
+                                    >
+                                      <span className="text-xl leading-none">{preset.emoji}</span>
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -926,9 +930,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           </>
                         )}
 
-                        {/* Center Orb Trigger (48px - 50% larger than 32px) */}
+                        {/* Center Orb Trigger (Scaled: w-16 h-16, emoji: text-[32px]) */}
                         <div 
-                          className={`w-12 h-12 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 z-50 ${
+                          className={`w-16 h-16 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 z-50 ${
                             isRadialOpen
                               ? 'scale-110 shadow-[0_0_20px_rgba(212,163,75,0.5)] bg-gold/10'
                               : themeMode === 'dark'
@@ -946,12 +950,12 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           }}
                           title={`Cấp độ mục tiêu hiện tại: ${activePreset.name} (Click để đổi nhanh)`}
                         >
-                          <span className="text-2xl leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                          <span className="text-[32px] leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
                         </div>
                       </div>
                     ) : (
                       <div 
-                        className={`w-12 h-12 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
+                        className={`w-16 h-16 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
                           themeMode === 'dark'
                             ? 'bg-neutral-900 shadow-[0_0_8px_rgba(212,163,75,0.1)]'
                             : 'bg-white shadow-[0_2px_6px_rgba(212,163,75,0.08)]'
@@ -960,7 +964,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           borderColor: themeMode === 'dark' ? 'rgba(212, 163, 75, 0.2)' : 'rgba(212, 163, 75, 0.2)'
                         }}
                       >
-                        <span className="text-2xl leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                        <span className="text-[32px] leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
                       </div>
                     )}
 
@@ -990,31 +994,41 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           <div 
                             className={`p-[1.2px] rounded-full transition-all duration-300 flex items-center justify-center ${
                               isActive 
-                                ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 shadow-[0_0_12px_rgba(236,72,153,0.35)] scale-105 z-20' 
+                                ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105 z-20' 
                                 : `${themeMode === 'dark' ? 'bg-neutral-800' : 'bg-slate-200'} z-10 hover:scale-105`
                             }`}
                           >
                             {/* Inner Capsule (opaque solid background to block line behind it) */}
                             <div 
-                              className={`rounded-full px-3 py-1 flex flex-col items-center min-w-[76px] ${
+                              className={`rounded-full px-4 py-1.5 flex flex-col items-center min-w-[80px] ${
                                 themeMode === 'dark'
                                   ? isActive
-                                    ? 'bg-neutral-950 text-white'
+                                    ? 'bg-neutral-955 text-pink-400'
                                     : 'bg-neutral-900 text-gray-400 hover:text-white'
                                   : isActive
-                                    ? 'bg-white text-slate-900 font-bold'
+                                    ? 'bg-white text-pink-500 font-bold'
                                     : 'bg-slate-50 text-slate-500 hover:bg-white hover:text-slate-900'
                               }`}
                             >
-                              <span className="text-[9px] font-extrabold tracking-tight leading-none">{p.label}</span>
+                              {/* Top Number (Target) - Large & Clear */}
                               <span 
-                                className={`text-[8px] font-extrabold mt-0.5 leading-none ${
+                                className={`font-outfit leading-tight ${
                                   isActive 
-                                    ? 'text-pink-500' 
-                                    : `${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
+                                    ? 'text-base font-black' 
+                                    : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-300' : 'text-slate-700'}`
                                 }`}
                               >
                                 {periodTgt}
+                              </span>
+                              {/* Bottom Label (Period Name) - Smaller */}
+                              <span 
+                                className={`text-[9px] mt-0.5 leading-none ${
+                                  isActive 
+                                    ? `font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}` 
+                                    : `font-medium opacity-85 ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
+                                }`}
+                              >
+                                {p.label}
                               </span>
                             </div>
                           </div>
@@ -1280,14 +1294,14 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             </div>
 
             {/* Main Area */}
-            <div className="flex-1 p-5 flex flex-col justify-between overflow-hidden relative">
-                        {/* Timeline (Aurora Glow Border Capsule) */}
+            <div className={`flex-1 p-5 flex flex-col justify-between relative ${isRadialOpen ? 'overflow-visible' : 'overflow-hidden'}`}>
+              {/* Timeline (Aurora Glow Border Capsule) */}
               <div className="mt-5 w-full py-4 relative">
                 <div className="relative flex items-center justify-center py-6 h-20">
                   {/* Timeline Track Line (z-index 0) */}
                   <div className={`absolute top-1/2 left-[4%] right-[4%] h-[2px] z-0 ${themeMode === 'dark' ? 'bg-slate-800/80' : 'bg-slate-200/80'}`} style={{ transform: 'translateY(-50%)' }}></div>
                   
-                  {/* Crosshair (The Golden Orb Radial Selector - 50% larger: w-12 h-12) */}
+                  {/* Crosshair (The Golden Orb Radial Selector - Scaled 30% larger: w-16 h-16) */}
                   <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${isRadialOpen ? 'z-[9999]' : 'z-30'}`}>
                     <div className={`w-[2px] h-[10px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
                     
@@ -1305,7 +1319,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               }}
                             />
                             
-                            {/* Option buttons */}
+                            {/* Option buttons (Scaled: w-12 h-12, emoji: text-xl, with outer translation wrapper to enable smooth hover zoom and glow) */}
                             <div className="absolute z-[9999] pointer-events-none">
                               {LEVEL_PRESETS.map((preset, idx) => {
                                 const coord = radialCoords[idx];
@@ -1313,31 +1327,35 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                                 return (
                                   <div
                                     key={idx}
-                                    className={`absolute w-9 h-9 rounded-full border flex items-center justify-center cursor-pointer pointer-events-auto transition-all duration-300 hover:scale-115 ${
-                                      themeMode === 'dark'
-                                        ? isCurrent
-                                          ? 'bg-gold/15 shadow-[0_0_12px_rgba(212,163,75,0.35)] text-white font-bold'
-                                          : 'bg-neutral-900 text-gray-300 hover:text-white'
-                                        : isCurrent
-                                          ? 'bg-gold/10 shadow-[0_2px_8px_rgba(212,163,75,0.25)] text-slate-800 font-bold'
-                                          : 'bg-white text-slate-600 hover:text-slate-900'
-                                    }`}
+                                    className="absolute pointer-events-auto"
                                     style={{
                                       transform: `translate(-50%, -50%) translate(${coord.x}px, ${coord.y}px)`,
-                                      borderColor: isCurrent
-                                        ? '#D4A84B'
-                                        : (themeMode === 'dark'
-                                          ? 'rgba(255, 255, 255, 0.08)'
-                                          : 'rgba(148, 163, 184, 0.25)')
-                                    }}
-                                    title={preset.name}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleUpdateLevel(idx);
-                                      setIsRadialOpen(false);
                                     }}
                                   >
-                                    <span className="text-base leading-none">{preset.emoji}</span>
+                                    <div
+                                      className={`w-12 h-12 rounded-full border flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-115 ${
+                                        themeMode === 'dark'
+                                          ? isCurrent
+                                            ? 'bg-gold/15 shadow-[0_0_15px_rgba(212,163,75,0.45)] text-white font-bold'
+                                            : 'bg-neutral-900/90 shadow-[0_0_8px_rgba(212,163,75,0.15)] hover:shadow-[0_0_15px_rgba(212,163,75,0.35)] text-gray-300 hover:text-white'
+                                          : isCurrent
+                                            ? 'bg-gold/10 shadow-[0_2px_12px_rgba(212,163,75,0.3)] text-slate-800 font-bold'
+                                            : 'bg-white shadow-[0_2px_6px_rgba(212,163,75,0.12)] hover:shadow-[0_4px_12px_rgba(212,163,75,0.25)] text-slate-600 hover:text-slate-900'
+                                      }`}
+                                      style={{
+                                        borderColor: isCurrent
+                                          ? '#D4A84B'
+                                          : 'rgba(212, 163, 75, 0.2)'
+                                      }}
+                                      title={preset.name}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUpdateLevel(idx);
+                                        setIsRadialOpen(false);
+                                      }}
+                                    >
+                                      <span className="text-xl leading-none">{preset.emoji}</span>
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -1345,9 +1363,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           </>
                         )}
 
-                        {/* Center Orb Trigger (48px - 50% larger than 32px) */}
+                        {/* Center Orb Trigger (Scaled: w-16 h-16, emoji: text-[32px]) */}
                         <div 
-                          className={`w-12 h-12 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 z-50 ${
+                          className={`w-16 h-16 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 z-50 ${
                             isRadialOpen
                               ? 'scale-110 shadow-[0_0_20px_rgba(212,163,75,0.5)] bg-gold/10'
                               : themeMode === 'dark'
@@ -1365,12 +1383,12 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           }}
                           title={`Cấp độ mục tiêu hiện tại: ${activePreset.name} (Click để đổi nhanh)`}
                         >
-                          <span className="text-2xl leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                          <span className="text-[32px] leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
                         </div>
                       </div>
                     ) : (
                       <div 
-                        className={`w-12 h-12 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
+                        className={`w-16 h-16 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
                           themeMode === 'dark'
                             ? 'bg-neutral-900 shadow-[0_0_8px_rgba(212,163,75,0.1)]'
                             : 'bg-white shadow-[0_2px_6px_rgba(212,163,75,0.08)]'
@@ -1379,7 +1397,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           borderColor: themeMode === 'dark' ? 'rgba(212, 163, 75, 0.2)' : 'rgba(212, 163, 75, 0.2)'
                         }}
                       >
-                        <span className="text-2xl leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
+                        <span className="text-[32px] leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
                       </div>
                     )}
 
@@ -1409,31 +1427,41 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           <div 
                             className={`p-[1.2px] rounded-full transition-all duration-300 flex items-center justify-center ${
                               isActive 
-                                ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 shadow-[0_0_12px_rgba(236,72,153,0.35)] scale-105 z-20' 
+                                ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105 z-20' 
                                 : `${themeMode === 'dark' ? 'bg-neutral-800' : 'bg-slate-200'} z-10 hover:scale-105`
                             }`}
                           >
                             {/* Inner Capsule (opaque solid background to block line behind it) */}
                             <div 
-                              className={`rounded-full px-3 py-1 flex flex-col items-center min-w-[76px] ${
+                              className={`rounded-full px-4 py-1.5 flex flex-col items-center min-w-[80px] ${
                                 themeMode === 'dark'
                                   ? isActive
-                                    ? 'bg-neutral-950 text-white'
+                                    ? 'bg-neutral-955 text-pink-400'
                                     : 'bg-neutral-900 text-gray-400 hover:text-white'
                                   : isActive
-                                    ? 'bg-white text-slate-900 font-bold'
+                                    ? 'bg-white text-pink-500 font-bold'
                                     : 'bg-slate-50 text-slate-500 hover:bg-white hover:text-slate-900'
                               }`}
                             >
-                              <span className="text-[9px] font-extrabold tracking-tight leading-none">{p.label}</span>
+                              {/* Top Number (Target) - Large & Clear */}
                               <span 
-                                className={`text-[8px] font-extrabold mt-0.5 leading-none ${
+                                className={`font-outfit leading-tight ${
                                   isActive 
-                                    ? 'text-pink-500' 
-                                    : `${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
+                                    ? 'text-base font-black' 
+                                    : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-300' : 'text-slate-700'}`
                                 }`}
                               >
                                 {periodTgt}
+                              </span>
+                              {/* Bottom Label (Period Name) - Smaller */}
+                              <span 
+                                className={`text-[9px] mt-0.5 leading-none ${
+                                  isActive 
+                                    ? `font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}` 
+                                    : `font-medium opacity-85 ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
+                                }`}
+                              >
+                                {p.label}
                               </span>
                             </div>
                           </div>
