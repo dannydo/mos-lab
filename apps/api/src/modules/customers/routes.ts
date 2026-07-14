@@ -4303,7 +4303,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const promoName = pId ? (promoMap.get(Number(pId)) || `PROMO-${pId}`) : null;
 
         const isOc = telesalesNames.has(booker.trim().toLowerCase());
-        const category = group === 'combo_live' ? 'combo' : (isOc ? 'oc' : 'other');
+        const comboRev = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0), 0);
+        const category = (group === 'combo_live' || comboRev > 0) ? 'combo' : (isOc ? 'oc' : 'other');
 
         const comingItem = {
           key: String(o.id),
