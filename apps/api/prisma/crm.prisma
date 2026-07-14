@@ -142,4 +142,73 @@ model CrmAssignmentHistory {
   @@map("crm_assignment_history")
 }
 
+// ═══════════════════════════════════════════
+// OmiCall Integration — Raw webhook data + AI results
+// ═══════════════════════════════════════════
+model CrmOmicallLog {
+  id                Int       @id @default(autoincrement())
+  callUuid          String    @unique @map("call_uuid") @db.VarChar(100)
+  direction         String    @db.VarChar(10)           // 'outbound' | 'inbound'
+  status            String    @db.VarChar(20)           // 'ANSWER' | 'NOANSWER' | 'BUSY' | 'CANCEL'
+  sourceNumber      String    @map("source_number") @db.VarChar(20)
+  destinationNumber String    @map("destination_number") @db.VarChar(20)
+  duration          Int       @default(0)               // total seconds
+  billSec           Int       @default(0) @map("bill_sec") // billable seconds
+  recordingUrl      String?   @map("recording_url") @db.VarChar(500)
+  timeStartCall     DateTime? @map("time_start_call") @db.DateTime(0)
+  timeEndCall       DateTime? @map("time_end_call") @db.DateTime(0)
+
+  // Linking
+  staffId           Int?      @map("staff_id")          // matched CRM staff
+  legacyUserId      Int?      @map("legacy_user_id")    // matched customer
+  callLogId         Int?      @map("call_log_id")       // linked CrmCallLog (notes/tags)
+
+  // AI Analysis
+  analysisStatus    String    @default("PENDING") @map("analysis_status") @db.VarChar(20)
+                              // PENDING → WAITING_RECORDING → PROCESSING → DONE → FAILED | SKIPPED
+  analysisRetryCount Int      @default(0) @map("analysis_retry_count")
+  analysisError     String?   @map("analysis_error") @db.Text
+  laughCount        Int?      @map("laugh_count")
+  laughTimestamps   String?   @map("laugh_timestamps") @db.Text
+                              // JSON: [{"start":12.5,"end":14.2,"confidence":0.92}, ...]
+  transcript        String?   @db.LongText
+
+  // Happy Call Status (thay thế isHappyCall boolean)
+  happyCallStatus   String    @default("NONE") @map("happy_call_status") @db.VarChar(20)
+                              // NONE | APPROVED | PENDING_APPROVAL | REJECTED
+  happyCallReason   String?   @map("happy_call_reason") @db.VarChar(30)
+                              // 'auto_180s' | 'auto_laughter_30s' | 'manual_approved' | null
+
+  // QA Verification (Positive Feedback per laugh)
+  qaVerified        Boolean   @default(false) @map("qa_verified") @db.TinyInt
+  qaVerifiedBy      Int?      @map("qa_verified_by")
+  qaVerifiedAt      DateTime? @map("qa_verified_at") @db.DateTime(0)
+  qaLaughVerifications String? @map("qa_laugh_verifications") @db.Text
+                              // JSON: [{"timestamp":12.5,"verified":true}, {"timestamp":45.8,"verified":false}]
+  qaNotes           String?   @map("qa_notes") @db.Text
+
+  createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+
+  @@index([staffId])
+  @@index([legacyUserId])
+  @@index([analysisStatus])
+  @@index([happyCallStatus])
+  @@index([createdAt])
+  @@index([destinationNumber])
+  @@map("crm_omicall_logs")
+}
+
+// ═══════════════════════════════════════════
+// OmiCall Config — API keys, extension mapping
+// ═══════════════════════════════════════════
+model CrmOmicallConfig {
+  id           Int    @id @default(autoincrement())
+  staffId      Int    @unique @map("staff_id")
+  extension    String @db.VarChar(20)          // SIP extension number
+  phoneNumber  String? @map("phone_number") @db.VarChar(20) // Outbound caller ID
+
+  @@map("crm_omicall_config")
+}
+
+
 

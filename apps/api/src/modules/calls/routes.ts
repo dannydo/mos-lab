@@ -13,7 +13,8 @@ export async function callRoutes(fastify: FastifyInstance) {
       callResult, 
       note, 
       outcome, 
-      callbackDate 
+      callbackDate,
+      omicallLogId
     } = request.body as {
       planId?: number;
       legacyUserId: number;
@@ -22,6 +23,7 @@ export async function callRoutes(fastify: FastifyInstance) {
       note?: string;
       outcome?: string;
       callbackDate?: string;
+      omicallLogId?: number;
     };
 
     const user = request.user as { id: number };
@@ -63,44 +65,13 @@ export async function callRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // 3. Update staff KPI using timezone-safe manual upsert
-      const todayStr = new Date().toLocaleDateString('en-CA');
-      const kpiDate = new Date(todayStr + 'T00:00:00.000Z');
- 
-      // Increment values based on call metrics
-      const incCalled = 1;
-      const incAnswered = callResult === 'ANSWERED' ? 1 : 0;
-      const incBooked = outcome === 'BOOKED' ? 1 : 0;
-      const incRenewed = outcome === 'RENEWED' ? 1 : 0;
- 
-      const kpi = await fastify.prisma.crm.crmStaffKpi.findFirst({
-        where: {
-          staffId: user.id,
-          kpiDate
-        }
-      });
-
-      if (kpi) {
-        await fastify.prisma.crm.crmStaffKpi.update({
-          where: { id: kpi.id },
-          data: {
-            totalCalled: { increment: incCalled },
-            totalAnswered: { increment: incAnswered },
-            totalBooked: { increment: incBooked },
-            totalRenewed: { increment: incRenewed }
-          }
-        });
-      } else {
-        await fastify.prisma.crm.crmStaffKpi.create({
-          data: {
-            staffId: user.id,
-            kpiDate,
-            totalPlanned: 0,
-            totalCalled: incCalled,
-            totalAnswered: incAnswered,
-            totalBooked: incBooked,
-            totalRenewed: incRenewed
-          }
+      // 3. Link with CrmOmicallLog if omicallLogId is provided
+      if (omicallLogId) {
+        await fastify.prisma.crm.crmOmicallLog.update({
+          where: { id: omicallLogId },
+          data: { callLogId: callLog.id }
+        }).catch(err => {
+          fastify.log.error(`Failed to link CrmOmicallLog ${omicallLogId} with CallLog ${callLog.id}:`, err);
         });
       }
 

@@ -1027,21 +1027,31 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
       const legacyUserIds = Array.from(staffNameToLegacyIdMap.values());
 
+      const staffIds = staffList.map(s => s.id);
       let totalCalled = 0;
       let totalAnswered = 0;
+      let totalHappy = 0;
 
-      if (legacyUserIds.length > 0) {
-        const calls = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-          SELECT conversation_duration_second as duration
-          FROM \`user_call\`
-          WHERE date_created >= ? AND date_created <= ?
-            AND created_staff_id IN (${legacyUserIds.join(',')})
-        `, start, end);
+      if (staffIds.length > 0) {
+        const callLogs = await fastify.prisma.crm.crmOmicallLog.findMany({
+          where: {
+            staffId: { in: staffIds },
+            createdAt: { gte: start, lte: end },
+            direction: 'outbound'
+          },
+          select: {
+            status: true,
+            happyCallStatus: true
+          }
+        });
 
-        totalCalled = calls.length;
-        calls.forEach((c: any) => {
-          if (Number(c.duration) > 0) {
+        totalCalled = callLogs.length;
+        callLogs.forEach((c: any) => {
+          if (c.status === 'ANSWER') {
             totalAnswered++;
+          }
+          if (c.happyCallStatus === 'APPROVED') {
+            totalHappy++;
           }
         });
       }
@@ -1075,6 +1085,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         totalPlanned: totalBooked,
         totalCalled,
         totalAnswered,
+        totalHappy,
         totalBooked,
         totalCheckin,
         totalEarnings: salary ? salary.totalSalary : totalEarnings,
@@ -1175,24 +1186,34 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       });
 
       const legacyUserIds = Array.from(staffNameToLegacyIdMap.values());
-      const callStatsMap = new Map<number, { totalCalled: number; totalAnswered: number }>();
+      const crmStaffIds = staffList.map(s => s.id);
+      const callStatsMap = new Map<number, { totalCalled: number; totalAnswered: number; totalHappy: number }>();
 
-      if (legacyUserIds.length > 0) {
-        const calls = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-          SELECT created_staff_id as createdStaffId, conversation_duration_second as duration
-          FROM \`user_call\`
-          WHERE date_created >= ? AND date_created <= ?
-            AND created_staff_id IN (${legacyUserIds.join(',')})
-        `, start, end);
+      if (crmStaffIds.length > 0) {
+        const callLogs = await fastify.prisma.crm.crmOmicallLog.findMany({
+          where: {
+            staffId: { in: crmStaffIds },
+            createdAt: { gte: start, lte: end },
+            direction: 'outbound'
+          },
+          select: {
+            staffId: true,
+            status: true,
+            happyCallStatus: true
+          }
+        });
 
-        calls.forEach((c: any) => {
-          const uid = Number(c.createdStaffId);
-          const current = callStatsMap.get(uid) || { totalCalled: 0, totalAnswered: 0 };
+        callLogs.forEach((c: any) => {
+          const sid = Number(c.staffId);
+          const current = callStatsMap.get(sid) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
           current.totalCalled++;
-          if (Number(c.duration) > 0) {
+          if (c.status === 'ANSWER') {
             current.totalAnswered++;
           }
-          callStatsMap.set(uid, current);
+          if (c.happyCallStatus === 'APPROVED') {
+            current.totalHappy++;
+          }
+          callStatsMap.set(sid, current);
         });
       }
 
@@ -1215,45 +1236,11 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Fetch happy logs to calculate happy calls count per staff
-      const happyLogs = await fastify.prisma.crm.crmCallLog.findMany({
-        where: {
-          createdAt: { gte: start, lte: new Date(end.getTime() + 24 * 60 * 60 * 1000) },
-          planId: { not: null }
-        },
-        select: { staffId: true, planId: true }
-      });
-
-      const staffPlanIdsMap = new Map<number, number[]>();
-      happyLogs.forEach(log => {
-        if (log.planId) {
-          const list = staffPlanIdsMap.get(log.staffId) || [];
-          list.push(log.planId);
-          staffPlanIdsMap.set(log.staffId, list);
-        }
-      });
-
-      const allPlanIds = Array.from(new Set(happyLogs.map(l => l.planId as number)));
-      const happyPlans = allPlanIds.length > 0 ? await fastify.prisma.crm.crmDailyPlan.findMany({
-        where: {
-          id: { in: allPlanIds },
-          bucket: 'happy'
-        },
-        select: { id: true }
-      }) : [];
-      const happyPlanIdsSet = new Set(happyPlans.map(p => p.id));
-
-      const staffHappyCountMap = new Map<number, number>();
-      staffPlanIdsMap.forEach((planIds, staffId) => {
-        const count = planIds.filter(pid => happyPlanIdsSet.has(pid)).length;
-        staffHappyCountMap.set(staffId, count);
-      });
-
       const leaderboard = [];
 
       for (const staff of staffList) {
         const legacyUserId = staffNameToLegacyIdMap.get(staff.displayName.toLowerCase().trim());
-        const callStats = legacyUserId ? callStatsMap.get(legacyUserId) || { totalCalled: 0, totalAnswered: 0 } : { totalCalled: 0, totalAnswered: 0 };
+        const callStats = callStatsMap.get(staff.id) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
 
         const salary = salaries[staff.id] || {
           baseSalary: 5500000,
@@ -1279,7 +1266,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         const bookingRate = totalAnswered > 0 ? Math.round((totalBooked / totalAnswered) * 100) : 0;
         const checkinRate = totalBooked > 0 ? Math.round((salary.doneCount / totalBooked) * 100) : 0;
 
-        const totalHappy = staffHappyCountMap.get(staff.id) || 0;
+        const totalHappy = callStats.totalHappy;
 
         leaderboard.push({
           staffId: staff.id,

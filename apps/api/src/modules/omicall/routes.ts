@@ -1,0 +1,420 @@
+import { FastifyInstance } from 'fastify';
+import { requireAuth, requireRole } from '../../middlewares/auth.js';
+
+export async function omicallRoutes(fastify: FastifyInstance) {
+
+  // POST /api/omicall/webhook
+  // Webhook receiver for OmiCall hangup events
+  fastify.post('/omicall/webhook', async (request, reply) => {
+    // 1. Verify webhook secret
+    const webhookSecret = process.env.OMICALL_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const secretHeader = request.headers['x-webhook-secret'] || request.headers['X-Webhook-Secret'];
+      if (secretHeader !== webhookSecret) {
+        return reply.status(401).send({ error: 'Unauthorized', message: 'Invalid webhook secret' });
+      }
+    }
+
+    const body = request.body as any;
+    if (!body) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Empty body' });
+    }
+
+    // 2. Parse payload
+    const callUuid = body.call_uuid || body.callUuid;
+    const direction = body.direction; // 'outbound' | 'inbound'
+    const status = body.status; // 'ANSWER' | 'NOANSWER' | 'BUSY' | 'CANCEL'
+    const sourceNumber = body.source_number || body.sourceNumber;
+    const destinationNumber = body.destination_number || body.destinationNumber;
+    const duration = body.duration !== undefined ? Number(body.duration) : 0;
+    const billSec = body.bill_sec !== undefined ? Number(body.bill_sec) : (body.billSec !== undefined ? Number(body.billSec) : 0);
+    const recordingUrl = body.recording_url || body.recordingUrl || null;
+    const timeStartCall = body.time_start_call || body.timeStartCall ? new Date(body.time_start_call || body.timeStartCall) : null;
+    const timeEndCall = body.time_end_call || body.timeEndCall ? new Date(body.time_end_call || body.timeEndCall) : null;
+
+    if (!callUuid) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'callUuid/call_uuid is required' });
+    }
+
+    try {
+      // 3. Match extension to staffId via CrmOmicallConfig
+      let staffId: number | null = null;
+      const extensionToMatch = direction === 'outbound' ? sourceNumber : destinationNumber;
+
+      if (extensionToMatch) {
+        const config = await fastify.prisma.crm.crmOmicallConfig.findFirst({
+          where: { extension: String(extensionToMatch) },
+        });
+        if (config) {
+          staffId = config.staffId;
+        }
+      }
+
+      // 4. Match customer phone to legacyUserId (user_contact.phone_number)
+      let legacyUserId: number | null = null;
+      const customerPhone = direction === 'outbound' ? destinationNumber : sourceNumber;
+
+      if (customerPhone) {
+        const cleanPhone = String(customerPhone).replace(/\D/g, '');
+        const suffix = cleanPhone.length > 9 ? cleanPhone.substring(cleanPhone.length - 9) : cleanPhone;
+        
+        const contact = await fastify.prisma.legacy.user_contact.findFirst({
+          where: {
+            phone_number: {
+              endsWith: suffix
+            },
+            is_disabled: false
+          },
+          select: {
+            user_id: true
+          }
+        });
+        if (contact) {
+          legacyUserId = contact.user_id;
+        }
+      }
+
+      // 5. Determine initial analysis status
+      // If call was not answered, skip AI analysis
+      // If answered and recording exists -> PENDING
+      // If answered and no recording -> WAITING_RECORDING
+      let analysisStatus = 'PENDING';
+      if (status !== 'ANSWER') {
+        analysisStatus = 'SKIPPED';
+      } else if (!recordingUrl) {
+        analysisStatus = 'WAITING_RECORDING';
+      }
+
+      // 6. Save OmiCall Log
+      const log = await fastify.prisma.crm.crmOmicallLog.upsert({
+        where: { callUuid },
+        update: {
+          direction: direction || 'outbound',
+          status: status || 'NOANSWER',
+          sourceNumber: sourceNumber ? String(sourceNumber) : '',
+          destinationNumber: destinationNumber ? String(destinationNumber) : '',
+          duration,
+          billSec,
+          recordingUrl,
+          timeStartCall,
+          timeEndCall,
+          staffId,
+          legacyUserId,
+          // Do NOT overwrite analysisStatus on update.
+          // If OmiCall re-sends webhook for an already-processed record,
+          // we keep the existing state (PROCESSING/DONE/FAILED).
+          // Only update recordingUrl if we got a new one and record is still waiting.
+          ...(recordingUrl && {
+            recordingUrl,
+          }),
+        },
+        create: {
+          callUuid,
+          direction: direction || 'outbound',
+          status: status || 'NOANSWER',
+          sourceNumber: sourceNumber ? String(sourceNumber) : '',
+          destinationNumber: destinationNumber ? String(destinationNumber) : '',
+          duration,
+          billSec,
+          recordingUrl,
+          timeStartCall,
+          timeEndCall,
+          staffId,
+          legacyUserId,
+          analysisStatus
+        }
+      });
+
+      return { success: true, logId: log.id, analysisStatus: log.analysisStatus };
+    } catch (error: any) {
+      fastify.log.error('OmiCall webhook error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    }
+  });
+
+  // GET /api/omicall/config
+  // Get all OmiCall configs (Admin only)
+  fastify.get('/omicall/config', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
+    try {
+      const configs = await fastify.prisma.crm.crmOmicallConfig.findMany();
+      
+      // Resolve staff names
+      const staffIds = configs.map(c => c.staffId);
+      const staff = await fastify.prisma.crm.crmStaff.findMany({
+        where: { id: { in: staffIds } },
+        select: { id: true, displayName: true }
+      });
+      const staffMap = new Map(staff.map(s => [s.id, s.displayName]));
+
+      const formatted = configs.map(c => ({
+        ...c,
+        staffName: staffMap.get(c.staffId) || 'Unknown Staff'
+      }));
+
+      return formatted;
+    } catch (error: any) {
+      fastify.log.error('Get OmiCall configs error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    }
+  });
+
+  // POST /api/omicall/config
+  // Add or update an OmiCall config (Admin only)
+  fastify.post('/omicall/config', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
+    const { staffId, extension, phoneNumber } = request.body as {
+      staffId: number;
+      extension: string;
+      phoneNumber?: string;
+    };
+
+    if (!staffId || !extension) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'staffId and extension are required' });
+    }
+
+    try {
+      const config = await fastify.prisma.crm.crmOmicallConfig.upsert({
+        where: { staffId },
+        update: { extension, phoneNumber: phoneNumber || null },
+        create: { staffId, extension, phoneNumber: phoneNumber || null },
+      });
+      return config;
+    } catch (error: any) {
+      fastify.log.error('Upsert OmiCall config error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    }
+  });
+
+  // DELETE /api/omicall/config/:staffId
+  // Delete an OmiCall config (Admin only)
+  fastify.delete('/omicall/config/:staffId', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
+    const { staffId } = request.params as { staffId: string };
+    const parsedStaffId = parseInt(staffId, 10);
+
+    if (isNaN(parsedStaffId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid staffId' });
+    }
+
+    try {
+      await fastify.prisma.crm.crmOmicallConfig.delete({
+        where: { staffId: parsedStaffId },
+      });
+      return { success: true };
+    } catch (error: any) {
+      fastify.log.error('Delete OmiCall config error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    }
+  });
+
+  // GET /api/omicall/logs
+  // Get all OmiCall logs with pagination, filtering (Staff/Manager/Admin)
+  fastify.get('/omicall/logs', { preHandler: [requireAuth] }, async (request, reply) => {
+    const {
+      page = '1',
+      limit = '10',
+      staffId,
+      status,
+      happyCallStatus,
+      startDate,
+      endDate,
+    } = request.query as {
+      page?: string;
+      limit?: string;
+      staffId?: string;
+      status?: string;
+      happyCallStatus?: string;
+      startDate?: string;
+      endDate?: string;
+    };
+
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const take = parseInt(limit, 10);
+
+    const where: any = {};
+    if (staffId) where.staffId = parseInt(staffId, 10);
+    if (status) where.status = status;
+    if (happyCallStatus) where.happyCallStatus = happyCallStatus;
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
+
+    try {
+      const [logs, total] = await Promise.all([
+        fastify.prisma.crm.crmOmicallLog.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+        }),
+        fastify.prisma.crm.crmOmicallLog.count({ where }),
+      ]);
+
+      const foundStaffIds = Array.from(new Set(logs.map(l => l.staffId).filter((id): id is number => id !== null)));
+      const foundUserIds = Array.from(new Set(logs.map(l => l.legacyUserId).filter((id): id is number => id !== null)));
+
+      const [staffList, customerList] = await Promise.all([
+        fastify.prisma.crm.crmStaff.findMany({
+          where: { id: { in: foundStaffIds } },
+          select: { id: true, displayName: true }
+        }),
+        fastify.prisma.legacy.user_profile.findMany({
+          where: { user_id: { in: foundUserIds } },
+          select: { user_id: true, full_name: true, first_name: true, last_name: true }
+        })
+      ]);
+
+      const staffMap = new Map(staffList.map(s => [s.id, s.displayName]));
+      const customerMap = new Map(customerList.map(c => [
+        c.user_id,
+        c.full_name || `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Unknown Customer'
+      ]));
+
+      const formattedLogs = logs.map(log => ({
+        ...log,
+        laughTimestamps: log.laughTimestamps ? JSON.parse(log.laughTimestamps) : [],
+        staffName: log.staffId ? staffMap.get(log.staffId) : null,
+        customerName: log.legacyUserId ? customerMap.get(log.legacyUserId) : null,
+      }));
+
+      return {
+        logs: formattedLogs,
+        total,
+        page: parseInt(page, 10),
+        limit: take,
+      };
+    } catch (error: any) {
+      fastify.log.error('Get OmiCall logs error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    }
+  });
+
+  // GET /api/omicall/logs/:id/play
+  // Get details of a single call for the audio player (requireAuth)
+  fastify.get('/omicall/logs/:id/play', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const logId = parseInt(id, 10);
+
+    if (isNaN(logId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid log id' });
+    }
+
+    try {
+      const log = await fastify.prisma.crm.crmOmicallLog.findUnique({
+        where: { id: logId }
+      });
+
+      if (!log) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Log not found' });
+      }
+
+      // Fetch staff and customer names
+      let staffName = null;
+      let customerName = null;
+
+      if (log.staffId) {
+        const staff = await fastify.prisma.crm.crmStaff.findUnique({
+          where: { id: log.staffId },
+          select: { displayName: true }
+        });
+        if (staff) staffName = staff.displayName;
+      }
+
+      if (log.legacyUserId) {
+        const customer = await fastify.prisma.legacy.user_profile.findFirst({
+          where: { user_id: log.legacyUserId },
+          select: { full_name: true, first_name: true, last_name: true }
+        });
+        if (customer) {
+          customerName = customer.full_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+        }
+      }
+
+      return {
+        ...log,
+        laughTimestamps: log.laughTimestamps ? JSON.parse(log.laughTimestamps) : [],
+        qaLaughVerifications: log.qaLaughVerifications ? JSON.parse(log.qaLaughVerifications) : [],
+        staffName,
+        customerName,
+      };
+    } catch (error: any) {
+      fastify.log.error('Play call error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    }
+  });
+
+  // POST /api/omicall/logs/:id/verify
+  // QA verification endpoint (Admin or Manager only)
+  fastify.post('/omicall/logs/:id/verify', { preHandler: [requireAuth, requireRole(['admin', 'manager'])] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { action, laughVerifications, notes } = request.body as {
+      action: 'approve' | 'reject';
+      laughVerifications?: any;
+      notes?: string;
+    };
+
+    const logId = parseInt(id, 10);
+    if (isNaN(logId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid log id' });
+    }
+
+    if (!action || !['approve', 'reject'].includes(action)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'action must be approve or reject' });
+    }
+
+    const user = request.user as { id: number };
+
+    try {
+      const log = await fastify.prisma.crm.crmOmicallLog.findUnique({
+        where: { id: logId }
+      });
+
+      if (!log) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Log not found' });
+      }
+
+      // Guard: only PENDING_APPROVAL logs can be approved/rejected
+      if (log.happyCallStatus !== 'PENDING_APPROVAL') {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: `Cannot verify: current status is '${log.happyCallStatus}', expected 'PENDING_APPROVAL'`
+        });
+      }
+
+      const qaLaughVerifications = laughVerifications ? (typeof laughVerifications === 'string' ? laughVerifications : JSON.stringify(laughVerifications)) : null;
+
+      let happyCallStatus = log.happyCallStatus;
+      let happyCallReason = log.happyCallReason;
+
+      if (action === 'approve') {
+        happyCallStatus = 'APPROVED';
+        happyCallReason = 'manual_approved';
+      } else if (action === 'reject') {
+        happyCallStatus = 'REJECTED';
+      }
+
+      const updated = await fastify.prisma.crm.crmOmicallLog.update({
+        where: { id: logId },
+        data: {
+          happyCallStatus,
+          happyCallReason,
+          qaVerified: true,
+          qaVerifiedBy: user.id,
+          qaVerifiedAt: new Date(),
+          qaLaughVerifications,
+          qaNotes: notes || null
+        }
+      });
+
+      return {
+        ...updated,
+        laughTimestamps: updated.laughTimestamps ? JSON.parse(updated.laughTimestamps) : [],
+        qaLaughVerifications: updated.qaLaughVerifications ? JSON.parse(updated.qaLaughVerifications) : [],
+      };
+    } catch (error: any) {
+      fastify.log.error('Verify call log error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    }
+  });
+
+}

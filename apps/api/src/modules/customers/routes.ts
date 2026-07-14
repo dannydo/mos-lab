@@ -3807,7 +3807,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const userIds = Array.from(new Set([
         ...bookingsOrders.map(o => o.user_id),
         ...comingOrders.map(o => o.user_id)
-      ]));
+      ])).filter((id): id is number => id !== null && id !== undefined && !isNaN(Number(id)) && Number(id) > 0);
       
       const userProfiles = userIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT up.user_id as userId, up.full_name as fullName, up.avatar, u.email, u.gender, u.date_of_birth as dob
@@ -3868,7 +3868,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ...comingOrders.map(o => o.promotion_id).filter(id => id !== null && id !== undefined),
         ...comingOrders.map(o => o.selected_promotion_id).filter(id => id !== null && id !== undefined),
         ...allOrderServices.map(os => os.promotion_id).filter(id => id !== null && id !== undefined)
-      ].map(id => Number(id))));
+      ].map(id => Number(id)))).filter(id => !isNaN(id) && id > 0);
 
       const promotions = promoIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT p.id, p.promotion_key as promotionKey, pl.promotion_name as name
@@ -4083,7 +4083,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ) s
       `, thirtyDaysAgo, thirtyDaysAgo);
 
-      const activeCcIds = activeCcRows.map(r => Number(r.staffId));
+      const activeCcIds = activeCcRows.map(r => Number(r.staffId)).filter(id => !isNaN(id) && id > 0);
       let activeCcs: { id: number; name: string; branch: 'detham' | 'pxl' | 'estella' }[] = [];
 
       if (activeCcIds.length > 0) {
@@ -4724,7 +4724,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
     } catch (error: any) {
-      fastify.log.error('Fetch dashboard today error:', error);
+      fastify.log.error(error, 'Fetch dashboard today error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi hệ thống khi tải dữ liệu vận hành hôm nay.'

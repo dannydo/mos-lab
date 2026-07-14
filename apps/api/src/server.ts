@@ -13,6 +13,9 @@ import { kpiRoutes } from './modules/kpi/routes.js';
 import { staffRoutes } from './modules/staff/routes.js';
 import { rolesRoutes } from './modules/roles/routes.js';
 import { tableConfigRoutes } from './modules/table-config/routes.js';
+import { omicallRoutes } from './modules/omicall/routes.js';
+import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
+
 
 // Load environment variables
 dotenv.config();
@@ -68,6 +71,10 @@ const start = async () => {
     await server.register(staffRoutes, { prefix: '/api' });
     await server.register(rolesRoutes, { prefix: '/api' });
     await server.register(tableConfigRoutes, { prefix: '/api' });
+    await server.register(omicallRoutes, { prefix: '/api' });
+
+    // Start background analyzer polling for AI laugh detection
+    startRecordingAnalyzer(server);
 
     const port = Number(process.env.PORT) || 3001;
     await server.listen({ port, host: '0.0.0.0' });

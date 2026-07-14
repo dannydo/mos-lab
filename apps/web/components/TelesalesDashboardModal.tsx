@@ -126,6 +126,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const [isAdmin, setIsAdmin] = useState(false);
   const [staffLevels, setStaffLevels] = useState<Record<string, number>>({});
   const [isRadialOpen, setIsRadialOpen] = useState(false);
+  const [periodDataMap, setPeriodDataMap] = useState<Record<string, any[]>>({});
 
   const getMemberLevelIdx = (memberId: string | number): number => {
     const idStr = String(memberId);
@@ -292,50 +293,22 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   useEffect(() => {
     if (!visible) return;
 
-    const fetchLeaderboard = async () => {
+    const fetchAllLeaderboards = async () => {
       setLoading(true);
       try {
         const now = dayjs();
-        let start = now;
-        let end = now;
-
-        if (currentPeriodId === 'today') {
-          start = now.startOf('day');
-          end = now.endOf('day');
-        } else if (currentPeriodId === 'yesterday') {
-          start = now.subtract(1, 'day').startOf('day');
-          end = now.subtract(1, 'day').endOf('day');
-        } else if (currentPeriodId === 'this_week') {
-          start = now.startOf('isoWeek');
-          end = now.endOf('day');
-        } else if (currentPeriodId === 'last_week') {
-          start = now.subtract(1, 'week').startOf('isoWeek');
-          end = now.subtract(1, 'week').endOf('isoWeek');
-        } else if (currentPeriodId === 'this_month') {
-          start = now.startOf('month');
-          end = now.endOf('day');
-        } else if (currentPeriodId === 'last_month') {
-          start = now.subtract(1, 'month').startOf('month');
-          end = now.subtract(1, 'month').endOf('month');
-        }
+        const periodsList = [
+          { id: 'today', start: now.startOf('day'), end: now.endOf('day') },
+          { id: 'yesterday', start: now.subtract(1, 'day').startOf('day'), end: now.subtract(1, 'day').endOf('day') },
+          { id: 'this_week', start: now.startOf('isoWeek'), end: now.endOf('day') },
+          { id: 'last_week', start: now.subtract(1, 'week').startOf('isoWeek'), end: now.subtract(1, 'week').endOf('isoWeek') },
+          { id: 'this_month', start: now.startOf('month'), end: now.endOf('day') },
+          { id: 'last_month', start: now.subtract(1, 'month').startOf('month'), end: now.subtract(1, 'month').endOf('month') }
+        ];
 
         const saved = localStorage.getItem('telesales_dashboard_visible_staff');
         const savedIds = saved ? JSON.parse(saved) : [];
 
-        const params: any = {
-          startDate: start.format('YYYY-MM-DD'),
-          endDate: end.format('YYYY-MM-DD')
-        };
-
-        if (savedIds.length > 0) {
-          params.staffIds = savedIds.join(',');
-        } else {
-          params.role = 'telesales';
-        }
-
-        const res = await api.get('/kpi/leaderboard', { params });
-        const list = res.data || [];
-        
         const stylesPreset = [
           { color: '#EC4899', gradient: 'linear-gradient(135deg, #EC4899, #DB2777)', textColor: 'text-pink-400', borderColor: 'border-pink-400', hoverGlow: 'shadow-pink-500/20' },
           { color: '#A855F7', gradient: 'linear-gradient(135deg, #A855F7, #9333EA)', textColor: 'text-purple-400', borderColor: 'border-purple-400', hoverGlow: 'shadow-purple-500/20' },
@@ -347,50 +320,93 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
           { color: '#EF4444', gradient: 'linear-gradient(135deg, #EF4444, #B91C1C)', textColor: 'text-red-400', borderColor: 'border-red-400', hoverGlow: 'shadow-red-500/20' }
         ];
 
-        const mappedMembers = list.map((item: any, idx: number) => {
-          const initials = item.displayName
-            ? item.displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-            : item.username?.slice(0, 2).toUpperCase() || '??';
+        const fetchResults = await Promise.all(
+          periodsList.map(async (p) => {
+            const params: any = {
+              startDate: p.start.format('YYYY-MM-DD'),
+              endDate: p.end.format('YYYY-MM-DD')
+            };
 
-          const style = stylesPreset[idx % stylesPreset.length];
-
-          return {
-            id: String(item.staffId),
-            name: item.displayName || item.username,
-            initials,
-            ...style,
-            teamRole: item.role === 'admin' ? 'Telesales Manager' : 'Telesales Executive',
-            perf: {
-              calls: item.totalCalled || 0,
-              pickups: item.totalAnswered || 0,
-              happy: item.totalHappy || 0,
-              booked: item.totalBooked || 0,
-              done: item.totalCheckin || 0
+            if (savedIds.length > 0) {
+              params.staffIds = savedIds.join(',');
+            } else {
+              params.role = 'telesales';
             }
-          };
+
+            const res = await api.get('/kpi/leaderboard', { params });
+            const list = res.data || [];
+            
+            const mappedMembers = list.map((item: any, idx: number) => {
+              const initials = item.displayName
+                ? item.displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                : item.username?.slice(0, 2).toUpperCase() || '??';
+
+              const style = stylesPreset[idx % stylesPreset.length];
+
+              return {
+                id: String(item.staffId),
+                name: item.displayName || item.username,
+                initials,
+                ...style,
+                teamRole: item.role === 'admin' ? 'Telesales Manager' : 'Telesales Executive',
+                perf: {
+                  calls: item.totalCalled || 0,
+                  pickups: item.totalAnswered || 0,
+                  happy: item.totalHappy || 0,
+                  booked: item.totalBooked || 0,
+                  done: item.totalCheckin || 0
+                }
+              };
+            });
+
+            return { periodId: p.id, data: mappedMembers };
+          })
+        );
+
+        const newMap: Record<string, any[]> = {};
+        fetchResults.forEach(r => {
+          newMap[r.periodId] = r.data;
         });
 
-        setDbMembers(mappedMembers);
+        setPeriodDataMap(newMap);
 
-        if (mappedMembers.length > 0) {
-          const found = mappedMembers.find((m: any) => m.id === currentMemberId || m.initials === currentMemberId);
+        // Get members list for currently selected period
+        const activeList = newMap[currentPeriodId] || [];
+        setDbMembers(activeList);
+
+        if (activeList.length > 0) {
+          const found = activeList.find((m: any) => m.id === currentMemberId || m.initials === currentMemberId);
           if (!found) {
-            const initialFound = mappedMembers.find((m: any) => m.id === initialMemberId || m.initials === initialMemberId);
-            setCurrentMemberId(initialFound ? initialFound.id : mappedMembers[0].id);
+            const initialFound = activeList.find((m: any) => m.id === initialMemberId || m.initials === initialMemberId);
+            setCurrentMemberId(initialFound ? initialFound.id : activeList[0].id);
           } else {
             setCurrentMemberId(found.id);
           }
         }
       } catch (err: any) {
-        console.error('Fetch telesales leaderboard error:', err);
+        console.error('Fetch telesales leaderboards error:', err);
         message.error('Không thể tải dữ liệu bảng xếp hạng telesales');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLeaderboard();
-  }, [visible, currentPeriodId, initialMemberId, refreshCounter]);
+    fetchAllLeaderboards();
+  }, [visible, refreshCounter]);
+
+  useEffect(() => {
+    const list = periodDataMap[currentPeriodId] || [];
+    setDbMembers(list);
+    if (list.length > 0) {
+      const found = list.find((m: any) => m.id === currentMemberId || m.initials === currentMemberId);
+      if (found) {
+        setCurrentMemberId(found.id);
+      } else {
+        const initialFound = list.find((m: any) => m.id === initialMemberId || m.initials === initialMemberId);
+        setCurrentMemberId(initialFound ? initialFound.id : list[0].id);
+      }
+    }
+  }, [currentPeriodId, periodDataMap]);
 
   const toggleStaffSelection = (id: number) => {
     setSelectedStaffIds(prev => 
@@ -990,6 +1006,18 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                         periodTgt = weeklyTarget;
                       }
 
+                      const isPast = ['yesterday', 'last_week', 'last_month'].includes(p.id);
+                      let displayValue = periodTgt;
+                      if (isPast) {
+                        const pList = periodDataMap[p.id] || [];
+                        const memInPeriod = pList.find((m: any) => m.id === activeMember.id || m.initials === activeMember.id);
+                        if (memInPeriod && memInPeriod.perf) {
+                          displayValue = memInPeriod.perf[currentMetricKey] || 0;
+                        } else {
+                          displayValue = 0;
+                        }
+                      }
+
                       return (
                         <div 
                           key={p.id} 
@@ -1017,7 +1045,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                                     : 'bg-slate-50 text-slate-500 hover:bg-white hover:text-slate-900'
                               }`}
                             >
-                              {/* Top Number (Target) - Large & Clear */}
+                              {/* Top Number (Target or Actual) - Large & Clear */}
                               <span 
                                 className={`font-outfit leading-tight ${
                                   isActive 
@@ -1025,7 +1053,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                                     : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`
                                 }`}
                               >
-                                {periodTgt}
+                                {displayValue}
                               </span>
                               {/* Bottom Label (Period Name) - Smaller */}
                               <span 
@@ -1423,6 +1451,18 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                         periodTgt = weeklyTarget;
                       }
 
+                      const isPast = ['yesterday', 'last_week', 'last_month'].includes(p.id);
+                      let displayValue = periodTgt;
+                      if (isPast) {
+                        const pList = periodDataMap[p.id] || [];
+                        const memInPeriod = pList.find((m: any) => m.id === activeMember.id || m.initials === activeMember.id);
+                        if (memInPeriod && memInPeriod.perf) {
+                          displayValue = memInPeriod.perf[currentMetricKey] || 0;
+                        } else {
+                          displayValue = 0;
+                        }
+                      }
+
                       return (
                         <div 
                           key={p.id} 
@@ -1450,7 +1490,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                                     : 'bg-slate-50 text-slate-500 hover:bg-white hover:text-slate-900'
                               }`}
                             >
-                              {/* Top Number (Target) - Large & Clear */}
+                              {/* Top Number (Target or Actual) - Large & Clear */}
                               <span 
                                 className={`font-outfit leading-tight ${
                                   isActive 
@@ -1458,7 +1498,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                                     : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`
                                 }`}
                               >
-                                {periodTgt}
+                                {displayValue}
                               </span>
                               {/* Bottom Label (Period Name) - Smaller */}
                               <span 

@@ -16,7 +16,8 @@ import {
   RightOutlined,
   SolutionOutlined,
   ClockCircleOutlined,
-  ShareAltOutlined
+  ShareAltOutlined,
+  AudioOutlined
 } from '@ant-design/icons';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
@@ -61,6 +62,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     if (pathname.includes('/dashboard/appointments')) return 'my-appointments';
     if (pathname.includes('/dashboard/plans')) return 'plans';
     if (pathname.includes('/dashboard/calls')) return 'calls';
+    if (pathname.includes('/dashboard/omicall')) return 'omicall';
     if (pathname.includes('/dashboard/kpi')) return 'kpi';
     if (pathname.includes('/dashboard/staff')) return 'staff';
     if (pathname.includes('/dashboard/referrals')) return 'referrals';
@@ -132,6 +134,12 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
       icon: <PhoneOutlined />,
       label: 'Lịch sử cuộc gọi',
       onClick: () => router.push('/dashboard/calls')
+    },
+    {
+      key: 'omicall',
+      icon: <AudioOutlined />,
+      label: 'Cuộc gọi OmiCall (AI)',
+      onClick: () => router.push('/dashboard/omicall')
     },
     {
       key: 'kpi',
