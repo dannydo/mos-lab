@@ -1145,26 +1145,62 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                           minWidth: '26px'
                         };
                       }
+                      // Determine slot frame styles matching the badge colors
+                      let frameStyle: React.CSSProperties = {
+                        flex: 1,
+                        textAlign: 'center',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '12px',
+                        padding: '5px 8px',
+                        transition: 'all 0.2s'
+                      };
+
+                      if (isActive) {
+                        frameStyle = {
+                          ...frameStyle,
+                          background: '#D4A84B',
+                          border: '1px solid #D4A84B',
+                          color: '#fff'
+                        };
+                      } else {
+                        if (availableVal > 2) {
+                          frameStyle = {
+                            ...frameStyle,
+                            background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+                            border: `1px solid ${themeMode === 'dark' ? '#334155' : '#d9d9d9'}`,
+                            color: themeMode === 'dark' ? '#cbd5e1' : '#1f2937'
+                          };
+                        } else if (availableVal === 1 || availableVal === 2) {
+                          frameStyle = {
+                            ...frameStyle,
+                            background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.08)' : '#fffbe6',
+                            border: `1px solid ${themeMode === 'dark' ? '#d4a84b' : '#ffe58f'}`,
+                            color: themeMode === 'dark' ? '#d4a84b' : '#d46b08'
+                          };
+                        } else if (availableVal === 0) {
+                          frameStyle = {
+                            ...frameStyle,
+                            background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.05)' : '#fff1f0',
+                            border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : '#ffccc7'}`,
+                            color: '#ef4444'
+                          };
+                        } else {
+                          frameStyle = {
+                            ...frameStyle,
+                            background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.1)' : '#fff1f0',
+                            border: '1px solid #ef4444',
+                            color: '#ef4444'
+                          };
+                        }
+                      }
                       
                       return (
                         <Col span={6} key={time}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <div 
-                              style={{
-                                flex: 1,
-                                textAlign: 'center',
-                                background: isActive 
-                                  ? '#D4A84B' 
-                                  : (themeMode === 'dark' ? '#1e293b' : '#ffffff'),
-                                border: `1px solid ${isActive ? '#D4A84B' : (themeMode === 'dark' ? '#334155' : '#d9d9d9')}`,
-                                color: isActive ? '#fff' : (themeMode === 'dark' ? '#cbd5e1' : '#1f2937'),
-                                padding: '5px 8px',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                fontSize: '12px',
-                                transition: 'all 0.2s'
-                              }}
+                              style={frameStyle}
                               onClick={() => setSelectedSlot(time)}
                             >
                               {time}
