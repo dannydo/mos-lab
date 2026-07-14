@@ -268,10 +268,17 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
     };
   }, [visible]);
 
+  // Reset flip and config states only when the modal opens
   useEffect(() => {
     if (visible) {
       setIsFlipped(false);
       setIsConfigOpen(false);
+    }
+  }, [visible]);
+
+  // Synchronize target expansion when period changes
+  useEffect(() => {
+    if (visible) {
       setExpandedSections(prev => {
         const next = { ...prev };
         periods.forEach(p => {
