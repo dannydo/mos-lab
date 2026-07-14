@@ -86,6 +86,13 @@ body {
   background-color: rgba(82, 196, 26, 0.15) !important;
 }
 
+.light-theme .coming-row-serving td {
+  background-color: rgba(19, 194, 194, 0.08) !important;
+}
+.light-theme .coming-row-serving:hover td {
+  background-color: rgba(19, 194, 194, 0.15) !important;
+}
+
 .light-theme .coming-row-late td {
   background-color: rgba(255, 77, 79, 0.08) !important;
 }
@@ -99,6 +106,14 @@ body {
 }
 .dark-theme .coming-row-completed:hover td {
   background-color: rgba(74, 222, 128, 0.15) !important;
+}
+
+.dark-theme .coming-row-serving td {
+  background-color: rgba(34, 211, 238, 0.08) !important;
+  color: #f8fafc !important;
+}
+.dark-theme .coming-row-serving:hover td {
+  background-color: rgba(34, 211, 238, 0.15) !important;
 }
 
 .dark-theme .coming-row-late td {

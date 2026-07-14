@@ -1003,10 +1003,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               className={`rounded-full px-2.5 py-1.5 flex flex-col items-center min-w-[84px] ${
                                 themeMode === 'dark'
                                   ? isActive
-                                    ? 'bg-neutral-955 text-pink-400'
-                                    : 'bg-neutral-900 text-gray-400 hover:text-white'
+                                    ? 'bg-[#121212]'
+                                    : 'bg-neutral-900/90 text-gray-400 hover:text-white'
                                   : isActive
-                                    ? 'bg-white text-pink-500 font-bold'
+                                    ? 'bg-white'
                                     : 'bg-slate-50 text-slate-500 hover:bg-white hover:text-slate-900'
                               }`}
                             >
@@ -1014,8 +1014,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               <span 
                                 className={`font-outfit leading-tight ${
                                   isActive 
-                                    ? 'text-base font-black' 
-                                    : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-300' : 'text-slate-700'}`
+                                    ? 'text-base font-black text-pink-500 dark:text-pink-400' 
+                                    : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`
                                 }`}
                               >
                                 {periodTgt}
@@ -1024,8 +1024,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               <span 
                                 className={`text-[9px] mt-0.5 leading-none whitespace-nowrap ${
                                   isActive 
-                                    ? `font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}` 
-                                    : `font-medium opacity-85 ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
+                                    ? `font-bold ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}` 
+                                    : `font-medium ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`
                                 }`}
                               >
                                 {p.label}
@@ -1436,10 +1436,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               className={`rounded-full px-2.5 py-1.5 flex flex-col items-center min-w-[84px] ${
                                 themeMode === 'dark'
                                   ? isActive
-                                    ? 'bg-neutral-955 text-pink-400'
-                                    : 'bg-neutral-900 text-gray-400 hover:text-white'
+                                    ? 'bg-[#121212]'
+                                    : 'bg-neutral-900/90 text-gray-400 hover:text-white'
                                   : isActive
-                                    ? 'bg-white text-pink-500 font-bold'
+                                    ? 'bg-white'
                                     : 'bg-slate-50 text-slate-500 hover:bg-white hover:text-slate-900'
                               }`}
                             >
@@ -1447,8 +1447,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               <span 
                                 className={`font-outfit leading-tight ${
                                   isActive 
-                                    ? 'text-base font-black' 
-                                    : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-300' : 'text-slate-700'}`
+                                    ? 'text-base font-black text-pink-500 dark:text-pink-400' 
+                                    : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`
                                 }`}
                               >
                                 {periodTgt}
@@ -1457,8 +1457,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               <span 
                                 className={`text-[9px] mt-0.5 leading-none whitespace-nowrap ${
                                   isActive 
-                                    ? `font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}` 
-                                    : `font-medium opacity-85 ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`
+                                    ? `font-bold ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}` 
+                                    : `font-medium ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`
                                 }`}
                               >
                                 {p.label}

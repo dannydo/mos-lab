@@ -52,3 +52,47 @@
 * Mọi ứng dụng liên kết (như Google Sheets, App Scripts) hoặc các Module tính toán Leaderboard bắt buộc phải chuyển hướng cấu hình gọi qua domain nội bộ của hệ thống mos-lab với API key đi kèm:
   `?key=FDC0D0A177694777A&booker=...&date_from=...&date_to=...`
 
+---
+
+# Workspace Isolation and External Code Modification Rules
+
+Để tránh việc Agent vô tình chỉnh sửa mã nguồn của các dự án/workspace khác khi đang làm việc trong workspace này:
+
+## 1. Hạn chế phạm vi hoạt động (Workspace Isolation)
+* Agent **được phép ĐỌC** thông tin từ các tệp tin nằm ngoài thư mục workspace hiện tại (`/Users/dannydo/projects/mos-lab`) để tham khảo, đối chiếu hoặc tìm hiểu ngữ cảnh phục vụ công việc.
+* Tuy nhiên, **tuyệt đối KHÔNG tự ý chỉnh sửa (ghi, tạo mới hoặc thay đổi)** bất kỳ tệp tin nào nằm ngoài thư mục workspace hiện tại.
+* Nếu người dùng yêu cầu chỉnh sửa hoặc ghi tệp tin nằm ngoài workspace hiện tại, Agent **bắt buộc phải cảnh báo người dùng** trước khi thực hiện:
+  * Nêu rõ đường dẫn tuyệt đối của tệp tin/dự án ngoài workspace sẽ bị tác động.
+  * Yêu cầu xác nhận rõ ràng từ người dùng (ví dụ: "Bạn có chắc chắn muốn chỉnh sửa tệp tin ngoài workspace này không?") trước khi gọi bất kỳ công cụ ghi/sửa tệp tin nào (`write_to_file`, `replace_file_content`, v.v.).
+
+## 2. Xác thực trước khi sửa đổi
+* Chỉ tiến hành thay đổi mã nguồn ở workspace khác khi và chỉ khi nhận được sự đồng ý bằng văn bản rõ ràng từ người dùng trong phiên chat hiện tại.
+
+---
+
+# Hybrid Styling Workflow: Ant Design 5 & Tailwind CSS v4
+
+Để xây dựng giao diện ứng dụng quản lý `mos-lab` vừa vững chắc về tính năng, vừa có tính thẩm mỹ cao (Premium UI) và đồng bộ, Agent cần tuân thủ workflow phối hợp sau:
+
+## 1. Phân chia vai trò công nghệ
+* **Ant Design 5 (Trụ cột chức năng):** Sử dụng các component sẵn có của Antd cho các thành phần có trạng thái (state) phức tạp, tương tác dữ liệu cao hoặc cần tuân thủ form/bảng biểu:
+  * `<Table>`, `<Form>`, `<Form.Item>`, `<Select>`, `<DatePicker>`, `<Modal>`, `<Drawer>`, `<Tabs>`, `<Steps>`, `<Upload>`.
+* **Tailwind CSS v4 (Thẩm mỹ & Bố cục):** Sử dụng các utility classes của Tailwind để dựng bố cục, căn lề, khoảng cách, và trang trí nâng cao:
+  * Layout: `grid`, `flex`, `gap-*`, `w-*`, `h-*`.
+  * Visual: Gradient nền (`bg-gradient-to-r`), hiệu ứng bóng mờ (`shadow-*`), bo góc (`rounded-*`), và backdrop-filter (glassmorphism).
+  * Animations: Hiệu ứng hover, chuyển cảnh mượt mà (`transition-all duration-300 ease-in-out hover:scale-[1.02]`).
+
+## 2. Quy tắc tích hợp & Tránh xung đột
+* **Không lạm dụng custom CSS:** Ưu tiên dùng Tailwind class trực tiếp trên thẻ hoặc cấu hình `className` của Antd. Hạn chế tối đa việc viết thêm file `.css` mới trừ khi ghi đè (override) component của Antd.
+* **Ghi đè phong cách Antd (Antd Customization):**
+  * Sử dụng thuộc tính `className` kết hợp với Tailwind (ví dụ: `<Card className="shadow-lg border border-slate-100 dark:border-slate-800">`).
+  * Khi cần ghi đè CSS sâu của Antd (ví dụ `.ant-table`), hãy đặt trong các block CSS phân vùng rõ ràng theo theme `.dark-theme` / `.light-theme` trong file CSS toàn cục như quy định ở phần "Frontend Theme Customization Rules".
+* **Đồng bộ màu sắc với Design Tokens:**
+  * Khi dùng Tailwind class hoặc inline style liên quan đến màu sắc, hãy đảm bảo chúng khớp với trạng thái `themeMode` hiện tại.
+  * Ưu tiên dùng CSS Variables hoặc Antd Design Tokens (`theme.useToken()`) để các màu sắc (background, border, text) tự động thay đổi khi chuyển đổi qua lại giữa Light/Dark theme.
+
+## 3. Tiêu chuẩn giao diện cao cấp (Premium UI)
+* **Tránh giao diện mặc định đơn điệu:** Tuyệt đối không để nguyên giao diện mặc định thô cứng của Antd. Hãy bo tròn các góc mềm mại hơn, thêm shadow nhẹ, và dùng màu nền tinh tế (thay vì màu xám/trắng mặc định).
+* **Micro-animations:** Thêm hiệu ứng transition nhẹ nhàng khi hover vào các thẻ card, nút bấm hoặc dòng trong bảng để giao diện có cảm giác "sống động" và phản hồi tốt.
+* **Không dùng hình ảnh giữ chỗ (placeholders):** Sử dụng biểu tượng SVG chất lượng cao hoặc sinh ảnh thực tế bằng công cụ AI nếu cần minh họa.
+

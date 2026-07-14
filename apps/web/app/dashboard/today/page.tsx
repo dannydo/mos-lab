@@ -1466,6 +1466,7 @@ export default function TodayDashboard() {
                 className="antd-custom-table"
                 rowClassName={(record) => {
                   if (record.status === 'completed') return 'coming-row-completed';
+                  if (record.status === 'serving' || record.status === 'arrived') return 'coming-row-serving';
                   if (record.status === 'late') return 'coming-row-late';
                   return '';
                 }}
@@ -1539,6 +1540,7 @@ export default function TodayDashboard() {
                 className="antd-custom-table"
                 rowClassName={(record) => {
                   if (record.status === 'completed') return 'coming-row-completed';
+                  if (record.status === 'serving' || record.status === 'arrived') return 'coming-row-serving';
                   if (record.status === 'late') return 'coming-row-late';
                   return '';
                 }}
