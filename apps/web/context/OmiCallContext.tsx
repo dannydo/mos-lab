@@ -280,7 +280,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const scriptUrl = process.env.NEXT_PUBLIC_OMICALL_SDK_URL || 'https://cdn.omicrm.com/sdk/web/3.0.42/core.min.js';
+    const scriptUrl = process.env.NEXT_PUBLIC_OMICALL_SDK_URL || '/core.min.js';
     const script = document.createElement('script');
     script.src = scriptUrl;
     script.type = 'text/javascript';
@@ -467,13 +467,20 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     };
 
     const startCheck = () => {
+      let duration = 0;
       if (window.OMICallSDK) {
         runInitOnce();
       } else {
         checkInterval = setInterval(() => {
+          duration += 100;
           if (window.OMICallSDK) {
             clearInterval(checkInterval);
             runInitOnce();
+          } else if (duration >= 4000) { // 4 seconds timeout
+            console.warn('[OmiCallContext] OmiCall SDK load timed out (possibly blocked by ad-blocker). Enabling Simulation Mode.');
+            clearInterval(checkInterval);
+            setIsSimulated(true);
+            setIsRegistered(true);
           }
         }, 100);
       }

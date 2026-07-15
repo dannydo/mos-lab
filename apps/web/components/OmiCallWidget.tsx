@@ -480,118 +480,120 @@ export default function OmiCallWidget() {
           </div>
 
           {/* AI Analysis and CSAT Panel */}
-          {!resolvedLog ? (
-            <div 
-              className="p-3 rounded-lg border text-xs flex flex-col gap-1 items-center justify-center text-amber-500 text-center"
-              style={{ background: 'rgba(245,158,11,0.04)', borderColor: 'rgba(245,158,11,0.15)' }}
-            >
-              <div className="flex items-center gap-2">
-                <SyncOutlined spin />
-                <span className="font-bold">🤖 AI đang phân tích cuộc gọi ngầm...</span>
+          {callDuration > 0 && (
+            !resolvedLog ? (
+              <div 
+                className="p-3 rounded-lg border text-xs flex flex-col gap-1 items-center justify-center text-amber-500 text-center"
+                style={{ background: 'rgba(245,158,11,0.04)', borderColor: 'rgba(245,158,11,0.15)' }}
+              >
+                <div className="flex items-center gap-2">
+                  <SyncOutlined spin />
+                  <span className="font-bold">🤖 AI đang phân tích cuộc gọi ngầm...</span>
+                </div>
+                <span className="text-[10px]" style={{ color: descColor }}>
+                  Booker có thể ghi chú và bấm lưu luôn mà không cần chờ.
+                </span>
               </div>
-              <span className="text-[10px]" style={{ color: descColor }}>
-                Booker có thể ghi chú và bấm lưu luôn mà không cần chờ.
-              </span>
-            </div>
-          ) : (
-            <div 
-              className="p-3.5 rounded-lg border text-xs space-y-3"
-              style={{ background: subBg, borderColor }}
-            >
-              {/* Laughter & CSAT Score */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="font-bold" style={{ color: textColor }}>Điểm hài lòng (CSAT)</span>
-                  <div className="flex items-center gap-0.5 mt-0.5 text-amber-400">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i} className="text-base">
-                        {i < (resolvedLog.customerSatisfactionScore || 0) ? '★' : '☆'}
+            ) : resolvedLog.analysisStatus !== 'SKIPPED' ? (
+              <div 
+                className="p-3.5 rounded-lg border text-xs space-y-3"
+                style={{ background: subBg, borderColor }}
+              >
+                {/* Laughter & CSAT Score */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-bold" style={{ color: textColor }}>Điểm hài lòng (CSAT)</span>
+                    <div className="flex items-center gap-0.5 mt-0.5 text-amber-400">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <span key={i} className="text-base">
+                          {i < (resolvedLog.customerSatisfactionScore || 0) ? '★' : '☆'}
+                        </span>
+                      ))}
+                      <span className="text-[10px] ml-1 font-bold" style={{ color: descColor }}>
+                        ({resolvedLog.customerSatisfactionScore || 0}/5)
                       </span>
-                    ))}
-                    <span className="text-[10px] ml-1 font-bold" style={{ color: descColor }}>
-                      ({resolvedLog.customerSatisfactionScore || 0}/5)
-                    </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="font-bold" style={{ color: textColor }}>Thái độ KH</span>
+                    <Tag 
+                      className="mt-0.5 font-bold text-[9px] px-1.5 py-0"
+                      color={
+                        resolvedLog.customerSentiment === 'HAPPY' ? 'emerald' :
+                        resolvedLog.customerSentiment === 'SATISFIED' ? 'green' :
+                        resolvedLog.customerSentiment === 'NEUTRAL' ? 'blue' :
+                        resolvedLog.customerSentiment === 'FRUSTRATED' ? 'orange' :
+                        resolvedLog.customerSentiment === 'ANGRY' ? 'red' : 'default'
+                      }
+                    >
+                      {resolvedLog.customerSentiment || 'NEUTRAL'}
+                    </Tag>
                   </div>
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className="font-bold" style={{ color: textColor }}>Thái độ KH</span>
-                  <Tag 
-                    className="mt-0.5 font-bold text-[9px] px-1.5 py-0"
-                    color={
-                      resolvedLog.customerSentiment === 'HAPPY' ? 'emerald' :
-                      resolvedLog.customerSentiment === 'SATISFIED' ? 'green' :
-                      resolvedLog.customerSentiment === 'NEUTRAL' ? 'blue' :
-                      resolvedLog.customerSentiment === 'FRUSTRATED' ? 'orange' :
-                      resolvedLog.customerSentiment === 'ANGRY' ? 'red' : 'default'
-                    }
-                  >
-                    {resolvedLog.customerSentiment || 'NEUTRAL'}
-                  </Tag>
+
+                {/* Satisfaction Analysis Detail */}
+                {resolvedLog.satisfactionAnalysis && (
+                  <div className="text-[10.5px] border-t pt-2" style={{ borderColor, color: descColor }}>
+                    <span className="font-bold text-zinc-400">Phân tích:</span> {resolvedLog.satisfactionAnalysis}
+                  </div>
+                )}
+
+                {/* Laughter Breakdown */}
+                <div className="border-t pt-2 space-y-1.5" style={{ borderColor }}>
+                  <div className="flex justify-between items-center text-[10.5px]">
+                    <span>👤 Khách hàng cười: <strong>{resolvedLog.laughCountCustomer || 0}</strong> lần</span>
+                    <span>🎧 Nhân viên cười: <strong>{resolvedLog.laughCountAgent || 0}</strong> lần</span>
+                  </div>
+
+                  {/* Click-to-seek badges */}
+                  {(() => {
+                    try {
+                      const laughs = typeof resolvedLog.laughTimestamps === 'string'
+                        ? JSON.parse(resolvedLog.laughTimestamps)
+                        : resolvedLog.laughTimestamps;
+                      if (Array.isArray(laughs) && laughs.length > 0) {
+                        return (
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {laughs.map((l: any, i: number) => {
+                              const isCustomer = l.speaker === 'customer';
+                              return (
+                                <Tag 
+                                  key={i}
+                                  onClick={() => {
+                                    if (audioRef.current) {
+                                      audioRef.current.currentTime = l.start;
+                                      audioRef.current.play().catch(() => {});
+                                    }
+                                  }}
+                                  className="cursor-pointer text-[9px] font-mono hover:opacity-85 active:scale-95 transition-all py-0 px-1.5"
+                                  color={isCustomer ? 'purple' : 'blue'}
+                                >
+                                  😂 {isCustomer ? 'KH' : 'NV'}: {Math.floor(l.start)}s
+                                </Tag>
+                              );
+                            })}
+                          </div>
+                        );
+                      }
+                    } catch (e) {}
+                    return null;
+                  })()}
                 </div>
+
+                {/* Audio player element */}
+                {resolvedLog.recordingUrl && (
+                  <div className="border-t pt-2" style={{ borderColor }}>
+                    <audio 
+                      ref={audioRef}
+                      src={resolvedLog.recordingUrl} 
+                      controls 
+                      className="w-full h-7 mt-1"
+                      style={{ outline: 'none' }}
+                    />
+                  </div>
+                )}
               </div>
-
-              {/* Satisfaction Analysis Detail */}
-              {resolvedLog.satisfactionAnalysis && (
-                <div className="text-[10.5px] border-t pt-2" style={{ borderColor, color: descColor }}>
-                  <span className="font-bold text-zinc-400">Phân tích:</span> {resolvedLog.satisfactionAnalysis}
-                </div>
-              )}
-
-              {/* Laughter Breakdown */}
-              <div className="border-t pt-2 space-y-1.5" style={{ borderColor }}>
-                <div className="flex justify-between items-center text-[10.5px]">
-                  <span>👤 Khách hàng cười: <strong>{resolvedLog.laughCountCustomer || 0}</strong> lần</span>
-                  <span>🎧 Nhân viên cười: <strong>{resolvedLog.laughCountAgent || 0}</strong> lần</span>
-                </div>
-
-                {/* Click-to-seek badges */}
-                {(() => {
-                  try {
-                    const laughs = typeof resolvedLog.laughTimestamps === 'string'
-                      ? JSON.parse(resolvedLog.laughTimestamps)
-                      : resolvedLog.laughTimestamps;
-                    if (Array.isArray(laughs) && laughs.length > 0) {
-                      return (
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {laughs.map((l: any, i: number) => {
-                            const isCustomer = l.speaker === 'customer';
-                            return (
-                              <Tag 
-                                key={i}
-                                onClick={() => {
-                                  if (audioRef.current) {
-                                    audioRef.current.currentTime = l.start;
-                                    audioRef.current.play().catch(() => {});
-                                  }
-                                }}
-                                className="cursor-pointer text-[9px] font-mono hover:opacity-85 active:scale-95 transition-all py-0 px-1.5"
-                                color={isCustomer ? 'purple' : 'blue'}
-                              >
-                                😂 {isCustomer ? 'KH' : 'NV'}: {Math.floor(l.start)}s
-                              </Tag>
-                            );
-                          })}
-                        </div>
-                      );
-                    }
-                  } catch (e) {}
-                  return null;
-                })()}
-              </div>
-
-              {/* Audio player element */}
-              {resolvedLog.recordingUrl && (
-                <div className="border-t pt-2" style={{ borderColor }}>
-                  <audio 
-                    ref={audioRef}
-                    src={resolvedLog.recordingUrl} 
-                    controls 
-                    className="w-full h-7 mt-1"
-                    style={{ outline: 'none' }}
-                  />
-                </div>
-              )}
-            </div>
+            ) : null
           )}
 
           {/* Wrapup Form */}
