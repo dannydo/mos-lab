@@ -13,19 +13,15 @@ async function fetchRecordingUrl(callUuid: string): Promise<string | null> {
   }
 
   try {
-    const response = await fetch(`https://public-v1.omicall.com/api/call/transaction/detail?call_uuid=${callUuid}`, {
-      method: 'GET',
+    const response = await axios.get(`https://public-v1.omicall.com/api/call/transaction/detail?call_uuid=${callUuid}`, {
       headers: {
         'Accept': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
+      timeout: 10_000,
     });
 
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = (await response.json()) as any;
+    const data = response.data;
     const recordingUrl = data?.payload?.recording_file_url || data?.payload?.recording_url || data?.recording_file_url || data?.recording_url;
     return recordingUrl || null;
   } catch (error) {

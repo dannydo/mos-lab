@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
+import axios from 'axios';
 import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
 import { LoginRequest, LoginResponse } from '@mos-lab/shared';
 
@@ -99,14 +100,16 @@ export async function authRoutes(fastify: FastifyInstance) {
         name = mockName || 'Danh Do (Mock Google)';
         picture = 'https://lh3.googleusercontent.com/a/default-user=s96-c';
       } else {
-        const tokenRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
-        if (!tokenRes.ok) {
+        let tokenInfo: any;
+        try {
+          const tokenRes = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+          tokenInfo = tokenRes.data;
+        } catch (error) {
           return reply.status(401).send({
             error: 'Unauthorized',
             message: 'Invalid Google credential'
           });
         }
-        const tokenInfo = await tokenRes.json() as any;
         if (tokenInfo.email_verified !== 'true') {
           return reply.status(401).send({
             error: 'Unauthorized',
