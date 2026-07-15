@@ -11,6 +11,8 @@ declare global {
     AudioContext: any;
     webkitAudioContext: any;
     __mosLastOmiCallAudioDiagnostics?: any;
+    __mosOmiCallPeerConnections?: Set<RTCPeerConnection>;
+    __mosOmiCallPeerConnectionTrackerInstalled?: boolean;
   }
 }
 
@@ -365,6 +367,43 @@ const refreshOmiCallMediaDevices = async () => {
   }
 };
 
+const installOmiCallPeerConnectionTracker = () => {
+  if (typeof window === 'undefined') return;
+  if (window.__mosOmiCallPeerConnectionTrackerInstalled) return;
+  if (typeof window.RTCPeerConnection !== 'function') return;
+
+  const OriginalRTCPeerConnection = window.RTCPeerConnection;
+  const trackedPeerConnections = new Set<RTCPeerConnection>();
+
+  const PatchedRTCPeerConnection = function(this: RTCPeerConnection, ...args: ConstructorParameters<typeof RTCPeerConnection>) {
+    const peerConnection = new OriginalRTCPeerConnection(...args);
+    trackedPeerConnections.add(peerConnection);
+
+    const pruneIfTerminal = () => {
+      if (['closed', 'failed', 'disconnected'].includes(peerConnection.connectionState)) {
+        setTimeout(() => {
+          if (peerConnection.connectionState === 'closed') {
+            trackedPeerConnections.delete(peerConnection);
+          }
+        }, 15000);
+      }
+    };
+
+    peerConnection.addEventListener('connectionstatechange', pruneIfTerminal);
+    return peerConnection;
+  } as any;
+
+  try {
+    PatchedRTCPeerConnection.prototype = OriginalRTCPeerConnection.prototype;
+    Object.setPrototypeOf(PatchedRTCPeerConnection, OriginalRTCPeerConnection);
+    window.RTCPeerConnection = PatchedRTCPeerConnection;
+    window.__mosOmiCallPeerConnections = trackedPeerConnections;
+    window.__mosOmiCallPeerConnectionTrackerInstalled = true;
+  } catch (err) {
+    console.warn('[OmiCallContext] Failed to install OmiCall peer connection tracker:', err);
+  }
+};
+
 const getOmiCallSdkUid = (call: any) => call?.uid || call?.sdkUid || null;
 
 const getOmiCallMediaContainer = () => {
@@ -523,8 +562,96 @@ const describeOmiCallStream = async (call: any, streamKey: string) => {
   };
 };
 
+const getPeerConnectionAudioStats = async (peerConnection: RTCPeerConnection) => {
+  const summarizeTrack = (track: MediaStreamTrack | null) => track ? {
+    id: track.id,
+    kind: track.kind,
+    label: track.label,
+    enabled: track.enabled,
+    muted: track.muted,
+    readyState: track.readyState,
+    settings: typeof track.getSettings === 'function' ? track.getSettings() : null,
+  } : null;
+
+  const summarizeReports = async (source: RTCRtpSender | RTCRtpReceiver) => {
+    try {
+      const stats = await source.getStats();
+      const reports = Array.from(stats.values());
+      return reports
+        .filter((report: any) => {
+          const kind = report.kind || report.mediaType;
+          return kind === 'audio' || String(report.id || '').toLowerCase().includes('audio');
+        })
+        .map((report: any) => ({
+          id: report.id,
+          type: report.type,
+          kind: report.kind || report.mediaType || null,
+          bytesSent: report.bytesSent ?? null,
+          packetsSent: report.packetsSent ?? null,
+          bytesReceived: report.bytesReceived ?? null,
+          packetsReceived: report.packetsReceived ?? null,
+          audioLevel: report.audioLevel ?? null,
+          totalAudioEnergy: report.totalAudioEnergy ?? null,
+          totalSamplesDuration: report.totalSamplesDuration ?? null,
+          jitter: report.jitter ?? null,
+          roundTripTime: report.roundTripTime ?? null,
+          concealedSamples: report.concealedSamples ?? null,
+          silentConcealedSamples: report.silentConcealedSamples ?? null,
+        }));
+    } catch (err) {
+      return [{ error: err instanceof Error ? err.message : String(err) }];
+    }
+  };
+
+  const senders = await Promise.all(peerConnection.getSenders().map(async sender => ({
+    track: summarizeTrack(sender.track),
+    stats: await summarizeReports(sender),
+  })));
+
+  const receivers = await Promise.all(peerConnection.getReceivers().map(async receiver => ({
+    track: summarizeTrack(receiver.track),
+    stats: await summarizeReports(receiver),
+  })));
+
+  return {
+    connectionState: peerConnection.connectionState,
+    iceConnectionState: peerConnection.iceConnectionState,
+    iceGatheringState: peerConnection.iceGatheringState,
+    signalingState: peerConnection.signalingState,
+    senders,
+    receivers,
+  };
+};
+
+const describeOmiCallPeerConnections = async () => {
+  if (typeof window === 'undefined') return [];
+
+  const trackedPeerConnections = Array.from(window.__mosOmiCallPeerConnections || []);
+  const activePeerConnections = trackedPeerConnections.filter(peerConnection => {
+    return peerConnection.signalingState !== 'closed';
+  });
+
+  return Promise.all(activePeerConnections.map(getPeerConnectionAudioStats));
+};
+
 const hasLiveEnabledTrack = (streamInfo: any) => {
   return streamInfo?.tracks?.some((track: any) => track.readyState === 'live' && track.enabled);
+};
+
+const hasLiveAudioSender = (diagnostics: any) => {
+  return diagnostics?.peerConnections?.some((peerConnection: any) => {
+    return peerConnection.senders?.some((sender: any) => {
+      return sender.track?.kind === 'audio' && sender.track.readyState === 'live' && sender.track.enabled;
+    });
+  });
+};
+
+const hasRemoteAudioReceiver = (diagnostics: any) => {
+  return diagnostics?.peerConnections?.some((peerConnection: any) => {
+    return peerConnection.receivers?.some((receiver: any) => {
+      return receiver.track?.kind === 'audio' && receiver.track.readyState === 'live';
+    });
+  });
 };
 
 const warnOmiCallAudioHealth = (diagnostics: any) => {
@@ -542,11 +669,27 @@ const warnOmiCallAudioHealth = (diagnostics: any) => {
     }
   }
 
+  if (!hasLiveAudioSender(diagnostics)) {
+    const key = `${callKey}:pc-audio-sender`;
+    if (!audioHealthWarningKeys.has(key)) {
+      audioHealthWarningKeys.add(key);
+      message.error('WebRTC chưa có audio sender live. Giọng bạn có thể chưa được gửi vào cuộc gọi.', 12);
+    }
+  }
+
   if (!hasLiveEnabledTrack(remote)) {
     const key = `${callKey}:remote-track`;
     if (!audioHealthWarningKeys.has(key)) {
       audioHealthWarningKeys.add(key);
       message.error('Cuộc gọi chưa nhận được remote audio track từ OmiCall. Bạn có thể sẽ không nghe được khách.', 12);
+    }
+  }
+
+  if (!hasRemoteAudioReceiver(diagnostics)) {
+    const key = `${callKey}:pc-audio-receiver`;
+    if (!audioHealthWarningKeys.has(key)) {
+      audioHealthWarningKeys.add(key);
+      message.error('WebRTC chưa có audio receiver live. Bạn có thể chưa nhận được tiếng khách.', 12);
     }
   }
 
@@ -579,6 +722,7 @@ const recordOmiCallAudioDiagnostics = async (call: any, stage: string) => {
       local: await describeOmiCallStream(activeCall, 'local'),
       remote: await describeOmiCallStream(activeCall, 'remote'),
     },
+    peerConnections: await describeOmiCallPeerConnections(),
   };
 
   window.__mosLastOmiCallAudioDiagnostics = diagnostics;
@@ -766,6 +910,8 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   // 1. Dynamic Script Loading
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    installOmiCallPeerConnectionTracker();
 
     const existing = document.querySelector('script[src*="core.min.js"]');
     if (existing) {
@@ -1115,6 +1261,12 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       const hotlineNumber = sipConfig?.phoneNumber || '';
       const omicallCall = await window.OMICallSDK.makeCall(cleanPhone, {
         ...(hotlineNumber ? { sipNumber: { number: hotlineNumber } } : {}),
+        sessionDescriptionHandlerOptions: {
+          constraints: {
+            audio: getMicrophoneConstraints(),
+            video: false,
+          },
+        },
         userData: JSON.stringify({
           customerName: name || 'Khách hàng'
         })
