@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOmiCall, CurrentCall } from '../context/OmiCallContext';
 import { useTheme } from '../context/ThemeContext';
-import { Button, Input, DatePicker, Tag, Space, Form, theme, message } from 'antd';
+import { Button, Input, DatePicker, Tag, Space, Form, theme, message, Select } from 'antd';
 import { 
   PhoneOutlined, 
   CloseOutlined, 
@@ -36,7 +36,14 @@ export default function OmiCallWidget() {
     sipConfig,
     setCallState,
     setCurrentCall,
-    isSimulated
+    isSimulated,
+    audioInputDevices,
+    audioOutputDevices,
+    selectedAudioInputId,
+    selectedAudioOutputId,
+    setSelectedAudioInputId,
+    setSelectedAudioOutputId,
+    refreshAudioDevices
   } = useOmiCall();
 
   const { themeMode } = useTheme();
@@ -190,6 +197,52 @@ export default function OmiCallWidget() {
   const textColor = isDark ? '#f4f4f5' : '#18181b';
   const descColor = isDark ? '#a1a1aa' : '#71717a';
   const subBg = isDark ? 'rgba(24, 24, 27, 0.8)' : 'rgba(244, 244, 245, 0.8)';
+  const systemDeviceValue = '__system__';
+  const inputDeviceOptions = [
+    { value: systemDeviceValue, label: 'Mic hệ thống' },
+    ...audioInputDevices.map((device, index) => ({
+      value: device.deviceId,
+      label: device.label || `Mic ${index + 1}`
+    }))
+  ];
+  const outputDeviceOptions = [
+    { value: systemDeviceValue, label: 'Tai nghe hệ thống' },
+    ...audioOutputDevices.map((device, index) => ({
+      value: device.deviceId,
+      label: device.label || `Tai nghe ${index + 1}`
+    }))
+  ];
+
+  const renderAudioDeviceControls = () => (
+    <div className="grid grid-cols-2 gap-2 text-left">
+      <div className="space-y-1">
+        <div className="text-[10px] uppercase font-bold tracking-wide" style={{ color: descColor }}>Mic</div>
+        <Select
+          size="small"
+          className="w-full"
+          value={selectedAudioInputId || systemDeviceValue}
+          options={inputDeviceOptions}
+          optionFilterProp="label"
+          showSearch
+          onFocus={() => void refreshAudioDevices()}
+          onChange={(value) => setSelectedAudioInputId(value === systemDeviceValue ? '' : value)}
+        />
+      </div>
+      <div className="space-y-1">
+        <div className="text-[10px] uppercase font-bold tracking-wide" style={{ color: descColor }}>Tai nghe</div>
+        <Select
+          size="small"
+          className="w-full"
+          value={selectedAudioOutputId || systemDeviceValue}
+          options={outputDeviceOptions}
+          optionFilterProp="label"
+          showSearch
+          onFocus={() => void refreshAudioDevices()}
+          onChange={(value) => setSelectedAudioOutputId(value === systemDeviceValue ? '' : value)}
+        />
+      </div>
+    </div>
+  );
 
   // RENDER MINIMIZED WIDGET (STANDBY OR ACTIVE CALL)
   if (widgetMinimized) {
@@ -277,6 +330,7 @@ export default function OmiCallWidget() {
               <p className="text-xs mt-1" style={{ color: descColor }}>Extension: <span className="font-bold text-amber-500">{sipConfig?.sipUser}</span> (Sẵn sàng nghe gọi)</p>
             )}
           </div>
+          {renderAudioDeviceControls()}
         </div>
       )}
 
@@ -295,6 +349,7 @@ export default function OmiCallWidget() {
             <h4 className="text-base font-bold mt-1">{currentCall?.name}</h4>
             <p className="text-xs font-mono" style={{ color: descColor }}>{currentCall?.phone}</p>
           </div>
+          {renderAudioDeviceControls()}
           <div className="flex justify-center">
             <Button 
               danger 
@@ -321,6 +376,7 @@ export default function OmiCallWidget() {
             <h4 className="text-base font-bold mt-1">{currentCall?.name}</h4>
             <p className="text-xs font-mono" style={{ color: descColor }}>{currentCall?.phone}</p>
           </div>
+          {renderAudioDeviceControls()}
           <div className="flex justify-center gap-4">
             <Button 
               type="primary" 
@@ -370,6 +426,8 @@ export default function OmiCallWidget() {
               </div>
             )}
           </div>
+
+          {renderAudioDeviceControls()}
 
           {/* Color Progress Bar */}
           <div className="space-y-1.5">

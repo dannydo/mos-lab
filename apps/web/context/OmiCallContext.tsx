@@ -49,6 +49,13 @@ interface OmiCallContextType {
   setCallState: (state: CallState) => void;
   setCurrentCall: (call: CurrentCall | null) => void;
   isSimulated: boolean;
+  audioInputDevices: MediaDeviceInfo[];
+  audioOutputDevices: MediaDeviceInfo[];
+  selectedAudioInputId: string;
+  selectedAudioOutputId: string;
+  setSelectedAudioInputId: (deviceId: string) => void;
+  setSelectedAudioOutputId: (deviceId: string) => void;
+  refreshAudioDevices: () => Promise<void>;
 }
 
 const OmiCallContext = createContext<OmiCallContextType | undefined>(undefined);
@@ -115,6 +122,24 @@ const stopRingtone = () => {
 
 let ringbackAudio: any = null;
 
+const OMI_AUDIO_INPUT_STORAGE_KEY = 'mos_omicall_audio_input_id';
+const OMI_AUDIO_OUTPUT_STORAGE_KEY = 'mos_omicall_audio_output_id';
+let selectedOmiCallAudioInputId = '';
+let selectedOmiCallAudioOutputId = '';
+
+const applyOmiCallAudioOutputDevice = async (element: HTMLMediaElement | null | undefined) => {
+  if (!element || element.muted) return;
+
+  const setSinkId = (element as HTMLMediaElement & { setSinkId?: (sinkId: string) => Promise<void> }).setSinkId;
+  if (typeof setSinkId !== 'function') return;
+
+  try {
+    await setSinkId.call(element, selectedOmiCallAudioOutputId || '');
+  } catch (err) {
+    console.warn('[OmiCallContext] Failed to route audio output device:', err);
+  }
+};
+
 const playRingback = () => {
   if (typeof window === 'undefined') return;
   try {
@@ -122,6 +147,7 @@ const playRingback = () => {
       ringbackAudio = new Audio('https://cdn.omicrm.com/sdk/assets/audios/call/ringing.mp3');
       ringbackAudio.loop = true;
     }
+    void applyOmiCallAudioOutputDevice(ringbackAudio);
     ringbackAudio.play().catch((e: any) => {
       console.warn('[OmiCallContext] Failed to play ringback audio:', e);
     });
@@ -139,11 +165,45 @@ const stopRingback = () => {
   }
 };
 
-const getMicrophoneConstraints = () => ({
-  echoCancellation: true,
-  noiseSuppression: true,
-  autoGainControl: true,
-});
+const getMicrophoneConstraints = (): MediaTrackConstraints => {
+  const constraints: MediaTrackConstraints = {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+  };
+
+  if (selectedOmiCallAudioInputId) {
+    constraints.deviceId = { exact: selectedOmiCallAudioInputId };
+  }
+
+  return constraints;
+};
+
+const getOmiCallMicrophoneStream = async () => {
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      audio: getMicrophoneConstraints(),
+      video: false,
+    });
+  } catch (err: any) {
+    const canRetryDefault =
+      selectedOmiCallAudioInputId &&
+      ['OverconstrainedError', 'NotFoundError', 'NotReadableError'].includes(err?.name);
+
+    if (!canRetryDefault) throw err;
+
+    console.warn('[OmiCallContext] Selected microphone is unavailable. Falling back to system default microphone.', err);
+    selectedOmiCallAudioInputId = '';
+    try {
+      localStorage.removeItem(OMI_AUDIO_INPUT_STORAGE_KEY);
+    } catch (e) {}
+
+    return navigator.mediaDevices.getUserMedia({
+      audio: getMicrophoneConstraints(),
+      video: false,
+    });
+  }
+};
 
 const measureAudioSignal = async (stream: MediaStream, sampleCount = 8, sampleMs = 80) => {
   if (typeof window === 'undefined') return null;
@@ -373,10 +433,7 @@ const prepareMicrophoneForOmiCall = async () => {
     if (err?.message?.includes('Microphone')) throw err;
   }
 
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: getMicrophoneConstraints(),
-    video: false,
-  });
+  const stream = await getOmiCallMicrophoneStream();
 
   const audioTracks = getLiveAudioTracks(stream);
 
@@ -500,6 +557,46 @@ const summarizeMediaTrack = (track: MediaStreamTrack | null) => track ? {
   settings: typeof track.getSettings === 'function' ? track.getSettings() : null,
 } : null;
 
+const resumeOmiCallAudioGraph = async (sessionDescriptionHandler: any) => {
+  const audioContext = sessionDescriptionHandler?.constructor?.audioContext;
+
+  if (audioContext?.state === 'suspended' && typeof audioContext.resume === 'function') {
+    await audioContext.resume();
+  }
+
+  return audioContext?.state || null;
+};
+
+const syncOmiCallLocalStreamFromSender = (activeCall: any, peerConnection: RTCPeerConnection) => {
+  const audioSenders = peerConnection.getSenders().filter(sender => sender.track?.kind === 'audio');
+  const localStream = activeCall.streams?.local;
+
+  if (isMediaStream(localStream)) {
+    localStream.getAudioTracks().forEach((track: MediaStreamTrack) => {
+      if (!audioSenders.some(sender => sender.track?.id === track.id)) {
+        localStream.removeTrack(track);
+        track.stop();
+      }
+    });
+    audioSenders.forEach(sender => {
+      const track = sender.track;
+      if (track && !localStream.getAudioTracks().some((existingTrack: MediaStreamTrack) => existingTrack.id === track.id)) {
+        localStream.addTrack(track);
+      }
+    });
+    activeCall.streams.local = localStream;
+    return localStream;
+  }
+
+  const nextLocalStream = new MediaStream();
+  audioSenders.forEach(sender => {
+    if (sender.track) nextLocalStream.addTrack(sender.track);
+  });
+  activeCall.streams = activeCall.streams || {};
+  activeCall.streams.local = nextLocalStream;
+  return nextLocalStream;
+};
+
 const reinforceOmiCallMicrophoneSender = async (call: any, stage: string) => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
   if (!navigator.mediaDevices?.getUserMedia) return false;
@@ -512,10 +609,7 @@ const reinforceOmiCallMicrophoneSender = async (call: any, stage: string) => {
   let freshStream: MediaStream | null = null;
 
   try {
-    freshStream = await navigator.mediaDevices.getUserMedia({
-      audio: getMicrophoneConstraints(),
-      video: false,
-    });
+    freshStream = await getOmiCallMicrophoneStream();
 
     const [freshTrack] = getLiveAudioTracks(freshStream);
     if (!freshTrack) {
@@ -524,27 +618,28 @@ const reinforceOmiCallMicrophoneSender = async (call: any, stage: string) => {
     }
 
     freshTrack.enabled = true;
-    const audioSender = peerConnection.getSenders().find(sender => sender.track?.kind === 'audio');
+    const sessionDescriptionHandler = activeCall.session?.sessionDescriptionHandler;
+    let reinforcementMode = 'sender-replace-track';
+    let audioGraphState = await resumeOmiCallAudioGraph(sessionDescriptionHandler);
 
-    if (audioSender) {
-      await audioSender.replaceTrack(freshTrack);
+    if (typeof sessionDescriptionHandler?.setRealLocalMediaStream === 'function') {
+      const previousRealStream = sessionDescriptionHandler.localMediaStreamReal;
+      sessionDescriptionHandler.setRealLocalMediaStream(freshStream);
+      if (isMediaStream(previousRealStream)) {
+        previousRealStream.getTracks().forEach((track: MediaStreamTrack) => {
+          if (track.id !== freshTrack.id) track.stop();
+        });
+      }
+      audioGraphState = await resumeOmiCallAudioGraph(sessionDescriptionHandler);
+      reinforcementMode = 'sdk-real-local-stream';
     } else {
-      peerConnection.addTrack(freshTrack, freshStream);
-    }
+      const audioSender = peerConnection.getSenders().find(sender => sender.track?.kind === 'audio');
 
-    const previousLocalStream = activeCall.streams?.local;
-    if (isMediaStream(previousLocalStream)) {
-      previousLocalStream.getAudioTracks().forEach((track: MediaStreamTrack) => {
-        if (track.id !== freshTrack.id) {
-          previousLocalStream.removeTrack(track);
-          track.stop();
-        }
-      });
-      previousLocalStream.addTrack(freshTrack);
-      activeCall.streams.local = previousLocalStream;
-    } else {
-      activeCall.streams = activeCall.streams || {};
-      activeCall.streams.local = freshStream;
+      if (audioSender) {
+        await audioSender.replaceTrack(freshTrack);
+      } else {
+        peerConnection.addTrack(freshTrack, freshStream);
+      }
     }
 
     activeCall.audio = true;
@@ -554,6 +649,10 @@ const reinforceOmiCallMicrophoneSender = async (call: any, stage: string) => {
         sender.track.enabled = true;
       }
     });
+    const localStream = syncOmiCallLocalStreamFromSender(activeCall, peerConnection);
+    localStream.getAudioTracks().forEach((track: MediaStreamTrack) => {
+      track.enabled = true;
+    });
 
     const result = {
       stage,
@@ -561,6 +660,12 @@ const reinforceOmiCallMicrophoneSender = async (call: any, stage: string) => {
       uid: getOmiCallSdkUid(activeCall),
       uuid: activeCall.uuid || activeCall.callUuid || activeCall.call_uuid || null,
       track: summarizeMediaTrack(freshTrack),
+      senderTracks: peerConnection.getSenders()
+        .filter(sender => sender.track?.kind === 'audio')
+        .map(sender => summarizeMediaTrack(sender.track)),
+      localStreamTracks: localStream.getAudioTracks().map(track => summarizeMediaTrack(track)),
+      mode: reinforcementMode,
+      audioGraphState,
       senderCount: peerConnection.getSenders().length,
       audioSenderCount: peerConnection.getSenders().filter(sender => sender.track?.kind === 'audio').length,
     };
@@ -596,6 +701,7 @@ const ensureOmiCallMediaElement = (id: string, muted: boolean) => {
     existing.autoplay = true;
     existing.playsInline = true;
     existing.muted = muted;
+    void applyOmiCallAudioOutputDevice(existing);
     return existing;
   }
 
@@ -611,6 +717,7 @@ const ensureOmiCallMediaElement = (id: string, muted: boolean) => {
   video.setAttribute('webkit-playsinline', 'true');
   video.style.cssText = 'width:1px;height:1px;opacity:0;pointer-events:none;';
   container.appendChild(video);
+  void applyOmiCallAudioOutputDevice(video);
 
   return video;
 };
@@ -705,6 +812,7 @@ const describeOmiCallStream = async (call: any, streamKey: string) => {
         autoplay: element.autoplay,
         paused: element.paused,
         hasSrcObject: !!element.srcObject,
+        sinkId: (element as HTMLMediaElement & { sinkId?: string }).sinkId || null,
       } : null,
     };
   }
@@ -727,6 +835,7 @@ const describeOmiCallStream = async (call: any, streamKey: string) => {
       autoplay: element.autoplay,
       paused: element.paused,
       hasSrcObject: !!element.srcObject,
+      sinkId: (element as HTMLMediaElement & { sinkId?: string }).sinkId || null,
     } : null,
   };
 };
@@ -1063,9 +1172,73 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   const [callDuration, setCallDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isHeld, setIsHeld] = useState(false);
+  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>([]);
+  const [audioOutputDevices, setAudioOutputDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedAudioInputIdState, setSelectedAudioInputIdState] = useState('');
+  const [selectedAudioOutputIdState, setSelectedAudioOutputIdState] = useState('');
 
   // Multi-Tab Sync State
   const [isTabMuted, setIsTabMuted] = useState(false);
+
+  const refreshAudioDevices = useCallback(async () => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) return;
+
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      setAudioInputDevices(devices.filter(device => device.kind === 'audioinput'));
+      setAudioOutputDevices(devices.filter(device => device.kind === 'audiooutput'));
+    } catch (err) {
+      console.warn('[OmiCallContext] Failed to enumerate audio devices:', err);
+    }
+  }, []);
+
+  const setSelectedAudioInputId = useCallback((deviceId: string) => {
+    selectedOmiCallAudioInputId = deviceId || '';
+    setSelectedAudioInputIdState(selectedOmiCallAudioInputId);
+    try {
+      if (selectedOmiCallAudioInputId) {
+        localStorage.setItem(OMI_AUDIO_INPUT_STORAGE_KEY, selectedOmiCallAudioInputId);
+      } else {
+        localStorage.removeItem(OMI_AUDIO_INPUT_STORAGE_KEY);
+      }
+    } catch (e) {}
+  }, []);
+
+  const setSelectedAudioOutputId = useCallback((deviceId: string) => {
+    selectedOmiCallAudioOutputId = deviceId || '';
+    setSelectedAudioOutputIdState(selectedOmiCallAudioOutputId);
+    try {
+      if (selectedOmiCallAudioOutputId) {
+        localStorage.setItem(OMI_AUDIO_OUTPUT_STORAGE_KEY, selectedOmiCallAudioOutputId);
+      } else {
+        localStorage.removeItem(OMI_AUDIO_OUTPUT_STORAGE_KEY);
+      }
+    } catch (e) {}
+
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll<HTMLMediaElement>('#mos-omicall-media-bridge audio, #mos-omicall-media-bridge video')
+        .forEach(element => void applyOmiCallAudioOutputDevice(element));
+    }
+    void applyOmiCallAudioOutputDevice(ringbackAudio);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const storedInputId = localStorage.getItem(OMI_AUDIO_INPUT_STORAGE_KEY) || '';
+    const storedOutputId = localStorage.getItem(OMI_AUDIO_OUTPUT_STORAGE_KEY) || '';
+    selectedOmiCallAudioInputId = storedInputId;
+    selectedOmiCallAudioOutputId = storedOutputId;
+    setSelectedAudioInputIdState(storedInputId);
+    setSelectedAudioOutputIdState(storedOutputId);
+    void refreshAudioDevices();
+
+    const handleDeviceChange = () => void refreshAudioDevices();
+    navigator.mediaDevices?.addEventListener?.('devicechange', handleDeviceChange);
+    return () => {
+      navigator.mediaDevices?.removeEventListener?.('devicechange', handleDeviceChange);
+    };
+  }, [refreshAudioDevices]);
 
   // 1. Dynamic Script Loading
   useEffect(() => {
@@ -1169,6 +1342,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
           } else {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             stream.getTracks().forEach(t => t.stop()); // Release immediately
+            await refreshAudioDevices();
           }
         } catch (e: any) {
           console.warn('[OmiCallContext] Microphone permission request failed or denied:', e);
@@ -1405,6 +1579,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       }
       preparedMicrophonePatch = installPreparedMicrophonePatch(preparedMicrophoneStream);
       await refreshOmiCallMediaDevices();
+      await refreshAudioDevices();
       await unlockAudioPlayback();
     } catch (err: any) {
       console.warn('[OmiCallContext] Microphone preflight failed:', err);
@@ -1577,7 +1752,14 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         sipConfig,
         setCallState,
         setCurrentCall,
-        isSimulated
+        isSimulated,
+        audioInputDevices,
+        audioOutputDevices,
+        selectedAudioInputId: selectedAudioInputIdState,
+        selectedAudioOutputId: selectedAudioOutputIdState,
+        setSelectedAudioInputId,
+        setSelectedAudioOutputId,
+        refreshAudioDevices,
       }}
     >
       {children}
