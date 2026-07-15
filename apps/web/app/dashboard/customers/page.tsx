@@ -891,14 +891,14 @@ export default function CustomersPage() {
       dataIndex: 'phone',
       key: 'phone',
       render: (phone: string, record: Customer) => phone ? (
-        <Button
-          type="link"
-          icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+        <span 
+          className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
           onClick={() => makeCall(phone, record.name, record.id)}
-          style={{ padding: 0, height: 'auto', color: token.colorTextDescription }}
+          style={{ color: token.colorTextDescription }}
         >
-          {phone}
-        </Button>
+          <PhoneOutlined style={{ color: '#D4A84B' }} />
+          <span>{phone}</span>
+        </span>
       ) : <span style={{ color: token.colorTextDescription }}>-</span>
     },
     {

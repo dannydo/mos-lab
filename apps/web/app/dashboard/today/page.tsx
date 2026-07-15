@@ -632,14 +632,14 @@ export default function TodayDashboard() {
       dataIndex: 'phone',
       key: 'phone',
       render: (t: string, record: any) => t ? (
-        <Button
-          type="link"
-          icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+        <span 
+          className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
           onClick={() => makeCall(t, record.customer, record.customerId)}
-          style={{ padding: 0, height: 'auto', color: token.colorTextSecondary }}
+          style={{ color: token.colorTextSecondary }}
         >
-          {t}
-        </Button>
+          <PhoneOutlined style={{ color: '#D4A84B' }} />
+          <span>{t}</span>
+        </span>
       ) : <Text type="secondary">-</Text>
     },
     {
@@ -760,14 +760,14 @@ export default function TodayDashboard() {
       dataIndex: 'phone',
       key: 'phone',
       render: (t: string, record: any) => t ? (
-        <Button
-          type="link"
-          icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+        <span 
+          className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
           onClick={() => makeCall(t, record.customer, record.customerId)}
-          style={{ padding: 0, height: 'auto', color: token.colorTextSecondary }}
+          style={{ color: token.colorTextSecondary }}
         >
-          {t}
-        </Button>
+          <PhoneOutlined style={{ color: '#D4A84B' }} />
+          <span>{t}</span>
+        </span>
       ) : <Text type="secondary">-</Text>
     },
     {

@@ -523,14 +523,14 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                 </div>
                 <div style={{ fontSize: '12px', color: '#888', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                   {customer.phone ? (
-                    <Button 
-                      type="link" 
-                      icon={<PhoneOutlined style={{ color: '#D4A84B' }} />} 
+                    <span 
+                      className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
                       onClick={() => makeCall(customer.phone, customer.name, customer.id)}
-                      style={{ padding: 0, height: 'auto', fontSize: '12px', color: '#888' }}
+                      style={{ fontSize: '12px', color: '#888' }}
                     >
-                      {customer.phone}
-                    </Button>
+                      <PhoneOutlined style={{ color: '#D4A84B' }} />
+                      <span>{customer.phone}</span>
+                    </span>
                   ) : (
                     <span><PhoneOutlined /> -</span>
                   )}

@@ -421,14 +421,14 @@ export default function AppointmentsPage() {
       dataIndex: 'customerPhone',
       key: 'customerPhone',
       render: (phone: string, record: Appointment) => phone ? (
-        <Button
-          type="link"
-          icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+        <span 
+          className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
           onClick={() => makeCall(phone, record.customerName, record.customerId)}
-          style={{ padding: 0, height: 'auto', color: token.colorText }}
+          style={{ color: token.colorText }}
         >
-          {phone}
-        </Button>
+          <PhoneOutlined style={{ color: '#D4A84B' }} />
+          <span>{phone}</span>
+        </span>
       ) : <Text type="secondary">-</Text>
     },
     {
