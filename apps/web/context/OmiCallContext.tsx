@@ -140,6 +140,22 @@ const applyOmiCallAudioOutputDevice = async (element: HTMLMediaElement | null | 
   }
 };
 
+const applyOmiCallAudioOutputToActiveMedia = (call?: any) => {
+  if (typeof document !== 'undefined') {
+    document.querySelectorAll<HTMLMediaElement>('#mos-omicall-media-bridge audio, #mos-omicall-media-bridge video')
+      .forEach(element => void applyOmiCallAudioOutputDevice(element));
+  }
+
+  const activeCall = call || (typeof window !== 'undefined' ? (window as any).activeCall : null);
+  Object.values(activeCall?.players || {}).forEach((player: any) => {
+    if (typeof HTMLMediaElement !== 'undefined' && player instanceof HTMLMediaElement) {
+      void applyOmiCallAudioOutputDevice(player);
+    }
+  });
+
+  void applyOmiCallAudioOutputDevice(ringbackAudio);
+};
+
 const playRingback = () => {
   if (typeof window === 'undefined') return;
   try {
@@ -147,7 +163,7 @@ const playRingback = () => {
       ringbackAudio = new Audio('https://cdn.omicrm.com/sdk/assets/audios/call/ringing.mp3');
       ringbackAudio.loop = true;
     }
-    void applyOmiCallAudioOutputDevice(ringbackAudio);
+    applyOmiCallAudioOutputToActiveMedia();
     ringbackAudio.play().catch((e: any) => {
       console.warn('[OmiCallContext] Failed to play ringback audio:', e);
     });
@@ -786,6 +802,8 @@ const ensureOmiCallMediaBridge = (call: any) => {
   Object.keys(call?.streams || {}).forEach(streamKey => {
     attachOmiCallStream(call, streamKey, shouldMuteOmiCallStream(streamKey));
   });
+
+  applyOmiCallAudioOutputToActiveMedia(call);
 };
 
 const scheduleOmiCallMediaBridgeSync = (call: any) => {
@@ -1185,8 +1203,24 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      setAudioInputDevices(devices.filter(device => device.kind === 'audioinput'));
-      setAudioOutputDevices(devices.filter(device => device.kind === 'audiooutput'));
+      const inputDevices = devices.filter(device => device.kind === 'audioinput');
+      const outputDevices = devices.filter(device => device.kind === 'audiooutput');
+
+      if (selectedOmiCallAudioInputId && !inputDevices.some(device => device.deviceId === selectedOmiCallAudioInputId)) {
+        selectedOmiCallAudioInputId = '';
+        setSelectedAudioInputIdState('');
+        localStorage.removeItem(OMI_AUDIO_INPUT_STORAGE_KEY);
+      }
+
+      if (selectedOmiCallAudioOutputId && !outputDevices.some(device => device.deviceId === selectedOmiCallAudioOutputId)) {
+        selectedOmiCallAudioOutputId = '';
+        setSelectedAudioOutputIdState('');
+        localStorage.removeItem(OMI_AUDIO_OUTPUT_STORAGE_KEY);
+        applyOmiCallAudioOutputToActiveMedia();
+      }
+
+      setAudioInputDevices(inputDevices);
+      setAudioOutputDevices(outputDevices);
     } catch (err) {
       console.warn('[OmiCallContext] Failed to enumerate audio devices:', err);
     }
@@ -1202,6 +1236,12 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem(OMI_AUDIO_INPUT_STORAGE_KEY);
       }
     } catch (e) {}
+
+    const activeCall = typeof window !== 'undefined' ? (window as any).activeCall : null;
+    if (activeCall && ['ringing', 'incoming', 'connected'].includes(callStateRef.current)) {
+      void reinforceOmiCallMicrophoneSender(activeCall, 'audio-input-selected');
+      void recordOmiCallAudioDiagnostics(activeCall, 'audio-input-selected');
+    }
   }, []);
 
   const setSelectedAudioOutputId = useCallback((deviceId: string) => {
@@ -1215,11 +1255,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (e) {}
 
-    if (typeof document !== 'undefined') {
-      document.querySelectorAll<HTMLMediaElement>('#mos-omicall-media-bridge audio, #mos-omicall-media-bridge video')
-        .forEach(element => void applyOmiCallAudioOutputDevice(element));
-    }
-    void applyOmiCallAudioOutputDevice(ringbackAudio);
+    applyOmiCallAudioOutputToActiveMedia();
   }, []);
 
   useEffect(() => {
