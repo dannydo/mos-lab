@@ -136,7 +136,6 @@ const stopRingback = () => {
 };
 
 const getMicrophoneConstraints = () => ({
-  deviceId: { ideal: 'default' },
   echoCancellation: true,
   noiseSuppression: true,
   autoGainControl: true,
@@ -198,7 +197,95 @@ const measureMicrophoneSignal = async (stream: MediaStream) => {
   return measureAudioSignal(stream);
 };
 
-const ensureMicrophoneAvailable = async () => {
+const getLiveAudioTracks = (stream: MediaStream) => {
+  return stream.getAudioTracks().filter(track => track.readyState === 'live' && track.enabled);
+};
+
+const stopMediaStream = (stream: MediaStream | null | undefined) => {
+  stream?.getTracks().forEach(track => track.stop());
+};
+
+const shouldUsePreparedMicrophoneForConstraints = (constraints?: MediaStreamConstraints) => {
+  if (!constraints?.audio) return false;
+  if (constraints.video) return false;
+  return true;
+};
+
+const installPreparedMicrophonePatch = (stream: MediaStream) => {
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+    return {
+      wasConsumed: () => false,
+      restore: () => {},
+      release: () => stopMediaStream(stream),
+      releaseIfUnused: () => stopMediaStream(stream),
+    };
+  }
+
+  const mediaDevices = navigator.mediaDevices;
+  const originalGetUserMedia = mediaDevices.getUserMedia.bind(mediaDevices);
+  let restored = false;
+  let consumed = false;
+  let timeout: any = null;
+
+  const restore = () => {
+    if (restored) return;
+    restored = true;
+    if (timeout) clearTimeout(timeout);
+    try {
+      (mediaDevices as any).getUserMedia = originalGetUserMedia;
+    } catch (err) {
+      console.warn('[OmiCallContext] Failed to restore getUserMedia after OmiCall mic patch:', err);
+    }
+  };
+
+  try {
+    (mediaDevices as any).getUserMedia = async (constraints?: MediaStreamConstraints) => {
+      if (!consumed && shouldUsePreparedMicrophoneForConstraints(constraints)) {
+        consumed = true;
+        restore();
+        console.log('[OmiCallContext] Supplying validated microphone stream to OmiCall SDK.', {
+          constraints,
+          tracks: stream.getAudioTracks().map(track => ({
+            id: track.id,
+            label: track.label,
+            enabled: track.enabled,
+            muted: track.muted,
+            readyState: track.readyState,
+            settings: typeof track.getSettings === 'function' ? track.getSettings() : null,
+          })),
+        });
+        return stream;
+      }
+
+      return originalGetUserMedia(constraints as MediaStreamConstraints);
+    };
+
+    timeout = setTimeout(() => {
+      restore();
+      if (!consumed) {
+        stopMediaStream(stream);
+      }
+    }, 12000);
+  } catch (err) {
+    console.warn('[OmiCallContext] Failed to install OmiCall mic patch:', err);
+    restore();
+  }
+
+  return {
+    wasConsumed: () => consumed,
+    restore,
+    release: () => {
+      restore();
+      stopMediaStream(stream);
+    },
+    releaseIfUnused: () => {
+      restore();
+      if (!consumed) stopMediaStream(stream);
+    },
+  };
+};
+
+const prepareMicrophoneForOmiCall = async () => {
   if (typeof window === 'undefined') return;
 
   if (!window.isSecureContext) {
@@ -223,20 +310,33 @@ const ensureMicrophoneAvailable = async () => {
     video: false,
   });
 
-  const audioTracks = stream.getAudioTracks();
-  const hasLiveAudio = audioTracks.some(track => track.readyState === 'live' && track.enabled);
+  const audioTracks = getLiveAudioTracks(stream);
 
-  if (!hasLiveAudio) {
-    stream.getTracks().forEach(track => track.stop());
+  if (!audioTracks.length) {
+    stopMediaStream(stream);
     throw new Error('Không tìm thấy microphone đang hoạt động.');
   }
 
   const maxRms = await measureMicrophoneSignal(stream);
-  stream.getTracks().forEach(track => track.stop());
 
   if (maxRms !== null && maxRms < 0.0005) {
+    stopMediaStream(stream);
     throw new Error('Microphone đang được cấp quyền nhưng không có tín hiệu âm thanh. Hãy chọn đúng input trong Chrome, nói thử 1 giây rồi gọi lại.');
   }
+
+  console.log('[OmiCallContext] Microphone preflight passed:', {
+    maxRms,
+    tracks: audioTracks.map(track => ({
+      id: track.id,
+      label: track.label,
+      enabled: track.enabled,
+      muted: track.muted,
+      readyState: track.readyState,
+      settings: typeof track.getSettings === 'function' ? track.getSettings() : null,
+    })),
+  });
+
+  return stream;
 };
 
 const unlockAudioPlayback = async () => {
@@ -407,6 +507,7 @@ const describeOmiCallStream = async (call: any, streamKey: string) => {
     enabled: track.enabled,
     muted: track.muted,
     readyState: track.readyState,
+    settings: typeof track.getSettings === 'function' ? track.getSettings() : null,
   }));
 
   return {
@@ -449,11 +550,11 @@ const warnOmiCallAudioHealth = (diagnostics: any) => {
     }
   }
 
-  if (remote?.exists && (!remote.element?.hasSrcObject || remote.element?.muted)) {
+  if (remote?.exists && (!remote.element?.hasSrcObject || remote.element?.muted || remote.element?.paused)) {
     const key = `${callKey}:remote-playback`;
     if (!audioHealthWarningKeys.has(key)) {
       audioHealthWarningKeys.add(key);
-      message.error('Remote audio đã có stream nhưng chưa gắn đúng playback element. Hãy reload trang trước khi gọi lại.', 12);
+      message.error('Remote audio đã có stream nhưng playback element chưa phát. Hãy click vào trang hoặc reload trước khi gọi lại.', 12);
     }
   }
 };
@@ -733,7 +834,13 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         // Initialize SDK
         window.OMICallSDK.init({
           allowMultiTab: true, // Enable native OmiCall multi-tab support
-          rootBody: document.body
+          rootBody: document.body,
+          media: {
+            constraints: {
+              audio: getMicrophoneConstraints(),
+              video: false,
+            },
+          },
         });
 
         // Request Microphone permission before registering device
@@ -979,19 +1086,28 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    let preparedMicrophonePatch: ReturnType<typeof installPreparedMicrophonePatch> | null = null;
+
     try {
-      await ensureMicrophoneAvailable();
+      const preparedMicrophoneStream = await prepareMicrophoneForOmiCall();
+      if (!preparedMicrophoneStream) {
+        message.error('Không chuẩn bị được microphone để thực hiện cuộc gọi.', 12);
+        return;
+      }
+      preparedMicrophonePatch = installPreparedMicrophonePatch(preparedMicrophoneStream);
       await refreshOmiCallMediaDevices();
       await unlockAudioPlayback();
     } catch (err: any) {
       console.warn('[OmiCallContext] Microphone preflight failed:', err);
       message.error(err?.message || 'Vui lòng cấp quyền Microphone để thực hiện cuộc gọi.', 12);
+      preparedMicrophonePatch?.releaseIfUnused();
       return;
     }
 
     try {
       const isSwitchboardOnline = await ensureOmiCallSwitchboardOnline();
       if (!isSwitchboardOnline) {
+        preparedMicrophonePatch?.releaseIfUnused();
         message.error('Tổng đài OmiCall chưa trực tuyến. Vui lòng thử lại sau vài giây.');
         return;
       }
@@ -1005,6 +1121,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!omicallCall) {
+        preparedMicrophonePatch?.release();
         console.warn('[OmiCallContext] OmiCall SDK did not create an outbound call.', {
           sbState: window.OMICallSDK.getSbState?.(),
           sbDetail: window.OMICallSDK.getDetailSbState?.(),
@@ -1029,6 +1146,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       });
       playRingback();
     } catch (err: any) {
+      preparedMicrophonePatch?.release();
       console.error('[OmiCallContext] makeCall failed:', err);
       message.error('Lỗi khi thực hiện cuộc gọi: ' + err.message);
       setCallState('idle');
