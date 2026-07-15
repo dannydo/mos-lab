@@ -380,6 +380,8 @@ const scheduleOmiCallMediaBridgeSync = (call: any) => {
   });
 };
 
+const audioHealthWarningKeys = new Set<string>();
+
 const describeOmiCallStream = async (call: any, streamKey: string) => {
   const stream = call?.streams?.[streamKey];
   const uid = getOmiCallSdkUid(call);
@@ -420,6 +422,42 @@ const describeOmiCallStream = async (call: any, streamKey: string) => {
   };
 };
 
+const hasLiveEnabledTrack = (streamInfo: any) => {
+  return streamInfo?.tracks?.some((track: any) => track.readyState === 'live' && track.enabled);
+};
+
+const warnOmiCallAudioHealth = (diagnostics: any) => {
+  if (!diagnostics?.stage?.startsWith('accepted+')) return;
+
+  const callKey = diagnostics.uuid || diagnostics.uid || 'active-call';
+  const local = diagnostics.streams?.local;
+  const remote = diagnostics.streams?.remote;
+
+  if (!hasLiveEnabledTrack(local)) {
+    const key = `${callKey}:local-track`;
+    if (!audioHealthWarningKeys.has(key)) {
+      audioHealthWarningKeys.add(key);
+      message.error('Cuộc gọi đang không có live microphone track. Chrome có thể chưa gửi giọng bạn vào OmiCall.', 12);
+    }
+  }
+
+  if (!hasLiveEnabledTrack(remote)) {
+    const key = `${callKey}:remote-track`;
+    if (!audioHealthWarningKeys.has(key)) {
+      audioHealthWarningKeys.add(key);
+      message.error('Cuộc gọi chưa nhận được remote audio track từ OmiCall. Bạn có thể sẽ không nghe được khách.', 12);
+    }
+  }
+
+  if (remote?.exists && (!remote.element?.hasSrcObject || remote.element?.muted)) {
+    const key = `${callKey}:remote-playback`;
+    if (!audioHealthWarningKeys.has(key)) {
+      audioHealthWarningKeys.add(key);
+      message.error('Remote audio đã có stream nhưng chưa gắn đúng playback element. Hãy reload trang trước khi gọi lại.', 12);
+    }
+  }
+};
+
 const recordOmiCallAudioDiagnostics = async (call: any, stage: string) => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
@@ -444,10 +482,14 @@ const recordOmiCallAudioDiagnostics = async (call: any, stage: string) => {
 
   window.__mosLastOmiCallAudioDiagnostics = diagnostics;
   console.log('[OmiCallContext] audio diagnostics:', diagnostics);
+  warnOmiCallAudioHealth(diagnostics);
+  return diagnostics;
 };
 
 const cleanupOmiCallMediaBridge = (call: any) => {
   if (typeof document === 'undefined') return;
+
+  audioHealthWarningKeys.clear();
 
   const uid = getOmiCallSdkUid(call);
   if (!uid) return;
