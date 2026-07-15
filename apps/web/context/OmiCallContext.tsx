@@ -141,6 +141,58 @@ const getMicrophoneConstraints = () => ({
   autoGainControl: true,
 });
 
+const measureMicrophoneSignal = async (stream: MediaStream) => {
+  if (typeof window === 'undefined') return null;
+
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+
+  let ctx: AudioContext | null = null;
+  let source: MediaStreamAudioSourceNode | null = null;
+
+  try {
+    const audioContext = new AudioContextClass() as AudioContext;
+    ctx = audioContext;
+
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 2048;
+    source = audioContext.createMediaStreamSource(stream);
+    source.connect(analyser);
+
+    const data = new Uint8Array(analyser.fftSize);
+    let maxRms = 0;
+
+    for (let sample = 0; sample < 8; sample += 1) {
+      await new Promise(resolve => setTimeout(resolve, 80));
+      analyser.getByteTimeDomainData(data);
+
+      let sumSquares = 0;
+      for (let index = 0; index < data.length; index += 1) {
+        const normalized = (data[index] - 128) / 128;
+        sumSquares += normalized * normalized;
+      }
+
+      maxRms = Math.max(maxRms, Math.sqrt(sumSquares / data.length));
+    }
+
+    return maxRms;
+  } catch (err) {
+    console.warn('[OmiCallContext] Microphone signal probe skipped:', err);
+    return null;
+  } finally {
+    try {
+      source?.disconnect();
+    } catch (e) {}
+    try {
+      await ctx?.close();
+    } catch (e) {}
+  }
+};
+
 const ensureMicrophoneAvailable = async () => {
   if (typeof window === 'undefined') return;
 
@@ -168,10 +220,17 @@ const ensureMicrophoneAvailable = async () => {
 
   const audioTracks = stream.getAudioTracks();
   const hasLiveAudio = audioTracks.some(track => track.readyState === 'live' && track.enabled);
-  stream.getTracks().forEach(track => track.stop());
 
   if (!hasLiveAudio) {
+    stream.getTracks().forEach(track => track.stop());
     throw new Error('Không tìm thấy microphone đang hoạt động.');
+  }
+
+  const maxRms = await measureMicrophoneSignal(stream);
+  stream.getTracks().forEach(track => track.stop());
+
+  if (maxRms !== null && maxRms < 0.0005) {
+    throw new Error('Microphone đang được cấp quyền nhưng không có tín hiệu âm thanh. Hãy chọn đúng input trong Chrome, nói thử 1 giây rồi gọi lại.');
   }
 };
 
