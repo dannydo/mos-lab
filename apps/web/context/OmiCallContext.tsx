@@ -220,7 +220,12 @@ const getOmiCallMediaContainer = () => {
 
 const ensureOmiCallMediaElement = (id: string, muted: boolean) => {
   const existing = document.getElementById(id) as HTMLVideoElement | null;
-  if (existing) return existing;
+  if (existing) {
+    existing.autoplay = true;
+    existing.playsInline = true;
+    existing.muted = muted;
+    return existing;
+  }
 
   const container = getOmiCallMediaContainer();
   if (!container) return null;
@@ -238,6 +243,55 @@ const ensureOmiCallMediaElement = (id: string, muted: boolean) => {
   return video;
 };
 
+const playOmiCallMediaElement = (element: HTMLMediaElement) => {
+  const playPromise = element.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.catch((err: any) => {
+      console.warn('[OmiCallContext] OmiCall media playback is not ready yet:', err);
+    });
+  }
+};
+
+const isMediaStream = (value: any): value is MediaStream => {
+  return typeof MediaStream !== 'undefined' && value instanceof MediaStream;
+};
+
+const attachOmiCallStream = (call: any, streamKey: string, muted: boolean) => {
+  const uid = getOmiCallSdkUid(call);
+  const stream = call?.streams?.[streamKey];
+  if (!uid || !isMediaStream(stream)) return;
+
+  const element = ensureOmiCallMediaElement(`${uid}-${streamKey}`, muted);
+  if (!element) return;
+
+  element.muted = muted;
+  element.autoplay = true;
+  element.srcObject = stream;
+
+  if (call.players && !call.players[streamKey]) {
+    call.players[streamKey] = element;
+  }
+
+  const trackListenerKey = '__mosOmiCallTrackListener';
+  if (!(element as any)[trackListenerKey]) {
+    const onAddTrack = () => {
+      try {
+        element.load();
+      } catch (e) {}
+      playOmiCallMediaElement(element);
+    };
+    stream.addEventListener('addtrack', onAddTrack);
+    (element as any)[trackListenerKey] = onAddTrack;
+  }
+
+  playOmiCallMediaElement(element);
+};
+
+const shouldMuteOmiCallStream = (streamKey: string) => {
+  const normalizedKey = streamKey.toLowerCase();
+  return !['remote', 'receiver', 'receivers'].includes(normalizedKey);
+};
+
 const ensureOmiCallMediaBridge = (call: any) => {
   if (typeof document === 'undefined') return;
 
@@ -246,6 +300,20 @@ const ensureOmiCallMediaBridge = (call: any) => {
 
   ensureOmiCallMediaElement(`${uid}-remote`, false);
   ensureOmiCallMediaElement(`${uid}-local`, true);
+
+  attachOmiCallStream(call, 'remote', false);
+  attachOmiCallStream(call, 'local', true);
+
+  Object.keys(call?.streams || {}).forEach(streamKey => {
+    attachOmiCallStream(call, streamKey, shouldMuteOmiCallStream(streamKey));
+  });
+};
+
+const scheduleOmiCallMediaBridgeSync = (call: any) => {
+  ensureOmiCallMediaBridge(call);
+  [250, 1000, 2500].forEach(delay => {
+    setTimeout(() => ensureOmiCallMediaBridge(call), delay);
+  });
 };
 
 const cleanupOmiCallMediaBridge = (call: any) => {
@@ -269,6 +337,8 @@ const auditActiveCallAudio = () => {
   if (typeof window === 'undefined') return;
 
   const activeCall = (window as any).activeCall;
+  ensureOmiCallMediaBridge(activeCall);
+
   const localTracks = activeCall?.streams?.local?.getAudioTracks?.() || [];
   const remoteTracks = activeCall?.streams?.remote?.getAudioTracks?.() || [];
 
@@ -553,7 +623,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         window.OMICallSDK.on('invite', (data: any) => {
           console.log('[OmiCallContext] invite event:', data);
           if (callStateRef.current !== 'idle') return; // Don't interrupt active calls
-          ensureOmiCallMediaBridge(data);
+          scheduleOmiCallMediaBridgeSync(data);
           
           const phone = data.phoneNumber || data.callerNumber || 'Unknown';
           setCallState('incoming');
@@ -570,7 +640,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
         window.OMICallSDK.on('ringing', (data: any) => {
           console.log('[OmiCallContext] ringing event:', data);
-          ensureOmiCallMediaBridge(data);
+          scheduleOmiCallMediaBridgeSync(data);
           setCallState('ringing');
           if (currentCallRef.current?.direction === 'outbound') {
             playRingback();
@@ -586,7 +656,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
         window.OMICallSDK.on('accepted', (data: any) => {
           console.log('[OmiCallContext] accepted event:', data);
-          ensureOmiCallMediaBridge(data);
+          scheduleOmiCallMediaBridgeSync(data);
           setCallState('connected');
           stopRingtone();
           stopRingback();
@@ -768,7 +838,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      ensureOmiCallMediaBridge(omicallCall);
+      scheduleOmiCallMediaBridgeSync(omicallCall);
       setCallState('ringing');
       setCurrentCall({
         phone: cleanPhone,
@@ -789,7 +859,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
   const answerCall = () => {
     const activeCall = (window as any).activeCall;
-    ensureOmiCallMediaBridge(activeCall);
+    scheduleOmiCallMediaBridgeSync(activeCall);
     if (activeCall && typeof activeCall.accept === 'function') {
       activeCall.accept();
     } else if (window.OMICallSDK && typeof (window.OMICallSDK as any).answer === 'function') {
