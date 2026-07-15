@@ -32,6 +32,7 @@ import {
   ShareAltOutlined
 } from '@ant-design/icons';
 import { useTheme } from '../context/ThemeContext';
+import { useOmiCall } from '../context/OmiCallContext';
 import api from '../lib/api';
 import { RescheduleBookingModal } from './RescheduleBookingModal';
 import BookingWizardDrawer from './BookingWizardDrawer';
@@ -51,6 +52,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const { makeCall } = useOmiCall();
 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
@@ -519,8 +521,19 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   {customer.name}
                   <span style={{ color: '#D4A84B', fontSize: '14px' }}>⭐⭐⭐⭐•</span>
                 </div>
-                <div style={{ fontSize: '12px', color: '#888', marginTop: '2px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  <span><PhoneOutlined /> {customer.phone}</span>
+                <div style={{ fontSize: '12px', color: '#888', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  {customer.phone ? (
+                    <Button 
+                      type="link" 
+                      icon={<PhoneOutlined style={{ color: '#D4A84B' }} />} 
+                      onClick={() => makeCall(customer.phone, customer.name)}
+                      style={{ padding: 0, height: 'auto', fontSize: '12px', color: '#888' }}
+                    >
+                      {customer.phone}
+                    </Button>
+                  ) : (
+                    <span><PhoneOutlined /> -</span>
+                  )}
                   <span>Mã KH: {customer.id}</span>
                   {customer.email && <span>Email: {customer.email}</span>}
                 </div>

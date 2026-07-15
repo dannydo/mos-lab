@@ -43,10 +43,12 @@ import {
   CloseOutlined,
   BarChartOutlined,
   PieChartOutlined,
-  SettingOutlined
+  SettingOutlined,
+  PhoneOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
+import { useOmiCall } from '../../../context/OmiCallContext';
 import CustomerDetailDrawer from '../../../components/CustomerDetailDrawer';
 import { useTableConfig } from '../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../components/TableConfigDrawer';
@@ -270,6 +272,7 @@ RealtimeClock.displayName = 'RealtimeClock';
 export default function TodayDashboard() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const { makeCall } = useOmiCall();
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
 
@@ -628,7 +631,16 @@ export default function TodayDashboard() {
       title: 'SĐT',
       dataIndex: 'phone',
       key: 'phone',
-      render: (t: string) => <Text type="secondary">{t}</Text>
+      render: (t: string, record: any) => t ? (
+        <Button
+          type="link"
+          icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+          onClick={() => makeCall(t, record.customer)}
+          style={{ padding: 0, height: 'auto', color: token.colorTextSecondary }}
+        >
+          {t}
+        </Button>
+      ) : <Text type="secondary">-</Text>
     },
     {
       title: 'Chi nhánh',
@@ -747,7 +759,16 @@ export default function TodayDashboard() {
       title: 'SĐT',
       dataIndex: 'phone',
       key: 'phone',
-      render: (t: string) => <Text type="secondary">{t}</Text>
+      render: (t: string, record: any) => t ? (
+        <Button
+          type="link"
+          icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+          onClick={() => makeCall(t, record.customer)}
+          style={{ padding: 0, height: 'auto', color: token.colorTextSecondary }}
+        >
+          {t}
+        </Button>
+      ) : <Text type="secondary">-</Text>
     },
     {
       title: 'Nhóm',

@@ -43,6 +43,7 @@ import {
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { useTheme } from '../../../context/ThemeContext';
+import { useOmiCall } from '../../../context/OmiCallContext';
 import api from '../../../lib/api';
 import CustomerDetailDrawer from '../../../components/CustomerDetailDrawer';
 import BookingWizardDrawer from '../../../components/BookingWizardDrawer';
@@ -81,6 +82,7 @@ interface Appointment {
 export default function AppointmentsPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const { makeCall } = useOmiCall();
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Column configuration state
@@ -418,11 +420,15 @@ export default function AppointmentsPage() {
       title: 'Số Điện Thoại',
       dataIndex: 'customerPhone',
       key: 'customerPhone',
-      render: (phone: string) => phone ? (
-        <Space>
-          <PhoneOutlined style={{ color: token.colorPrimary }} />
-          <span style={{ color: token.colorText }}>{phone}</span>
-        </Space>
+      render: (phone: string, record: Appointment) => phone ? (
+        <Button
+          type="link"
+          icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+          onClick={() => makeCall(phone, record.customerName)}
+          style={{ padding: 0, height: 'auto', color: token.colorText }}
+        >
+          {phone}
+        </Button>
       ) : <Text type="secondary">-</Text>
     },
     {

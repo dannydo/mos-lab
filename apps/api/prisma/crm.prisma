@@ -206,6 +206,7 @@ model CrmOmicallConfig {
   staffId      Int    @unique @map("staff_id")
   extension    String @db.VarChar(20)          // SIP extension number
   phoneNumber  String? @map("phone_number") @db.VarChar(20) // Outbound caller ID
+  sipPassword  String? @map("sip_password") @db.VarChar(255) // SIP password (đã mã hóa)
 
   @@map("crm_omicall_config")
 }

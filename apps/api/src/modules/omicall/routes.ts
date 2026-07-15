@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { requireAuth, requireRole } from '../../middlewares/auth.js';
+import { requireAuth, requireRole, JwtUserPayload } from '../../middlewares/auth.js';
+import { encrypt, decrypt } from '../../utils/crypto.js';
 
 export async function omicallRoutes(fastify: FastifyInstance) {
 
@@ -133,25 +134,35 @@ export async function omicallRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/omicall/config
-  // Get all OmiCall configs (Admin only)
+  // Get all OmiCall configs merged with active staff list (Admin only)
   fastify.get('/omicall/config', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
     try {
-      const configs = await fastify.prisma.crm.crmOmicallConfig.findMany();
-      
-      // Resolve staff names
-      const staffIds = configs.map(c => c.staffId);
+      // 1. Get all active staff
       const staff = await fastify.prisma.crm.crmStaff.findMany({
-        where: { id: { in: staffIds } },
-        select: { id: true, displayName: true }
+        where: { isActive: true },
+        select: { id: true, displayName: true, username: true, role: true }
       });
-      const staffMap = new Map(staff.map(s => [s.id, s.displayName]));
 
-      const formatted = configs.map(c => ({
-        ...c,
-        staffName: staffMap.get(c.staffId) || 'Unknown Staff'
-      }));
+      // 2. Get all configs
+      const configs = await fastify.prisma.crm.crmOmicallConfig.findMany();
+      const configMap = new Map(configs.map(c => [c.staffId, c]));
 
-      return formatted;
+      // 3. Merge them
+      const merged = staff.map(s => {
+        const config = configMap.get(s.id);
+        return {
+          id: config?.id || null,
+          staffId: s.id,
+          displayName: s.displayName,
+          username: s.username,
+          role: s.role,
+          extension: config?.extension || null,
+          phoneNumber: config?.phoneNumber || null,
+          hasSipPassword: !!config?.sipPassword,
+        };
+      });
+
+      return merged;
     } catch (error: any) {
       fastify.log.error('Get OmiCall configs error:', error);
       return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
@@ -161,10 +172,11 @@ export async function omicallRoutes(fastify: FastifyInstance) {
   // POST /api/omicall/config
   // Add or update an OmiCall config (Admin only)
   fastify.post('/omicall/config', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
-    const { staffId, extension, phoneNumber } = request.body as {
+    const { staffId, extension, phoneNumber, sipPassword } = request.body as {
       staffId: number;
       extension: string;
       phoneNumber?: string;
+      sipPassword?: string;
     };
 
     if (!staffId || !extension) {
@@ -172,14 +184,124 @@ export async function omicallRoutes(fastify: FastifyInstance) {
     }
 
     try {
+      const encryptedPassword = sipPassword ? encrypt(sipPassword) : undefined;
+      
+      const updateData: any = { extension, phoneNumber: phoneNumber || null };
+      if (encryptedPassword !== undefined) {
+        updateData.sipPassword = encryptedPassword;
+      }
+
+      const createData: any = { 
+        staffId, 
+        extension, 
+        phoneNumber: phoneNumber || null,
+        sipPassword: encryptedPassword || null
+      };
+
       const config = await fastify.prisma.crm.crmOmicallConfig.upsert({
         where: { staffId },
-        update: { extension, phoneNumber: phoneNumber || null },
-        create: { staffId, extension, phoneNumber: phoneNumber || null },
+        update: updateData,
+        create: createData,
       });
-      return config;
+
+      return {
+        id: config.id,
+        staffId: config.staffId,
+        extension: config.extension,
+        phoneNumber: config.phoneNumber,
+        hasSipPassword: !!config.sipPassword
+      };
     } catch (error: any) {
       fastify.log.error('Upsert OmiCall config error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    }
+  });
+
+  // GET /api/omicall/sip-config
+  // Get decrypted SIP configuration for the currently logged-in Telesales/Staff (requireAuth)
+  fastify.get('/omicall/sip-config', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as JwtUserPayload;
+    try {
+      const config = await fastify.prisma.crm.crmOmicallConfig.findUnique({
+        where: { staffId: user.id }
+      });
+
+      if (!config) {
+        return reply.status(404).send({ error: 'Not Found', message: 'No OmiCall configuration found for your account' });
+      }
+
+      const sipRealm = process.env.OMICALL_SIP_DOMAIN || 'sip.omicall.com';
+      const decryptedPassword = config.sipPassword ? decrypt(config.sipPassword) : '';
+
+      return {
+        sipRealm,
+        sipUser: config.extension,
+        sipPassword: decryptedPassword,
+        phoneNumber: config.phoneNumber || ''
+      };
+    } catch (error: any) {
+      fastify.log.error('Get SIP config error:', error);
+      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    }
+  });
+
+  // GET /api/omicall/logs/latest
+  // Fallback endpoint to find the latest OmiCall log matching a phone number (requireAuth)
+  fastify.get('/omicall/logs/latest', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as JwtUserPayload;
+    const { phone, direction } = request.query as { phone?: string; direction?: string };
+
+    if (!phone) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'phone number is required' });
+    }
+
+    try {
+      // Clean phone number (keep only numbers)
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      const suffix = cleanPhone.length > 9 ? cleanPhone.slice(-9) : cleanPhone;
+      
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      
+      const log = await fastify.prisma.crm.crmOmicallLog.findFirst({
+        where: {
+          staffId: user.id,
+          createdAt: { gte: twoMinutesAgo },
+          direction: direction || 'outbound',
+          OR: [
+            { destinationNumber: { contains: suffix } },
+            { sourceNumber: { contains: suffix } }
+          ]
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      if (!log) {
+        return reply.status(404).send({ error: 'Not Found', message: 'No recent call log found' });
+      }
+
+      let customerName = null;
+      if (log.legacyUserId) {
+        const customer = await fastify.prisma.legacy.user_profile.findFirst({
+          where: { user_id: log.legacyUserId },
+          select: { full_name: true, first_name: true, last_name: true }
+        });
+        if (customer) {
+          customerName = customer.full_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+        }
+      }
+
+      return {
+        id: log.id,
+        callUuid: log.callUuid,
+        duration: log.duration,
+        happyCallStatus: log.happyCallStatus,
+        analysisStatus: log.analysisStatus,
+        laughCount: log.laughCount,
+        customerName,
+        legacyUserId: log.legacyUserId
+      };
+    } catch (error: any) {
+      fastify.log.error('Get latest log error:', error);
       return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
     }
   });

@@ -24,6 +24,8 @@ import { useTheme } from '../../context/ThemeContext';
 import TelesalesDashboardModal from '../../components/TelesalesDashboardModal';
 import dayjs from 'dayjs';
 import api from '../../lib/api';
+import { OmiCallProvider } from '../../context/OmiCallContext';
+import OmiCallWidget from '../../components/OmiCallWidget';
 
 const { Header, Sider, Content } = Layout;
 
@@ -343,7 +345,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <OmiCallProvider>
+      <Layout style={{ minHeight: '100vh' }}>
       <Sider 
         trigger={null} 
         collapsible 
@@ -553,6 +556,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           animation: avatarBreath 3s infinite ease-in-out;
         }
       `}</style>
-    </Layout>
+      </Layout>
+      <OmiCallWidget />
+    </OmiCallProvider>
   );
 }

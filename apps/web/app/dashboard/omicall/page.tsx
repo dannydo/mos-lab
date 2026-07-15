@@ -201,7 +201,9 @@ export default function OmicallLogsPage() {
   const handleOpenConfigModal = (staff: any) => {
     setSelectedStaffForConfig(staff);
     configForm.setFieldsValue({
-      extension: staff.extension || ''
+      extension: staff.extension || '',
+      sipPassword: '',
+      phoneNumber: staff.phoneNumber || ''
     });
     setConfigModalOpen(true);
   };
@@ -211,10 +213,17 @@ export default function OmicallLogsPage() {
       const values = await configForm.validateFields();
       setSubmittingConfig(true);
       
-      await api.post('/omicall/config', {
+      const payload: any = {
         staffId: selectedStaffForConfig.staffId,
-        extension: values.extension.trim()
-      });
+        extension: values.extension.trim(),
+        phoneNumber: values.phoneNumber ? values.phoneNumber.trim() : null
+      };
+
+      if (values.sipPassword && values.sipPassword.trim()) {
+        payload.sipPassword = values.sipPassword.trim();
+      }
+      
+      await api.post('/omicall/config', payload);
 
       message.success(`Đã cập nhật máy lẻ cho ${selectedStaffForConfig.displayName}`);
       setConfigModalOpen(false);
@@ -406,6 +415,26 @@ export default function OmicallLogsPage() {
         ) : (
           <Tag color="default" style={{ color: token.colorTextDescription }}>Chưa cấu hình</Tag>
         )
+      )
+    },
+    {
+      title: 'Caller ID / Hotline',
+      dataIndex: 'phoneNumber',
+      key: 'phoneNumber',
+      render: (val: string | null) => val || <Text type="secondary" style={{ fontStyle: 'italic', fontSize: '13px' }}>Không có</Text>
+    },
+    {
+      title: 'Mật khẩu SIP WebRTC',
+      dataIndex: 'hasSipPassword',
+      key: 'hasSipPassword',
+      render: (val: boolean, record: any) => (
+        record.extension ? (
+          val ? (
+            <Tag color="blue">● Đã cấu hình</Tag>
+          ) : (
+            <Tag color="warning">● Chưa cấu hình</Tag>
+          )
+        ) : <Text type="secondary">-</Text>
       )
     },
     {
@@ -664,6 +693,24 @@ export default function OmicallLogsPage() {
             ]}
           >
             <Input placeholder="Ví dụ: 101, 102, 103..." maxLength={10} />
+          </Form.Item>
+          
+          <Form.Item
+            name="sipPassword"
+            label="Mật khẩu SIP WebRTC (SIP Password):"
+            help="Chỉ điền khi muốn tạo mới hoặc cập nhật mật khẩu SIP thiết bị"
+          >
+            <Input.Password placeholder="Nhập mật khẩu máy nhánh WebRTC" />
+          </Form.Item>
+          
+          <Form.Item
+            name="phoneNumber"
+            label="Số Hotline hiển thị (Outbound Caller ID):"
+            rules={[
+              { pattern: /^[0-9]+$/, message: 'Số điện thoại không hợp lệ' }
+            ]}
+          >
+            <Input placeholder="Ví dụ: 02871012345" maxLength={20} />
           </Form.Item>
         </Form>
       </Modal>

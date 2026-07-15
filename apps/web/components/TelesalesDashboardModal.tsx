@@ -19,7 +19,10 @@ import {
 } from '@ant-design/icons';
 import { useTheme } from '../context/ThemeContext';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
 import api from '../lib/api';
+
+dayjs.extend(isoWeek);
 
 interface TelesalesDashboardModalProps {
   visible: boolean;
@@ -1029,9 +1032,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           <div 
                             className={`p-[1.2px] rounded-full transition-all duration-300 flex items-center justify-center ${
                               isActive 
-                                ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105 z-20' 
+                                ? `bg-gradient-to-r ${activeMetricConfig.bgGradient} scale-105 z-20` 
                                 : `${themeMode === 'dark' ? 'bg-neutral-800' : 'bg-slate-200'} z-10 hover:scale-105`
                             }`}
+                            style={isActive ? { boxShadow: `0 0 12px ${activeMetricConfig.color}59` } : undefined}
                           >
                             {/* Inner Capsule (opaque solid background to block line behind it) */}
                             <div 
@@ -1049,9 +1053,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               <span 
                                 className={`font-outfit leading-tight ${
                                   isActive 
-                                    ? 'text-base font-black text-pink-500 dark:text-pink-400' 
+                                    ? 'text-base font-black' 
                                     : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`
                                 }`}
+                                style={isActive ? { color: activeMetricConfig.color } : undefined}
                               >
                                 {displayValue}
                               </span>
@@ -1474,9 +1479,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           <div 
                             className={`p-[1.2px] rounded-full transition-all duration-300 flex items-center justify-center ${
                               isActive 
-                                ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105 z-20' 
+                                ? `bg-gradient-to-r ${activeMetricConfig.bgGradient} scale-105 z-20` 
                                 : `${themeMode === 'dark' ? 'bg-neutral-800' : 'bg-slate-200'} z-10 hover:scale-105`
                             }`}
+                            style={isActive ? { boxShadow: `0 0 12px ${activeMetricConfig.color}59` } : undefined}
                           >
                             {/* Inner Capsule (opaque solid background to block line behind it) */}
                             <div 
@@ -1494,9 +1500,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               <span 
                                 className={`font-outfit leading-tight ${
                                   isActive 
-                                    ? 'text-base font-black text-pink-500 dark:text-pink-400' 
+                                    ? 'text-base font-black' 
                                     : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`
                                 }`}
+                                style={isActive ? { color: activeMetricConfig.color } : undefined}
                               >
                                 {displayValue}
                               </span>

@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import axios from 'axios';
 
 const MAX_RETRIES = 3;
 const AI_TIMEOUT_MS = 180_000; // 3 minutes
@@ -124,30 +125,24 @@ async function processNextBatch(fastify: FastifyInstance) {
         const staffExtension = log.direction === 'outbound' ? log.sourceNumber : log.destinationNumber;
         const customerPhone = log.direction === 'outbound' ? log.destinationNumber : log.sourceNumber;
 
-        const result = await fetch(`${aiServerUrl}/analyze`, {
-          method: 'POST',
+        const response = await axios.post(`${aiServerUrl}/analyze`, {
+          audio_url: log.recordingUrl,
+          call_uuid: log.callUuid,
+          staff_extension: staffExtension,
+          customer_phone: customerPhone,
+          duration_sec: log.duration,
+          time_start_call: log.timeStartCall ? log.timeStartCall.toISOString() : null,
+        }, {
           headers: {
-            'Content-Type': 'application/json',
             'X-API-Key': aiServerApiKey,
           },
-          body: JSON.stringify({
-            audio_url: log.recordingUrl,
-            call_uuid: log.callUuid,
-            staff_extension: staffExtension,
-            customer_phone: customerPhone,
-            duration_sec: log.duration,
-            time_start_call: log.timeStartCall ? log.timeStartCall.toISOString() : null,
-          }),
+          timeout: 300000, // 5 minutes
           signal: controller.signal,
         });
 
         clearTimeout(timeoutId);
 
-        if (!result.ok) {
-          throw new Error(`AI Server returned status ${result.status}`);
-        }
-
-        const ai = (await result.json()) as {
+        const ai = response.data as {
           laugh_count: number;
           laugh_timestamps: Array<{ start: number; end: number; confidence: number }>;
           transcript?: string;

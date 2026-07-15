@@ -49,6 +49,7 @@ import {
 } from '@ant-design/icons';
 import { useSearchParams } from 'next/navigation';
 import { useTheme } from '../../../context/ThemeContext';
+import { useOmiCall } from '../../../context/OmiCallContext';
 import api from '../../../lib/api';
 import CustomerDetailDrawer from '../../../components/CustomerDetailDrawer';
 import BookingWizardDrawer from '../../../components/BookingWizardDrawer';
@@ -68,6 +69,7 @@ const PRESET_FILTERS = [
 export default function CustomersPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const { makeCall } = useOmiCall();
   const [modal, contextHolder] = Modal.useModal();
   // Table state
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -888,6 +890,16 @@ export default function CustomersPage() {
       title: 'Số Điện Thoại',
       dataIndex: 'phone',
       key: 'phone',
+      render: (phone: string, record: Customer) => phone ? (
+        <Button
+          type="link"
+          icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+          onClick={() => makeCall(phone, record.name)}
+          style={{ padding: 0, height: 'auto', color: token.colorTextDescription }}
+        >
+          {phone}
+        </Button>
+      ) : <span style={{ color: token.colorTextDescription }}>-</span>
     },
     {
       title: 'Nhóm',
