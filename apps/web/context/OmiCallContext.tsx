@@ -1116,6 +1116,10 @@ const cleanupOmiCallMediaBridge = (call: any) => {
     stopMediaStream(call.__mosMicrophoneStream);
     call.__mosMicrophoneStream = null;
   }
+  call?.__mosPreparedMicrophonePatch?.releaseIfUnused?.();
+  if (call?.__mosPreparedMicrophonePatch) {
+    call.__mosPreparedMicrophonePatch = null;
+  }
 
   const uid = getOmiCallSdkUid(call);
   if (!uid) return;
@@ -1748,8 +1752,8 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      preparedMicrophonePatch?.restore();
       omicallCall.__mosMicrophoneStream = preparedMicrophoneStream;
+      omicallCall.__mosPreparedMicrophonePatch = preparedMicrophonePatch;
       scheduleOmiCallMediaBridgeSync(omicallCall);
       void reinforceOmiCallMicrophoneSender(omicallCall, 'outbound-created');
       void recordOmiCallAudioDiagnostics(omicallCall, 'outbound-created');
