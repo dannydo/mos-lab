@@ -20,6 +20,7 @@ export interface CurrentCall {
   name: string;
   direction: 'inbound' | 'outbound';
   callUuid?: string | null;
+  sdkUid?: string | null;
   legacyUserId?: number | null;
 }
 
@@ -130,6 +131,154 @@ const stopRingback = () => {
       ringbackAudio.pause();
       ringbackAudio.currentTime = 0;
     } catch (e) {}
+  }
+};
+
+const getMicrophoneConstraints = () => ({
+  deviceId: { ideal: 'default' },
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+});
+
+const ensureMicrophoneAvailable = async () => {
+  if (typeof window === 'undefined') return;
+
+  if (!window.isSecureContext) {
+    throw new Error('Trình duyệt phải chạy qua HTTPS để dùng microphone.');
+  }
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new Error('Trình duyệt không hỗ trợ hoặc đang chặn MediaDevices/getUserMedia.');
+  }
+
+  try {
+    const permissionStatus = await navigator.permissions?.query({ name: 'microphone' as any });
+    if (permissionStatus?.state === 'denied') {
+      throw new Error('Quyền Microphone đang bị chặn. Hãy mở biểu tượng khóa trên thanh địa chỉ và chọn Allow Microphone.');
+    }
+  } catch (err: any) {
+    if (err?.message?.includes('Microphone')) throw err;
+  }
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: getMicrophoneConstraints(),
+    video: false,
+  });
+
+  const audioTracks = stream.getAudioTracks();
+  const hasLiveAudio = audioTracks.some(track => track.readyState === 'live' && track.enabled);
+  stream.getTracks().forEach(track => track.stop());
+
+  if (!hasLiveAudio) {
+    throw new Error('Không tìm thấy microphone đang hoạt động.');
+  }
+};
+
+const unlockAudioPlayback = async () => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+    await ctx.close();
+  } catch (err) {
+    console.warn('[OmiCallContext] Audio playback unlock skipped:', err);
+  }
+};
+
+const refreshOmiCallMediaDevices = async () => {
+  try {
+    navigator.mediaDevices?.dispatchEvent?.(new Event('devicechange'));
+    await new Promise(resolve => setTimeout(resolve, 350));
+  } catch (err) {
+    console.warn('[OmiCallContext] Media device refresh skipped:', err);
+  }
+};
+
+const getOmiCallSdkUid = (call: any) => call?.uid || call?.sdkUid || null;
+
+const getOmiCallMediaContainer = () => {
+  if (typeof document === 'undefined') return null;
+
+  let container = document.getElementById('mos-omicall-media-bridge');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'mos-omicall-media-bridge';
+    container.setAttribute('aria-hidden', 'true');
+    container.style.cssText = 'position:fixed;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;';
+    document.body.appendChild(container);
+  }
+
+  return container;
+};
+
+const ensureOmiCallMediaElement = (id: string, muted: boolean) => {
+  const existing = document.getElementById(id) as HTMLVideoElement | null;
+  if (existing) return existing;
+
+  const container = getOmiCallMediaContainer();
+  if (!container) return null;
+
+  const video = document.createElement('video');
+  video.id = id;
+  video.autoplay = true;
+  video.playsInline = true;
+  video.muted = muted;
+  video.setAttribute('playsinline', 'true');
+  video.setAttribute('webkit-playsinline', 'true');
+  video.style.cssText = 'width:1px;height:1px;opacity:0;pointer-events:none;';
+  container.appendChild(video);
+
+  return video;
+};
+
+const ensureOmiCallMediaBridge = (call: any) => {
+  if (typeof document === 'undefined') return;
+
+  const uid = getOmiCallSdkUid(call);
+  if (!uid) return;
+
+  ensureOmiCallMediaElement(`${uid}-remote`, false);
+  ensureOmiCallMediaElement(`${uid}-local`, true);
+};
+
+const cleanupOmiCallMediaBridge = (call: any) => {
+  if (typeof document === 'undefined') return;
+
+  const uid = getOmiCallSdkUid(call);
+  if (!uid) return;
+
+  [`${uid}-remote`, `${uid}-local`].forEach(id => {
+    const el = document.getElementById(id) as HTMLMediaElement | null;
+    if (!el) return;
+    try {
+      el.pause();
+      el.srcObject = null;
+    } catch (e) {}
+    el.remove();
+  });
+};
+
+const auditActiveCallAudio = () => {
+  if (typeof window === 'undefined') return;
+
+  const activeCall = (window as any).activeCall;
+  const localTracks = activeCall?.streams?.local?.getAudioTracks?.() || [];
+  const remoteTracks = activeCall?.streams?.remote?.getAudioTracks?.() || [];
+
+  if (!localTracks.length || localTracks.every((track: MediaStreamTrack) => track.readyState !== 'live' || !track.enabled)) {
+    console.warn('[OmiCallContext] Active call has no live local microphone track.', activeCall);
+    message.error('Microphone chưa được gửi vào cuộc gọi. Hãy kiểm tra quyền mic và chọn đúng input trên Chrome.', 12);
+  }
+
+  if (!remoteTracks.length) {
+    console.warn('[OmiCallContext] Active call has no remote audio track yet.', activeCall);
   }
 };
 
@@ -404,6 +553,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         window.OMICallSDK.on('invite', (data: any) => {
           console.log('[OmiCallContext] invite event:', data);
           if (callStateRef.current !== 'idle') return; // Don't interrupt active calls
+          ensureOmiCallMediaBridge(data);
           
           const phone = data.phoneNumber || data.callerNumber || 'Unknown';
           setCallState('incoming');
@@ -411,7 +561,8 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
             phone,
             name: 'Khách hàng gọi đến',
             direction: 'inbound',
-            callUuid: data.callUuid || data.call_uuid || null
+            callUuid: data.callUuid || data.call_uuid || data.uuid || null,
+            sdkUid: getOmiCallSdkUid(data)
           });
           playRingtone();
           triggerIncomingNotification(phone);
@@ -419,24 +570,35 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
         window.OMICallSDK.on('ringing', (data: any) => {
           console.log('[OmiCallContext] ringing event:', data);
+          ensureOmiCallMediaBridge(data);
           setCallState('ringing');
           if (currentCallRef.current?.direction === 'outbound') {
             playRingback();
           }
-          if (data.callUuid || data.call_uuid) {
-            setCurrentCall(prev => prev ? { ...prev, callUuid: data.callUuid || data.call_uuid } : null);
+          if (data.callUuid || data.call_uuid || data.uuid || getOmiCallSdkUid(data)) {
+            setCurrentCall(prev => prev ? {
+              ...prev,
+              callUuid: data.callUuid || data.call_uuid || data.uuid || prev.callUuid,
+              sdkUid: getOmiCallSdkUid(data) || prev.sdkUid
+            } : null);
           }
         });
 
         window.OMICallSDK.on('accepted', (data: any) => {
           console.log('[OmiCallContext] accepted event:', data);
+          ensureOmiCallMediaBridge(data);
           setCallState('connected');
           stopRingtone();
           stopRingback();
           clearIncomingNotification();
-          if (data.callUuid || data.call_uuid) {
-            setCurrentCall(prev => prev ? { ...prev, callUuid: data.callUuid || data.call_uuid } : null);
+          if (data.callUuid || data.call_uuid || data.uuid || getOmiCallSdkUid(data)) {
+            setCurrentCall(prev => prev ? {
+              ...prev,
+              callUuid: data.callUuid || data.call_uuid || data.uuid || prev.callUuid,
+              sdkUid: getOmiCallSdkUid(data) || prev.sdkUid
+            } : null);
           }
+          setTimeout(auditActiveCallAudio, 1000);
         });
 
         window.OMICallSDK.on('ended', (data: any) => {
@@ -448,6 +610,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
           if (data.callUuid || data.call_uuid) {
             setCurrentCall(prev => prev ? { ...prev, callUuid: data.callUuid || data.call_uuid } : null);
           }
+          cleanupOmiCallMediaBridge(data);
         });
 
       } catch (err: any) {
@@ -568,11 +731,13 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Request Mic permission
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      message.error('Vui lòng cấp quyền Microphone để thực hiện cuộc gọi.');
+      await ensureMicrophoneAvailable();
+      await refreshOmiCallMediaDevices();
+      await unlockAudioPlayback();
+    } catch (err: any) {
+      console.warn('[OmiCallContext] Microphone preflight failed:', err);
+      message.error(err?.message || 'Vui lòng cấp quyền Microphone để thực hiện cuộc gọi.', 12);
       return;
     }
 
@@ -584,10 +749,8 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       }
 
       const hotlineNumber = sipConfig?.phoneNumber || '';
-      const extensionNumber = sipConfig?.extension || '';
       const omicallCall = await window.OMICallSDK.makeCall(cleanPhone, {
-        hotline: hotlineNumber,
-        sipNumber: { number: extensionNumber },
+        ...(hotlineNumber ? { sipNumber: { number: hotlineNumber } } : {}),
         userData: JSON.stringify({
           customerName: name || 'Khách hàng'
         })
@@ -605,12 +768,14 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      ensureOmiCallMediaBridge(omicallCall);
       setCallState('ringing');
       setCurrentCall({
         phone: cleanPhone,
         name: name || 'Khách hàng',
         direction: 'outbound',
         callUuid: omicallCall.uuid || null,
+        sdkUid: getOmiCallSdkUid(omicallCall),
         legacyUserId: customerId
       });
       playRingback();
@@ -624,6 +789,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
   const answerCall = () => {
     const activeCall = (window as any).activeCall;
+    ensureOmiCallMediaBridge(activeCall);
     if (activeCall && typeof activeCall.accept === 'function') {
       activeCall.accept();
     } else if (window.OMICallSDK && typeof (window.OMICallSDK as any).answer === 'function') {
@@ -639,6 +805,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
   const rejectCall = () => {
     const activeCall = (window as any).activeCall;
+    const callForCleanup = activeCall || currentCallRef.current;
     if (activeCall && typeof activeCall.decline === 'function') {
       activeCall.decline();
     } else if (window.OMICallSDK && typeof (window.OMICallSDK as any).decline === 'function') {
@@ -651,6 +818,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     stopRingtone();
     stopRingback();
     clearIncomingNotification();
+    cleanupOmiCallMediaBridge(callForCleanup);
   };
 
   const hangUp = () => {
@@ -662,6 +830,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     }
 
     const activeCall = (window as any).activeCall;
+    const callForCleanup = activeCall || currentCallRef.current;
     if (activeCall && typeof activeCall.end === 'function') {
       activeCall.end();
     } else if (window.OMICallSDK && typeof (window.OMICallSDK as any).hangup === 'function') {
@@ -671,6 +840,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     }
     setCallState('wrapup');
     stopRingback();
+    setTimeout(() => cleanupOmiCallMediaBridge(callForCleanup), 3000);
   };
 
   const toggleMute = () => {
