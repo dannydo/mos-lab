@@ -281,6 +281,10 @@ const getLiveAudioTracks = (stream: MediaStream) => {
   return stream.getAudioTracks().filter(track => track.readyState === 'live' && track.enabled);
 };
 
+const hasUsableMicrophoneStream = (stream: MediaStream | null | undefined) => {
+  return !!stream && getLiveAudioTracks(stream).length > 0;
+};
+
 const stopMediaStream = (stream: MediaStream | null | undefined) => {
   stream?.getTracks().forEach(track => track.stop());
 };
@@ -613,7 +617,116 @@ const syncOmiCallLocalStreamFromSender = (activeCall: any, peerConnection: RTCPe
   return nextLocalStream;
 };
 
-const reinforceOmiCallMicrophoneSender = async (call: any, stage: string) => {
+const syncOmiCallRemoteStreamFromReceiver = (activeCall: any, peerConnection: RTCPeerConnection) => {
+  const audioReceivers = peerConnection.getReceivers().filter(receiver => receiver.track?.kind === 'audio');
+  if (!audioReceivers.length) return null;
+
+  const remoteStream = isMediaStream(activeCall.streams?.remote)
+    ? activeCall.streams.remote
+    : new MediaStream();
+
+  remoteStream.getAudioTracks().forEach((track: MediaStreamTrack) => {
+    if (!audioReceivers.some(receiver => receiver.track?.id === track.id)) {
+      remoteStream.removeTrack(track);
+    }
+  });
+
+  audioReceivers.forEach(receiver => {
+    const track = receiver.track;
+    if (track && !remoteStream.getAudioTracks().some((existingTrack: MediaStreamTrack) => existingTrack.id === track.id)) {
+      remoteStream.addTrack(track);
+    }
+  });
+
+  activeCall.streams = activeCall.streams || {};
+  activeCall.streams.remote = remoteStream;
+  return remoteStream;
+};
+
+const attachMicrophoneStreamToOmiCall = async (
+  activeCall: any,
+  peerConnection: RTCPeerConnection,
+  microphoneStream: MediaStream,
+  stage: string,
+) => {
+  const [microphoneTrack] = getLiveAudioTracks(microphoneStream);
+  if (!microphoneTrack) return false;
+
+  microphoneTrack.enabled = true;
+
+  const sessionDescriptionHandler = activeCall.session?.sessionDescriptionHandler;
+  let audioGraphState = await resumeOmiCallAudioGraph(sessionDescriptionHandler);
+  let reinforcementMode = 'stable-sender-track';
+
+  if (typeof sessionDescriptionHandler?.setRealLocalMediaStream === 'function') {
+    sessionDescriptionHandler.setRealLocalMediaStream(microphoneStream);
+    reinforcementMode = 'sdk-real-local-stream';
+  } else if (sessionDescriptionHandler) {
+    sessionDescriptionHandler.localMediaStreamReal = microphoneStream;
+    sessionDescriptionHandler.localMediaStream = microphoneStream;
+  }
+
+  const audioSender = peerConnection.getSenders().find(sender => sender.track?.kind === 'audio');
+  if (audioSender) {
+    if (audioSender.track?.id !== microphoneTrack.id) {
+      await audioSender.replaceTrack(microphoneTrack);
+      reinforcementMode = reinforcementMode === 'sdk-real-local-stream'
+        ? 'sdk-real-local-stream+sender-track'
+        : 'stable-sender-replace-track';
+    }
+  } else {
+    peerConnection.addTrack(microphoneTrack, microphoneStream);
+    reinforcementMode = `${reinforcementMode}+sender-add-track`;
+  }
+
+  audioGraphState = await resumeOmiCallAudioGraph(sessionDescriptionHandler);
+
+  activeCall.audio = true;
+  activeCall.__mosUserMuted = false;
+  activeCall.__mosMicrophoneStream = microphoneStream;
+  activeCall.streams = activeCall.streams || {};
+  activeCall.streams.local = microphoneStream;
+
+  peerConnection.getSenders().forEach(sender => {
+    if (sender.track?.kind === 'audio') {
+      sender.track.enabled = true;
+    }
+  });
+
+  const localStream = isMediaStream(activeCall.streams.local)
+    ? activeCall.streams.local
+    : syncOmiCallLocalStreamFromSender(activeCall, peerConnection);
+
+  localStream.getAudioTracks().forEach((track: MediaStreamTrack) => {
+    track.enabled = true;
+  });
+
+  const result = {
+    stage,
+    at: new Date().toISOString(),
+    uid: getOmiCallSdkUid(activeCall),
+    uuid: activeCall.uuid || activeCall.callUuid || activeCall.call_uuid || null,
+    track: summarizeMediaTrack(microphoneTrack),
+    senderTracks: peerConnection.getSenders()
+      .filter(sender => sender.track?.kind === 'audio')
+      .map(sender => summarizeMediaTrack(sender.track)),
+    localStreamTracks: localStream.getAudioTracks().map((track: MediaStreamTrack) => summarizeMediaTrack(track)),
+    mode: reinforcementMode,
+    audioGraphState,
+    senderCount: peerConnection.getSenders().length,
+    audioSenderCount: peerConnection.getSenders().filter(sender => sender.track?.kind === 'audio').length,
+  };
+
+  window.__mosLastOmiCallMicrophoneReinforcement = result;
+  console.log('[OmiCallContext] microphone sender reinforced:', JSON.stringify(result));
+  return true;
+};
+
+const reinforceOmiCallMicrophoneSender = async (
+  call: any,
+  stage: string,
+  options: { forceNewStream?: boolean } = {},
+) => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
   if (!navigator.mediaDevices?.getUserMedia) return false;
 
@@ -622,75 +735,27 @@ const reinforceOmiCallMicrophoneSender = async (call: any, stage: string) => {
   if (!activeCall || !peerConnection || peerConnection.signalingState === 'closed') return false;
   if (activeCall.__mosUserMuted) return false;
 
-  let freshStream: MediaStream | null = null;
+  let nextStream: MediaStream | null = null;
+  const previousStream = isMediaStream(activeCall.__mosMicrophoneStream)
+    ? activeCall.__mosMicrophoneStream
+    : null;
 
   try {
-    freshStream = await getOmiCallMicrophoneStream();
+    nextStream = !options.forceNewStream && hasUsableMicrophoneStream(previousStream)
+      ? previousStream
+      : await getOmiCallMicrophoneStream();
 
-    const [freshTrack] = getLiveAudioTracks(freshStream);
-    if (!freshTrack) {
-      stopMediaStream(freshStream);
-      return false;
+    if (!nextStream) return false;
+
+    const attached = await attachMicrophoneStreamToOmiCall(activeCall, peerConnection, nextStream, stage);
+    if (attached && previousStream && previousStream !== nextStream) {
+      stopMediaStream(previousStream);
     }
-
-    freshTrack.enabled = true;
-    const sessionDescriptionHandler = activeCall.session?.sessionDescriptionHandler;
-    let reinforcementMode = 'sender-replace-track';
-    let audioGraphState = await resumeOmiCallAudioGraph(sessionDescriptionHandler);
-
-    if (typeof sessionDescriptionHandler?.setRealLocalMediaStream === 'function') {
-      const previousRealStream = sessionDescriptionHandler.localMediaStreamReal;
-      sessionDescriptionHandler.setRealLocalMediaStream(freshStream);
-      if (isMediaStream(previousRealStream)) {
-        previousRealStream.getTracks().forEach((track: MediaStreamTrack) => {
-          if (track.id !== freshTrack.id) track.stop();
-        });
-      }
-      audioGraphState = await resumeOmiCallAudioGraph(sessionDescriptionHandler);
-      reinforcementMode = 'sdk-real-local-stream';
-    } else {
-      const audioSender = peerConnection.getSenders().find(sender => sender.track?.kind === 'audio');
-
-      if (audioSender) {
-        await audioSender.replaceTrack(freshTrack);
-      } else {
-        peerConnection.addTrack(freshTrack, freshStream);
-      }
-    }
-
-    activeCall.audio = true;
-    activeCall.__mosUserMuted = false;
-    peerConnection.getSenders().forEach(sender => {
-      if (sender.track?.kind === 'audio') {
-        sender.track.enabled = true;
-      }
-    });
-    const localStream = syncOmiCallLocalStreamFromSender(activeCall, peerConnection);
-    localStream.getAudioTracks().forEach((track: MediaStreamTrack) => {
-      track.enabled = true;
-    });
-
-    const result = {
-      stage,
-      at: new Date().toISOString(),
-      uid: getOmiCallSdkUid(activeCall),
-      uuid: activeCall.uuid || activeCall.callUuid || activeCall.call_uuid || null,
-      track: summarizeMediaTrack(freshTrack),
-      senderTracks: peerConnection.getSenders()
-        .filter(sender => sender.track?.kind === 'audio')
-        .map(sender => summarizeMediaTrack(sender.track)),
-      localStreamTracks: localStream.getAudioTracks().map(track => summarizeMediaTrack(track)),
-      mode: reinforcementMode,
-      audioGraphState,
-      senderCount: peerConnection.getSenders().length,
-      audioSenderCount: peerConnection.getSenders().filter(sender => sender.track?.kind === 'audio').length,
-    };
-
-    window.__mosLastOmiCallMicrophoneReinforcement = result;
-    console.log('[OmiCallContext] microphone sender reinforced:', JSON.stringify(result));
-    return true;
+    return attached;
   } catch (err) {
-    stopMediaStream(freshStream);
+    if (nextStream && nextStream !== previousStream) {
+      stopMediaStream(nextStream);
+    }
     console.warn('[OmiCallContext] Failed to reinforce microphone sender:', err);
     return false;
   }
@@ -762,9 +827,24 @@ const attachOmiCallStream = (call: any, streamKey: string, muted: boolean) => {
   element.muted = muted;
   element.autoplay = true;
   element.srcObject = stream;
+  void applyOmiCallAudioOutputDevice(element);
 
   if (call.players && !call.players[streamKey]) {
     call.players[streamKey] = element;
+  }
+
+  const sdkPlayer = call.players?.[streamKey];
+  if (
+    sdkPlayer &&
+    sdkPlayer !== element &&
+    typeof HTMLMediaElement !== 'undefined' &&
+    sdkPlayer instanceof HTMLMediaElement
+  ) {
+    sdkPlayer.muted = muted;
+    sdkPlayer.autoplay = true;
+    sdkPlayer.srcObject = stream;
+    void applyOmiCallAudioOutputDevice(sdkPlayer);
+    playOmiCallMediaElement(sdkPlayer);
   }
 
   const trackListenerKey = '__mosOmiCallTrackListener';
@@ -792,6 +872,15 @@ const ensureOmiCallMediaBridge = (call: any) => {
 
   const uid = getOmiCallSdkUid(call);
   if (!uid) return;
+
+  const peerConnection = getActiveOmiCallPeerConnection(call);
+  if (peerConnection) {
+    syncOmiCallRemoteStreamFromReceiver(call, peerConnection);
+    if (hasUsableMicrophoneStream(call.__mosMicrophoneStream)) {
+      call.streams = call.streams || {};
+      call.streams.local = call.__mosMicrophoneStream;
+    }
+  }
 
   ensureOmiCallMediaElement(`${uid}-remote`, false);
   ensureOmiCallMediaElement(`${uid}-local`, true);
@@ -1023,6 +1112,11 @@ const cleanupOmiCallMediaBridge = (call: any) => {
 
   audioHealthWarningKeys.clear();
 
+  if (isMediaStream(call?.__mosMicrophoneStream)) {
+    stopMediaStream(call.__mosMicrophoneStream);
+    call.__mosMicrophoneStream = null;
+  }
+
   const uid = getOmiCallSdkUid(call);
   if (!uid) return;
 
@@ -1239,7 +1333,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
     const activeCall = typeof window !== 'undefined' ? (window as any).activeCall : null;
     if (activeCall && ['ringing', 'incoming', 'connected'].includes(callStateRef.current)) {
-      void reinforceOmiCallMicrophoneSender(activeCall, 'audio-input-selected');
+      void reinforceOmiCallMicrophoneSender(activeCall, 'audio-input-selected', { forceNewStream: true });
       void recordOmiCallAudioDiagnostics(activeCall, 'audio-input-selected');
     }
   }, []);
@@ -1606,9 +1700,10 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     }
 
     let preparedMicrophonePatch: ReturnType<typeof installPreparedMicrophonePatch> | null = null;
+    let preparedMicrophoneStream: MediaStream | null | undefined = null;
 
     try {
-      const preparedMicrophoneStream = await prepareMicrophoneForOmiCall();
+      preparedMicrophoneStream = await prepareMicrophoneForOmiCall();
       if (!preparedMicrophoneStream) {
         message.error('Không chuẩn bị được microphone để thực hiện cuộc gọi.', 12);
         return;
@@ -1653,6 +1748,8 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      preparedMicrophonePatch?.restore();
+      omicallCall.__mosMicrophoneStream = preparedMicrophoneStream;
       scheduleOmiCallMediaBridgeSync(omicallCall);
       void reinforceOmiCallMicrophoneSender(omicallCall, 'outbound-created');
       void recordOmiCallAudioDiagnostics(omicallCall, 'outbound-created');
