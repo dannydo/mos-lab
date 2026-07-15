@@ -283,6 +283,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     const scriptUrl = process.env.NEXT_PUBLIC_OMICALL_SDK_URL || '/core.min.js';
     const script = document.createElement('script');
     script.src = scriptUrl;
+    script.setAttribute('omi-call-sdk', '');
     script.type = 'text/javascript';
     script.async = true;
     script.onload = () => {
