@@ -436,6 +436,47 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     return ktvs.filter(staff => favoriteTechs.includes(staff.displayName?.trim()));
   };
 
+  const handleStepChange = (step: number) => {
+    // If navigating to step 2 (Confirm step), we must validate first
+    if (step === 2) {
+      if (!selectedService || 
+          (!isNewLead && !selectedCustomer) || 
+          (isNewLead && (!leadName || !leadPhone)) ||
+          !selectedSlot ||
+          !selectedCN) {
+        message.error('Vui lòng chọn đầy đủ Dịch vụ, Khách hàng, Chi nhánh và Khung giờ trống.');
+        return;
+      }
+
+      if (isNewLead) {
+        const cleanName = leadName.trim();
+        const cleanPhone = leadPhone.trim();
+
+        // Check if name looks like phone (digits, spaces, plus, hyphens, parentheses only)
+        const isNamePhone = /^\+?[0-9\s\-()]{8,}$/.test(cleanName);
+        if (isNamePhone) {
+          message.error('Tên khách hàng không được là số điện thoại. Vui lòng kiểm tra lại!');
+          return;
+        }
+
+        // Check if phone number contains letters
+        const isPhoneInvalid = /[a-zA-Z\u00C0-\u1EF9]/.test(cleanPhone);
+        if (isPhoneInvalid) {
+          message.error('Số điện thoại không hợp lệ (không được chứa chữ cái). Vui lòng kiểm tra lại!');
+          return;
+        }
+
+        // Check length of phone number
+        const digitCount = cleanPhone.replace(/[^0-9]/g, '').length;
+        if (digitCount < 8 || digitCount > 15) {
+          message.error('Số điện thoại phải từ 8 đến 15 chữ số.');
+          return;
+        }
+      }
+    }
+    setCurrentStep(step);
+  };
+
   const handleCreateBooking = async () => {
     if (!selectedCN) {
       message.error('Vui lòng chọn chi nhánh');
@@ -452,6 +493,29 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     if (!selectedCustomer && !isNewLead) {
       message.error('Vui lòng chọn khách hàng');
       return;
+    }
+
+    if (isNewLead) {
+      const cleanName = leadName.trim();
+      const cleanPhone = leadPhone.trim();
+
+      const isNamePhone = /^\+?[0-9\s\-()]{8,}$/.test(cleanName);
+      if (isNamePhone) {
+        message.error('Tên khách hàng không được là số điện thoại. Vui lòng kiểm tra lại!');
+        return;
+      }
+
+      const isPhoneInvalid = /[a-zA-Z\u00C0-\u1EF9]/.test(cleanPhone);
+      if (isPhoneInvalid) {
+        message.error('Số điện thoại không hợp lệ (không được chứa chữ cái). Vui lòng kiểm tra lại!');
+        return;
+      }
+
+      const digitCount = cleanPhone.replace(/[^0-9]/g, '').length;
+      if (digitCount < 8 || digitCount > 15) {
+        message.error('Số điện thoại phải từ 8 đến 15 chữ số.');
+        return;
+      }
     }
 
     try {
@@ -530,7 +594,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     >
       <Steps
         current={currentStep}
-        onChange={(step) => setCurrentStep(step)}
+        onChange={handleStepChange}
         size="small"
         style={{ marginBottom: '24px' }}
         items={[
@@ -1222,7 +1286,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 
           <Button 
             type="primary" 
-            onClick={() => setCurrentStep(2)} 
+            onClick={() => handleStepChange(2)} 
             disabled={
               !selectedService || 
               (!isNewLead && !selectedCustomer) || 
