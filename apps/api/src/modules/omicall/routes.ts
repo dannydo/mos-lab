@@ -247,7 +247,7 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Not Found', message: 'No OmiCall configuration found for your account' });
       }
 
-      const sipRealm = process.env.OMICALL_SIP_DOMAIN || 'sip.omicall.com';
+      const sipRealm = process.env.OMICALL_SIP_DOMAIN || 'quangnguyen2';
       const decryptedPassword = config.sipPassword ? decrypt(config.sipPassword) : '';
 
       return {
