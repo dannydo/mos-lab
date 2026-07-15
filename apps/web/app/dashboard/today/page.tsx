@@ -635,7 +635,7 @@ export default function TodayDashboard() {
         <Button
           type="link"
           icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
-          onClick={() => makeCall(t, record.customer)}
+          onClick={() => makeCall(t, record.customer, record.customerId)}
           style={{ padding: 0, height: 'auto', color: token.colorTextSecondary }}
         >
           {t}
@@ -763,7 +763,7 @@ export default function TodayDashboard() {
         <Button
           type="link"
           icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
-          onClick={() => makeCall(t, record.customer)}
+          onClick={() => makeCall(t, record.customer, record.customerId)}
           style={{ padding: 0, height: 'auto', color: token.colorTextSecondary }}
         >
           {t}

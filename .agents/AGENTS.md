@@ -98,8 +98,8 @@
 
 ---
 
-# External Server Details (Image & AI Server)
-*Đây là thông tin cấu hình máy chủ dùng để lưu trữ ảnh và xử lý tác vụ AI phát hiện tiếng cười (Laughter Detection) cho dự án Wings Lashes.*
+# External Server Details (Image Storage Server)
+*Đây là thông tin cấu hình máy chủ dùng để lưu trữ ảnh cho dự án Wings Lashes (tác vụ phân tích tiếng cười đã chuyển qua sử dụng trực tiếp Gemini API).*
 
 *   **IP:** `75.119.148.205`
 *   **Port:** `22`

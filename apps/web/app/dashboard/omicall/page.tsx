@@ -33,7 +33,7 @@ import {
   EyeOutlined
 } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
-import api from '../../../lib/api';
+import { apiClient } from '../../../lib/api-client';
 import { QAPlayerDrawer } from '../../../components/QAPlayerDrawer';
 import dayjs from 'dayjs';
 
@@ -94,9 +94,9 @@ export default function OmicallLogsPage() {
   // Fetch staff list for filters
   const fetchStaffList = useCallback(async () => {
     try {
-      const res = await api.get('/staff');
+      const data = await apiClient.staff.list();
       // Filter out only active telesales or all active staff
-      setStaffList(res.data || []);
+      setStaffList(data || []);
     } catch (err) {
       console.error('[OmicallLogsPage] Failed to fetch staff list:', err);
     }
@@ -134,9 +134,9 @@ export default function OmicallLogsPage() {
         params.staffId = Number(staffFilter);
       }
 
-      const res = await api.get('/omicall/logs', { params });
-      setLogs(res.data.logs || []);
-      setTotalLogs(res.data.pagination?.total || 0);
+      const data = await apiClient.omicall.listLogs(params);
+      setLogs(data.logs || []);
+      setTotalLogs(data.pagination?.total || data.total || 0);
     } catch (err) {
       console.error('[OmicallLogsPage] Failed to fetch call logs:', err);
       message.error('Không thể tải lịch sử cuộc gọi OmiCall');
@@ -150,8 +150,8 @@ export default function OmicallLogsPage() {
     if (!isAdmin) return;
     setLoadingConfigs(true);
     try {
-      const res = await api.get('/omicall/config');
-      setConfigs(res.data || []);
+      const data = await apiClient.omicall.getConfigs();
+      setConfigs(data || []);
     } catch (err) {
       console.error('[OmicallLogsPage] Failed to fetch extensions configurations:', err);
       message.error('Không thể tải cấu hình máy lẻ extension');
@@ -223,7 +223,7 @@ export default function OmicallLogsPage() {
         payload.sipPassword = values.sipPassword.trim();
       }
       
-      await api.post('/omicall/config', payload);
+      await apiClient.omicall.saveConfig(payload);
 
       message.success(`Đã cập nhật máy lẻ cho ${selectedStaffForConfig.displayName}`);
       setConfigModalOpen(false);
@@ -238,7 +238,7 @@ export default function OmicallLogsPage() {
 
   const handleDeleteConfig = async (staffId: number, displayName: string) => {
     try {
-      await api.delete(`/omicall/config/${staffId}`);
+      await apiClient.omicall.deleteConfig(staffId);
       message.success(`Đã xóa cấu hình máy lẻ của ${displayName}`);
       fetchConfigs();
     } catch (err: any) {

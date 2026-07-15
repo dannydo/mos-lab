@@ -424,7 +424,7 @@ export default function AppointmentsPage() {
         <Button
           type="link"
           icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
-          onClick={() => makeCall(phone, record.customerName)}
+          onClick={() => makeCall(phone, record.customerName, record.customerId)}
           style={{ padding: 0, height: 'auto', color: token.colorText }}
         >
           {phone}

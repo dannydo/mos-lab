@@ -316,9 +316,8 @@ Day 6+ ──→ 💥 Iterate biz rules cho đến khi proven
 
 ---
 
-## Open Questions
+## 12. Tài liệu & Tích hợp (Wiki)
 
-> [!NOTE]
-> Chỉ còn 1 việc cần anh làm trước khi bắt đầu:
+Hệ thống tích hợp các dịch vụ bên thứ ba và tài liệu hướng dẫn vận hành chi tiết:
+*   [Tài liệu cấu hình & biểu phí OmiCall](file:///Users/dannydo/projects/mos-lab/docs/wiki/omicall_reference.md) — Chi tiết về các đầu số hotline mạng Viettel, cơ chế định tuyến, chính sách chặn cuộc gọi, cảnh báo số dư tài khoản và biểu phí cước gọi di động/cố định/1800.
 
-1. **Tạo GitHub repo `mos-lab`** — Anh tạo hay tôi tạo qua GitHub MCP?

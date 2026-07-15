@@ -24,8 +24,8 @@ async function runTest() {
       destination_number: '0987654321',
       duration: 60,
       bill_sec: 45,
-      // Using public obama laugh wav for laughter count validation
-      recording_url: 'https://raw.githubusercontent.com/benedikt-bartscherer/laughter-detection/master/data/web_examples/audio/obama_laugh.wav',
+      // Using public sample wav for laughter count validation
+      recording_url: 'https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.wav',
       time_start_call: new Date().toISOString(),
       time_end_call: new Date(Date.now() + 45000).toISOString()
     })

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useOmiCall } from '../context/OmiCallContext';
+import { useOmiCall, CurrentCall } from '../context/OmiCallContext';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Input, DatePicker, Tag, Space, Form, theme, message } from 'antd';
 import { 
@@ -16,7 +16,7 @@ import {
   LoadingOutlined,
   SmileOutlined
 } from '@ant-design/icons';
-import api from '../lib/api';
+import { apiClient } from '../lib/api-client';
 import dayjs from 'dayjs';
 
 export default function OmiCallWidget() {
@@ -35,7 +35,8 @@ export default function OmiCallWidget() {
     isHeld,
     sipConfig,
     setCallState,
-    setCurrentCall
+    setCurrentCall,
+    isSimulated
   } = useOmiCall();
 
   const { themeMode } = useTheme();
@@ -43,6 +44,7 @@ export default function OmiCallWidget() {
 
   const [widgetMinimized, setWidgetMinimized] = useState(false);
   const [resolvedLog, setResolvedLog] = useState<any>(null);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
   
   // Wrap-up Form States
   const [noteForm] = Form.useForm();
@@ -77,10 +79,21 @@ export default function OmiCallWidget() {
     return '#10b981'; // Emerald/Green
   };
 
-  // Polling AI analysis result during 'analyzing' state
+  // Polling AI analysis result during 'wrapup' state
   useEffect(() => {
-    if (callState !== 'analyzing' || !currentCall) {
+    if (callState !== 'wrapup' || !currentCall) {
       setResolvedLog(null);
+      return;
+    }
+
+    if (isSimulated) {
+      console.log('[OmiCallWidget] Resolving simulated call log...');
+      setResolvedLog({
+        id: 0,
+        customerName: currentCall.name,
+        legacyUserId: currentCall.legacyUserId || 0,
+        callUuid: currentCall.callUuid || 'simulated-' + Date.now()
+      });
       return;
     }
 
@@ -90,26 +103,25 @@ export default function OmiCallWidget() {
     const pollLog = async () => {
       attempts++;
       try {
-        const res = await api.get('/omicall/logs/latest', {
-          params: {
-            phone: currentCall.phone,
-            direction: currentCall.direction
-          }
+        const data = await apiClient.omicall.getLatestLog({
+          phone: currentCall.phone,
+          direction: currentCall.direction
         });
 
-        if (res.data && res.data.id) {
-          console.log('[OmiCallWidget] Log resolved successfully:', res.data);
-          setResolvedLog(res.data);
+        if (data && data.id) {
+          console.log('[OmiCallWidget] Log resolved successfully:', data);
+          setResolvedLog(data);
           
           // Update current call with customer name and ID
-          setCurrentCall({
-            ...currentCall,
-            legacyUserId: res.data.legacyUserId,
-            name: res.data.customerName || currentCall.name,
-            callUuid: res.data.callUuid
-          });
+          if (currentCall) {
+            setCurrentCall({
+              ...currentCall,
+              legacyUserId: data.legacyUserId,
+              name: data.customerName || currentCall.name,
+              callUuid: data.callUuid
+            });
+          }
 
-          setCallState('wrapup');
           clearInterval(intervalId);
           return;
         }
@@ -117,17 +129,17 @@ export default function OmiCallWidget() {
         console.log('[OmiCallWidget] Log not ready yet. Retrying...');
       }
 
-      if (attempts >= 15) { // 45 seconds timeout
+      if (attempts >= 20) { // 60 seconds timeout
         console.warn('[OmiCallWidget] AI analysis polling timed out');
-        setCallState('wrapup');
         clearInterval(intervalId);
       }
     };
 
     // Poll every 3 seconds
     intervalId = setInterval(pollLog, 3000);
+    pollLog(); // Poll immediately
     return () => clearInterval(intervalId);
-  }, [callState, currentCall, setCallState, setCurrentCall]);
+  }, [callState, currentCall, setCurrentCall]);
 
   // Handle Wrap-up Form Submission
   const handleSaveWrapup = async () => {
@@ -139,15 +151,16 @@ export default function OmiCallWidget() {
 
       const payload = {
         legacyUserId: currentCall.legacyUserId || 0, // Fallback if customer not matched
-        callType: currentCall.direction === 'outbound' ? 'OUTBOUND' : 'INBOUND',
-        callResult: callDuration > 0 ? 'ANSWERED' : 'NO_ANSWER',
+        callType: currentCall.direction === 'outbound' ? ('OUTBOUND' as const) : ('INBOUND' as const),
+        callResult: callDuration > 0 ? ('ANSWERED' as const) : ('NO_ANSWER' as const),
         note: values.note || '',
         outcome: selectedTags.join(', '),
         callbackDate: values.callbackDate ? values.callbackDate.toISOString() : null,
-        omicallLogId: resolvedLog?.id || null // Link with actual OmiCall log
+        omicallLogId: resolvedLog?.id || null, // Link with actual OmiCall log
+        callUuid: currentCall.callUuid || null // Link asynchronously using callUuid
       };
 
-      await api.post('/calls', payload);
+      await apiClient.calls.create(payload as any);
       message.success('Đã lưu ghi chú cuộc gọi thành công!');
       
       // Reset State
@@ -218,6 +231,9 @@ export default function OmiCallWidget() {
           <span className="text-xs font-bold uppercase tracking-wider text-amber-500 font-sans">
             {isTabMuted ? 'OmiCall (Tab khác)' : 'OmiCall WebRTC'}
           </span>
+          {isSimulated && (
+            <Tag color="warning" className="m-0 text-[9px] font-extrabold uppercase px-1 py-0 border-0 leading-none">MÔ PHỎNG</Tag>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {callState !== 'wrapup' && (
@@ -253,7 +269,13 @@ export default function OmiCallWidget() {
           </div>
           <div>
             <h4 className="text-sm font-bold">Tổng đài đang hoạt động</h4>
-            <p className="text-xs mt-1" style={{ color: descColor }}>Extension: <span className="font-bold text-amber-500">{sipConfig?.sipUser}</span> (Sẵn sàng nghe gọi)</p>
+            {isSimulated ? (
+              <p className="text-xs mt-1 text-amber-500 font-semibold">
+                ⚠️ Chế độ mô phỏng. Cấu hình máy lẻ <a href="/dashboard/omicall" className="text-blue-500 underline hover:text-blue-600">tại đây</a>.
+              </p>
+            ) : (
+              <p className="text-xs mt-1" style={{ color: descColor }}>Extension: <span className="font-bold text-amber-500">{sipConfig?.sipUser}</span> (Sẵn sàng nghe gọi)</p>
+            )}
           </div>
         </div>
       )}
@@ -265,7 +287,11 @@ export default function OmiCallWidget() {
             <PhoneOutlined className="text-2xl" />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-widest font-semibold text-amber-500">Đang đổ chuông...</p>
+            {isSimulated ? (
+              <p className="text-xs uppercase tracking-widest font-semibold text-amber-500">MÔ PHỎNG: Tự kết nối sau 2s...</p>
+            ) : (
+              <p className="text-xs uppercase tracking-widest font-semibold text-amber-500">Đang đổ chuông...</p>
+            )}
             <h4 className="text-base font-bold mt-1">{currentCall?.name}</h4>
             <p className="text-xs font-mono" style={{ color: descColor }}>{currentCall?.phone}</p>
           </div>
@@ -332,10 +358,17 @@ export default function OmiCallWidget() {
               <span>{currentCall?.name}</span>
               <span className="font-mono text-zinc-500">{currentCall?.phone}</span>
             </div>
-            <div className="text-[10px] flex items-center gap-1.5 border-t mt-2 pt-2" style={{ borderColor: borderColor, color: descColor }}>
-              <span className="text-red-500 animate-pulse font-bold">● REC</span>
-              <span>Ghi âm đang bật — AI sẽ quét sau khi gác máy</span>
-            </div>
+            {isSimulated ? (
+              <div className="text-[10px] flex items-center gap-1.5 border-t mt-2 pt-2 text-amber-500" style={{ borderColor: borderColor }}>
+                <span className="font-bold">⚠️ CUỘC GỌI MÔ PHỎNG</span>
+                <span>Tài khoản chưa có cấu hình máy lẻ</span>
+              </div>
+            ) : (
+              <div className="text-[10px] flex items-center gap-1.5 border-t mt-2 pt-2" style={{ borderColor: borderColor, color: descColor }}>
+                <span className="text-red-500 animate-pulse font-bold">● REC</span>
+                <span>Ghi âm đang bật — AI sẽ quét sau khi gác máy</span>
+              </div>
+            )}
           </div>
 
           {/* Color Progress Bar */}
@@ -432,7 +465,7 @@ export default function OmiCallWidget() {
 
       {/* WRAP-UP STATE */}
       {!isTabMuted && callState === 'wrapup' && (
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 max-h-[550px] overflow-y-auto">
           <div className="text-center border-b pb-3" style={{ borderColor: borderColor }}>
             <h4 className="text-sm font-bold">Ghi nhận cuộc gọi</h4>
             <p className="text-xs mt-1" style={{ color: descColor }}>
@@ -446,24 +479,118 @@ export default function OmiCallWidget() {
             </p>
           </div>
 
-          {/* AI Result Banner */}
-          {resolvedLog && (
+          {/* AI Analysis and CSAT Panel */}
+          {!resolvedLog ? (
             <div 
-              className="p-2.5 rounded-lg border text-xs flex items-center justify-between"
-              style={{ 
-                background: resolvedLog.happyCallStatus === 'APPROVED' ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)',
-                borderColor: resolvedLog.happyCallStatus === 'APPROVED' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'
-              }}
+              className="p-3 rounded-lg border text-xs flex flex-col gap-1 items-center justify-center text-amber-500 text-center"
+              style={{ background: 'rgba(245,158,11,0.04)', borderColor: 'rgba(245,158,11,0.15)' }}
             >
-              <div className="flex items-center gap-1.5">
-                <SmileOutlined style={{ color: resolvedLog.happyCallStatus === 'APPROVED' ? '#10b981' : '#f59e0b' }} />
-                <span>
-                  AI phát hiện: <strong>{resolvedLog.laughCount || 0} lần cười</strong>
-                </span>
+              <div className="flex items-center gap-2">
+                <SyncOutlined spin />
+                <span className="font-bold">🤖 AI đang phân tích cuộc gọi ngầm...</span>
               </div>
-              <span className="font-mono text-[10px]" style={{ color: descColor }}>
-                Status: {resolvedLog.happyCallStatus}
+              <span className="text-[10px]" style={{ color: descColor }}>
+                Booker có thể ghi chú và bấm lưu luôn mà không cần chờ.
               </span>
+            </div>
+          ) : (
+            <div 
+              className="p-3.5 rounded-lg border text-xs space-y-3"
+              style={{ background: subBg, borderColor }}
+            >
+              {/* Laughter & CSAT Score */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-bold" style={{ color: textColor }}>Điểm hài lòng (CSAT)</span>
+                  <div className="flex items-center gap-0.5 mt-0.5 text-amber-400">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span key={i} className="text-base">
+                        {i < (resolvedLog.customerSatisfactionScore || 0) ? '★' : '☆'}
+                      </span>
+                    ))}
+                    <span className="text-[10px] ml-1 font-bold" style={{ color: descColor }}>
+                      ({resolvedLog.customerSatisfactionScore || 0}/5)
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="font-bold" style={{ color: textColor }}>Thái độ KH</span>
+                  <Tag 
+                    className="mt-0.5 font-bold text-[9px] px-1.5 py-0"
+                    color={
+                      resolvedLog.customerSentiment === 'HAPPY' ? 'emerald' :
+                      resolvedLog.customerSentiment === 'SATISFIED' ? 'green' :
+                      resolvedLog.customerSentiment === 'NEUTRAL' ? 'blue' :
+                      resolvedLog.customerSentiment === 'FRUSTRATED' ? 'orange' :
+                      resolvedLog.customerSentiment === 'ANGRY' ? 'red' : 'default'
+                    }
+                  >
+                    {resolvedLog.customerSentiment || 'NEUTRAL'}
+                  </Tag>
+                </div>
+              </div>
+
+              {/* Satisfaction Analysis Detail */}
+              {resolvedLog.satisfactionAnalysis && (
+                <div className="text-[10.5px] border-t pt-2" style={{ borderColor, color: descColor }}>
+                  <span className="font-bold text-zinc-400">Phân tích:</span> {resolvedLog.satisfactionAnalysis}
+                </div>
+              )}
+
+              {/* Laughter Breakdown */}
+              <div className="border-t pt-2 space-y-1.5" style={{ borderColor }}>
+                <div className="flex justify-between items-center text-[10.5px]">
+                  <span>👤 Khách hàng cười: <strong>{resolvedLog.laughCountCustomer || 0}</strong> lần</span>
+                  <span>🎧 Nhân viên cười: <strong>{resolvedLog.laughCountAgent || 0}</strong> lần</span>
+                </div>
+
+                {/* Click-to-seek badges */}
+                {(() => {
+                  try {
+                    const laughs = typeof resolvedLog.laughTimestamps === 'string'
+                      ? JSON.parse(resolvedLog.laughTimestamps)
+                      : resolvedLog.laughTimestamps;
+                    if (Array.isArray(laughs) && laughs.length > 0) {
+                      return (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {laughs.map((l: any, i: number) => {
+                            const isCustomer = l.speaker === 'customer';
+                            return (
+                              <Tag 
+                                key={i}
+                                onClick={() => {
+                                  if (audioRef.current) {
+                                    audioRef.current.currentTime = l.start;
+                                    audioRef.current.play().catch(() => {});
+                                  }
+                                }}
+                                className="cursor-pointer text-[9px] font-mono hover:opacity-85 active:scale-95 transition-all py-0 px-1.5"
+                                color={isCustomer ? 'purple' : 'blue'}
+                              >
+                                😂 {isCustomer ? 'KH' : 'NV'}: {Math.floor(l.start)}s
+                              </Tag>
+                            );
+                          })}
+                        </div>
+                      );
+                    }
+                  } catch (e) {}
+                  return null;
+                })()}
+              </div>
+
+              {/* Audio player element */}
+              {resolvedLog.recordingUrl && (
+                <div className="border-t pt-2" style={{ borderColor }}>
+                  <audio 
+                    ref={audioRef}
+                    src={resolvedLog.recordingUrl} 
+                    controls 
+                    className="w-full h-7 mt-1"
+                    style={{ outline: 'none' }}
+                  />
+                </div>
+              )}
             </div>
           )}
 

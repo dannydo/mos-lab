@@ -894,7 +894,7 @@ export default function CustomersPage() {
         <Button
           type="link"
           icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
-          onClick={() => makeCall(phone, record.name)}
+          onClick={() => makeCall(phone, record.name, record.id)}
           style={{ padding: 0, height: 'auto', color: token.colorTextDescription }}
         >
           {phone}

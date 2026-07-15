@@ -526,7 +526,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     <Button 
                       type="link" 
                       icon={<PhoneOutlined style={{ color: '#D4A84B' }} />} 
-                      onClick={() => makeCall(customer.phone, customer.name)}
+                      onClick={() => makeCall(customer.phone, customer.name, customer.id)}
                       style={{ padding: 0, height: 'auto', fontSize: '12px', color: '#888' }}
                     >
                       {customer.phone}

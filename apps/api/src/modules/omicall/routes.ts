@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth, requireRole, JwtUserPayload } from '../../middlewares/auth.js';
 import { encrypt, decrypt } from '../../utils/crypto.js';
+import { triggerImmediateAnalysis } from './analyzer.js';
 
 export async function omicallRoutes(fastify: FastifyInstance) {
 
@@ -86,6 +87,15 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         analysisStatus = 'WAITING_RECORDING';
       }
 
+      // Check if call log was already created in parallel
+      let callLogId: number | null = null;
+      const existingCallLog = await fastify.prisma.crm.crmCallLog.findFirst({
+        where: { callUuid }
+      });
+      if (existingCallLog) {
+        callLogId = existingCallLog.id;
+      }
+
       // 6. Save OmiCall Log
       const log = await fastify.prisma.crm.crmOmicallLog.upsert({
         where: { callUuid },
@@ -101,6 +111,7 @@ export async function omicallRoutes(fastify: FastifyInstance) {
           timeEndCall,
           staffId,
           legacyUserId,
+          callLogId,
           // Do NOT overwrite analysisStatus on update.
           // If OmiCall re-sends webhook for an already-processed record,
           // we keep the existing state (PROCESSING/DONE/FAILED).
@@ -122,9 +133,15 @@ export async function omicallRoutes(fastify: FastifyInstance) {
           timeEndCall,
           staffId,
           legacyUserId,
+          callLogId,
           analysisStatus
         }
       });
+
+      // Trigger immediate analysis if pending and answer
+      if (log.analysisStatus === 'PENDING') {
+        triggerImmediateAnalysis(fastify, log.id);
+      }
 
       return { success: true, logId: log.id, analysisStatus: log.analysisStatus };
     } catch (error: any) {
@@ -297,6 +314,13 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         happyCallStatus: log.happyCallStatus,
         analysisStatus: log.analysisStatus,
         laughCount: log.laughCount,
+        laughCountAgent: log.laughCountAgent,
+        laughCountCustomer: log.laughCountCustomer,
+        laughTimestamps: log.laughTimestamps ? JSON.parse(log.laughTimestamps) : [],
+        customerSatisfactionScore: log.customerSatisfactionScore,
+        customerSentiment: log.customerSentiment,
+        satisfactionAnalysis: log.satisfactionAnalysis,
+        transcript: log.transcript,
         customerName,
         legacyUserId: log.legacyUserId
       };

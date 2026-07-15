@@ -242,5 +242,33 @@ export const apiClient = {
       const response = await api.post(`/table-config/${tableId}/reset`);
       return response.data;
     }
+  },
+
+  omicall: {
+    getSipConfig: async (): Promise<any> => {
+      const response = await api.get('/omicall/sip-config');
+      return response.data;
+    },
+    getLatestLog: async (params: { phone: string; direction: string }): Promise<any> => {
+      const response = await api.get('/omicall/logs/latest', { params });
+      return response.data;
+    },
+    listLogs: async (params: any): Promise<any> => {
+      const response = await api.get('/omicall/logs', { params });
+      return response.data;
+    },
+    getConfigs: async (): Promise<any[]> => {
+      const response = await api.get('/omicall/config');
+      return response.data;
+    },
+    saveConfig: async (data: { staffId: number; extension: string; phoneNumber?: string; sipPassword?: string }): Promise<any> => {
+      const response = await api.post('/omicall/config', data);
+      return response.data;
+    },
+    deleteConfig: async (staffId: number): Promise<{ success: boolean }> => {
+      const response = await api.delete(`/omicall/config/${staffId}`);
+      return response.data;
+    }
   }
 };
+

@@ -547,6 +547,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           opacity: 1 !important;
         }
 
+        /* Hide OmiCall LiveTalk chat widget and its warning alerts */
+        #omi_nvd,
+        #omiLiveTalk,
+        [id^="omi_"],
+        [class*="omi-lt-"] {
+          display: none !important;
+        }
+
         /* Avatar gentle breathing animation */
         @keyframes avatarBreath {
           0%, 100% { transform: scale(1); }

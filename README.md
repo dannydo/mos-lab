@@ -32,3 +32,11 @@ Build → Launch → Explode 💥 → Learn → Fix → Repeat
 ```
 
 When biz rules are proven → Port to MasterOS (masteros.app)
+
+## Wiki & Tài liệu
+
+Hệ thống tài liệu hướng dẫn và vận hành của dự án:
+*   [Kiến trúc hệ thống](file:///Users/dannydo/projects/mos-lab/docs/ARCHITECTURE.md) — Sơ đồ luồng dữ liệu, Tech stack và mô tả Database.
+*   [Cấu hình & Biểu phí OmiCall](file:///Users/dannydo/projects/mos-lab/docs/wiki/omicall_reference.md) — Chi tiết cấu hình các hotline Viettel SIP Trunk và đơn giá cước thoại.
+*   [Tech Stack chi tiết](file:///Users/dannydo/projects/mos-lab/docs/TECH_STACK.md) — Các công nghệ sử dụng trong monorepo.
+

@@ -14,7 +14,8 @@ export async function callRoutes(fastify: FastifyInstance) {
       note, 
       outcome, 
       callbackDate,
-      omicallLogId
+      omicallLogId,
+      callUuid
     } = request.body as {
       planId?: number;
       legacyUserId: number;
@@ -24,6 +25,7 @@ export async function callRoutes(fastify: FastifyInstance) {
       outcome?: string;
       callbackDate?: string;
       omicallLogId?: number;
+      callUuid?: string;
     };
 
     const user = request.user as { id: number };
@@ -48,7 +50,8 @@ export async function callRoutes(fastify: FastifyInstance) {
           callResult,
           note,
           outcome,
-          callbackDate: parsedCallbackDate
+          callbackDate: parsedCallbackDate,
+          callUuid
         }
       });
 
@@ -65,13 +68,21 @@ export async function callRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // 3. Link with CrmOmicallLog if omicallLogId is provided
+      // 3. Link with CrmOmicallLog if omicallLogId or callUuid is provided
       if (omicallLogId) {
         await fastify.prisma.crm.crmOmicallLog.update({
           where: { id: omicallLogId },
           data: { callLogId: callLog.id }
         }).catch(err => {
           fastify.log.error(`Failed to link CrmOmicallLog ${omicallLogId} with CallLog ${callLog.id}:`, err);
+        });
+      } else if (callUuid) {
+        // Asynchronous link if OmiCall log is already generated
+        await fastify.prisma.crm.crmOmicallLog.update({
+          where: { callUuid },
+          data: { callLogId: callLog.id }
+        }).catch(err => {
+          fastify.log.warn(`OmiCall log not yet found for UUID ${callUuid}. It will be linked when webhook arrives.`);
         });
       }
 

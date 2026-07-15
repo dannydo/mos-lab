@@ -1,11 +1,9 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { PrismaClient as CrmPrismaClient } from './generated/crm-client';
+import { PrismaClient as CrmPrismaClient } from './generated/crm-client/index.js';
+import { analyzeLogRecord } from './modules/omicall/analyzer.js';
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
-
-const aiServerUrl = process.env.AI_SERVER_URL || 'http://75.119.148.205:8500';
-const aiServerApiKey = process.env.AI_SERVER_API_KEY;
 
 async function main() {
   console.log('🔌 Connecting to database...');
@@ -20,69 +18,81 @@ async function main() {
   await crm.$connect();
   console.log('✅ Connected.');
 
-  console.log('🔍 Fetching log ID 11...');
-  const log = await crm.crmOmicallLog.findUnique({
-    where: { id: 11 }
+  console.log('🔍 Fetching latest OmiCall log with recordingUrl...');
+  const log = await crm.crmOmicallLog.findFirst({
+    where: {
+      status: 'ANSWER',
+      recordingUrl: { not: null }
+    },
+    orderBy: { createdAt: 'desc' }
   });
 
   if (!log) {
-    console.error('❌ Log ID 11 not found.');
-    process.exit(1);
+    console.log('❌ No answer log with recordingUrl found in database.');
+    console.log('Creating a mock log for testing...');
+    const mockLog = await crm.crmOmicallLog.create({
+      data: {
+        callUuid: 'test-call-uuid-' + Date.now(),
+        direction: 'outbound',
+        status: 'ANSWER',
+        sourceNumber: '101',
+        destinationNumber: '0987654321',
+        duration: 45,
+        billSec: 40,
+        recordingUrl: 'https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.wav',
+        analysisStatus: 'PENDING'
+      }
+    });
+    console.log('Mock log created:', mockLog);
+    await runAnalysis(crm, mockLog);
+  } else {
+    console.log('Found log details:', {
+      id: log.id,
+      callUuid: log.callUuid,
+      recordingUrl: log.recordingUrl
+    });
+    await runAnalysis(crm, log);
   }
 
-  console.log('Log details:', {
-    id: log.id,
-    callUuid: log.callUuid,
-    analysisStatus: log.analysisStatus,
-    recordingUrl: log.recordingUrl
-  });
+  await crm.$disconnect();
+}
 
-  console.log('📡 Calling AI server to analyze...');
-  const staffExtension = log.direction === 'outbound' ? log.sourceNumber : log.destinationNumber;
-  const customerPhone = log.direction === 'outbound' ? log.destinationNumber : log.sourceNumber;
+async function runAnalysis(crm: any, log: any) {
+  console.log('🤖 Triggering Gemini API analysis via analyzeLogRecord...');
+  const fastifyMock = {
+    prisma: {
+      crm
+    },
+    log: console
+  } as any;
 
   const start = Date.now();
-  const response = await fetch(`${aiServerUrl}/analyze`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-Key': aiServerApiKey || '',
-    },
-    body: JSON.stringify({
-      audio_url: log.recordingUrl,
-      call_uuid: log.callUuid,
-      staff_extension: staffExtension,
-      customer_phone: customerPhone,
-      duration_sec: log.duration,
-      time_start_call: log.timeStartCall ? log.timeStartCall.toISOString() : null,
-    }),
-  });
-
-  console.log(`Response status: ${response.status} (took ${Date.now() - start}ms)`);
-  if (!response.ok) {
-    const errText = await response.text();
-    console.error('❌ AI Server error response:', errText);
-    process.exit(1);
+  try {
+    await analyzeLogRecord(fastifyMock, log);
+    console.log(`\n✅ Analysis completed successfully (took ${Date.now() - start}ms)`);
+    
+    // Fetch and display updated log details
+    const updated = await crm.crmOmicallLog.findUnique({
+      where: { id: log.id }
+    });
+    console.log('Updated database record fields:');
+    console.log(JSON.stringify({
+      id: updated.id,
+      analysisStatus: updated.analysisStatus,
+      laughCount: updated.laughCount,
+      laughCountAgent: updated.laughCountAgent,
+      laughCountCustomer: updated.laughCountCustomer,
+      laughTimestamps: updated.laughTimestamps ? JSON.parse(updated.laughTimestamps) : [],
+      customerSatisfactionScore: updated.customerSatisfactionScore,
+      customerSentiment: updated.customerSentiment,
+      satisfactionAnalysis: updated.satisfactionAnalysis,
+      happyCallStatus: updated.happyCallStatus,
+      happyCallReason: updated.happyCallReason,
+      transcript: updated.transcript ? updated.transcript.substring(0, 150) + '...' : null
+    }, null, 2));
+  } catch (err: any) {
+    console.error('❌ Analysis failed:', err.message || err);
   }
-
-  const ai = (await response.json()) as any;
-  console.log('✅ AI Server parsed response:', ai);
-
-  console.log('💾 Attempting to update database record...');
-  const updated = await crm.crmOmicallLog.update({
-    where: { id: log.id },
-    data: {
-      laughCount: ai.laugh_count,
-      laughTimestamps: JSON.stringify(ai.laugh_timestamps),
-      transcript: ai.transcript || null,
-      happyCallStatus: 'APPROVED',
-      happyCallReason: 'auto_laughter_30s',
-      analysisStatus: 'DONE',
-    }
-  });
-
-  console.log('🎉 Update successful! New status in DB:', updated.analysisStatus);
-  await crm.$disconnect();
 }
 
 main().catch(err => {

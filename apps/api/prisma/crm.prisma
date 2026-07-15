@@ -66,6 +66,7 @@ model CrmCallLog {
   note         String?   @db.Text
   outcome      String?   @db.VarChar(30)
   callbackDate DateTime? @map("callback_date") @db.Date
+  callUuid     String?   @map("call_uuid") @db.VarChar(100)
   createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(0)
 
   @@index([legacyUserId])
@@ -169,9 +170,16 @@ model CrmOmicallLog {
   analysisRetryCount Int      @default(0) @map("analysis_retry_count")
   analysisError     String?   @map("analysis_error") @db.Text
   laughCount        Int?      @map("laugh_count")
+  laughCountAgent     Int?      @map("laugh_count_agent")
+  laughCountCustomer  Int?      @map("laugh_count_customer")
   laughTimestamps   String?   @map("laugh_timestamps") @db.Text
-                              // JSON: [{"start":12.5,"end":14.2,"confidence":0.92}, ...]
+                              // JSON: [{"start":12.5,"end":14.2,"speaker":"agent"|"customer","confidence":0.92}, ...]
   transcript        String?   @db.LongText
+
+  // Customer Satisfaction (CSAT) Evaluation Fields
+  customerSatisfactionScore Int?    @map("customer_satisfaction_score")
+  customerSentiment         String? @map("customer_sentiment") @db.VarChar(20)
+  satisfactionAnalysis      String? @map("satisfaction_analysis") @db.Text
 
   // Happy Call Status (thay thế isHappyCall boolean)
   happyCallStatus   String    @default("NONE") @map("happy_call_status") @db.VarChar(20)

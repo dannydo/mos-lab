@@ -85,13 +85,13 @@
     <!-- Sidebar: Flow Controller -->
     <aside class="w-80 border-r border-zinc-800 bg-zinc-950 p-6 flex flex-col justify-between overflow-y-auto">
       <div>
-        <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-4">Giả Lập Flow Cuộc Gọi</h2>
-        <p class="text-xs text-zinc-400 mb-6 leading-relaxed">Mô phỏng luồng OmiCall → AI Laughter Detection → Happy Call judgment.</p>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-4">Giả Lập Flow Cuộc Gọi mới</h2>
+        <p class="text-xs text-zinc-400 mb-6 leading-relaxed">Mô phỏng luồng tối ưu song song (Parallel Wrap-up) kết hợp Gemini CSAT (Phân tích ngôn từ, ngữ điệu, hơi thở) & Tua nhanh audio.</p>
         
         <div class="space-y-3">
           <!-- Step 1: Idle -->
           <button onclick="changeState('idle')" id="btn-idle" class="w-full text-left px-4 py-3 rounded-lg border border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 transition-all flex items-center gap-3 text-sm font-medium">
-            <span class="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-xs">1</span>
+            <span class="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-xs text-zinc-200">1</span>
             <div>
               <p class="text-zinc-200">Chờ gọi (Idle)</p>
               <p class="text-[10px] text-zinc-500">Màn hình mặc định</p>
@@ -103,7 +103,7 @@
             <span class="w-6 h-6 rounded-full bg-blue-900/60 text-blue-300 flex items-center justify-center text-xs">2</span>
             <div>
               <p class="text-zinc-400">Đang đổ chuông</p>
-              <p class="text-[10px] text-zinc-500">+1 Call, webhook ringing</p>
+              <p class="text-[10px] text-zinc-500">Gặp khách hàng tiềm năng</p>
             </div>
           </button>
 
@@ -111,62 +111,44 @@
           <button onclick="changeState('connected')" id="btn-connected" class="w-full text-left px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-950/20 hover:bg-zinc-800 transition-all flex items-center gap-3 text-sm font-medium">
             <span class="w-6 h-6 rounded-full bg-purple-900/60 text-purple-300 flex items-center justify-center text-xs">3</span>
             <div>
-              <p class="text-zinc-400">Khách bắt máy (Pickup)</p>
-              <p class="text-[10px] text-zinc-500">+1 Pickup, bắt đầu recording</p>
+              <p class="text-zinc-400">Đàm thoại (Connected)</p>
+              <p class="text-[10px] text-zinc-500">Bắt đầu ghi âm cuộc gọi</p>
             </div>
           </button>
 
-          <!-- Step 4: Hangup → AI Analyzing -->
-          <button onclick="changeState('analyzing')" id="btn-analyzing" class="w-full text-left px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-950/20 hover:bg-zinc-800 transition-all flex items-center gap-3 text-sm font-medium">
+          <!-- Step 4: Hangup → Direct Wrap-up (AI Pending) -->
+          <button onclick="changeState('wrapup-pending')" id="btn-wrapup-pending" class="w-full text-left px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-950/20 hover:bg-zinc-800 transition-all flex items-center gap-3 text-sm font-medium">
             <span class="w-6 h-6 rounded-full bg-cyan-900/60 text-cyan-300 flex items-center justify-center text-xs">4</span>
             <div>
-              <p class="text-zinc-400">Gác máy → AI Đang Quét 🤖</p>
-              <p class="text-[10px] text-zinc-500">Laughter Detection + Transcription</p>
+              <p class="text-zinc-400">Gác máy → Wrap-up ngay ⚡</p>
+              <p class="text-[10px] text-cyan-400 font-semibold">AI chạy ngầm (Non-blocking)</p>
             </div>
           </button>
 
-          <!-- Step 5: AI Result - Happy Call -->
-          <button onclick="changeState('ai-happy')" id="btn-ai-happy" class="w-full text-left px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-950/20 hover:bg-zinc-800 transition-all flex items-center gap-3 text-sm font-medium">
-            <span class="w-6 h-6 rounded-full bg-emerald-900/60 text-emerald-300 flex items-center justify-center text-xs">5a</span>
+          <!-- Step 5: AI Completed (Gemini Analysis) -->
+          <button onclick="changeState('wrapup-done')" id="btn-wrapup-done" class="w-full text-left px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-950/20 hover:bg-zinc-800 transition-all flex items-center gap-3 text-sm font-medium">
+            <span class="w-6 h-6 rounded-full bg-emerald-900/60 text-emerald-300 flex items-center justify-center text-xs">5</span>
             <div>
-              <p class="text-zinc-400">AI: Happy Call ✅ (≥30s + 😂)</p>
-              <p class="text-[10px] text-zinc-500">Auto approve, +1 Happy Call</p>
+              <p class="text-zinc-400">AI Xong → Show CSAT & Tua 🤖</p>
+              <p class="text-[10px] text-zinc-500">Đánh giá tone, lời, hơi thở + Tua</p>
             </div>
           </button>
 
-          <!-- Step 5b: AI Result - Pending Approval -->
-          <button onclick="changeState('ai-pending')" id="btn-ai-pending" class="w-full text-left px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-950/20 hover:bg-zinc-800 transition-all flex items-center gap-3 text-sm font-medium">
-            <span class="w-6 h-6 rounded-full bg-amber-900/60 text-amber-300 flex items-center justify-center text-xs">5b</span>
-            <div>
-              <p class="text-zinc-400">AI: Cần Duyệt ⏳ (<30s + 😂)</p>
-              <p class="text-[10px] text-zinc-500">Manager phải approve</p>
-            </div>
-          </button>
-
-          <!-- Step 6: Wrap-up -->
-          <button onclick="changeState('wrapup')" id="btn-wrapup" class="w-full text-left px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-950/20 hover:bg-zinc-800 transition-all flex items-center gap-3 text-sm font-medium">
-            <span class="w-6 h-6 rounded-full bg-zinc-800 text-zinc-300 flex items-center justify-center text-xs">6</span>
-            <div>
-              <p class="text-zinc-400">Wrap-up & Lưu kết quả</p>
-              <p class="text-[10px] text-zinc-500">Tags + Notes + Ghi nhận KPI</p>
-            </div>
-          </button>
-
-          <!-- Step 7: QA Review (Manager) -->
+          <!-- Step 6: QA Review (Manager) -->
           <button onclick="changeState('qa-review')" id="btn-qa-review" class="w-full text-left px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-950/20 hover:bg-zinc-800 transition-all flex items-center gap-3 text-sm font-medium">
-            <span class="w-6 h-6 rounded-full bg-rose-900/60 text-rose-300 flex items-center justify-center text-xs">7</span>
+            <span class="w-6 h-6 rounded-full bg-rose-900/60 text-rose-300 flex items-center justify-center text-xs">6</span>
             <div>
               <p class="text-zinc-400">QA Review (Manager View)</p>
-              <p class="text-[10px] text-zinc-500">Audio Player + Verify laughs</p>
+              <p class="text-[10px] text-zinc-500">Thẩm định cuộc gọi & audio</p>
             </div>
           </button>
 
-          <!-- Step 8: Celebration -->
+          <!-- Step 7: Celebration -->
           <button onclick="changeState('celebration')" id="btn-celebration" class="w-full text-left px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-950/20 hover:bg-zinc-800 transition-all flex items-center gap-3 text-sm font-medium">
-            <span class="w-6 h-6 rounded-full bg-amber-900/60 text-amber-300 flex items-center justify-center text-xs">8</span>
+            <span class="w-6 h-6 rounded-full bg-amber-900/60 text-amber-300 flex items-center justify-center text-xs">7</span>
             <div>
               <p class="text-zinc-400">Nở Trứng & Nhận Quà 🐣</p>
-              <p class="text-[10px] text-zinc-500">Đạt mục tiêu ngày!</p>
+              <p class="text-[10px] text-zinc-500">Telesales thăng hạng thành công</p>
             </div>
           </button>
         </div>
@@ -174,12 +156,11 @@
       
       <!-- Flow Diagram -->
       <div class="border-t border-zinc-800 pt-4 mt-4">
-        <p class="text-[10px] text-zinc-600 mb-2 font-bold uppercase tracking-wider">Happy Call Logic</p>
+        <p class="text-[10px] text-zinc-600 mb-2 font-bold uppercase tracking-wider">AI CSAT Logic</p>
         <div class="text-[10px] text-zinc-500 space-y-1 font-mono leading-relaxed">
-          <p>≥180s → <span class="text-emerald-400">Auto Happy</span> + AI scan</p>
-          <p>≥30s + 😂≥1 → <span class="text-emerald-400">Auto Happy</span></p>
-          <p><30s + 😂≥1 → <span class="text-amber-400">Cần Manager duyệt</span></p>
-          <p>Không 😂 → <span class="text-zinc-400">Ghi nhận, không Happy</span></p>
+          <p>CSAT = F(Ngôn từ, Ngữ điệu, Hơi thở)</p>
+          <p>Tua nhanh 1-Click = Đồng bộ player</p>
+          <p>Lưu tự động = Đồng bộ qua UUID</p>
         </div>
       </div>
     </aside>
@@ -291,7 +272,7 @@
           <p class="text-[10px] text-amber-400 mt-2 font-semibold">Đạt: <span id="kpi-happy-pct">0%</span></p>
         </div>
 
-        <!-- 4. BOOKED (Legacy Wings Lashes) -->
+        <!-- 4. BOOKED -->
         <div onclick="selectMetric('booked')" id="card-booked" class="glass-card p-4 rounded-xl cursor-pointer hover:border-orange-500/50 transition-all border border-zinc-800">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold text-zinc-400 font-outfit uppercase tracking-wider">Booked</span>
@@ -309,7 +290,7 @@
           </p>
         </div>
 
-        <!-- 5. DONE DEAL (Legacy Wings Lashes) -->
+        <!-- 5. DONE DEAL -->
         <div onclick="selectMetric('done')" id="card-done" class="glass-card p-4 rounded-xl cursor-pointer hover:border-emerald-500/50 transition-all border border-zinc-800">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold text-zinc-400 font-outfit uppercase tracking-wider">Done Deal</span>
@@ -389,7 +370,7 @@
       </section>
 
       <!-- FLOATING OMICALL WIDGET -->
-      <div id="call-panel" class="fixed bottom-6 right-6 w-[420px] rounded-2xl border border-zinc-800 bg-zinc-950/95 shadow-2xl z-50 overflow-hidden transition-all duration-300 flex flex-col">
+      <div id="call-panel" class="fixed bottom-6 right-6 w-[430px] rounded-2xl border border-zinc-800 bg-zinc-950/95 shadow-2xl z-50 overflow-hidden transition-all duration-300 flex flex-col">
         
         <!-- Widget Header -->
         <div id="call-panel-header" class="bg-zinc-900 px-4 py-3 flex items-center justify-between border-b border-zinc-800">
@@ -406,8 +387,8 @@
             <i class="fa-solid fa-phone-slash text-2xl"></i>
           </div>
           <div>
-            <h4 class="text-sm font-bold">Chưa có cuộc gọi nào</h4>
-            <p class="text-xs text-zinc-500 mt-1">Chọn "Gọi điện" để thực hiện cuộc gọi qua OmiCall.</p>
+            <h4 class="text-sm font-bold">Chương trình gọi điện rảnh tay</h4>
+            <p class="text-xs text-zinc-500 mt-1">Chọn "Gọi điện" từ hàng chờ để bắt đầu cuộc đàm thoại.</p>
           </div>
         </div>
 
@@ -442,7 +423,7 @@
             </div>
             <div class="text-[10px] text-zinc-500 flex items-center gap-2 border-t border-zinc-800/80 pt-2 mt-2">
               <span class="text-red-400 animate-pulse"><i class="fa-solid fa-circle text-[6px]"></i> REC</span>
-              <span>Ghi âm đang hoạt động — AI sẽ phân tích sau khi gác máy</span>
+              <span>Đang đàm thoại ngắt kết nối sẽ vào Wrap-up tức thì, AI quét dưới nền.</span>
             </div>
           </div>
           
@@ -455,9 +436,7 @@
               <span class="font-bold text-zinc-400" id="zone-timer">0s</span>
             </div>
             <div class="w-full bg-zinc-800 h-2.5 rounded-full overflow-hidden border border-zinc-700/50 relative">
-              <!-- 30s marker -->
               <div class="absolute top-0 bottom-0 left-[16.6%] w-px bg-amber-500/50 z-10" title="30s"></div>
-              <!-- 180s marker -->
               <div class="absolute top-0 bottom-0 left-[100%] w-px bg-emerald-500/50 z-10" title="180s"></div>
               <div id="zone-bar" class="bg-gradient-to-r from-red-500 to-amber-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
@@ -475,144 +454,131 @@
             <button class="h-10 w-10 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors flex items-center justify-center text-sm">
               <i class="fa-solid fa-volume-high"></i>
             </button>
-            <button onclick="hangUpAndAnalyze()" class="px-6 py-2 rounded-full bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-red-600/15">
-              <i class="fa-solid fa-phone-slash"></i> Gác máy
+            <button onclick="changeState('wrapup-pending')" class="px-6 py-2 rounded-full bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-red-600/15">
+              <i class="fa-solid fa-phone-slash"></i> Gác máy & Note
             </button>
           </div>
         </div>
 
-        <!-- AI ANALYZING STATE -->
-        <div id="panel-analyzing" class="p-6 space-y-4 hidden">
-          <div class="text-center">
-            <div class="h-16 w-16 rounded-full bg-cyan-500/10 border-2 border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400">
-              <i class="fa-solid fa-robot text-2xl"></i>
+        <!-- WRAP-UP STATE (Parallel, Non-blocking) -->
+        <div id="panel-wrapup" class="p-5 space-y-4 hidden max-h-[550px] overflow-y-auto">
+          <div class="text-center border-b border-zinc-900 pb-3 flex justify-between items-center">
+            <div>
+              <h4 class="text-sm font-bold text-zinc-200 text-left">Ghi nhận cuộc gọi</h4>
+              <p class="text-[10px] text-zinc-500 text-left mt-0.5">Thời lượng: <span class="font-mono text-zinc-300" id="wrapup-duration">01:25</span></p>
             </div>
-            <h4 class="text-sm font-bold mt-3">🤖 AI Đang Phân Tích...</h4>
-            <p class="text-[11px] text-zinc-500 mt-1">Cuộc gọi: <span class="text-zinc-300 font-mono" id="analyze-duration">01:25</span></p>
-          </div>
-          
-          <!-- Fake waveform with scan line -->
-          <div class="relative bg-zinc-900/70 border border-zinc-800 rounded-lg p-3 h-16 overflow-hidden">
-            <div class="scan-line"></div>
-            <div class="flex items-end justify-center gap-[2px] h-full" id="fake-waveform">
-              <!-- Generated by JS -->
+            <div id="wrapup-status-badge">
+              <span class="text-xs bg-zinc-800 text-zinc-400 py-1 px-2.5 rounded-full font-bold">Chờ AI...</span>
             </div>
           </div>
-          
-          <div class="space-y-2 text-xs">
-            <div class="flex items-center gap-2" id="ai-step-1">
-              <i class="fa-solid fa-spinner animate-spin text-cyan-400"></i>
-              <span class="text-zinc-400">Downloading recording...</span>
-            </div>
-            <div class="flex items-center gap-2 opacity-30" id="ai-step-2">
-              <i class="fa-solid fa-circle text-[6px] text-zinc-600"></i>
-              <span class="text-zinc-500">Laughter Detection (scanning audio)</span>
-            </div>
-            <div class="flex items-center gap-2 opacity-30" id="ai-step-3">
-              <i class="fa-solid fa-circle text-[6px] text-zinc-600"></i>
-              <span class="text-zinc-500">Speech-to-Text (Whisper)</span>
-            </div>
-            <div class="flex items-center gap-2 opacity-30" id="ai-step-4">
-              <i class="fa-solid fa-circle text-[6px] text-zinc-600"></i>
-              <span class="text-zinc-500">Happy Call judgment</span>
-            </div>
-          </div>
-        </div>
 
-        <!-- AI RESULT: HAPPY CALL ✅ -->
-        <div id="panel-ai-happy" class="p-6 space-y-4 hidden">
-          <div class="text-center">
-            <div class="h-16 w-16 rounded-full bg-emerald-500/10 border-2 border-emerald-500/40 flex items-center justify-center mx-auto">
-              <span class="text-3xl">😂</span>
+          <!-- GEMINI CSAT & AUDIO PANEL -->
+          <div id="wrapup-gemini-board" class="space-y-3">
+            <!-- Pending Stage -->
+            <div id="gemini-pending" class="p-3.5 rounded-xl border border-cyan-500/20 bg-cyan-950/10 flex items-center gap-3 animate-pulse">
+              <i class="fa-solid fa-circle-notch animate-spin text-cyan-400 text-lg"></i>
+              <div class="flex-1">
+                <h5 class="text-xs font-bold text-cyan-300">🤖 Gemini đang phân tích ghi âm...</h5>
+                <p class="text-[9px] text-zinc-500 mt-0.5">Nhận diện tiếng cười, dịch văn bản & tính CSAT (Khoảng ~3s)</p>
+              </div>
             </div>
-            <h4 class="text-sm font-bold mt-3 text-emerald-400">✅ HAPPY CALL — Auto Approved!</h4>
-            <p class="text-[11px] text-zinc-500 mt-1">≥30s + Phát hiện tiếng cười</p>
-          </div>
-          
-          <!-- Laugh results -->
-          <div class="bg-zinc-900/70 border border-emerald-500/20 rounded-lg p-3 space-y-2">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-zinc-400 font-bold">Kết quả AI</span>
-              <span class="text-emerald-400 font-mono text-[10px]">confidence: 0.92</span>
-            </div>
-            <div class="flex items-center gap-3 text-xs">
-              <span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-lg font-bold">😂 3 lần cười</span>
-              <span class="text-zinc-500">tại</span>
-              <span class="font-mono text-zinc-300 text-[10px]">0:12 · 0:45 · 1:03</span>
-            </div>
-          </div>
-          
-          <button onclick="changeState('wrapup')" class="w-full py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/10 transition-colors">
-            <i class="fa-solid fa-arrow-right mr-1.5"></i> Tiếp tục Wrap-up
-          </button>
-        </div>
 
-        <!-- AI RESULT: PENDING APPROVAL ⏳ -->
-        <div id="panel-ai-pending" class="p-6 space-y-4 hidden">
-          <div class="text-center">
-            <div class="h-16 w-16 rounded-full bg-amber-500/10 border-2 border-amber-500/40 flex items-center justify-center mx-auto">
-              <span class="text-3xl">🤔</span>
-            </div>
-            <h4 class="text-sm font-bold mt-3 text-amber-400">⏳ Cần Manager Duyệt</h4>
-            <p class="text-[11px] text-zinc-500 mt-1">Cuộc gọi <30s nhưng phát hiện cười</p>
-          </div>
-          
-          <div class="bg-zinc-900/70 border border-amber-500/20 rounded-lg p-3 space-y-2">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-zinc-400 font-bold">Kết quả AI</span>
-              <span class="text-amber-400 font-mono text-[10px]">duration: 22s</span>
-            </div>
-            <div class="flex items-center gap-3 text-xs">
-              <span class="bg-amber-500/10 text-amber-400 px-2 py-1 rounded-lg font-bold">😂 1 lần cười</span>
-              <span class="text-zinc-500">tại</span>
-              <span class="font-mono text-zinc-300 text-[10px]">0:15</span>
-            </div>
-            <div class="text-[10px] text-amber-400/70 border-t border-zinc-800 pt-2 mt-1">
-              <i class="fa-solid fa-clock"></i> Đang chờ Manager/Admin xem xét và approve
-            </div>
-          </div>
-          
-          <button onclick="changeState('wrapup')" class="w-full py-2 bg-gradient-to-r from-zinc-700 to-zinc-600 hover:from-zinc-600 hover:to-zinc-500 text-white font-bold text-xs rounded-xl transition-colors">
-            <i class="fa-solid fa-arrow-right mr-1.5"></i> Tiếp tục Wrap-up (chờ duyệt)
-          </button>
-        </div>
+            <!-- Done Stage (Hidden initially) -->
+            <div id="gemini-done" class="hidden space-y-3">
+              <!-- CSAT Rating Card -->
+              <div class="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-950/10 flex items-center justify-between">
+                <div>
+                  <h5 class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Đánh giá khách hàng (CSAT)</h5>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="text-amber-400 text-sm">⭐⭐⭐⭐</span>
+                    <span class="text-xs text-zinc-200 font-bold font-outfit">4 / 5</span>
+                  </div>
+                </div>
+                <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Hài lòng (SATISFIED)</span>
+              </div>
 
-        <!-- WRAP-UP STATE -->
-        <div id="panel-wrapup" class="p-6 space-y-4 hidden">
-          <div class="text-center border-b border-zinc-900 pb-3">
-            <h4 class="text-sm font-bold text-zinc-200">Ghi nhận cuộc gọi</h4>
-            <p class="text-[11px] text-zinc-500 mt-1">Thời lượng: <span class="font-mono text-zinc-300" id="wrapup-duration">01:25</span> · <span id="wrapup-happy-badge" class="text-emerald-400 font-bold">✅ Happy Call</span></p>
+              <!-- AI Analysis box -->
+              <div class="p-3 bg-zinc-900 border border-zinc-800 rounded-xl space-y-1.5">
+                <div class="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase">
+                  <i class="fa-solid fa-robot text-purple-400"></i> Phân tích cuộc gọi chi tiết của Gemini
+                </div>
+                <p class="text-xs text-zinc-300 leading-relaxed">
+                  Khách hàng (KH) ban đầu <span class="text-amber-400 font-medium">thở dài nhẹ ở 0:15</span> do băn khoăn về giá dịch vụ, sau đó nhân viên (NV) <span class="text-emerald-400 font-medium">cười giải thích thân thiện ở 0:33</span>. Cuối cùng khách hàng <span class="text-emerald-400 font-medium">cười lớn hài lòng ở 0:45</span> và đồng ý trải nghiệm.
+                </p>
+              </div>
+
+              <!-- Interactive mini player -->
+              <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3 space-y-3">
+                <div class="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase">
+                  <span>Trình phát & Tua nhanh cuộc gọi</span>
+                  <span id="player-time" class="font-mono text-zinc-400">00:00 / 01:25</span>
+                </div>
+                <div class="relative h-1.5 bg-zinc-800 rounded-full cursor-pointer" onclick="clickSlider(event)" id="mock-slider-track">
+                  <div id="mock-slider-thumb" class="absolute top-1/2 -translate-y-1/2 left-0 h-3.5 w-3.5 rounded-full bg-blue-500 border border-white shadow-md z-20"></div>
+                  <div id="mock-slider-fill" class="bg-blue-500 h-full rounded-full w-0"></div>
+                </div>
+                <div class="flex items-center justify-between gap-4 pt-1">
+                  <button id="btn-player-play" onclick="togglePlayerPlay()" class="h-8 w-8 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center text-white text-xs transition-colors shrink-0 shadow-lg shadow-blue-600/10">
+                    <i class="fa-solid fa-play" id="play-icon"></i>
+                  </button>
+                  <div class="flex flex-wrap gap-1.5 flex-1 justify-end">
+                    <button onclick="seekAudio(12, '😂 KH cười')" class="px-2 py-1 rounded bg-zinc-800 hover:bg-purple-950 border border-zinc-700/60 hover:border-purple-500/50 text-[9px] font-bold text-zinc-300 hover:text-purple-300 transition-all flex items-center gap-1">
+                      <span>00:12</span> <span class="text-purple-400">😂 KH cười</span>
+                    </button>
+                    <button onclick="seekAudio(15, '😮‍💨 KH thở dài')" class="px-2 py-1 rounded bg-zinc-800 hover:bg-amber-950 border border-zinc-700/60 hover:border-amber-500/50 text-[9px] font-bold text-zinc-300 hover:text-amber-300 transition-all flex items-center gap-1">
+                      <span>00:15</span> <span class="text-amber-400">😮‍💨 KH thở dài</span>
+                    </button>
+                    <button onclick="seekAudio(33, '😊 NV cười')" class="px-2 py-1 rounded bg-zinc-800 hover:bg-purple-950 border border-zinc-700/60 hover:border-purple-500/50 text-[9px] font-bold text-zinc-300 hover:text-purple-300 transition-all flex items-center gap-1">
+                      <span>00:33</span> <span class="text-purple-400">😊 NV cười</span>
+                    </button>
+                    <button onclick="seekAudio(45, '😂 KH cười lớn')" class="px-2 py-1 rounded bg-zinc-800 hover:bg-purple-950 border border-zinc-700/60 hover:border-purple-500/50 text-[9px] font-bold text-zinc-300 hover:text-purple-300 transition-all flex items-center gap-1">
+                      <span>00:45</span> <span class="text-purple-400">😂 KH cười lớn</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="space-y-2">
-            <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Kết quả cuộc gọi</label>
-            <div class="grid grid-cols-2 gap-2" id="tags-container">
-              <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Đặt lịch hẹn
+
+          <!-- Wrapup Form fields -->
+          <div class="space-y-4">
+            <div class="space-y-2">
+              <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Kết quả cuộc gọi (Outcome)</label>
+              <div class="grid grid-cols-2 gap-2" id="tags-container">
+                <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Đặt lịch hẹn
+                </button>
+                <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span> Khách quan tâm
+                </button>
+                <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-blue-500"></span> Đã gửi Zalo
+                </button>
+                <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-purple-500"></span> Hẹn gọi lại
+                </button>
+                <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-red-500"></span> Máy bận/Hủy
+                </button>
+                <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-zinc-500"></span> Sai số máy
+                </button>
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Ghi chú cuộc gọi</label>
+              <textarea placeholder="Nhập tóm tắt chi tiết cuộc gọi, thắc mắc của khách hàng (Telesales có thể gõ ngay lập tức)..." class="w-full text-xs bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-zinc-300 focus:outline-none focus:border-zinc-700 h-16 resize-none"></textarea>
+            </div>
+            
+            <div class="flex gap-2">
+              <button onclick="changeState('idle')" class="flex-1 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 font-bold text-xs transition-colors">
+                Bỏ qua
               </button>
-              <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-amber-500"></span> Khách quan tâm
-              </button>
-              <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-blue-500"></span> Đã gửi Zalo
-              </button>
-              <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-purple-500"></span> Hẹn gọi lại
-              </button>
-              <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-red-500"></span> Máy bận/Hủy
-              </button>
-              <button onclick="toggleTag(this)" class="tag-btn py-1.5 px-2 rounded-lg border border-zinc-800 hover:border-zinc-700 text-[11px] font-medium bg-zinc-900/30 text-zinc-400 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-zinc-500"></span> Sai số máy
+              <button onclick="saveWrapup()" class="flex-1 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/10 transition-colors">
+                <i class="fa-solid fa-save mr-1"></i> Lưu & Hoàn tất
               </button>
             </div>
           </div>
-          <div class="space-y-1.5">
-            <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Ghi chú</label>
-            <textarea placeholder="Nhập ghi chú nhanh..." class="w-full text-xs bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-zinc-300 focus:outline-none focus:border-zinc-700 h-14 resize-none"></textarea>
-          </div>
-          <button onclick="saveWrapup()" class="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/10 transition-colors">
-            <i class="fa-solid fa-save mr-1.5"></i> Lưu & Hoàn tất
-          </button>
         </div>
 
         <!-- QA REVIEW STATE (Manager View) -->
@@ -638,8 +604,8 @@
               <span class="text-zinc-200 font-mono">01:25</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-zinc-400">AI Verdict:</span>
-              <span class="text-emerald-400 font-bold">Happy Call ✅</span>
+              <span class="text-zinc-400">AI CSAT Verdict:</span>
+              <span class="text-emerald-400 font-bold">Hài lòng (4/5) ✅</span>
             </div>
           </div>
           
@@ -647,10 +613,8 @@
           <div class="space-y-2">
             <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Audio Player</label>
             <div class="bg-zinc-900/70 border border-zinc-800 rounded-lg p-3">
-              <!-- Waveform with laugh markers -->
               <div class="relative h-12 mb-2" id="qa-waveform-container">
                 <div class="flex items-end gap-[1px] h-full" id="qa-waveform"></div>
-                <!-- Laugh markers overlaid -->
                 <div class="absolute top-0 left-[14%] flex flex-col items-center laugh-marker" title="Laugh @ 0:12">
                   <span class="text-[10px]">😂</span>
                   <div class="w-px h-8 bg-amber-500/50"></div>
@@ -664,14 +628,12 @@
                   <div class="w-px h-8 bg-amber-500/50"></div>
                 </div>
               </div>
-              <!-- Playback controls -->
               <div class="flex items-center gap-3">
                 <button class="h-8 w-8 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center text-white text-xs transition-colors">
                   <i class="fa-solid fa-play"></i>
                 </button>
                 <div class="flex-1 bg-zinc-800 h-1 rounded-full relative">
                   <div class="bg-blue-500 h-full rounded-full w-[35%]"></div>
-                  <!-- Laugh dots on timeline -->
                   <div class="absolute top-1/2 -translate-y-1/2 left-[14%] h-2.5 w-2.5 rounded-full bg-amber-500 border border-amber-400 cursor-pointer" title="😂 0:12"></div>
                   <div class="absolute top-1/2 -translate-y-1/2 left-[52%] h-2.5 w-2.5 rounded-full bg-amber-500 border border-amber-400 cursor-pointer" title="😂 0:45"></div>
                   <div class="absolute top-1/2 -translate-y-1/2 left-[73%] h-2.5 w-2.5 rounded-full bg-amber-500 border border-amber-400 cursor-pointer" title="😂 1:03"></div>
@@ -681,10 +643,8 @@
             </div>
           </div>
           
-          <!-- Verify each laugh -->
           <div class="space-y-2">
             <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Xác nhận từng lần cười</label>
-            
             <div class="bg-zinc-900/70 border border-zinc-800 rounded-lg divide-y divide-zinc-800">
               <div class="p-2.5 flex items-center justify-between">
                 <div class="flex items-center gap-2 text-xs">
@@ -721,8 +681,6 @@
               </div>
             </div>
           </div>
-          
-          <!-- QA Notes -->
           <textarea placeholder="Ghi chú QA (không bắt buộc)..." class="w-full text-xs bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-zinc-300 focus:outline-none focus:border-zinc-700 h-12 resize-none"></textarea>
           
           <div class="flex gap-2">
@@ -738,7 +696,6 @@
     </main>
   </div>
 
-  <!-- Toast -->
   <div id="realtime-toast" class="fixed top-20 right-6 glass-card border border-emerald-500/30 bg-emerald-950/20 text-emerald-300 px-4 py-3 rounded-xl shadow-xl z-50 flex items-center gap-3 transition-all duration-300 transform translate-x-96 opacity-0">
     <div class="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-sm"><i class="fa-solid fa-circle-check"></i></div>
     <div>
@@ -748,16 +705,18 @@
   </div>
 
   <script>
-    // ══════════════════════════════════
-    // State Management
-    // ══════════════════════════════════
     let selectedMetricKey = 'calls';
     let currentCallName = '';
     let currentCallPhone = '';
     let callTimer = null;
     let callSeconds = 0;
-    let aiAnimTimer = null;
     
+    // Simulated Audio Player State
+    let isPlaying = false;
+    let playTimer = null;
+    let playSeconds = 0;
+    const totalPlaySeconds = 85;
+
     const kpis = {
       calls:   { val: 0, target: 125, color: 'blue' },
       pickups: { val: 0, target: 38,  color: 'purple' },
@@ -774,18 +733,12 @@
     ];
     let eggLevel = 0;
 
-    // ══════════════════════════════════
-    // Initialization
-    // ══════════════════════════════════
     window.onload = function() {
       updateKpiCards();
       selectMetric('calls');
       generateQAWaveform();
     };
 
-    // ══════════════════════════════════
-    // Metric Selection
-    // ══════════════════════════════════
     function selectMetric(key) {
       selectedMetricKey = key;
       const colorMap = { calls: 'blue', pickups: 'purple', happy: 'amber', booked: 'orange', done: 'emerald' };
@@ -825,20 +778,22 @@
       selectMetric(selectedMetricKey);
     }
 
-    // ══════════════════════════════════
-    // State Controller
-    // ══════════════════════════════════
+    function stopAudioPlayer() {
+      pauseAudioPlayer();
+      playSeconds = 0;
+      updatePlayerUI();
+    }
+
     function changeState(state) {
       if (callTimer) { clearInterval(callTimer); callTimer = null; }
-      if (aiAnimTimer) { clearInterval(aiAnimTimer); aiAnimTimer = null; }
+      stopAudioPlayer();
       
-      // Hide all panels
-      ['idle','ringing','connected','analyzing','ai-happy','ai-pending','wrapup','qa-review'].forEach(p => {
-        document.getElementById(`panel-${p}`).classList.add('hidden');
+      ['idle','ringing','connected','wrapup','qa-review'].forEach(p => {
+        const panel = document.getElementById(`panel-${p}`);
+        if(panel) panel.classList.add('hidden');
       });
       
-      // Reset sidebar active states
-      ['idle','ringing','connected','analyzing','ai-happy','ai-pending','wrapup','qa-review','celebration'].forEach(s => {
+      ['idle','ringing','connected','wrapup-pending','wrapup-done','qa-review','celebration'].forEach(s => {
         const btn = document.getElementById(`btn-${s}`);
         if (btn) btn.className = "w-full text-left px-4 py-3 rounded-lg border border-zinc-800 bg-zinc-950/20 hover:bg-zinc-800 transition-all flex items-center gap-3 text-sm font-medium";
       });
@@ -849,8 +804,7 @@
       const dot = document.getElementById('status-dot');
       const title = document.getElementById('status-title');
       
-      // Reset widget border
-      document.getElementById('call-panel').className = "fixed bottom-6 right-6 w-[420px] rounded-2xl border border-zinc-800 bg-zinc-950/95 shadow-2xl z-50 overflow-hidden transition-all duration-300 flex flex-col";
+      document.getElementById('call-panel').className = "fixed bottom-6 right-6 w-[430px] rounded-2xl border border-zinc-800 bg-zinc-950/95 shadow-2xl z-50 overflow-hidden transition-all duration-300 flex flex-col";
 
       if (state === 'idle') {
         dot.className = "h-2 w-2 rounded-full bg-zinc-500";
@@ -861,10 +815,8 @@
         dot.className = "h-2 w-2 rounded-full bg-blue-500 animate-pulse";
         title.textContent = "OmiCall — Đang gọi";
         document.getElementById('panel-ringing').classList.remove('hidden');
-        currentCallName = currentCallName || "Nguyễn Thị Mai";
-        currentCallPhone = currentCallPhone || "0909 123 456";
-        document.getElementById('ringing-name').textContent = currentCallName;
-        document.getElementById('ringing-phone').textContent = currentCallPhone;
+        document.getElementById('ringing-name').textContent = currentCallName || "Nguyễn Thị Mai";
+        document.getElementById('ringing-phone').textContent = currentCallPhone || "0909 123 456";
         kpis.calls.val++;
         updateKpiCards();
       }
@@ -872,15 +824,9 @@
         dot.className = "h-2 w-2 rounded-full bg-purple-500 animate-pulse";
         title.textContent = "OmiCall — Connected";
         document.getElementById('panel-connected').classList.remove('hidden');
-        document.getElementById('connected-name').textContent = currentCallName || "Nguyễn Thị Mai";
-        document.getElementById('connected-phone').textContent = currentCallPhone || "0909 123 456";
         kpis.pickups.val++;
         updateKpiCards();
-        
         callSeconds = 0;
-        document.getElementById('live-timer').textContent = "00:00";
-        updateZoneBar(0);
-        
         callTimer = setInterval(() => {
           callSeconds++;
           const m = Math.floor(callSeconds / 60).toString().padStart(2, '0');
@@ -888,60 +834,42 @@
           document.getElementById('live-timer').textContent = `${m}:${s}`;
           document.getElementById('zone-timer').textContent = `${callSeconds}s`;
           updateZoneBar(callSeconds);
-          
-          if (callSeconds === 180) {
-            showToast("🎉 180s — Auto Happy Call!", "Cuộc gọi dài, tự động đánh dấu Happy + AI vẫn quét");
-            document.getElementById('call-panel').className = "fixed bottom-6 right-6 w-[420px] rounded-2xl border-2 border-emerald-500 bg-zinc-950/95 shadow-2xl shadow-emerald-500/10 z-50 overflow-hidden transition-all duration-300 flex flex-col";
-          }
         }, 1000);
       }
-      else if (state === 'analyzing') {
+      else if (state === 'wrapup-pending') {
         dot.className = "h-2 w-2 rounded-full bg-cyan-500 animate-pulse";
-        title.textContent = "AI Đang Phân Tích...";
-        document.getElementById('call-panel').className = "fixed bottom-6 right-6 w-[420px] rounded-2xl border border-cyan-500/30 bg-zinc-950/95 shadow-2xl shadow-cyan-500/10 z-50 overflow-hidden transition-all duration-300 flex flex-col";
-        document.getElementById('panel-analyzing').classList.remove('hidden');
-        
-        const m = Math.floor(callSeconds / 60).toString().padStart(2, '0');
-        const s = (callSeconds % 60).toString().padStart(2, '0');
-        document.getElementById('analyze-duration').textContent = `${m}:${s}`;
-        
-        generateFakeWaveform();
-        animateAISteps();
+        title.textContent = "OmiCall — Ghi nhận (AI đang phân tích)";
+        document.getElementById('call-panel').className = "fixed bottom-6 right-6 w-[430px] rounded-2xl border border-cyan-500/30 bg-zinc-950/95 shadow-2xl z-50 overflow-hidden transition-all duration-300 flex flex-col";
+        document.getElementById('panel-wrapup').classList.remove('hidden');
+        document.getElementById('gemini-pending').classList.remove('hidden');
+        document.getElementById('gemini-done').classList.add('hidden');
+        document.getElementById('wrapup-status-badge').innerHTML = '<span class="text-xs bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 py-1 px-2.5 rounded-full font-bold animate-pulse">🤖 AI đang phân tích...</span>';
+        const durationSecs = callSeconds || 85;
+        const m = Math.floor(durationSecs / 60).toString().padStart(2, '0');
+        const s = (durationSecs % 60).toString().padStart(2, '0');
+        document.getElementById('wrapup-duration').textContent = `${m}:${s}`;
       }
-      else if (state === 'ai-happy') {
+      else if (state === 'wrapup-done') {
         dot.className = "h-2 w-2 rounded-full bg-emerald-500";
-        title.textContent = "AI — Happy Call ✅";
-        document.getElementById('call-panel').className = "fixed bottom-6 right-6 w-[420px] rounded-2xl border-2 border-emerald-500 bg-zinc-950/95 shadow-2xl shadow-emerald-500/10 z-50 overflow-hidden transition-all duration-300 flex flex-col";
-        document.getElementById('panel-ai-happy').classList.remove('hidden');
+        title.textContent = "OmiCall — Ghi nhận (AI Hoàn tất)";
+        document.getElementById('call-panel').className = "fixed bottom-6 right-6 w-[430px] rounded-2xl border-2 border-emerald-500 bg-zinc-950/95 shadow-2xl shadow-emerald-500/10 z-50 overflow-hidden transition-all duration-300 flex flex-col";
+        document.getElementById('panel-wrapup').classList.remove('hidden');
+        document.getElementById('gemini-pending').classList.add('hidden');
+        document.getElementById('gemini-done').classList.remove('hidden');
+        document.getElementById('wrapup-status-badge').innerHTML = '<span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 py-1 px-2.5 rounded-full font-bold">✅ Phân tích xong</span>';
+        const durationSecs = callSeconds || 85;
+        const m = Math.floor(durationSecs / 60).toString().padStart(2, '0');
+        const s = (durationSecs % 60).toString().padStart(2, '0');
+        document.getElementById('wrapup-duration').textContent = `${m}:${s}`;
         kpis.happy.val++;
         updateKpiCards();
         triggerConfetti();
-        showToast("😂 Happy Call Detected!", "AI phát hiện 3 lần cười — Auto Approved +1 Happy Call");
-        
-        // Animate egg
-        const egg = document.getElementById('egg-container');
-        egg.classList.add('scale-110', '-translate-y-4');
-        setTimeout(() => egg.classList.remove('scale-110', '-translate-y-4'), 500);
-      }
-      else if (state === 'ai-pending') {
-        dot.className = "h-2 w-2 rounded-full bg-amber-500 animate-pulse";
-        title.textContent = "AI — Cần Duyệt ⏳";
-        document.getElementById('call-panel').className = "fixed bottom-6 right-6 w-[420px] rounded-2xl border border-amber-500/30 bg-zinc-950/95 shadow-2xl shadow-amber-500/10 z-50 overflow-hidden transition-all duration-300 flex flex-col";
-        document.getElementById('panel-ai-pending').classList.remove('hidden');
-        showToast("⏳ Chờ Manager Duyệt", "Cuộc gọi <30s có cười — cần admin approve");
-      }
-      else if (state === 'wrapup') {
-        dot.className = "h-2 w-2 rounded-full bg-zinc-600";
-        title.textContent = "OmiCall — Wrap-Up";
-        document.getElementById('panel-wrapup').classList.remove('hidden');
-        const m = Math.floor(callSeconds / 60).toString().padStart(2, '0');
-        const s = (callSeconds % 60).toString().padStart(2, '0');
-        document.getElementById('wrapup-duration').textContent = `${m}:${s}`;
+        showToast("🤖 Phân tích Gemini Hoàn Tất", "CSAT: 4/5 - Phát hiện cười & đàm thoại tốt");
       }
       else if (state === 'qa-review') {
         dot.className = "h-2 w-2 rounded-full bg-rose-500";
         title.textContent = "QA Review — Manager";
-        document.getElementById('call-panel').className = "fixed bottom-6 right-6 w-[420px] rounded-2xl border border-rose-500/30 bg-zinc-950/95 shadow-2xl shadow-rose-500/10 z-50 overflow-hidden transition-all duration-300 flex flex-col";
+        document.getElementById('call-panel').className = "fixed bottom-6 right-6 w-[430px] rounded-2xl border border-rose-500/30 bg-zinc-950/95 shadow-2xl shadow-rose-500/10 z-50 overflow-hidden transition-all duration-300 flex flex-col";
         document.getElementById('panel-qa-review').classList.remove('hidden');
       }
       else if (state === 'celebration') {
@@ -952,15 +880,11 @@
       }
     }
 
-    // ══════════════════════════════════
-    // Zone Bar (Connected state)
-    // ══════════════════════════════════
     function updateZoneBar(secs) {
       const pct = Math.min(100, (secs / 180) * 100);
       const bar = document.getElementById('zone-bar');
       const label = document.getElementById('zone-label');
       bar.style.width = `${pct}%`;
-      
       if (secs >= 180) {
         bar.className = "bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-300";
         label.className = "text-emerald-400 font-bold flex items-center gap-1 text-xs";
@@ -968,149 +892,113 @@
       } else if (secs >= 30) {
         bar.className = "bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full transition-all duration-300";
         label.className = "text-amber-400 font-semibold flex items-center gap-1 text-xs";
-        label.innerHTML = '<i class="fa-solid fa-robot"></i> AI sẽ quét laughter sau hangup';
+        label.innerHTML = '<i class="fa-solid fa-robot"></i> Đàm thoại đạt mốc liên kết';
       } else {
         bar.className = "bg-gradient-to-r from-red-500 to-amber-500 h-full rounded-full transition-all duration-300";
         label.className = "text-zinc-500 flex items-center gap-1 text-xs";
-        label.innerHTML = '<i class="fa-solid fa-robot"></i> AI sẽ quét (cần Manager duyệt nếu có 😂)';
+        label.innerHTML = '<i class="fa-solid fa-robot"></i> Đang kết nối';
       }
     }
 
-    // ══════════════════════════════════
-    // AI Analysis Animation
-    // ══════════════════════════════════
-    function generateFakeWaveform() {
-      const container = document.getElementById('fake-waveform');
-      container.innerHTML = '';
-      for (let i = 0; i < 80; i++) {
-        const bar = document.createElement('div');
-        const h = 4 + Math.random() * 36;
-        bar.style.cssText = `width:3px;height:${h}px;background:rgba(6,182,212,0.3);border-radius:2px;flex-shrink:0;`;
-        container.appendChild(bar);
-      }
+    function togglePlayerPlay() {
+      if (isPlaying) { pauseAudioPlayer(); } else { startAudioPlayer(); }
     }
 
-    function animateAISteps() {
-      const steps = [
-        { id: 'ai-step-1', delay: 800, label: '✅ Recording downloaded' },
-        { id: 'ai-step-2', delay: 2000, label: '✅ Laughter detected: 3 events' },
-        { id: 'ai-step-3', delay: 3500, label: '✅ Transcription complete' },
-        { id: 'ai-step-4', delay: 4500, label: '✅ Verdict: HAPPY CALL' },
-      ];
-      
-      steps.forEach((step, i) => {
-        setTimeout(() => {
-          const el = document.getElementById(step.id);
-          el.classList.remove('opacity-30');
-          el.innerHTML = `<i class="fa-solid fa-check-circle text-emerald-400"></i><span class="text-zinc-300">${step.label}</span>`;
-          
-          // Reset for next use
-          if (i < steps.length - 1) {
-            const next = document.getElementById(steps[i + 1].id);
-            next.classList.remove('opacity-30');
-            next.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-cyan-400"></i><span class="text-zinc-400">${next.querySelector('span')?.textContent || ''}</span>`;
-          }
-        }, step.delay);
-      });
+    function startAudioPlayer() {
+      isPlaying = true;
+      document.getElementById('play-icon').className = "fa-solid fa-pause";
+      playTimer = setInterval(() => {
+        if (playSeconds >= totalPlaySeconds) { stopAudioPlayer(); return; }
+        playSeconds++;
+        updatePlayerUI();
+      }, 1000);
     }
 
-    // ══════════════════════════════════
-    // QA Waveform
-    // ══════════════════════════════════
+    function pauseAudioPlayer() {
+      isPlaying = false;
+      document.getElementById('play-icon').className = "fa-solid fa-play";
+      if (playTimer) { clearInterval(playTimer); playTimer = null; }
+    }
+
+    function seekAudio(seconds, reason) {
+      playSeconds = seconds;
+      updatePlayerUI();
+      showToast(`📍 Đang phát lúc ${formatTime(seconds)}`, reason);
+      if (!isPlaying) startAudioPlayer();
+    }
+
+    function clickSlider(event) {
+      const track = document.getElementById('mock-slider-track');
+      const rect = track.getBoundingClientRect();
+      const pct = (event.clientX - rect.left) / rect.width;
+      seekAudio(Math.round(pct * totalPlaySeconds), `Tua đến ${formatTime(Math.round(pct * totalPlaySeconds))}`);
+    }
+
+    function updatePlayerUI() {
+      const pct = (playSeconds / totalPlaySeconds) * 100;
+      document.getElementById('player-time').textContent = `${formatTime(playSeconds)} / ${formatTime(totalPlaySeconds)}`;
+      document.getElementById('mock-slider-fill').style.width = `${pct}%`;
+      document.getElementById('mock-slider-thumb').style.left = `calc(${pct}% - 7px)`;
+    }
+
+    function formatTime(totalSecs) {
+      const m = Math.floor(totalSecs / 60).toString().padStart(2, '0');
+      const s = (totalSecs % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
     function generateQAWaveform() {
       const container = document.getElementById('qa-waveform');
       if (!container) return;
-      container.innerHTML = '';
       for (let i = 0; i < 100; i++) {
         const bar = document.createElement('div');
         const h = 3 + Math.random() * 32;
-        // Make certain regions "louder" to simulate talking
-        const loud = (i > 10 && i < 18) || (i > 45 && i < 55) || (i > 68 && i < 78);
-        const color = loud ? 'rgba(245,158,11,0.5)' : 'rgba(113,113,122,0.3)';
-        bar.style.cssText = `width:2px;height:${loud ? h * 1.5 : h}px;background:${color};border-radius:1px;flex-shrink:0;`;
+        bar.style.cssText = `width:2px;height:${h}px;background:rgba(113,113,122,0.3);border-radius:1px;flex-shrink:0;`;
         bar.className = 'waveform-bar';
         container.appendChild(bar);
       }
     }
 
-    // ══════════════════════════════════
-    // Actions
-    // ══════════════════════════════════
     function triggerCall(name, phone, rowId) {
-      currentCallName = name;
-      currentCallPhone = phone;
+      currentCallName = name; currentCallPhone = phone;
       changeState('ringing');
-      [1, 2, 3].forEach(id => document.getElementById(`lead-row-${id}`).classList.remove('bg-blue-950/20'));
+      document.querySelectorAll('tr').forEach(tr => tr.classList.remove('bg-blue-950/20'));
       document.getElementById(`lead-row-${rowId}`).classList.add('bg-blue-950/20');
     }
 
     function hangUpNoAnswer() {
       callSeconds = 0;
-      changeState('wrapup');
-      document.getElementById('wrapup-happy-badge').textContent = '❌ Không bắt máy';
-      document.getElementById('wrapup-happy-badge').className = 'text-red-400 font-bold';
-    }
-
-    function hangUpAndAnalyze() {
-      changeState('analyzing');
+      changeState('wrapup-pending');
+      document.getElementById('wrapup-status-badge').innerHTML = '<span class="text-xs bg-red-500/10 text-red-400 border border-red-500/20 py-1 px-2.5 rounded-full font-bold">❌ Không nhấc máy</span>';
     }
 
     function toggleTag(el) {
-      el.classList.toggle('border-zinc-800');
-      el.classList.toggle('bg-zinc-900/30');
-      el.classList.toggle('text-zinc-400');
       el.classList.toggle('border-blue-500/50');
       el.classList.toggle('bg-blue-600/10');
       el.classList.toggle('text-blue-400');
     }
 
     function saveWrapup() {
-      showToast("💾 Cuộc gọi đã lưu!", "Dữ liệu được ghi nhận vào CRM");
+      showToast("💾 Ghi chú cuộc gọi đã lưu!", "Dữ liệu được ghi nhận đồng bộ");
       changeState('idle');
     }
 
     function verifyLaugh(btn, isCorrect) {
-      const row = btn.closest('.flex.items-center.justify-between');
-      const buttons = row.querySelectorAll('button');
-      buttons.forEach(b => b.classList.add('opacity-30', 'pointer-events-none'));
-      
-      if (isCorrect) {
-        btn.classList.remove('opacity-30', 'pointer-events-none');
-        btn.className = "px-2 py-1 rounded bg-emerald-500 text-white text-[10px] font-bold";
-      } else {
-        btn.classList.remove('opacity-30', 'pointer-events-none');
-        btn.className = "px-2 py-1 rounded bg-red-500 text-white text-[10px] font-bold";
-      }
+      btn.className = `px-2 py-1 rounded ${isCorrect ? 'bg-emerald-500' : 'bg-red-500'} text-white text-[10px] font-bold`;
     }
 
-    function qaApprove() {
-      showToast("✅ QA Approved!", "Manager xác nhận Happy Call — Feedback lưu cho AI training");
-      triggerConfetti();
-    }
-
-    function qaReject() {
-      showToast("❌ QA Rejected", "Manager từ chối — Happy Call bị hủy, -1 Happy KPI");
-    }
+    function qaApprove() { showToast("✅ QA Approved!", "Xác nhận Happy Call"); triggerConfetti(); }
+    function qaReject() { showToast("❌ QA Rejected", "Bác bỏ Happy Call"); }
 
     function triggerLevelUp() {
       eggLevel = Math.min(eggLevel + 1, 3);
       const lvl = levels[eggLevel];
       document.getElementById('egg-icon').textContent = lvl.icon;
-      document.getElementById('egg-icon').classList.add('animate-bounce');
       document.getElementById('egg-level-tag').textContent = lvl.label;
-      
-      if (eggLevel >= 2) {
-        document.getElementById('egg-level-tag').className = "bg-emerald-500 text-black text-[9px] font-bold uppercase px-2 py-0.5 rounded-full mt-2 font-outfit tracking-wider";
-        document.getElementById('egg-container').className = "h-20 w-20 rounded-full bg-gradient-to-b from-zinc-800 to-zinc-900 border-2 border-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 relative transition-transform duration-500 hover:scale-105";
-        document.getElementById('egg-glow').className = "absolute inset-0 bg-emerald-500/20 blur-xl rounded-full scale-150 opacity-50 transition-all duration-500";
-      }
-      showToast("🐣 LEVEL UP!", `Đạt ${lvl.label}! Tiếp tục phấn đấu!`);
+      showToast("🐣 LEVEL UP!", `Đạt ${lvl.label}!`);
       triggerConfetti();
     }
 
-    // ══════════════════════════════════
-    // Utilities
-    // ══════════════════════════════════
     function showToast(title, desc) {
       const toast = document.getElementById('realtime-toast');
       document.getElementById('toast-title').textContent = title;

@@ -38,3 +38,12 @@ scratch/
 # Vercel
 .vercel/
 .vercel
+
+# Local server scripts and logs
+start-servers.sh
+stop-servers.sh
+logs/
+AGENTS.md
+.agents/skills/
+docs/wiki/
+apps/web/public/core.min.js
