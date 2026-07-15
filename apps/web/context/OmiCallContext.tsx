@@ -507,6 +507,7 @@ const reinforceOmiCallMicrophoneSender = async (call: any, stage: string) => {
   const activeCall = call || (window as any).activeCall;
   const peerConnection = getActiveOmiCallPeerConnection(activeCall);
   if (!activeCall || !peerConnection || peerConnection.signalingState === 'closed') return false;
+  if (activeCall.__mosUserMuted) return false;
 
   let freshStream: MediaStream | null = null;
 
@@ -547,6 +548,7 @@ const reinforceOmiCallMicrophoneSender = async (call: any, stage: string) => {
     }
 
     activeCall.audio = true;
+    activeCall.__mosUserMuted = false;
     peerConnection.getSenders().forEach(sender => {
       if (sender.track?.kind === 'audio') {
         sender.track.enabled = true;
@@ -1444,6 +1446,8 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       void reinforceOmiCallMicrophoneSender(omicallCall, 'outbound-created');
       void recordOmiCallAudioDiagnostics(omicallCall, 'outbound-created');
       setCallState('ringing');
+      setIsMuted(false);
+      setIsHeld(false);
       setCurrentCall({
         phone: cleanPhone,
         name: name || 'Khách hàng',
@@ -1521,16 +1525,20 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toggleMute = () => {
-    const nextMute = !isMuted;
     const activeCall = (window as any).activeCall;
     if (activeCall && typeof activeCall.mute === 'function') {
-      activeCall.mute(nextMute);
-      setIsMuted(nextMute);
+      activeCall.mute((audioEnabled: boolean) => {
+        const muted = !audioEnabled;
+        activeCall.__mosUserMuted = muted;
+        setIsMuted(muted);
+        void recordOmiCallAudioDiagnostics(activeCall, muted ? 'muted' : 'unmuted');
+      });
     } else if (window.OMICallSDK && typeof (window.OMICallSDK as any).mute === 'function') {
-      (window.OMICallSDK as any).mute(nextMute);
-      setIsMuted(nextMute);
+      (window.OMICallSDK as any).mute((audioEnabled: boolean) => {
+        setIsMuted(!audioEnabled);
+      });
     } else {
-      setIsMuted(nextMute);
+      setIsMuted(prev => !prev);
     }
   };
 
