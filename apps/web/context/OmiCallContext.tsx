@@ -13,6 +13,7 @@ declare global {
     __mosLastOmiCallAudioDiagnostics?: any;
     __mosOmiCallPeerConnections?: Set<RTCPeerConnection>;
     __mosOmiCallPeerConnectionTrackerInstalled?: boolean;
+    __mosOmiCallMediaConstraintPatchInstalled?: boolean;
   }
 }
 
@@ -207,6 +208,65 @@ const stopMediaStream = (stream: MediaStream | null | undefined) => {
   stream?.getTracks().forEach(track => track.stop());
 };
 
+const isPlainRecord = (value: unknown): value is Record<string, any> => {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+};
+
+const omitDefaultAudioDevice = (audioConstraints: MediaTrackConstraints | boolean | undefined) => {
+  if (!isPlainRecord(audioConstraints)) return audioConstraints;
+
+  const nextAudioConstraints = { ...audioConstraints };
+  const deviceId: any = nextAudioConstraints.deviceId;
+  const isDefaultDevice =
+    deviceId === 'default' ||
+    (isPlainRecord(deviceId) && (deviceId.ideal === 'default' || deviceId.exact === 'default'));
+
+  if (isDefaultDevice) {
+    delete nextAudioConstraints.deviceId;
+  }
+
+  return nextAudioConstraints;
+};
+
+const sanitizeOmiCallMediaConstraints = (constraints?: MediaStreamConstraints) => {
+  if (!constraints?.audio) return constraints;
+
+  const sanitizedAudio = omitDefaultAudioDevice(constraints.audio);
+  if (sanitizedAudio === constraints.audio) return constraints;
+
+  return {
+    ...constraints,
+    audio: sanitizedAudio,
+  };
+};
+
+const installOmiCallMediaConstraintPatch = () => {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+  if (window.__mosOmiCallMediaConstraintPatchInstalled) return;
+  if (!navigator.mediaDevices?.getUserMedia) return;
+
+  const mediaDevices = navigator.mediaDevices;
+  const originalGetUserMedia = mediaDevices.getUserMedia.bind(mediaDevices);
+
+  try {
+    (mediaDevices as any).getUserMedia = (constraints?: MediaStreamConstraints) => {
+      const sanitizedConstraints = sanitizeOmiCallMediaConstraints(constraints);
+
+      if (sanitizedConstraints !== constraints) {
+        console.log('[OmiCallContext] Removed hard-coded default audio device from media constraints.', {
+          original: constraints,
+          sanitized: sanitizedConstraints,
+        });
+      }
+
+      return originalGetUserMedia(sanitizedConstraints as MediaStreamConstraints);
+    };
+    window.__mosOmiCallMediaConstraintPatchInstalled = true;
+  } catch (err) {
+    console.warn('[OmiCallContext] Failed to install OmiCall media constraint patch:', err);
+  }
+};
+
 const shouldUsePreparedMicrophoneForConstraints = (constraints?: MediaStreamConstraints) => {
   if (!constraints?.audio) return false;
   if (constraints.video) return false;
@@ -226,7 +286,7 @@ const installPreparedMicrophonePatch = (stream: MediaStream) => {
   const mediaDevices = navigator.mediaDevices;
   const originalGetUserMedia = mediaDevices.getUserMedia.bind(mediaDevices);
   let restored = false;
-  let consumed = false;
+  let consumedCount = 0;
   let timeout: any = null;
 
   const restore = () => {
@@ -242,11 +302,11 @@ const installPreparedMicrophonePatch = (stream: MediaStream) => {
 
   try {
     (mediaDevices as any).getUserMedia = async (constraints?: MediaStreamConstraints) => {
-      if (!consumed && shouldUsePreparedMicrophoneForConstraints(constraints)) {
-        consumed = true;
-        restore();
+      if (shouldUsePreparedMicrophoneForConstraints(constraints)) {
+        consumedCount += 1;
         console.log('[OmiCallContext] Supplying validated microphone stream to OmiCall SDK.', {
           constraints,
+          consumedCount,
           tracks: stream.getAudioTracks().map(track => ({
             id: track.id,
             label: track.label,
@@ -264,17 +324,17 @@ const installPreparedMicrophonePatch = (stream: MediaStream) => {
 
     timeout = setTimeout(() => {
       restore();
-      if (!consumed) {
+      if (!consumedCount) {
         stopMediaStream(stream);
       }
-    }, 12000);
+    }, 30000);
   } catch (err) {
     console.warn('[OmiCallContext] Failed to install OmiCall mic patch:', err);
     restore();
   }
 
   return {
-    wasConsumed: () => consumed,
+    wasConsumed: () => consumedCount > 0,
     restore,
     release: () => {
       restore();
@@ -282,7 +342,7 @@ const installPreparedMicrophonePatch = (stream: MediaStream) => {
     },
     releaseIfUnused: () => {
       restore();
-      if (!consumed) stopMediaStream(stream);
+      if (!consumedCount) stopMediaStream(stream);
     },
   };
 };
@@ -322,8 +382,18 @@ const prepareMicrophoneForOmiCall = async () => {
   const maxRms = await measureMicrophoneSignal(stream);
 
   if (maxRms !== null && maxRms < 0.0005) {
-    stopMediaStream(stream);
-    throw new Error('Microphone đang được cấp quyền nhưng không có tín hiệu âm thanh. Hãy chọn đúng input trong Chrome, nói thử 1 giây rồi gọi lại.');
+    console.warn('[OmiCallContext] Microphone permission is granted but the short preflight sample was silent.', {
+      maxRms,
+      tracks: audioTracks.map(track => ({
+        id: track.id,
+        label: track.label,
+        enabled: track.enabled,
+        muted: track.muted,
+        readyState: track.readyState,
+        settings: typeof track.getSettings === 'function' ? track.getSettings() : null,
+      })),
+    });
+    message.warning('Microphone đã được cấp quyền nhưng mẫu thử đang im lặng. Hãy nói thử khi cuộc gọi kết nối để kiểm tra 2 chiều.', 8);
   }
 
   console.log('[OmiCallContext] Microphone preflight passed:', {
@@ -911,6 +981,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    installOmiCallMediaConstraintPatch();
     installOmiCallPeerConnectionTracker();
 
     const existing = document.querySelector('script[src*="core.min.js"]');
@@ -1261,12 +1332,6 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       const hotlineNumber = sipConfig?.phoneNumber || '';
       const omicallCall = await window.OMICallSDK.makeCall(cleanPhone, {
         ...(hotlineNumber ? { sipNumber: { number: hotlineNumber } } : {}),
-        sessionDescriptionHandlerOptions: {
-          constraints: {
-            audio: getMicrophoneConstraints(),
-            video: false,
-          },
-        },
         userData: JSON.stringify({
           customerName: name || 'Khách hàng'
         })
