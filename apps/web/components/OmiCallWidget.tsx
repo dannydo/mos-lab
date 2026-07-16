@@ -49,9 +49,143 @@ export default function OmiCallWidget() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
 
-  const [widgetMinimized, setWidgetMinimized] = useState(false);
+  const [widgetMinimized, setWidgetMinimizedState] = useState(false);
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [size, setSize] = useState<{ width: number; height: number }>({ width: 384, height: 320 });
   const [resolvedLog, setResolvedLog] = useState<any>(null);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
+  const setWidgetMinimized = (min: boolean) => {
+    setWidgetMinimizedState(min);
+    localStorage.setItem('omi_widget_minimized', min ? 'true' : 'false');
+  };
+
+  // Drag handler that checks for actual move before deciding it's a drag
+  const handleDragStart = (e: React.MouseEvent, isMinimized: boolean = false) => {
+    if (e.button !== 0) return;
+    
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input') || target.closest('.ant-select') || target.closest('.ant-btn')) {
+      return;
+    }
+
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const currentWidth = isMinimized ? 56 : size.width;
+    const currentHeight = isMinimized ? 56 : size.height;
+    
+    const initialX = position?.x ?? (window.innerWidth - currentWidth - 24);
+    const initialY = position?.y ?? (window.innerHeight - currentHeight - 24);
+    let hasMoved = false;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      
+      if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+        hasMoved = true;
+      }
+
+      const newX = Math.max(10, Math.min(window.innerWidth - currentWidth - 10, initialX + deltaX));
+      const newY = Math.max(10, Math.min(window.innerHeight - currentHeight - 10, initialY + deltaY));
+      const newPos = { x: newX, y: newY };
+      setPosition(newPos);
+      localStorage.setItem('omi_widget_pos', JSON.stringify(newPos));
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      
+      if (isMinimized && !hasMoved) {
+        setWidgetMinimized(false);
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Resize handler for bottom-right, bottom-left, and bottom edge
+  const handleResizeStart = (e: React.MouseEvent, direction: 'bottom-right' | 'bottom-left' | 'bottom') => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = size.width;
+    const startHeight = size.height;
+    const startXPos = position?.x ?? (window.innerWidth - size.width - 24);
+    const startYPos = position?.y ?? (window.innerHeight - size.height - 24);
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+      let newX = startXPos;
+
+      if (direction === 'bottom-right') {
+        newWidth = Math.max(300, Math.min(800, startWidth + deltaX));
+        newHeight = Math.max(240, Math.min(600, startHeight + deltaY));
+      } else if (direction === 'bottom-left') {
+        newWidth = Math.max(300, Math.min(800, startWidth - deltaX));
+        newHeight = Math.max(240, Math.min(600, startHeight + deltaY));
+        newX = startXPos + (startWidth - newWidth);
+      } else if (direction === 'bottom') {
+        newHeight = Math.max(240, Math.min(600, startHeight + deltaY));
+      }
+
+      setSize({ width: newWidth, height: newHeight });
+      localStorage.setItem('omi_widget_size', JSON.stringify({ width: newWidth, height: newHeight }));
+      
+      if (direction === 'bottom-left') {
+        const newPos = { x: newX, y: position?.y ?? startYPos };
+        setPosition(newPos);
+        localStorage.setItem('omi_widget_pos', JSON.stringify(newPos));
+      }
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Load saved widget settings on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedMin = localStorage.getItem('omi_widget_minimized');
+      if (savedMin !== null) {
+        setWidgetMinimizedState(savedMin === 'true');
+      }
+      
+      const savedPos = localStorage.getItem('omi_widget_pos');
+      const savedSize = localStorage.getItem('omi_widget_size');
+      if (savedPos) {
+        try {
+          const parsed = JSON.parse(savedPos);
+          const currentWidth = savedMin === 'true' ? 56 : (savedSize ? JSON.parse(savedSize).width : 384);
+          const currentHeight = savedMin === 'true' ? 56 : (savedSize ? JSON.parse(savedSize).height : 320);
+          const x = Math.max(10, Math.min(window.innerWidth - currentWidth - 10, parsed.x));
+          const y = Math.max(10, Math.min(window.innerHeight - currentHeight - 10, parsed.y));
+          setPosition({ x, y });
+        } catch (e) {}
+      } else {
+        const x = window.innerWidth - 384 - 24;
+        const y = window.innerHeight - 320 - 24;
+        setPosition({ x, y });
+      }
+      if (savedSize) {
+        try { setSize(JSON.parse(savedSize)); } catch (e) {}
+      }
+    }
+  }, []);
   
   // Wrap-up Form States
   const [noteForm] = Form.useForm();
@@ -248,12 +382,17 @@ export default function OmiCallWidget() {
   if (widgetMinimized) {
     return (
       <div 
-        onClick={() => setWidgetMinimized(false)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full flex items-center justify-center cursor-pointer shadow-2xl transition-all duration-300 hover:scale-105 z-50 animate-pulse"
+        onMouseDown={(e) => handleDragStart(e, true)}
+        className="fixed h-14 w-14 rounded-full flex items-center justify-center cursor-pointer shadow-2xl hover:scale-105 animate-pulse"
         style={{
           background: '#D4A84B',
           boxShadow: '0 8px 30px rgba(212, 168, 75, 0.4)',
-          border: '2px solid white'
+          border: '2px solid white',
+          left: position ? `${position.x}px` : undefined,
+          top: position ? `${position.y}px` : undefined,
+          right: position ? undefined : '24px',
+          bottom: position ? undefined : '24px',
+          zIndex: 9999
         }}
       >
         {callState === 'connected' ? (
@@ -267,16 +406,24 @@ export default function OmiCallWidget() {
 
   return (
     <div 
-      className="fixed bottom-6 right-6 w-96 rounded-2xl border shadow-2xl z-50 overflow-hidden backdrop-blur-md transition-all duration-300 flex flex-col"
+      className="fixed rounded-2xl border shadow-2xl overflow-hidden backdrop-blur-md flex flex-col"
       style={{
         background: containerBg,
         borderColor: borderColor,
-        color: textColor
+        color: textColor,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
+        left: position ? `${position.x}px` : undefined,
+        top: position ? `${position.y}px` : undefined,
+        right: position ? undefined : '24px',
+        bottom: position ? undefined : '24px',
+        zIndex: 9999
       }}
     >
       {/* HEADER */}
       <div 
-        className="px-4 py-3 flex items-center justify-between border-b"
+        onMouseDown={(e) => handleDragStart(e, false)}
+        className="px-4 py-3 flex items-center justify-between border-b cursor-move select-none"
         style={{ borderColor: borderColor, background: isDark ? '#18181b' : '#f4f4f5' }}
       >
         <div className="flex items-center gap-2">
@@ -300,6 +447,9 @@ export default function OmiCallWidget() {
           )}
         </div>
       </div>
+
+      {/* CONTENT BODY */}
+      <div className="flex-1 overflow-y-auto min-h-0 flex flex-col justify-center">
 
       {/* TAB MUTED (CONCURRENT CALL IN ANOTHER TAB) */}
       {isTabMuted && callState !== 'wrapup' && (
@@ -730,6 +880,48 @@ export default function OmiCallWidget() {
           </Form>
         </div>
       )}
+      </div>
+
+      {/* Resize handles */}
+      {/* Bottom right handle */}
+      <div 
+        style={{
+          position: 'absolute',
+          right: 0,
+          bottom: 0,
+          width: '12px',
+          height: '12px',
+          cursor: 'se-resize',
+          zIndex: 10000
+        }}
+        onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
+      />
+      {/* Bottom left handle */}
+      <div 
+        style={{
+          position: 'absolute',
+          left: 0,
+          bottom: 0,
+          width: '12px',
+          height: '12px',
+          cursor: 'sw-resize',
+          zIndex: 10000
+        }}
+        onMouseDown={(e) => handleResizeStart(e, 'bottom-left')}
+      />
+      {/* Bottom edge handle */}
+      <div 
+        style={{
+          position: 'absolute',
+          left: '12px',
+          right: '12px',
+          bottom: 0,
+          height: '6px',
+          cursor: 's-resize',
+          zIndex: 10000
+        }}
+        onMouseDown={(e) => handleResizeStart(e, 'bottom')}
+      />
     </div>
   );
 }
