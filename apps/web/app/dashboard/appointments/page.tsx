@@ -482,7 +482,7 @@ export default function AppointmentsPage() {
               {note}
             </div>
           }
-          overlayStyle={{ maxWidth: '400px' }}
+          styles={{ root: { maxWidth: '400px' } }}
         >
           <Paragraph 
             ellipsis={{ rows: 2 }} 

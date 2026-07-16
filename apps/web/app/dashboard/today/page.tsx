@@ -691,7 +691,7 @@ export default function TodayDashboard() {
               {note}
             </div>
           }
-          overlayStyle={{ maxWidth: '400px' }}
+          styles={{ root: { maxWidth: '400px' } }}
         >
           <div style={{ 
             maxWidth: '200px', 
