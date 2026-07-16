@@ -1464,28 +1464,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
     } = request.body as any;
 
     try {
-      // Find matching legacy user ID by CRM user (Direct link first, then exact name matching fallback)
-      let legacyStaffId: number | null = null;
+      // Find matching legacy user ID by CRM user (Strictly require direct link)
       const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
         where: { id: user.id },
         select: { legacyStaffId: true }
       });
-      if (crmStaff?.legacyStaffId) {
-        legacyStaffId = crmStaff.legacyStaffId;
-      } else if (user.displayName) {
-        const legacyStaffs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-          `SELECT user_id, full_name FROM user_profile 
-           WHERE provider = 'Staff' AND is_disabled = 0
-           ORDER BY user_id ASC`
-        );
-        const exactMatch = legacyStaffs.find(
-          (s: any) => s.full_name?.trim() === user.displayName?.trim()
-        );
-        if (exactMatch) {
-          legacyStaffId = Number(exactMatch.user_id);
-        }
+
+      if (!crmStaff || !crmStaff.legacyStaffId) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.'
+        });
       }
 
+      const legacyStaffId = crmStaff.legacyStaffId;
       let validStaffId: number | null = null;
       if (legacyStaffId) {
         const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
@@ -1495,6 +1487,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (staffExists.length > 0) {
           validStaffId = legacyStaffId;
         }
+      }
+
+      if (!validStaffId) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Tài khoản liên kết bên hệ thống cũ không tồn tại hoặc đã bị xóa. Vui lòng liên hệ Admin.'
+        });
       }
 
       // Check referrer phone
@@ -1776,6 +1775,30 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     try {
+      // Verify that the current user has linked legacy staff account
+      const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
+        where: { id: user.id },
+        select: { legacyStaffId: true }
+      });
+
+      if (!crmStaff || !crmStaff.legacyStaffId) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.'
+        });
+      }
+
+      const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT id FROM user WHERE id = ? LIMIT 1`,
+        crmStaff.legacyStaffId
+      );
+      if (staffExists.length === 0) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Tài khoản liên kết bên hệ thống cũ không tồn tại hoặc đã bị xóa. Vui lòng liên hệ Admin.'
+        });
+      }
+
       // 1. Fetch current order details (like duration and user_id)
       const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
         `SELECT user_id, booking_duration_minute, total_price FROM \`order\` WHERE id = ?`,
