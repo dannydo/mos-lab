@@ -1630,7 +1630,26 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const mysqlStart = formatLocalMySQL(startDate);
       const mysqlEnd = formatLocalMySQL(endDate);
 
-      // 5. Create the booking order
+      // 5. Determine booker name and format final booking note to render correctly on legacy client
+      let bookerName = user.displayName || '';
+      if (validStaffId) {
+        const staffProfile = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
+          validStaffId
+        );
+        if (staffProfile.length > 0 && staffProfile[0].full_name) {
+          bookerName = staffProfile[0].full_name;
+        }
+      }
+
+      let finalBookingNote = (bookingNote || '').trim();
+      if (bookerName) {
+        finalBookingNote = finalBookingNote
+          ? `${bookerName} - ${finalBookingNote}`
+          : bookerName;
+      }
+
+      // 6. Create the booking order
       const orderKey = 'booking_' + Math.random().toString(36).substring(2, 12);
       await fastify.prisma.legacy.$executeRawUnsafe(
         `INSERT INTO \`order\` (
@@ -1640,7 +1659,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           last_day_order_completed, combo_sale_required, is_new, is_debt, date_created, date_updated,
           promotion_id, selected_promotion_id, campaign_id
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?)`,
-        11, 1, validStaffId, orderKey, storeId, finalCustomerId, 1, bookingNote || '', bookingChannel || 'FB', srvDuration,
+        11, 1, validStaffId, orderKey, storeId, finalCustomerId, 1, finalBookingNote, bookingChannel || 'FB', srvDuration,
         mysqlStart, mysqlEnd, 1, finalPrice, 'New', 0, 0, 1, 0, selectedPromoId, selectedPromoId, campaignId
       );
 
