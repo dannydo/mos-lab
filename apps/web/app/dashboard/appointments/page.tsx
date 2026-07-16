@@ -398,7 +398,11 @@ export default function AppointmentsPage() {
       title: 'Khách hàng',
       key: 'customerName',
       render: (record: Appointment) => (
-        <Space size="middle" style={{ display: 'flex', alignItems: 'center' }}>
+        <Space 
+          size="middle" 
+          style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+          onClick={() => openDetailModal(record.customerId)}
+        >
           <Avatar 
             src={record.customerAvatar || undefined} 
             icon={<UserOutlined />} 
@@ -410,7 +414,7 @@ export default function AppointmentsPage() {
             }} 
           />
           <div>
-            <div style={{ fontWeight: '600', color: token.colorText }}>{record.customerName}</div>
+            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline">{record.customerName}</div>
             <div style={{ fontSize: '12px', color: token.colorTextDescription }}>ID: {record.customerId}</div>
           </div>
         </Space>
@@ -586,7 +590,11 @@ export default function AppointmentsPage() {
       title: 'Khách hàng',
       key: 'customerName',
       render: (record: Appointment) => (
-        <Space size="middle" style={{ display: 'flex', alignItems: 'center' }}>
+        <Space 
+          size="middle" 
+          style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+          onClick={() => openDetailModal(record.customerId)}
+        >
           <Avatar 
             src={record.customerAvatar || undefined} 
             icon={<UserOutlined />} 
@@ -598,7 +606,7 @@ export default function AppointmentsPage() {
             }} 
           />
           <div>
-            <div style={{ fontWeight: '600', color: token.colorText }}>{record.customerName}</div>
+            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline">{record.customerName}</div>
             <div style={{ fontSize: '12px', color: token.colorTextDescription }}>ID: {record.customerId}</div>
           </div>
         </Space>

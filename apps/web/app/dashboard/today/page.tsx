@@ -291,7 +291,7 @@ export default function TodayDashboard() {
 
   // Drawer states
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<BookingData | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [showTax, setShowTax] = useState(true);
 
   // Load persisted states on mount
@@ -342,7 +342,7 @@ export default function TodayDashboard() {
     }
   }, []);
 
-  const openCustomerDrawer = (record: BookingData) => {
+  const openCustomerDrawer = (record: any) => {
     setSelectedCustomer(record);
     setDrawerVisible(true);
   };
@@ -610,7 +610,11 @@ export default function TodayDashboard() {
       title: 'Khách hàng',
       key: 'customer',
       render: (_: any, record: BookingData) => (
-        <Space size="middle">
+        <Space 
+          size="middle" 
+          style={{ cursor: 'pointer' }}
+          onClick={() => openCustomerDrawer(record)}
+        >
           <Avatar 
             src={record.avatar || undefined}
             style={{ 
@@ -623,7 +627,7 @@ export default function TodayDashboard() {
           >
             {record.customer.trim().split(' ').pop()?.substring(0, 2).toUpperCase()}
           </Avatar>
-          <strong>{record.customer}</strong>
+          <strong className="hover:underline">{record.customer}</strong>
         </Space>
       )
     },
@@ -747,7 +751,11 @@ export default function TodayDashboard() {
       title: 'Khách hàng',
       key: 'customer',
       render: (_: any, record: ComingClientData) => (
-        <Space size="middle">
+        <Space 
+          size="middle" 
+          style={{ cursor: 'pointer' }}
+          onClick={() => openCustomerDrawer(record)}
+        >
           <Avatar 
             src={record.avatar || undefined}
             style={{ 
@@ -760,7 +768,7 @@ export default function TodayDashboard() {
           >
             {record.customer.trim().split(' ').pop()?.substring(0, 2).toUpperCase()}
           </Avatar>
-          <strong>{record.customer}</strong>
+          <strong className="hover:underline">{record.customer}</strong>
         </Space>
       )
     },
