@@ -2,6 +2,7 @@
 
 import '../../suppress-warnings';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import dayjs from 'dayjs';
 import { 
   Table, 
   Avatar,
@@ -88,6 +89,7 @@ export default function CustomersPage() {
     return 'ALL';
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [showTrash, setShowTrash] = useState(false);
   const [sortField, setSortField] = useState('id_desc');
   
   // Stats state
@@ -209,6 +211,9 @@ export default function CustomersPage() {
   ) => {
     try {
       const params: any = { search: searchVal };
+      if (showTrash) {
+        params.trash = 'true';
+      }
       if (randomSelectedIds && randomSelectedIds.length > 0) {
         params.ids = randomSelectedIds.join(',');
       }
@@ -233,7 +238,7 @@ export default function CustomersPage() {
     } catch (error) {
       console.error('Fetch stats error:', error);
     }
-  }, [randomSelectedIds]);
+  }, [randomSelectedIds, showTrash]);
 
   // Fetch Customer List
   const fetchCustomers = useCallback(async (
@@ -264,6 +269,9 @@ export default function CustomersPage() {
         limit: limit.toString(),
         sort
       };
+      if (showTrash) {
+        params.trash = 'true';
+      }
 
       const idsToUse = overrideIds !== undefined ? overrideIds : randomSelectedIds;
       if (idsToUse && idsToUse.length > 0) {
@@ -315,7 +323,7 @@ export default function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  }, [randomSelectedIds]);
+  }, [randomSelectedIds, showTrash]);
 
   // Fetch Saved Filters from DB
   const fetchSavedFilters = useCallback(async () => {
@@ -370,6 +378,7 @@ export default function CustomersPage() {
     pageSize, 
     activeTab, 
     searchQuery, 
+    showTrash,
     sortField, 
     daysSinceLastVisitMin,
     daysSinceLastVisitMax,
@@ -858,6 +867,36 @@ export default function CustomersPage() {
     );
   };
 
+  const getRowClassName = (record: Customer) => {
+    // 1. check callback date ("có hẹn gọi lại -> màu hy vọng")
+    const hasCallback = record.callbackDate ? new Date(record.callbackDate) >= new Date(new Date().setHours(0,0,0,0)) : false;
+    if (hasCallback) {
+      return themeMode === 'dark' ? 'row-hope-dark' : 'row-hope-light';
+    }
+
+    // 2. check if they have a future booking ("đã booked -> sẽ đến, chuyển sang màu xanh")
+    const isBookingInFuture = record.lastBookingDate ? new Date(record.lastBookingDate) > new Date() : false;
+    if (isBookingInFuture) {
+      const state = record.lastBookingState;
+      const isBooked = state === 'New' || state === 'Confirmed';
+      if (isBooked) {
+        return themeMode === 'dark' ? 'row-booked-future-dark' : 'row-booked-future-light';
+      }
+    }
+
+    // 3. check positive daysSinceLastVisit but missed booking ("đã booked mà chưa tới (missed), chuyển sang màu đỏ lợt")
+    const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
+    if (isBookingInPast) {
+      const state = record.lastBookingState;
+      const isMissed = state && state !== 'Completed' && state !== 'ServiceCompleted' && state !== 'CheckIn' && state !== 'CheckOut' && state !== 'ServiceStart';
+      if (isMissed) {
+        return themeMode === 'dark' ? 'row-missed-dark' : 'row-missed-light';
+      }
+    }
+
+    return '';
+  };
+
   // Define table columns
   const columns = [
     {
@@ -871,8 +910,13 @@ export default function CustomersPage() {
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: Customer) => (
-        <Space size="middle" style={{ display: 'flex', alignItems: 'center' }}>
+        <Space 
+          size="small" 
+          style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+          onClick={() => openDetailModal(record)}
+        >
           <Avatar 
+            size="small"
             src={record.avatar || undefined} 
             icon={<UserOutlined />} 
             style={{ 
@@ -882,7 +926,9 @@ export default function CustomersPage() {
               flexShrink: 0
             }} 
           />
-          <span style={{ fontWeight: '600', color: token.colorText }}>{text}</span>
+          <span className="hover:underline" style={{ fontWeight: '600', color: token.colorText }}>
+            {text}
+          </span>
         </Space>
       ),
     },
@@ -915,7 +961,59 @@ export default function CustomersPage() {
       title: 'Chưa tới tiệm (Ngày)',
       dataIndex: 'daysSinceLastVisit',
       key: 'daysSinceLastVisit',
-      render: (days: number | null) => days !== null ? `${days} ngày` : <Text style={{ color: '#555' }}>Chưa từng đến</Text>,
+      render: (days: number | null, record: Customer) => {
+        // 1. check callback date ("có hẹn gọi lại")
+        const hasCallback = record.callbackDate ? new Date(record.callbackDate) >= new Date(new Date().setHours(0,0,0,0)) : false;
+        if (hasCallback) {
+          const callbackFormatted = dayjs(record.callbackDate).format('DD/MM/YYYY');
+          return (
+            <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#d4b106', fontWeight: 'bold' }}>
+              🕒 Hẹn gọi lại: {callbackFormatted}
+            </span>
+          );
+        }
+
+        // 2. check future booking ("đã booked -> sẽ đến")
+        const isBookingInFuture = record.lastBookingDate ? new Date(record.lastBookingDate) > new Date() : false;
+        if (isBookingInFuture) {
+          const state = record.lastBookingState;
+          const isBooked = state === 'New' || state === 'Confirmed';
+          if (isBooked) {
+            const bookingFormatted = dayjs(record.lastBookingDate).format('DD/MM/YYYY');
+            return (
+              <span style={{ color: themeMode === 'dark' ? '#73d13d' : '#389e0d', fontWeight: 'bold' }}>
+                📅 Booked: {bookingFormatted}
+              </span>
+            );
+          }
+        }
+
+        // 3. check missed booking ("đã booked mà chưa tới (missed)")
+        const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
+        if (isBookingInPast) {
+          const state = record.lastBookingState;
+          const isMissed = state && state !== 'Completed' && state !== 'ServiceCompleted' && state !== 'CheckIn' && state !== 'CheckOut' && state !== 'ServiceStart';
+          if (isMissed) {
+            let missedDays = days;
+            if (record.lastBookingDate) {
+              const bookingDate = new Date(record.lastBookingDate);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              bookingDate.setHours(0, 0, 0, 0);
+              const diffMs = today.getTime() - bookingDate.getTime();
+              missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+            }
+            return (
+              <span style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold' }}>
+                ⚠️ Missed: {missedDays} ngày
+              </span>
+            );
+          }
+        }
+
+        // 4. normal daysSinceLastVisit ("số dương -> chưa ghé x days, bình thường")
+        return days !== null ? `${days} ngày` : <Text style={{ color: '#888' }}>Chưa từng đến</Text>;
+      },
     },
     {
       title: 'Chi tiêu',
@@ -1021,6 +1119,18 @@ export default function CustomersPage() {
             />
 
             <div className="flex items-center gap-2">
+              {currentUser?.role === 'admin' && (
+                <Checkbox
+                  checked={showTrash}
+                  onChange={(e) => {
+                    setShowTrash(e.target.checked);
+                    setCurrentPage(1);
+                  }}
+                  style={{ color: token.colorText, marginRight: '16px', fontWeight: 'bold' }}
+                >
+                  🗑️ Xem thùng rác
+                </Checkbox>
+              )}
               <Text style={{ color: token.colorTextDescription }}>Sắp xếp theo:</Text>
               <Select
                 defaultValue="id_desc"
@@ -1317,6 +1427,8 @@ export default function CustomersPage() {
         dataSource={customers}
         columns={columns.filter(col => col.key !== 'assignedStaff' || currentUser?.role === 'admin')}
         rowKey="id"
+        rowClassName={getRowClassName}
+        size="small"
         loading={loading}
         rowSelection={currentUser?.role === 'admin' ? {
           selectedRowKeys,
@@ -1404,6 +1516,45 @@ export default function CustomersPage() {
             bucket: cust.bucket
           });
           setBookingWizardVisible(true);
+        }}
+        onDeleteSuccess={() => {
+          setModalVisible(false);
+          fetchCustomers(
+            1, 
+            pageSize, 
+            activeTab, 
+            searchQuery, 
+            sortField,
+            daysSinceLastVisitMin,
+            daysSinceLastVisitMax,
+            totalSpentMin,
+            totalSpentMax,
+            totalVisitsMin,
+            totalVisitsMax,
+            promoUsed,
+            promoCountMin,
+            promoCountMax,
+            referralUsed,
+            referralCountMin,
+            referralCountMax,
+            assignedStaffId
+          );
+          fetchStats(
+            searchQuery,
+            daysSinceLastVisitMin,
+            daysSinceLastVisitMax,
+            totalSpentMin,
+            totalSpentMax,
+            totalVisitsMin,
+            totalVisitsMax,
+            promoUsed,
+            promoCountMin,
+            promoCountMax,
+            referralUsed,
+            referralCountMin,
+            referralCountMax,
+            assignedStaffId
+          );
         }}
       />
 
@@ -1974,12 +2125,62 @@ export default function CustomersPage() {
           background: #1e1e1e !important;
         }
 
+        /* Row highlighting - Light Theme */
+        .light-theme .row-missed-light > td {
+          background-color: #fff1f0 !important;
+        }
+        .light-theme .row-booked-future-light > td {
+          background-color: #f6ffed !important;
+        }
+        .light-theme .row-hope-light > td {
+          background-color: #fffbe6 !important;
+        }
+        .light-theme .row-missed-light:hover > td {
+          background-color: #ffe8e6 !important;
+        }
+        .light-theme .row-booked-future-light:hover > td {
+          background-color: #ebfcdd !important;
+        }
+        .light-theme .row-hope-light:hover > td {
+          background-color: #fffac6 !important;
+        }
+
+        /* Row highlighting - Dark Theme */
+        .dark-theme .row-missed-dark > td {
+          background-color: #2a1215 !important;
+        }
+        .dark-theme .row-booked-future-dark > td {
+          background-color: #162c1b !important;
+        }
+        .dark-theme .row-hope-dark > td {
+          background-color: #2b2111 !important;
+        }
+        .dark-theme .row-missed-dark:hover > td {
+          background-color: #381b1e !important;
+        }
+        .dark-theme .row-booked-future-dark:hover > td {
+          background-color: #1e3a24 !important;
+        }
+        .dark-theme .row-hope-dark:hover > td {
+          background-color: #382c16 !important;
+        }
+
         /* Gold highlights for both light/dark */
         .antd-custom-table .ant-pagination-item-active {
           border-color: #D4A84B !important;
         }
         .antd-custom-table .ant-pagination-item-active a {
           color: #D4A84B !important;
+        }
+
+        /* Compact line height & padding */
+        .antd-custom-table .ant-table-tbody > tr > td {
+          padding: 6px 8px !important;
+          line-height: 1.25 !important;
+        }
+        .antd-custom-table .ant-table-thead > tr > th {
+          padding: 8px 8px !important;
+          line-height: 1.25 !important;
         }
       `}</style>
     </div>

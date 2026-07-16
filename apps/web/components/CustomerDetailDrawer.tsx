@@ -29,7 +29,9 @@ import {
   CloseCircleOutlined,
   SunOutlined,
   SyncOutlined,
-  ShareAltOutlined
+  ShareAltOutlined,
+  DeleteOutlined,
+  UndoOutlined
 } from '@ant-design/icons';
 import { useTheme } from '../context/ThemeContext';
 import { useOmiCall } from '../context/OmiCallContext';
@@ -42,13 +44,15 @@ interface CustomerDetailDrawerProps {
   customerId: number | null;
   onClose: () => void;
   onBookAppointment?: (customer: any) => void;
+  onDeleteSuccess?: () => void;
 }
 
 const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   open,
   customerId,
   onClose,
-  onBookAppointment
+  onBookAppointment,
+  onDeleteSuccess
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
@@ -61,6 +65,52 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const [isGemModalOpen, setIsGemModalOpen] = useState(false);
   const [isComboModalOpen, setIsComboModalOpen] = useState(false);
   const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const currentUser = React.useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('mos_user');
+      return stored ? JSON.parse(stored) : null;
+    }
+    return null;
+  }, []);
+
+  const handleDeleteCustomer = async () => {
+    if (!customerId) return;
+    setDeleteLoading(true);
+    try {
+      await api.delete(`/customers/${customerId}`);
+      message.success('Xóa khách hàng thành công!');
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      }
+    } catch (err: any) {
+      console.error('Delete customer error:', err);
+      message.error(err.response?.data?.message || 'Không thể xóa khách hàng.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [forbiddenError, setForbiddenError] = useState<string | null>(null);
+
+  const handleRestoreCustomer = async () => {
+    if (!customerId) return;
+    setRestoreLoading(true);
+    try {
+      await api.post(`/customers/${customerId}/restore`);
+      message.success('Khôi phục khách hàng thành công!');
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      }
+    } catch (err: any) {
+      console.error('Restore customer error:', err);
+      message.error(err.response?.data?.message || 'Không thể khôi phục khách hàng.');
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
 
   // Resizable drawer states and hooks
   const [isDragging, setIsDragging] = useState(false);
@@ -375,17 +425,23 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       fetchDetails();
     } else {
       setData(null);
+      setForbiddenError(null);
     }
   }, [open, customerId]);
 
   const fetchDetails = async () => {
     setLoading(true);
+    setForbiddenError(null);
     try {
       const res = await api.get(`/customers/${customerId}/detailed`);
       setData(res.data);
     } catch (err: any) {
       console.error('Failed to fetch detailed customer:', err);
-      message.error(err.response?.data?.message || 'Không thể tải thông tin chi tiết khách hàng.');
+      if (err.response?.status === 403) {
+        setForbiddenError(err.response?.data?.message || 'Bạn không có quyền xem thông tin chi tiết khách hàng này.');
+      } else {
+        message.error(err.response?.data?.message || 'Không thể tải thông tin chi tiết khách hàng.');
+      }
     } finally {
       setLoading(false);
     }
@@ -539,24 +595,64 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                 </div>
               </div>
             </div>
-            <Button
-              type="primary"
-              icon={<CalendarOutlined />}
-              style={{
-                background: '#D4A84B',
-                borderColor: '#D4A84B',
-                fontWeight: 'bold'
-              }}
-              onClick={() => {
-                if (onBookAppointment) {
-                  onBookAppointment(customer);
-                } else {
-                  setBookingWizardOpen(true);
-                }
-              }}
-            >
-              Đặt Lịch Hẹn
-            </Button>
+            <Space>
+              {currentUser?.role === 'admin' && (
+                customer.isDeleted ? (
+                  <Popconfirm
+                    title="Khôi phục khách hàng"
+                    description="Bạn có chắc chắn muốn khôi phục khách hàng này?"
+                    onConfirm={handleRestoreCustomer}
+                    okText="Khôi phục"
+                    cancelText="Hủy"
+                    okButtonProps={{ loading: restoreLoading }}
+                  >
+                    <Button
+                      type="primary"
+                      icon={<UndoOutlined />}
+                      style={{ fontWeight: 'bold', background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
+                    >
+                      Khôi Phục Khách Hàng
+                    </Button>
+                  </Popconfirm>
+                ) : (
+                  <Popconfirm
+                    title="Xóa khách hàng"
+                    description="Bạn có chắc chắn muốn xóa khách hàng này không? Khách hàng sẽ bị chuyển vào thùng rác."
+                    onConfirm={handleDeleteCustomer}
+                    okText="Xóa"
+                    cancelText="Hủy"
+                    okButtonProps={{ danger: true, loading: deleteLoading }}
+                  >
+                    <Button
+                      danger
+                      type="dashed"
+                      icon={<DeleteOutlined />}
+                      style={{ fontWeight: 'bold' }}
+                    >
+                      Xóa Khách Hàng
+                    </Button>
+                  </Popconfirm>
+                )
+              )}
+              <Button
+                type="primary"
+                icon={<CalendarOutlined />}
+                style={{
+                  background: '#D4A84B',
+                  borderColor: '#D4A84B',
+                  fontWeight: 'bold'
+                }}
+                onClick={() => {
+                  if (onBookAppointment) {
+                    onBookAppointment(customer);
+                  } else {
+                    setBookingWizardOpen(true);
+                  }
+                }}
+              >
+                Đặt Lịch Hẹn
+              </Button>
+            </Space>
           </div>
         )
       }
@@ -594,7 +690,36 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         onMouseLeave={(e) => { if (!isDragging) e.currentTarget.style.background = 'transparent'; }}
       />
       <Spin spinning={loading}>
-        {customer && (
+        {forbiddenError ? (
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            minHeight: '400px', 
+            padding: '40px 20px', 
+            textAlign: 'center',
+            background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+            borderRadius: '12px',
+            border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+          }}>
+            <div style={{ fontSize: '56px', marginBottom: '16px' }}>🔒</div>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: themeMode === 'dark' ? '#fff' : '#1f2937', marginBottom: '8px' }}>
+              Quyền Truy Cập Bị Hạn Chế
+            </h3>
+            <p style={{ fontSize: '14px', color: '#888', maxWidth: '400px', marginBottom: '24px', lineHeight: '1.5' }}>
+              {forbiddenError}
+            </p>
+            <Button 
+              type="primary" 
+              onClick={onClose} 
+              style={{ background: '#D4A84B', borderColor: '#D4A84B', fontWeight: 'bold', borderRadius: '6px' }}
+            >
+              Đóng cửa sổ
+            </Button>
+          </div>
+        ) : customer && (
           <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
             
             {/* SIDEBAR: Info & Stats */}

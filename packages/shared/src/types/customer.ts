@@ -27,6 +27,10 @@ export interface Customer {
     displayName: string;
     username: string;
   } | null;
+  lastBookingState?: string | null;
+  lastBookingDate?: string | null;
+  callbackDate?: string | null;
+  isDeleted?: boolean;
 }
 
 export interface CustomerStats {
@@ -73,6 +77,7 @@ export interface ListCustomersParams {
   referralCountMin?: number | string;
   referralCountMax?: number | string;
   assignedStaffId?: string;
+  trash?: string | boolean;
   ids?: string;
 }
 

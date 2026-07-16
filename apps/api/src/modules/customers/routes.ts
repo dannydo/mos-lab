@@ -25,6 +25,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMin,
       referralCountMax,
       assignedStaffId,
+      trash,
       ids
     } = request.query as {
       bucket?: BucketType | 'ALL';
@@ -45,6 +46,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMin?: string;
       referralCountMax?: string;
       assignedStaffId?: string;
+      trash?: string;
       ids?: string;
     };
 
@@ -169,6 +171,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const innerWhereClauses: string[] = [];
       const innerParams: any[] = [];
+
+      // Filter out or in deleted users based on trash flag
+      if (trash === 'true') {
+        innerWhereClauses.push('up.is_deleted = 1');
+      } else {
+        innerWhereClauses.push('COALESCE(up.is_deleted, 0) = 0');
+      }
 
       if (allowedUserIds !== null) {
         innerWhereClauses.push(`u.id IN (${allowedUserIds.join(',')})`);
@@ -405,9 +414,48 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
       });
 
+      // Fetch latest bookings for the returned customers
+      const latestBookings = customerIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT o.user_id as userId, o.booking_date_start as bookingDate, o.order_state as orderState
+         FROM \`order\` o
+         WHERE o.id IN (
+           SELECT MAX(id)
+           FROM \`order\`
+           WHERE user_id IN (${customerIds.join(',')})
+           GROUP BY user_id
+         )`
+      ) : [];
+
+      const bookingMap = new Map();
+      latestBookings.forEach(b => {
+        bookingMap.set(Number(b.userId), {
+          bookingDate: b.bookingDate,
+          orderState: b.orderState
+        });
+      });
+
+      // Fetch latest call logs with callbacks for the returned customers
+      const latestCallbacks = customerIds.length > 0 ? await fastify.prisma.crm.crmCallLog.findMany({
+        where: {
+          legacyUserId: { in: customerIds },
+          callbackDate: { not: null }
+        },
+        orderBy: { createdAt: 'desc' }
+      }) : [];
+
+      const callbackMap = new Map();
+      latestCallbacks.forEach(c => {
+        if (!callbackMap.has(c.legacyUserId)) {
+          callbackMap.set(c.legacyUserId, c.callbackDate);
+        }
+      });
+
       // Map raw SQL outputs to clean Customer interface types
       const customers = dataResult.map((row: any) => {
         const assigned = assignmentMap.get(Number(row.id)) || null;
+        const booking = bookingMap.get(Number(row.id)) || null;
+        const callbackDateVal = callbackMap.get(Number(row.id)) || null;
+
         return {
           id: Number(row.id),
           name: row.name,
@@ -428,7 +476,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
             expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null
           } : null,
           assignedStaff: assigned,
-          avatar: row.avatar
+          avatar: row.avatar,
+          lastBookingState: booking ? booking.orderState : null,
+          lastBookingDate: booking && booking.bookingDate ? new Date(booking.bookingDate).toISOString() : null,
+          callbackDate: callbackDateVal ? new Date(callbackDateVal).toISOString().split('T')[0] : null
         };
       });
 
@@ -468,7 +519,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralUsed,
       referralCountMin,
       referralCountMax,
-      assignedStaffId
+      assignedStaffId,
+      trash
     } = request.query as { 
       search?: string;
       ids?: string;
@@ -485,6 +537,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMin?: string;
       referralCountMax?: string;
       assignedStaffId?: string;
+      trash?: string;
     };
 
     const adminUser = request.user as { id: number; role: string };
@@ -590,6 +643,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const innerWhereClauses: string[] = [];
       const innerParams: any[] = [];
+
+      // Filter out or in deleted users based on trash flag
+      if (trash === 'true') {
+        innerWhereClauses.push('up.is_deleted = 1');
+      } else {
+        innerWhereClauses.push('COALESCE(up.is_deleted, 0) = 0');
+      }
 
       if (allowedUserIds !== null) {
         innerWhereClauses.push(`u.id IN (${allowedUserIds.join(',')})`);
@@ -1038,6 +1098,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE s.is_disabled = 0 
           AND s.is_temporary = 0
           AND sl.language_id = 1
+          AND s.service_key NOT LIKE 'classic-%'
+          AND s.service_key NOT LIKE 'volume-%'
+          AND s.service_key NOT LIKE 'ultralight-%'
+          AND s.service_key NOT LIKE 'mink-%'
+          AND s.service_key NOT LIKE 'under-mink-%'
+          AND s.service_key NOT LIKE 'infrared-sauna-%'
         ORDER BY s.position ASC, s.id ASC
       `;
 
@@ -1846,6 +1912,140 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // DELETE /api/customers/:id
+  // Soft delete a customer by setting is_deleted = 1
+  fastify.delete('/customers/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string; id: number };
+    if (user.role !== 'admin') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép xóa khách hàng.' });
+    }
+
+    const { id } = request.params as { id: string };
+    const customerId = parseInt(id, 10);
+    if (isNaN(customerId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'ID khách hàng không hợp lệ' });
+    }
+
+    try {
+      // 1. Verify user exists in the user table
+      const users = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT id FROM \`user\` WHERE id = ?`,
+        customerId
+      );
+
+      if (users.length === 0) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy khách hàng trên hệ thống.' });
+      }
+
+      // 2. Check if user_profile row exists
+      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT id FROM user_profile WHERE user_id = ?`,
+        customerId
+      );
+
+      if (profiles.length > 0) {
+        // Update is_deleted to 1
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `UPDATE user_profile SET is_deleted = 1 WHERE user_id = ?`,
+          customerId
+        );
+      } else {
+        // Insert a new user_profile row with is_deleted = 1
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `INSERT INTO user_profile (
+            client_id, 
+            user_id, 
+            language_id, 
+            user_group_id, 
+            access_user_group_ids, 
+            provider, 
+            is_academy, 
+            is_temporary, 
+            is_disabled, 
+            is_leaved, 
+            is_deleted, 
+            date_created
+          ) VALUES (
+            11, ?, 1, 12, '12', 'System', 0, 0, 0, 0, 1, NOW()
+          )`,
+          customerId
+        );
+      }
+
+      return reply.send({ success: true, customerId });
+    } catch (err: any) {
+      fastify.log.error(err, 'Delete customer error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: err.message || 'Không thể xóa khách hàng.' });
+    }
+  });
+
+  // POST /api/customers/:id/restore
+  // Restore a soft-deleted customer by setting is_deleted = 0
+  fastify.post('/customers/:id/restore', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string; id: number };
+    if (user.role !== 'admin') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép khôi phục khách hàng.' });
+    }
+
+    const { id } = request.params as { id: string };
+    const customerId = parseInt(id, 10);
+    if (isNaN(customerId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'ID khách hàng không hợp lệ' });
+    }
+
+    try {
+      // 1. Verify user exists in the user table
+      const users = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT id FROM \`user\` WHERE id = ?`,
+        customerId
+      );
+
+      if (users.length === 0) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy khách hàng trên hệ thống.' });
+      }
+
+      // 2. Check if user_profile row exists
+      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT id FROM user_profile WHERE user_id = ?`,
+        customerId
+      );
+
+      if (profiles.length > 0) {
+        // Update is_deleted to 0
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `UPDATE user_profile SET is_deleted = 0 WHERE user_id = ?`,
+          customerId
+        );
+      } else {
+        // Insert a new user_profile row with is_deleted = 0
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `INSERT INTO user_profile (
+            client_id, 
+            user_id, 
+            language_id, 
+            user_group_id, 
+            access_user_group_ids, 
+            provider, 
+            is_academy, 
+            is_temporary, 
+            is_disabled, 
+            is_leaved, 
+            is_deleted, 
+            date_created
+          ) VALUES (
+            11, ?, 1, 12, '12', 'System', 0, 0, 0, 0, 0, NOW()
+          )`,
+          customerId
+        );
+      }
+
+      return reply.send({ success: true, customerId });
+    } catch (err: any) {
+      fastify.log.error(err, 'Restore customer error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: err.message || 'Không thể khôi phục khách hàng.' });
+    }
+  });
+
   // POST /api/customers/assign
   // Assign multiple customers to a staff member
   fastify.post('/customers/assign', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -2222,6 +2422,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           u.id, 
           COALESCE(up.full_name, 'No Name') as name, 
           up.avatar as avatar,
+          COALESCE(up.is_deleted, 0) as isDeleted,
           COALESCE(uc.phone_number, '') as phone, 
           u.email,
           u.gender,
@@ -2266,7 +2467,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           retainCount: Number(row.retainCount || 0),
           expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null
         } : null,
-        avatar: row.avatar
+        avatar: row.avatar,
+        isDeleted: row.isDeleted === 1
       };
 
       return customer;
@@ -2369,6 +2571,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           u.id, 
           COALESCE(up.full_name, 'No Name') as name, 
           up.avatar as avatar,
+          COALESCE(up.is_deleted, 0) as isDeleted,
           COALESCE(uc.phone_number, '') as phone, 
           u.email,
           u.gender,
@@ -2732,7 +2935,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
           bucket: row.bucket,
           avatar: row.avatar,
-          onlineConsultant: onlineConsultantName
+          onlineConsultant: onlineConsultantName,
+          isDeleted: row.isDeleted === 1
         },
         stats: {
           totalSpent: totalSpent,

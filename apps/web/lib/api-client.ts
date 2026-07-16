@@ -93,6 +93,14 @@ export const apiClient = {
     deleteBooking: async (orderId: number): Promise<any> => {
       const response = await api.delete(`/customers/booking/${orderId}`);
       return response.data;
+    },
+    delete: async (id: number): Promise<any> => {
+      const response = await api.delete(`/customers/${id}`);
+      return response.data;
+    },
+    restore: async (id: number): Promise<any> => {
+      const response = await api.post(`/customers/${id}/restore`);
+      return response.data;
     }
   },
 

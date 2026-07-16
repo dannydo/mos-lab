@@ -128,6 +128,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   const [favoriteTechs, setFavoriteTechs] = useState<string[]>([]);
   const [comboBalances, setComboBalances] = useState<any[]>([]);
   const [suggestedServices, setSuggestedServices] = useState<string[]>([]);
+  const [lastUsedServices, setLastUsedServices] = useState<string[]>([]);
   const [suggestedBranch, setSuggestedBranch] = useState<any>(null);
 
   const hasActiveLowerLashCombo = (balances: any[]) => {
@@ -199,6 +200,17 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             .sort((a, b) => b.count - a.count);
           setSuggestedServices(sortedSrvs.slice(0, 1).map(s => s.name));
 
+          // Find last completed booking services
+          let lastSrvs: string[] = [];
+          for (const b of bookings) {
+            const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
+            if (isCompleted && b.services && b.services.length > 0) {
+              lastSrvs = b.services;
+              break;
+            }
+          }
+          setLastUsedServices(lastSrvs);
+
           // Count branches in bookings
           const branchCounts: { [key: number]: number } = {};
           bookings.forEach((b: any) => {
@@ -227,6 +239,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       setFavoriteTechs([]);
       setComboBalances([]);
       setSuggestedServices([]);
+      setLastUsedServices([]);
       setSuggestedBranch(null);
     }
   }, [selectedCustomer]);
@@ -937,34 +950,70 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             />
 
             {/* Favorite Service Suggestion */}
-            {suggestedServices.length > 0 && (
+            {suggestedServices.filter(sName => services.some(active => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)).length > 0 && (
               <div style={{ marginTop: '6px', fontSize: '12px' }}>
                 <span style={{ color: '#fa8c16', fontWeight: 'bold' }}>⭐ Dòng mi khách hay đi nhất: </span>
-                {suggestedServices.map(sName => {
-                  return (
-                    <span 
-                      key={sName}
-                      style={{ 
-                        color: themeMode === 'dark' ? '#ffa940' : '#d87a16', 
-                        textDecoration: 'underline', 
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        marginLeft: '4px'
-                      }}
-                      onClick={() => {
-                        const matchedSrv = services.find(s => s.name.toLowerCase() === sName.toLowerCase());
-                        if (matchedSrv) {
-                          setSelectedService(matchedSrv);
-                          message.success(`Đã chọn dòng mi hay dùng: ${matchedSrv.name}`);
-                        } else {
-                          message.info(`Hay đi: ${sName}`);
-                        }
-                      }}
-                    >
-                      {sName}
-                    </span>
-                  );
-                })}
+                {suggestedServices
+                  .filter(sName => services.some(active => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0))
+                  .map(sName => {
+                    return (
+                      <span 
+                        key={sName}
+                        style={{ 
+                          color: themeMode === 'dark' ? '#ffa940' : '#d87a16', 
+                          textDecoration: 'underline', 
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          marginLeft: '4px'
+                        }}
+                        onClick={() => {
+                          const matchedSrv = services.find(s => s.name.toLowerCase() === sName.toLowerCase());
+                          if (matchedSrv) {
+                            setSelectedService(matchedSrv);
+                            message.success(`Đã chọn dòng mi hay dùng: ${matchedSrv.name}`);
+                          } else {
+                            message.info(`Hay đi: ${sName}`);
+                          }
+                        }}
+                      >
+                        {sName}
+                      </span>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Last Service Used Suggestion */}
+            {lastUsedServices.filter(sName => services.some(active => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)).length > 0 && (
+              <div style={{ marginTop: '4px', fontSize: '12px' }}>
+                <span style={{ color: '#096dd9', fontWeight: 'bold' }}>🕒 Dịch vụ khách dùng cuối cùng: </span>
+                {lastUsedServices
+                  .filter(sName => services.some(active => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0))
+                  .map(sName => {
+                    return (
+                      <span 
+                        key={sName}
+                        style={{ 
+                          color: themeMode === 'dark' ? '#177ddc' : '#096dd9', 
+                          textDecoration: 'underline', 
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          marginLeft: '4px'
+                        }}
+                        onClick={() => {
+                          const matchedSrv = services.find(s => s.name.toLowerCase() === sName.toLowerCase());
+                          if (matchedSrv) {
+                            setSelectedService(matchedSrv);
+                            message.success(`Đã chọn dịch vụ cuối cùng: ${matchedSrv.name}`);
+                          } else {
+                            message.info(`Dùng cuối cùng: ${sName}`);
+                          }
+                        }}
+                      >
+                        {sName}
+                      </span>
+                    );
+                  })}
               </div>
             )}
 
