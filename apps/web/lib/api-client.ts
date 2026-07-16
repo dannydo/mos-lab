@@ -13,7 +13,8 @@ import {
   KPISummary,
   CustomerWeeklyProgress,
   UserRole,
-  ColumnConfig
+  ColumnConfig,
+  BulkDeleteCustomersResponse
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -100,6 +101,10 @@ export const apiClient = {
     },
     restore: async (id: number): Promise<any> => {
       const response = await api.post(`/customers/${id}/restore`);
+      return response.data;
+    },
+    bulkDelete: async (ids: number[]): Promise<BulkDeleteCustomersResponse> => {
+      const response = await api.post('/customers/bulk-delete', { ids });
       return response.data;
     }
   },

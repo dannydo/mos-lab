@@ -1517,9 +1517,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // 1. If it's a new customer, create parent user, user_profile, and user_contact records
       if (!finalCustomerId) {
-        // Insert parent user record
+        // Insert parent user record (default to Female 202 to avoid legacy system filtering)
         await fastify.prisma.legacy.$executeRawUnsafe(
-          `INSERT INTO user (created_staff_id, date_created) VALUES (?, NOW())`,
+          `INSERT INTO user (created_staff_id, attribute_gender_id, date_created) VALUES (?, 202, NOW())`,
           validStaffId
         );
 
@@ -1642,11 +1642,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       let finalBookingNote = (bookingNote || '').trim();
-      if (bookerName) {
-        finalBookingNote = finalBookingNote
-          ? `${bookerName} - ${finalBookingNote}`
-          : bookerName;
-      }
 
       // 6. Create the booking order
       const orderKey = 'booking_' + Math.random().toString(36).substring(2, 12);
@@ -1671,6 +1666,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
         throw new Error('Failed to create booking order.');
       }
       const orderId = Number(insertedOrder[0].id);
+
+      // Insert log record into order_booking_date_change to sync booker details and time on legacy frontend
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `INSERT INTO order_booking_date_change (
+          created_staff_id, order_id, client_store_id, assigned_staff_id, 
+          booking_note, booking_duration_minute, booking_date_start, booking_date_end, date_created
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        validStaffId, orderId, storeId, technicianId || null, 
+        finalBookingNote, srvDuration, mysqlStart, mysqlEnd
+      );
 
       // 5. Create order_service record
       await fastify.prisma.legacy.$executeRawUnsafe(
@@ -1872,6 +1877,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
         orderId
       );
 
+      // Insert log record into order_booking_date_change to sync booker details and time on legacy frontend
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `INSERT INTO order_booking_date_change (
+          created_staff_id, order_id, client_store_id, assigned_staff_id, 
+          booking_note, booking_duration_minute, booking_date_start, booking_date_end, date_created
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        crmStaff.legacyStaffId, orderId, storeId, technicianId || null, 
+        bookingNote || null, duration, mysqlStart, mysqlEnd
+      );
+
       // 5. Update order_service record KTV assignment & service details
       if (serviceId !== undefined && serviceId !== null) {
         await fastify.prisma.legacy.$executeRawUnsafe(
@@ -2018,6 +2033,84 @@ export async function customerRoutes(fastify: FastifyInstance) {
     } catch (err: any) {
       fastify.log.error(err, 'Delete customer error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: err.message || 'Không thể xóa khách hàng.' });
+    }
+  });
+
+  // POST /api/customers/bulk-delete
+  // Soft delete multiple customers by setting is_deleted = 1
+  fastify.post('/customers/bulk-delete', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string; id: number };
+    if (user.role !== 'admin') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép xóa khách hàng.' });
+    }
+
+    const { ids } = request.body as { ids: number[] };
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Danh sách ID khách hàng không hợp lệ.' });
+    }
+
+    const customerIds = ids.map(id => parseInt(id as any, 10)).filter(id => !isNaN(id));
+    if (customerIds.length === 0) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Danh sách ID khách hàng không chứa ID hợp lệ.' });
+    }
+
+    try {
+      const count = await fastify.prisma.legacy.$transaction(async (tx) => {
+        let deletedCount = 0;
+        for (const customerId of customerIds) {
+          // 1. Verify user exists in the user table
+          const users = await tx.$queryRawUnsafe<any[]>(
+            `SELECT id FROM \`user\` WHERE id = ?`,
+            customerId
+          );
+
+          if (users.length === 0) {
+            continue;
+          }
+
+          // 2. Check if user_profile row exists
+          const profiles = await tx.$queryRawUnsafe<any[]>(
+            `SELECT id FROM user_profile WHERE user_id = ?`,
+            customerId
+          );
+
+          if (profiles.length > 0) {
+            // Update is_deleted to 1
+            await tx.$executeRawUnsafe(
+              `UPDATE user_profile SET is_deleted = 1 WHERE user_id = ?`,
+              customerId
+            );
+          } else {
+            // Insert a new user_profile row with is_deleted = 1
+            await tx.$executeRawUnsafe(
+              `INSERT INTO user_profile (
+                client_id, 
+                user_id, 
+                language_id, 
+                user_group_id, 
+                access_user_group_ids, 
+                provider, 
+                is_academy, 
+                is_temporary, 
+                is_disabled, 
+                is_leaved, 
+                is_deleted, 
+                date_created
+              ) VALUES (
+                11, ?, 1, 12, '12', 'System', 0, 0, 0, 0, 1, NOW()
+              )`,
+              customerId
+            );
+          }
+          deletedCount++;
+        }
+        return deletedCount;
+      });
+
+      return reply.send({ success: true, count });
+    } catch (err: any) {
+      fastify.log.error(err, 'Bulk delete customers error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: err.message || 'Không thể xóa hàng loạt khách hàng.' });
     }
   });
 
@@ -4589,20 +4682,63 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (o.order_state === 'Completed') {
           const comboRev = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0), 0);
           const productRev = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0), 0);
-          const leRev = Math.max(0, (o.total_price || 0) - comboRev - productRev);
+          const orderTotal = Number(o.total_price || 0);
+
+          let finalRevCombo = comboRev;
+          let finalRevProduct = productRev;
+          let finalRevLe = 0;
+
+          if (orderTotal < 0) {
+            if (comboRev + productRev === 0) {
+              finalRevLe = orderTotal;
+            } else {
+              const scale = orderTotal / (comboRev + productRev);
+              finalRevCombo = comboRev * scale;
+              finalRevProduct = productRev * scale;
+            }
+          } else {
+            if (comboRev + productRev > orderTotal) {
+              const scale = orderTotal / (comboRev + productRev);
+              finalRevCombo = comboRev * scale;
+              finalRevProduct = productRev * scale;
+            } else {
+              finalRevLe = orderTotal - comboRev - productRev;
+            }
+          }
 
           const comboNet = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0) - Number(c.tax_amount || 0), 0);
           const productNet = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0) - Number(p.tax_amount || 0), 0);
-          const orderNet = Math.max(0, (o.total_price || 0) - totalTax);
-          const leNet = Math.max(0, orderNet - comboNet - productNet);
+          const orderNet = orderTotal - totalTax;
 
-          branchDetailMap[branchKey].revCombo += comboRev;
-          branchDetailMap[branchKey].revProduct += productRev;
-          branchDetailMap[branchKey].revLe += leRev;
+          let finalNetCombo = comboNet;
+          let finalNetProduct = productNet;
+          let finalNetLe = 0;
 
-          branchDetailMap[branchKey].netCombo += comboNet;
-          branchDetailMap[branchKey].netProduct += productNet;
-          branchDetailMap[branchKey].netLe += leNet;
+          if (orderNet < 0) {
+            if (comboNet + productNet === 0) {
+              finalNetLe = orderNet;
+            } else {
+              const scaleNet = orderNet / (comboNet + productNet);
+              finalNetCombo = comboNet * scaleNet;
+              finalNetProduct = productNet * scaleNet;
+            }
+          } else {
+            if (comboNet + productNet > orderNet) {
+              const scaleNet = orderNet / (comboNet + productNet);
+              finalNetCombo = comboNet * scaleNet;
+              finalNetProduct = productNet * scaleNet;
+            } else {
+              finalNetLe = orderNet - comboNet - productNet;
+            }
+          }
+
+          branchDetailMap[branchKey].revCombo += finalRevCombo;
+          branchDetailMap[branchKey].revProduct += finalRevProduct;
+          branchDetailMap[branchKey].revLe += finalRevLe;
+
+          branchDetailMap[branchKey].netCombo += finalNetCombo;
+          branchDetailMap[branchKey].netProduct += finalNetProduct;
+          branchDetailMap[branchKey].netLe += finalNetLe;
         }
       });
 
@@ -4922,21 +5058,64 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
             const comboRev = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0), 0);
             const productRev = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0), 0);
-            const leRev = Math.max(0, (o.total_price || 0) - comboRev - productRev);
+            const orderTotal = Number(o.total_price || 0);
+
+            let finalRevCombo = comboRev;
+            let finalRevProduct = productRev;
+            let finalRevLe = 0;
+
+            if (orderTotal < 0) {
+              if (comboRev + productRev === 0) {
+                finalRevLe = orderTotal;
+              } else {
+                const scale = orderTotal / (comboRev + productRev);
+                finalRevCombo = comboRev * scale;
+                finalRevProduct = productRev * scale;
+              }
+            } else {
+              if (comboRev + productRev > orderTotal) {
+                const scale = orderTotal / (comboRev + productRev);
+                finalRevCombo = comboRev * scale;
+                finalRevProduct = productRev * scale;
+              } else {
+                finalRevLe = orderTotal - comboRev - productRev;
+              }
+            }
 
             const comboNet = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0) - Number(c.tax_amount || 0), 0);
             const productNet = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0) - Number(p.tax_amount || 0), 0);
-            const orderNet = Math.max(0, (o.total_price || 0) - totalTax);
-            const leNet = Math.max(0, orderNet - comboNet - productNet);
+            const orderNet = orderTotal - totalTax;
 
-            cc.revCombo += comboRev;
-            cc.revProduct += productRev;
-            cc.revLe += leRev;
-            cc.revenue += o.total_price || 0;
+            let finalNetCombo = comboNet;
+            let finalNetProduct = productNet;
+            let finalNetLe = 0;
 
-            cc.netCombo += comboNet;
-            cc.netProduct += productNet;
-            cc.netLe += leNet;
+            if (orderNet < 0) {
+              if (comboNet + productNet === 0) {
+                finalNetLe = orderNet;
+              } else {
+                const scaleNet = orderNet / (comboNet + productNet);
+                finalNetCombo = comboNet * scaleNet;
+                finalNetProduct = productNet * scaleNet;
+              }
+            } else {
+              if (comboNet + productNet > orderNet) {
+                const scaleNet = orderNet / (comboNet + productNet);
+                finalNetCombo = comboNet * scaleNet;
+                finalNetProduct = productNet * scaleNet;
+              } else {
+                finalNetLe = orderNet - comboNet - productNet;
+              }
+            }
+
+            cc.revCombo += finalRevCombo;
+            cc.revProduct += finalRevProduct;
+            cc.revLe += finalRevLe;
+            cc.revenue += orderTotal;
+
+            cc.netCombo += finalNetCombo;
+            cc.netProduct += finalNetProduct;
+            cc.netLe += finalNetLe;
             cc.netRevenue += orderNet;
 
             cc.combos += orderCombos.length;

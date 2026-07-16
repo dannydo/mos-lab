@@ -1042,7 +1042,7 @@ export default function TodayDashboard() {
       if (item.status === 'completed') {
         const rawPrice = item.price || 0;
         const tax = item.tax || 0;
-        const price = showTax ? rawPrice : Math.max(0, rawPrice - tax);
+        const price = showTax ? rawPrice : (rawPrice - tax);
 
         if (item.category === 'combo') {
           revCombo += price;
@@ -1275,7 +1275,7 @@ export default function TodayDashboard() {
                       Khách Đến Hôm Nay
                     </span>
                     <strong style={{ fontSize: '13px', color: token.colorText }} title={`Tổng cộng: ${comingStats.totalCount} khách • ${comingStats.totalPrice.toLocaleString('vi-VN')} đ`}>
-                      {comingStats.totalCount} khách • {formatCenterRevenue(comingStats.totalPrice)}
+                      {comingStats.totalCount} khách • {comingStats.totalPrice.toLocaleString('vi-VN')} đ
                     </strong>
                   </div>
 
@@ -1296,15 +1296,15 @@ export default function TodayDashboard() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, overflow: 'hidden' }}>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Combo: ${comingStats.combo.count} khách • ${comingStats.combo.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#D4A84B', borderRadius: '50%', marginRight: '4px' }} />
-                            Combo: <strong>{comingStats.combo.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({formatCenterRevenue(comingStats.combo.price)})</span>
+                            Combo: <strong>{comingStats.combo.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({comingStats.combo.price.toLocaleString('vi-VN')} đ)</span>
                           </div>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Telesales: ${comingStats.oc.count} khách • ${comingStats.oc.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#52C41A', borderRadius: '50%', marginRight: '4px' }} />
-                            Tele: <strong>{comingStats.oc.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({formatCenterRevenue(comingStats.oc.price)})</span>
+                            Tele: <strong>{comingStats.oc.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({comingStats.oc.price.toLocaleString('vi-VN')} đ)</span>
                           </div>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Khác: ${comingStats.other.count} khách • ${comingStats.other.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#1890FF', borderRadius: '50%', marginRight: '4px' }} />
-                            Khác: <strong>{comingStats.other.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({formatCenterRevenue(comingStats.other.price)})</span>
+                            Khác: <strong>{comingStats.other.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({comingStats.other.price.toLocaleString('vi-VN')} đ)</span>
                           </div>
                         </div>
                       </div>
@@ -1326,15 +1326,15 @@ export default function TodayDashboard() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, overflow: 'hidden' }}>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Đề Thám: ${comingBranchStats.dt.count} khách • ${comingBranchStats.dt.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#722ED1', borderRadius: '50%', marginRight: '4px' }} />
-                            DT: <strong>{comingBranchStats.dt.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({formatCenterRevenue(comingBranchStats.dt.price)})</span>
+                            DT: <strong>{comingBranchStats.dt.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({comingBranchStats.dt.price.toLocaleString('vi-VN')} đ)</span>
                           </div>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Estella: ${comingBranchStats.ep.count} khách • ${comingBranchStats.ep.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#13C2C2', borderRadius: '50%', marginRight: '4px' }} />
-                            EP: <strong>{comingBranchStats.ep.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({formatCenterRevenue(comingBranchStats.ep.price)})</span>
+                            EP: <strong>{comingBranchStats.ep.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({comingBranchStats.ep.price.toLocaleString('vi-VN')} đ)</span>
                           </div>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Phan Xích Long: ${comingBranchStats.pxl.count} khách • ${comingBranchStats.pxl.price.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#EB2F96', borderRadius: '50%', marginRight: '4px' }} />
-                            PXL: <strong>{comingBranchStats.pxl.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({formatCenterRevenue(comingBranchStats.pxl.price)})</span>
+                            PXL: <strong>{comingBranchStats.pxl.count}</strong> <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>({comingBranchStats.pxl.price.toLocaleString('vi-VN')} đ)</span>
                           </div>
                         </div>
                       </div>
@@ -1385,15 +1385,15 @@ export default function TodayDashboard() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, overflow: 'hidden' }}>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Combo: ${totalRevenueData.revCombo.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#D4A84B', borderRadius: '50%', marginRight: '4px' }} />
-                            Combo: <strong>{formatCenterRevenue(totalRevenueData.revCombo)}</strong>
+                            Combo: <strong>{totalRevenueData.revCombo.toLocaleString('vi-VN')} đ</strong>
                           </div>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Lẻ (Single): ${totalRevenueData.revLe.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#1890FF', borderRadius: '50%', marginRight: '4px' }} />
-                            Lẻ: <strong>{formatCenterRevenue(totalRevenueData.revLe)}</strong>
+                            Lẻ: <strong>{totalRevenueData.revLe.toLocaleString('vi-VN')} đ</strong>
                           </div>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Sản phẩm: ${totalRevenueData.revProduct.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#FA8C16', borderRadius: '50%', marginRight: '4px' }} />
-                            SP: <strong>{formatCenterRevenue(totalRevenueData.revProduct)}</strong>
+                            SP: <strong>{totalRevenueData.revProduct.toLocaleString('vi-VN')} đ</strong>
                           </div>
                         </div>
                       </div>
@@ -1417,15 +1417,15 @@ export default function TodayDashboard() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, overflow: 'hidden' }}>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Combo: ${categoryRevenueData.revCombo.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#D4A84B', borderRadius: '50%', marginRight: '4px' }} />
-                            Combo: <strong>{formatCenterRevenue(categoryRevenueData.revCombo)}</strong>
+                            Combo: <strong>{categoryRevenueData.revCombo.toLocaleString('vi-VN')} đ</strong>
                           </div>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Tele: ${categoryRevenueData.revTele.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#52C41A', borderRadius: '50%', marginRight: '4px' }} />
-                            Tele: <strong>{formatCenterRevenue(categoryRevenueData.revTele)}</strong>
+                            Tele: <strong>{categoryRevenueData.revTele.toLocaleString('vi-VN')} đ</strong>
                           </div>
                           <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }} title={`Khác: ${categoryRevenueData.revOther.toLocaleString('vi-VN')} đ`}>
                             <span style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#1890FF', borderRadius: '50%', marginRight: '4px' }} />
-                            Khác: <strong>{formatCenterRevenue(categoryRevenueData.revOther)}</strong>
+                            Khác: <strong>{categoryRevenueData.revOther.toLocaleString('vi-VN')} đ</strong>
                           </div>
                         </div>
                       </div>

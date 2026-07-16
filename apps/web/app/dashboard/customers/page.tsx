@@ -28,7 +28,8 @@ import {
   Col,
   Spin,
   Checkbox,
-  Tooltip
+  Tooltip,
+  Popconfirm
 } from 'antd';
 import { 
   SearchOutlined, 
@@ -52,6 +53,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTheme } from '../../../context/ThemeContext';
 import { useOmiCall } from '../../../context/OmiCallContext';
 import api from '../../../lib/api';
+import { apiClient } from '../../../lib/api-client';
 import CustomerDetailDrawer from '../../../components/CustomerDetailDrawer';
 import BookingWizardDrawer from '../../../components/BookingWizardDrawer';
 import { Customer, BucketType } from '@mos-lab/shared';
@@ -78,6 +80,7 @@ export default function CustomersPage() {
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(20);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   
   // Filters & Search state
@@ -652,6 +655,63 @@ export default function CustomersPage() {
       message.error(error.response?.data?.message || 'Có lỗi xảy ra khi hủy phân bổ');
     } finally {
       setUnassigning(false);
+    }
+  };
+
+  const handleBulkDeleteCustomers = async () => {
+    if (selectedRowKeys.length === 0) return;
+    setBulkDeleteLoading(true);
+    try {
+      const ids = selectedRowKeys.map(k => Number(k));
+      const res = await apiClient.customers.bulkDelete(ids);
+      if (res.success) {
+        message.success(`Đã xóa thành công ${res.count} khách hàng!`);
+        setSelectedRowKeys([]);
+        setRandomSelectedIds(null);
+        // Refresh list
+        fetchCustomers(
+          1,
+          pageSize,
+          activeTab,
+          searchQuery,
+          sortField,
+          daysSinceLastVisitMin,
+          daysSinceLastVisitMax,
+          totalSpentMin,
+          totalSpentMax,
+          totalVisitsMin,
+          totalVisitsMax,
+          promoUsed,
+          promoCountMin,
+          promoCountMax,
+          referralUsed,
+          referralCountMin,
+          referralCountMax,
+          assignedStaffId
+        );
+        // Refresh stats
+        fetchStats(
+          searchQuery,
+          daysSinceLastVisitMin,
+          daysSinceLastVisitMax,
+          totalSpentMin,
+          totalSpentMax,
+          totalVisitsMin,
+          totalVisitsMax,
+          promoUsed,
+          promoCountMin,
+          promoCountMax,
+          referralUsed,
+          referralCountMin,
+          referralCountMax,
+          assignedStaffId
+        );
+      }
+    } catch (error: any) {
+      console.error('Bulk delete error:', error);
+      message.error(error.response?.data?.message || 'Có lỗi xảy ra khi xóa hàng loạt');
+    } finally {
+      setBulkDeleteLoading(false);
     }
   };
 
@@ -1359,6 +1419,25 @@ export default function CustomersPage() {
             >
               Phân bổ Booker
             </Button>
+            {currentUser?.role === 'admin' && (
+              <Popconfirm
+                title={`Anh/chị có chắc chắn muốn xóa ${selectedRowKeys.length} khách hàng đã chọn không?`}
+                onConfirm={handleBulkDeleteCustomers}
+                okText="Xóa"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true, loading: bulkDeleteLoading }}
+              >
+                <Button 
+                  danger
+                  type="primary"
+                  icon={<DeleteOutlined />}
+                  loading={bulkDeleteLoading}
+                  style={{ borderRadius: '6px', fontWeight: 600 }}
+                >
+                  Xóa hàng loạt
+                </Button>
+              </Popconfirm>
+            )}
           </Space>
         </div>
       )}

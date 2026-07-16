@@ -99,3 +99,13 @@ export interface CustomerStatsResponse {
   notComboLive: number;
 }
 
+export interface BulkDeleteCustomersRequest {
+  ids: number[];
+}
+
+export interface BulkDeleteCustomersResponse {
+  success: boolean;
+  count: number;
+}
+
+
