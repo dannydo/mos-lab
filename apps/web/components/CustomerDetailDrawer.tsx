@@ -659,7 +659,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                         <span 
                           key={phoneObj.id}
                           className={`inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text ${phoneObj.is_disabled ? 'opacity-50 line-through' : ''}`}
-                          onClick={() => !phoneObj.is_disabled && makeCall(phoneObj.phone_number, customer.name, customer.id)}
+                          onClick={() => !phoneObj.is_disabled && makeCall(phoneObj.phone_number, customer.name, customer.id, customer.avatar || undefined)}
                           style={{ fontSize: '12px', color: phoneObj.is_disabled ? '#bbb' : '#888' }}
                         >
                           <PhoneOutlined style={{ color: phoneObj.is_disabled ? '#bbb' : '#D4A84B' }} />
@@ -669,7 +669,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     ) : customer.phone ? (
                       <span 
                         className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-                        onClick={() => makeCall(customer.phone, customer.name, customer.id)}
+                        onClick={() => makeCall(customer.phone, customer.name, customer.id, customer.avatar || undefined)}
                         style={{ fontSize: '12px', color: '#888' }}
                       >
                         <PhoneOutlined style={{ color: '#D4A84B' }} />

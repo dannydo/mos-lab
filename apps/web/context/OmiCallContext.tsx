@@ -18,7 +18,7 @@ declare global {
   }
 }
 
-export type CallState = 'idle' | 'ringing' | 'incoming' | 'connected' | 'analyzing' | 'wrapup';
+export type CallState = 'idle' | 'confirming' | 'ringing' | 'incoming' | 'connected' | 'analyzing' | 'wrapup';
 
 export interface CurrentCall {
   phone: string;
@@ -27,6 +27,7 @@ export interface CurrentCall {
   callUuid?: string | null;
   sdkUid?: string | null;
   legacyUserId?: number | null;
+  avatar?: string | null;
 }
 
 interface OmiCallContextType {
@@ -37,7 +38,9 @@ interface OmiCallContextType {
   callState: CallState;
   callDuration: number;
   currentCall: CurrentCall | null;
-  makeCall: (phone: string, name?: string, customerId?: number) => Promise<void>;
+  makeCall: (phone: string, name?: string, customerId?: number, avatar?: string) => Promise<void>;
+  executeCall: () => Promise<void>;
+  cancelConfirm: () => void;
   answerCall: () => void;
   rejectCall: () => void;
   hangUp: () => void;
@@ -1265,6 +1268,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isSimulated, setIsSimulated] = useState(false);
   const simulatedTimerRef = useRef<any>(null);
+  const [shouldInit, setShouldInit] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1376,7 +1380,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
   // 1. Dynamic Script Loading
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !shouldInit) return;
 
     installOmiCallMediaConstraintPatch();
     installOmiCallPeerConnectionTracker();
@@ -1404,7 +1408,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       setIsRegistered(true);
     };
     document.body.appendChild(script);
-  }, []);
+  }, [shouldInit]);
 
   const broadcastState = useCallback((state: CallState, call: CurrentCall | null, duration: number, muted: boolean, held: boolean) => {
     // No-op since we use native allowMultiTab
@@ -1427,7 +1431,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
   // 4. SDK Initialise and SIP Device registration
   useEffect(() => {
-    if (typeof window === 'undefined' || !token) return;
+    if (typeof window === 'undefined' || !token || !shouldInit) return;
 
     let active = true;
     let checkInterval: any = null;
@@ -1642,10 +1646,10 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {}
       }
     };
-  }, [token]);
+  }, [token, shouldInit]);
 
   // 5. Calling Actions
-  const makeCall = async (phone: string, name?: string, customerId?: number) => {
+  const makeCall = async (phone: string, name?: string, customerId?: number, avatar?: string) => {
     if (isTabMuted) {
       message.warning('Có cuộc gọi đang diễn ra trên một tab khác.');
       return;
@@ -1653,18 +1657,26 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
     const cleanPhone = phone.replace(/[^0-9]/g, '');
 
+    // Transition to confirming state, store call details and trigger OmiCall loading/SIP registration
+    setCallState('confirming');
+    setCurrentCall({
+      phone: cleanPhone,
+      name: name || 'Khách hàng',
+      direction: 'outbound',
+      legacyUserId: customerId,
+      avatar: avatar || null
+    });
+    setShouldInit(true);
+  };
+
+  const executeCall = async () => {
+    if (!currentCall) return;
+    const { phone: cleanPhone, name, legacyUserId: customerId, avatar } = currentCall;
+
     if (isSimulated) {
       console.log(`[OmiCallContext] Simulating outbound call to ${cleanPhone} (${name || 'Khách hàng'}, ID: ${customerId})...`);
       try {
         setCallState('ringing');
-        setCurrentCall({
-          phone: cleanPhone,
-          name: name || 'Khách hàng',
-          direction: 'outbound',
-          callUuid: 'simulated-' + Date.now(),
-          legacyUserId: customerId
-        });
-
         playRingback();
 
         if (simulatedTimerRef.current) clearTimeout(simulatedTimerRef.current);
@@ -1766,7 +1778,8 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         direction: 'outbound',
         callUuid: omicallCall.uuid || null,
         sdkUid: getOmiCallSdkUid(omicallCall),
-        legacyUserId: customerId
+        legacyUserId: customerId,
+        avatar: avatar || null
       });
       playRingback();
     } catch (err: any) {
@@ -1776,6 +1789,11 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       setCallState('idle');
       setCurrentCall(null);
     }
+  };
+
+  const cancelConfirm = () => {
+    setCallState('idle');
+    setCurrentCall(null);
   };
 
   const answerCall = () => {
@@ -1879,6 +1897,8 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         callDuration,
         currentCall,
         makeCall,
+        executeCall,
+        cancelConfirm,
         answerCall,
         rejectCall,
         hangUp,

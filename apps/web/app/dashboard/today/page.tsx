@@ -638,7 +638,7 @@ export default function TodayDashboard() {
       render: (t: string, record: any) => t ? (
         <span 
           className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-          onClick={() => makeCall(t, record.customer, record.customerId)}
+          onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
           style={{ color: token.colorTextSecondary }}
         >
           <PhoneOutlined style={{ color: '#D4A84B' }} />
@@ -779,7 +779,7 @@ export default function TodayDashboard() {
       render: (t: string, record: any) => t ? (
         <span 
           className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-          onClick={() => makeCall(t, record.customer, record.customerId)}
+          onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
           style={{ color: token.colorTextSecondary }}
         >
           <PhoneOutlined style={{ color: '#D4A84B' }} />

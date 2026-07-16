@@ -427,7 +427,7 @@ export default function AppointmentsPage() {
       render: (phone: string, record: Appointment) => phone ? (
         <span 
           className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-          onClick={() => makeCall(phone, record.customerName, record.customerId)}
+          onClick={() => makeCall(phone, record.customerName, record.customerId, record.customerAvatar || undefined)}
           style={{ color: token.colorText }}
         >
           <PhoneOutlined style={{ color: '#D4A84B' }} />

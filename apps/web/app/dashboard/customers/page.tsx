@@ -999,7 +999,7 @@ export default function CustomersPage() {
       render: (phone: string, record: Customer) => phone ? (
         <span 
           className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-          onClick={() => makeCall(phone, record.name, record.id)}
+          onClick={() => makeCall(phone, record.name, record.id, record.avatar || undefined)}
           style={{ color: token.colorTextDescription }}
         >
           <PhoneOutlined style={{ color: '#D4A84B' }} />
