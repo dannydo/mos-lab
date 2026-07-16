@@ -680,16 +680,25 @@ export default function TodayDashboard() {
       title: 'Booking Notes',
       dataIndex: 'bookingNote',
       key: 'bookingNote',
-      render: (note: string) => (
-        <div style={{ 
-          maxWidth: '200px', 
-          overflow: 'hidden', 
-          textOverflow: 'ellipsis', 
-          whiteSpace: 'nowrap' 
-        }} title={note}>
-          {note || <Text type="secondary">-</Text>}
-        </div>
-      )
+      render: (note: string) => note ? (
+        <Tooltip 
+          title={
+            <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
+              {note}
+            </div>
+          }
+          overlayStyle={{ maxWidth: '400px' }}
+        >
+          <div style={{ 
+            maxWidth: '200px', 
+            overflow: 'hidden', 
+            textOverflow: 'ellipsis', 
+            whiteSpace: 'nowrap' 
+          }}>
+            {note}
+          </div>
+        </Tooltip>
+      ) : <Text type="secondary">-</Text>
     },
     {
       title: 'Trạng Thái',

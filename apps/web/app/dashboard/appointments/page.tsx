@@ -471,20 +471,29 @@ export default function AppointmentsPage() {
       title: 'Ghi chú đặt lịch',
       dataIndex: 'bookingNote',
       key: 'bookingNote',
-      ellipsis: true,
       render: (note: string | null) => note ? (
-        <Paragraph 
-          ellipsis={{ rows: 2, tooltip: note }} 
-          style={{ 
-            color: themeMode === 'dark' ? token.colorText : token.colorText, 
-            margin: 0, 
-            maxWidth: '100%',
-            whiteSpace: 'normal',
-            wordBreak: 'break-word'
-          }}
+        <Tooltip 
+          title={
+            <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
+              {note}
+            </div>
+          }
+          overlayStyle={{ maxWidth: '400px' }}
         >
-          {note}
-        </Paragraph>
+          <Paragraph 
+            ellipsis={{ rows: 2 }} 
+            title=""
+            style={{ 
+              color: themeMode === 'dark' ? token.colorText : token.colorText, 
+              margin: 0, 
+              maxWidth: '100%',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word'
+            }}
+          >
+            {note}
+          </Paragraph>
+        </Tooltip>
       ) : <Text type="secondary" style={{ fontStyle: 'italic' }}>Không có</Text>
     },
     {
