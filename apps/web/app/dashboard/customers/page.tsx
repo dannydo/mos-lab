@@ -1000,7 +1000,7 @@ export default function CustomersPage() {
         <span 
           className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
           onClick={() => makeCall(phone, record.name, record.id, record.avatar || undefined)}
-          style={{ color: token.colorTextDescription }}
+          style={{ color: token.colorText, fontWeight: '600' }}
         >
           <PhoneOutlined style={{ color: '#D4A84B' }} />
           <span>{phone}</span>

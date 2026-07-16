@@ -428,7 +428,7 @@ export default function AppointmentsPage() {
         <span 
           className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
           onClick={() => makeCall(phone, record.customerName, record.customerId, record.customerAvatar || undefined)}
-          style={{ color: token.colorText }}
+          style={{ color: token.colorText, fontWeight: '600' }}
         >
           <PhoneOutlined style={{ color: '#D4A84B' }} />
           <span>{phone}</span>

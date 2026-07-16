@@ -639,7 +639,7 @@ export default function TodayDashboard() {
         <span 
           className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
           onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
-          style={{ color: token.colorTextSecondary }}
+          style={{ color: token.colorText, fontWeight: '600' }}
         >
           <PhoneOutlined style={{ color: '#D4A84B' }} />
           <span>{t}</span>
@@ -780,7 +780,7 @@ export default function TodayDashboard() {
         <span 
           className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
           onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
-          style={{ color: token.colorTextSecondary }}
+          style={{ color: token.colorText, fontWeight: '600' }}
         >
           <PhoneOutlined style={{ color: '#D4A84B' }} />
           <span>{t}</span>
