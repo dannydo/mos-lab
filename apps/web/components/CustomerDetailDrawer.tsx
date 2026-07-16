@@ -15,7 +15,13 @@ import {
   Button,
   Popconfirm,
   Modal,
-  Table
+  Table,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  Switch,
+  Tooltip
 } from 'antd';
 import {
   PhoneOutlined,
@@ -31,13 +37,17 @@ import {
   SyncOutlined,
   ShareAltOutlined,
   DeleteOutlined,
-  UndoOutlined
+  UndoOutlined,
+  EditOutlined,
+  PlusOutlined
 } from '@ant-design/icons';
 import { useTheme } from '../context/ThemeContext';
 import { useOmiCall } from '../context/OmiCallContext';
 import api from '../lib/api';
 import { RescheduleBookingModal } from './RescheduleBookingModal';
 import BookingWizardDrawer from './BookingWizardDrawer';
+import dayjs from 'dayjs';
+import { apiClient } from '../lib/api-client';
 
 interface CustomerDetailDrawerProps {
   open: boolean;
@@ -66,6 +76,71 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const [isComboModalOpen, setIsComboModalOpen] = useState(false);
   const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm] = Form.useForm();
+  const [saveLoading, setSaveLoading] = useState(false);
+
+  const handleOpenEditModal = () => {
+    if (!customer) return;
+    editForm.setFieldsValue({
+      name: customer.name,
+      email: customer.email,
+      gender: customer.gender,
+      dob: customer.dob ? dayjs(customer.dob) : null,
+      phones: customer.phones && customer.phones.length > 0
+        ? customer.phones.map((p: any) => ({ id: p.id, phone_number: p.phone_number, is_active: !p.is_disabled }))
+        : [{ phone_number: customer.phone, is_active: true }]
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      const values = await editForm.validateFields();
+      setSaveLoading(true);
+      
+      const originalPhones = customer.phones || [];
+      const currentPhones = values.phones || [];
+      const phonesPayload = [];
+      
+      for (const orig of originalPhones) {
+        const isStillHere = currentPhones.some((curr: any) => curr.id === orig.id);
+        if (!isStillHere) {
+          phonesPayload.push({
+            id: orig.id,
+            phone_number: orig.phone_number,
+            is_deleted: true
+          });
+        }
+      }
+      
+      for (const curr of currentPhones) {
+        phonesPayload.push({
+          id: curr.id,
+          phone_number: curr.phone_number,
+          is_disabled: !curr.is_active
+        });
+      }
+      
+      await apiClient.customers.update(customerId!, {
+        name: values.name,
+        email: values.email || null,
+        gender: values.gender || null,
+        dob: values.dob ? values.dob.format('YYYY-MM-DD') : null,
+        phones: phonesPayload
+      });
+      
+      message.success('Cập nhật thông tin khách hàng thành công!');
+      setIsEditModalOpen(false);
+      fetchDetails();
+    } catch (err: any) {
+      console.error('Update customer failed:', err);
+      message.error(err.response?.data?.message || 'Không thể cập nhật thông tin khách hàng.');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
 
   const currentUser = React.useMemo(() => {
     if (typeof window !== 'undefined') {
@@ -578,18 +653,32 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   <span style={{ color: '#D4A84B', fontSize: '14px' }}>⭐⭐⭐⭐•</span>
                 </div>
                 <div style={{ fontSize: '12px', color: '#888', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                  {customer.phone ? (
-                    <span 
-                      className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-                      onClick={() => makeCall(customer.phone, customer.name, customer.id)}
-                      style={{ fontSize: '12px', color: '#888' }}
-                    >
-                      <PhoneOutlined style={{ color: '#D4A84B' }} />
-                      <span>{customer.phone}</span>
-                    </span>
-                  ) : (
-                    <span><PhoneOutlined /> -</span>
-                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {customer.phones && customer.phones.length > 0 ? (
+                      customer.phones.map((phoneObj: any) => (
+                        <span 
+                          key={phoneObj.id}
+                          className={`inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text ${phoneObj.is_disabled ? 'opacity-50 line-through' : ''}`}
+                          onClick={() => !phoneObj.is_disabled && makeCall(phoneObj.phone_number, customer.name, customer.id)}
+                          style={{ fontSize: '12px', color: phoneObj.is_disabled ? '#bbb' : '#888' }}
+                        >
+                          <PhoneOutlined style={{ color: phoneObj.is_disabled ? '#bbb' : '#D4A84B' }} />
+                          <span>{phoneObj.phone_number} {phoneObj.is_disabled && '(Vô hiệu hóa)'}</span>
+                        </span>
+                      ))
+                    ) : customer.phone ? (
+                      <span 
+                        className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
+                        onClick={() => makeCall(customer.phone, customer.name, customer.id)}
+                        style={{ fontSize: '12px', color: '#888' }}
+                      >
+                        <PhoneOutlined style={{ color: '#D4A84B' }} />
+                        <span>{customer.phone}</span>
+                      </span>
+                    ) : (
+                      <span><PhoneOutlined /> -</span>
+                    )}
+                  </div>
                   <span>Mã KH: {customer.id}</span>
                   {customer.email && <span>Email: {customer.email}</span>}
                 </div>
@@ -606,13 +695,13 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     cancelText="Hủy"
                     okButtonProps={{ loading: restoreLoading }}
                   >
-                    <Button
-                      type="primary"
-                      icon={<UndoOutlined />}
-                      style={{ fontWeight: 'bold', background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
-                    >
-                      Khôi Phục Khách Hàng
-                    </Button>
+                    <Tooltip title="Khôi Phục Khách Hàng">
+                      <Button
+                        type="primary"
+                        icon={<UndoOutlined />}
+                        style={{ fontWeight: 'bold', background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
+                      />
+                    </Tooltip>
                   </Popconfirm>
                 ) : (
                   <Popconfirm
@@ -623,17 +712,29 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     cancelText="Hủy"
                     okButtonProps={{ danger: true, loading: deleteLoading }}
                   >
-                    <Button
-                      danger
-                      type="dashed"
-                      icon={<DeleteOutlined />}
-                      style={{ fontWeight: 'bold' }}
-                    >
-                      Xóa Khách Hàng
-                    </Button>
+                    <Tooltip title="Xóa Khách Hàng">
+                      <Button
+                        danger
+                        type="dashed"
+                        icon={<DeleteOutlined />}
+                        style={{ fontWeight: 'bold' }}
+                      />
+                    </Tooltip>
                   </Popconfirm>
                 )
               )}
+              <Tooltip title="Sửa Thông Tin">
+                <Button
+                  type="default"
+                  icon={<EditOutlined />}
+                  style={{
+                    fontWeight: 'bold',
+                    borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9',
+                    color: themeMode === 'dark' ? '#fff' : '#1f2937'
+                  }}
+                  onClick={handleOpenEditModal}
+                />
+              </Tooltip>
               <Button
                 type="primary"
                 icon={<CalendarOutlined />}
@@ -644,7 +745,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                 }}
                 onClick={() => {
                   if (onBookAppointment) {
-                    onBookAppointment(customer);
+                     onBookAppointment(customer);
                   } else {
                     setBookingWizardOpen(true);
                   }
@@ -1491,6 +1592,171 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
           size="small"
           locale={{ emptyText: 'Không có lịch sử mua combo nào.' }}
         />
+      </Modal>
+      <Modal
+        title={
+          <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937', fontWeight: 'bold', fontSize: '16px' }}>
+            ✏️ Sửa Thông Tin Khách Hàng
+          </span>
+        }
+        open={isEditModalOpen}
+        onCancel={() => setIsEditModalOpen(false)}
+        onOk={handleSaveEdit}
+        confirmLoading={saveLoading}
+        okText="Lưu thay đổi"
+        cancelText="Hủy"
+        width={600}
+        styles={{
+          body: {
+            paddingTop: '16px',
+            backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+          },
+          content: {
+            backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+            color: themeMode === 'dark' ? '#fff' : '#1f2937',
+          },
+          header: {
+            backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+            borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
+            paddingBottom: '8px'
+          }
+        }}
+      >
+        <Form
+          form={editForm}
+          layout="vertical"
+          style={{ marginTop: '8px' }}
+        >
+          <Form.Item
+            name="name"
+            label={<span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563' }}>Họ và Tên</span>}
+            rules={[{ required: true, message: 'Vui lòng nhập họ và tên khách hàng' }]}
+          >
+            <Input 
+              style={{
+                backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
+                color: themeMode === 'dark' ? '#fff' : '#1f2937',
+                borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9',
+              }}
+            />
+          </Form.Item>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Form.Item
+              name="gender"
+              label={<span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563' }}>Giới tính</span>}
+            >
+              <Select
+                allowClear
+                style={{ width: '100%' }}
+                styles={{ popup: { root: { backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' } } }}
+                options={[
+                  { value: 'Male', label: 'Nam' },
+                  { value: 'Female', label: 'Nữ' },
+                  { value: 'Other', label: 'Khác' }
+                ]}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="dob"
+              label={<span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563' }}>Ngày sinh</span>}
+            >
+              <DatePicker
+                format="DD/MM/YYYY"
+                style={{ width: '100%', backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff', borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9' }}
+                placeholder="Chọn ngày sinh"
+              />
+            </Form.Item>
+          </div>
+
+          <Form.Item
+            name="email"
+            label={<span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563' }}>Email</span>}
+            rules={[{ type: 'email', message: 'Email không hợp lệ' }]}
+          >
+            <Input 
+              placeholder="example@domain.com"
+              style={{
+                backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
+                color: themeMode === 'dark' ? '#fff' : '#1f2937',
+                borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9',
+              }}
+            />
+          </Form.Item>
+
+          <Card
+            size="small"
+            title={<span style={{ fontSize: '13px', fontWeight: 'bold', color: themeMode === 'dark' ? '#fff' : '#374151' }}>📞 Danh sách số điện thoại</span>}
+            style={{
+              backgroundColor: themeMode === 'dark' ? '#0f172a' : '#f9fafb',
+              borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
+            }}
+          >
+            <Form.List name="phones">
+              {(fields, { add, remove }) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <Space key={key} style={{ display: 'flex', width: '100%', alignItems: 'center' }} align="baseline">
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'phone_number']}
+                        rules={[
+                          { required: true, message: 'Số điện thoại không được để trống' },
+                          { pattern: /^[0-9+()-\s]*$/, message: 'Số điện thoại không hợp lệ' }
+                        ]}
+                        style={{ marginBottom: 0, width: '220px' }}
+                      >
+                        <Input 
+                          placeholder="Số điện thoại"
+                          style={{
+                            backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+                            color: themeMode === 'dark' ? '#fff' : '#1f2937',
+                            borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9',
+                          }}
+                        />
+                      </Form.Item>
+                      
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'is_active']}
+                        valuePropName="checked"
+                        style={{ marginBottom: 0 }}
+                      >
+                        <Switch 
+                          checkedChildren="Hoạt động" 
+                          unCheckedChildren="Khóa" 
+                          style={{ minWidth: '100px' }}
+                        />
+                      </Form.Item>
+
+                      <Button 
+                        type="text" 
+                        danger 
+                        icon={<DeleteOutlined />} 
+                        onClick={() => remove(name)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      />
+                    </Space>
+                  ))}
+                  <Button
+                    type="dashed"
+                    onClick={() => add({ phone_number: '', is_active: true })}
+                    block
+                    icon={<PlusOutlined />}
+                    style={{
+                      color: '#D4A84B',
+                      borderColor: '#D4A84B',
+                      marginTop: '8px'
+                    }}
+                  >
+                    Thêm số điện thoại mới
+                  </Button>
+                </div>
+              )}
+            </Form.List>
+          </Card>
+        </Form>
       </Modal>
       {bookingWizardOpen && (
         <BookingWizardDrawer

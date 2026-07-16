@@ -106,6 +106,10 @@ export const apiClient = {
     bulkDelete: async (ids: number[]): Promise<BulkDeleteCustomersResponse> => {
       const response = await api.post('/customers/bulk-delete', { ids });
       return response.data;
+    },
+    update: async (id: number, data: { name: string; email: string | null; gender: string | null; dob: string | null; phones: Array<{ id?: number; phone_number: string; is_disabled?: boolean; is_deleted?: boolean }> }): Promise<any> => {
+      const response = await api.put(`/customers/${id}`, data);
+      return response.data;
     }
   },
 

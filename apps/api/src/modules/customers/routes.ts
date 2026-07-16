@@ -2675,6 +2675,112 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // PUT /api/customers/:id
+  // Update customer details in legacy DB (name, email, gender, dob, phones list)
+  fastify.put('/customers/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const customerId = parseInt(id, 10);
+    const user = request.user as { id: number; role: string };
+
+    if (isNaN(customerId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
+    }
+
+    const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
+      where: { legacyUserId: customerId }
+    });
+    if (user.role !== 'admin') {
+      if (!assigned || assigned.staffId !== user.id) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền chỉnh sửa thông tin khách hàng này.' });
+      }
+    }
+
+    const { name, email, gender, dob, phones } = request.body as {
+      name: string;
+      email: string | null;
+      gender: string | null;
+      dob: string | null;
+      phones: Array<{ id?: number; phone_number: string; is_disabled?: boolean; is_deleted?: boolean }>;
+    };
+
+    if (!name || name.trim() === '') {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Tên khách hàng không được để trống' });
+    }
+
+    try {
+      const nameParts = name.trim().split(/\s+/);
+      const lastName = nameParts[0] || '';
+      const firstName = nameParts.slice(1).join(' ') || '';
+
+      let dobDate: Date | null = null;
+      if (dob) {
+        dobDate = new Date(dob);
+        if (isNaN(dobDate.getTime())) {
+          dobDate = null;
+        }
+      }
+
+      const profileCount = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT id FROM user_profile WHERE user_id = ? LIMIT 1`,
+        customerId
+      );
+
+      if (profileCount.length > 0) {
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `UPDATE user_profile SET full_name = ?, first_name = ?, last_name = ? WHERE user_id = ?`,
+          name, firstName, lastName, customerId
+        );
+      } else {
+        const randPasscode = Math.random().toString(36).substring(2, 8);
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `INSERT INTO user_profile (
+            user_id, client_id, client_business_id, user_group_id, passcode, provider, 
+            first_name, last_name, full_name, client_store_id, is_disabled, 
+            is_leaved, is_deleted, date_created, language_id, access_user_group_ids,
+            is_academy, is_temporary
+          ) VALUES (?, 11, 1, 1, ?, 'Client', ?, ?, ?, 1, 0, 0, 0, NOW(), 1, '', 0, 0)`,
+          customerId, randPasscode, firstName, lastName, name
+        );
+      }
+
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `UPDATE user SET email = ?, gender = ?, date_of_birth = ? WHERE id = ?`,
+        email || null, gender || null, dobDate, customerId
+      );
+
+      if (Array.isArray(phones)) {
+        for (const p of phones) {
+          if (p.is_deleted) {
+            if (p.id) {
+              await fastify.prisma.legacy.$executeRawUnsafe(
+                `DELETE FROM user_contact WHERE id = ? AND user_id = ?`,
+                p.id, customerId
+              );
+            }
+          } else if (p.id) {
+            await fastify.prisma.legacy.$executeRawUnsafe(
+              `UPDATE user_contact SET phone_number = ?, is_disabled = ? WHERE id = ? AND user_id = ?`,
+              p.phone_number, p.is_disabled ? 1 : 0, p.id, customerId
+            );
+          } else {
+            await fastify.prisma.legacy.$executeRawUnsafe(
+              `INSERT INTO user_contact (user_id, phone_number, is_disabled, date_created) VALUES (?, ?, ?, NOW())`,
+              customerId, p.phone_number, p.is_disabled ? 1 : 0
+            );
+          }
+        }
+      }
+
+      return reply.send({ success: true, message: 'Cập nhật thông tin khách hàng thành công!' });
+    } catch (error: any) {
+      fastify.log.error('Update customer error:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Lỗi hệ thống khi cập nhật thông tin khách hàng.'
+      });
+    }
+  });
+
   // GET /api/customers/:id/detailed
   // Return complete detailed customer profile, stats, bookings, notes, and call logs
   fastify.get('/customers/:id/detailed', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -2733,6 +2839,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Not Found', message: 'Customer not found' });
       }
       const row = customerResult[0];
+
+      // Fetch all phone numbers associated with the customer
+      const userContacts = await fastify.prisma.legacy.user_contact.findMany({
+        where: { user_id: customerId }
+      });
 
       // 3. Fetch LTV and Total Visits in a single query
       const statsSql = `SELECT SUM(total_price) as totalSpent, COUNT(*) as totalVisits FROM \`order\` WHERE user_id = ? AND order_state = 'Completed'`;
@@ -3063,6 +3174,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
           id: row.id,
           name: row.name,
           phone: row.phone,
+          phones: userContacts.map(uc => ({
+            id: uc.id,
+            phone_number: uc.phone_number,
+            is_disabled: uc.is_disabled
+          })),
           email: row.email,
           gender: row.gender,
           dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
@@ -3071,6 +3187,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           bucket: row.bucket,
           avatar: row.avatar,
           onlineConsultant: onlineConsultantName,
+          onlineConsultantId: assigned?.staffId || null,
           isDeleted: row.isDeleted === 1
         },
         stats: {

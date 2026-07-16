@@ -39,6 +39,7 @@ import {
 import api from '../../../lib/api';
 import CallLogModal from '../../../components/CallLogModal';
 import { Customer, CustomerWeeklyProgress, BucketType } from '@mos-lab/shared';
+import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
 
 const { Title, Text } = Typography;
@@ -211,6 +212,36 @@ export default function PlansPage() {
     return `${mon.toLocaleDateString('vi-VN')} - ${sun.toLocaleDateString('vi-VN')}`;
   };
 
+  const getRowClassName = (record: Customer) => {
+    // 1. check callback date ("có hẹn gọi lại -> màu hy vọng")
+    const hasCallback = record.callbackDate ? new Date(record.callbackDate) >= new Date(new Date().setHours(0,0,0,0)) : false;
+    if (hasCallback) {
+      return themeMode === 'dark' ? 'row-hope-dark' : 'row-hope-light';
+    }
+
+    // 2. check if they have a future booking ("đã booked -> sẽ đến, chuyển sang màu xanh")
+    const isBookingInFuture = record.lastBookingDate ? new Date(record.lastBookingDate) > new Date() : false;
+    if (isBookingInFuture) {
+      const state = record.lastBookingState;
+      const isBooked = state === 'New' || state === 'Confirmed';
+      if (isBooked) {
+        return themeMode === 'dark' ? 'row-booked-future-dark' : 'row-booked-future-light';
+      }
+    }
+
+    // 3. check positive daysSinceLastVisit but missed booking ("đã booked mà chưa tới (missed), chuyển sang màu đỏ lợt")
+    const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
+    if (isBookingInPast) {
+      const state = record.lastBookingState;
+      const isMissed = state && state !== 'Completed' && state !== 'ServiceCompleted' && state !== 'CheckIn' && state !== 'CheckOut' && state !== 'ServiceStart';
+      if (isMissed) {
+        return themeMode === 'dark' ? 'row-missed-dark' : 'row-missed-light';
+      }
+    }
+
+    return '';
+  };
+
   // Columns definition
   const columns = [
     {
@@ -246,11 +277,64 @@ export default function PlansPage() {
       }
     },
     {
-      title: 'Trễ (Ngày)',
+      title: 'Chưa tới tiệm (Ngày)',
       dataIndex: ['customer', 'daysSinceLastVisit'],
       key: 'daysSince',
-      width: 90,
-      render: (days: number | null) => days !== null ? `${days}d` : '-'
+      width: 180,
+      render: (days: number | null, record: CustomerWeeklyProgress) => {
+        const cust = record.customer;
+        // 1. check callback date ("có hẹn gọi lại")
+        const hasCallback = cust.callbackDate ? new Date(cust.callbackDate) >= new Date(new Date().setHours(0,0,0,0)) : false;
+        if (hasCallback) {
+          const callbackFormatted = dayjs(cust.callbackDate).format('DD/MM/YYYY');
+          return (
+            <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#d4b106', fontWeight: 'bold' }}>
+              🕒 Hẹn gọi lại: {callbackFormatted}
+            </span>
+          );
+        }
+
+        // 2. check future booking ("đã booked -> sẽ đến")
+        const isBookingInFuture = cust.lastBookingDate ? new Date(cust.lastBookingDate) > new Date() : false;
+        if (isBookingInFuture) {
+          const state = cust.lastBookingState;
+          const isBooked = state === 'New' || state === 'Confirmed';
+          if (isBooked) {
+            const bookingFormatted = dayjs(cust.lastBookingDate).format('DD/MM/YYYY');
+            return (
+              <span style={{ color: themeMode === 'dark' ? '#73d13d' : '#389e0d', fontWeight: 'bold' }}>
+                📅 Booked: {bookingFormatted}
+              </span>
+            );
+          }
+        }
+
+        // 3. check missed booking ("đã booked mà chưa tới (missed)")
+        const isBookingInPast = cust.lastBookingDate ? new Date(cust.lastBookingDate) < new Date() : false;
+        if (isBookingInPast) {
+          const state = cust.lastBookingState;
+          const isMissed = state && state !== 'Completed' && state !== 'ServiceCompleted' && state !== 'CheckIn' && state !== 'CheckOut' && state !== 'ServiceStart';
+          if (isMissed) {
+            let missedDays = days;
+            if (cust.lastBookingDate) {
+              const bookingDate = new Date(cust.lastBookingDate);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              bookingDate.setHours(0, 0, 0, 0);
+              const diffMs = today.getTime() - bookingDate.getTime();
+              missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+            }
+            return (
+              <span style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold' }}>
+                ⚠️ Missed: {missedDays} ngày
+              </span>
+            );
+          }
+        }
+
+        // 4. normal daysSinceLastVisit ("số dương -> chưa ghé x days, bình thường")
+        return days !== null ? `${days} ngày` : <Text style={{ color: '#888' }}>Chưa từng đến</Text>;
+      }
     },
     // Monday to Sunday dynamic columns
     ...weekDays.map((date, idx) => {
@@ -444,6 +528,7 @@ export default function PlansPage() {
         columns={columns}
         rowKey={(record) => record.customer.id.toString()}
         loading={loading}
+        rowClassName={(record) => getRowClassName(record.customer)}
         pagination={false}
         scroll={{ x: 1000 }}
         style={{
@@ -593,6 +678,46 @@ export default function PlansPage() {
         .ant-drawer .ant-tabs-card .ant-tabs-tab-active {
           background: #D4A84B !important;
           color: #000 !important;
+        }
+
+        /* Row highlighting - Light Theme */
+        .light-theme .row-missed-light > td {
+          background-color: #fff1f0 !important;
+        }
+        .light-theme .row-booked-future-light > td {
+          background-color: #f6ffed !important;
+        }
+        .light-theme .row-hope-light > td {
+          background-color: #fffbe6 !important;
+        }
+        .light-theme .row-missed-light:hover > td {
+          background-color: #ffe8e6 !important;
+        }
+        .light-theme .row-booked-future-light:hover > td {
+          background-color: #ebfcdd !important;
+        }
+        .light-theme .row-hope-light:hover > td {
+          background-color: #fffac6 !important;
+        }
+
+        /* Row highlighting - Dark Theme */
+        .dark-theme .row-missed-dark > td {
+          background-color: #2a1215 !important;
+        }
+        .dark-theme .row-booked-future-dark > td {
+          background-color: #162c1b !important;
+        }
+        .dark-theme .row-hope-dark > td {
+          background-color: #2b2111 !important;
+        }
+        .dark-theme .row-missed-dark:hover > td {
+          background-color: #381b1e !important;
+        }
+        .dark-theme .row-booked-future-dark:hover > td {
+          background-color: #1e3a24 !important;
+        }
+        .dark-theme .row-hope-dark:hover > td {
+          background-color: #382c16 !important;
         }
       `}</style>
     </div>

@@ -961,15 +961,21 @@ export default function TodayDashboard() {
 
     (branchesData.detham?.coming || []).forEach((item: any) => {
       dtCount++;
-      dtPrice += getItemPrice(item);
+      if (item.status === 'completed') {
+        dtPrice += getItemPrice(item);
+      }
     });
     (branchesData.estella?.coming || []).forEach((item: any) => {
       epCount++;
-      epPrice += getItemPrice(item);
+      if (item.status === 'completed') {
+        epPrice += getItemPrice(item);
+      }
     });
     (branchesData.pxl?.coming || []).forEach((item: any) => {
       pxlCount++;
-      pxlPrice += getItemPrice(item);
+      if (item.status === 'completed') {
+        pxlPrice += getItemPrice(item);
+      }
     });
 
     const totalCount = dtCount + epCount + pxlCount;
@@ -998,7 +1004,7 @@ export default function TodayDashboard() {
 
     const allComing = Object.keys(branchesData).flatMap(branchKey => branchesData[branchKey].coming || []);
     allComing.forEach(item => {
-      const price = getItemPrice(item);
+      const price = item.status === 'completed' ? getItemPrice(item) : 0;
       if (item.category === 'combo') {
         comboCount++;
         comboPrice += price;
