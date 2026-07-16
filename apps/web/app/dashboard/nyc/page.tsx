@@ -642,7 +642,10 @@ export default function NycCampaignPage() {
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: Customer) => (
-        <Space style={{ display: 'flex', alignItems: 'center' }}>
+        <Space 
+          style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+          onClick={() => handleOpenDetailModal(record)}
+        >
           <Avatar
             src={record.avatar || undefined}
             icon={<UserOutlined />}
@@ -654,7 +657,12 @@ export default function NycCampaignPage() {
             }}
           />
           <div>
-            <div style={{ fontWeight: '600', color: token.colorText }}>{text}</div>
+            <div 
+              style={{ fontWeight: '600', color: token.colorText }}
+              className="hover:underline transition-all"
+            >
+              {text}
+            </div>
             <div style={{ fontSize: '12px', color: token.colorTextDescription }}>{record.phone}</div>
           </div>
         </Space>
@@ -1053,6 +1061,7 @@ export default function NycCampaignPage() {
 
       {/* DATA TABLE */}
       <Table
+        size="small"
         dataSource={customers}
         columns={columns}
         rowKey="id"
