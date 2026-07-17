@@ -132,11 +132,30 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
           height: `${modalHeight}px`,
           overflowY: 'auto',
           padding: '4px',
-          border: `1px solid ${token.colorBorderSecondary}`,
+          border: `1px solid ${token.colorBorder}`,
           borderRadius: '6px',
           background: token.colorBgContainer,
         }}
       >
+        <style>{`
+          .icon-picker-btn {
+            background: ${token.colorBgContainer} !important;
+            border: 1px solid ${token.colorBorder} !important;
+            color: ${token.colorText} !important;
+            transition: all 0.2s ease-in-out !important;
+          }
+          .icon-picker-btn:hover {
+            border-color: ${token.colorPrimary} !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            background: ${token.colorBgTextHover} !important;
+          }
+          .icon-picker-btn-selected {
+            border: 2px solid ${token.colorPrimary} !important;
+            background: ${token.colorPrimaryBg || 'rgba(212, 168, 75, 0.15)'} !important;
+            color: ${token.colorPrimary} !important;
+          }
+        `}</style>
         {filteredIcons.map((name) => {
           const IconComp = (Icons as any)[name];
           const isSelected = value === name;
@@ -153,29 +172,29 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '8px',
-                border: isSelected 
-                  ? `2px solid ${token.colorPrimary}` 
-                  : `1px solid ${token.colorBorderSecondary}`,
                 borderRadius: '6px',
-                background: isSelected ? token.colorPrimaryBg : 'transparent',
                 cursor: 'pointer',
-                transition: 'all 0.2s',
                 height: '70px',
                 gap: '6px',
-                color: token.colorText,
               }}
               title={name}
-              className="icon-picker-btn"
+              className={isSelected ? "icon-picker-btn icon-picker-btn-selected" : "icon-picker-btn"}
             >
-              {IconComp && React.createElement(IconComp, { style: { fontSize: '20px', color: isSelected ? token.colorPrimary : token.colorTextDescription } })}
+              {IconComp && React.createElement(IconComp, { 
+                style: { 
+                  fontSize: '20px', 
+                  color: isSelected ? token.colorPrimary : token.colorTextSecondary 
+                } 
+              })}
               <span
                 style={{
-                  fontSize: '9px',
+                  fontSize: '10px',
+                  fontWeight: '500',
                   maxWidth: '100%',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  color: token.colorTextDescription,
+                  color: isSelected ? token.colorPrimary : token.colorTextSecondary,
                 }}
               >
                 {name.replace('Outlined', '')}
@@ -184,7 +203,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
           );
         })}
         {filteredIcons.length === 0 && (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '32px', color: token.colorTextDescription }}>
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '32px', color: token.colorTextSecondary }}>
             Không tìm thấy icon nào phù hợp
           </div>
         )}

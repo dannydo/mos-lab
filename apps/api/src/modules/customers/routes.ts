@@ -450,11 +450,32 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       });
 
+      // Fetch latest call logs for the returned customers
+      const latestCalls = customerIds.length > 0 ? await fastify.prisma.crm.crmCallLog.findMany({
+        where: {
+          legacyUserId: { in: customerIds }
+        },
+        orderBy: { createdAt: 'desc' }
+      }) : [];
+
+      const latestCallMap = new Map();
+      latestCalls.forEach(c => {
+        if (!latestCallMap.has(c.legacyUserId)) {
+          latestCallMap.set(c.legacyUserId, {
+            createdAt: c.createdAt.toISOString(),
+            durationSec: c.durationSec,
+            callResult: c.callResult,
+            note: c.note
+          });
+        }
+      });
+
       // Map raw SQL outputs to clean Customer interface types
       const customers = dataResult.map((row: any) => {
         const assigned = assignmentMap.get(Number(row.id)) || null;
         const booking = bookingMap.get(Number(row.id)) || null;
         const callbackDateVal = callbackMap.get(Number(row.id)) || null;
+        const lastCallVal = latestCallMap.get(Number(row.id)) || null;
 
         return {
           id: Number(row.id),
@@ -479,7 +500,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           avatar: row.avatar,
           lastBookingState: booking ? booking.orderState : null,
           lastBookingDate: booking && booking.bookingDate ? new Date(booking.bookingDate).toISOString() : null,
-          callbackDate: callbackDateVal ? new Date(callbackDateVal).toISOString().split('T')[0] : null
+          callbackDate: callbackDateVal ? new Date(callbackDateVal).toISOString().split('T')[0] : null,
+          lastCall: lastCallVal
         };
       });
 

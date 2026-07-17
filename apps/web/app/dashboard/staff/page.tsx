@@ -458,7 +458,6 @@ export default function StaffPage() {
         }
 
         const lastLogin = dayjs(record.lastLoginAt);
-        const lastActive = record.lastActiveAt ? dayjs(record.lastActiveAt) : null;
         const now = dayjs();
         
         let lastLoginStr = '';
@@ -470,41 +469,55 @@ export default function StaffPage() {
           lastLoginStr = lastLogin.format('DD/MM/YYYY HH:mm');
         }
 
-        // Relative time for active status
-        const isOnline = !!(lastActive && now.diff(lastActive, 'minute') < 5);
-        let activeStatusText = '';
+        return (
+          <Text style={{ fontSize: '13px', fontWeight: '500', color: token.colorText }}>
+            {lastLoginStr}
+          </Text>
+        );
+      }
+    },
+    {
+      title: 'Lần cuối online',
+      key: 'lastActive',
+      render: (_: any, record: Staff) => {
+        if (!record.lastActiveAt) {
+          return (
+            <Text type="secondary" italic style={{ fontSize: '12px' }}>
+              Chưa hoạt động
+            </Text>
+          );
+        }
+
+        const lastActive = dayjs(record.lastActiveAt);
+        const now = dayjs();
+        const diffMin = now.diff(lastActive, 'minute');
+        const isOnline = diffMin < 5;
+
         if (isOnline) {
-          activeStatusText = 'Đang hoạt động';
-        } else if (lastActive) {
-          const diffMin = now.diff(lastActive, 'minute');
-          if (diffMin < 60) {
-            activeStatusText = `${diffMin} phút trước`;
+          return (
+            <Tag color="success" style={{ fontSize: '12px', fontWeight: '500', borderRadius: '4px' }}>
+              Đang online
+            </Tag>
+          );
+        }
+
+        let activeStatusText = '';
+        if (diffMin < 60) {
+          activeStatusText = `${diffMin} phút trước`;
+        } else {
+          const diffHr = now.diff(lastActive, 'hour');
+          if (diffHr < 24) {
+            activeStatusText = `${diffHr} giờ trước`;
           } else {
-            const diffHr = now.diff(lastActive, 'hour');
-            if (diffHr < 24) {
-              activeStatusText = `${diffHr} giờ trước`;
-            } else {
-              const diffDay = now.diff(lastActive, 'day');
-              activeStatusText = `${diffDay} ngày trước`;
-            }
+            const diffDay = now.diff(lastActive, 'day');
+            activeStatusText = `${diffDay} ngày trước`;
           }
         }
 
         return (
-          <div style={{ fontSize: '13px' }}>
-            <div style={{ fontWeight: '500', color: token.colorText }}>
-              {lastLoginStr}
-            </div>
-            {isOnline ? (
-              <Tag color="success" style={{ fontSize: '10px', marginTop: '4px', height: '18px', lineHeight: '16px' }}>
-                Online
-              </Tag>
-            ) : activeStatusText ? (
-              <Text type="secondary" style={{ fontSize: '11px', display: 'block', marginTop: '2px' }}>
-                Hoạt động: {activeStatusText}
-              </Text>
-            ) : null}
-          </div>
+          <Text style={{ fontSize: '13px', color: token.colorTextDescription }}>
+            {activeStatusText}
+          </Text>
         );
       }
     },

@@ -31,6 +31,12 @@ export interface Customer {
   lastBookingDate?: string | null;
   callbackDate?: string | null;
   isDeleted?: boolean;
+  lastCall?: {
+    createdAt: string;
+    durationSec: number | null;
+    callResult: string | null;
+    note: string | null;
+  } | null;
 }
 
 export interface CustomerStats {

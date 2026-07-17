@@ -45,14 +45,18 @@ import {
   RiseOutlined,
   InfoCircleOutlined,
   InboxOutlined,
-  WarningOutlined
+  WarningOutlined,
+  CloseCircleFilled
 } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../lib/api';
 import CallLogModal from '../../../components/CallLogModal';
 import CustomerDetailDrawer from '../../../components/CustomerDetailDrawer';
 import BookingWizardDrawer from '../../../components/BookingWizardDrawer';
-import { Customer } from '@mos-lab/shared';
+import { TableConfigDrawer } from '../../../components/TableConfigDrawer';
+import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
+import { useTableConfig } from '../../../hooks/useTableConfig';
+import { Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -77,6 +81,12 @@ const TAB_KEYS = [
   { id: 'NYC_365', name: 'NYC 365', rangeText: '181 - 365 ngày', minDays: 181, maxDays: 365 },
   { id: 'NYC_365plus', name: 'NYC 365+', rangeText: '> 365 ngày', minDays: 366, maxDays: undefined }
 ];
+
+const formatDuration = (secs: number) => {
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+};
 
 export default function NycCampaignPage() {
   const { themeMode } = useTheme();
@@ -760,12 +770,6 @@ export default function NycCampaignPage() {
       }
     },
     {
-      title: 'Ghé tiệm gần nhất',
-      dataIndex: 'lastVisit',
-      key: 'lastVisit',
-      render: (dateStr: string | null) => dateStr ? new Date(dateStr).toLocaleDateString('vi-VN') : '-'
-    },
-    {
       title: 'Tổng Chi Tiêu',
       dataIndex: 'totalSpent',
       key: 'totalSpent',
@@ -776,6 +780,51 @@ export default function NycCampaignPage() {
       dataIndex: 'assignedStaff',
       key: 'assignedStaff',
       render: (staff: any) => staff ? <Tag color="cyan">{staff.displayName}</Tag> : <Text type="secondary" style={{ fontStyle: 'italic' }}>Chưa phân bổ</Text>
+    },
+    {
+      title: 'Ngày gọi gần nhất',
+      key: 'lastCallDate',
+      render: (_: any, record: Customer) => {
+        if (!record.lastCall?.createdAt) return '-';
+        return dayjs(record.lastCall.createdAt).format('DD/MM/YYYY HH:mm');
+      }
+    },
+    {
+      title: 'Thời lượng',
+      key: 'lastCallDuration',
+      render: (_: any, record: Customer) => {
+        if (record.lastCall?.durationSec === undefined || record.lastCall?.durationSec === null) return '-';
+        return formatDuration(record.lastCall.durationSec);
+      }
+    },
+    {
+      title: 'Trạng thái cuộc gọi',
+      key: 'lastCallResult',
+      render: (_: any, record: Customer) => {
+        if (!record.lastCall?.callResult) return '-';
+        const result = record.lastCall.callResult;
+        const label = CALL_RESULT_LABELS[result as keyof typeof CALL_RESULT_LABELS] || result;
+        let color = 'default';
+        if (result === 'ANSWERED') color = 'success';
+        else if (result === 'NO_ANSWER') color = 'warning';
+        else if (result === 'BUSY') color = 'orange';
+        else if (result === 'FAILED' || result === 'WRONG_NUMBER') color = 'error';
+        return <Tag color={color}>{label}</Tag>;
+      }
+    },
+    {
+      title: 'Ghi chú cuộc gọi',
+      key: 'lastCallNote',
+      render: (_: any, record: Customer) => {
+        if (!record.lastCall?.note) return '-';
+        const note = record.lastCall.note;
+        const compactNote = note.length > 25 ? `${note.substring(0, 25)}...` : note;
+        return (
+          <Tooltip title={note}>
+            <span style={{ cursor: 'pointer' }}>{compactNote}</span>
+          </Tooltip>
+        );
+      }
     },
     {
       title: 'Thao tác',
@@ -845,6 +894,17 @@ export default function NycCampaignPage() {
       render: (val: string) => <Tag color={val === 'Completed' ? 'green' : 'orange'}>{val}</Tag>
     }
   ];
+
+  const {
+    loading: nycConfigLoading,
+    columns: nycConfigColumns,
+    rawConfig: nycRawConfig,
+    configVisible: nycConfigVisible,
+    openConfig: openNycConfig,
+    closeConfig: closeNycConfig,
+    saveConfig: saveNycConfig,
+    resetConfig: resetNycConfig,
+  } = useTableConfig('nyc_campaign_table', columns);
 
   const activeTouchpointsList = configs[activeTab] || [];
 
@@ -1111,7 +1171,16 @@ export default function NycCampaignPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ maxWidth: 380 }}
-              allowClear
+              suffix={
+                searchQuery ? (
+                  <CloseCircleFilled
+                    onClick={() => setSearchQuery('')}
+                    style={{ color: token.colorTextDescription, cursor: 'pointer', fontSize: '14px' }}
+                  />
+                ) : (
+                  <span style={{ width: '14px', display: 'inline-block' }} />
+                )
+              }
               size="large"
             />
             
@@ -1131,6 +1200,13 @@ export default function NycCampaignPage() {
                   { value: 'id_desc', label: 'Khách hàng mới nhất' }
                 ]}
               />
+              <Tooltip title="Cấu hình hiển thị cột">
+                <Button 
+                  type="text" 
+                  icon={<SettingOutlined style={{ color: token.colorTextDescription }} />} 
+                  onClick={openNycConfig}
+                />
+              </Tooltip>
             </Space>
           </div>
         </div>
@@ -1140,10 +1216,16 @@ export default function NycCampaignPage() {
       <Table
         size="small"
         dataSource={customers}
-        columns={columns}
+        columns={nycConfigColumns}
         rowKey="id"
-        loading={loading}
+        loading={loading || nycConfigLoading}
         rowClassName={getRowClassName}
+        components={{
+          header: {
+            cell: ResizableHeaderCell
+          }
+        }}
+        scroll={{ x: 'max-content' }}
         pagination={{
           current: currentPage,
           pageSize: pageSize,
@@ -1386,6 +1468,15 @@ export default function NycCampaignPage() {
           </Form.List>
         </Form>
       </Modal>
+
+      <TableConfigDrawer
+        visible={nycConfigVisible}
+        onClose={closeNycConfig}
+        title="Cấu hình cột: Chiến dịch khách hàng NYC"
+        columns={nycRawConfig}
+        onSave={saveNycConfig}
+        onReset={resetNycConfig}
+      />
 
       <style jsx global>{`
         /* Keep theme styling consistent */
