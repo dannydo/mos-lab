@@ -8,7 +8,9 @@ async function run() {
   const crmStaff = await crm.crmStaff.findMany();
   console.log('CRM Staff:');
   for (const s of crmStaff) {
-    console.log(`ID: ${s.id}, Username: ${s.username}, DisplayName: ${s.displayName}, Role: ${s.role}, LegacyStaffId: ${s.legacyStaffId}, IsActive: ${s.isActive}`);
+    console.log(
+      `ID: ${s.id}, Username: ${s.username}, DisplayName: ${s.displayName}, Role: ${s.role}, LegacyStaffId: ${s.legacyStaffId}, IsActive: ${s.isActive}`
+    );
   }
 
   await crm.$disconnect();

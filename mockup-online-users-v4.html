@@ -1,480 +1,709 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi" class="dark-theme dark">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mockup V4 – Activity Rings with Bottom Sheet</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mockup V4 – Activity Rings with Bottom Sheet</title>
 
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            gold: '#D4A84B',
-            darkBg: '#0A0A0A',
-            darkCard: '#141414',
-            darkBorder: '#262626',
-          },
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'sans-serif'],
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              gold: '#D4A84B',
+              darkBg: '#0A0A0A',
+              darkCard: '#141414',
+              darkBorder: '#262626',
+            },
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', 'sans-serif'],
+            },
           },
         },
-      },
-    };
-  </script>
+      };
+    </script>
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
 
-  <!-- FontAwesome 6.4 -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- FontAwesome 6.4 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
 
-    /* ---- Theme Vars ---- */
-    .dark-theme { --bg: #0A0A0A; --card: #141414; --border: #262626; --text: #E5E5E5; --textMuted: #737373; --overlay: rgba(0,0,0,0.7); }
-    .light-theme { --bg: #F5F5F4; --card: #FFFFFF; --border: #E5E7EB; --text: #1A1A1A; --textMuted: #6B7280; --overlay: rgba(0,0,0,0.4); }
-    body { background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
+      /* ---- Theme Vars ---- */
+      .dark-theme {
+        --bg: #0a0a0a;
+        --card: #141414;
+        --border: #262626;
+        --text: #e5e5e5;
+        --textMuted: #737373;
+        --overlay: rgba(0, 0, 0, 0.7);
+      }
+      .light-theme {
+        --bg: #f5f5f4;
+        --card: #ffffff;
+        --border: #e5e7eb;
+        --text: #1a1a1a;
+        --textMuted: #6b7280;
+        --overlay: rgba(0, 0, 0, 0.4);
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        transition:
+          background 0.3s,
+          color 0.3s;
+      }
 
-    /* ---- Glass Card ---- */
-    .glass-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
+      /* ---- Glass Card ---- */
+      .glass-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
 
-    /* ---- Pulse Ring ---- */
-    @keyframes pulseRing {
-      0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
-      70% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
-      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
-    }
-    .ring-pulse { animation: pulseRing 2s ease-out infinite; }
+      /* ---- Pulse Ring ---- */
+      @keyframes pulseRing {
+        0% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+        }
+        70% {
+          box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+      }
+      .ring-pulse {
+        animation: pulseRing 2s ease-out infinite;
+      }
 
-    /* ---- DD Gold Pulse ---- */
-    @keyframes pulseGold {
-      0% { box-shadow: 0 0 0 0 rgba(212,168,75,0.5); }
-      70% { box-shadow: 0 0 0 6px rgba(212,168,75,0); }
-      100% { box-shadow: 0 0 0 0 rgba(212,168,75,0); }
-    }
-    .ring-pulse-gold { animation: pulseGold 2s ease-out infinite; }
+      /* ---- DD Gold Pulse ---- */
+      @keyframes pulseGold {
+        0% {
+          box-shadow: 0 0 0 0 rgba(212, 168, 75, 0.5);
+        }
+        70% {
+          box-shadow: 0 0 0 6px rgba(212, 168, 75, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(212, 168, 75, 0);
+        }
+      }
+      .ring-pulse-gold {
+        animation: pulseGold 2s ease-out infinite;
+      }
 
-    /* ---- SVG Ring Animation ---- */
-    .ring-progress {
-      transition: stroke-dashoffset 0.8s ease;
-    }
+      /* ---- SVG Ring Animation ---- */
+      .ring-progress {
+        transition: stroke-dashoffset 0.8s ease;
+      }
 
-    /* ---- Tab Underline ---- */
-    .tab-underline {
-      transition: left 0.3s ease, width 0.3s ease;
-    }
+      /* ---- Tab Underline ---- */
+      .tab-underline {
+        transition:
+          left 0.3s ease,
+          width 0.3s ease;
+      }
 
-    /* ---- Bottom Sheet ---- */
-    .bottom-sheet-overlay {
-      position: fixed; inset: 0; z-index: 50;
-      background: var(--overlay);
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.35s ease;
-    }
-    .bottom-sheet-overlay.active { opacity: 1; pointer-events: auto; }
+      /* ---- Bottom Sheet ---- */
+      .bottom-sheet-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: var(--overlay);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s ease;
+      }
+      .bottom-sheet-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
 
-    .bottom-sheet {
-      position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
-      height: 75vh;
-      transform: translateY(100%);
-      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
-      border-top-left-radius: 1.5rem;
-      border-top-right-radius: 1.5rem;
-      overflow: hidden;
-    }
-    .bottom-sheet.active { transform: translateY(0); }
+      .bottom-sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 60;
+        height: 75vh;
+        transform: translateY(100%);
+        transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+        border-top-left-radius: 1.5rem;
+        border-top-right-radius: 1.5rem;
+        overflow: hidden;
+      }
+      .bottom-sheet.active {
+        transform: translateY(0);
+      }
 
-    /* ---- Scrollbar Styling ---- */
-    .sheet-body::-webkit-scrollbar { width: 4px; }
-    .sheet-body::-webkit-scrollbar-track { background: transparent; }
-    .sheet-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 9999px; }
+      /* ---- Scrollbar Styling ---- */
+      .sheet-body::-webkit-scrollbar {
+        width: 4px;
+      }
+      .sheet-body::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .sheet-body::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 9999px;
+      }
 
-    /* ---- Stacked Bar ---- */
-    .stacked-bar { display: flex; height: 18px; border-radius: 9px; overflow: hidden; }
-    .stacked-bar > div { transition: width 0.6s ease; }
+      /* ---- Stacked Bar ---- */
+      .stacked-bar {
+        display: flex;
+        height: 18px;
+        border-radius: 9px;
+        overflow: hidden;
+      }
+      .stacked-bar > div {
+        transition: width 0.6s ease;
+      }
 
-    /* ---- Online strip scroll buttons ---- */
-    .strip-btn {
-      width: 22px; height: 22px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 10px; cursor: pointer;
-      background: var(--card); border: 1px solid var(--border); color: var(--textMuted);
-      transition: all 0.2s;
-    }
-    .strip-btn:hover { color: #D4A84B; border-color: #D4A84B; }
-  </style>
-</head>
+      /* ---- Online strip scroll buttons ---- */
+      .strip-btn {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        cursor: pointer;
+        background: var(--card);
+        border: 1px solid var(--border);
+        color: var(--textMuted);
+        transition: all 0.2s;
+      }
+      .strip-btn:hover {
+        color: #d4a84b;
+        border-color: #d4a84b;
+      }
+    </style>
+  </head>
 
-<body class="min-h-screen">
-
-  <!-- ============================================================ -->
-  <!-- HEADER                                                        -->
-  <!-- ============================================================ -->
-  <header class="glass-card sticky top-0 z-40 border-b" style="border-color: var(--border);">
-    <div class="max-w-7xl mx-auto flex items-center justify-between px-4 py-2.5">
-
-      <!-- Left: Logo -->
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center text-black font-extrabold text-sm shadow-lg shadow-gold/20">WL</div>
-        <div class="hidden sm:block leading-tight">
-          <div class="text-sm font-bold" style="color: var(--text);">Wingslashes</div>
-          <div class="text-[10px]" style="color: var(--textMuted);">Telesales Dashboard</div>
+  <body class="min-h-screen">
+    <!-- ============================================================ -->
+    <!-- HEADER                                                        -->
+    <!-- ============================================================ -->
+    <header class="glass-card sticky top-0 z-40 border-b" style="border-color: var(--border)">
+      <div class="max-w-7xl mx-auto flex items-center justify-between px-4 py-2.5">
+        <!-- Left: Logo -->
+        <div class="flex items-center gap-3">
+          <div
+            class="w-9 h-9 rounded-lg bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center text-black font-extrabold text-sm shadow-lg shadow-gold/20"
+          >
+            WL
+          </div>
+          <div class="hidden sm:block leading-tight">
+            <div class="text-sm font-bold" style="color: var(--text)">Wingslashes</div>
+            <div class="text-[10px]" style="color: var(--textMuted)">Telesales Dashboard</div>
+          </div>
         </div>
-      </div>
 
-      <!-- Right: Online strip → Time → Toggle → DD -->
-      <div class="flex items-center gap-3">
+        <!-- Right: Online strip → Time → Toggle → DD -->
+        <div class="flex items-center gap-3">
+          <!-- Online User Strip -->
+          <div class="flex items-center gap-1">
+            <!-- Left Arrow -->
+            <button class="strip-btn" id="stripLeft"><i class="fa-solid fa-chevron-left"></i></button>
 
-        <!-- Online User Strip -->
-        <div class="flex items-center gap-1">
-          <!-- Left Arrow -->
-          <button class="strip-btn" id="stripLeft"><i class="fa-solid fa-chevron-left"></i></button>
+            <div id="userStrip" class="flex items-center gap-3 overflow-hidden" style="max-width: 340px">
+              <!-- Users injected by JS -->
+            </div>
 
-          <div id="userStrip" class="flex items-center gap-3 overflow-hidden" style="max-width: 340px;">
-            <!-- Users injected by JS -->
+            <!-- Right Arrow -->
+            <button class="strip-btn" id="stripRight"><i class="fa-solid fa-chevron-right"></i></button>
           </div>
 
-          <!-- Right Arrow -->
-          <button class="strip-btn" id="stripRight"><i class="fa-solid fa-chevron-right"></i></button>
+          <!-- Separator -->
+          <div class="w-px h-6" style="background: var(--border)"></div>
+
+          <!-- Time -->
+          <div id="clock" class="text-xs font-medium" style="color: var(--textMuted)"></div>
+
+          <!-- Theme Toggle -->
+          <button
+            id="themeToggle"
+            class="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-110"
+            style="background: var(--card); border: 1px solid var(--border); color: var(--textMuted)"
+          >
+            <i class="fa-solid fa-moon text-sm" id="themeIcon"></i>
+          </button>
+
+          <!-- DD Avatar (separate, gold ring, bigger) -->
+          <button
+            id="ddAvatar"
+            class="relative flex flex-col items-center cursor-pointer group"
+            onclick="openSheet('DD')"
+          >
+            <div
+              class="w-10 h-10 rounded-full ring-pulse-gold flex items-center justify-center font-bold text-xs text-black"
+              style="background: linear-gradient(135deg, #d4a84b, #b8860b); box-shadow: 0 0 0 3px #d4a84b"
+            >
+              DD
+            </div>
+            <span class="text-[9px] mt-0.5 font-medium" style="color: #d4a84b">Danny</span>
+          </button>
         </div>
+      </div>
+    </header>
 
-        <!-- Separator -->
-        <div class="w-px h-6" style="background: var(--border);"></div>
+    <!-- ============================================================ -->
+    <!-- MAIN PLACEHOLDER CONTENT                                      -->
+    <!-- ============================================================ -->
+    <main class="max-w-7xl mx-auto px-4 py-10">
+      <div class="text-center py-20">
+        <div
+          class="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6"
+          style="
+            background: linear-gradient(135deg, rgba(212, 168, 75, 0.15), rgba(212, 168, 75, 0.05));
+            border: 1px solid rgba(212, 168, 75, 0.2);
+          "
+        >
+          <i class="fa-solid fa-ring text-3xl text-gold"></i>
+        </div>
+        <h2 class="text-2xl font-bold mb-2" style="color: var(--text)">Mockup V4 — Activity Rings</h2>
+        <p class="text-sm" style="color: var(--textMuted)">
+          Click any avatar in the header strip to open the bottom sheet
+        </p>
+        <div class="flex items-center justify-center gap-2 mt-4">
+          <span class="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+          <span class="text-xs" style="color: var(--textMuted)">5 users online</span>
+        </div>
+      </div>
+    </main>
 
-        <!-- Time -->
-        <div id="clock" class="text-xs font-medium" style="color: var(--textMuted);"></div>
+    <!-- ============================================================ -->
+    <!-- BOTTOM SHEET OVERLAY                                          -->
+    <!-- ============================================================ -->
+    <div class="bottom-sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
 
-        <!-- Theme Toggle -->
-        <button id="themeToggle" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-110" style="background: var(--card); border: 1px solid var(--border); color: var(--textMuted);">
-          <i class="fa-solid fa-moon text-sm" id="themeIcon"></i>
+    <!-- ============================================================ -->
+    <!-- BOTTOM SHEET                                                  -->
+    <!-- ============================================================ -->
+    <div class="bottom-sheet glass-card" id="bottomSheet">
+      <!-- Drag Handle -->
+      <div class="flex justify-center pt-3 pb-2 cursor-grab" id="dragHandle">
+        <div class="w-10 h-1 rounded-full" style="background: var(--textMuted); opacity: 0.4"></div>
+      </div>
+
+      <!-- Sheet Header -->
+      <div class="px-5 pb-3 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <div
+              id="sheetAvatar"
+              class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm text-white"
+            ></div>
+            <span
+              class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2"
+              style="border-color: var(--card)"
+            ></span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="sheetName" class="font-bold text-base" style="color: var(--text)"></span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gold/15 text-gold">Telesales</span>
+            </div>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+              <span class="text-[11px]" style="color: var(--textMuted)">Đang hoạt động</span>
+            </div>
+          </div>
+        </div>
+        <button
+          onclick="closeSheet()"
+          class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-white/10"
+          style="color: var(--textMuted)"
+        >
+          <i class="fa-solid fa-xmark"></i>
         </button>
+      </div>
 
-        <!-- DD Avatar (separate, gold ring, bigger) -->
-        <button id="ddAvatar" class="relative flex flex-col items-center cursor-pointer group" onclick="openSheet('DD')">
-          <div class="w-10 h-10 rounded-full ring-pulse-gold flex items-center justify-center font-bold text-xs text-black" style="background: linear-gradient(135deg, #D4A84B, #B8860B); box-shadow: 0 0 0 3px #D4A84B;">
-            DD
+      <!-- Tabs -->
+      <div class="relative px-5 pt-3" style="border-bottom: 1px solid var(--border)">
+        <div class="flex gap-6" id="tabContainer">
+          <button
+            class="tab-btn pb-2.5 text-sm font-semibold transition-colors"
+            data-tab="today"
+            onclick="switchTab('today')"
+          >
+            Hôm nay
+          </button>
+          <button
+            class="tab-btn pb-2.5 text-sm font-semibold transition-colors"
+            data-tab="week"
+            onclick="switchTab('week')"
+          >
+            Tuần này
+          </button>
+          <button
+            class="tab-btn pb-2.5 text-sm font-semibold transition-colors"
+            data-tab="month"
+            onclick="switchTab('month')"
+          >
+            Tháng này
+          </button>
+        </div>
+        <!-- Underline indicator -->
+        <div id="tabIndicator" class="tab-underline absolute bottom-0 h-[3px] rounded-full bg-gold"></div>
+      </div>
+
+      <!-- Sheet Body (scrollable) -->
+      <div class="sheet-body overflow-y-auto" style="height: calc(75vh - 160px); padding: 20px">
+        <!-- KPI Rings Section -->
+        <div class="flex flex-col lg:flex-row items-center gap-6 mb-8">
+          <!-- SVG Rings -->
+          <div class="flex-shrink-0">
+            <svg id="ringSvg" width="300" height="300" viewBox="0 0 300 300" style="transform: rotate(-90deg)">
+              <!-- Ring 1: Calls (outermost) - blue -->
+              <circle cx="150" cy="150" r="140" stroke="#3B82F6" stroke-opacity="0.15" stroke-width="16" fill="none" />
+              <circle
+                id="ring1"
+                class="ring-progress"
+                cx="150"
+                cy="150"
+                r="140"
+                stroke="#3B82F6"
+                stroke-width="16"
+                fill="none"
+                stroke-linecap="round"
+                stroke-dasharray="879.6"
+                stroke-dashoffset="879.6"
+              />
+
+              <!-- Ring 2: Pickups - emerald -->
+              <circle cx="150" cy="150" r="120" stroke="#10B981" stroke-opacity="0.15" stroke-width="16" fill="none" />
+              <circle
+                id="ring2"
+                class="ring-progress"
+                cx="150"
+                cy="150"
+                r="120"
+                stroke="#10B981"
+                stroke-width="16"
+                fill="none"
+                stroke-linecap="round"
+                stroke-dasharray="753.98"
+                stroke-dashoffset="753.98"
+              />
+
+              <!-- Ring 3: Happy - amber -->
+              <circle cx="150" cy="150" r="100" stroke="#F59E0B" stroke-opacity="0.15" stroke-width="16" fill="none" />
+              <circle
+                id="ring3"
+                class="ring-progress"
+                cx="150"
+                cy="150"
+                r="100"
+                stroke="#F59E0B"
+                stroke-width="16"
+                fill="none"
+                stroke-linecap="round"
+                stroke-dasharray="628.32"
+                stroke-dashoffset="628.32"
+              />
+
+              <!-- Ring 4: Booked - violet -->
+              <circle cx="150" cy="150" r="80" stroke="#8B5CF6" stroke-opacity="0.15" stroke-width="16" fill="none" />
+              <circle
+                id="ring4"
+                class="ring-progress"
+                cx="150"
+                cy="150"
+                r="80"
+                stroke="#8B5CF6"
+                stroke-width="16"
+                fill="none"
+                stroke-linecap="round"
+                stroke-dasharray="502.65"
+                stroke-dashoffset="502.65"
+              />
+
+              <!-- Ring 5: Done (innermost) - gold -->
+              <circle cx="150" cy="150" r="60" stroke="#D4A84B" stroke-opacity="0.15" stroke-width="16" fill="none" />
+              <circle
+                id="ring5"
+                class="ring-progress"
+                cx="150"
+                cy="150"
+                r="60"
+                stroke="#D4A84B"
+                stroke-width="16"
+                fill="none"
+                stroke-linecap="round"
+                stroke-dasharray="376.99"
+                stroke-dashoffset="376.99"
+              />
+            </svg>
           </div>
-          <span class="text-[9px] mt-0.5 font-medium" style="color: #D4A84B;">Danny</span>
-        </button>
-      </div>
-    </div>
-  </header>
 
-  <!-- ============================================================ -->
-  <!-- MAIN PLACEHOLDER CONTENT                                      -->
-  <!-- ============================================================ -->
-  <main class="max-w-7xl mx-auto px-4 py-10">
-    <div class="text-center py-20">
-      <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6" style="background: linear-gradient(135deg, rgba(212,168,75,0.15), rgba(212,168,75,0.05)); border: 1px solid rgba(212,168,75,0.2);">
-        <i class="fa-solid fa-ring text-3xl text-gold"></i>
-      </div>
-      <h2 class="text-2xl font-bold mb-2" style="color: var(--text);">Mockup V4 — Activity Rings</h2>
-      <p class="text-sm" style="color: var(--textMuted);">Click any avatar in the header strip to open the bottom sheet</p>
-      <div class="flex items-center justify-center gap-2 mt-4">
-        <span class="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-        <span class="text-xs" style="color: var(--textMuted);">5 users online</span>
-      </div>
-    </div>
-  </main>
-
-  <!-- ============================================================ -->
-  <!-- BOTTOM SHEET OVERLAY                                          -->
-  <!-- ============================================================ -->
-  <div class="bottom-sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
-
-  <!-- ============================================================ -->
-  <!-- BOTTOM SHEET                                                  -->
-  <!-- ============================================================ -->
-  <div class="bottom-sheet glass-card" id="bottomSheet">
-
-    <!-- Drag Handle -->
-    <div class="flex justify-center pt-3 pb-2 cursor-grab" id="dragHandle">
-      <div class="w-10 h-1 rounded-full" style="background: var(--textMuted); opacity: 0.4;"></div>
-    </div>
-
-    <!-- Sheet Header -->
-    <div class="px-5 pb-3 flex items-center justify-between" style="border-bottom: 1px solid var(--border);">
-      <div class="flex items-center gap-3">
-        <div class="relative">
-          <div id="sheetAvatar" class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm text-white"></div>
-          <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2" style="border-color: var(--card);"></span>
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <span id="sheetName" class="font-bold text-base" style="color: var(--text);"></span>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gold/15 text-gold">Telesales</span>
+          <!-- Legend -->
+          <div class="flex flex-col gap-3 w-full lg:w-auto" id="ringLegend">
+            <!-- Injected by JS -->
           </div>
-          <div class="flex items-center gap-1.5 mt-0.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-            <span class="text-[11px]" style="color: var(--textMuted);">Đang hoạt động</span>
+        </div>
+
+        <!-- Divider -->
+        <div class="h-px my-4" style="background: var(--border)"></div>
+
+        <!-- Leaderboard -->
+        <div class="mb-4">
+          <h3 class="text-base font-bold mb-4" style="color: var(--text)">🏆 Bảng Xếp Hạng Team Telesales</h3>
+          <div class="flex flex-col gap-2.5" id="leaderboard">
+            <!-- Injected by JS -->
           </div>
         </div>
       </div>
-      <button onclick="closeSheet()" class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-white/10" style="color: var(--textMuted);">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
     </div>
 
-    <!-- Tabs -->
-    <div class="relative px-5 pt-3" style="border-bottom: 1px solid var(--border);">
-      <div class="flex gap-6" id="tabContainer">
-        <button class="tab-btn pb-2.5 text-sm font-semibold transition-colors" data-tab="today" onclick="switchTab('today')">Hôm nay</button>
-        <button class="tab-btn pb-2.5 text-sm font-semibold transition-colors" data-tab="week" onclick="switchTab('week')">Tuần này</button>
-        <button class="tab-btn pb-2.5 text-sm font-semibold transition-colors" data-tab="month" onclick="switchTab('month')">Tháng này</button>
-      </div>
-      <!-- Underline indicator -->
-      <div id="tabIndicator" class="tab-underline absolute bottom-0 h-[3px] rounded-full bg-gold"></div>
-    </div>
+    <!-- ============================================================ -->
+    <!-- JAVASCRIPT                                                    -->
+    <!-- ============================================================ -->
+    <script>
+      // ---- USERS DATA ----
+      const users = [
+        { id: 'TN', name: 'Trang N.', color: '#3B82F6', bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' },
+        { id: 'HM', name: 'Hùng M.', color: '#10B981', bg: 'linear-gradient(135deg, #10B981, #047857)' },
+        { id: 'VT', name: 'Vy T.', color: '#F59E0B', bg: 'linear-gradient(135deg, #F59E0B, #D97706)' },
+        { id: 'KL', name: 'Khoa L.', color: '#8B5CF6', bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' },
+        { id: 'TH', name: 'Thảo H.', color: '#EC4899', bg: 'linear-gradient(135deg, #EC4899, #BE185D)' },
+      ];
+      const ddUser = { id: 'DD', name: 'Danny D.', color: '#D4A84B', bg: 'linear-gradient(135deg, #D4A84B, #B8860B)' };
 
-    <!-- Sheet Body (scrollable) -->
-    <div class="sheet-body overflow-y-auto" style="height: calc(75vh - 160px); padding: 20px;">
+      // ---- KPI DATA ----
+      const metrics = [
+        { key: 'calls', label: 'Calls', color: '#3B82F6', icon: 'fa-phone' },
+        { key: 'pickups', label: 'Pickups', color: '#10B981', icon: 'fa-phone-volume' },
+        { key: 'happy', label: 'Happy', color: '#F59E0B', icon: 'fa-face-smile' },
+        { key: 'booked', label: 'Booked', color: '#8B5CF6', icon: 'fa-calendar-check' },
+        { key: 'done', label: 'Done', color: '#D4A84B', icon: 'fa-circle-check' },
+      ];
 
-      <!-- KPI Rings Section -->
-      <div class="flex flex-col lg:flex-row items-center gap-6 mb-8">
+      const kpiData = {
+        today: { calls: [45, 80], pickups: [28, 50], happy: [12, 20], booked: [8, 15], done: [5, 10] },
+        week: { calls: [180, 400], pickups: [120, 250], happy: [55, 100], booked: [35, 75], done: [22, 50] },
+        month: { calls: [650, 1600], pickups: [420, 1000], happy: [195, 400], booked: [130, 300], done: [85, 200] },
+      };
 
-        <!-- SVG Rings -->
-        <div class="flex-shrink-0">
-          <svg id="ringSvg" width="300" height="300" viewBox="0 0 300 300" style="transform: rotate(-90deg);">
-            <!-- Ring 1: Calls (outermost) - blue -->
-            <circle cx="150" cy="150" r="140" stroke="#3B82F6" stroke-opacity="0.15" stroke-width="16" fill="none"/>
-            <circle id="ring1" class="ring-progress" cx="150" cy="150" r="140" stroke="#3B82F6" stroke-width="16" fill="none" stroke-linecap="round" stroke-dasharray="879.6" stroke-dashoffset="879.6"/>
+      // ---- LEADERBOARD DATA ----
+      const teamData = [
+        {
+          id: 'DD',
+          name: 'Danny D.',
+          color: '#D4A84B',
+          bg: 'linear-gradient(135deg, #D4A84B, #B8860B)',
+          stats: { today: [52, 32, 15, 10, 7], week: [210, 135, 62, 42, 28], month: [780, 490, 220, 155, 105] },
+        },
+        {
+          id: 'TN',
+          name: 'Trang N.',
+          color: '#3B82F6',
+          bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)',
+          stats: { today: [48, 30, 14, 9, 6], week: [195, 128, 58, 38, 24], month: [710, 450, 200, 140, 90] },
+        },
+        {
+          id: 'HM',
+          name: 'Hùng M.',
+          color: '#10B981',
+          bg: 'linear-gradient(135deg, #10B981, #047857)',
+          stats: { today: [45, 28, 12, 8, 5], week: [180, 120, 55, 35, 22], month: [650, 420, 195, 130, 85] },
+        },
+        {
+          id: 'VT',
+          name: 'Vy T.',
+          color: '#F59E0B',
+          bg: 'linear-gradient(135deg, #F59E0B, #D97706)',
+          stats: { today: [40, 25, 11, 7, 4], week: [165, 108, 48, 30, 18], month: [590, 380, 170, 115, 72] },
+        },
+        {
+          id: 'KL',
+          name: 'Khoa L.',
+          color: '#8B5CF6',
+          bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+          stats: { today: [38, 22, 9, 6, 3], week: [150, 95, 42, 27, 15], month: [540, 340, 148, 100, 60] },
+        },
+        {
+          id: 'TH',
+          name: 'Thảo H.',
+          color: '#EC4899',
+          bg: 'linear-gradient(135deg, #EC4899, #BE185D)',
+          stats: { today: [35, 20, 8, 5, 3], week: [140, 88, 38, 24, 13], month: [500, 310, 135, 90, 52] },
+        },
+      ];
 
-            <!-- Ring 2: Pickups - emerald -->
-            <circle cx="150" cy="150" r="120" stroke="#10B981" stroke-opacity="0.15" stroke-width="16" fill="none"/>
-            <circle id="ring2" class="ring-progress" cx="150" cy="150" r="120" stroke="#10B981" stroke-width="16" fill="none" stroke-linecap="round" stroke-dasharray="753.98" stroke-dashoffset="753.98"/>
+      // ---- STATE ----
+      let currentTab = 'today';
+      let currentUser = null;
+      let isDark = true;
 
-            <!-- Ring 3: Happy - amber -->
-            <circle cx="150" cy="150" r="100" stroke="#F59E0B" stroke-opacity="0.15" stroke-width="16" fill="none"/>
-            <circle id="ring3" class="ring-progress" cx="150" cy="150" r="100" stroke="#F59E0B" stroke-width="16" fill="none" stroke-linecap="round" stroke-dasharray="628.32" stroke-dashoffset="628.32"/>
-
-            <!-- Ring 4: Booked - violet -->
-            <circle cx="150" cy="150" r="80" stroke="#8B5CF6" stroke-opacity="0.15" stroke-width="16" fill="none"/>
-            <circle id="ring4" class="ring-progress" cx="150" cy="150" r="80" stroke="#8B5CF6" stroke-width="16" fill="none" stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="502.65"/>
-
-            <!-- Ring 5: Done (innermost) - gold -->
-            <circle cx="150" cy="150" r="60" stroke="#D4A84B" stroke-opacity="0.15" stroke-width="16" fill="none"/>
-            <circle id="ring5" class="ring-progress" cx="150" cy="150" r="60" stroke="#D4A84B" stroke-width="16" fill="none" stroke-linecap="round" stroke-dasharray="376.99" stroke-dashoffset="376.99"/>
-          </svg>
-        </div>
-
-        <!-- Legend -->
-        <div class="flex flex-col gap-3 w-full lg:w-auto" id="ringLegend">
-          <!-- Injected by JS -->
-        </div>
-      </div>
-
-      <!-- Divider -->
-      <div class="h-px my-4" style="background: var(--border);"></div>
-
-      <!-- Leaderboard -->
-      <div class="mb-4">
-        <h3 class="text-base font-bold mb-4" style="color: var(--text);">🏆 Bảng Xếp Hạng Team Telesales</h3>
-        <div class="flex flex-col gap-2.5" id="leaderboard">
-          <!-- Injected by JS -->
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================================ -->
-  <!-- JAVASCRIPT                                                    -->
-  <!-- ============================================================ -->
-  <script>
-    // ---- USERS DATA ----
-    const users = [
-      { id: 'TN', name: 'Trang N.', color: '#3B82F6', bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' },
-      { id: 'HM', name: 'Hùng M.', color: '#10B981', bg: 'linear-gradient(135deg, #10B981, #047857)' },
-      { id: 'VT', name: 'Vy T.', color: '#F59E0B', bg: 'linear-gradient(135deg, #F59E0B, #D97706)' },
-      { id: 'KL', name: 'Khoa L.', color: '#8B5CF6', bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' },
-      { id: 'TH', name: 'Thảo H.', color: '#EC4899', bg: 'linear-gradient(135deg, #EC4899, #BE185D)' },
-    ];
-    const ddUser = { id: 'DD', name: 'Danny D.', color: '#D4A84B', bg: 'linear-gradient(135deg, #D4A84B, #B8860B)' };
-
-    // ---- KPI DATA ----
-    const metrics = [
-      { key: 'calls', label: 'Calls', color: '#3B82F6', icon: 'fa-phone' },
-      { key: 'pickups', label: 'Pickups', color: '#10B981', icon: 'fa-phone-volume' },
-      { key: 'happy', label: 'Happy', color: '#F59E0B', icon: 'fa-face-smile' },
-      { key: 'booked', label: 'Booked', color: '#8B5CF6', icon: 'fa-calendar-check' },
-      { key: 'done', label: 'Done', color: '#D4A84B', icon: 'fa-circle-check' },
-    ];
-
-    const kpiData = {
-      today: { calls: [45,80], pickups: [28,50], happy: [12,20], booked: [8,15], done: [5,10] },
-      week:  { calls: [180,400], pickups: [120,250], happy: [55,100], booked: [35,75], done: [22,50] },
-      month: { calls: [650,1600], pickups: [420,1000], happy: [195,400], booked: [130,300], done: [85,200] },
-    };
-
-    // ---- LEADERBOARD DATA ----
-    const teamData = [
-      { id: 'DD', name: 'Danny D.', color: '#D4A84B', bg: 'linear-gradient(135deg, #D4A84B, #B8860B)', stats: { today: [52,32,15,10,7], week: [210,135,62,42,28], month: [780,490,220,155,105] } },
-      { id: 'TN', name: 'Trang N.', color: '#3B82F6', bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', stats: { today: [48,30,14,9,6], week: [195,128,58,38,24], month: [710,450,200,140,90] } },
-      { id: 'HM', name: 'Hùng M.', color: '#10B981', bg: 'linear-gradient(135deg, #10B981, #047857)', stats: { today: [45,28,12,8,5], week: [180,120,55,35,22], month: [650,420,195,130,85] } },
-      { id: 'VT', name: 'Vy T.', color: '#F59E0B', bg: 'linear-gradient(135deg, #F59E0B, #D97706)', stats: { today: [40,25,11,7,4], week: [165,108,48,30,18], month: [590,380,170,115,72] } },
-      { id: 'KL', name: 'Khoa L.', color: '#8B5CF6', bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', stats: { today: [38,22,9,6,3], week: [150,95,42,27,15], month: [540,340,148,100,60] } },
-      { id: 'TH', name: 'Thảo H.', color: '#EC4899', bg: 'linear-gradient(135deg, #EC4899, #BE185D)', stats: { today: [35,20,8,5,3], week: [140,88,38,24,13], month: [500,310,135,90,52] } },
-    ];
-
-    // ---- STATE ----
-    let currentTab = 'today';
-    let currentUser = null;
-    let isDark = true;
-
-    // ---- RENDER ONLINE USER STRIP ----
-    function renderStrip() {
-      const strip = document.getElementById('userStrip');
-      strip.innerHTML = '';
-      users.forEach(u => {
-        const el = document.createElement('button');
-        el.className = 'flex flex-col items-center cursor-pointer group flex-shrink-0';
-        el.onclick = () => openSheet(u.id);
-        el.innerHTML = `
+      // ---- RENDER ONLINE USER STRIP ----
+      function renderStrip() {
+        const strip = document.getElementById('userStrip');
+        strip.innerHTML = '';
+        users.forEach((u) => {
+          const el = document.createElement('button');
+          el.className = 'flex flex-col items-center cursor-pointer group flex-shrink-0';
+          el.onclick = () => openSheet(u.id);
+          el.innerHTML = `
           <div class="w-[34px] h-[34px] rounded-full ring-pulse flex items-center justify-center font-bold text-[11px] text-white transition-transform group-hover:scale-110"
                style="background: ${u.bg}; box-shadow: 0 0 0 3px ${u.color};">
             ${u.id}
           </div>
           <span class="text-[9px] mt-0.5 font-medium" style="color: var(--textMuted);">${u.name.split(' ')[0]}</span>
         `;
-        strip.appendChild(el);
-      });
-    }
-
-    // ---- STRIP SCROLL ----
-    document.getElementById('stripLeft').addEventListener('click', () => {
-      document.getElementById('userStrip').scrollBy({ left: -100, behavior: 'smooth' });
-    });
-    document.getElementById('stripRight').addEventListener('click', () => {
-      document.getElementById('userStrip').scrollBy({ left: 100, behavior: 'smooth' });
-    });
-
-    // ---- CLOCK ----
-    function updateClock() {
-      const now = new Date();
-      document.getElementById('clock').textContent = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // ---- THEME TOGGLE ----
-    document.getElementById('themeToggle').addEventListener('click', () => {
-      isDark = !isDark;
-      const html = document.documentElement;
-      if (isDark) {
-        html.className = 'dark-theme dark';
-        document.getElementById('themeIcon').className = 'fa-solid fa-moon text-sm';
-      } else {
-        html.className = 'light-theme';
-        document.getElementById('themeIcon').className = 'fa-solid fa-sun text-sm';
+          strip.appendChild(el);
+        });
       }
-    });
 
-    // ---- OPEN / CLOSE SHEET ----
-    function openSheet(userId) {
-      const allUsers = [...teamData];
-      const user = allUsers.find(u => u.id === userId) || allUsers[0];
-      currentUser = user;
+      // ---- STRIP SCROLL ----
+      document.getElementById('stripLeft').addEventListener('click', () => {
+        document.getElementById('userStrip').scrollBy({ left: -100, behavior: 'smooth' });
+      });
+      document.getElementById('stripRight').addEventListener('click', () => {
+        document.getElementById('userStrip').scrollBy({ left: 100, behavior: 'smooth' });
+      });
 
-      // Set avatar
-      const avatar = document.getElementById('sheetAvatar');
-      avatar.style.background = user.bg;
-      avatar.textContent = user.id;
+      // ---- CLOCK ----
+      function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').textContent = now.toLocaleTimeString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
 
-      // Set name
-      document.getElementById('sheetName').textContent = user.name;
-
-      // Show
-      document.getElementById('sheetOverlay').classList.add('active');
-      document.getElementById('bottomSheet').classList.add('active');
-
-      // Reset tab and render
-      switchTab('today');
-    }
-
-    function closeSheet() {
-      document.getElementById('sheetOverlay').classList.remove('active');
-      document.getElementById('bottomSheet').classList.remove('active');
-    }
-
-    // ---- SWITCH TAB ----
-    function switchTab(tab) {
-      currentTab = tab;
-
-      // Update tab button styles
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        if (btn.dataset.tab === tab) {
-          btn.style.color = '#D4A84B';
+      // ---- THEME TOGGLE ----
+      document.getElementById('themeToggle').addEventListener('click', () => {
+        isDark = !isDark;
+        const html = document.documentElement;
+        if (isDark) {
+          html.className = 'dark-theme dark';
+          document.getElementById('themeIcon').className = 'fa-solid fa-moon text-sm';
         } else {
-          btn.style.color = 'var(--textMuted)';
+          html.className = 'light-theme';
+          document.getElementById('themeIcon').className = 'fa-solid fa-sun text-sm';
         }
       });
 
-      // Move underline indicator
-      requestAnimationFrame(() => {
-        const activeBtn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
-        const indicator = document.getElementById('tabIndicator');
-        const container = document.getElementById('tabContainer');
-        if (activeBtn && indicator && container) {
-          const containerRect = container.getBoundingClientRect();
-          const btnRect = activeBtn.getBoundingClientRect();
-          indicator.style.left = (btnRect.left - containerRect.left + container.offsetLeft) + 'px';
-          indicator.style.width = btnRect.width + 'px';
-        }
-      });
+      // ---- OPEN / CLOSE SHEET ----
+      function openSheet(userId) {
+        const allUsers = [...teamData];
+        const user = allUsers.find((u) => u.id === userId) || allUsers[0];
+        currentUser = user;
 
-      // Render rings + legend
-      renderRings();
-      // Render leaderboard
-      renderLeaderboard();
-    }
+        // Set avatar
+        const avatar = document.getElementById('sheetAvatar');
+        avatar.style.background = user.bg;
+        avatar.textContent = user.id;
 
-    // ---- RENDER RINGS ----
-    function renderRings() {
-      const data = kpiData[currentTab];
-      const radii = [140, 120, 100, 80, 60];
-      const keys = ['calls', 'pickups', 'happy', 'booked', 'done'];
+        // Set name
+        document.getElementById('sheetName').textContent = user.name;
 
-      keys.forEach((key, i) => {
-        const [current, target] = data[key];
-        const pct = Math.min(current / target, 1);
-        const circumference = 2 * Math.PI * radii[i];
-        const offset = circumference * (1 - pct);
-        const ring = document.getElementById(`ring${i + 1}`);
-        // Reset first then animate
-        ring.style.transition = 'none';
-        ring.setAttribute('stroke-dashoffset', circumference);
+        // Show
+        document.getElementById('sheetOverlay').classList.add('active');
+        document.getElementById('bottomSheet').classList.add('active');
+
+        // Reset tab and render
+        switchTab('today');
+      }
+
+      function closeSheet() {
+        document.getElementById('sheetOverlay').classList.remove('active');
+        document.getElementById('bottomSheet').classList.remove('active');
+      }
+
+      // ---- SWITCH TAB ----
+      function switchTab(tab) {
+        currentTab = tab;
+
+        // Update tab button styles
+        document.querySelectorAll('.tab-btn').forEach((btn) => {
+          if (btn.dataset.tab === tab) {
+            btn.style.color = '#D4A84B';
+          } else {
+            btn.style.color = 'var(--textMuted)';
+          }
+        });
+
+        // Move underline indicator
         requestAnimationFrame(() => {
+          const activeBtn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+          const indicator = document.getElementById('tabIndicator');
+          const container = document.getElementById('tabContainer');
+          if (activeBtn && indicator && container) {
+            const containerRect = container.getBoundingClientRect();
+            const btnRect = activeBtn.getBoundingClientRect();
+            indicator.style.left = btnRect.left - containerRect.left + container.offsetLeft + 'px';
+            indicator.style.width = btnRect.width + 'px';
+          }
+        });
+
+        // Render rings + legend
+        renderRings();
+        // Render leaderboard
+        renderLeaderboard();
+      }
+
+      // ---- RENDER RINGS ----
+      function renderRings() {
+        const data = kpiData[currentTab];
+        const radii = [140, 120, 100, 80, 60];
+        const keys = ['calls', 'pickups', 'happy', 'booked', 'done'];
+
+        keys.forEach((key, i) => {
+          const [current, target] = data[key];
+          const pct = Math.min(current / target, 1);
+          const circumference = 2 * Math.PI * radii[i];
+          const offset = circumference * (1 - pct);
+          const ring = document.getElementById(`ring${i + 1}`);
+          // Reset first then animate
+          ring.style.transition = 'none';
+          ring.setAttribute('stroke-dashoffset', circumference);
           requestAnimationFrame(() => {
-            ring.style.transition = 'stroke-dashoffset 0.8s ease';
-            ring.setAttribute('stroke-dashoffset', offset);
+            requestAnimationFrame(() => {
+              ring.style.transition = 'stroke-dashoffset 0.8s ease';
+              ring.setAttribute('stroke-dashoffset', offset);
+            });
           });
         });
-      });
 
-      // Render legend
-      const legend = document.getElementById('ringLegend');
-      legend.innerHTML = '';
-      keys.forEach((key, i) => {
-        const [current, target] = data[key];
-        const pct = Math.round((current / target) * 100);
-        const m = metrics[i];
-        const item = document.createElement('div');
-        item.className = 'flex items-center gap-3 px-3 py-2 rounded-xl transition-all';
-        item.style.background = 'var(--card)';
-        item.style.border = '1px solid var(--border)';
-        item.innerHTML = `
+        // Render legend
+        const legend = document.getElementById('ringLegend');
+        legend.innerHTML = '';
+        keys.forEach((key, i) => {
+          const [current, target] = data[key];
+          const pct = Math.round((current / target) * 100);
+          const m = metrics[i];
+          const item = document.createElement('div');
+          item.className = 'flex items-center gap-3 px-3 py-2 rounded-xl transition-all';
+          item.style.background = 'var(--card)';
+          item.style.border = '1px solid var(--border)';
+          item.innerHTML = `
           <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: ${m.color}20;">
             <i class="fa-solid ${m.icon} text-xs" style="color: ${m.color};"></i>
           </div>
@@ -491,37 +720,40 @@
             </div>
           </div>
         `;
-        legend.appendChild(item);
-      });
-    }
+          legend.appendChild(item);
+        });
+      }
 
-    // ---- RENDER LEADERBOARD ----
-    function renderLeaderboard() {
-      const lb = document.getElementById('leaderboard');
-      lb.innerHTML = '';
+      // ---- RENDER LEADERBOARD ----
+      function renderLeaderboard() {
+        const lb = document.getElementById('leaderboard');
+        lb.innerHTML = '';
 
-      // Sort by Done (index 4) descending
-      const sorted = [...teamData].sort((a, b) => b.stats[currentTab][4] - a.stats[currentTab][4]);
+        // Sort by Done (index 4) descending
+        const sorted = [...teamData].sort((a, b) => b.stats[currentTab][4] - a.stats[currentTab][4]);
 
-      // Find max total for proportional bar
-      const maxTotal = Math.max(...sorted.map(m => m.stats[currentTab].reduce((a, b) => a + b, 0)));
+        // Find max total for proportional bar
+        const maxTotal = Math.max(...sorted.map((m) => m.stats[currentTab].reduce((a, b) => a + b, 0)));
 
-      const rankIcons = ['🥇', '🥈', '🥉'];
+        const rankIcons = ['🥇', '🥈', '🥉'];
 
-      sorted.forEach((member, idx) => {
-        const stats = member.stats[currentTab];
-        const total = stats.reduce((a, b) => a + b, 0);
-        const barWidth = (total / maxTotal) * 100;
-        const isCurrentUser = currentUser && member.id === currentUser.id;
+        sorted.forEach((member, idx) => {
+          const stats = member.stats[currentTab];
+          const total = stats.reduce((a, b) => a + b, 0);
+          const barWidth = (total / maxTotal) * 100;
+          const isCurrentUser = currentUser && member.id === currentUser.id;
 
-        const row = document.createElement('div');
-        row.className = `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${isCurrentUser ? 'ring-1 ring-gold/40' : ''}`;
-        row.style.background = isCurrentUser ? 'rgba(212,168,75,0.08)' : 'var(--card)';
-        row.style.border = `1px solid ${isCurrentUser ? 'rgba(212,168,75,0.25)' : 'var(--border)'}`;
+          const row = document.createElement('div');
+          row.className = `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${isCurrentUser ? 'ring-1 ring-gold/40' : ''}`;
+          row.style.background = isCurrentUser ? 'rgba(212,168,75,0.08)' : 'var(--card)';
+          row.style.border = `1px solid ${isCurrentUser ? 'rgba(212,168,75,0.25)' : 'var(--border)'}`;
 
-        const rank = idx < 3 ? rankIcons[idx] : `<span class="text-xs font-bold" style="color: var(--textMuted);">${idx + 1}</span>`;
+          const rank =
+            idx < 3
+              ? rankIcons[idx]
+              : `<span class="text-xs font-bold" style="color: var(--textMuted);">${idx + 1}</span>`;
 
-        row.innerHTML = `
+          row.innerHTML = `
           <div class="w-6 text-center text-sm">${rank}</div>
           <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0" style="background: ${member.bg};">${member.id}</div>
           <div class="flex-1 min-w-0">
@@ -530,24 +762,26 @@
               <span class="text-[10px] font-bold" style="color: var(--textMuted);">${stats[4]} done</span>
             </div>
             <div class="stacked-bar" style="width: ${barWidth}%; opacity: 0.9;">
-              ${stats.map((val, si) => {
-                const segPct = (val / total) * 100;
-                return `<div style="width: ${segPct}%; background: ${metrics[si].color};" title="${metrics[si].label}: ${val}"></div>`;
-              }).join('')}
+              ${stats
+                .map((val, si) => {
+                  const segPct = (val / total) * 100;
+                  return `<div style="width: ${segPct}%; background: ${metrics[si].color};" title="${metrics[si].label}: ${val}"></div>`;
+                })
+                .join('')}
             </div>
           </div>
         `;
-        lb.appendChild(row);
+          lb.appendChild(row);
+        });
+      }
+
+      // ---- INIT ----
+      renderStrip();
+
+      // Close on Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeSheet();
       });
-    }
-
-    // ---- INIT ----
-    renderStrip();
-
-    // Close on Escape
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') closeSheet();
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>

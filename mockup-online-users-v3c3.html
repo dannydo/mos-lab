@@ -1,491 +1,758 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>V3C3 – Online Users Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        gold: '#D4A84B',
-                        goldDark: '#B8912F',
-                        goldLight: '#E8C878',
-                        darkBg: '#0f1117',
-                        darkCard: '#1a1d27',
-                        darkBorder: '#2a2d3a',
-                        darkHover: '#252836',
-                    },
-                    fontFamily: {
-                        sans: ['Plus Jakarta Sans', 'sans-serif'],
-                    }
-                }
-            }
-        }
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              gold: '#D4A84B',
+              goldDark: '#B8912F',
+              goldLight: '#E8C878',
+              darkBg: '#0f1117',
+              darkCard: '#1a1d27',
+              darkBorder: '#2a2d3a',
+              darkHover: '#252836',
+            },
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', 'sans-serif'],
+            },
+          },
+        },
+      };
     </script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: #0f1117;
+        color: #e2e8f0;
+        min-height: 100vh;
+      }
 
-        /* Glass card */
-        .glass-card {
-            background: rgba(26, 29, 39, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(42, 45, 58, 0.6);
-            border-radius: 16px;
-        }
+      /* Glass card */
+      .glass-card {
+        background: rgba(26, 29, 39, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(42, 45, 58, 0.6);
+        border-radius: 16px;
+      }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #2a2d3a; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3a3d4a; }
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #2a2d3a;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #3a3d4a;
+      }
 
-        /* Bubble stack */
-        .bubble-stack { display: flex; align-items: center; }
-        .bubble-avatar {
-            width: 36px; height: 36px; border-radius: 50%;
-            border: 2px solid #0f1117;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: 700; color: #fff;
-            position: relative; cursor: pointer;
-            transition: transform 0.2s, z-index 0.2s;
-        }
-        .bubble-avatar:not(:first-child) { margin-left: -10px; }
-        .bubble-avatar:hover { transform: scale(1.2); z-index: 50 !important; }
-        .bubble-avatar .status-dot {
-            position: absolute; bottom: -1px; right: -1px;
-            width: 10px; height: 10px; border-radius: 50%;
-            border: 2px solid #0f1117;
-        }
+      /* Bubble stack */
+      .bubble-stack {
+        display: flex;
+        align-items: center;
+      }
+      .bubble-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid #0f1117;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        position: relative;
+        cursor: pointer;
+        transition:
+          transform 0.2s,
+          z-index 0.2s;
+      }
+      .bubble-avatar:not(:first-child) {
+        margin-left: -10px;
+      }
+      .bubble-avatar:hover {
+        transform: scale(1.2);
+        z-index: 50 !important;
+      }
+      .bubble-avatar .status-dot {
+        position: absolute;
+        bottom: -1px;
+        right: -1px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid #0f1117;
+      }
 
-        /* Time cards scroll */
-        .time-cards-container {
-            display: flex; gap: 10px;
-            overflow-x: auto; overflow-y: hidden;
-            scroll-snap-type: x mandatory;
-            padding: 8px 4px;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-        .time-cards-container::-webkit-scrollbar { display: none; }
-        .time-card {
-            flex: 0 0 120px; height: 60px;
-            scroll-snap-align: start;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            border-radius: 12px; cursor: pointer;
-            border: 1.5px solid transparent;
-            background: rgba(26, 29, 39, 0.6);
-            backdrop-filter: blur(8px);
-            transition: all 0.25s ease;
-            user-select: none;
-        }
-        .time-card:hover { background: rgba(42, 45, 58, 0.5); }
-        .time-card.active {
-            border-color: #D4A84B;
-            background: rgba(212, 168, 75, 0.08);
-            transform: scale(1.05);
-        }
-        .time-card.active .tc-label { color: #D4A84B; }
-        .time-card.active .tc-date { color: #E8C878; }
-        .time-card.active .tc-icon { color: #D4A84B; }
-        .tc-label { font-size: 11px; font-weight: 600; color: #94a3b8; transition: color 0.25s; }
-        .tc-date { font-size: 9px; color: #64748b; margin-top: 2px; transition: color 0.25s; }
-        .tc-icon { font-size: 10px; color: #4a5568; margin-bottom: 3px; transition: color 0.25s; }
+      /* Time cards scroll */
+      .time-cards-container {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        padding: 8px 4px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .time-cards-container::-webkit-scrollbar {
+        display: none;
+      }
+      .time-card {
+        flex: 0 0 120px;
+        height: 60px;
+        scroll-snap-align: start;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        cursor: pointer;
+        border: 1.5px solid transparent;
+        background: rgba(26, 29, 39, 0.6);
+        backdrop-filter: blur(8px);
+        transition: all 0.25s ease;
+        user-select: none;
+      }
+      .time-card:hover {
+        background: rgba(42, 45, 58, 0.5);
+      }
+      .time-card.active {
+        border-color: #d4a84b;
+        background: rgba(212, 168, 75, 0.08);
+        transform: scale(1.05);
+      }
+      .time-card.active .tc-label {
+        color: #d4a84b;
+      }
+      .time-card.active .tc-date {
+        color: #e8c878;
+      }
+      .time-card.active .tc-icon {
+        color: #d4a84b;
+      }
+      .tc-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #94a3b8;
+        transition: color 0.25s;
+      }
+      .tc-date {
+        font-size: 9px;
+        color: #64748b;
+        margin-top: 2px;
+        transition: color 0.25s;
+      }
+      .tc-icon {
+        font-size: 10px;
+        color: #4a5568;
+        margin-bottom: 3px;
+        transition: color 0.25s;
+      }
 
-        /* Modal overlay */
-        .modal-overlay {
-            position: fixed; inset: 0; z-index: 1000;
-            background: rgba(0,0,0,0.7);
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
-        .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal-content {
-            width: 95%; max-width: 800px; max-height: 90vh;
-            overflow-y: auto; overflow-x: hidden;
-            transform: scale(0.9); opacity: 0;
-            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
-        }
-        .modal-overlay.active .modal-content { transform: scale(1); opacity: 1; }
+      /* Modal overlay */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.3s,
+          visibility 0.3s;
+      }
+      .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+      .modal-content {
+        width: 95%;
+        max-width: 800px;
+        max-height: 90vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        transform: scale(0.9);
+        opacity: 0;
+        transition:
+          transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+          opacity 0.3s;
+      }
+      .modal-overlay.active .modal-content {
+        transform: scale(1);
+        opacity: 1;
+      }
 
-        /* Config modal (nested) */
-        .config-overlay {
-            position: fixed; inset: 0; z-index: 2000;
-            background: rgba(0,0,0,0.65);
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; visibility: hidden;
-            transition: opacity 0.25s, visibility 0.25s;
-        }
-        .config-overlay.active { opacity: 1; visibility: visible; }
-        .config-content {
-            width: 92%; max-width: 500px; max-height: 85vh;
-            overflow-y: auto;
-            transform: scale(0.85); opacity: 0;
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s;
-        }
-        .config-overlay.active .config-content { transform: scale(1); opacity: 1; }
+      /* Config modal (nested) */
+      .config-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        background: rgba(0, 0, 0, 0.65);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.25s,
+          visibility 0.25s;
+      }
+      .config-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+      .config-content {
+        width: 92%;
+        max-width: 500px;
+        max-height: 85vh;
+        overflow-y: auto;
+        transform: scale(0.85);
+        opacity: 0;
+        transition:
+          transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+          opacity 0.25s;
+      }
+      .config-overlay.active .config-content {
+        transform: scale(1);
+        opacity: 1;
+      }
 
-        /* Config tab */
-        .config-tab {
-            padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600;
-            color: #94a3b8; cursor: pointer; transition: all 0.2s;
-            white-space: nowrap; border: 1px solid transparent;
-        }
-        .config-tab:hover { color: #cbd5e1; background: rgba(255,255,255,0.04); }
-        .config-tab.active { color: #D4A84B; background: rgba(212,168,75,0.1); border-color: rgba(212,168,75,0.3); }
+      /* Config tab */
+      .config-tab {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #94a3b8;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+        border: 1px solid transparent;
+      }
+      .config-tab:hover {
+        color: #cbd5e1;
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .config-tab.active {
+        color: #d4a84b;
+        background: rgba(212, 168, 75, 0.1);
+        border-color: rgba(212, 168, 75, 0.3);
+      }
 
-        /* Config input row */
-        .config-input-row {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px 12px; border-radius: 10px;
-            background: rgba(15, 17, 23, 0.5);
-            border: 1px solid rgba(42, 45, 58, 0.4);
-            transition: border-color 0.2s;
-        }
-        .config-input-row:hover { border-color: rgba(42, 45, 58, 0.8); }
-        .config-input-row input[type="number"] {
-            width: 80px; padding: 6px 10px; border-radius: 8px;
-            background: rgba(15, 17, 23, 0.8);
-            border: 1px solid #2a2d3a; color: #e2e8f0;
-            font-size: 13px; font-weight: 600;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            outline: none; transition: border-color 0.2s;
-        }
-        .config-input-row input[type="number"]:focus { border-color: #D4A84B; }
+      /* Config input row */
+      .config-input-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(15, 17, 23, 0.5);
+        border: 1px solid rgba(42, 45, 58, 0.4);
+        transition: border-color 0.2s;
+      }
+      .config-input-row:hover {
+        border-color: rgba(42, 45, 58, 0.8);
+      }
+      .config-input-row input[type='number'] {
+        width: 80px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: rgba(15, 17, 23, 0.8);
+        border: 1px solid #2a2d3a;
+        color: #e2e8f0;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .config-input-row input[type='number']:focus {
+        border-color: #d4a84b;
+      }
 
-        /* Donut */
-        .donut-ring { transition: stroke-dasharray 0.6s ease, stroke 0.3s; }
+      /* Donut */
+      .donut-ring {
+        transition:
+          stroke-dasharray 0.6s ease,
+          stroke 0.3s;
+      }
 
-        /* Metric pill */
-        .metric-pill {
-            display: flex; align-items: center; gap: 8px;
-            padding: 8px 14px; border-radius: 12px;
-            background: rgba(15, 17, 23, 0.5);
-            border: 1px solid rgba(42, 45, 58, 0.4);
-            transition: all 0.2s;
-        }
-        .metric-pill:hover { border-color: rgba(42, 45, 58, 0.8); transform: translateY(-1px); }
+      /* Metric pill */
+      .metric-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 12px;
+        background: rgba(15, 17, 23, 0.5);
+        border: 1px solid rgba(42, 45, 58, 0.4);
+        transition: all 0.2s;
+      }
+      .metric-pill:hover {
+        border-color: rgba(42, 45, 58, 0.8);
+        transform: translateY(-1px);
+      }
 
-        /* Mini card */
-        .mini-card {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px 14px; border-radius: 12px;
-            background: rgba(15, 17, 23, 0.4);
-            border: 1px solid rgba(42, 45, 58, 0.3);
-            cursor: pointer; transition: all 0.2s;
-        }
-        .mini-card:hover { background: rgba(42, 45, 58, 0.4); border-color: rgba(42,45,58,0.6); transform: translateY(-1px); }
-        .mini-card.active-member { border-color: rgba(212,168,75,0.4); background: rgba(212,168,75,0.05); }
+      /* Mini card */
+      .mini-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        background: rgba(15, 17, 23, 0.4);
+        border: 1px solid rgba(42, 45, 58, 0.3);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .mini-card:hover {
+        background: rgba(42, 45, 58, 0.4);
+        border-color: rgba(42, 45, 58, 0.6);
+        transform: translateY(-1px);
+      }
+      .mini-card.active-member {
+        border-color: rgba(212, 168, 75, 0.4);
+        background: rgba(212, 168, 75, 0.05);
+      }
 
-        /* Toast */
-        .toast-container {
-            position: fixed; top: 20px; right: 20px; z-index: 9999;
-            display: flex; flex-direction: column; gap: 8px;
-        }
-        .toast {
-            padding: 12px 20px; border-radius: 12px;
-            background: rgba(26,29,39,0.95);
-            border: 1px solid rgba(42,45,58,0.6);
-            backdrop-filter: blur(12px);
-            color: #e2e8f0; font-size: 13px; font-weight: 500;
-            display: flex; align-items: center; gap: 8px;
-            transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-        .toast.show { transform: translateX(0); }
+      /* Toast */
+      .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .toast {
+        padding: 12px 20px;
+        border-radius: 12px;
+        background: rgba(26, 29, 39, 0.95);
+        border: 1px solid rgba(42, 45, 58, 0.6);
+        backdrop-filter: blur(12px);
+        color: #e2e8f0;
+        font-size: 13px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transform: translateX(120%);
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      .toast.show {
+        transform: translateX(0);
+      }
 
-        /* Podium */
-        .podium-wrapper {
-            display: flex; align-items: flex-end; justify-content: center;
-            gap: 20px; padding-top: 100px; position: relative;
-        }
-        .podium-column {
-            display: flex; flex-direction: column; align-items: center;
-            width: 100px;
-        }
-        .podium-info {
-            display: flex; flex-direction: column; align-items: center;
-            margin-bottom: 8px; text-align: center;
-        }
-        .podium-bar {
-            width: 100%; border-radius: 10px 10px 0 0;
-            display: flex; align-items: flex-end; justify-content: center;
-            padding-bottom: 8px; font-size: 11px; font-weight: 700;
-            transition: height 0.5s cubic-bezier(0.16,1,0.3,1);
-        }
+      /* Podium */
+      .podium-wrapper {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 20px;
+        padding-top: 100px;
+        position: relative;
+      }
+      .podium-column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100px;
+      }
+      .podium-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+      .podium-bar {
+        width: 100%;
+        border-radius: 10px 10px 0 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        transition: height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      }
 
-        /* Pulse animation for online dots */
-        @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); } 50% { box-shadow: 0 0 0 4px rgba(34,197,94,0); } }
-        .pulse-online { animation: pulse-green 2s infinite; }
+      /* Pulse animation for online dots */
+      @keyframes pulse-green {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 4px rgba(34, 197, 94, 0);
+        }
+      }
+      .pulse-online {
+        animation: pulse-green 2s infinite;
+      }
 
-        /* Fade-in for sections */
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-in { animation: fadeInUp 0.4s ease forwards; }
+      /* Fade-in for sections */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-in {
+        animation: fadeInUp 0.4s ease forwards;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
 
-<!-- Toast container -->
-<div class="toast-container" id="toastContainer"></div>
-
-<!-- HEADER -->
-<header class="sticky top-0 z-50 border-b border-darkBorder" style="background:rgba(15,17,23,0.85);backdrop-filter:blur(16px);">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <!-- HEADER -->
+    <header
+      class="sticky top-0 z-50 border-b border-darkBorder"
+      style="background: rgba(15, 17, 23, 0.85); backdrop-filter: blur(16px)"
+    >
+      <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         <!-- Left: Logo + Bubble Stack -->
         <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-goldDark flex items-center justify-center">
-                    <span class="text-white font-extrabold text-sm">W</span>
-                </div>
-                <span class="text-white font-bold text-base hidden sm:block">Wingslashes</span>
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-goldDark flex items-center justify-center">
+              <span class="text-white font-extrabold text-sm">W</span>
             </div>
-            <div class="h-6 w-px bg-darkBorder hidden sm:block"></div>
-            <div class="bubble-stack" id="bubbleStack"></div>
-            <!-- Count badge -->
-            <div id="countBadge" class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.2);">
-                <span class="w-2 h-2 rounded-full bg-green-500 pulse-online"></span>
-                <span id="onlineCount">0</span> online
-            </div>
+            <span class="text-white font-bold text-base hidden sm:block">Wingslashes</span>
+          </div>
+          <div class="h-6 w-px bg-darkBorder hidden sm:block"></div>
+          <div class="bubble-stack" id="bubbleStack"></div>
+          <!-- Count badge -->
+          <div
+            id="countBadge"
+            class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
+            style="background: rgba(34, 197, 94, 0.12); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2)"
+          >
+            <span class="w-2 h-2 rounded-full bg-green-500 pulse-online"></span>
+            <span id="onlineCount">0</span> online
+          </div>
         </div>
         <!-- Right: Clock + Toggle + Avatar -->
         <div class="flex items-center gap-3">
-            <div class="text-xs text-slate-400 font-medium hidden sm:flex items-center gap-1.5">
-                <i class="fa-regular fa-clock text-gold/60"></i>
-                <span id="headerClock">--:--:--</span>
-            </div>
-            <button id="themeToggle" class="w-8 h-8 rounded-lg border border-darkBorder flex items-center justify-center text-slate-400 hover:text-gold hover:border-gold/30 transition-all">
-                <i class="fa-solid fa-moon text-sm"></i>
-            </button>
-            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-gold to-goldDark flex items-center justify-center text-white font-bold text-xs cursor-pointer hover:scale-110 transition-transform">DD</div>
+          <div class="text-xs text-slate-400 font-medium hidden sm:flex items-center gap-1.5">
+            <i class="fa-regular fa-clock text-gold/60"></i>
+            <span id="headerClock">--:--:--</span>
+          </div>
+          <button
+            id="themeToggle"
+            class="w-8 h-8 rounded-lg border border-darkBorder flex items-center justify-center text-slate-400 hover:text-gold hover:border-gold/30 transition-all"
+          >
+            <i class="fa-solid fa-moon text-sm"></i>
+          </button>
+          <div
+            class="w-8 h-8 rounded-full bg-gradient-to-br from-gold to-goldDark flex items-center justify-center text-white font-bold text-xs cursor-pointer hover:scale-110 transition-transform"
+          >
+            DD
+          </div>
         </div>
-    </div>
-</header>
+      </div>
+    </header>
 
-<!-- MAIN MODAL OVERLAY -->
-<div class="modal-overlay active" id="mainModal">
-    <div class="modal-content glass-card p-0" id="modalInner">
-
+    <!-- MAIN MODAL OVERLAY -->
+    <div class="modal-overlay active" id="mainModal">
+      <div class="modal-content glass-card p-0" id="modalInner">
         <!-- Modal Header -->
         <div class="flex items-center justify-between p-5 border-b border-darkBorder/50">
-            <div>
-                <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-chart-line text-gold"></i>
-                    Telesales Performance
-                </h2>
-                <p class="text-xs text-slate-400 mt-0.5">Thống kê hiệu suất telesales theo thời gian</p>
-            </div>
-            <button onclick="closeMainModal()" class="w-8 h-8 rounded-lg border border-darkBorder flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-500 transition-all">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-line text-gold"></i>
+              Telesales Performance
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Thống kê hiệu suất telesales theo thời gian</p>
+          </div>
+          <button
+            onclick="closeMainModal()"
+            class="w-8 h-8 rounded-lg border border-darkBorder flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-500 transition-all"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
 
         <!-- Time Cards (CHANGE 1) -->
         <div class="px-5 pt-4">
-            <div class="time-cards-container" id="timeCardsContainer"></div>
+          <div class="time-cards-container" id="timeCardsContainer"></div>
         </div>
 
         <!-- Modal Body -->
         <div class="p-5 space-y-5" id="modalBody">
-            <!-- Will be populated by JS -->
+          <!-- Will be populated by JS -->
         </div>
-
+      </div>
     </div>
-</div>
 
-<!-- CONFIG MODAL OVERLAY (CHANGE 3) -->
-<div class="config-overlay" id="configOverlay">
-    <div class="config-content glass-card p-0" id="configModal">
+    <!-- CONFIG MODAL OVERLAY (CHANGE 3) -->
+    <div class="config-overlay" id="configOverlay">
+      <div class="config-content glass-card p-0" id="configModal">
         <div class="flex items-center justify-between p-4 border-b border-darkBorder/50">
-            <div>
-                <h3 class="text-base font-bold text-white">⚙️ Cấu hình Target Telesales</h3>
-                <p class="text-xs text-slate-400 mt-0.5" id="configSubtitle">--</p>
-            </div>
-            <button onclick="closeConfigModal()" class="w-7 h-7 rounded-lg border border-darkBorder flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-500 transition-all">
-                <i class="fa-solid fa-xmark text-sm"></i>
-            </button>
+          <div>
+            <h3 class="text-base font-bold text-white">⚙️ Cấu hình Target Telesales</h3>
+            <p class="text-xs text-slate-400 mt-0.5" id="configSubtitle">--</p>
+          </div>
+          <button
+            onclick="closeConfigModal()"
+            class="w-7 h-7 rounded-lg border border-darkBorder flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-500 transition-all"
+          >
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
         </div>
         <!-- Config tab bar -->
-        <div class="px-4 pt-3 pb-1 flex gap-2 overflow-x-auto" id="configTabs" style="scrollbar-width:none;"></div>
+        <div class="px-4 pt-3 pb-1 flex gap-2 overflow-x-auto" id="configTabs" style="scrollbar-width: none"></div>
         <!-- Config inputs -->
         <div class="px-4 py-3 space-y-2" id="configInputs"></div>
         <!-- Config footer -->
         <div class="flex items-center justify-end gap-2 p-4 border-t border-darkBorder/50">
-            <button onclick="closeConfigModal()" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-white border border-darkBorder hover:border-slate-500 transition-all">Hủy</button>
-            <button onclick="saveConfig()" class="px-5 py-2 rounded-lg text-sm font-bold text-darkBg bg-gold hover:bg-goldLight transition-all">Lưu Target</button>
+          <button
+            onclick="closeConfigModal()"
+            class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-white border border-darkBorder hover:border-slate-500 transition-all"
+          >
+            Hủy
+          </button>
+          <button
+            onclick="saveConfig()"
+            class="px-5 py-2 rounded-lg text-sm font-bold text-darkBg bg-gold hover:bg-goldLight transition-all"
+          >
+            Lưu Target
+          </button>
         </div>
+      </div>
     </div>
-</div>
 
-<script>
-// ──────────── DATA ────────────
-const MEMBERS = [
-    { id: 'TN', name: 'Thu Ngân', color: '#8B5CF6', online: true },
-    { id: 'DD', name: 'Danny Đỗ', color: '#D4A84B', online: true },
-    { id: 'HM', name: 'Hồng Mai', color: '#EC4899', online: false },
-    { id: 'VT', name: 'Văn Toàn', color: '#3B82F6', online: true },
-    { id: 'KL', name: 'Kim Loan', color: '#10B981', online: true },
-    { id: 'TH', name: 'Thanh Hà', color: '#F97316', online: false }
-];
+    <script>
+      // ──────────── DATA ────────────
+      const MEMBERS = [
+        { id: 'TN', name: 'Thu Ngân', color: '#8B5CF6', online: true },
+        { id: 'DD', name: 'Danny Đỗ', color: '#D4A84B', online: true },
+        { id: 'HM', name: 'Hồng Mai', color: '#EC4899', online: false },
+        { id: 'VT', name: 'Văn Toàn', color: '#3B82F6', online: true },
+        { id: 'KL', name: 'Kim Loan', color: '#10B981', online: true },
+        { id: 'TH', name: 'Thanh Hà', color: '#F97316', online: false },
+      ];
 
-const METRIC_DEFS = [
-    { key: 'calls',    label: 'Cuộc gọi',    icon: 'fa-phone',          color: '#3B82F6' },
-    { key: 'contacts', label: 'Liên hệ mới', icon: 'fa-address-book',   color: '#8B5CF6' },
-    { key: 'demos',    label: 'Demo',         icon: 'fa-desktop',        color: '#10B981' },
-    { key: 'deals',    label: 'Chốt deal',    icon: 'fa-handshake',      color: '#F59E0B' },
-    { key: 'revenue',  label: 'Doanh thu (tr)', icon: 'fa-dollar-sign', color: '#EC4899' }
-];
+      const METRIC_DEFS = [
+        { key: 'calls', label: 'Cuộc gọi', icon: 'fa-phone', color: '#3B82F6' },
+        { key: 'contacts', label: 'Liên hệ mới', icon: 'fa-address-book', color: '#8B5CF6' },
+        { key: 'demos', label: 'Demo', icon: 'fa-desktop', color: '#10B981' },
+        { key: 'deals', label: 'Chốt deal', icon: 'fa-handshake', color: '#F59E0B' },
+        { key: 'revenue', label: 'Doanh thu (tr)', icon: 'fa-dollar-sign', color: '#EC4899' },
+      ];
 
-// Generate dates
-const TODAY = new Date();
-function fmtDate(d) { return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; }
-function getMonday(d) { const day=d.getDay(), diff=d.getDate()-day+(day===0?-6:1); return new Date(d.getFullYear(), d.getMonth(), diff); }
+      // Generate dates
+      const TODAY = new Date();
+      function fmtDate(d) {
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+      }
+      function getMonday(d) {
+        const day = d.getDay(),
+          diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.getFullYear(), d.getMonth(), diff);
+      }
 
-const yesterday = new Date(TODAY); yesterday.setDate(TODAY.getDate()-1);
-const weekStart = getMonday(new Date(TODAY));
-const weekEnd = new Date(TODAY);
-const lastWeekEnd = new Date(weekStart); lastWeekEnd.setDate(lastWeekEnd.getDate()-1);
-const lastWeekStart = getMonday(lastWeekEnd);
-const monthStart = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
-const lastMonthEnd = new Date(TODAY.getFullYear(), TODAY.getMonth(), 0);
-const lastMonthStart = new Date(lastMonthEnd.getFullYear(), lastMonthEnd.getMonth(), 1);
+      const yesterday = new Date(TODAY);
+      yesterday.setDate(TODAY.getDate() - 1);
+      const weekStart = getMonday(new Date(TODAY));
+      const weekEnd = new Date(TODAY);
+      const lastWeekEnd = new Date(weekStart);
+      lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+      const lastWeekStart = getMonday(lastWeekEnd);
+      const monthStart = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+      const lastMonthEnd = new Date(TODAY.getFullYear(), TODAY.getMonth(), 0);
+      const lastMonthStart = new Date(lastMonthEnd.getFullYear(), lastMonthEnd.getMonth(), 1);
 
-const TIME_PERIODS = [
-    { key: 'today',      label: 'Hôm nay',     date: fmtDate(TODAY),          icon: 'fa-calendar-day' },
-    { key: 'yesterday',  label: 'Hôm qua',     date: fmtDate(yesterday),      icon: 'fa-clock-rotate-left' },
-    { key: 'thisWeek',   label: 'Tuần này',     date: `${fmtDate(weekStart)} - ${fmtDate(weekEnd)}`, icon: 'fa-calendar-week' },
-    { key: 'lastWeek',   label: 'Tuần trước',   date: `${fmtDate(lastWeekStart)} - ${fmtDate(lastWeekEnd)}`, icon: 'fa-clock-rotate-left' },
-    { key: 'thisMonth',  label: 'Tháng này',    date: `${fmtDate(monthStart)} - ${fmtDate(TODAY)}`, icon: 'fa-calendar' },
-    { key: 'lastMonth',  label: 'Tháng trước',  date: `${fmtDate(lastMonthStart)} - ${fmtDate(lastMonthEnd)}`, icon: 'fa-clock-rotate-left' }
-];
+      const TIME_PERIODS = [
+        { key: 'today', label: 'Hôm nay', date: fmtDate(TODAY), icon: 'fa-calendar-day' },
+        { key: 'yesterday', label: 'Hôm qua', date: fmtDate(yesterday), icon: 'fa-clock-rotate-left' },
+        {
+          key: 'thisWeek',
+          label: 'Tuần này',
+          date: `${fmtDate(weekStart)} - ${fmtDate(weekEnd)}`,
+          icon: 'fa-calendar-week',
+        },
+        {
+          key: 'lastWeek',
+          label: 'Tuần trước',
+          date: `${fmtDate(lastWeekStart)} - ${fmtDate(lastWeekEnd)}`,
+          icon: 'fa-clock-rotate-left',
+        },
+        {
+          key: 'thisMonth',
+          label: 'Tháng này',
+          date: `${fmtDate(monthStart)} - ${fmtDate(TODAY)}`,
+          icon: 'fa-calendar',
+        },
+        {
+          key: 'lastMonth',
+          label: 'Tháng trước',
+          date: `${fmtDate(lastMonthStart)} - ${fmtDate(lastMonthEnd)}`,
+          icon: 'fa-clock-rotate-left',
+        },
+      ];
 
-// Member data per period
-const DATA = {};
-function rng(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-function genData(scale) {
-    return {
-        calls: rng(5*scale, 15*scale),
-        contacts: rng(3*scale, 10*scale),
-        demos: rng(1*scale, 5*scale),
-        deals: rng(0, 2*scale),
-        revenue: +(rng(5*scale, 30*scale) / 10).toFixed(1)
-    };
-}
-TIME_PERIODS.forEach(tp => {
-    DATA[tp.key] = {};
-    const scale = tp.key === 'today' ? 1 : tp.key === 'yesterday' ? 1 :
-                  tp.key.includes('Week') ? 5 : 20;
-    MEMBERS.forEach(m => { DATA[tp.key][m.id] = genData(scale); });
-});
+      // Member data per period
+      const DATA = {};
+      function rng(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+      function genData(scale) {
+        return {
+          calls: rng(5 * scale, 15 * scale),
+          contacts: rng(3 * scale, 10 * scale),
+          demos: rng(1 * scale, 5 * scale),
+          deals: rng(0, 2 * scale),
+          revenue: +(rng(5 * scale, 30 * scale) / 10).toFixed(1),
+        };
+      }
+      TIME_PERIODS.forEach((tp) => {
+        DATA[tp.key] = {};
+        const scale = tp.key === 'today' ? 1 : tp.key === 'yesterday' ? 1 : tp.key.includes('Week') ? 5 : 20;
+        MEMBERS.forEach((m) => {
+          DATA[tp.key][m.id] = genData(scale);
+        });
+      });
 
-// Targets per member per period (mutable)
-const TARGETS = {};
-MEMBERS.forEach(m => {
-    TARGETS[m.id] = {};
-    TIME_PERIODS.forEach(tp => {
-        const s = tp.key === 'today' ? 1 : tp.key === 'yesterday' ? 1 :
-                  tp.key.includes('Week') ? 5 : 20;
-        TARGETS[m.id][tp.key] = {
+      // Targets per member per period (mutable)
+      const TARGETS = {};
+      MEMBERS.forEach((m) => {
+        TARGETS[m.id] = {};
+        TIME_PERIODS.forEach((tp) => {
+          const s = tp.key === 'today' ? 1 : tp.key === 'yesterday' ? 1 : tp.key.includes('Week') ? 5 : 20;
+          TARGETS[m.id][tp.key] = {
             calls: 12 * s,
             contacts: 8 * s,
             demos: 4 * s,
             deals: 2 * s,
-            revenue: 2.5 * s
-        };
-    });
-});
+            revenue: 2.5 * s,
+          };
+        });
+      });
 
-// ──────────── STATE ────────────
-let activePeriod = 'today';
-let activeMember = 'TN';
-let configPeriod = 'today';
+      // ──────────── STATE ────────────
+      let activePeriod = 'today';
+      let activeMember = 'TN';
+      let configPeriod = 'today';
 
-// ──────────── HEADER ────────────
-function renderHeader() {
-    const stack = document.getElementById('bubbleStack');
-    stack.innerHTML = '';
-    MEMBERS.forEach((m, i) => {
-        const el = document.createElement('div');
-        el.className = 'bubble-avatar';
-        el.style.cssText = `background:${m.color};z-index:${MEMBERS.length - i}`;
-        el.textContent = m.id;
-        el.innerHTML += `<span class="status-dot ${m.online ? 'pulse-online' : ''}" style="background:${m.online ? '#22c55e' : '#64748b'}"></span>`;
-        el.title = m.name;
-        stack.appendChild(el);
-    });
-    document.getElementById('onlineCount').textContent = MEMBERS.filter(m => m.online).length;
-}
+      // ──────────── HEADER ────────────
+      function renderHeader() {
+        const stack = document.getElementById('bubbleStack');
+        stack.innerHTML = '';
+        MEMBERS.forEach((m, i) => {
+          const el = document.createElement('div');
+          el.className = 'bubble-avatar';
+          el.style.cssText = `background:${m.color};z-index:${MEMBERS.length - i}`;
+          el.textContent = m.id;
+          el.innerHTML += `<span class="status-dot ${m.online ? 'pulse-online' : ''}" style="background:${m.online ? '#22c55e' : '#64748b'}"></span>`;
+          el.title = m.name;
+          stack.appendChild(el);
+        });
+        document.getElementById('onlineCount').textContent = MEMBERS.filter((m) => m.online).length;
+      }
 
-function updateClock() {
-    const now = new Date();
-    document.getElementById('headerClock').textContent =
-        `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-}
+      function updateClock() {
+        const now = new Date();
+        document.getElementById('headerClock').textContent =
+          `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      }
 
-// ──────────── TIME CARDS (CHANGE 1) ────────────
-function renderTimeCards() {
-    const container = document.getElementById('timeCardsContainer');
-    container.innerHTML = '';
-    TIME_PERIODS.forEach(tp => {
-        const card = document.createElement('div');
-        card.className = `time-card ${tp.key === activePeriod ? 'active' : ''}`;
-        card.innerHTML = `
+      // ──────────── TIME CARDS (CHANGE 1) ────────────
+      function renderTimeCards() {
+        const container = document.getElementById('timeCardsContainer');
+        container.innerHTML = '';
+        TIME_PERIODS.forEach((tp) => {
+          const card = document.createElement('div');
+          card.className = `time-card ${tp.key === activePeriod ? 'active' : ''}`;
+          card.innerHTML = `
             <i class="fa-solid ${tp.icon} tc-icon"></i>
             <span class="tc-label">${tp.label}</span>
             <span class="tc-date">${tp.date.length > 12 ? tp.date.split(' - ')[0] : tp.date}</span>
         `;
-        card.onclick = () => { activePeriod = tp.key; renderTimeCards(); renderModalBody(); };
-        container.appendChild(card);
-    });
-    // Scroll active into view
-    const activeEl = container.querySelector('.active');
-    if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-}
+          card.onclick = () => {
+            activePeriod = tp.key;
+            renderTimeCards();
+            renderModalBody();
+          };
+          container.appendChild(card);
+        });
+        // Scroll active into view
+        const activeEl = container.querySelector('.active');
+        if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
 
-// ──────────── DONUT CHART ────────────
-function createDonut(value, target, color, size = 140) {
-    const pct = Math.min(value / target * 100, 100);
-    const r = (size - 12) / 2;
-    const circ = 2 * Math.PI * r;
-    const dashArr = `${circ * pct / 100} ${circ * (1 - pct / 100)}`;
-    const overTarget = value >= target;
-    return `
+      // ──────────── DONUT CHART ────────────
+      function createDonut(value, target, color, size = 140) {
+        const pct = Math.min((value / target) * 100, 100);
+        const r = (size - 12) / 2;
+        const circ = 2 * Math.PI * r;
+        const dashArr = `${(circ * pct) / 100} ${circ * (1 - pct / 100)}`;
+        const overTarget = value >= target;
+        return `
         <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="block mx-auto">
-            <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(42,45,58,0.5)" stroke-width="10"/>
-            <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="10"
+            <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="rgba(42,45,58,0.5)" stroke-width="10"/>
+            <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="10"
                 stroke-dasharray="${dashArr}" stroke-dashoffset="${circ * 0.25}" stroke-linecap="round"
                 class="donut-ring" style="transform:rotate(-90deg);transform-origin:center;"/>
-            <text x="${size/2}" y="${size/2 - 6}" text-anchor="middle" fill="#fff" font-size="22" font-weight="800">${Math.round(pct)}%</text>
-            <text x="${size/2}" y="${size/2 + 14}" text-anchor="middle" fill="${overTarget ? '#22c55e' : '#94a3b8'}" font-size="10" font-weight="600">${value} / ${target}</text>
+            <text x="${size / 2}" y="${size / 2 - 6}" text-anchor="middle" fill="#fff" font-size="22" font-weight="800">${Math.round(pct)}%</text>
+            <text x="${size / 2}" y="${size / 2 + 14}" text-anchor="middle" fill="${overTarget ? '#22c55e' : '#94a3b8'}" font-size="10" font-weight="600">${value} / ${target}</text>
         </svg>
     `;
-}
+      }
 
-// ──────────── MODAL BODY ────────────
-function renderModalBody() {
-    const body = document.getElementById('modalBody');
-    const memberData = DATA[activePeriod][activeMember];
-    const memberTargets = TARGETS[activeMember][activePeriod];
-    const member = MEMBERS.find(m => m.id === activeMember);
-    const totalPct = METRIC_DEFS.reduce((sum, md) => {
-        return sum + Math.min(memberData[md.key] / memberTargets[md.key] * 100, 100);
-    }, 0) / METRIC_DEFS.length;
+      // ──────────── MODAL BODY ────────────
+      function renderModalBody() {
+        const body = document.getElementById('modalBody');
+        const memberData = DATA[activePeriod][activeMember];
+        const memberTargets = TARGETS[activeMember][activePeriod];
+        const member = MEMBERS.find((m) => m.id === activeMember);
+        const totalPct =
+          METRIC_DEFS.reduce((sum, md) => {
+            return sum + Math.min((memberData[md.key] / memberTargets[md.key]) * 100, 100);
+          }, 0) / METRIC_DEFS.length;
 
-    body.innerHTML = `
+        body.innerHTML = `
         <!-- Top Section: Donut + Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 animate-in">
             <!-- Left: Donut -->
             <div class="flex flex-col items-center gap-3">
-                <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">${member.name} – ${TIME_PERIODS.find(t=>t.key===activePeriod).label}</div>
+                <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">${member.name} – ${TIME_PERIODS.find((t) => t.key === activePeriod).label}</div>
                 ${createDonut(Math.round(totalPct), 100, member.color, 160)}
                 <div class="text-xs text-slate-500">Hoàn thành tổng target</div>
                 <button onclick="openConfigModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-gold border border-darkBorder hover:border-gold/30 transition-all mt-1">
@@ -494,11 +761,11 @@ function renderModalBody() {
             </div>
             <!-- Right: Metric Pills -->
             <div class="flex flex-col gap-2 justify-center">
-                ${METRIC_DEFS.map(md => {
-                    const val = memberData[md.key];
-                    const tgt = memberTargets[md.key];
-                    const pct = Math.min(Math.round(val / tgt * 100), 100);
-                    return `
+                ${METRIC_DEFS.map((md) => {
+                  const val = memberData[md.key];
+                  const tgt = memberTargets[md.key];
+                  const pct = Math.min(Math.round((val / tgt) * 100), 100);
+                  return `
                     <div class="metric-pill">
                         <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:${md.color}20;">
                             <i class="fa-solid ${md.icon} text-xs" style="color:${md.color}"></i>
@@ -506,14 +773,14 @@ function renderModalBody() {
                         <div class="flex-1">
                             <div class="flex items-center justify-between">
                                 <span class="text-xs text-slate-300 font-medium">${md.label}</span>
-                                <span class="text-xs font-bold" style="color:${md.color}">${val}${md.key==='revenue'?'tr':''}</span>
+                                <span class="text-xs font-bold" style="color:${md.color}">${val}${md.key === 'revenue' ? 'tr' : ''}</span>
                             </div>
                             <div class="w-full h-1.5 rounded-full bg-darkBorder/50 mt-1.5 overflow-hidden">
                                 <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${md.color}"></div>
                             </div>
                             <div class="flex justify-between mt-0.5">
                                 <span class="text-[9px] text-slate-500">${pct}%</span>
-                                <span class="text-[9px] text-slate-500">Target: ${tgt}${md.key==='revenue'?'tr':''}</span>
+                                <span class="text-[9px] text-slate-500">Target: ${tgt}${md.key === 'revenue' ? 'tr' : ''}</span>
                             </div>
                         </div>
                     </div>`;
@@ -525,10 +792,10 @@ function renderModalBody() {
         <div class="animate-in" style="animation-delay:0.1s">
             <div class="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wider">Chọn thành viên</div>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                ${MEMBERS.map(m => {
-                    const md = DATA[activePeriod][m.id];
-                    const totalCalls = md.calls;
-                    return `
+                ${MEMBERS.map((m) => {
+                  const md = DATA[activePeriod][m.id];
+                  const totalCalls = md.calls;
+                  return `
                     <div class="mini-card ${m.id === activeMember ? 'active-member' : ''}" onclick="selectMember('${m.id}')">
                         <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:${m.color}">${m.id}</div>
                         <div class="min-w-0">
@@ -547,35 +814,35 @@ function renderModalBody() {
             ${renderPodium()}
         </div>
     `;
-}
+      }
 
-// ──────────── PODIUM (CHANGE 2) ────────────
-function renderPodium() {
-    // Sort members by calls descending
-    const sorted = MEMBERS.map(m => ({
-        ...m,
-        calls: DATA[activePeriod][m.id].calls
-    })).sort((a, b) => b.calls - a.calls);
+      // ──────────── PODIUM (CHANGE 2) ────────────
+      function renderPodium() {
+        // Sort members by calls descending
+        const sorted = MEMBERS.map((m) => ({
+          ...m,
+          calls: DATA[activePeriod][m.id].calls,
+        })).sort((a, b) => b.calls - a.calls);
 
-    const top3 = sorted.slice(0, 3);
-    // Reorder for display: #2, #1, #3
-    const display = [top3[1], top3[0], top3[2]];
-    const heights = { 0: 90, 1: 120, 2: 65 }; // #2=90, #1=120, #3=65
-    const ranks = { 0: 2, 1: 1, 2: 3 };
-    const barColors = {
-        0: 'linear-gradient(to top, rgba(192,192,192,0.15), rgba(192,192,192,0.05))',
-        1: 'linear-gradient(to top, rgba(212,168,75,0.2), rgba(212,168,75,0.05))',
-        2: 'linear-gradient(to top, rgba(205,127,50,0.15), rgba(205,127,50,0.05))'
-    };
-    const barBorders = { 0: 'rgba(192,192,192,0.25)', 1: 'rgba(212,168,75,0.35)', 2: 'rgba(205,127,50,0.2)' };
-    const rankColors = { 0: '#C0C0C0', 1: '#D4A84B', 2: '#CD7F32' };
+        const top3 = sorted.slice(0, 3);
+        // Reorder for display: #2, #1, #3
+        const display = [top3[1], top3[0], top3[2]];
+        const heights = { 0: 90, 1: 120, 2: 65 }; // #2=90, #1=120, #3=65
+        const ranks = { 0: 2, 1: 1, 2: 3 };
+        const barColors = {
+          0: 'linear-gradient(to top, rgba(192,192,192,0.15), rgba(192,192,192,0.05))',
+          1: 'linear-gradient(to top, rgba(212,168,75,0.2), rgba(212,168,75,0.05))',
+          2: 'linear-gradient(to top, rgba(205,127,50,0.15), rgba(205,127,50,0.05))',
+        };
+        const barBorders = { 0: 'rgba(192,192,192,0.25)', 1: 'rgba(212,168,75,0.35)', 2: 'rgba(205,127,50,0.2)' };
+        const rankColors = { 0: '#C0C0C0', 1: '#D4A84B', 2: '#CD7F32' };
 
-    let html = '<div class="podium-wrapper">';
-    display.forEach((m, i) => {
-        if (!m) return;
-        const rank = ranks[i];
-        const h = heights[i];
-        html += `
+        let html = '<div class="podium-wrapper">';
+        display.forEach((m, i) => {
+          if (!m) return;
+          const rank = ranks[i];
+          const h = heights[i];
+          html += `
         <div class="podium-column">
             <div class="podium-info">
                 ${rank === 1 ? '<div class="text-lg mb-1">👑</div>' : ''}
@@ -587,13 +854,13 @@ function renderPodium() {
                 <span style="color:${rankColors[i]};font-size:16px;font-weight:800;">#${rank}</span>
             </div>
         </div>`;
-    });
-    html += '</div>';
+        });
+        html += '</div>';
 
-    // Remaining members
-    if (sorted.length > 3) {
-        html += '<div class="mt-4 space-y-1.5">';
-        sorted.slice(3).forEach((m, i) => {
+        // Remaining members
+        if (sorted.length > 3) {
+          html += '<div class="mt-4 space-y-1.5">';
+          sorted.slice(3).forEach((m, i) => {
             html += `
             <div class="flex items-center gap-3 px-3 py-2 rounded-lg" style="background:rgba(15,17,23,0.4);border:1px solid rgba(42,45,58,0.3);">
                 <span class="text-xs font-bold text-slate-500 w-5 text-center">#${i + 4}</span>
@@ -601,49 +868,52 @@ function renderPodium() {
                 <span class="text-xs text-slate-300 font-medium flex-1">${m.name}</span>
                 <span class="text-xs font-bold text-slate-400">${m.calls} calls</span>
             </div>`;
-        });
-        html += '</div>';
-    }
-    return html;
-}
+          });
+          html += '</div>';
+        }
+        return html;
+      }
 
-// ──────────── MEMBER SELECT ────────────
-function selectMember(id) {
-    activeMember = id;
-    renderModalBody();
-}
+      // ──────────── MEMBER SELECT ────────────
+      function selectMember(id) {
+        activeMember = id;
+        renderModalBody();
+      }
 
-// ──────────── CONFIG MODAL (CHANGE 3) ────────────
-function openConfigModal() {
-    configPeriod = activePeriod;
-    const member = MEMBERS.find(m => m.id === activeMember);
-    document.getElementById('configSubtitle').textContent = member.name;
-    renderConfigTabs();
-    renderConfigInputs();
-    document.getElementById('configOverlay').classList.add('active');
-}
+      // ──────────── CONFIG MODAL (CHANGE 3) ────────────
+      function openConfigModal() {
+        configPeriod = activePeriod;
+        const member = MEMBERS.find((m) => m.id === activeMember);
+        document.getElementById('configSubtitle').textContent = member.name;
+        renderConfigTabs();
+        renderConfigInputs();
+        document.getElementById('configOverlay').classList.add('active');
+      }
 
-function closeConfigModal() {
-    document.getElementById('configOverlay').classList.remove('active');
-}
+      function closeConfigModal() {
+        document.getElementById('configOverlay').classList.remove('active');
+      }
 
-function renderConfigTabs() {
-    const container = document.getElementById('configTabs');
-    container.innerHTML = TIME_PERIODS.map(tp => `
+      function renderConfigTabs() {
+        const container = document.getElementById('configTabs');
+        container.innerHTML = TIME_PERIODS.map(
+          (tp) => `
         <div class="config-tab ${tp.key === configPeriod ? 'active' : ''}" onclick="switchConfigPeriod('${tp.key}')">${tp.label}</div>
-    `).join('');
-}
+    `
+        ).join('');
+      }
 
-function switchConfigPeriod(key) {
-    configPeriod = key;
-    renderConfigTabs();
-    renderConfigInputs();
-}
+      function switchConfigPeriod(key) {
+        configPeriod = key;
+        renderConfigTabs();
+        renderConfigInputs();
+      }
 
-function renderConfigInputs() {
-    const container = document.getElementById('configInputs');
-    const targets = TARGETS[activeMember][configPeriod];
-    container.innerHTML = METRIC_DEFS.map(md => `
+      function renderConfigInputs() {
+        const container = document.getElementById('configInputs');
+        const targets = TARGETS[activeMember][configPeriod];
+        container.innerHTML = METRIC_DEFS.map(
+          (md) => `
         <div class="config-input-row">
             <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="background:${md.color}25;">
                 <i class="fa-solid ${md.icon}" style="color:${md.color};font-size:10px;"></i>
@@ -652,70 +922,75 @@ function renderConfigInputs() {
             <input type="number" id="cfg_${md.key}" value="${targets[md.key]}" min="0" step="${md.key === 'revenue' ? '0.5' : '1'}">
             <span class="text-[10px] text-slate-500 w-16 text-right">Hiện: ${DATA[configPeriod][activeMember][md.key]}${md.key === 'revenue' ? 'tr' : ''}</span>
         </div>
-    `).join('');
-}
+    `
+        ).join('');
+      }
 
-function saveConfig() {
-    METRIC_DEFS.forEach(md => {
-        const input = document.getElementById(`cfg_${md.key}`);
-        if (input) {
+      function saveConfig() {
+        METRIC_DEFS.forEach((md) => {
+          const input = document.getElementById(`cfg_${md.key}`);
+          if (input) {
             const val = md.key === 'revenue' ? parseFloat(input.value) : parseInt(input.value);
             if (!isNaN(val) && val >= 0) {
-                TARGETS[activeMember][configPeriod][md.key] = val;
+              TARGETS[activeMember][configPeriod][md.key] = val;
             }
-        }
-    });
-    closeConfigModal();
-    renderModalBody();
-    showToast('✅ Đã lưu target thành công!', '#22c55e');
-}
+          }
+        });
+        closeConfigModal();
+        renderModalBody();
+        showToast('✅ Đã lưu target thành công!', '#22c55e');
+      }
 
-// ──────────── TOAST ────────────
-function showToast(msg, color = '#D4A84B') {
-    const container = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.style.borderLeftColor = color;
-    toast.style.borderLeft = `3px solid ${color}`;
-    toast.innerHTML = `<span>${msg}</span>`;
-    container.appendChild(toast);
-    requestAnimationFrame(() => { requestAnimationFrame(() => { toast.classList.add('show'); }); });
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 400);
-    }, 3000);
-}
+      // ──────────── TOAST ────────────
+      function showToast(msg, color = '#D4A84B') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.style.borderLeftColor = color;
+        toast.style.borderLeft = `3px solid ${color}`;
+        toast.innerHTML = `<span>${msg}</span>`;
+        container.appendChild(toast);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            toast.classList.add('show');
+          });
+        });
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => toast.remove(), 400);
+        }, 3000);
+      }
 
-// ──────────── MODAL CONTROLS ────────────
-function closeMainModal() {
-    document.getElementById('mainModal').classList.remove('active');
-}
-function openMainModal() {
-    document.getElementById('mainModal').classList.add('active');
-}
+      // ──────────── MODAL CONTROLS ────────────
+      function closeMainModal() {
+        document.getElementById('mainModal').classList.remove('active');
+      }
+      function openMainModal() {
+        document.getElementById('mainModal').classList.add('active');
+      }
 
-// ESC key handling
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-        if (document.getElementById('configOverlay').classList.contains('active')) {
+      // ESC key handling
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (document.getElementById('configOverlay').classList.contains('active')) {
             closeConfigModal();
-        } else if (document.getElementById('mainModal').classList.contains('active')) {
+          } else if (document.getElementById('mainModal').classList.contains('active')) {
             closeMainModal();
+          }
         }
-    }
-});
+      });
 
-// Click outside config modal
-document.getElementById('configOverlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('configOverlay')) closeConfigModal();
-});
+      // Click outside config modal
+      document.getElementById('configOverlay').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('configOverlay')) closeConfigModal();
+      });
 
-// ──────────── INIT ────────────
-renderHeader();
-renderTimeCards();
-renderModalBody();
-updateClock();
-setInterval(updateClock, 1000);
-</script>
-</body>
+      // ──────────── INIT ────────────
+      renderHeader();
+      renderTimeCards();
+      renderModalBody();
+      updateClock();
+      setInterval(updateClock, 1000);
+    </script>
+  </body>
 </html>

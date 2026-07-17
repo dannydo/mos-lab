@@ -72,37 +72,37 @@ const playRingtone = () => {
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
-    
+
     audioCtx = new AudioContextClass();
-    
+
     const playBeep = () => {
       if (!audioCtx) return;
-      
+
       // Dual tone generator (similar to phone ring)
       const osc1 = audioCtx.createOscillator();
       const osc2 = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      
+
       osc1.connect(gain);
       osc2.connect(gain);
       gain.connect(audioCtx.destination);
-      
+
       osc1.type = 'sine';
       osc2.type = 'sine';
       osc1.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
       osc2.frequency.setValueAtTime(480, audioCtx.currentTime); // Ring pitch
-      
+
       gain.gain.setValueAtTime(0, audioCtx.currentTime);
       gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.1);
       gain.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.8);
       gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.0);
-      
+
       osc1.start(audioCtx.currentTime);
       osc2.start(audioCtx.currentTime);
       osc1.stop(audioCtx.currentTime + 1.0);
       osc2.stop(audioCtx.currentTime + 1.0);
     };
-    
+
     playBeep();
     ringtoneInterval = setInterval(playBeep, 2000);
   } catch (e) {
@@ -145,8 +145,9 @@ const applyOmiCallAudioOutputDevice = async (element: HTMLMediaElement | null | 
 
 const applyOmiCallAudioOutputToActiveMedia = (call?: any) => {
   if (typeof document !== 'undefined') {
-    document.querySelectorAll<HTMLMediaElement>('#mos-omicall-media-bridge audio, #mos-omicall-media-bridge video')
-      .forEach(element => void applyOmiCallAudioOutputDevice(element));
+    document
+      .querySelectorAll<HTMLMediaElement>('#mos-omicall-media-bridge audio, #mos-omicall-media-bridge video')
+      .forEach((element) => void applyOmiCallAudioOutputDevice(element));
   }
 
   const activeCall = call || (typeof window !== 'undefined' ? (window as any).activeCall : null);
@@ -206,12 +207,14 @@ const getOmiCallMicrophoneStream = async () => {
     });
   } catch (err: any) {
     const canRetryDefault =
-      selectedOmiCallAudioInputId &&
-      ['OverconstrainedError', 'NotFoundError', 'NotReadableError'].includes(err?.name);
+      selectedOmiCallAudioInputId && ['OverconstrainedError', 'NotFoundError', 'NotReadableError'].includes(err?.name);
 
     if (!canRetryDefault) throw err;
 
-    console.warn('[OmiCallContext] Selected microphone is unavailable. Falling back to system default microphone.', err);
+    console.warn(
+      '[OmiCallContext] Selected microphone is unavailable. Falling back to system default microphone.',
+      err
+    );
     selectedOmiCallAudioInputId = '';
     try {
       localStorage.removeItem(OMI_AUDIO_INPUT_STORAGE_KEY);
@@ -250,7 +253,7 @@ const measureAudioSignal = async (stream: MediaStream, sampleCount = 8, sampleMs
     let maxRms = 0;
 
     for (let sample = 0; sample < sampleCount; sample += 1) {
-      await new Promise(resolve => setTimeout(resolve, sampleMs));
+      await new Promise((resolve) => setTimeout(resolve, sampleMs));
       analyser.getByteTimeDomainData(data);
 
       let sumSquares = 0;
@@ -281,7 +284,7 @@ const measureMicrophoneSignal = async (stream: MediaStream) => {
 };
 
 const getLiveAudioTracks = (stream: MediaStream) => {
-  return stream.getAudioTracks().filter(track => track.readyState === 'live' && track.enabled);
+  return stream.getAudioTracks().filter((track) => track.readyState === 'live' && track.enabled);
 };
 
 const hasUsableMicrophoneStream = (stream: MediaStream | null | undefined) => {
@@ -289,7 +292,7 @@ const hasUsableMicrophoneStream = (stream: MediaStream | null | undefined) => {
 };
 
 const stopMediaStream = (stream: MediaStream | null | undefined) => {
-  stream?.getTracks().forEach(track => track.stop());
+  stream?.getTracks().forEach((track) => track.stop());
 };
 
 const isPlainRecord = (value: unknown): value is Record<string, any> => {
@@ -395,7 +398,7 @@ const installPreparedMicrophonePatch = (stream: MediaStream) => {
         console.log('[OmiCallContext] Supplying validated microphone stream to OmiCall SDK.', {
           constraints,
           consumedCount,
-          tracks: stream.getAudioTracks().map(track => ({
+          tracks: stream.getAudioTracks().map((track) => ({
             id: track.id,
             label: track.label,
             enabled: track.enabled,
@@ -450,7 +453,9 @@ const prepareMicrophoneForOmiCall = async () => {
   try {
     const permissionStatus = await navigator.permissions?.query({ name: 'microphone' as any });
     if (permissionStatus?.state === 'denied') {
-      throw new Error('Quyền Microphone đang bị chặn. Hãy mở biểu tượng khóa trên thanh địa chỉ và chọn Allow Microphone.');
+      throw new Error(
+        'Quyền Microphone đang bị chặn. Hãy mở biểu tượng khóa trên thanh địa chỉ và chọn Allow Microphone.'
+      );
     }
   } catch (err: any) {
     if (err?.message?.includes('Microphone')) throw err;
@@ -470,7 +475,7 @@ const prepareMicrophoneForOmiCall = async () => {
   if (maxRms !== null && maxRms < 0.0005) {
     console.warn('[OmiCallContext] Microphone permission is granted but the short preflight sample was silent.', {
       maxRms,
-      tracks: audioTracks.map(track => ({
+      tracks: audioTracks.map((track) => ({
         id: track.id,
         label: track.label,
         enabled: track.enabled,
@@ -479,12 +484,15 @@ const prepareMicrophoneForOmiCall = async () => {
         settings: typeof track.getSettings === 'function' ? track.getSettings() : null,
       })),
     });
-    message.warning('Microphone đã được cấp quyền nhưng mẫu thử đang im lặng. Hãy nói thử khi cuộc gọi kết nối để kiểm tra 2 chiều.', 8);
+    message.warning(
+      'Microphone đã được cấp quyền nhưng mẫu thử đang im lặng. Hãy nói thử khi cuộc gọi kết nối để kiểm tra 2 chiều.',
+      8
+    );
   }
 
   console.log('[OmiCallContext] Microphone preflight passed:', {
     maxRms,
-    tracks: audioTracks.map(track => ({
+    tracks: audioTracks.map((track) => ({
       id: track.id,
       label: track.label,
       enabled: track.enabled,
@@ -517,7 +525,7 @@ const unlockAudioPlayback = async () => {
 const refreshOmiCallMediaDevices = async () => {
   try {
     navigator.mediaDevices?.dispatchEvent?.(new Event('devicechange'));
-    await new Promise(resolve => setTimeout(resolve, 350));
+    await new Promise((resolve) => setTimeout(resolve, 350));
   } catch (err) {
     console.warn('[OmiCallContext] Media device refresh skipped:', err);
   }
@@ -531,7 +539,10 @@ const installOmiCallPeerConnectionTracker = () => {
   const OriginalRTCPeerConnection = window.RTCPeerConnection;
   const trackedPeerConnections = new Set<RTCPeerConnection>();
 
-  const PatchedRTCPeerConnection = function(this: RTCPeerConnection, ...args: ConstructorParameters<typeof RTCPeerConnection>) {
+  const PatchedRTCPeerConnection = function (
+    this: RTCPeerConnection,
+    ...args: ConstructorParameters<typeof RTCPeerConnection>
+  ) {
     const peerConnection = new OriginalRTCPeerConnection(...args);
     trackedPeerConnections.add(peerConnection);
 
@@ -567,18 +578,21 @@ const getActiveOmiCallPeerConnection = (call: any): RTCPeerConnection | null => 
   if (fromCall) return fromCall;
 
   const trackedPeerConnections = Array.from(window.__mosOmiCallPeerConnections || []);
-  return trackedPeerConnections.find(peerConnection => peerConnection.signalingState !== 'closed') || null;
+  return trackedPeerConnections.find((peerConnection) => peerConnection.signalingState !== 'closed') || null;
 };
 
-const summarizeMediaTrack = (track: MediaStreamTrack | null) => track ? {
-  id: track.id,
-  kind: track.kind,
-  label: track.label,
-  enabled: track.enabled,
-  muted: track.muted,
-  readyState: track.readyState,
-  settings: typeof track.getSettings === 'function' ? track.getSettings() : null,
-} : null;
+const summarizeMediaTrack = (track: MediaStreamTrack | null) =>
+  track
+    ? {
+        id: track.id,
+        kind: track.kind,
+        label: track.label,
+        enabled: track.enabled,
+        muted: track.muted,
+        readyState: track.readyState,
+        settings: typeof track.getSettings === 'function' ? track.getSettings() : null,
+      }
+    : null;
 
 const resumeOmiCallAudioGraph = async (sessionDescriptionHandler: any) => {
   const audioContext = sessionDescriptionHandler?.constructor?.audioContext;
@@ -591,19 +605,22 @@ const resumeOmiCallAudioGraph = async (sessionDescriptionHandler: any) => {
 };
 
 const syncOmiCallLocalStreamFromSender = (activeCall: any, peerConnection: RTCPeerConnection) => {
-  const audioSenders = peerConnection.getSenders().filter(sender => sender.track?.kind === 'audio');
+  const audioSenders = peerConnection.getSenders().filter((sender) => sender.track?.kind === 'audio');
   const localStream = activeCall.streams?.local;
 
   if (isMediaStream(localStream)) {
     localStream.getAudioTracks().forEach((track: MediaStreamTrack) => {
-      if (!audioSenders.some(sender => sender.track?.id === track.id)) {
+      if (!audioSenders.some((sender) => sender.track?.id === track.id)) {
         localStream.removeTrack(track);
         track.stop();
       }
     });
-    audioSenders.forEach(sender => {
+    audioSenders.forEach((sender) => {
       const track = sender.track;
-      if (track && !localStream.getAudioTracks().some((existingTrack: MediaStreamTrack) => existingTrack.id === track.id)) {
+      if (
+        track &&
+        !localStream.getAudioTracks().some((existingTrack: MediaStreamTrack) => existingTrack.id === track.id)
+      ) {
         localStream.addTrack(track);
       }
     });
@@ -612,7 +629,7 @@ const syncOmiCallLocalStreamFromSender = (activeCall: any, peerConnection: RTCPe
   }
 
   const nextLocalStream = new MediaStream();
-  audioSenders.forEach(sender => {
+  audioSenders.forEach((sender) => {
     if (sender.track) nextLocalStream.addTrack(sender.track);
   });
   activeCall.streams = activeCall.streams || {};
@@ -621,22 +638,23 @@ const syncOmiCallLocalStreamFromSender = (activeCall: any, peerConnection: RTCPe
 };
 
 const syncOmiCallRemoteStreamFromReceiver = (activeCall: any, peerConnection: RTCPeerConnection) => {
-  const audioReceivers = peerConnection.getReceivers().filter(receiver => receiver.track?.kind === 'audio');
+  const audioReceivers = peerConnection.getReceivers().filter((receiver) => receiver.track?.kind === 'audio');
   if (!audioReceivers.length) return null;
 
-  const remoteStream = isMediaStream(activeCall.streams?.remote)
-    ? activeCall.streams.remote
-    : new MediaStream();
+  const remoteStream = isMediaStream(activeCall.streams?.remote) ? activeCall.streams.remote : new MediaStream();
 
   remoteStream.getAudioTracks().forEach((track: MediaStreamTrack) => {
-    if (!audioReceivers.some(receiver => receiver.track?.id === track.id)) {
+    if (!audioReceivers.some((receiver) => receiver.track?.id === track.id)) {
       remoteStream.removeTrack(track);
     }
   });
 
-  audioReceivers.forEach(receiver => {
+  audioReceivers.forEach((receiver) => {
     const track = receiver.track;
-    if (track && !remoteStream.getAudioTracks().some((existingTrack: MediaStreamTrack) => existingTrack.id === track.id)) {
+    if (
+      track &&
+      !remoteStream.getAudioTracks().some((existingTrack: MediaStreamTrack) => existingTrack.id === track.id)
+    ) {
       remoteStream.addTrack(track);
     }
   });
@@ -650,7 +668,7 @@ const attachMicrophoneStreamToOmiCall = async (
   activeCall: any,
   peerConnection: RTCPeerConnection,
   microphoneStream: MediaStream,
-  stage: string,
+  stage: string
 ) => {
   const [microphoneTrack] = getLiveAudioTracks(microphoneStream);
   if (!microphoneTrack) return false;
@@ -669,13 +687,14 @@ const attachMicrophoneStreamToOmiCall = async (
     sessionDescriptionHandler.localMediaStream = microphoneStream;
   }
 
-  const audioSender = peerConnection.getSenders().find(sender => sender.track?.kind === 'audio');
+  const audioSender = peerConnection.getSenders().find((sender) => sender.track?.kind === 'audio');
   if (audioSender) {
     if (audioSender.track?.id !== microphoneTrack.id) {
       await audioSender.replaceTrack(microphoneTrack);
-      reinforcementMode = reinforcementMode === 'sdk-real-local-stream'
-        ? 'sdk-real-local-stream+sender-track'
-        : 'stable-sender-replace-track';
+      reinforcementMode =
+        reinforcementMode === 'sdk-real-local-stream'
+          ? 'sdk-real-local-stream+sender-track'
+          : 'stable-sender-replace-track';
     }
   } else {
     peerConnection.addTrack(microphoneTrack, microphoneStream);
@@ -690,7 +709,7 @@ const attachMicrophoneStreamToOmiCall = async (
   activeCall.streams = activeCall.streams || {};
   activeCall.streams.local = microphoneStream;
 
-  peerConnection.getSenders().forEach(sender => {
+  peerConnection.getSenders().forEach((sender) => {
     if (sender.track?.kind === 'audio') {
       sender.track.enabled = true;
     }
@@ -710,14 +729,15 @@ const attachMicrophoneStreamToOmiCall = async (
     uid: getOmiCallSdkUid(activeCall),
     uuid: activeCall.uuid || activeCall.callUuid || activeCall.call_uuid || null,
     track: summarizeMediaTrack(microphoneTrack),
-    senderTracks: peerConnection.getSenders()
-      .filter(sender => sender.track?.kind === 'audio')
-      .map(sender => summarizeMediaTrack(sender.track)),
+    senderTracks: peerConnection
+      .getSenders()
+      .filter((sender) => sender.track?.kind === 'audio')
+      .map((sender) => summarizeMediaTrack(sender.track)),
     localStreamTracks: localStream.getAudioTracks().map((track: MediaStreamTrack) => summarizeMediaTrack(track)),
     mode: reinforcementMode,
     audioGraphState,
     senderCount: peerConnection.getSenders().length,
-    audioSenderCount: peerConnection.getSenders().filter(sender => sender.track?.kind === 'audio').length,
+    audioSenderCount: peerConnection.getSenders().filter((sender) => sender.track?.kind === 'audio').length,
   };
 
   window.__mosLastOmiCallMicrophoneReinforcement = result;
@@ -728,7 +748,7 @@ const attachMicrophoneStreamToOmiCall = async (
 const reinforceOmiCallMicrophoneSender = async (
   call: any,
   stage: string,
-  options: { forceNewStream?: boolean } = {},
+  options: { forceNewStream?: boolean } = {}
 ) => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
   if (!navigator.mediaDevices?.getUserMedia) return false;
@@ -739,14 +759,13 @@ const reinforceOmiCallMicrophoneSender = async (
   if (activeCall.__mosUserMuted) return false;
 
   let nextStream: MediaStream | null = null;
-  const previousStream = isMediaStream(activeCall.__mosMicrophoneStream)
-    ? activeCall.__mosMicrophoneStream
-    : null;
+  const previousStream = isMediaStream(activeCall.__mosMicrophoneStream) ? activeCall.__mosMicrophoneStream : null;
 
   try {
-    nextStream = !options.forceNewStream && hasUsableMicrophoneStream(previousStream)
-      ? previousStream
-      : await getOmiCallMicrophoneStream();
+    nextStream =
+      !options.forceNewStream && hasUsableMicrophoneStream(previousStream)
+        ? previousStream
+        : await getOmiCallMicrophoneStream();
 
     if (!nextStream) return false;
 
@@ -772,7 +791,8 @@ const getOmiCallMediaContainer = () => {
     container = document.createElement('div');
     container.id = 'mos-omicall-media-bridge';
     container.setAttribute('aria-hidden', 'true');
-    container.style.cssText = 'position:fixed;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;';
+    container.style.cssText =
+      'position:fixed;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;';
     document.body.appendChild(container);
   }
 
@@ -891,7 +911,7 @@ const ensureOmiCallMediaBridge = (call: any) => {
   attachOmiCallStream(call, 'remote', false);
   attachOmiCallStream(call, 'local', true);
 
-  Object.keys(call?.streams || {}).forEach(streamKey => {
+  Object.keys(call?.streams || {}).forEach((streamKey) => {
     attachOmiCallStream(call, streamKey, shouldMuteOmiCallStream(streamKey));
   });
 
@@ -900,7 +920,7 @@ const ensureOmiCallMediaBridge = (call: any) => {
 
 const scheduleOmiCallMediaBridgeSync = (call: any) => {
   ensureOmiCallMediaBridge(call);
-  [250, 1000, 2500].forEach(delay => {
+  [250, 1000, 2500].forEach((delay) => {
     setTimeout(() => ensureOmiCallMediaBridge(call), delay);
   });
 };
@@ -910,24 +930,26 @@ const audioHealthWarningKeys = new Set<string>();
 const describeOmiCallStream = async (call: any, streamKey: string) => {
   const stream = call?.streams?.[streamKey];
   const uid = getOmiCallSdkUid(call);
-  const element = uid ? document.getElementById(`${uid}-${streamKey}`) as HTMLMediaElement | null : null;
+  const element = uid ? (document.getElementById(`${uid}-${streamKey}`) as HTMLMediaElement | null) : null;
 
   if (!isMediaStream(stream)) {
     return {
       exists: false,
       tracks: [],
       rms: null,
-      element: element ? {
-        muted: element.muted,
-        autoplay: element.autoplay,
-        paused: element.paused,
-        hasSrcObject: !!element.srcObject,
-        sinkId: (element as HTMLMediaElement & { sinkId?: string }).sinkId || null,
-      } : null,
+      element: element
+        ? {
+            muted: element.muted,
+            autoplay: element.autoplay,
+            paused: element.paused,
+            hasSrcObject: !!element.srcObject,
+            sinkId: (element as HTMLMediaElement & { sinkId?: string }).sinkId || null,
+          }
+        : null,
     };
   }
 
-  const tracks = stream.getAudioTracks().map(track => ({
+  const tracks = stream.getAudioTracks().map((track) => ({
     id: track.id,
     label: track.label,
     enabled: track.enabled,
@@ -940,13 +962,15 @@ const describeOmiCallStream = async (call: any, streamKey: string) => {
     exists: true,
     tracks,
     rms: tracks.length ? await measureAudioSignal(stream, 4, 60) : null,
-    element: element ? {
-      muted: element.muted,
-      autoplay: element.autoplay,
-      paused: element.paused,
-      hasSrcObject: !!element.srcObject,
-      sinkId: (element as HTMLMediaElement & { sinkId?: string }).sinkId || null,
-    } : null,
+    element: element
+      ? {
+          muted: element.muted,
+          autoplay: element.autoplay,
+          paused: element.paused,
+          hasSrcObject: !!element.srcObject,
+          sinkId: (element as HTMLMediaElement & { sinkId?: string }).sinkId || null,
+        }
+      : null,
   };
 };
 
@@ -958,7 +982,12 @@ const getPeerConnectionAudioStats = async (peerConnection: RTCPeerConnection) =>
       return reports
         .filter((report: any) => {
           const kind = report.kind || report.mediaType;
-          return kind === 'audio' || String(report.id || '').toLowerCase().includes('audio');
+          return (
+            kind === 'audio' ||
+            String(report.id || '')
+              .toLowerCase()
+              .includes('audio')
+          );
         })
         .map((report: any) => ({
           id: report.id,
@@ -981,15 +1010,19 @@ const getPeerConnectionAudioStats = async (peerConnection: RTCPeerConnection) =>
     }
   };
 
-  const senders = await Promise.all(peerConnection.getSenders().map(async sender => ({
-    track: summarizeMediaTrack(sender.track),
-    stats: await summarizeReports(sender),
-  })));
+  const senders = await Promise.all(
+    peerConnection.getSenders().map(async (sender) => ({
+      track: summarizeMediaTrack(sender.track),
+      stats: await summarizeReports(sender),
+    }))
+  );
 
-  const receivers = await Promise.all(peerConnection.getReceivers().map(async receiver => ({
-    track: summarizeMediaTrack(receiver.track),
-    stats: await summarizeReports(receiver),
-  })));
+  const receivers = await Promise.all(
+    peerConnection.getReceivers().map(async (receiver) => ({
+      track: summarizeMediaTrack(receiver.track),
+      stats: await summarizeReports(receiver),
+    }))
+  );
 
   return {
     connectionState: peerConnection.connectionState,
@@ -1005,7 +1038,7 @@ const describeOmiCallPeerConnections = async () => {
   if (typeof window === 'undefined') return [];
 
   const trackedPeerConnections = Array.from(window.__mosOmiCallPeerConnections || []);
-  const activePeerConnections = trackedPeerConnections.filter(peerConnection => {
+  const activePeerConnections = trackedPeerConnections.filter((peerConnection) => {
     return peerConnection.signalingState !== 'closed';
   });
 
@@ -1075,7 +1108,10 @@ const warnOmiCallAudioHealth = (diagnostics: any) => {
     const key = `${callKey}:remote-playback`;
     if (!audioHealthWarningKeys.has(key)) {
       audioHealthWarningKeys.add(key);
-      message.error('Remote audio đã có stream nhưng playback element chưa phát. Hãy click vào trang hoặc reload trước khi gọi lại.', 12);
+      message.error(
+        'Remote audio đã có stream nhưng playback element chưa phát. Hãy click vào trang hoặc reload trước khi gọi lại.',
+        12
+      );
     }
   }
 };
@@ -1127,7 +1163,7 @@ const cleanupOmiCallMediaBridge = (call: any) => {
   const uid = getOmiCallSdkUid(call);
   if (!uid) return;
 
-  [`${uid}-remote`, `${uid}-local`].forEach(id => {
+  [`${uid}-remote`, `${uid}-local`].forEach((id) => {
     const el = document.getElementById(id) as HTMLMediaElement | null;
     if (!el) return;
     try {
@@ -1148,7 +1184,10 @@ const auditActiveCallAudio = () => {
   const localTracks = activeCall?.streams?.local?.getAudioTracks?.() || [];
   const remoteTracks = activeCall?.streams?.remote?.getAudioTracks?.() || [];
 
-  if (!localTracks.length || localTracks.every((track: MediaStreamTrack) => track.readyState !== 'live' || !track.enabled)) {
+  if (
+    !localTracks.length ||
+    localTracks.every((track: MediaStreamTrack) => track.readyState !== 'live' || !track.enabled)
+  ) {
     console.warn('[OmiCallContext] Active call has no live local microphone track.', activeCall);
     message.error('Microphone chưa được gửi vào cuộc gọi. Hãy kiểm tra quyền mic và chọn đúng input trên Chrome.', 12);
   }
@@ -1165,33 +1204,34 @@ const ensureOmiCallSwitchboardOnline = async () => {
   const onlineState = window.OMICallSDK.SB_STATE?.ONLINE;
   if (!onlineState) return true;
 
-  const waitForConnected = () => new Promise<boolean>(resolve => {
-    let settled = false;
-    let timeout: any = null;
+  const waitForConnected = () =>
+    new Promise<boolean>((resolve) => {
+      let settled = false;
+      let timeout: any = null;
 
-    const finish = (result: boolean) => {
-      if (settled) return;
-      settled = true;
-      if (timeout) clearTimeout(timeout);
+      const finish = (result: boolean) => {
+        if (settled) return;
+        settled = true;
+        if (timeout) clearTimeout(timeout);
+        try {
+          sdk.off?.('register', onRegister);
+        } catch (e) {}
+        resolve(result);
+      };
+
+      const onRegister = (data: any) => {
+        console.log('[OmiCallContext] register event:', data);
+        if (data?.status === 'connected') finish(true);
+        if (data?.status === 'disconnect') finish(false);
+      };
+
       try {
-        sdk.off?.('register', onRegister);
-      } catch (e) {}
-      resolve(result);
-    };
-
-    const onRegister = (data: any) => {
-      console.log('[OmiCallContext] register event:', data);
-      if (data?.status === 'connected') finish(true);
-      if (data?.status === 'disconnect') finish(false);
-    };
-
-    try {
-      sdk.on?.('register', onRegister);
-      timeout = setTimeout(() => finish(false), 8000);
-    } catch (e) {
-      finish(false);
-    }
-  });
+        sdk.on?.('register', onRegister);
+        timeout = setTimeout(() => finish(false), 8000);
+      } catch (e) {
+        finish(false);
+      }
+    });
 
   try {
     const currentState = sdk.getSbState?.();
@@ -1225,7 +1265,7 @@ let titleInterval: any = null;
 
 const triggerIncomingNotification = (phone: string) => {
   if (typeof window === 'undefined') return;
-  
+
   let showCallTitle = true;
   titleInterval = setInterval(() => {
     document.title = showCallTitle ? `📞 CUỘC GỌI ĐẾN: ${phone}` : 'mos-lab — Wings Lashes CRM';
@@ -1236,13 +1276,13 @@ const triggerIncomingNotification = (phone: string) => {
     if (Notification.permission === 'granted') {
       new Notification('Cuộc gọi đến OmiCall', {
         body: `Số điện thoại: ${phone}. Click vào để xem chi tiết cuộc gọi.`,
-        tag: 'omicall-call'
+        tag: 'omicall-call',
       });
     } else if (Notification.permission !== 'denied') {
-      Notification.requestPermission().then(permission => {
+      Notification.requestPermission().then((permission) => {
         if (permission === 'granted') {
           new Notification('Cuộc gọi đến OmiCall', {
-            body: `Số điện thoại: ${phone}`
+            body: `Số điện thoại: ${phone}`,
           });
         }
       });
@@ -1275,7 +1315,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       setToken(localStorage.getItem('mos_token'));
     }
   }, []);
-  
+
   // Call States
   const [callState, setCallState] = useState<CallState>('idle');
   const callStateRef = useRef<CallState>('idle');
@@ -1305,16 +1345,22 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const inputDevices = devices.filter(device => device.kind === 'audioinput');
-      const outputDevices = devices.filter(device => device.kind === 'audiooutput');
+      const inputDevices = devices.filter((device) => device.kind === 'audioinput');
+      const outputDevices = devices.filter((device) => device.kind === 'audiooutput');
 
-      if (selectedOmiCallAudioInputId && !inputDevices.some(device => device.deviceId === selectedOmiCallAudioInputId)) {
+      if (
+        selectedOmiCallAudioInputId &&
+        !inputDevices.some((device) => device.deviceId === selectedOmiCallAudioInputId)
+      ) {
         selectedOmiCallAudioInputId = '';
         setSelectedAudioInputIdState('');
         localStorage.removeItem(OMI_AUDIO_INPUT_STORAGE_KEY);
       }
 
-      if (selectedOmiCallAudioOutputId && !outputDevices.some(device => device.deviceId === selectedOmiCallAudioOutputId)) {
+      if (
+        selectedOmiCallAudioOutputId &&
+        !outputDevices.some((device) => device.deviceId === selectedOmiCallAudioOutputId)
+      ) {
         selectedOmiCallAudioOutputId = '';
         setSelectedAudioOutputIdState('');
         localStorage.removeItem(OMI_AUDIO_OUTPUT_STORAGE_KEY);
@@ -1410,16 +1456,19 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     document.body.appendChild(script);
   }, [shouldInit]);
 
-  const broadcastState = useCallback((state: CallState, call: CurrentCall | null, duration: number, muted: boolean, held: boolean) => {
-    // No-op since we use native allowMultiTab
-  }, []);
+  const broadcastState = useCallback(
+    (state: CallState, call: CurrentCall | null, duration: number, muted: boolean, held: boolean) => {
+      // No-op since we use native allowMultiTab
+    },
+    []
+  );
 
   // 3. Audio Recording Timer
   useEffect(() => {
     let timer: any = null;
     if (callState === 'connected') {
       timer = setInterval(() => {
-        setCallDuration(prev => prev + 1);
+        setCallDuration((prev) => prev + 1);
       }, 1000);
     } else if (callState === 'idle') {
       setCallDuration(0);
@@ -1464,7 +1513,10 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         // Request Microphone permission before registering device
         try {
           if (!window.isSecureContext) {
-            message.error('⚠️ CẢNH BÁO: Trình duyệt đang chạy ở chế độ không bảo mật (Insecure Context). Hãy truy cập qua http://localhost:4000 hoặc HTTPS để sử dụng Microphone và cuộc gọi!', 15);
+            message.error(
+              '⚠️ CẢNH BÁO: Trình duyệt đang chạy ở chế độ không bảo mật (Insecure Context). Hãy truy cập qua http://localhost:4000 hoặc HTTPS để sử dụng Microphone và cuộc gọi!',
+              15
+            );
           }
 
           let micBlocked = false;
@@ -1476,22 +1528,28 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
           } catch (pe) {}
 
           if (micBlocked) {
-            message.error('⚠️ QUAN TRỌNG: Quyền truy cập Microphone đang bị chặn trên trình duyệt! Hãy nhấp vào biểu tượng chiếc khóa 🔒 ở bên trái thanh địa chỉ và chọn "Cho phép" (Allow) Microphone.', 15);
+            message.error(
+              '⚠️ QUAN TRỌNG: Quyền truy cập Microphone đang bị chặn trên trình duyệt! Hãy nhấp vào biểu tượng chiếc khóa 🔒 ở bên trái thanh địa chỉ và chọn "Cho phép" (Allow) Microphone.',
+              15
+            );
           } else {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach(t => t.stop()); // Release immediately
+            stream.getTracks().forEach((t) => t.stop()); // Release immediately
             await refreshAudioDevices();
           }
         } catch (e: any) {
           console.warn('[OmiCallContext] Microphone permission request failed or denied:', e);
-          message.error('⚠️ Không thể kết nối cuộc gọi: Trình duyệt chưa được cấp quyền sử dụng Microphone. Vui lòng cấp quyền Microphone trên thanh địa chỉ!', 15);
+          message.error(
+            '⚠️ Không thể kết nối cuộc gọi: Trình duyệt chưa được cấp quyền sử dụng Microphone. Vui lòng cấp quyền Microphone trên thanh địa chỉ!',
+            15
+          );
         }
 
         // Register SIP extension
         const registerStatus = await window.OMICallSDK.register({
           sipRealm: config.sipRealm,
           sipUser: config.sipUser,
-          sipPassword: config.sipPassword
+          sipPassword: config.sipPassword,
         });
 
         if (!active) return;
@@ -1523,7 +1581,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
           console.log('[OmiCallContext] invite event:', data);
           if (callStateRef.current !== 'idle') return; // Don't interrupt active calls
           scheduleOmiCallMediaBridgeSync(data);
-          
+
           const phone = data.phoneNumber || data.callerNumber || 'Unknown';
           setCallState('incoming');
           setCurrentCall({
@@ -1531,7 +1589,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
             name: 'Khách hàng gọi đến',
             direction: 'inbound',
             callUuid: data.callUuid || data.call_uuid || data.uuid || null,
-            sdkUid: getOmiCallSdkUid(data)
+            sdkUid: getOmiCallSdkUid(data),
           });
           playRingtone();
           triggerIncomingNotification(phone);
@@ -1546,11 +1604,15 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
             playRingback();
           }
           if (data.callUuid || data.call_uuid || data.uuid || getOmiCallSdkUid(data)) {
-            setCurrentCall(prev => prev ? {
-              ...prev,
-              callUuid: data.callUuid || data.call_uuid || data.uuid || prev.callUuid,
-              sdkUid: getOmiCallSdkUid(data) || prev.sdkUid
-            } : null);
+            setCurrentCall((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    callUuid: data.callUuid || data.call_uuid || data.uuid || prev.callUuid,
+                    sdkUid: getOmiCallSdkUid(data) || prev.sdkUid,
+                  }
+                : null
+            );
           }
         });
 
@@ -1564,16 +1626,26 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
           stopRingback();
           clearIncomingNotification();
           if (data.callUuid || data.call_uuid || data.uuid || getOmiCallSdkUid(data)) {
-            setCurrentCall(prev => prev ? {
-              ...prev,
-              callUuid: data.callUuid || data.call_uuid || data.uuid || prev.callUuid,
-              sdkUid: getOmiCallSdkUid(data) || prev.sdkUid
-            } : null);
+            setCurrentCall((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    callUuid: data.callUuid || data.call_uuid || data.uuid || prev.callUuid,
+                    sdkUid: getOmiCallSdkUid(data) || prev.sdkUid,
+                  }
+                : null
+            );
           }
           setTimeout(auditActiveCallAudio, 1000);
-          [3000, 8000].forEach(delay => {
-            setTimeout(() => void reinforceOmiCallMicrophoneSender((window as any).activeCall || data, `accepted+${delay}ms`), delay);
-            setTimeout(() => void recordOmiCallAudioDiagnostics((window as any).activeCall || data, `accepted+${delay}ms`), delay);
+          [3000, 8000].forEach((delay) => {
+            setTimeout(
+              () => void reinforceOmiCallMicrophoneSender((window as any).activeCall || data, `accepted+${delay}ms`),
+              delay
+            );
+            setTimeout(
+              () => void recordOmiCallAudioDiagnostics((window as any).activeCall || data, `accepted+${delay}ms`),
+              delay
+            );
           });
         });
 
@@ -1584,14 +1656,15 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
           stopRingback();
           clearIncomingNotification();
           if (data.callUuid || data.call_uuid) {
-            setCurrentCall(prev => prev ? { ...prev, callUuid: data.callUuid || data.call_uuid } : null);
+            setCurrentCall((prev) => (prev ? { ...prev, callUuid: data.callUuid || data.call_uuid } : null));
           }
           cleanupOmiCallMediaBridge(data);
         });
-
       } catch (err: any) {
         if (err?.response?.status === 404) {
-          console.log('[OmiCallContext] OmiCall WebRTC is not configured for this account. Call Simulation Mode enabled.');
+          console.log(
+            '[OmiCallContext] OmiCall WebRTC is not configured for this account. Call Simulation Mode enabled.'
+          );
         } else {
           console.error('[OmiCallContext] SIP config or init failure. Call Simulation Mode enabled:', err);
         }
@@ -1616,8 +1689,11 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
           if (window.OMICallSDK) {
             clearInterval(checkInterval);
             runInitOnce();
-          } else if (duration >= 4000) { // 4 seconds timeout
-            console.warn('[OmiCallContext] OmiCall SDK load timed out (possibly blocked by ad-blocker). Enabling Simulation Mode.');
+          } else if (duration >= 4000) {
+            // 4 seconds timeout
+            console.warn(
+              '[OmiCallContext] OmiCall SDK load timed out (possibly blocked by ad-blocker). Enabling Simulation Mode.'
+            );
             clearInterval(checkInterval);
             setIsSimulated(true);
             setIsRegistered(true);
@@ -1664,7 +1740,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       name: name || 'Khách hàng',
       direction: 'outbound',
       legacyUserId: customerId,
-      avatar: avatar || null
+      avatar: avatar || null,
     });
     setShouldInit(true);
   };
@@ -1674,7 +1750,9 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     const { phone: cleanPhone, name, legacyUserId: customerId, avatar } = currentCall;
 
     if (isSimulated) {
-      console.log(`[OmiCallContext] Simulating outbound call to ${cleanPhone} (${name || 'Khách hàng'}, ID: ${customerId})...`);
+      console.log(
+        `[OmiCallContext] Simulating outbound call to ${cleanPhone} (${name || 'Khách hàng'}, ID: ${customerId})...`
+      );
       try {
         setCallState('ringing');
         playRingback();
@@ -1747,8 +1825,8 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       const omicallCall = await window.OMICallSDK.makeCall(cleanPhone, {
         ...(hotlineNumber ? { sipNumber: { number: hotlineNumber } } : {}),
         userData: JSON.stringify({
-          customerName: name || 'Khách hàng'
-        })
+          customerName: name || 'Khách hàng',
+        }),
       });
 
       if (!omicallCall) {
@@ -1756,7 +1834,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         console.warn('[OmiCallContext] OmiCall SDK did not create an outbound call.', {
           sbState: window.OMICallSDK.getSbState?.(),
           sbDetail: window.OMICallSDK.getDetailSbState?.(),
-          canCallOut: window.OMICallSDK.canCallOut?.()
+          canCallOut: window.OMICallSDK.canCallOut?.(),
         });
         message.error('OmiCall chưa tạo được cuộc gọi thật. Vui lòng đợi trạng thái tổng đài sẵn sàng rồi gọi lại.');
         setCallState('idle');
@@ -1779,7 +1857,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         callUuid: omicallCall.uuid || null,
         sdkUid: getOmiCallSdkUid(omicallCall),
         legacyUserId: customerId,
-        avatar: avatar || null
+        avatar: avatar || null,
       });
       playRingback();
     } catch (err: any) {
@@ -1868,7 +1946,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         setIsMuted(!audioEnabled);
       });
     } else {
-      setIsMuted(prev => !prev);
+      setIsMuted((prev) => !prev);
     }
   };
 

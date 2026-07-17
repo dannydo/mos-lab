@@ -1,282 +1,632 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi" class="dark-theme dark">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mockup V2 – Floating Dock with Side Drawer | Wings Lashes</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mockup V2 – Floating Dock with Side Drawer | Wings Lashes</title>
 
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Google Font -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
 
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            gold: '#D4A84B',
-            darkBg: '#0A0A0A',
-            darkCard: '#141414',
-            darkBorder: '#262626',
-          },
-          fontFamily: {
-            jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              gold: '#D4A84B',
+              darkBg: '#0A0A0A',
+              darkCard: '#141414',
+              darkBorder: '#262626',
+            },
+            fontFamily: {
+              jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
+            },
           },
         },
-      },
-    };
-  </script>
+      };
+    </script>
 
-  <!-- FontAwesome 6.4 -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- FontAwesome 6.4 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; }
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        margin: 0;
+      }
 
-    /* ── Theme Tokens ── */
-    .dark-theme  { --bg: #0A0A0A; --card: #141414; --border: #262626; --text: #e5e5e5; --textMuted: #737373; --overlay: rgba(0,0,0,.55); }
-    .light-theme { --bg: #f5f5f5; --card: #ffffff; --border: #e5e7eb; --text: #1f2937; --textMuted: #6b7280; --overlay: rgba(0,0,0,.35); }
+      /* ── Theme Tokens ── */
+      .dark-theme {
+        --bg: #0a0a0a;
+        --card: #141414;
+        --border: #262626;
+        --text: #e5e5e5;
+        --textMuted: #737373;
+        --overlay: rgba(0, 0, 0, 0.55);
+      }
+      .light-theme {
+        --bg: #f5f5f5;
+        --card: #ffffff;
+        --border: #e5e7eb;
+        --text: #1f2937;
+        --textMuted: #6b7280;
+        --overlay: rgba(0, 0, 0, 0.35);
+      }
 
-    body { background: var(--bg); color: var(--text); transition: background .3s, color .3s; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        transition:
+          background 0.3s,
+          color 0.3s;
+      }
 
-    /* ── Pulse ring animation ── */
-    @keyframes pulseRing {
-      0%   { box-shadow: 0 0 0 0 rgba(34,197,94,.55); }
-      70%  { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
-      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
-    }
-    .avatar-pulse { animation: pulseRing 2s ease-out infinite; }
+      /* ── Pulse ring animation ── */
+      @keyframes pulseRing {
+        0% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+        }
+        70% {
+          box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+      }
+      .avatar-pulse {
+        animation: pulseRing 2s ease-out infinite;
+      }
 
-    @keyframes pulseRingGold {
-      0%   { box-shadow: 0 0 0 0 rgba(212,168,75,.55); }
-      70%  { box-shadow: 0 0 0 6px rgba(212,168,75,0); }
-      100% { box-shadow: 0 0 0 0 rgba(212,168,75,0); }
-    }
-    .avatar-pulse-gold { animation: pulseRingGold 2s ease-out infinite; }
+      @keyframes pulseRingGold {
+        0% {
+          box-shadow: 0 0 0 0 rgba(212, 168, 75, 0.55);
+        }
+        70% {
+          box-shadow: 0 0 0 6px rgba(212, 168, 75, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(212, 168, 75, 0);
+        }
+      }
+      .avatar-pulse-gold {
+        animation: pulseRingGold 2s ease-out infinite;
+      }
 
-    /* ── Tooltip ── */
-    .avatar-wrap { position: relative; }
-    .avatar-wrap .tip {
-      position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-      white-space: nowrap; font-size: 11px; font-weight: 600;
-      padding: 4px 10px; border-radius: 6px;
-      background: var(--card); color: var(--text); border: 1px solid var(--border);
-      opacity: 0; pointer-events: none; transition: opacity .2s;
-      box-shadow: 0 4px 12px rgba(0,0,0,.25);
-    }
-    .avatar-wrap .tip::after {
-      content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-      border: 5px solid transparent; border-top-color: var(--border);
-    }
-    .avatar-wrap:hover .tip { opacity: 1; }
+      /* ── Tooltip ── */
+      .avatar-wrap {
+        position: relative;
+      }
+      .avatar-wrap .tip {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 6px;
+        background: var(--card);
+        color: var(--text);
+        border: 1px solid var(--border);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      }
+      .avatar-wrap .tip::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: var(--border);
+      }
+      .avatar-wrap:hover .tip {
+        opacity: 1;
+      }
 
-    /* ── Glass card ── */
-    .glass {
-      background: rgba(20,20,20,.55);
-      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border);
-    }
-    .light-theme .glass {
-      background: rgba(255,255,255,.65);
-    }
+      /* ── Glass card ── */
+      .glass {
+        background: rgba(20, 20, 20, 0.55);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--border);
+      }
+      .light-theme .glass {
+        background: rgba(255, 255, 255, 0.65);
+      }
 
-    /* ── Drawer ── */
-    .drawer-overlay {
-      position: fixed; inset: 0; background: var(--overlay);
-      opacity: 0; pointer-events: none; transition: opacity .35s; z-index: 90;
-    }
-    .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+      /* ── Drawer ── */
+      .drawer-overlay {
+        position: fixed;
+        inset: 0;
+        background: var(--overlay);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s;
+        z-index: 90;
+      }
+      .drawer-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
 
-    .drawer {
-      position: fixed; top: 0; right: 0; width: 440px; height: 100%;
-      background: var(--card); border-left: 1px solid var(--border);
-      transform: translateX(100%); transition: transform .35s cubic-bezier(.4,0,.2,1);
-      z-index: 100; display: flex; flex-direction: column; overflow: hidden;
-    }
-    .drawer.open { transform: translateX(0); }
+      .drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 440px;
+        height: 100%;
+        background: var(--card);
+        border-left: 1px solid var(--border);
+        transform: translateX(100%);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .drawer.open {
+        transform: translateX(0);
+      }
 
-    /* ── Progress bar animation ── */
-    .progress-fill { transition: width .8s cubic-bezier(.4,0,.2,1); }
+      /* ── Progress bar animation ── */
+      .progress-fill {
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-    /* ── Scrollbar ── */
-    .drawer-body::-webkit-scrollbar { width: 5px; }
-    .drawer-body::-webkit-scrollbar-track { background: transparent; }
-    .drawer-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+      /* ── Scrollbar ── */
+      .drawer-body::-webkit-scrollbar {
+        width: 5px;
+      }
+      .drawer-body::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .drawer-body::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 10px;
+      }
 
-    /* ── Segment control ── */
-    .seg-btn { transition: background .2s, color .2s; cursor: pointer; }
-  </style>
-</head>
+      /* ── Segment control ── */
+      .seg-btn {
+        transition:
+          background 0.2s,
+          color 0.2s;
+        cursor: pointer;
+      }
+    </style>
+  </head>
 
-<body class="font-jakarta min-h-screen">
+  <body class="font-jakarta min-h-screen">
+    <!-- ═══════════════════ HEADER ═══════════════════ -->
+    <header class="glass sticky top-0 z-50" style="border-bottom: 1px solid var(--border)">
+      <div class="max-w-[1440px] mx-auto flex items-center justify-between px-5 h-[60px]">
+        <!-- Left: Logo -->
+        <div class="flex items-center gap-3">
+          <div
+            class="w-9 h-9 rounded-lg bg-gold flex items-center justify-center text-black font-extrabold text-sm tracking-wide"
+          >
+            WL
+          </div>
+          <div class="leading-tight">
+            <span class="font-bold text-sm tracking-wide" style="color: var(--text)">WINGS LASHES</span>
+            <span class="block text-[10px] font-medium" style="color: var(--textMuted)">Management System</span>
+          </div>
+        </div>
 
-  <!-- ═══════════════════ HEADER ═══════════════════ -->
-  <header class="glass sticky top-0 z-50" style="border-bottom:1px solid var(--border);">
-    <div class="max-w-[1440px] mx-auto flex items-center justify-between px-5 h-[60px]">
+        <!-- Right: Dock + Clock + Theme + User -->
+        <div class="flex items-center gap-4">
+          <!-- ── Floating Online Dock ── -->
+          <div
+            class="glass flex items-center gap-2.5 px-4 py-1.5 rounded-full"
+            style="
+              box-shadow:
+                0 0 20px rgba(212, 168, 75, 0.08),
+                0 4px 24px rgba(0, 0, 0, 0.25);
+            "
+          >
+            <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--textMuted)"
+              >Online</span
+            >
+            <div class="w-px h-5" style="background: var(--border)"></div>
 
-      <!-- Left: Logo -->
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-gold flex items-center justify-center text-black font-extrabold text-sm tracking-wide">WL</div>
-        <div class="leading-tight">
-          <span class="font-bold text-sm tracking-wide" style="color:var(--text);">WINGS LASHES</span>
-          <span class="block text-[10px] font-medium" style="color:var(--textMuted);">Management System</span>
+            <!-- Avatars -->
+            <div class="avatar-wrap">
+              <div
+                class="w-[34px] h-[34px] rounded-full bg-rose-500 flex items-center justify-center text-white text-[11px] font-bold avatar-pulse cursor-pointer"
+                onclick="openDrawer('Thanh Nga', 'TN', 'bg-rose-500', 'rose')"
+              >
+                TN
+              </div>
+              <span class="tip">Thanh Nga</span>
+            </div>
+            <div class="avatar-wrap">
+              <div
+                class="w-[34px] h-[34px] rounded-full bg-sky-500 flex items-center justify-center text-white text-[11px] font-bold avatar-pulse cursor-pointer"
+                onclick="openDrawer('Hoài My', 'HM', 'bg-sky-500', 'sky')"
+              >
+                HM
+              </div>
+              <span class="tip">Hoài My</span>
+            </div>
+            <div class="avatar-wrap">
+              <div
+                class="w-[34px] h-[34px] rounded-full bg-violet-500 flex items-center justify-center text-white text-[11px] font-bold avatar-pulse cursor-pointer"
+                onclick="openDrawer('Vân Trang', 'VT', 'bg-violet-500', 'violet')"
+              >
+                VT
+              </div>
+              <span class="tip">Vân Trang</span>
+            </div>
+            <div class="avatar-wrap">
+              <div
+                class="w-[34px] h-[34px] rounded-full bg-emerald-500 flex items-center justify-center text-white text-[11px] font-bold avatar-pulse cursor-pointer"
+                onclick="openDrawer('Kim Liên', 'KL', 'bg-emerald-500', 'emerald')"
+              >
+                KL
+              </div>
+              <span class="tip">Kim Liên</span>
+            </div>
+            <div class="avatar-wrap">
+              <div
+                class="w-[34px] h-[34px] rounded-full bg-orange-500 flex items-center justify-center text-white text-[11px] font-bold avatar-pulse cursor-pointer"
+                onclick="openDrawer('Thu Hà', 'TH', 'bg-orange-500', 'orange')"
+              >
+                TH
+              </div>
+              <span class="tip">Thu Hà</span>
+            </div>
+
+            <div class="w-px h-5" style="background: var(--border)"></div>
+
+            <!-- Current user DD -->
+            <div class="avatar-wrap">
+              <div
+                class="w-[38px] h-[38px] rounded-full bg-gold flex items-center justify-center text-black text-[12px] font-extrabold avatar-pulse-gold cursor-pointer"
+                onclick="openDrawer('Danny Do', 'DD', 'bg-gold', 'gold')"
+              >
+                DD
+              </div>
+              <span class="tip">Danny Do (You)</span>
+            </div>
+          </div>
+
+          <!-- Live Clock -->
+          <div class="flex items-center gap-1.5 text-xs font-semibold" style="color: var(--textMuted)">
+            <i class="fa-regular fa-clock text-gold text-[13px]"></i>
+            <span id="liveClock">--:--:--</span>
+          </div>
+
+          <!-- Theme Toggle -->
+          <button
+            id="themeBtn"
+            onclick="toggleTheme()"
+            class="w-9 h-9 rounded-lg flex items-center justify-center text-sm transition-colors"
+            style="background: var(--card); border: 1px solid var(--border); color: var(--text)"
+            title="Toggle theme"
+          >
+            <i class="fa-solid fa-moon"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════ MAIN (placeholder) ═══════════════════ -->
+    <main class="max-w-[1440px] mx-auto px-5 py-12">
+      <div class="text-center" style="color: var(--textMuted)">
+        <p class="text-lg font-semibold mb-2" style="color: var(--text)">Mockup V2 — Floating Dock with Side Drawer</p>
+        <p class="text-sm">Click on any avatar in the dock above to open the side drawer.</p>
+      </div>
+    </main>
+
+    <!-- ═══════════════════ DRAWER OVERLAY ═══════════════════ -->
+    <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+
+    <!-- ═══════════════════ SIDE DRAWER ═══════════════════ -->
+    <div id="drawer" class="drawer">
+      <!-- Close -->
+      <button
+        onclick="closeDrawer()"
+        class="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-sm z-10 transition-colors hover:bg-white/10"
+        style="color: var(--textMuted)"
+      >
+        <i class="fa-solid fa-xmark text-base"></i>
+      </button>
+
+      <!-- ── Drawer Header ── -->
+      <div class="px-6 pt-7 pb-5 text-center" style="border-bottom: 1px solid var(--border)">
+        <div
+          id="drawerAvatar"
+          class="w-14 h-14 rounded-full mx-auto flex items-center justify-center text-white text-lg font-extrabold mb-3 avatar-pulse"
+        ></div>
+        <h2 id="drawerName" class="text-lg font-bold mb-2" style="color: var(--text)"></h2>
+        <div class="flex items-center justify-center gap-3">
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-gold text-black"
+            >Telesales</span
+          >
+          <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span> Online
+          </span>
         </div>
       </div>
 
-      <!-- Right: Dock + Clock + Theme + User -->
-      <div class="flex items-center gap-4">
-
-        <!-- ── Floating Online Dock ── -->
-        <div class="glass flex items-center gap-2.5 px-4 py-1.5 rounded-full" style="box-shadow:0 0 20px rgba(212,168,75,.08), 0 4px 24px rgba(0,0,0,.25);">
-          <span class="text-[10px] font-semibold uppercase tracking-wider" style="color:var(--textMuted);">Online</span>
-          <div class="w-px h-5" style="background:var(--border);"></div>
-
-          <!-- Avatars -->
-          <div class="avatar-wrap">
-            <div class="w-[34px] h-[34px] rounded-full bg-rose-500 flex items-center justify-center text-white text-[11px] font-bold avatar-pulse cursor-pointer" onclick="openDrawer('Thanh Nga','TN','bg-rose-500','rose')">TN</div>
-            <span class="tip">Thanh Nga</span>
-          </div>
-          <div class="avatar-wrap">
-            <div class="w-[34px] h-[34px] rounded-full bg-sky-500 flex items-center justify-center text-white text-[11px] font-bold avatar-pulse cursor-pointer" onclick="openDrawer('Hoài My','HM','bg-sky-500','sky')">HM</div>
-            <span class="tip">Hoài My</span>
-          </div>
-          <div class="avatar-wrap">
-            <div class="w-[34px] h-[34px] rounded-full bg-violet-500 flex items-center justify-center text-white text-[11px] font-bold avatar-pulse cursor-pointer" onclick="openDrawer('Vân Trang','VT','bg-violet-500','violet')">VT</div>
-            <span class="tip">Vân Trang</span>
-          </div>
-          <div class="avatar-wrap">
-            <div class="w-[34px] h-[34px] rounded-full bg-emerald-500 flex items-center justify-center text-white text-[11px] font-bold avatar-pulse cursor-pointer" onclick="openDrawer('Kim Liên','KL','bg-emerald-500','emerald')">KL</div>
-            <span class="tip">Kim Liên</span>
-          </div>
-          <div class="avatar-wrap">
-            <div class="w-[34px] h-[34px] rounded-full bg-orange-500 flex items-center justify-center text-white text-[11px] font-bold avatar-pulse cursor-pointer" onclick="openDrawer('Thu Hà','TH','bg-orange-500','orange')">TH</div>
-            <span class="tip">Thu Hà</span>
-          </div>
-
-          <div class="w-px h-5" style="background:var(--border);"></div>
-
-          <!-- Current user DD -->
-          <div class="avatar-wrap">
-            <div class="w-[38px] h-[38px] rounded-full bg-gold flex items-center justify-center text-black text-[12px] font-extrabold avatar-pulse-gold cursor-pointer" onclick="openDrawer('Danny Do','DD','bg-gold','gold')">DD</div>
-            <span class="tip">Danny Do (You)</span>
-          </div>
+      <!-- ── Scrollable Body ── -->
+      <div class="drawer-body flex-1 overflow-y-auto px-6 py-5">
+        <!-- Segment Tabs -->
+        <div class="flex items-center rounded-full p-1 mb-6" style="background: var(--border)">
+          <button
+            class="seg-btn flex-1 py-2 rounded-full text-xs font-bold bg-gold text-black"
+            data-tab="today"
+            onclick="switchTab('today')"
+          >
+            Hôm nay
+          </button>
+          <button
+            class="seg-btn flex-1 py-2 rounded-full text-xs font-bold"
+            data-tab="week"
+            style="color: var(--textMuted)"
+            onclick="switchTab('week')"
+          >
+            Tuần này
+          </button>
+          <button
+            class="seg-btn flex-1 py-2 rounded-full text-xs font-bold"
+            data-tab="month"
+            style="color: var(--textMuted)"
+            onclick="switchTab('month')"
+          >
+            Tháng này
+          </button>
         </div>
 
-        <!-- Live Clock -->
-        <div class="flex items-center gap-1.5 text-xs font-semibold" style="color:var(--textMuted);">
-          <i class="fa-regular fa-clock text-gold text-[13px]"></i>
-          <span id="liveClock">--:--:--</span>
-        </div>
+        <!-- KPI Section -->
+        <div id="kpiSection" class="space-y-4 mb-6"></div>
 
-        <!-- Theme Toggle -->
-        <button id="themeBtn" onclick="toggleTheme()" class="w-9 h-9 rounded-lg flex items-center justify-center text-sm transition-colors" style="background:var(--card);border:1px solid var(--border);color:var(--text);" title="Toggle theme">
-          <i class="fa-solid fa-moon"></i>
-        </button>
-      </div>
-    </div>
-  </header>
+        <!-- Divider -->
+        <div class="h-px my-5" style="background: var(--border)"></div>
 
-  <!-- ═══════════════════ MAIN (placeholder) ═══════════════════ -->
-  <main class="max-w-[1440px] mx-auto px-5 py-12">
-    <div class="text-center" style="color:var(--textMuted);">
-      <p class="text-lg font-semibold mb-2" style="color:var(--text);">Mockup V2 — Floating Dock with Side Drawer</p>
-      <p class="text-sm">Click on any avatar in the dock above to open the side drawer.</p>
-    </div>
-  </main>
-
-  <!-- ═══════════════════ DRAWER OVERLAY ═══════════════════ -->
-  <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
-
-  <!-- ═══════════════════ SIDE DRAWER ═══════════════════ -->
-  <div id="drawer" class="drawer">
-
-    <!-- Close -->
-    <button onclick="closeDrawer()" class="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-sm z-10 transition-colors hover:bg-white/10" style="color:var(--textMuted);">
-      <i class="fa-solid fa-xmark text-base"></i>
-    </button>
-
-    <!-- ── Drawer Header ── -->
-    <div class="px-6 pt-7 pb-5 text-center" style="border-bottom:1px solid var(--border);">
-      <div id="drawerAvatar" class="w-14 h-14 rounded-full mx-auto flex items-center justify-center text-white text-lg font-extrabold mb-3 avatar-pulse"></div>
-      <h2 id="drawerName" class="text-lg font-bold mb-2" style="color:var(--text);"></h2>
-      <div class="flex items-center justify-center gap-3">
-        <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-gold text-black">Telesales</span>
-        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span> Online
-        </span>
+        <!-- Leaderboard -->
+        <h3 class="text-sm font-bold mb-4" style="color: var(--text)">🏆 Bảng Xếp Hạng Team Telesales</h3>
+        <div class="space-y-2" id="leaderboard"></div>
       </div>
     </div>
 
-    <!-- ── Scrollable Body ── -->
-    <div class="drawer-body flex-1 overflow-y-auto px-6 py-5">
+    <!-- ═══════════════════ JAVASCRIPT ═══════════════════ -->
+    <script>
+      /* ── Data ── */
+      const kpiData = {
+        today: [
+          {
+            label: 'Số cuộc gọi',
+            icon: 'fa-phone',
+            color: 'rgb(59,130,246)',
+            bg: 'rgba(59,130,246,.15)',
+            val: 45,
+            target: 80,
+          },
+          {
+            label: 'Số pickup',
+            icon: 'fa-phone-volume',
+            color: 'rgb(16,185,129)',
+            bg: 'rgba(16,185,129,.15)',
+            val: 28,
+            target: 50,
+          },
+          {
+            label: 'Số happy call',
+            icon: 'fa-face-smile',
+            color: 'rgb(245,158,11)',
+            bg: 'rgba(245,158,11,.15)',
+            val: 12,
+            target: 20,
+          },
+          {
+            label: 'Số booked',
+            icon: 'fa-calendar-check',
+            color: 'rgb(139,92,246)',
+            bg: 'rgba(139,92,246,.15)',
+            val: 8,
+            target: 15,
+          },
+          {
+            label: 'Số done',
+            icon: 'fa-circle-check',
+            color: '#D4A84B',
+            bg: 'rgba(212,168,75,.15)',
+            val: 5,
+            target: 10,
+          },
+        ],
+        week: [
+          {
+            label: 'Số cuộc gọi',
+            icon: 'fa-phone',
+            color: 'rgb(59,130,246)',
+            bg: 'rgba(59,130,246,.15)',
+            val: 180,
+            target: 400,
+          },
+          {
+            label: 'Số pickup',
+            icon: 'fa-phone-volume',
+            color: 'rgb(16,185,129)',
+            bg: 'rgba(16,185,129,.15)',
+            val: 120,
+            target: 250,
+          },
+          {
+            label: 'Số happy call',
+            icon: 'fa-face-smile',
+            color: 'rgb(245,158,11)',
+            bg: 'rgba(245,158,11,.15)',
+            val: 55,
+            target: 100,
+          },
+          {
+            label: 'Số booked',
+            icon: 'fa-calendar-check',
+            color: 'rgb(139,92,246)',
+            bg: 'rgba(139,92,246,.15)',
+            val: 35,
+            target: 75,
+          },
+          {
+            label: 'Số done',
+            icon: 'fa-circle-check',
+            color: '#D4A84B',
+            bg: 'rgba(212,168,75,.15)',
+            val: 22,
+            target: 50,
+          },
+        ],
+        month: [
+          {
+            label: 'Số cuộc gọi',
+            icon: 'fa-phone',
+            color: 'rgb(59,130,246)',
+            bg: 'rgba(59,130,246,.15)',
+            val: 650,
+            target: 1600,
+          },
+          {
+            label: 'Số pickup',
+            icon: 'fa-phone-volume',
+            color: 'rgb(16,185,129)',
+            bg: 'rgba(16,185,129,.15)',
+            val: 420,
+            target: 1000,
+          },
+          {
+            label: 'Số happy call',
+            icon: 'fa-face-smile',
+            color: 'rgb(245,158,11)',
+            bg: 'rgba(245,158,11,.15)',
+            val: 195,
+            target: 400,
+          },
+          {
+            label: 'Số booked',
+            icon: 'fa-calendar-check',
+            color: 'rgb(139,92,246)',
+            bg: 'rgba(139,92,246,.15)',
+            val: 130,
+            target: 300,
+          },
+          {
+            label: 'Số done',
+            icon: 'fa-circle-check',
+            color: '#D4A84B',
+            bg: 'rgba(212,168,75,.15)',
+            val: 85,
+            target: 200,
+          },
+        ],
+      };
 
-      <!-- Segment Tabs -->
-      <div class="flex items-center rounded-full p-1 mb-6" style="background:var(--border);">
-        <button class="seg-btn flex-1 py-2 rounded-full text-xs font-bold bg-gold text-black" data-tab="today" onclick="switchTab('today')">Hôm nay</button>
-        <button class="seg-btn flex-1 py-2 rounded-full text-xs font-bold" data-tab="week" style="color:var(--textMuted);" onclick="switchTab('week')">Tuần này</button>
-        <button class="seg-btn flex-1 py-2 rounded-full text-xs font-bold" data-tab="month" style="color:var(--textMuted);" onclick="switchTab('month')">Tháng này</button>
-      </div>
+      const leaderboardData = [
+        {
+          rank: 1,
+          medal: '🥇',
+          name: 'Thanh Nga',
+          init: 'TN',
+          bg: 'bg-rose-500',
+          done: 7,
+          c: 52,
+          p: 35,
+          h: 15,
+          b: 10,
+          isSelf: false,
+        },
+        {
+          rank: 2,
+          medal: '🥈',
+          name: 'Danny Do',
+          init: 'DD',
+          bg: 'bg-gold',
+          done: 5,
+          c: 45,
+          p: 28,
+          h: 12,
+          b: 8,
+          isSelf: true,
+        },
+        {
+          rank: 3,
+          medal: '🥉',
+          name: 'Hoài My',
+          init: 'HM',
+          bg: 'bg-sky-500',
+          done: 5,
+          c: 40,
+          p: 25,
+          h: 10,
+          b: 7,
+          isSelf: false,
+        },
+        {
+          rank: 4,
+          medal: '4',
+          name: 'Vân Trang',
+          init: 'VT',
+          bg: 'bg-violet-500',
+          done: 4,
+          c: 38,
+          p: 22,
+          h: 9,
+          b: 6,
+          isSelf: false,
+        },
+        {
+          rank: 5,
+          medal: '5',
+          name: 'Kim Liên',
+          init: 'KL',
+          bg: 'bg-emerald-500',
+          done: 3,
+          c: 30,
+          p: 18,
+          h: 7,
+          b: 5,
+          isSelf: false,
+        },
+        {
+          rank: 6,
+          medal: '6',
+          name: 'Thu Hà',
+          init: 'TH',
+          bg: 'bg-orange-500',
+          done: 2,
+          c: 25,
+          p: 14,
+          h: 5,
+          b: 3,
+          isSelf: false,
+        },
+      ];
 
-      <!-- KPI Section -->
-      <div id="kpiSection" class="space-y-4 mb-6"></div>
+      let currentTab = 'today';
 
-      <!-- Divider -->
-      <div class="h-px my-5" style="background:var(--border);"></div>
-
-      <!-- Leaderboard -->
-      <h3 class="text-sm font-bold mb-4" style="color:var(--text);">🏆 Bảng Xếp Hạng Team Telesales</h3>
-      <div class="space-y-2" id="leaderboard"></div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════ JAVASCRIPT ═══════════════════ -->
-  <script>
-    /* ── Data ── */
-    const kpiData = {
-      today: [
-        { label: 'Số cuộc gọi', icon: 'fa-phone',          color: 'rgb(59,130,246)',  bg: 'rgba(59,130,246,.15)',  val: 45,  target: 80  },
-        { label: 'Số pickup',    icon: 'fa-phone-volume',   color: 'rgb(16,185,129)',  bg: 'rgba(16,185,129,.15)',  val: 28,  target: 50  },
-        { label: 'Số happy call',icon: 'fa-face-smile',     color: 'rgb(245,158,11)',  bg: 'rgba(245,158,11,.15)',  val: 12,  target: 20  },
-        { label: 'Số booked',   icon: 'fa-calendar-check',  color: 'rgb(139,92,246)',  bg: 'rgba(139,92,246,.15)',  val: 8,   target: 15  },
-        { label: 'Số done',     icon: 'fa-circle-check',    color: '#D4A84B',          bg: 'rgba(212,168,75,.15)',  val: 5,   target: 10  },
-      ],
-      week: [
-        { label: 'Số cuộc gọi', icon: 'fa-phone',          color: 'rgb(59,130,246)',  bg: 'rgba(59,130,246,.15)',  val: 180, target: 400 },
-        { label: 'Số pickup',    icon: 'fa-phone-volume',   color: 'rgb(16,185,129)',  bg: 'rgba(16,185,129,.15)',  val: 120, target: 250 },
-        { label: 'Số happy call',icon: 'fa-face-smile',     color: 'rgb(245,158,11)',  bg: 'rgba(245,158,11,.15)',  val: 55,  target: 100 },
-        { label: 'Số booked',   icon: 'fa-calendar-check',  color: 'rgb(139,92,246)',  bg: 'rgba(139,92,246,.15)',  val: 35,  target: 75  },
-        { label: 'Số done',     icon: 'fa-circle-check',    color: '#D4A84B',          bg: 'rgba(212,168,75,.15)',  val: 22,  target: 50  },
-      ],
-      month: [
-        { label: 'Số cuộc gọi', icon: 'fa-phone',          color: 'rgb(59,130,246)',  bg: 'rgba(59,130,246,.15)',  val: 650,  target: 1600 },
-        { label: 'Số pickup',    icon: 'fa-phone-volume',   color: 'rgb(16,185,129)',  bg: 'rgba(16,185,129,.15)',  val: 420,  target: 1000 },
-        { label: 'Số happy call',icon: 'fa-face-smile',     color: 'rgb(245,158,11)',  bg: 'rgba(245,158,11,.15)',  val: 195,  target: 400  },
-        { label: 'Số booked',   icon: 'fa-calendar-check',  color: 'rgb(139,92,246)',  bg: 'rgba(139,92,246,.15)',  val: 130,  target: 300  },
-        { label: 'Số done',     icon: 'fa-circle-check',    color: '#D4A84B',          bg: 'rgba(212,168,75,.15)',  val: 85,   target: 200  },
-      ],
-    };
-
-    const leaderboardData = [
-      { rank: 1, medal: '🥇', name: 'Thanh Nga',  init: 'TN', bg: 'bg-rose-500',    done: 7, c: 52, p: 35, h: 15, b: 10, isSelf: false },
-      { rank: 2, medal: '🥈', name: 'Danny Do',   init: 'DD', bg: 'bg-gold',         done: 5, c: 45, p: 28, h: 12, b: 8,  isSelf: true  },
-      { rank: 3, medal: '🥉', name: 'Hoài My',    init: 'HM', bg: 'bg-sky-500',      done: 5, c: 40, p: 25, h: 10, b: 7,  isSelf: false },
-      { rank: 4, medal: '4',  name: 'Vân Trang',   init: 'VT', bg: 'bg-violet-500',   done: 4, c: 38, p: 22, h: 9,  b: 6,  isSelf: false },
-      { rank: 5, medal: '5',  name: 'Kim Liên',    init: 'KL', bg: 'bg-emerald-500',  done: 3, c: 30, p: 18, h: 7,  b: 5,  isSelf: false },
-      { rank: 6, medal: '6',  name: 'Thu Hà',      init: 'TH', bg: 'bg-orange-500',   done: 2, c: 25, p: 14, h: 5,  b: 3,  isSelf: false },
-    ];
-
-    let currentTab = 'today';
-
-    /* ── Render KPIs ── */
-    function renderKPIs(tab) {
-      const el = document.getElementById('kpiSection');
-      const items = kpiData[tab];
-      el.innerHTML = items.map((k, i) => {
-        const pct = Math.round((k.val / k.target) * 100);
-        return `
+      /* ── Render KPIs ── */
+      function renderKPIs(tab) {
+        const el = document.getElementById('kpiSection');
+        const items = kpiData[tab];
+        el.innerHTML = items
+          .map((k, i) => {
+            const pct = Math.round((k.val / k.target) * 100);
+            return `
           <div class="rounded-xl p-3.5" style="background:var(--bg);border:1px solid var(--border);">
             <div class="flex items-center gap-3 mb-2.5">
               <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs" style="background:${k.bg};color:${k.color};">
@@ -290,27 +640,29 @@
               <div class="progress-fill h-full rounded-full" style="width:0%;background:${k.color};" data-width="${Math.min(pct, 100)}%"></div>
             </div>
           </div>`;
-      }).join('');
+          })
+          .join('');
 
-      // Animate progress bars
-      requestAnimationFrame(() => {
+        // Animate progress bars
         requestAnimationFrame(() => {
-          el.querySelectorAll('.progress-fill').forEach(bar => {
-            bar.style.width = bar.dataset.width;
+          requestAnimationFrame(() => {
+            el.querySelectorAll('.progress-fill').forEach((bar) => {
+              bar.style.width = bar.dataset.width;
+            });
           });
         });
-      });
-    }
+      }
 
-    /* ── Render Leaderboard ── */
-    function renderLeaderboard() {
-      const el = document.getElementById('leaderboard');
-      el.innerHTML = leaderboardData.map(m => {
-        const isTop3 = m.rank <= 3;
-        const selfBorder = m.isSelf ? 'border-l-[3px] border-l-gold' : '';
-        const selfBg = m.isSelf ? 'rgba(212,168,75,.08)' : 'var(--bg)';
-        const textColor = m.bg === 'bg-gold' ? 'text-black' : 'text-white';
-        return `
+      /* ── Render Leaderboard ── */
+      function renderLeaderboard() {
+        const el = document.getElementById('leaderboard');
+        el.innerHTML = leaderboardData
+          .map((m) => {
+            const isTop3 = m.rank <= 3;
+            const selfBorder = m.isSelf ? 'border-l-[3px] border-l-gold' : '';
+            const selfBg = m.isSelf ? 'rgba(212,168,75,.08)' : 'var(--bg)';
+            const textColor = m.bg === 'bg-gold' ? 'text-black' : 'text-white';
+            return `
           <div class="flex items-center gap-3 rounded-xl px-3.5 py-3 ${selfBorder}" style="background:${selfBg};border:1px solid var(--border);">
             <div class="w-7 text-center font-extrabold text-sm" style="color:${isTop3 ? 'var(--text)' : 'var(--textMuted)'};">
               ${isTop3 ? m.medal : m.medal}
@@ -324,79 +676,82 @@
               <i class="fa-solid fa-circle-check text-[10px]"></i> ${m.done}
             </div>
           </div>`;
-      }).join('');
-    }
+          })
+          .join('');
+      }
 
-    /* ── Tab Switching ── */
-    function switchTab(tab) {
-      currentTab = tab;
-      document.querySelectorAll('.seg-btn').forEach(btn => {
-        if (btn.dataset.tab === tab) {
-          btn.classList.add('bg-gold', 'text-black');
-          btn.style.color = '';
+      /* ── Tab Switching ── */
+      function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.seg-btn').forEach((btn) => {
+          if (btn.dataset.tab === tab) {
+            btn.classList.add('bg-gold', 'text-black');
+            btn.style.color = '';
+          } else {
+            btn.classList.remove('bg-gold', 'text-black');
+            btn.style.color = 'var(--textMuted)';
+          }
+        });
+        renderKPIs(tab);
+      }
+
+      /* ── Drawer Open / Close ── */
+      function openDrawer(name, initials, bgClass, colorKey) {
+        const avatar = document.getElementById('drawerAvatar');
+        // Reset classes
+        avatar.className =
+          'w-14 h-14 rounded-full mx-auto flex items-center justify-center text-lg font-extrabold mb-3';
+        avatar.classList.add(bgClass);
+        if (colorKey === 'gold') {
+          avatar.classList.add('text-black', 'avatar-pulse-gold');
         } else {
-          btn.classList.remove('bg-gold', 'text-black');
-          btn.style.color = 'var(--textMuted)';
+          avatar.classList.add('text-white', 'avatar-pulse');
         }
+        avatar.textContent = initials;
+
+        document.getElementById('drawerName').textContent = name;
+
+        // Reset to today tab
+        switchTab('today');
+        renderLeaderboard();
+
+        document.getElementById('drawer').classList.add('open');
+        document.getElementById('drawerOverlay').classList.add('open');
+      }
+
+      function closeDrawer() {
+        document.getElementById('drawer').classList.remove('open');
+        document.getElementById('drawerOverlay').classList.remove('open');
+      }
+
+      // Close on Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDrawer();
       });
-      renderKPIs(tab);
-    }
 
-    /* ── Drawer Open / Close ── */
-    function openDrawer(name, initials, bgClass, colorKey) {
-      const avatar = document.getElementById('drawerAvatar');
-      // Reset classes
-      avatar.className = 'w-14 h-14 rounded-full mx-auto flex items-center justify-center text-lg font-extrabold mb-3';
-      avatar.classList.add(bgClass);
-      if (colorKey === 'gold') {
-        avatar.classList.add('text-black', 'avatar-pulse-gold');
-      } else {
-        avatar.classList.add('text-white', 'avatar-pulse');
+      /* ── Theme Toggle ── */
+      function toggleTheme() {
+        const html = document.documentElement;
+        const btn = document.getElementById('themeBtn');
+        if (html.classList.contains('dark-theme')) {
+          html.className = 'light-theme';
+          btn.querySelector('i').className = 'fa-solid fa-sun';
+        } else {
+          html.className = 'dark-theme dark';
+          btn.querySelector('i').className = 'fa-solid fa-moon';
+        }
       }
-      avatar.textContent = initials;
 
-      document.getElementById('drawerName').textContent = name;
-
-      // Reset to today tab
-      switchTab('today');
-      renderLeaderboard();
-
-      document.getElementById('drawer').classList.add('open');
-      document.getElementById('drawerOverlay').classList.add('open');
-    }
-
-    function closeDrawer() {
-      document.getElementById('drawer').classList.remove('open');
-      document.getElementById('drawerOverlay').classList.remove('open');
-    }
-
-    // Close on Escape
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
-
-    /* ── Theme Toggle ── */
-    function toggleTheme() {
-      const html = document.documentElement;
-      const btn = document.getElementById('themeBtn');
-      if (html.classList.contains('dark-theme')) {
-        html.className = 'light-theme';
-        btn.querySelector('i').className = 'fa-solid fa-sun';
-      } else {
-        html.className = 'dark-theme dark';
-        btn.querySelector('i').className = 'fa-solid fa-moon';
+      /* ── Live Clock ── */
+      function updateClock() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        const s = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('liveClock').textContent = `${h}:${m}:${s}`;
       }
-    }
-
-    /* ── Live Clock ── */
-    function updateClock() {
-      const now = new Date();
-      const h = String(now.getHours()).padStart(2, '0');
-      const m = String(now.getMinutes()).padStart(2, '0');
-      const s = String(now.getSeconds()).padStart(2, '0');
-      document.getElementById('liveClock').textContent = `${h}:${m}:${s}`;
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-  </script>
-
-</body>
+      setInterval(updateClock, 1000);
+      updateClock();
+    </script>
+  </body>
 </html>

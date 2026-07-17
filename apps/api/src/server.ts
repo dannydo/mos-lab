@@ -16,7 +16,6 @@ import { tableConfigRoutes } from './modules/table-config/routes.js';
 import { omicallRoutes } from './modules/omicall/routes.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
-
 // Load environment variables
 dotenv.config();
 
@@ -50,13 +49,67 @@ const start = async () => {
     if (roleCount === 0) {
       await server.prisma.crm.crmRole.createMany({
         data: [
-          { key: 'admin', name: 'Administrator', color: 'red', viewKPI: true, viewTeamKPI: true, manageStaff: true, isSystem: true, description: 'Toàn quyền quản trị hệ thống' },
-          { key: 'manager', name: 'Manager', color: 'purple', viewKPI: true, viewTeamKPI: true, manageStaff: false, isSystem: true, description: 'Quản lý bộ phận' },
-          { key: 'oc', name: 'Operations Coordinator', color: 'blue', viewKPI: true, viewTeamKPI: true, manageStaff: false, isSystem: true, description: 'Điều phối vận hành' },
-          { key: 'cc', name: 'Customer Care', color: 'cyan', viewKPI: true, viewTeamKPI: false, manageStaff: false, isSystem: true, description: 'Chăm sóc khách hàng' },
-          { key: 'ls', name: 'Leader Sales', color: 'gold', viewKPI: true, viewTeamKPI: true, manageStaff: false, isSystem: true, description: 'Trưởng nhóm Telesales' },
-          { key: 'telesales', name: 'Telesales Executive', color: 'orange', viewKPI: true, viewTeamKPI: false, manageStaff: false, isSystem: true, description: 'Nhân viên Telesales' }
-        ]
+          {
+            key: 'admin',
+            name: 'Administrator',
+            color: 'red',
+            viewKPI: true,
+            viewTeamKPI: true,
+            manageStaff: true,
+            isSystem: true,
+            description: 'Toàn quyền quản trị hệ thống',
+          },
+          {
+            key: 'manager',
+            name: 'Manager',
+            color: 'purple',
+            viewKPI: true,
+            viewTeamKPI: true,
+            manageStaff: false,
+            isSystem: true,
+            description: 'Quản lý bộ phận',
+          },
+          {
+            key: 'oc',
+            name: 'Operations Coordinator',
+            color: 'blue',
+            viewKPI: true,
+            viewTeamKPI: true,
+            manageStaff: false,
+            isSystem: true,
+            description: 'Điều phối vận hành',
+          },
+          {
+            key: 'cc',
+            name: 'Customer Care',
+            color: 'cyan',
+            viewKPI: true,
+            viewTeamKPI: false,
+            manageStaff: false,
+            isSystem: true,
+            description: 'Chăm sóc khách hàng',
+          },
+          {
+            key: 'ls',
+            name: 'Leader Sales',
+            color: 'gold',
+            viewKPI: true,
+            viewTeamKPI: true,
+            manageStaff: false,
+            isSystem: true,
+            description: 'Trưởng nhóm Telesales',
+          },
+          {
+            key: 'telesales',
+            name: 'Telesales Executive',
+            color: 'orange',
+            viewKPI: true,
+            viewTeamKPI: false,
+            manageStaff: false,
+            isSystem: true,
+            description: 'Nhân viên Telesales',
+          },
+        ],
       });
       server.log.info('Seeded default roles successfully');
     }
@@ -78,7 +131,7 @@ const start = async () => {
 
     const port = Number(process.env.PORT) || 3001;
     await server.listen({ port, host: '0.0.0.0' });
-    
+
     server.log.info(`Server is running at http://localhost:${port}`);
   } catch (err) {
     server.log.error(err);

@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Select, Input, DatePicker, Button, Space, message, Divider, theme } from 'antd';
-import { PhoneOutlined, MailOutlined, CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import {
+  PhoneOutlined,
+  MailOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+} from '@ant-design/icons';
 import api from '../lib/api';
 import { CALL_RESULT_LABELS, CALL_OUTCOME_LABELS } from '@mos-lab/shared';
 import { useTheme } from '../context/ThemeContext';
@@ -24,7 +30,7 @@ export default function CallLogModal({
   onSuccess,
   planId,
   legacyUserId,
-  customerName
+  customerName,
 }: CallLogModalProps) {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
@@ -38,7 +44,7 @@ export default function CallLogModal({
       form.resetFields();
       form.setFieldsValue({
         callResult: 'ANSWERED',
-        outcome: 'PENDING'
+        outcome: 'PENDING',
       });
       setCallResult('ANSWERED');
       setOutcome('PENDING');
@@ -48,10 +54,10 @@ export default function CallLogModal({
   const handleQuickAction = async (actionType: 'NO_ANSWER' | 'CALL_BACK' | 'BOOKED' | 'RENEWED') => {
     setLoading(true);
     try {
-      let data: any = {
+      const data: any = {
         planId,
         legacyUserId,
-        callType: 'PHONE'
+        callType: 'PHONE',
       };
 
       if (actionType === 'NO_ANSWER') {
@@ -97,7 +103,7 @@ export default function CallLogModal({
         callResult: values.callResult,
         outcome: values.outcome,
         note: values.note,
-        callbackDate: values.callbackDate ? values.callbackDate.format('YYYY-MM-DD') : null
+        callbackDate: values.callbackDate ? values.callbackDate.format('YYYY-MM-DD') : null,
       };
 
       await api.post('/calls', data);
@@ -129,27 +135,27 @@ export default function CallLogModal({
           GHI NHANH (1-CLICK):
         </div>
         <Space wrap>
-          <Button 
-            danger 
-            icon={<CloseCircleOutlined />} 
+          <Button
+            danger
+            icon={<CloseCircleOutlined />}
             onClick={() => handleQuickAction('NO_ANSWER')}
             loading={loading}
           >
             Gọi Nhỡ (No Ans)
           </Button>
-          <Button 
-            style={{ color: '#FAAD14', borderColor: '#FAAD14' }} 
+          <Button
+            style={{ color: '#FAAD14', borderColor: '#FAAD14' }}
             ghost
-            icon={<CalendarOutlined />} 
+            icon={<CalendarOutlined />}
             onClick={() => handleQuickAction('CALL_BACK')}
             loading={loading}
           >
             Hẹn Gọi Lại (Call Bk)
           </Button>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             style={{ background: '#52C41A', borderColor: '#52C41A', color: '#fff' }}
-            icon={<CheckCircleOutlined />} 
+            icon={<CheckCircleOutlined />}
             onClick={() => handleQuickAction('BOOKED')}
             loading={loading}
           >
@@ -166,7 +172,7 @@ export default function CallLogModal({
         onFinish={handleFinish}
         initialValues={{
           callResult: 'ANSWERED',
-          outcome: 'PENDING'
+          outcome: 'PENDING',
         }}
       >
         <Form.Item
@@ -174,7 +180,7 @@ export default function CallLogModal({
           label={<span style={{ color: token.colorTextSecondary }}>Kết quả cuộc gọi</span>}
           rules={[{ required: true }]}
         >
-          <Select 
+          <Select
             onChange={(val) => {
               setCallResult(val);
               if (val !== 'ANSWERED') {
@@ -192,9 +198,11 @@ export default function CallLogModal({
             label={<span style={{ color: token.colorTextSecondary }}>Kết quả chi tiết</span>}
             rules={[{ required: true }]}
           >
-            <Select 
+            <Select
               onChange={(val) => setOutcome(val)}
-              options={Object.entries(CALL_OUTCOME_LABELS).filter(([k]) => k !== 'RENEWED').map(([k, v]) => ({ value: k, label: v }))}
+              options={Object.entries(CALL_OUTCOME_LABELS)
+                .filter(([k]) => k !== 'RENEWED')
+                .map(([k, v]) => ({ value: k, label: v }))}
             />
           </Form.Item>
         )}
@@ -209,17 +217,19 @@ export default function CallLogModal({
           </Form.Item>
         )}
 
-        <Form.Item
-          name="note"
-          label={<span style={{ color: token.colorTextSecondary }}>Ghi chú cuộc gọi</span>}
-        >
+        <Form.Item name="note" label={<span style={{ color: token.colorTextSecondary }}>Ghi chú cuộc gọi</span>}>
           <TextArea rows={4} placeholder="Nhập ghi chú chi tiết về cuộc hội thoại..." />
         </Form.Item>
 
         <Form.Item className="mb-0 text-right">
           <Space>
             <Button onClick={onCancel}>Hủy</Button>
-            <Button type="primary" htmlType="submit" loading={loading} style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}
+            >
               Lưu Nhật Ký
             </Button>
           </Space>

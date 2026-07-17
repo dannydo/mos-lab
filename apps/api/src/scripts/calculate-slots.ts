@@ -6,7 +6,7 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 async function run() {
   const legacy = new LegacyPrismaClient({
-    datasources: { db: { url: process.env.LEGACY_DATABASE_URL } }
+    datasources: { db: { url: process.env.LEGACY_DATABASE_URL } },
   });
 
   const date = '2026-07-13';
@@ -18,7 +18,8 @@ async function run() {
       `SELECT staff_name, shift_start, shift_end, is_off 
        FROM wingsctrl_roster 
        WHERE roster_date = ? AND store = ? AND is_active = 1`,
-      date, store
+      date,
+      store
     );
 
     // 2. Fetch Appointments
@@ -27,11 +28,12 @@ async function run() {
       `SELECT client_name, time_start, duration, status, specialist_name 
        FROM wingsctrl_appointments 
        WHERE store = ? AND DATE(time_start) = ? AND status != 'cancelled'`,
-      store, date
+      store,
+      date
     );
 
     console.log('--- Roster ---');
-    roster.forEach(r => {
+    roster.forEach((r) => {
       if (!r.is_off) {
         // Format time
         const start = new Date(r.shift_start).toISOString().split('T')[1].slice(0, 5);
@@ -41,7 +43,7 @@ async function run() {
     });
 
     console.log('\n--- Appointments ---');
-    appointments.forEach(a => {
+    appointments.forEach((a) => {
       const time = new Date(a.time_start).toISOString().split('T')[1].slice(0, 8);
       console.log(`${a.client_name}: ${time} (Duration: ${a.duration}m), specialist: ${a.specialist_name}`);
     });
@@ -53,9 +55,9 @@ async function run() {
 
     while (current < end) {
       const timeStr = current.toISOString().split('T')[1].slice(0, 5);
-      
+
       // Calculate roster count active at this time
-      const activeRoster = roster.filter(r => {
+      const activeRoster = roster.filter((r) => {
         if (r.is_off) return false;
         const rStart = new Date(r.shift_start).toISOString().split('T')[1].slice(0, 5);
         const rEnd = new Date(r.shift_end).toISOString().split('T')[1].slice(0, 5);
@@ -63,13 +65,13 @@ async function run() {
       });
 
       // Calculate active appointments at this time
-      const activeAppointments = appointments.filter(a => {
+      const activeAppointments = appointments.filter((a) => {
         const aStartStr = new Date(a.time_start).toISOString().split('T')[1].slice(0, 5);
         // calculate end time string
         const aStart = new Date(a.time_start);
         const aEnd = new Date(aStart.getTime() + a.duration * 60000);
         const aEndStr = aEnd.toISOString().split('T')[1].slice(0, 5);
-        
+
         // Handle overlaps
         return aStartStr <= timeStr && timeStr < aEndStr;
       });
@@ -79,11 +81,10 @@ async function run() {
       const available = rosterCount - bookedCount;
 
       console.log(`${timeStr} -> Roster: ${rosterCount}, Booked: ${bookedCount}, Available: ${available}`);
-      
+
       // Advance by 15 mins
       current = new Date(current.getTime() + 15 * 60000);
     }
-
   } catch (err) {
     console.error(err);
   } finally {

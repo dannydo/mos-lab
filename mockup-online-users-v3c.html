@@ -1,576 +1,772 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi" class="dark">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>V3C - Large Donut + Metric Selector + Podium</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-  darkMode: 'class',
-  theme: {
-    extend: {
-      colors: {
-        gold: '#D4A84B',
-        darkBg: '#0A0A0A',
-        darkCard: '#141414',
-        darkBorder: '#262626',
-      },
-      fontFamily: {
-        jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>V3C - Large Donut + Metric Selector + Podium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              gold: '#D4A84B',
+              darkBg: '#0A0A0A',
+              darkCard: '#141414',
+              darkBorder: '#262626',
+            },
+            fontFamily: {
+              jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
-    }
-  }
-}
-</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0A0A0A; min-height: 100vh; }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: #0a0a0a;
+        min-height: 100vh;
+      }
 
-  /* Breathing animation for online bubbles */
-  @keyframes breathe {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
-    50% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
-  }
-  @keyframes pulse-ring {
-    0% { transform: scale(0.8); opacity: 1; }
-    100% { transform: scale(1.6); opacity: 0; }
-  }
-  .bubble-breathing {
-    animation: breathe 2.5s ease-in-out infinite;
-  }
-  .pulse-dot::after {
-    content: '';
-    position: absolute;
-    bottom: -1px; right: -1px;
-    width: 12px; height: 12px;
-    background: #4ade80;
-    border-radius: 50%;
-    border: 2px solid #0A0A0A;
-  }
-  .pulse-dot::before {
-    content: '';
-    position: absolute;
-    bottom: -3px; right: -3px;
-    width: 16px; height: 16px;
-    background: rgba(74, 222, 128, 0.4);
-    border-radius: 50%;
-    animation: pulse-ring 2s ease-out infinite;
-  }
+      /* Breathing animation for online bubbles */
+      @keyframes breathe {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 6px rgba(74, 222, 128, 0);
+        }
+      }
+      @keyframes pulse-ring {
+        0% {
+          transform: scale(0.8);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1.6);
+          opacity: 0;
+        }
+      }
+      .bubble-breathing {
+        animation: breathe 2.5s ease-in-out infinite;
+      }
+      .pulse-dot::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        right: -1px;
+        width: 12px;
+        height: 12px;
+        background: #4ade80;
+        border-radius: 50%;
+        border: 2px solid #0a0a0a;
+      }
+      .pulse-dot::before {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        right: -3px;
+        width: 16px;
+        height: 16px;
+        background: rgba(74, 222, 128, 0.4);
+        border-radius: 50%;
+        animation: pulse-ring 2s ease-out infinite;
+      }
 
-  /* Modal animations */
-  @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.9) translateY(20px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  @keyframes modalOut {
-    from { opacity: 1; transform: scale(1) translateY(0); }
-    to { opacity: 0; transform: scale(0.9) translateY(20px); }
-  }
-  @keyframes overlayIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes overlayOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-  }
-  .modal-enter { animation: modalIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-  .modal-exit { animation: modalOut 0.25s ease-in forwards; }
-  .overlay-enter { animation: overlayIn 0.3s ease forwards; }
-  .overlay-exit { animation: overlayOut 0.25s ease forwards; }
+      /* Modal animations */
+      @keyframes modalIn {
+        from {
+          opacity: 0;
+          transform: scale(0.9) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      @keyframes modalOut {
+        from {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: scale(0.9) translateY(20px);
+        }
+      }
+      @keyframes overlayIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes overlayOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+      .modal-enter {
+        animation: modalIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .modal-exit {
+        animation: modalOut 0.25s ease-in forwards;
+      }
+      .overlay-enter {
+        animation: overlayIn 0.3s ease forwards;
+      }
+      .overlay-exit {
+        animation: overlayOut 0.25s ease forwards;
+      }
 
-  /* Glass card */
-  .glass-card {
-    background: rgba(20, 20, 20, 0.85);
-    backdrop-filter: blur(20px) saturate(1.4);
-    -webkit-backdrop-filter: blur(20px) saturate(1.4);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
+      /* Glass card */
+      .glass-card {
+        background: rgba(20, 20, 20, 0.85);
+        backdrop-filter: blur(20px) saturate(1.4);
+        -webkit-backdrop-filter: blur(20px) saturate(1.4);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
 
-  /* SVG donut animation */
-  .donut-ring {
-    transition: stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-                stroke 0.4s ease;
-  }
+      /* SVG donut animation */
+      .donut-ring {
+        transition:
+          stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+          stroke 0.4s ease;
+      }
 
-  /* Metric pill */
-  .metric-pill {
-    transition: all 0.25s ease;
-    cursor: pointer;
-    user-select: none;
-  }
-  .metric-pill:hover {
-    transform: translateY(-1px);
-  }
+      /* Metric pill */
+      .metric-pill {
+        transition: all 0.25s ease;
+        cursor: pointer;
+        user-select: none;
+      }
+      .metric-pill:hover {
+        transform: translateY(-1px);
+      }
 
-  /* Mini card highlight */
-  .mini-card {
-    transition: all 0.3s ease;
-    border: 1px solid transparent;
-  }
-  .mini-card.active {
-    border-color: var(--metric-color);
-    background: rgba(255,255,255,0.04);
-  }
+      /* Mini card highlight */
+      .mini-card {
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+      }
+      .mini-card.active {
+        border-color: var(--metric-color);
+        background: rgba(255, 255, 255, 0.04);
+      }
 
-  /* Podium */
-  @keyframes podiumGrow {
-    from { transform: scaleY(0); }
-    to { transform: scaleY(1); }
-  }
-  .podium-bar {
-    transform-origin: bottom;
-    animation: podiumGrow 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  @keyframes avatarDrop {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .avatar-drop {
-    animation: avatarDrop 0.5s ease forwards;
-    animation-delay: 0.3s;
-    opacity: 0;
-  }
+      /* Podium */
+      @keyframes podiumGrow {
+        from {
+          transform: scaleY(0);
+        }
+        to {
+          transform: scaleY(1);
+        }
+      }
+      .podium-bar {
+        transform-origin: bottom;
+        animation: podiumGrow 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      @keyframes avatarDrop {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .avatar-drop {
+        animation: avatarDrop 0.5s ease forwards;
+        animation-delay: 0.3s;
+        opacity: 0;
+      }
 
-  /* Time tab */
-  .time-tab {
-    transition: all 0.25s ease;
-    cursor: pointer;
-  }
+      /* Time tab */
+      .time-tab {
+        transition: all 0.25s ease;
+        cursor: pointer;
+      }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 4px;
+      }
 
-  /* Bubble stack */
-  .bubble-stack {
-    display: flex;
-    flex-direction: row-reverse;
-  }
-  .bubble-stack > div:not(:last-child) {
-    margin-left: -10px;
-  }
+      /* Bubble stack */
+      .bubble-stack {
+        display: flex;
+        flex-direction: row-reverse;
+      }
+      .bubble-stack > div:not(:last-child) {
+        margin-left: -10px;
+      }
 
-  /* Clock */
-  @keyframes clockPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-  .clock-colon {
-    animation: clockPulse 1s ease-in-out infinite;
-  }
+      /* Clock */
+      @keyframes clockPulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      .clock-colon {
+        animation: clockPulse 1s ease-in-out infinite;
+      }
 
-  /* Count badge */
-  .count-badge {
-    background: linear-gradient(135deg, #D4A84B, #b8912f);
-    min-width: 22px;
-    height: 22px;
-    border-radius: 11px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: #0A0A0A;
-    padding: 0 6px;
-    margin-left: -6px;
-    z-index: 10;
-    position: relative;
-  }
-</style>
-</head>
-<body class="bg-darkBg text-white font-jakarta">
-
-<!-- ===== HEADER ===== -->
-<header class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-darkBorder">
-  <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-    <!-- Left: Logo -->
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center">
-        <span class="text-xs font-extrabold text-darkBg">WL</span>
-      </div>
-      <span class="text-sm font-semibold text-white/70 hidden sm:block">Wingslashes</span>
-    </div>
-
-    <!-- Right: Bubbles + Clock + Toggle + DD -->
-    <div class="flex items-center gap-4">
-      <!-- Bubble stack -->
-      <div class="flex items-center gap-1">
-        <div class="bubble-stack" id="bubbleStack">
-          <!-- Bubbles injected by JS -->
-        </div>
-        <div class="count-badge" id="countBadge">6</div>
-      </div>
-
-      <!-- Live clock -->
-      <div class="text-xs font-mono text-white/50 flex items-center gap-0" id="headerClock">
-        <span id="clockHH">13</span><span class="clock-colon">:</span><span id="clockMM">53</span><span class="clock-colon">:</span><span id="clockSS">49</span>
-      </div>
-
-      <!-- Theme toggle -->
-      <button onclick="toggleTheme()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors" title="Toggle theme">
-        <i class="fas fa-moon text-white/40 text-sm" id="themeIcon"></i>
-      </button>
-
-      <!-- DD avatar (gold ring) -->
-      <button onclick="openModal('DD')" class="relative w-9 h-9 rounded-full bg-gradient-to-br from-gold/30 to-gold/10 border-2 border-gold flex items-center justify-center text-gold text-xs font-bold bubble-breathing pulse-dot hover:scale-105 transition-transform">
-        DD
-      </button>
-    </div>
-  </div>
-</header>
-
-<!-- ===== MODAL OVERLAY ===== -->
-<div id="modalOverlay" class="fixed inset-0 z-[100] hidden" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
-  <div class="flex items-center justify-center min-h-screen p-4">
-    <div id="modalContent" class="glass-card rounded-2xl w-full max-w-[780px] max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/40 border border-white/[0.06]">
-
-      <!-- Modal Header -->
-      <div class="p-5 border-b border-darkBorder flex items-center justify-between">
+      /* Count badge */
+      .count-badge {
+        background: linear-gradient(135deg, #d4a84b, #b8912f);
+        min-width: 22px;
+        height: 22px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #0a0a0a;
+        padding: 0 6px;
+        margin-left: -6px;
+        z-index: 10;
+        position: relative;
+      }
+    </style>
+  </head>
+  <body class="bg-darkBg text-white font-jakarta">
+    <!-- ===== HEADER ===== -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-darkBorder">
+      <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+        <!-- Left: Logo -->
         <div class="flex items-center gap-3">
-          <div class="relative">
-            <div id="modalAvatar" class="w-11 h-11 rounded-full bg-gradient-to-br from-gold/30 to-gold/10 border-2 border-gold flex items-center justify-center text-gold text-sm font-bold">
-              DD
-            </div>
-            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-darkCard"></div>
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center">
+            <span class="text-xs font-extrabold text-darkBg">WL</span>
           </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <span id="modalName" class="font-semibold text-white text-sm">Đăng Đô</span>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gold/15 text-gold border border-gold/20">Telesales</span>
-            </div>
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <div class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
-              <span class="text-[11px] text-green-400/80">Đang online</span>
-              <span class="text-white/20 mx-1">·</span>
-              <span class="text-[11px] text-white/30" id="modalClock">13:53:49</span>
-            </div>
-          </div>
+          <span class="text-sm font-semibold text-white/70 hidden sm:block">Wingslashes</span>
         </div>
-        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors" title="Đóng (ESC)">
-          <i class="fas fa-xmark text-white/40"></i>
-        </button>
+
+        <!-- Right: Bubbles + Clock + Toggle + DD -->
+        <div class="flex items-center gap-4">
+          <!-- Bubble stack -->
+          <div class="flex items-center gap-1">
+            <div class="bubble-stack" id="bubbleStack">
+              <!-- Bubbles injected by JS -->
+            </div>
+            <div class="count-badge" id="countBadge">6</div>
+          </div>
+
+          <!-- Live clock -->
+          <div class="text-xs font-mono text-white/50 flex items-center gap-0" id="headerClock">
+            <span id="clockHH">13</span><span class="clock-colon">:</span><span id="clockMM">53</span
+            ><span class="clock-colon">:</span><span id="clockSS">49</span>
+          </div>
+
+          <!-- Theme toggle -->
+          <button
+            onclick="toggleTheme()"
+            class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+            title="Toggle theme"
+          >
+            <i class="fas fa-moon text-white/40 text-sm" id="themeIcon"></i>
+          </button>
+
+          <!-- DD avatar (gold ring) -->
+          <button
+            onclick="openModal('DD')"
+            class="relative w-9 h-9 rounded-full bg-gradient-to-br from-gold/30 to-gold/10 border-2 border-gold flex items-center justify-center text-gold text-xs font-bold bubble-breathing pulse-dot hover:scale-105 transition-transform"
+          >
+            DD
+          </button>
+        </div>
       </div>
+    </header>
 
-      <!-- Modal Body -->
-      <div class="p-5 space-y-5">
-
-        <!-- Time Tabs -->
-        <div class="flex justify-center">
-          <div class="inline-flex items-center bg-white/[0.03] rounded-full p-1 border border-white/[0.06]">
-            <button onclick="setTimeTab('day')" data-tab="day" class="time-tab px-4 py-1.5 rounded-full text-xs font-semibold bg-gold/15 text-gold">Hôm nay</button>
-            <button onclick="setTimeTab('week')" data-tab="week" class="time-tab px-4 py-1.5 rounded-full text-xs font-semibold text-white/40 hover:text-white/60">Tuần này</button>
-            <button onclick="setTimeTab('month')" data-tab="month" class="time-tab px-4 py-1.5 rounded-full text-xs font-semibold text-white/40 hover:text-white/60">Tháng này</button>
+    <!-- ===== MODAL OVERLAY ===== -->
+    <div
+      id="modalOverlay"
+      class="fixed inset-0 z-[100] hidden"
+      style="background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px)"
+    >
+      <div class="flex items-center justify-center min-h-screen p-4">
+        <div
+          id="modalContent"
+          class="glass-card rounded-2xl w-full max-w-[780px] max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/40 border border-white/[0.06]"
+        >
+          <!-- Modal Header -->
+          <div class="p-5 border-b border-darkBorder flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="relative">
+                <div
+                  id="modalAvatar"
+                  class="w-11 h-11 rounded-full bg-gradient-to-br from-gold/30 to-gold/10 border-2 border-gold flex items-center justify-center text-gold text-sm font-bold"
+                >
+                  DD
+                </div>
+                <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-darkCard"></div>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span id="modalName" class="font-semibold text-white text-sm">Đăng Đô</span>
+                  <span
+                    class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gold/15 text-gold border border-gold/20"
+                    >Telesales</span
+                  >
+                </div>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <div class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
+                  <span class="text-[11px] text-green-400/80">Đang online</span>
+                  <span class="text-white/20 mx-1">·</span>
+                  <span class="text-[11px] text-white/30" id="modalClock">13:53:49</span>
+                </div>
+              </div>
+            </div>
+            <button
+              onclick="closeModal()"
+              class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+              title="Đóng (ESC)"
+            >
+              <i class="fas fa-xmark text-white/40"></i>
+            </button>
           </div>
-        </div>
 
-        <!-- Large Donut Chart -->
-        <div class="flex flex-col items-center">
-          <div class="relative w-[200px] h-[200px]">
-            <svg viewBox="0 0 200 200" class="w-full h-full -rotate-90">
-              <!-- Background ring -->
-              <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="14" />
-              <!-- Progress ring -->
-              <circle id="donutRing" cx="100" cy="100" r="85" fill="none"
-                stroke="#3B82F6" stroke-width="14" stroke-linecap="round"
-                stroke-dasharray="0 534" class="donut-ring" />
-            </svg>
-            <!-- Center text -->
-            <div class="absolute inset-0 flex flex-col items-center justify-center rotate-0">
-              <div id="donutValue" class="text-3xl font-extrabold text-white leading-none">45</div>
-              <div id="donutTarget" class="text-xs text-white/30 mt-0.5">/ 60</div>
-              <div id="donutPercent" class="text-sm font-bold mt-1" style="color: #3B82F6;">75%</div>
+          <!-- Modal Body -->
+          <div class="p-5 space-y-5">
+            <!-- Time Tabs -->
+            <div class="flex justify-center">
+              <div class="inline-flex items-center bg-white/[0.03] rounded-full p-1 border border-white/[0.06]">
+                <button
+                  onclick="setTimeTab('day')"
+                  data-tab="day"
+                  class="time-tab px-4 py-1.5 rounded-full text-xs font-semibold bg-gold/15 text-gold"
+                >
+                  Hôm nay
+                </button>
+                <button
+                  onclick="setTimeTab('week')"
+                  data-tab="week"
+                  class="time-tab px-4 py-1.5 rounded-full text-xs font-semibold text-white/40 hover:text-white/60"
+                >
+                  Tuần này
+                </button>
+                <button
+                  onclick="setTimeTab('month')"
+                  data-tab="month"
+                  class="time-tab px-4 py-1.5 rounded-full text-xs font-semibold text-white/40 hover:text-white/60"
+                >
+                  Tháng này
+                </button>
+              </div>
+            </div>
+
+            <!-- Large Donut Chart -->
+            <div class="flex flex-col items-center">
+              <div class="relative w-[200px] h-[200px]">
+                <svg viewBox="0 0 200 200" class="w-full h-full -rotate-90">
+                  <!-- Background ring -->
+                  <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="14" />
+                  <!-- Progress ring -->
+                  <circle
+                    id="donutRing"
+                    cx="100"
+                    cy="100"
+                    r="85"
+                    fill="none"
+                    stroke="#3B82F6"
+                    stroke-width="14"
+                    stroke-linecap="round"
+                    stroke-dasharray="0 534"
+                    class="donut-ring"
+                  />
+                </svg>
+                <!-- Center text -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center rotate-0">
+                  <div id="donutValue" class="text-3xl font-extrabold text-white leading-none">45</div>
+                  <div id="donutTarget" class="text-xs text-white/30 mt-0.5">/ 60</div>
+                  <div id="donutPercent" class="text-sm font-bold mt-1" style="color: #3b82f6">75%</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Metric Selector Pills -->
+            <div class="flex justify-center flex-wrap gap-2">
+              <button
+                onclick="setMetric('calls')"
+                data-metric="calls"
+                class="metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-blue-500 text-white"
+              >
+                📞 Calls
+              </button>
+              <button
+                onclick="setMetric('pickups')"
+                data-metric="pickups"
+                class="metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-transparent text-white/40 hover:text-white/60"
+              >
+                📱 Pickups
+              </button>
+              <button
+                onclick="setMetric('happy')"
+                data-metric="happy"
+                class="metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-transparent text-white/40 hover:text-white/60"
+              >
+                😊 Happy
+              </button>
+              <button
+                onclick="setMetric('booked')"
+                data-metric="booked"
+                class="metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-transparent text-white/40 hover:text-white/60"
+              >
+                📅 Booked
+              </button>
+              <button
+                onclick="setMetric('done')"
+                data-metric="done"
+                class="metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-transparent text-white/40 hover:text-white/60"
+              >
+                ✅ Done
+              </button>
+            </div>
+
+            <!-- Mini Summary Cards Row -->
+            <div class="grid grid-cols-5 gap-2" id="miniCardsRow">
+              <!-- Injected by JS -->
+            </div>
+
+            <!-- Leaderboard Podium -->
+            <div class="mt-2">
+              <div class="flex items-center gap-2 mb-4">
+                <i class="fas fa-trophy text-gold text-sm"></i>
+                <span class="text-sm font-semibold text-white/80">Bảng xếp hạng</span>
+                <span id="leaderboardMetricLabel" class="text-xs text-white/30">· Calls</span>
+              </div>
+
+              <!-- Podium -->
+              <div class="flex items-end justify-center gap-3 mb-4" id="podiumContainer" style="height: 200px">
+                <!-- Injected by JS -->
+              </div>
+
+              <!-- Remaining ranks list -->
+              <div id="remainingRanks" class="space-y-2">
+                <!-- Injected by JS -->
+              </div>
             </div>
           </div>
         </div>
-
-        <!-- Metric Selector Pills -->
-        <div class="flex justify-center flex-wrap gap-2">
-          <button onclick="setMetric('calls')" data-metric="calls"
-            class="metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-blue-500 text-white">
-            📞 Calls
-          </button>
-          <button onclick="setMetric('pickups')" data-metric="pickups"
-            class="metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-transparent text-white/40 hover:text-white/60">
-            📱 Pickups
-          </button>
-          <button onclick="setMetric('happy')" data-metric="happy"
-            class="metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-transparent text-white/40 hover:text-white/60">
-            😊 Happy
-          </button>
-          <button onclick="setMetric('booked')" data-metric="booked"
-            class="metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-transparent text-white/40 hover:text-white/60">
-            📅 Booked
-          </button>
-          <button onclick="setMetric('done')" data-metric="done"
-            class="metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-transparent text-white/40 hover:text-white/60">
-            ✅ Done
-          </button>
-        </div>
-
-        <!-- Mini Summary Cards Row -->
-        <div class="grid grid-cols-5 gap-2" id="miniCardsRow">
-          <!-- Injected by JS -->
-        </div>
-
-        <!-- Leaderboard Podium -->
-        <div class="mt-2">
-          <div class="flex items-center gap-2 mb-4">
-            <i class="fas fa-trophy text-gold text-sm"></i>
-            <span class="text-sm font-semibold text-white/80">Bảng xếp hạng</span>
-            <span id="leaderboardMetricLabel" class="text-xs text-white/30">· Calls</span>
-          </div>
-
-          <!-- Podium -->
-          <div class="flex items-end justify-center gap-3 mb-4" id="podiumContainer" style="height: 200px;">
-            <!-- Injected by JS -->
-          </div>
-
-          <!-- Remaining ranks list -->
-          <div id="remainingRanks" class="space-y-2">
-            <!-- Injected by JS -->
-          </div>
-        </div>
-
       </div>
     </div>
-  </div>
-</div>
 
-<script>
-// ===== DATA =====
-const members = {
-  TN: { name: 'Thanh Ngân', color: 'from-pink-500/30 to-pink-600/10', borderColor: 'border-pink-400', textColor: 'text-pink-400', hex: '#F472B6' },
-  HM: { name: 'Hoài My', color: 'from-purple-500/30 to-purple-600/10', borderColor: 'border-purple-400', textColor: 'text-purple-400', hex: '#C084FC' },
-  VT: { name: 'Vũ Thảo', color: 'from-cyan-500/30 to-cyan-600/10', borderColor: 'border-cyan-400', textColor: 'text-cyan-400', hex: '#22D3EE' },
-  KL: { name: 'Kim Loan', color: 'from-emerald-500/30 to-emerald-600/10', borderColor: 'border-emerald-400', textColor: 'text-emerald-400', hex: '#34D399' },
-  TH: { name: 'Thu Hà', color: 'from-orange-500/30 to-orange-600/10', borderColor: 'border-orange-400', textColor: 'text-orange-400', hex: '#FB923C' },
-  DD: { name: 'Đăng Đô', color: 'from-gold/30 to-gold/10', borderColor: 'border-gold', textColor: 'text-gold', hex: '#D4A84B' },
-};
+    <script>
+      // ===== DATA =====
+      const members = {
+        TN: {
+          name: 'Thanh Ngân',
+          color: 'from-pink-500/30 to-pink-600/10',
+          borderColor: 'border-pink-400',
+          textColor: 'text-pink-400',
+          hex: '#F472B6',
+        },
+        HM: {
+          name: 'Hoài My',
+          color: 'from-purple-500/30 to-purple-600/10',
+          borderColor: 'border-purple-400',
+          textColor: 'text-purple-400',
+          hex: '#C084FC',
+        },
+        VT: {
+          name: 'Vũ Thảo',
+          color: 'from-cyan-500/30 to-cyan-600/10',
+          borderColor: 'border-cyan-400',
+          textColor: 'text-cyan-400',
+          hex: '#22D3EE',
+        },
+        KL: {
+          name: 'Kim Loan',
+          color: 'from-emerald-500/30 to-emerald-600/10',
+          borderColor: 'border-emerald-400',
+          textColor: 'text-emerald-400',
+          hex: '#34D399',
+        },
+        TH: {
+          name: 'Thu Hà',
+          color: 'from-orange-500/30 to-orange-600/10',
+          borderColor: 'border-orange-400',
+          textColor: 'text-orange-400',
+          hex: '#FB923C',
+        },
+        DD: {
+          name: 'Đăng Đô',
+          color: 'from-gold/30 to-gold/10',
+          borderColor: 'border-gold',
+          textColor: 'text-gold',
+          hex: '#D4A84B',
+        },
+      };
 
-const metricConfig = {
-  calls:   { label: 'Calls',   icon: '📞', color: '#3B82F6', bgClass: 'bg-blue-500',    dotClass: 'bg-blue-400' },
-  pickups: { label: 'Pickups', icon: '📱', color: '#8B5CF6', bgClass: 'bg-violet-500',   dotClass: 'bg-violet-400' },
-  happy:   { label: 'Happy',   icon: '😊', color: '#F59E0B', bgClass: 'bg-amber-500',    dotClass: 'bg-amber-400' },
-  booked:  { label: 'Booked',  icon: '📅', color: '#10B981', bgClass: 'bg-emerald-500',  dotClass: 'bg-emerald-400' },
-  done:    { label: 'Done',    icon: '✅', color: '#EF4444', bgClass: 'bg-red-500',      dotClass: 'bg-red-400' },
-};
+      const metricConfig = {
+        calls: { label: 'Calls', icon: '📞', color: '#3B82F6', bgClass: 'bg-blue-500', dotClass: 'bg-blue-400' },
+        pickups: {
+          label: 'Pickups',
+          icon: '📱',
+          color: '#8B5CF6',
+          bgClass: 'bg-violet-500',
+          dotClass: 'bg-violet-400',
+        },
+        happy: { label: 'Happy', icon: '😊', color: '#F59E0B', bgClass: 'bg-amber-500', dotClass: 'bg-amber-400' },
+        booked: {
+          label: 'Booked',
+          icon: '📅',
+          color: '#10B981',
+          bgClass: 'bg-emerald-500',
+          dotClass: 'bg-emerald-400',
+        },
+        done: { label: 'Done', icon: '✅', color: '#EF4444', bgClass: 'bg-red-500', dotClass: 'bg-red-400' },
+      };
 
-// Leaderboard data (sorted desc)
-const leaderboardData = {
-  calls:   { TN:52, DD:45, HM:42, VT:38, KL:35, TH:30 },
-  pickups: { TN:35, DD:28, HM:26, VT:22, KL:20, TH:18 },
-  happy:   { TN:15, DD:12, HM:11, VT:9,  KL:8,  TH:7 },
-  booked:  { TN:10, DD:8,  HM:7,  VT:6,  KL:5,  TH:4 },
-  done:    { TN:7,  DD:5,  HM:5,  VT:4,  KL:3,  TH:2 },
-};
+      // Leaderboard data (sorted desc)
+      const leaderboardData = {
+        calls: { TN: 52, DD: 45, HM: 42, VT: 38, KL: 35, TH: 30 },
+        pickups: { TN: 35, DD: 28, HM: 26, VT: 22, KL: 20, TH: 18 },
+        happy: { TN: 15, DD: 12, HM: 11, VT: 9, KL: 8, TH: 7 },
+        booked: { TN: 10, DD: 8, HM: 7, VT: 6, KL: 5, TH: 4 },
+        done: { TN: 7, DD: 5, HM: 5, VT: 4, KL: 3, TH: 2 },
+      };
 
-// Targets per metric per time period
-const targets = {
-  day:   { calls: 60, pickups: 40, happy: 20, booked: 15, done: 10 },
-  week:  { calls: 300, pickups: 200, happy: 100, booked: 75, done: 50 },
-  month: { calls: 1200, pickups: 800, happy: 400, booked: 300, done: 200 },
-};
+      // Targets per metric per time period
+      const targets = {
+        day: { calls: 60, pickups: 40, happy: 20, booked: 15, done: 10 },
+        week: { calls: 300, pickups: 200, happy: 100, booked: 75, done: 50 },
+        month: { calls: 1200, pickups: 800, happy: 400, booked: 300, done: 200 },
+      };
 
-// Per-member data for the SELECTED member (we show DD by default)
-// This function generates data based on leaderboard values
-function getMemberData(memberId, timeTab) {
-  const mult = timeTab === 'week' ? 5 : timeTab === 'month' ? 20 : 1;
-  const data = {};
-  for (const m of Object.keys(metricConfig)) {
-    data[m] = (leaderboardData[m][memberId] || 0) * mult;
-  }
-  return data;
-}
+      // Per-member data for the SELECTED member (we show DD by default)
+      // This function generates data based on leaderboard values
+      function getMemberData(memberId, timeTab) {
+        const mult = timeTab === 'week' ? 5 : timeTab === 'month' ? 20 : 1;
+        const data = {};
+        for (const m of Object.keys(metricConfig)) {
+          data[m] = (leaderboardData[m][memberId] || 0) * mult;
+        }
+        return data;
+      }
 
-// ===== STATE =====
-let currentMember = 'DD';
-let currentMetric = 'calls';
-let currentTimeTab = 'day';
-let modalOpen = false;
+      // ===== STATE =====
+      let currentMember = 'DD';
+      let currentMetric = 'calls';
+      let currentTimeTab = 'day';
+      let modalOpen = false;
 
-// ===== HEADER BUBBLES =====
-function renderBubbles() {
-  const stack = document.getElementById('bubbleStack');
-  const order = ['TN','HM','VT','KL','TH'];
-  stack.innerHTML = order.map(id => {
-    const m = members[id];
-    return `<div onclick="openModal('${id}')" class="relative w-9 h-9 rounded-full bg-gradient-to-br ${m.color} border-2 ${m.borderColor} flex items-center justify-center ${m.textColor} text-xs font-bold cursor-pointer hover:scale-110 transition-transform bubble-breathing pulse-dot z-[1]" title="${m.name}">${id}</div>`;
-  }).join('');
-}
+      // ===== HEADER BUBBLES =====
+      function renderBubbles() {
+        const stack = document.getElementById('bubbleStack');
+        const order = ['TN', 'HM', 'VT', 'KL', 'TH'];
+        stack.innerHTML = order
+          .map((id) => {
+            const m = members[id];
+            return `<div onclick="openModal('${id}')" class="relative w-9 h-9 rounded-full bg-gradient-to-br ${m.color} border-2 ${m.borderColor} flex items-center justify-center ${m.textColor} text-xs font-bold cursor-pointer hover:scale-110 transition-transform bubble-breathing pulse-dot z-[1]" title="${m.name}">${id}</div>`;
+          })
+          .join('');
+      }
 
-// ===== CLOCK =====
-function updateClock() {
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2, '0');
-  const mm = String(now.getMinutes()).padStart(2, '0');
-  const ss = String(now.getSeconds()).padStart(2, '0');
-  document.getElementById('clockHH').textContent = hh;
-  document.getElementById('clockMM').textContent = mm;
-  document.getElementById('clockSS').textContent = ss;
-  if (document.getElementById('modalClock')) {
-    document.getElementById('modalClock').textContent = `${hh}:${mm}:${ss}`;
-  }
-}
-setInterval(updateClock, 1000);
+      // ===== CLOCK =====
+      function updateClock() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('clockHH').textContent = hh;
+        document.getElementById('clockMM').textContent = mm;
+        document.getElementById('clockSS').textContent = ss;
+        if (document.getElementById('modalClock')) {
+          document.getElementById('modalClock').textContent = `${hh}:${mm}:${ss}`;
+        }
+      }
+      setInterval(updateClock, 1000);
 
-// ===== THEME TOGGLE =====
-function toggleTheme() {
-  const html = document.documentElement;
-  const icon = document.getElementById('themeIcon');
-  if (html.classList.contains('dark')) {
-    html.classList.remove('dark');
-    document.body.style.background = '#F5F5F5';
-    document.body.style.color = '#1a1a1a';
-    icon.className = 'fas fa-sun text-yellow-500 text-sm';
-  } else {
-    html.classList.add('dark');
-    document.body.style.background = '#0A0A0A';
-    document.body.style.color = '#ffffff';
-    icon.className = 'fas fa-moon text-white/40 text-sm';
-  }
-}
+      // ===== THEME TOGGLE =====
+      function toggleTheme() {
+        const html = document.documentElement;
+        const icon = document.getElementById('themeIcon');
+        if (html.classList.contains('dark')) {
+          html.classList.remove('dark');
+          document.body.style.background = '#F5F5F5';
+          document.body.style.color = '#1a1a1a';
+          icon.className = 'fas fa-sun text-yellow-500 text-sm';
+        } else {
+          html.classList.add('dark');
+          document.body.style.background = '#0A0A0A';
+          document.body.style.color = '#ffffff';
+          icon.className = 'fas fa-moon text-white/40 text-sm';
+        }
+      }
 
-// ===== MODAL =====
-function openModal(memberId) {
-  currentMember = memberId;
-  currentMetric = 'calls';
-  currentTimeTab = 'day';
-  const m = members[memberId];
+      // ===== MODAL =====
+      function openModal(memberId) {
+        currentMember = memberId;
+        currentMetric = 'calls';
+        currentTimeTab = 'day';
+        const m = members[memberId];
 
-  // Update header
-  document.getElementById('modalAvatar').className = `w-11 h-11 rounded-full bg-gradient-to-br ${m.color} border-2 ${m.borderColor} flex items-center justify-center ${m.textColor} text-sm font-bold`;
-  document.getElementById('modalAvatar').textContent = memberId;
-  document.getElementById('modalName').textContent = m.name;
+        // Update header
+        document.getElementById('modalAvatar').className =
+          `w-11 h-11 rounded-full bg-gradient-to-br ${m.color} border-2 ${m.borderColor} flex items-center justify-center ${m.textColor} text-sm font-bold`;
+        document.getElementById('modalAvatar').textContent = memberId;
+        document.getElementById('modalName').textContent = m.name;
 
-  // Show modal
-  const overlay = document.getElementById('modalOverlay');
-  const content = document.getElementById('modalContent');
-  overlay.classList.remove('hidden');
-  overlay.classList.remove('overlay-exit');
-  overlay.classList.add('overlay-enter');
-  content.classList.remove('modal-exit');
-  content.classList.add('modal-enter');
-  modalOpen = true;
+        // Show modal
+        const overlay = document.getElementById('modalOverlay');
+        const content = document.getElementById('modalContent');
+        overlay.classList.remove('hidden');
+        overlay.classList.remove('overlay-exit');
+        overlay.classList.add('overlay-enter');
+        content.classList.remove('modal-exit');
+        content.classList.add('modal-enter');
+        modalOpen = true;
 
-  // Reset time tabs
-  renderTimeTabs();
-  renderMetricPills();
-  updateDonut();
-  renderMiniCards();
-  renderLeaderboard();
-}
+        // Reset time tabs
+        renderTimeTabs();
+        renderMetricPills();
+        updateDonut();
+        renderMiniCards();
+        renderLeaderboard();
+      }
 
-function closeModal() {
-  const overlay = document.getElementById('modalOverlay');
-  const content = document.getElementById('modalContent');
-  overlay.classList.remove('overlay-enter');
-  overlay.classList.add('overlay-exit');
-  content.classList.remove('modal-enter');
-  content.classList.add('modal-exit');
-  setTimeout(() => {
-    overlay.classList.add('hidden');
-    modalOpen = false;
-  }, 250);
-}
+      function closeModal() {
+        const overlay = document.getElementById('modalOverlay');
+        const content = document.getElementById('modalContent');
+        overlay.classList.remove('overlay-enter');
+        overlay.classList.add('overlay-exit');
+        content.classList.remove('modal-enter');
+        content.classList.add('modal-exit');
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+          modalOpen = false;
+        }, 250);
+      }
 
-// ESC close
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && modalOpen) closeModal();
-});
-// Click overlay close
-document.getElementById('modalOverlay').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('modalOverlay') || e.target === document.getElementById('modalOverlay').firstElementChild) {
-    if (!document.getElementById('modalContent').contains(e.target)) closeModal();
-  }
-});
+      // ESC close
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalOpen) closeModal();
+      });
+      // Click overlay close
+      document.getElementById('modalOverlay').addEventListener('click', (e) => {
+        if (
+          e.target === document.getElementById('modalOverlay') ||
+          e.target === document.getElementById('modalOverlay').firstElementChild
+        ) {
+          if (!document.getElementById('modalContent').contains(e.target)) closeModal();
+        }
+      });
 
-// ===== TIME TABS =====
-function setTimeTab(tab) {
-  currentTimeTab = tab;
-  renderTimeTabs();
-  updateDonut();
-  renderMiniCards();
-  renderLeaderboard();
-}
+      // ===== TIME TABS =====
+      function setTimeTab(tab) {
+        currentTimeTab = tab;
+        renderTimeTabs();
+        updateDonut();
+        renderMiniCards();
+        renderLeaderboard();
+      }
 
-function renderTimeTabs() {
-  document.querySelectorAll('[data-tab]').forEach(btn => {
-    if (btn.dataset.tab === currentTimeTab) {
-      btn.className = 'time-tab px-4 py-1.5 rounded-full text-xs font-semibold bg-gold/15 text-gold';
-    } else {
-      btn.className = 'time-tab px-4 py-1.5 rounded-full text-xs font-semibold text-white/40 hover:text-white/60';
-    }
-  });
-}
+      function renderTimeTabs() {
+        document.querySelectorAll('[data-tab]').forEach((btn) => {
+          if (btn.dataset.tab === currentTimeTab) {
+            btn.className = 'time-tab px-4 py-1.5 rounded-full text-xs font-semibold bg-gold/15 text-gold';
+          } else {
+            btn.className = 'time-tab px-4 py-1.5 rounded-full text-xs font-semibold text-white/40 hover:text-white/60';
+          }
+        });
+      }
 
-// ===== METRIC SELECTOR =====
-function setMetric(metric) {
-  currentMetric = metric;
-  renderMetricPills();
-  updateDonut();
-  renderMiniCards();
-  renderLeaderboard();
-}
+      // ===== METRIC SELECTOR =====
+      function setMetric(metric) {
+        currentMetric = metric;
+        renderMetricPills();
+        updateDonut();
+        renderMiniCards();
+        renderLeaderboard();
+      }
 
-function renderMetricPills() {
-  document.querySelectorAll('[data-metric]').forEach(btn => {
-    const m = btn.dataset.metric;
-    const cfg = metricConfig[m];
-    if (m === currentMetric) {
-      btn.className = `metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 ${cfg.bgClass} text-white`;
-    } else {
-      btn.className = 'metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-transparent text-white/40 hover:text-white/60';
-    }
-  });
-}
+      function renderMetricPills() {
+        document.querySelectorAll('[data-metric]').forEach((btn) => {
+          const m = btn.dataset.metric;
+          const cfg = metricConfig[m];
+          if (m === currentMetric) {
+            btn.className = `metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 ${cfg.bgClass} text-white`;
+          } else {
+            btn.className =
+              'metric-pill px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-transparent text-white/40 hover:text-white/60';
+          }
+        });
+      }
 
-// ===== DONUT CHART =====
-function updateDonut() {
-  const data = getMemberData(currentMember, currentTimeTab);
-  const cfg = metricConfig[currentMetric];
-  const value = data[currentMetric];
-  const target = targets[currentTimeTab][currentMetric];
-  const pct = Math.min(Math.round((value / target) * 100), 100);
-  const circumference = 2 * Math.PI * 85; // ~534.07
-  const dashLen = (pct / 100) * circumference;
+      // ===== DONUT CHART =====
+      function updateDonut() {
+        const data = getMemberData(currentMember, currentTimeTab);
+        const cfg = metricConfig[currentMetric];
+        const value = data[currentMetric];
+        const target = targets[currentTimeTab][currentMetric];
+        const pct = Math.min(Math.round((value / target) * 100), 100);
+        const circumference = 2 * Math.PI * 85; // ~534.07
+        const dashLen = (pct / 100) * circumference;
 
-  const ring = document.getElementById('donutRing');
-  // Reset first to trigger animation
-  ring.style.strokeDasharray = '0 ' + circumference;
-  ring.setAttribute('stroke', cfg.color);
+        const ring = document.getElementById('donutRing');
+        // Reset first to trigger animation
+        ring.style.strokeDasharray = '0 ' + circumference;
+        ring.setAttribute('stroke', cfg.color);
 
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      ring.style.strokeDasharray = `${dashLen} ${circumference}`;
-    });
-  });
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            ring.style.strokeDasharray = `${dashLen} ${circumference}`;
+          });
+        });
 
-  document.getElementById('donutValue').textContent = value;
-  document.getElementById('donutTarget').textContent = `/ ${target}`;
-  document.getElementById('donutPercent').textContent = `${pct}%`;
-  document.getElementById('donutPercent').style.color = cfg.color;
-}
+        document.getElementById('donutValue').textContent = value;
+        document.getElementById('donutTarget').textContent = `/ ${target}`;
+        document.getElementById('donutPercent').textContent = `${pct}%`;
+        document.getElementById('donutPercent').style.color = cfg.color;
+      }
 
-// ===== MINI CARDS =====
-function renderMiniCards() {
-  const container = document.getElementById('miniCardsRow');
-  const data = getMemberData(currentMember, currentTimeTab);
-  const tgt = targets[currentTimeTab];
+      // ===== MINI CARDS =====
+      function renderMiniCards() {
+        const container = document.getElementById('miniCardsRow');
+        const data = getMemberData(currentMember, currentTimeTab);
+        const tgt = targets[currentTimeTab];
 
-  container.innerHTML = Object.keys(metricConfig).map(m => {
-    const cfg = metricConfig[m];
-    const val = data[m];
-    const target = tgt[m];
-    const pct = Math.min(Math.round((val / target) * 100), 100);
-    const isActive = m === currentMetric;
+        container.innerHTML = Object.keys(metricConfig)
+          .map((m) => {
+            const cfg = metricConfig[m];
+            const val = data[m];
+            const target = tgt[m];
+            const pct = Math.min(Math.round((val / target) * 100), 100);
+            const isActive = m === currentMetric;
 
-    return `
+            return `
       <div onclick="setMetric('${m}')" class="mini-card rounded-xl p-2.5 cursor-pointer ${isActive ? 'bg-white/[0.04]' : 'bg-white/[0.02] hover:bg-white/[0.03]'}" style="border-color: ${isActive ? cfg.color : 'transparent'}; --metric-color: ${cfg.color};">
         <div class="flex items-center gap-1.5 mb-1.5">
           <div class="w-2 h-2 rounded-full" style="background: ${cfg.color};"></div>
@@ -582,43 +778,46 @@ function renderMiniCards() {
         </div>
       </div>
     `;
-  }).join('');
-}
+          })
+          .join('');
+      }
 
-// ===== LEADERBOARD PODIUM =====
-function renderLeaderboard() {
-  const cfg = metricConfig[currentMetric];
-  document.getElementById('leaderboardMetricLabel').textContent = `· ${cfg.label}`;
+      // ===== LEADERBOARD PODIUM =====
+      function renderLeaderboard() {
+        const cfg = metricConfig[currentMetric];
+        document.getElementById('leaderboardMetricLabel').textContent = `· ${cfg.label}`;
 
-  // Sort members by current metric desc
-  const sorted = Object.keys(leaderboardData[currentMetric])
-    .sort((a, b) => leaderboardData[currentMetric][b] - leaderboardData[currentMetric][a]);
+        // Sort members by current metric desc
+        const sorted = Object.keys(leaderboardData[currentMetric]).sort(
+          (a, b) => leaderboardData[currentMetric][b] - leaderboardData[currentMetric][a]
+        );
 
-  // Multiply by time tab
-  const mult = currentTimeTab === 'week' ? 5 : currentTimeTab === 'month' ? 20 : 1;
+        // Multiply by time tab
+        const mult = currentTimeTab === 'week' ? 5 : currentTimeTab === 'month' ? 20 : 1;
 
-  const top3 = sorted.slice(0, 3);
-  const rest = sorted.slice(3);
+        const top3 = sorted.slice(0, 3);
+        const rest = sorted.slice(3);
 
-  // Max value for scaling
-  const maxVal = leaderboardData[currentMetric][top3[0]] * mult;
+        // Max value for scaling
+        const maxVal = leaderboardData[currentMetric][top3[0]] * mult;
 
-  // Podium: order is 2nd, 1st, 3rd
-  const podiumOrder = [top3[1], top3[0], top3[2]];
-  const podiumHeights = [130, 170, 100]; // px heights
-  const podiumRanks = [2, 1, 3];
-  const crownIcons = ['', '👑', ''];
+        // Podium: order is 2nd, 1st, 3rd
+        const podiumOrder = [top3[1], top3[0], top3[2]];
+        const podiumHeights = [130, 170, 100]; // px heights
+        const podiumRanks = [2, 1, 3];
+        const crownIcons = ['', '👑', ''];
 
-  const podiumContainer = document.getElementById('podiumContainer');
-  podiumContainer.innerHTML = podiumOrder.map((id, i) => {
-    const m = members[id];
-    const val = leaderboardData[currentMetric][id] * mult;
-    const h = podiumHeights[i];
-    const rank = podiumRanks[i];
-    const isFirst = rank === 1;
-    const crown = crownIcons[i];
+        const podiumContainer = document.getElementById('podiumContainer');
+        podiumContainer.innerHTML = podiumOrder
+          .map((id, i) => {
+            const m = members[id];
+            const val = leaderboardData[currentMetric][id] * mult;
+            const h = podiumHeights[i];
+            const rank = podiumRanks[i];
+            const isFirst = rank === 1;
+            const crown = crownIcons[i];
 
-    return `
+            return `
       <div class="flex flex-col items-center" style="width: 100px;">
         <!-- Avatar -->
         <div class="avatar-drop flex flex-col items-center mb-2" style="animation-delay: ${0.2 + i * 0.15}s;">
@@ -637,16 +836,18 @@ function renderLeaderboard() {
         </div>
       </div>
     `;
-  }).join('');
+          })
+          .join('');
 
-  // Remaining ranks
-  const remainingContainer = document.getElementById('remainingRanks');
-  remainingContainer.innerHTML = rest.map((id, i) => {
-    const m = members[id];
-    const val = leaderboardData[currentMetric][id] * mult;
-    const rank = i + 4;
+        // Remaining ranks
+        const remainingContainer = document.getElementById('remainingRanks');
+        remainingContainer.innerHTML = rest
+          .map((id, i) => {
+            const m = members[id];
+            const val = leaderboardData[currentMetric][id] * mult;
+            const rank = i + 4;
 
-    return `
+            return `
       <div class="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors">
         <span class="text-xs font-bold text-white/20 w-5 text-center">#${rank}</span>
         <div class="w-8 h-8 rounded-full bg-gradient-to-br ${m.color} border ${m.borderColor} flex items-center justify-center ${m.textColor} text-[10px] font-bold">${id}</div>
@@ -656,16 +857,16 @@ function renderLeaderboard() {
         <div class="text-sm font-bold" style="color: ${cfg.color};">${val}</div>
       </div>
     `;
-  }).join('');
-}
+          })
+          .join('');
+      }
 
-// ===== INIT =====
-renderBubbles();
-updateClock();
+      // ===== INIT =====
+      renderBubbles();
+      updateClock();
 
-// Auto-open DD modal on load for demo
-setTimeout(() => openModal('DD'), 400);
-</script>
-
-</body>
+      // Auto-open DD modal on load for demo
+      setTimeout(() => openModal('DD'), 400);
+    </script>
+  </body>
 </html>

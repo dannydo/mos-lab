@@ -1,745 +1,779 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Banana Pro Header Mockups - 10 Thiết kế Giao diện</title>
-  <style>
-    :root {
-      --bg-dark: #0f172a;
-      --card-dark: #1e293b;
-      --border-dark: #334155;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      
-      --banana-yellow: #ffe135;
-      --banana-gold: #eab308;
-      --banana-light: #fef08a;
-      --banana-green: #22c55e;
-      --banana-brown: #78350f;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Banana Pro Header Mockups - 10 Thiết kế Giao diện</title>
+    <style>
+      :root {
+        --bg-dark: #0f172a;
+        --card-dark: #1e293b;
+        --border-dark: #334155;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-
-    body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Sidebar Navigation */
-    .sidebar {
-      width: 320px;
-      background-color: #0b0f19;
-      border-right: 1px solid var(--border-dark);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .sidebar-header {
-      padding: 24px;
-      border-bottom: 1px solid var(--border-dark);
-      background: linear-gradient(135deg, var(--banana-gold), var(--banana-yellow));
-      color: #000;
-    }
-
-    .sidebar-header h1 {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-
-    .sidebar-header p {
-      font-size: 11px;
-      opacity: 0.8;
-      font-weight: 600;
-      margin-top: 4px;
-      text-transform: uppercase;
-    }
-
-    .nav-list {
-      list-style: none;
-      overflow-y: auto;
-      flex: 1;
-      padding: 12px;
-    }
-
-    .nav-item {
-      padding: 12px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-bottom: 8px;
-      transition: all 0.2s ease;
-      border: 1px solid transparent;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .nav-item:hover {
-      background-color: rgba(255, 225, 53, 0.08);
-      border-color: rgba(255, 225, 53, 0.2);
-    }
-
-    .nav-item.active {
-      background-color: var(--banana-yellow);
-      color: #000;
-      font-weight: 600;
-    }
-
-    .nav-index {
-      font-size: 10px;
-      background-color: rgba(255, 255, 255, 0.1);
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-    }
-
-    .nav-item.active .nav-index {
-      background-color: rgba(0, 0, 0, 0.15);
-      color: #000;
-    }
-
-    .nav-title {
-      font-size: 14px;
-      flex: 1;
-    }
-
-    /* Main Preview Container */
-    .preview-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      background-color: #0d121f;
-      position: relative;
-    }
-
-    .preview-header {
-      padding: 24px;
-      border-bottom: 1px solid var(--border-dark);
-      background-color: #0f1626;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .preview-info h2 {
-      font-size: 22px;
-      font-weight: 700;
-    }
-
-    .preview-info p {
-      font-size: 14px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* Simulated CRM App Header Viewport */
-    .viewport {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-      background: radial-gradient(circle at center, #1b2640 0%, #0d121f 100%);
-      overflow: auto;
-    }
-
-    .simulated-header {
-      width: 90%;
-      max-width: 900px;
-      height: 70px;
-      background-color: #141b2d;
-      border: 1px solid var(--border-dark);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      position: relative;
-    }
-
-    .brand-logo {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--banana-yellow);
-      letter-spacing: 0.5px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .header-controls {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .control-item {
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: color 0.2s;
-    }
-
-    .control-item:hover {
-      color: var(--text-main);
-    }
-
-    .user-profile {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding-left: 16px;
-      border-left: 1px solid var(--border-dark);
-    }
-
-    .user-avatar {
-      width: 36px;
-      height: 36px;
-      background-color: var(--banana-gold);
-      color: #000;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-    }
-
-    /* Online Avatars Stack Area */
-    .online-stack-wrapper {
-      margin-right: 8px;
-    }
-
-    /* Mockup-Specific CSS Styles */
-    .avatar-circle {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background-size: cover;
-      background-position: center;
-      border: 2px solid #141b2d;
-      position: relative;
-      background-color: #2e3e60;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    /* Design 1: Banana Yellow Pill */
-    .design-pill-container {
-      background-color: var(--banana-yellow);
-      border-radius: 20px;
-      padding: 4px 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-      border: 1px solid rgba(0, 0, 0, 0.15);
-    }
-    .design-pill-text {
-      color: #000;
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .design-pill-avatars {
-      display: flex;
-    }
-    .design-pill-avatars .avatar-circle {
-      margin-left: -8px;
-      border-color: var(--banana-yellow);
-    }
-    .design-pill-avatars .avatar-circle:first-child {
-      margin-left: 0;
-    }
-
-    /* Design 2: Banana Slice Frame */
-    .design-slice-stack {
-      display: flex;
-      gap: 8px;
-    }
-    .design-slice-stack .avatar-circle {
-      clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
-      background-color: var(--banana-yellow);
-      color: #000;
-      border: none;
-      border-radius: 0;
-      box-shadow: 0 0 5px rgba(255,225,53,0.5);
-    }
-
-    /* Design 3: Gold Glow Mode */
-    .design-glow-stack {
-      display: flex;
-      gap: 6px;
-    }
-    .design-glow-stack .avatar-circle {
-      border-color: #ffd700;
-      box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
-      animation: goldPulse 2s infinite ease-in-out;
-    }
-    @keyframes goldPulse {
-      0%, 100% { box-shadow: 0 0 4px rgba(255,215,0,0.5); }
-      50% { box-shadow: 0 0 12px rgba(255,215,0,0.9); }
-    }
-
-    /* Design 4: Split Capsules */
-    .design-split-container {
-      display: flex;
-      gap: 8px;
-    }
-    .role-capsule {
-      background-color: rgba(255, 225, 53, 0.15);
-      border: 1px solid rgba(255, 225, 53, 0.3);
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 11px;
-      color: var(--banana-light);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: 500;
-    }
-
-    /* Design 5: Floating Sidebar */
-    .sidebar-trigger {
-      background-color: var(--card-dark);
-      border: 1px solid var(--border-dark);
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.2s;
-    }
-    .sidebar-trigger:hover {
-      background-color: rgba(255, 225, 53, 0.1);
-    }
-    .design-sidebar-panel {
-      position: absolute;
-      top: 72px;
-      right: 24px;
-      width: 250px;
-      background: linear-gradient(145deg, #1e293b, #0f172a);
-      border: 1px solid rgba(255, 225, 53, 0.3);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-      z-index: 100;
-      display: none;
-    }
-    .design-sidebar-panel h3 {
-      font-size: 12px;
-      color: var(--banana-yellow);
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .sidebar-user-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-      font-size: 12px;
-    }
-
-    /* Design 6: Ripeness Indicators */
-    .design-ripeness-stack {
-      display: flex;
-      gap: 6px;
-    }
-    .ripeness-badge {
-      position: absolute;
-      bottom: -2px;
-      right: -2px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      border: 1.5px solid #141b2d;
-    }
-
-    /* Design 7: Accordion Header */
-    .design-accordion-stack {
-      display: flex;
-      transition: all 0.3s ease;
-      width: 120px;
-      overflow: hidden;
-      border-radius: 20px;
-      background-color: var(--card-dark);
-      padding: 2px;
-      border: 1px solid var(--border-dark);
-    }
-    .design-accordion-stack:hover {
-      width: 240px;
-      background-color: rgba(255, 225, 53, 0.05);
-      border-color: var(--banana-yellow);
-    }
-    .design-accordion-stack .avatar-circle {
-      margin-left: -10px;
-      transition: margin 0.3s;
-    }
-    .design-accordion-stack:hover .avatar-circle {
-      margin-left: 4px;
-    }
-    .design-accordion-stack .avatar-circle:first-child {
-      margin-left: 2px;
-    }
-
-    /* Design 8: Shake Wobble */
-    .design-shake-stack {
-      display: flex;
-      gap: 6px;
-    }
-    .shake-avatar {
-      animation: bananaShake 4s infinite ease-in-out;
-    }
-    @keyframes bananaShake {
-      0%, 90%, 100% { transform: rotate(0deg) scale(1); }
-      92%, 96% { transform: rotate(-10deg) scale(1.05); }
-      94%, 98% { transform: rotate(10deg) scale(1.05); }
-    }
-
-    /* Design 9: Neon Pulse Line */
-    .design-pulse-line-stack {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-    }
-    .pulse-line-avatars {
-      display: flex;
-      gap: 8px;
-    }
-    .pulse-line {
-      width: 100%;
-      height: 2.5px;
-      background: linear-gradient(90deg, transparent, var(--banana-yellow), transparent);
-      margin-top: 4px;
-      box-shadow: 0 0 6px var(--banana-yellow);
-      animation: linePulse 2s infinite ease-in-out;
-    }
-    @keyframes linePulse {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 1; }
-    }
-
-    /* Design 10: Curved Crescent */
-    .design-crescent-stack {
-      display: flex;
-      position: relative;
-      height: 40px;
-      width: 100px;
-    }
-    .crescent-avatar {
-      position: absolute;
-    }
-
-    /* Details Panel */
-    .details-panel {
-      padding: 24px;
-      background-color: #0b0f19;
-      border-top: 1px solid var(--border-dark);
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .details-panel h3 {
-      font-size: 16px;
-      color: var(--banana-yellow);
-      margin-bottom: 8px;
-      font-weight: 700;
-    }
-
-    .badge-preview {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: bold;
-      margin-top: 8px;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <h1>BANANA PRO</h1>
-      <p>10 HTML Mockup Viewer</p>
-    </div>
-    <ul class="nav-list" id="navList">
-      <!-- Generated dynamically -->
-    </ul>
-  </div>
-
-  <!-- Main Viewport -->
-  <div class="preview-container">
-    <div class="preview-header">
-      <div class="preview-info">
-        <h2 id="conceptTitle">Tên thiết kế</h2>
-        <p id="conceptDesc">Mô tả ngắn gọn.</p>
-      </div>
-      <div class="badge-preview" id="conceptBadge" style="background-color: var(--banana-yellow); color: #000;">
-        ACTIVE PREVIEW
-      </div>
-    </div>
-
-    <div class="viewport">
-      <div class="simulated-header">
-        <div class="brand-logo">
-          <span>🍌</span>
-          <span>WINGS LASHES</span>
-        </div>
-        
-        <!-- Target Area where the mockup will load -->
-        <div id="mockupTarget">
-          <!-- Interactive Mockup Loads Here -->
-        </div>
-
-        <div class="header-controls">
-          <span class="control-item" style="font-size: 18px;">🌙</span>
-          <span class="control-item" style="font-size: 18px;">🔔</span>
-          <div class="user-profile">
-            <div class="user-avatar">D</div>
-            <div style="font-size: 13px; text-align: left;">
-              <span style="font-weight: 600; display: block; height: 14px;">Danny Do</span>
-              <span style="font-size: 10px; color: var(--text-muted);">ADMIN</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Floating Sidebar panel (used for Design 5) -->
-        <div class="design-sidebar-panel" id="floatingSidebarPanel">
-          <h3>Nhân viên Active (3)</h3>
-          <div class="sidebar-user-row">
-            <div class="avatar-circle" style="width: 24px; height: 24px; font-size: 9px; background-color: var(--banana-yellow); color: #000;">DW</div>
-            <span>Danny Wings (Sales)</span>
-          </div>
-          <div class="sidebar-user-row">
-            <div class="avatar-circle" style="width: 24px; height: 24px; font-size: 9px; background-color: var(--banana-yellow); color: #000;">TN</div>
-            <span>Tâm Nguyễn (Booker)</span>
-          </div>
-          <div class="sidebar-user-row">
-            <div class="avatar-circle" style="width: 24px; height: 24px; font-size: 9px; background-color: var(--banana-yellow); color: #000;">BH</div>
-            <span>Bảo Hân (Idle)</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Description Details -->
-    <div class="details-panel">
-      <h3>Ý tưởng & Trải nghiệm (UX Rationale)</h3>
-      <p id="conceptDetails">Đang tải...</p>
-    </div>
-  </div>
-
-  <script>
-    const concepts = [
-      {
-        id: 1,
-        title: "1. Banana Yellow Pill (Viên nang tối giản)",
-        desc: "Gom cụm các avatar online gọn gàng trong một khung hình viên thuốc màu vàng rực rỡ.",
-        details: "Tập hợp các avatar đè nhẹ lên nhau bên trong một khối màu vàng chuối (#FFE135) giúp làm nổi bật cụm người dùng đang hoạt động mà không chiếm quá nhiều diện tích. Rất thích hợp làm điểm nhấn trên thanh Header tối màu.",
-        html: \`
-          <div class="design-pill-container">
-            <span class="design-pill-text">🟢 3 Active</span>
-            <div class="design-pill-avatars">
-              <div class="avatar-circle">DW</div>
-              <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
-              <div class="avatar-circle">BH</div>
-            </div>
-          </div>
-        \`
-      },
-      {
-        id: 2,
-        title: "2. Banana Slice Avatar Frame (Khung lát chuối)",
-        desc: "Khung avatar được cắt góc cạnh giống lát chuối cắt lát thay vì hình tròn thông thường.",
-        details: "Bản sắc thiết kế đặc trưng cho thương hiệu Banana Pro. Sử dụng CSS clip-path để tạo hình lục giác/ngũ giác mềm mại đại diện cho lát chuối. Avatar có viền vàng mỏng tạo cảm giác công nghệ trẻ trung và khác biệt.",
-        html: \`
-          <div class="design-slice-stack">
-            <div class="avatar-circle">DW</div>
-            <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
-            <div class="avatar-circle">BH</div>
-          </div>
-        \`
-      },
-      {
-        id: 3,
-        title: "3. Gold-Banana Glow (Hào quang vàng nhấp nháy)",
-        desc: "Mỗi avatar có một quầng hào quang màu vàng Gold nhấp nháy phát sáng cực kỳ sang trọng.",
-        details: "Mỗi thành viên online sẽ có một vòng sáng vàng gold ấm áp nhấp nháy nhẹ nhàng quanh avatar (bằng hiệu ứng box-shadow animation). Tăng tính sống động cho chế độ Dark Mode của hệ thống Wings Lashes.",
-        html: \`
-          <div class="design-glow-stack">
-            <div class="avatar-circle">DW</div>
-            <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
-            <div class="avatar-circle">BH</div>
-          </div>
-        \`
-      },
-      {
-        id: 4,
-        title: "4. Split Banana Capsule (Chia nhóm theo vai trò)",
-        desc: "Phân loại rõ rệt số lượng người online của từng phòng ban trong từng viên thuốc riêng biệt.",
-        details: "Giải pháp quản lý tuyệt vời cho các doanh nghiệp lớn. Header hiển thị các hộp thuốc riêng biệt cho từng vai trò (Ví dụ: Booker, Admin, Telesales). Click vào hộp nào sẽ trực tiếp lọc bảng nhân viên dưới trang tương ứng.",
-        html: \`
-          <div class="design-split-container">
-            <div class="role-capsule">🍌 Admin: 1</div>
-            <div class="role-capsule" style="background-color: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.3); color: #86efac;">🍌 Bookers: 2</div>
-          </div>
-        \`
-      },
-      {
-        id: 5,
-        title: "5. Floating Banana Leaf Sidebar (Ngăn kéo trượt)",
-        desc: "Click vào nút tổng để hiển thị một Drawer nhỏ trượt xuống chứa danh sách người online.",
-        details: "Thay vì bày biện tất cả avatar trên Header làm loãng thiết kế, ta chỉ cung cấp một nút bấm tối giản kèm chấm xanh. Khi click vào, một panel trượt tuyệt đẹp sẽ hiện ra để xem chi tiết hành động của từng Booker.",
-        html: \`
-          <div class="sidebar-trigger" onclick="toggleSimulatedSidebar()">
-            <span>👥 Team Presence</span>
-            <span style="background-color: var(--banana-yellow); color: #000; font-size: 10px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">3</span>
-          </div>
-        \`
-      },
-      {
-        id: 6,
-        title: "6. Ripeness Status Indicators (Độ chín của Chuối)",
-        desc: "Đèn trạng thái dựa trên màu sắc độ chín của chuối: Xanh lá (Active), Vàng (Idle), Nâu (Offline).",
-        details: "Thay đổi trạng thái chấm tròn trạng thái vui nhộn: màu Xanh chuối non tượng trưng cho hoạt động tích cực; màu Vàng chín tượng trưng cho trạng thái treo máy (Idle); màu Nâu (chuối chín quá) thể hiện trạng thái offline.",
-        html: \`
-          <div class="design-ripeness-stack">
-            <div class="avatar-circle">DW<span class="ripeness-badge" style="background-color: var(--banana-green);"></span></div>
-            <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN<span class="ripeness-badge" style="background-color: var(--banana-yellow);"></span></div>
-            <div class="avatar-circle">BH<span class="ripeness-badge" style="background-color: var(--banana-brown);"></span></div>
-          </div>
-        \`
-      },
-      {
-        id: 7,
-        title: "7. Peel-Open Accordion Header (Giao diện co giãn)",
-        desc: "Rê chuột vào cụm avatar sẽ tự động trượt mở rộng để hiện tên chi tiết của Booker.",
-        details: "Tối ưu không gian ở trạng thái bình thường. Khi Booker rê chuột (Hover) vào cụm, toàn bộ thanh avatar sẽ mở rộng ra theo chiều ngang, hiển thị tên và phòng ban của từng người online một cách mượt mà.",
-        html: \`
-          <div class="design-accordion-stack">
-            <div class="avatar-circle">DW</div>
-            <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
-            <div class="avatar-circle">BH</div>
-            <span style="font-size: 11px; align-self: center; margin-left: 8px; color: var(--banana-yellow); font-weight: 600; white-space: nowrap;">Hover xem tên</span>
-          </div>
-        \`
-      },
-      {
-        id: 8,
-        title: "8. Banana Shake Animation (Wobble khi đăng nhập)",
-        desc: "Hiệu ứng lắc lư nhẹ như quả chuối khi có nhân sự mới đăng nhập vào hệ thống.",
-        details: "Mỗi khi có một Booker hoặc Telesales đăng nhập, Avatar của họ sẽ thực hiện hiệu ứng rung rinh nhẹ (Wobble) khoảng 2 giây để Admin hoặc Leader quản trị dễ dàng phát giác và chào đón.",
-        html: \`
-          <div class="design-shake-stack">
-            <div class="avatar-circle shake-avatar" style="background-color: var(--banana-yellow); color: #000;">NEW</div>
-            <div class="avatar-circle">DW</div>
-            <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
-          </div>
-        \`
-      },
-      {
-        id: 9,
-        title: "9. Neon Banana Pulse Line (Đường sóng xung kích)",
-        desc: "Đường neon mỏng màu vàng chạy dưới chân cụm avatar thể hiện trạng thái hoạt động.",
-        details: "Bổ sung một đường kẻ sáng màu vàng mảnh nằm ngay dưới đáy thanh avatar stack. Đường kẻ này liên tục nhấp nháy phát sáng nhẹ để biểu thị đường truyền hoạt động thời gian thực ổn định.",
-        html: \`
-          <div class="design-pulse-line-stack">
-            <div class="pulse-line-avatars">
-              <div class="avatar-circle">DW</div>
-              <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
-              <div class="avatar-circle">BH</div>
-            </div>
-            <div class="pulse-line"></div>
-          </div>
-        \`
-      },
-      {
-        id: 10,
-        title: "10. Curved Banana Crescent (Đồng hồ cát cong)",
-        desc: "Cụm avatar được xếp cong thành hình quả chuối thay vì một đường thẳng tẻ nhạt.",
-        details: "Một điểm phá cách mang tính nghệ thuật cho giao diện. Các avatar được dịch chuyển tọa độ để xếp theo hình vòng cung lưỡi liềm (giống quả chuối). Thiết kế mang tính độc quyền nhận diện cao.",
-        html: \`
-          <div class="design-crescent-stack">
-            <div class="avatar-circle crescent-avatar" style="top: 8px; left: 0px;">DW</div>
-            <div class="avatar-circle crescent-avatar" style="top: 0px; left: 24px; background-color: var(--banana-light); color: #000;">TN</div>
-            <div class="avatar-circle crescent-avatar" style="top: 8px; left: 48px;">BH</div>
-          </div>
-        \`
+        --banana-yellow: #ffe135;
+        --banana-gold: #eab308;
+        --banana-light: #fef08a;
+        --banana-green: #22c55e;
+        --banana-brown: #78350f;
       }
-    ];
 
-    // Populate Sidebar
-    const navList = document.getElementById('navList');
-    concepts.forEach((concept, index) => {
-      const li = document.createElement('li');
-      li.className = \`nav-item \${index === 0 ? 'active' : ''}\`;
-      li.innerHTML = \`
-        <span class="nav-index">\${concept.id}</span>
-        <span class="nav-title">\${concept.title.split('. ')[1]}</span>
-      \`;
-      li.onclick = () => selectConcept(index);
-      navList.appendChild(li);
-    });
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
 
-    // Select Concept Logic
-    function selectConcept(index) {
-      // Toggle nav active states
-      const items = document.querySelectorAll('.nav-item');
-      items.forEach((item, idx) => {
-        if (idx === index) item.classList.add('active');
-        else item.classList.remove('active');
+      body {
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* Sidebar Navigation */
+      .sidebar {
+        width: 320px;
+        background-color: #0b0f19;
+        border-right: 1px solid var(--border-dark);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .sidebar-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--border-dark);
+        background: linear-gradient(135deg, var(--banana-gold), var(--banana-yellow));
+        color: #000;
+      }
+
+      .sidebar-header h1 {
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+
+      .sidebar-header p {
+        font-size: 11px;
+        opacity: 0.8;
+        font-weight: 600;
+        margin-top: 4px;
+        text-transform: uppercase;
+      }
+
+      .nav-list {
+        list-style: none;
+        overflow-y: auto;
+        flex: 1;
+        padding: 12px;
+      }
+
+      .nav-item {
+        padding: 12px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-bottom: 8px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .nav-item:hover {
+        background-color: rgba(255, 225, 53, 0.08);
+        border-color: rgba(255, 225, 53, 0.2);
+      }
+
+      .nav-item.active {
+        background-color: var(--banana-yellow);
+        color: #000;
+        font-weight: 600;
+      }
+
+      .nav-index {
+        font-size: 10px;
+        background-color: rgba(255, 255, 255, 0.1);
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+      }
+
+      .nav-item.active .nav-index {
+        background-color: rgba(0, 0, 0, 0.15);
+        color: #000;
+      }
+
+      .nav-title {
+        font-size: 14px;
+        flex: 1;
+      }
+
+      /* Main Preview Container */
+      .preview-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background-color: #0d121f;
+        position: relative;
+      }
+
+      .preview-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--border-dark);
+        background-color: #0f1626;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .preview-info h2 {
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .preview-info p {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      /* Simulated CRM App Header Viewport */
+      .viewport {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        background: radial-gradient(circle at center, #1b2640 0%, #0d121f 100%);
+        overflow: auto;
+      }
+
+      .simulated-header {
+        width: 90%;
+        max-width: 900px;
+        height: 70px;
+        background-color: #141b2d;
+        border: 1px solid var(--border-dark);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        position: relative;
+      }
+
+      .brand-logo {
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--banana-yellow);
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .control-item {
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: color 0.2s;
+      }
+
+      .control-item:hover {
+        color: var(--text-main);
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-left: 16px;
+        border-left: 1px solid var(--border-dark);
+      }
+
+      .user-avatar {
+        width: 36px;
+        height: 36px;
+        background-color: var(--banana-gold);
+        color: #000;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+
+      /* Online Avatars Stack Area */
+      .online-stack-wrapper {
+        margin-right: 8px;
+      }
+
+      /* Mockup-Specific CSS Styles */
+      .avatar-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-size: cover;
+        background-position: center;
+        border: 2px solid #141b2d;
+        position: relative;
+        background-color: #2e3e60;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: #fff;
+      }
+
+      /* Design 1: Banana Yellow Pill */
+      .design-pill-container {
+        background-color: var(--banana-yellow);
+        border-radius: 20px;
+        padding: 4px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(0, 0, 0, 0.15);
+      }
+      .design-pill-text {
+        color: #000;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .design-pill-avatars {
+        display: flex;
+      }
+      .design-pill-avatars .avatar-circle {
+        margin-left: -8px;
+        border-color: var(--banana-yellow);
+      }
+      .design-pill-avatars .avatar-circle:first-child {
+        margin-left: 0;
+      }
+
+      /* Design 2: Banana Slice Frame */
+      .design-slice-stack {
+        display: flex;
+        gap: 8px;
+      }
+      .design-slice-stack .avatar-circle {
+        clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+        background-color: var(--banana-yellow);
+        color: #000;
+        border: none;
+        border-radius: 0;
+        box-shadow: 0 0 5px rgba(255, 225, 53, 0.5);
+      }
+
+      /* Design 3: Gold Glow Mode */
+      .design-glow-stack {
+        display: flex;
+        gap: 6px;
+      }
+      .design-glow-stack .avatar-circle {
+        border-color: #ffd700;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+        animation: goldPulse 2s infinite ease-in-out;
+      }
+      @keyframes goldPulse {
+        0%,
+        100% {
+          box-shadow: 0 0 4px rgba(255, 215, 0, 0.5);
+        }
+        50% {
+          box-shadow: 0 0 12px rgba(255, 215, 0, 0.9);
+        }
+      }
+
+      /* Design 4: Split Capsules */
+      .design-split-container {
+        display: flex;
+        gap: 8px;
+      }
+      .role-capsule {
+        background-color: rgba(255, 225, 53, 0.15);
+        border: 1px solid rgba(255, 225, 53, 0.3);
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        color: var(--banana-light);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+      }
+
+      /* Design 5: Floating Sidebar */
+      .sidebar-trigger {
+        background-color: var(--card-dark);
+        border: 1px solid var(--border-dark);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: background 0.2s;
+      }
+      .sidebar-trigger:hover {
+        background-color: rgba(255, 225, 53, 0.1);
+      }
+      .design-sidebar-panel {
+        position: absolute;
+        top: 72px;
+        right: 24px;
+        width: 250px;
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border: 1px solid rgba(255, 225, 53, 0.3);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        z-index: 100;
+        display: none;
+      }
+      .design-sidebar-panel h3 {
+        font-size: 12px;
+        color: var(--banana-yellow);
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .sidebar-user-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+        font-size: 12px;
+      }
+
+      /* Design 6: Ripeness Indicators */
+      .design-ripeness-stack {
+        display: flex;
+        gap: 6px;
+      }
+      .ripeness-badge {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 1.5px solid #141b2d;
+      }
+
+      /* Design 7: Accordion Header */
+      .design-accordion-stack {
+        display: flex;
+        transition: all 0.3s ease;
+        width: 120px;
+        overflow: hidden;
+        border-radius: 20px;
+        background-color: var(--card-dark);
+        padding: 2px;
+        border: 1px solid var(--border-dark);
+      }
+      .design-accordion-stack:hover {
+        width: 240px;
+        background-color: rgba(255, 225, 53, 0.05);
+        border-color: var(--banana-yellow);
+      }
+      .design-accordion-stack .avatar-circle {
+        margin-left: -10px;
+        transition: margin 0.3s;
+      }
+      .design-accordion-stack:hover .avatar-circle {
+        margin-left: 4px;
+      }
+      .design-accordion-stack .avatar-circle:first-child {
+        margin-left: 2px;
+      }
+
+      /* Design 8: Shake Wobble */
+      .design-shake-stack {
+        display: flex;
+        gap: 6px;
+      }
+      .shake-avatar {
+        animation: bananaShake 4s infinite ease-in-out;
+      }
+      @keyframes bananaShake {
+        0%,
+        90%,
+        100% {
+          transform: rotate(0deg) scale(1);
+        }
+        92%,
+        96% {
+          transform: rotate(-10deg) scale(1.05);
+        }
+        94%,
+        98% {
+          transform: rotate(10deg) scale(1.05);
+        }
+      }
+
+      /* Design 9: Neon Pulse Line */
+      .design-pulse-line-stack {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+      }
+      .pulse-line-avatars {
+        display: flex;
+        gap: 8px;
+      }
+      .pulse-line {
+        width: 100%;
+        height: 2.5px;
+        background: linear-gradient(90deg, transparent, var(--banana-yellow), transparent);
+        margin-top: 4px;
+        box-shadow: 0 0 6px var(--banana-yellow);
+        animation: linePulse 2s infinite ease-in-out;
+      }
+      @keyframes linePulse {
+        0%,
+        100% {
+          opacity: 0.5;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      /* Design 10: Curved Crescent */
+      .design-crescent-stack {
+        display: flex;
+        position: relative;
+        height: 40px;
+        width: 100px;
+      }
+      .crescent-avatar {
+        position: absolute;
+      }
+
+      /* Details Panel */
+      .details-panel {
+        padding: 24px;
+        background-color: #0b0f19;
+        border-top: 1px solid var(--border-dark);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .details-panel h3 {
+        font-size: 16px;
+        color: var(--banana-yellow);
+        margin-bottom: 8px;
+        font-weight: 700;
+      }
+
+      .badge-preview {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: bold;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>BANANA PRO</h1>
+        <p>10 HTML Mockup Viewer</p>
+      </div>
+      <ul class="nav-list" id="navList">
+        <!-- Generated dynamically -->
+      </ul>
+    </div>
+
+    <!-- Main Viewport -->
+    <div class="preview-container">
+      <div class="preview-header">
+        <div class="preview-info">
+          <h2 id="conceptTitle">Tên thiết kế</h2>
+          <p id="conceptDesc">Mô tả ngắn gọn.</p>
+        </div>
+        <div class="badge-preview" id="conceptBadge" style="background-color: var(--banana-yellow); color: #000">
+          ACTIVE PREVIEW
+        </div>
+      </div>
+
+      <div class="viewport">
+        <div class="simulated-header">
+          <div class="brand-logo">
+            <span>🍌</span>
+            <span>WINGS LASHES</span>
+          </div>
+
+          <!-- Target Area where the mockup will load -->
+          <div id="mockupTarget">
+            <!-- Interactive Mockup Loads Here -->
+          </div>
+
+          <div class="header-controls">
+            <span class="control-item" style="font-size: 18px">🌙</span>
+            <span class="control-item" style="font-size: 18px">🔔</span>
+            <div class="user-profile">
+              <div class="user-avatar">D</div>
+              <div style="font-size: 13px; text-align: left">
+                <span style="font-weight: 600; display: block; height: 14px">Danny Do</span>
+                <span style="font-size: 10px; color: var(--text-muted)">ADMIN</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating Sidebar panel (used for Design 5) -->
+          <div class="design-sidebar-panel" id="floatingSidebarPanel">
+            <h3>Nhân viên Active (3)</h3>
+            <div class="sidebar-user-row">
+              <div
+                class="avatar-circle"
+                style="width: 24px; height: 24px; font-size: 9px; background-color: var(--banana-yellow); color: #000"
+              >
+                DW
+              </div>
+              <span>Danny Wings (Sales)</span>
+            </div>
+            <div class="sidebar-user-row">
+              <div
+                class="avatar-circle"
+                style="width: 24px; height: 24px; font-size: 9px; background-color: var(--banana-yellow); color: #000"
+              >
+                TN
+              </div>
+              <span>Tâm Nguyễn (Booker)</span>
+            </div>
+            <div class="sidebar-user-row">
+              <div
+                class="avatar-circle"
+                style="width: 24px; height: 24px; font-size: 9px; background-color: var(--banana-yellow); color: #000"
+              >
+                BH
+              </div>
+              <span>Bảo Hân (Idle)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description Details -->
+      <div class="details-panel">
+        <h3>Ý tưởng & Trải nghiệm (UX Rationale)</h3>
+        <p id="conceptDetails">Đang tải...</p>
+      </div>
+    </div>
+
+    <script>
+      const concepts = [
+        {
+          id: 1,
+          title: "1. Banana Yellow Pill (Viên nang tối giản)",
+          desc: "Gom cụm các avatar online gọn gàng trong một khung hình viên thuốc màu vàng rực rỡ.",
+          details: "Tập hợp các avatar đè nhẹ lên nhau bên trong một khối màu vàng chuối (#FFE135) giúp làm nổi bật cụm người dùng đang hoạt động mà không chiếm quá nhiều diện tích. Rất thích hợp làm điểm nhấn trên thanh Header tối màu.",
+          html: \`
+            <div class="design-pill-container">
+              <span class="design-pill-text">🟢 3 Active</span>
+              <div class="design-pill-avatars">
+                <div class="avatar-circle">DW</div>
+                <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
+                <div class="avatar-circle">BH</div>
+              </div>
+            </div>
+          \`
+        },
+        {
+          id: 2,
+          title: "2. Banana Slice Avatar Frame (Khung lát chuối)",
+          desc: "Khung avatar được cắt góc cạnh giống lát chuối cắt lát thay vì hình tròn thông thường.",
+          details: "Bản sắc thiết kế đặc trưng cho thương hiệu Banana Pro. Sử dụng CSS clip-path để tạo hình lục giác/ngũ giác mềm mại đại diện cho lát chuối. Avatar có viền vàng mỏng tạo cảm giác công nghệ trẻ trung và khác biệt.",
+          html: \`
+            <div class="design-slice-stack">
+              <div class="avatar-circle">DW</div>
+              <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
+              <div class="avatar-circle">BH</div>
+            </div>
+          \`
+        },
+        {
+          id: 3,
+          title: "3. Gold-Banana Glow (Hào quang vàng nhấp nháy)",
+          desc: "Mỗi avatar có một quầng hào quang màu vàng Gold nhấp nháy phát sáng cực kỳ sang trọng.",
+          details: "Mỗi thành viên online sẽ có một vòng sáng vàng gold ấm áp nhấp nháy nhẹ nhàng quanh avatar (bằng hiệu ứng box-shadow animation). Tăng tính sống động cho chế độ Dark Mode của hệ thống Wings Lashes.",
+          html: \`
+            <div class="design-glow-stack">
+              <div class="avatar-circle">DW</div>
+              <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
+              <div class="avatar-circle">BH</div>
+            </div>
+          \`
+        },
+        {
+          id: 4,
+          title: "4. Split Banana Capsule (Chia nhóm theo vai trò)",
+          desc: "Phân loại rõ rệt số lượng người online của từng phòng ban trong từng viên thuốc riêng biệt.",
+          details: "Giải pháp quản lý tuyệt vời cho các doanh nghiệp lớn. Header hiển thị các hộp thuốc riêng biệt cho từng vai trò (Ví dụ: Booker, Admin, Telesales). Click vào hộp nào sẽ trực tiếp lọc bảng nhân viên dưới trang tương ứng.",
+          html: \`
+            <div class="design-split-container">
+              <div class="role-capsule">🍌 Admin: 1</div>
+              <div class="role-capsule" style="background-color: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.3); color: #86efac;">🍌 Bookers: 2</div>
+            </div>
+          \`
+        },
+        {
+          id: 5,
+          title: "5. Floating Banana Leaf Sidebar (Ngăn kéo trượt)",
+          desc: "Click vào nút tổng để hiển thị một Drawer nhỏ trượt xuống chứa danh sách người online.",
+          details: "Thay vì bày biện tất cả avatar trên Header làm loãng thiết kế, ta chỉ cung cấp một nút bấm tối giản kèm chấm xanh. Khi click vào, một panel trượt tuyệt đẹp sẽ hiện ra để xem chi tiết hành động của từng Booker.",
+          html: \`
+            <div class="sidebar-trigger" onclick="toggleSimulatedSidebar()">
+              <span>👥 Team Presence</span>
+              <span style="background-color: var(--banana-yellow); color: #000; font-size: 10px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">3</span>
+            </div>
+          \`
+        },
+        {
+          id: 6,
+          title: "6. Ripeness Status Indicators (Độ chín của Chuối)",
+          desc: "Đèn trạng thái dựa trên màu sắc độ chín của chuối: Xanh lá (Active), Vàng (Idle), Nâu (Offline).",
+          details: "Thay đổi trạng thái chấm tròn trạng thái vui nhộn: màu Xanh chuối non tượng trưng cho hoạt động tích cực; màu Vàng chín tượng trưng cho trạng thái treo máy (Idle); màu Nâu (chuối chín quá) thể hiện trạng thái offline.",
+          html: \`
+            <div class="design-ripeness-stack">
+              <div class="avatar-circle">DW<span class="ripeness-badge" style="background-color: var(--banana-green);"></span></div>
+              <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN<span class="ripeness-badge" style="background-color: var(--banana-yellow);"></span></div>
+              <div class="avatar-circle">BH<span class="ripeness-badge" style="background-color: var(--banana-brown);"></span></div>
+            </div>
+          \`
+        },
+        {
+          id: 7,
+          title: "7. Peel-Open Accordion Header (Giao diện co giãn)",
+          desc: "Rê chuột vào cụm avatar sẽ tự động trượt mở rộng để hiện tên chi tiết của Booker.",
+          details: "Tối ưu không gian ở trạng thái bình thường. Khi Booker rê chuột (Hover) vào cụm, toàn bộ thanh avatar sẽ mở rộng ra theo chiều ngang, hiển thị tên và phòng ban của từng người online một cách mượt mà.",
+          html: \`
+            <div class="design-accordion-stack">
+              <div class="avatar-circle">DW</div>
+              <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
+              <div class="avatar-circle">BH</div>
+              <span style="font-size: 11px; align-self: center; margin-left: 8px; color: var(--banana-yellow); font-weight: 600; white-space: nowrap;">Hover xem tên</span>
+            </div>
+          \`
+        },
+        {
+          id: 8,
+          title: "8. Banana Shake Animation (Wobble khi đăng nhập)",
+          desc: "Hiệu ứng lắc lư nhẹ như quả chuối khi có nhân sự mới đăng nhập vào hệ thống.",
+          details: "Mỗi khi có một Booker hoặc Telesales đăng nhập, Avatar của họ sẽ thực hiện hiệu ứng rung rinh nhẹ (Wobble) khoảng 2 giây để Admin hoặc Leader quản trị dễ dàng phát giác và chào đón.",
+          html: \`
+            <div class="design-shake-stack">
+              <div class="avatar-circle shake-avatar" style="background-color: var(--banana-yellow); color: #000;">NEW</div>
+              <div class="avatar-circle">DW</div>
+              <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
+            </div>
+          \`
+        },
+        {
+          id: 9,
+          title: "9. Neon Banana Pulse Line (Đường sóng xung kích)",
+          desc: "Đường neon mỏng màu vàng chạy dưới chân cụm avatar thể hiện trạng thái hoạt động.",
+          details: "Bổ sung một đường kẻ sáng màu vàng mảnh nằm ngay dưới đáy thanh avatar stack. Đường kẻ này liên tục nhấp nháy phát sáng nhẹ để biểu thị đường truyền hoạt động thời gian thực ổn định.",
+          html: \`
+            <div class="design-pulse-line-stack">
+              <div class="pulse-line-avatars">
+                <div class="avatar-circle">DW</div>
+                <div class="avatar-circle" style="background-color: var(--banana-light); color: #000;">TN</div>
+                <div class="avatar-circle">BH</div>
+              </div>
+              <div class="pulse-line"></div>
+            </div>
+          \`
+        },
+        {
+          id: 10,
+          title: "10. Curved Banana Crescent (Đồng hồ cát cong)",
+          desc: "Cụm avatar được xếp cong thành hình quả chuối thay vì một đường thẳng tẻ nhạt.",
+          details: "Một điểm phá cách mang tính nghệ thuật cho giao diện. Các avatar được dịch chuyển tọa độ để xếp theo hình vòng cung lưỡi liềm (giống quả chuối). Thiết kế mang tính độc quyền nhận diện cao.",
+          html: \`
+            <div class="design-crescent-stack">
+              <div class="avatar-circle crescent-avatar" style="top: 8px; left: 0px;">DW</div>
+              <div class="avatar-circle crescent-avatar" style="top: 0px; left: 24px; background-color: var(--banana-light); color: #000;">TN</div>
+              <div class="avatar-circle crescent-avatar" style="top: 8px; left: 48px;">BH</div>
+            </div>
+          \`
+        }
+      ];
+
+      // Populate Sidebar
+      const navList = document.getElementById('navList');
+      concepts.forEach((concept, index) => {
+        const li = document.createElement('li');
+        li.className = \`nav-item \${index === 0 ? 'active' : ''}\`;
+        li.innerHTML = \`
+          <span class="nav-index">\${concept.id}</span>
+          <span class="nav-title">\${concept.title.split('. ')[1]}</span>
+        \`;
+        li.onclick = () => selectConcept(index);
+        navList.appendChild(li);
       });
 
-      const selected = concepts[index];
-      document.getElementById('conceptTitle').innerText = selected.title;
-      document.getElementById('conceptDesc').innerText = selected.desc;
-      document.getElementById('conceptDetails').innerText = selected.details;
-      document.getElementById('mockupTarget').innerHTML = selected.html;
+      // Select Concept Logic
+      function selectConcept(index) {
+        // Toggle nav active states
+        const items = document.querySelectorAll('.nav-item');
+        items.forEach((item, idx) => {
+          if (idx === index) item.classList.add('active');
+          else item.classList.remove('active');
+        });
 
-      // Close floating sidebar by default if not design 5
-      const sidebarPanel = document.getElementById('floatingSidebarPanel');
-      sidebarPanel.style.display = 'none';
+        const selected = concepts[index];
+        document.getElementById('conceptTitle').innerText = selected.title;
+        document.getElementById('conceptDesc').innerText = selected.desc;
+        document.getElementById('conceptDetails').innerText = selected.details;
+        document.getElementById('mockupTarget').innerHTML = selected.html;
 
-      // Automatically open floating sidebar if it's design 5
-      if (selected.id === 5) {
-        sidebarPanel.style.display = 'block';
-      }
-    }
-
-    // Toggle simulated sidebar panel (for Design 5)
-    function toggleSimulatedSidebar() {
-      const sidebarPanel = document.getElementById('floatingSidebarPanel');
-      if (sidebarPanel.style.display === 'block') {
+        // Close floating sidebar by default if not design 5
+        const sidebarPanel = document.getElementById('floatingSidebarPanel');
         sidebarPanel.style.display = 'none';
-      } else {
-        sidebarPanel.style.display = 'block';
-      }
-    }
 
-    // Initialize first concept
-    selectConcept(0);
-  </script>
-</body>
+        // Automatically open floating sidebar if it's design 5
+        if (selected.id === 5) {
+          sidebarPanel.style.display = 'block';
+        }
+      }
+
+      // Toggle simulated sidebar panel (for Design 5)
+      function toggleSimulatedSidebar() {
+        const sidebarPanel = document.getElementById('floatingSidebarPanel');
+        if (sidebarPanel.style.display === 'block') {
+          sidebarPanel.style.display = 'none';
+        } else {
+          sidebarPanel.style.display = 'block';
+        }
+      }
+
+      // Initialize first concept
+      selectConcept(0);
+    </script>
+  </body>
 </html>

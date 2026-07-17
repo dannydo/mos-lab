@@ -64,9 +64,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           },
         }}
       >
-        <div style={{ opacity: mounted ? 1 : 0 }}>
-          {children}
-        </div>
+        <div style={{ opacity: mounted ? 1 : 0 }}>{children}</div>
       </ConfigProvider>
     </ThemeContext.Provider>
   );

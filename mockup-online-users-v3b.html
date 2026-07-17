@@ -1,441 +1,892 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi" class="dark-theme dark">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MOS Lab - Online Users V3B</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-  darkMode: 'class',
-  theme: {
-    extend: {
-      colors: {
-        gold: '#D4A84B',
-        goldLight: '#E8C97A',
-        goldDark: '#B8912F',
-        darkBg: '#0A0A0A',
-        darkCard: '#141414',
-        darkBorder: '#262626',
-      },
-      fontFamily: {
-        jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MOS Lab - Online Users V3B</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              gold: '#D4A84B',
+              goldLight: '#E8C97A',
+              goldDark: '#B8912F',
+              darkBg: '#0A0A0A',
+              darkCard: '#141414',
+              darkBorder: '#262626',
+            },
+            fontFamily: {
+              jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
-    }
-  }
-}
-</script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.4s, color 0.4s; }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition:
+          background 0.4s,
+          color 0.4s;
+      }
 
-  .dark-theme body { background: #0A0A0A; color: #e5e5e5; }
-  .light-theme body { background: #f5f5f0; color: #1a1a1a; }
+      .dark-theme body {
+        background: #0a0a0a;
+        color: #e5e5e5;
+      }
+      .light-theme body {
+        background: #f5f5f0;
+        color: #1a1a1a;
+      }
 
-  /* Glass card */
-  .glass-card {
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border: 1px solid rgba(212, 168, 75, 0.12);
-    transition: all 0.3s ease;
-  }
-  .dark-theme .glass-card {
-    background: rgba(20, 20, 20, 0.85);
-  }
-  .light-theme .glass-card {
-    background: rgba(255, 255, 255, 0.75);
-    border-color: rgba(0,0,0,0.08);
-  }
-  .glass-card:hover {
-    border-color: rgba(212, 168, 75, 0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(212, 168, 75, 0.08);
-  }
+      /* Glass card */
+      .glass-card {
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border: 1px solid rgba(212, 168, 75, 0.12);
+        transition: all 0.3s ease;
+      }
+      .dark-theme .glass-card {
+        background: rgba(20, 20, 20, 0.85);
+      }
+      .light-theme .glass-card {
+        background: rgba(255, 255, 255, 0.75);
+        border-color: rgba(0, 0, 0, 0.08);
+      }
+      .glass-card:hover {
+        border-color: rgba(212, 168, 75, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(212, 168, 75, 0.08);
+      }
 
-  /* Breathing animation for avatars */
-  @keyframes breathe {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 75, 0.4); }
-    50% { box-shadow: 0 0 0 6px rgba(212, 168, 75, 0); }
-  }
-  @keyframes pulse-ring {
-    0% { transform: scale(0.9); opacity: 1; }
-    100% { transform: scale(1.5); opacity: 0; }
-  }
-  .avatar-breathe { animation: breathe 3s ease-in-out infinite; }
-  .pulse-ring {
-    position: absolute; inset: -3px; border-radius: 50%;
-    border: 2px solid currentColor; opacity: 0;
-    animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-  }
+      /* Breathing animation for avatars */
+      @keyframes breathe {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(212, 168, 75, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 6px rgba(212, 168, 75, 0);
+        }
+      }
+      @keyframes pulse-ring {
+        0% {
+          transform: scale(0.9);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1.5);
+          opacity: 0;
+        }
+      }
+      .avatar-breathe {
+        animation: breathe 3s ease-in-out infinite;
+      }
+      .pulse-ring {
+        position: absolute;
+        inset: -3px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        opacity: 0;
+        animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+      }
 
-  /* Modal */
-  .modal-overlay {
-    position: fixed; inset: 0; z-index: 100;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(8px);
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0; visibility: hidden;
-    transition: opacity 0.35s, visibility 0.35s;
-  }
-  .modal-overlay.active { opacity: 1; visibility: visible; }
-  .modal-content {
-    transform: scale(0.9); opacity: 0;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s;
-  }
-  .modal-overlay.active .modal-content { transform: scale(1); opacity: 1; }
+      /* Modal */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.35s,
+          visibility 0.35s;
+      }
+      .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+      .modal-content {
+        transform: scale(0.9);
+        opacity: 0;
+        transition:
+          transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+          opacity 0.35s;
+      }
+      .modal-overlay.active .modal-content {
+        transform: scale(1);
+        opacity: 1;
+      }
 
-  /* Donut animation */
-  @keyframes donut-fill {
-    from { stroke-dasharray: 0 251.33; }
-  }
-  .donut-circle-progress { animation: donut-fill 1.2s ease-out forwards; }
+      /* Donut animation */
+      @keyframes donut-fill {
+        from {
+          stroke-dasharray: 0 251.33;
+        }
+      }
+      .donut-circle-progress {
+        animation: donut-fill 1.2s ease-out forwards;
+      }
 
-  /* Podium slide up */
-  @keyframes slideUp {
-    from { transform: translateY(80px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-  .podium-animate {
-    opacity: 0;
-    animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
+      /* Podium slide up */
+      @keyframes slideUp {
+        from {
+          transform: translateY(80px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      .podium-animate {
+        opacity: 0;
+        animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
 
-  /* Avatar glow for #1 */
-  @keyframes avatarGlow {
-    0%, 100% { box-shadow: 0 0 12px 4px rgba(212, 168, 75, 0.5); }
-    50% { box-shadow: 0 0 24px 8px rgba(212, 168, 75, 0.8); }
-  }
-  .avatar-glow { animation: avatarGlow 2s ease-in-out infinite; }
+      /* Avatar glow for #1 */
+      @keyframes avatarGlow {
+        0%,
+        100% {
+          box-shadow: 0 0 12px 4px rgba(212, 168, 75, 0.5);
+        }
+        50% {
+          box-shadow: 0 0 24px 8px rgba(212, 168, 75, 0.8);
+        }
+      }
+      .avatar-glow {
+        animation: avatarGlow 2s ease-in-out infinite;
+      }
 
-  /* Tab pill */
-  .tab-pill {
-    padding: 6px 20px; border-radius: 9999px; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all 0.3s; border: 1px solid transparent;
-  }
-  .dark-theme .tab-pill { color: #888; background: transparent; }
-  .light-theme .tab-pill { color: #666; background: transparent; }
-  .tab-pill.active {
-    background: linear-gradient(135deg, #D4A84B, #B8912F);
-    color: #fff; border-color: transparent;
-    box-shadow: 0 4px 15px rgba(212, 168, 75, 0.3);
-  }
-  .tab-pill:not(.active):hover {
-    border-color: rgba(212, 168, 75, 0.3); color: #D4A84B;
-  }
+      /* Tab pill */
+      .tab-pill {
+        padding: 6px 20px;
+        border-radius: 9999px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 1px solid transparent;
+      }
+      .dark-theme .tab-pill {
+        color: #888;
+        background: transparent;
+      }
+      .light-theme .tab-pill {
+        color: #666;
+        background: transparent;
+      }
+      .tab-pill.active {
+        background: linear-gradient(135deg, #d4a84b, #b8912f);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 4px 15px rgba(212, 168, 75, 0.3);
+      }
+      .tab-pill:not(.active):hover {
+        border-color: rgba(212, 168, 75, 0.3);
+        color: #d4a84b;
+      }
 
-  /* Status badges */
-  .badge-good { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); }
-  .badge-mid { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
-  .badge-low { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+      /* Status badges */
+      .badge-good {
+        background: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+      }
+      .badge-mid {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+      .badge-low {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
 
-  /* Scrollbar */
-  .custom-scroll::-webkit-scrollbar { width: 4px; }
-  .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-  .custom-scroll::-webkit-scrollbar-thumb { background: rgba(212, 168, 75, 0.3); border-radius: 4px; }
+      /* Scrollbar */
+      .custom-scroll::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
+        background: rgba(212, 168, 75, 0.3);
+        border-radius: 4px;
+      }
 
-  /* Theme toggle */
-  .theme-toggle {
-    width: 48px; height: 26px; border-radius: 13px; cursor: pointer;
-    position: relative; transition: background 0.3s;
-  }
-  .dark-theme .theme-toggle { background: #262626; }
-  .light-theme .theme-toggle { background: #e5e5e5; }
-  .theme-toggle-dot {
-    width: 20px; height: 20px; border-radius: 50%;
-    position: absolute; top: 3px; transition: all 0.3s;
-  }
-  .dark-theme .theme-toggle-dot { left: 25px; background: #D4A84B; }
-  .light-theme .theme-toggle-dot { left: 3px; background: #f59e0b; }
+      /* Theme toggle */
+      .theme-toggle {
+        width: 48px;
+        height: 26px;
+        border-radius: 13px;
+        cursor: pointer;
+        position: relative;
+        transition: background 0.3s;
+      }
+      .dark-theme .theme-toggle {
+        background: #262626;
+      }
+      .light-theme .theme-toggle {
+        background: #e5e5e5;
+      }
+      .theme-toggle-dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        position: absolute;
+        top: 3px;
+        transition: all 0.3s;
+      }
+      .dark-theme .theme-toggle-dot {
+        left: 25px;
+        background: #d4a84b;
+      }
+      .light-theme .theme-toggle-dot {
+        left: 3px;
+        background: #f59e0b;
+      }
 
-  /* Light theme text overrides */
-  .light-theme .text-forced-dark { color: #1a1a1a; }
-  .light-theme .text-forced-muted { color: #666; }
+      /* Light theme text overrides */
+      .light-theme .text-forced-dark {
+        color: #1a1a1a;
+      }
+      .light-theme .text-forced-muted {
+        color: #666;
+      }
 
-  /* Sparkline mini bars */
-  .spark-bar {
-    display: inline-block; width: 6px; border-radius: 2px;
-    margin-right: 2px; transition: height 0.5s ease;
-  }
+      /* Sparkline mini bars */
+      .spark-bar {
+        display: inline-block;
+        width: 6px;
+        border-radius: 2px;
+        margin-right: 2px;
+        transition: height 0.5s ease;
+      }
 
-  /* Performance dots */
-  .perf-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+      /* Performance dots */
+      .perf-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+      }
 
-  /* Mini horizontal bar */
-  .mini-hbar {
-    height: 4px; border-radius: 2px; transition: width 0.8s ease;
-  }
-</style>
-</head>
-<body class="min-h-screen">
+      /* Mini horizontal bar */
+      .mini-hbar {
+        height: 4px;
+        border-radius: 2px;
+        transition: width 0.8s ease;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <!-- ===== HEADER ===== -->
+    <header class="fixed top-0 right-0 z-50 p-3 flex items-center gap-3">
+      <!-- WL Logo -->
+      <div
+        class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-goldDark flex items-center justify-center text-white font-bold text-xs shadow-lg"
+      >
+        WL
+      </div>
 
-<!-- ===== HEADER ===== -->
-<header class="fixed top-0 right-0 z-50 p-3 flex items-center gap-3">
-  <!-- WL Logo -->
-  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-goldDark flex items-center justify-center text-white font-bold text-xs shadow-lg">
-    WL
-  </div>
+      <!-- Avatar Bubble Stack -->
+      <div class="flex items-center -space-x-2 relative cursor-pointer" id="avatarStack" onclick="openModal()">
+        <!-- TN - rose -->
+        <div
+          class="relative w-9 h-9 rounded-full bg-gradient-to-br from-rose-400 to-rose-600 flex items-center justify-center text-white text-xs font-bold border-2 border-darkBg dark:border-darkBg avatar-breathe z-[5] hover:scale-110 transition-transform"
+          style="animation-delay: 0s"
+        >
+          <span class="pulse-ring text-rose-400"></span>TN
+        </div>
+        <!-- HM - sky -->
+        <div
+          class="relative w-9 h-9 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white text-xs font-bold border-2 border-darkBg dark:border-darkBg avatar-breathe z-[4] hover:scale-110 transition-transform"
+          style="animation-delay: 0.5s"
+        >
+          <span class="pulse-ring text-sky-400"></span>HM
+        </div>
+        <!-- VT - violet -->
+        <div
+          class="relative w-9 h-9 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-xs font-bold border-2 border-darkBg dark:border-darkBg avatar-breathe z-[3] hover:scale-110 transition-transform"
+          style="animation-delay: 1s"
+        >
+          <span class="pulse-ring text-violet-400"></span>VT
+        </div>
+        <!-- KL - emerald -->
+        <div
+          class="relative w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-xs font-bold border-2 border-darkBg dark:border-darkBg avatar-breathe z-[2] hover:scale-110 transition-transform"
+          style="animation-delay: 1.5s"
+        >
+          <span class="pulse-ring text-emerald-400"></span>KL
+        </div>
+        <!-- TH - orange -->
+        <div
+          class="relative w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xs font-bold border-2 border-darkBg dark:border-darkBg avatar-breathe z-[1] hover:scale-110 transition-transform"
+          style="animation-delay: 2s"
+        >
+          <span class="pulse-ring text-orange-400"></span>TH
+        </div>
+        <!-- Count badge -->
+        <div class="relative z-[6] -ml-1">
+          <div
+            class="w-7 h-7 rounded-full bg-gradient-to-br from-gold to-goldDark flex items-center justify-center text-white text-[10px] font-bold shadow-lg"
+          >
+            +6
+          </div>
+        </div>
+      </div>
 
-  <!-- Avatar Bubble Stack -->
-  <div class="flex items-center -space-x-2 relative cursor-pointer" id="avatarStack" onclick="openModal()">
-    <!-- TN - rose -->
-    <div class="relative w-9 h-9 rounded-full bg-gradient-to-br from-rose-400 to-rose-600 flex items-center justify-center text-white text-xs font-bold border-2 border-darkBg dark:border-darkBg avatar-breathe z-[5] hover:scale-110 transition-transform" style="animation-delay: 0s;">
-      <span class="pulse-ring text-rose-400"></span>TN
-    </div>
-    <!-- HM - sky -->
-    <div class="relative w-9 h-9 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white text-xs font-bold border-2 border-darkBg dark:border-darkBg avatar-breathe z-[4] hover:scale-110 transition-transform" style="animation-delay: 0.5s;">
-      <span class="pulse-ring text-sky-400"></span>HM
-    </div>
-    <!-- VT - violet -->
-    <div class="relative w-9 h-9 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-xs font-bold border-2 border-darkBg dark:border-darkBg avatar-breathe z-[3] hover:scale-110 transition-transform" style="animation-delay: 1s;">
-      <span class="pulse-ring text-violet-400"></span>VT
-    </div>
-    <!-- KL - emerald -->
-    <div class="relative w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-xs font-bold border-2 border-darkBg dark:border-darkBg avatar-breathe z-[2] hover:scale-110 transition-transform" style="animation-delay: 1.5s;">
-      <span class="pulse-ring text-emerald-400"></span>KL
-    </div>
-    <!-- TH - orange -->
-    <div class="relative w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xs font-bold border-2 border-darkBg dark:border-darkBg avatar-breathe z-[1] hover:scale-110 transition-transform" style="animation-delay: 2s;">
-      <span class="pulse-ring text-orange-400"></span>TH
-    </div>
-    <!-- Count badge -->
-    <div class="relative z-[6] -ml-1">
-      <div class="w-7 h-7 rounded-full bg-gradient-to-br from-gold to-goldDark flex items-center justify-center text-white text-[10px] font-bold shadow-lg">
-        +6
+      <!-- Clock -->
+      <div class="flex items-center gap-1.5 text-xs font-mono opacity-60" id="headerClock">
+        <i class="fas fa-clock text-gold text-[10px]"></i>
+        <span id="clockText">--:--:--</span>
+      </div>
+
+      <!-- Theme Toggle -->
+      <div class="theme-toggle" onclick="toggleTheme()">
+        <div class="theme-toggle-dot"></div>
+      </div>
+
+      <!-- DD Avatar -->
+      <div
+        class="w-9 h-9 rounded-full bg-gradient-to-br from-gold to-goldDark flex items-center justify-center text-white text-xs font-bold border-2 border-gold/30 shadow-lg shadow-gold/20"
+      >
+        DD
+      </div>
+    </header>
+
+    <!-- ===== MODAL OVERLAY ===== -->
+    <div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+      <div
+        class="modal-content w-full max-w-[800px] mx-4 max-h-[90vh] overflow-hidden rounded-2xl glass-card"
+        onclick="event.stopPropagation()"
+      >
+        <!-- Modal Header -->
+        <div class="p-5 border-b border-gold/10 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center">
+              <i class="fas fa-chart-line text-gold"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold">
+                <span class="dark:text-white text-forced-dark">Hiệu suất </span>
+                <span class="text-gold" id="modalMemberName">Thành Nhân</span>
+              </h2>
+              <p class="text-xs opacity-50 mt-0.5" id="modalSubtitle">Telesales · Online</p>
+            </div>
+          </div>
+          <button
+            onclick="closeModal()"
+            class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
+          >
+            <i class="fas fa-times opacity-50 hover:opacity-100"></i>
+          </button>
+        </div>
+
+        <!-- Tab Pills -->
+        <div class="flex items-center justify-center gap-2 p-4">
+          <button class="tab-pill active" data-tab="today" onclick="switchTab('today')">Hôm nay</button>
+          <button class="tab-pill" data-tab="week" onclick="switchTab('week')">Tuần này</button>
+          <button class="tab-pill" data-tab="month" onclick="switchTab('month')">Tháng này</button>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="px-5 pb-5 overflow-y-auto custom-scroll" style="max-height: calc(90vh - 180px)" id="modalBody">
+          <!-- KPI Donut Grid -->
+          <div id="kpiGrid" class="grid grid-cols-3 gap-3 mb-4">
+            <!-- Donuts rendered by JS -->
+          </div>
+          <!-- Row 2 centered -->
+          <div id="kpiGridRow2" class="flex justify-center gap-3 mb-6">
+            <!-- Bottom 2 donuts -->
+          </div>
+
+          <!-- Leaderboard Section -->
+          <div class="border-t border-gold/10 pt-5">
+            <div class="flex items-center gap-2 mb-4">
+              <i class="fas fa-trophy text-gold text-sm"></i>
+              <span class="font-bold text-sm dark:text-white text-forced-dark">Bảng xếp hạng</span>
+              <span class="text-xs opacity-40 ml-1" id="leaderboardPeriod">Hôm nay</span>
+            </div>
+
+            <!-- Podium -->
+            <div class="flex items-end justify-center gap-3 mb-5 h-[200px]" id="podiumContainer">
+              <!-- Rendered by JS -->
+            </div>
+
+            <!-- Rows 4-6 -->
+            <div class="space-y-2" id="rankRows">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Clock -->
-  <div class="flex items-center gap-1.5 text-xs font-mono opacity-60" id="headerClock">
-    <i class="fas fa-clock text-gold text-[10px]"></i>
-    <span id="clockText">--:--:--</span>
-  </div>
-
-  <!-- Theme Toggle -->
-  <div class="theme-toggle" onclick="toggleTheme()">
-    <div class="theme-toggle-dot"></div>
-  </div>
-
-  <!-- DD Avatar -->
-  <div class="w-9 h-9 rounded-full bg-gradient-to-br from-gold to-goldDark flex items-center justify-center text-white text-xs font-bold border-2 border-gold/30 shadow-lg shadow-gold/20">
-    DD
-  </div>
-</header>
-
-<!-- ===== MODAL OVERLAY ===== -->
-<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
-  <div class="modal-content w-full max-w-[800px] mx-4 max-h-[90vh] overflow-hidden rounded-2xl glass-card" onclick="event.stopPropagation()">
-
-    <!-- Modal Header -->
-    <div class="p-5 border-b border-gold/10 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center">
-          <i class="fas fa-chart-line text-gold"></i>
-        </div>
-        <div>
-          <h2 class="text-lg font-bold">
-            <span class="dark:text-white text-forced-dark">Hiệu suất </span>
-            <span class="text-gold" id="modalMemberName">Thành Nhân</span>
-          </h2>
-          <p class="text-xs opacity-50 mt-0.5" id="modalSubtitle">Telesales · Online</p>
-        </div>
-      </div>
-      <button onclick="closeModal()" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors">
-        <i class="fas fa-times opacity-50 hover:opacity-100"></i>
-      </button>
-    </div>
-
-    <!-- Tab Pills -->
-    <div class="flex items-center justify-center gap-2 p-4">
-      <button class="tab-pill active" data-tab="today" onclick="switchTab('today')">Hôm nay</button>
-      <button class="tab-pill" data-tab="week" onclick="switchTab('week')">Tuần này</button>
-      <button class="tab-pill" data-tab="month" onclick="switchTab('month')">Tháng này</button>
-    </div>
-
-    <!-- Scrollable Content -->
-    <div class="px-5 pb-5 overflow-y-auto custom-scroll" style="max-height: calc(90vh - 180px);" id="modalBody">
-
-      <!-- KPI Donut Grid -->
-      <div id="kpiGrid" class="grid grid-cols-3 gap-3 mb-4">
-        <!-- Donuts rendered by JS -->
-      </div>
-      <!-- Row 2 centered -->
-      <div id="kpiGridRow2" class="flex justify-center gap-3 mb-6">
-        <!-- Bottom 2 donuts -->
-      </div>
-
-      <!-- Leaderboard Section -->
-      <div class="border-t border-gold/10 pt-5">
-        <div class="flex items-center gap-2 mb-4">
-          <i class="fas fa-trophy text-gold text-sm"></i>
-          <span class="font-bold text-sm dark:text-white text-forced-dark">Bảng xếp hạng</span>
-          <span class="text-xs opacity-40 ml-1" id="leaderboardPeriod">Hôm nay</span>
-        </div>
-
-        <!-- Podium -->
-        <div class="flex items-end justify-center gap-3 mb-5 h-[200px]" id="podiumContainer">
-          <!-- Rendered by JS -->
-        </div>
-
-        <!-- Rows 4-6 -->
-        <div class="space-y-2" id="rankRows">
-          <!-- Rendered by JS -->
-        </div>
+    <!-- Center prompt -->
+    <div class="flex items-center justify-center min-h-screen">
+      <div class="text-center opacity-30">
+        <i class="fas fa-mouse-pointer text-3xl mb-3 text-gold"></i>
+        <p class="text-sm">Click vào avatar stack ở góc trên phải</p>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- Center prompt -->
-<div class="flex items-center justify-center min-h-screen">
-  <div class="text-center opacity-30">
-    <i class="fas fa-mouse-pointer text-3xl mb-3 text-gold"></i>
-    <p class="text-sm">Click vào avatar stack ở góc trên phải</p>
-  </div>
-</div>
+    <script>
+      // ===== DATA =====
+      const members = [
+        {
+          id: 'TN',
+          name: 'Thành Nhân',
+          role: 'Telesales',
+          gradient: 'from-rose-400 to-rose-600',
+          color: '#f43f5e',
+          ring: 'text-rose-400',
+        },
+        {
+          id: 'HM',
+          name: 'Hồng Minh',
+          role: 'Telesales',
+          gradient: 'from-sky-400 to-sky-600',
+          color: '#0ea5e9',
+          ring: 'text-sky-400',
+        },
+        {
+          id: 'VT',
+          name: 'Vân Trang',
+          role: 'Telesales',
+          gradient: 'from-violet-400 to-violet-600',
+          color: '#8b5cf6',
+          ring: 'text-violet-400',
+        },
+        {
+          id: 'KL',
+          name: 'Kim Loan',
+          role: 'Telesales',
+          gradient: 'from-emerald-400 to-emerald-600',
+          color: '#10b981',
+          ring: 'text-emerald-400',
+        },
+        {
+          id: 'TH',
+          name: 'Tuấn Hùng',
+          role: 'Telesales',
+          gradient: 'from-orange-400 to-orange-600',
+          color: '#f97316',
+          ring: 'text-orange-400',
+        },
+        {
+          id: 'DD',
+          name: 'Danny Do',
+          role: 'Manager',
+          gradient: 'from-gold to-goldDark',
+          color: '#D4A84B',
+          ring: 'text-gold',
+        },
+      ];
 
-<script>
-// ===== DATA =====
-const members = [
-  { id: 'TN', name: 'Thành Nhân', role: 'Telesales', gradient: 'from-rose-400 to-rose-600', color: '#f43f5e', ring: 'text-rose-400' },
-  { id: 'HM', name: 'Hồng Minh', role: 'Telesales', gradient: 'from-sky-400 to-sky-600', color: '#0ea5e9', ring: 'text-sky-400' },
-  { id: 'VT', name: 'Vân Trang', role: 'Telesales', gradient: 'from-violet-400 to-violet-600', color: '#8b5cf6', ring: 'text-violet-400' },
-  { id: 'KL', name: 'Kim Loan', role: 'Telesales', gradient: 'from-emerald-400 to-emerald-600', color: '#10b981', ring: 'text-emerald-400' },
-  { id: 'TH', name: 'Tuấn Hùng', role: 'Telesales', gradient: 'from-orange-400 to-orange-600', color: '#f97316', ring: 'text-orange-400' },
-  { id: 'DD', name: 'Danny Do', role: 'Manager', gradient: 'from-gold to-goldDark', color: '#D4A84B', ring: 'text-gold' },
-];
+      const kpiConfig = [
+        { key: 'calls', label: 'Cuộc gọi', icon: 'fa-phone', color: '#3b82f6', colorName: 'blue' },
+        { key: 'contacts', label: 'Liên hệ mới', icon: 'fa-user-plus', color: '#8b5cf6', colorName: 'violet' },
+        { key: 'appointments', label: 'Lịch hẹn', icon: 'fa-calendar-check', color: '#10b981', colorName: 'emerald' },
+        { key: 'revenue', label: 'Doanh thu', icon: 'fa-dollar-sign', color: '#f59e0b', colorName: 'amber' },
+        { key: 'conversion', label: 'Tỉ lệ chuyển đổi', icon: 'fa-chart-pie', color: '#ef4444', colorName: 'red' },
+      ];
 
-const kpiConfig = [
-  { key: 'calls', label: 'Cuộc gọi', icon: 'fa-phone', color: '#3b82f6', colorName: 'blue' },
-  { key: 'contacts', label: 'Liên hệ mới', icon: 'fa-user-plus', color: '#8b5cf6', colorName: 'violet' },
-  { key: 'appointments', label: 'Lịch hẹn', icon: 'fa-calendar-check', color: '#10b981', colorName: 'emerald' },
-  { key: 'revenue', label: 'Doanh thu', icon: 'fa-dollar-sign', color: '#f59e0b', colorName: 'amber' },
-  { key: 'conversion', label: 'Tỉ lệ chuyển đổi', icon: 'fa-chart-pie', color: '#ef4444', colorName: 'red' },
-];
+      const sampleData = {
+        today: {
+          TN: {
+            calls: [45, 50],
+            contacts: [12, 15],
+            appointments: [4, 5],
+            revenue: [8500000, 10000000],
+            conversion: [28, 35],
+            trend: [5, -2, 8, 3, -1],
+            sparkBars: [
+              [30, 45, 50],
+              [8, 10, 12],
+              [2, 3, 4],
+              [5000000, 7000000, 8500000],
+              [20, 25, 28],
+            ],
+          },
+          HM: {
+            calls: [38, 50],
+            contacts: [10, 15],
+            appointments: [3, 5],
+            revenue: [6200000, 10000000],
+            conversion: [22, 35],
+            trend: [3, 5, -1, 2, 4],
+            sparkBars: [
+              [25, 30, 38],
+              [6, 8, 10],
+              [1, 2, 3],
+              [4000000, 5500000, 6200000],
+              [18, 20, 22],
+            ],
+          },
+          VT: {
+            calls: [52, 50],
+            contacts: [14, 15],
+            appointments: [5, 5],
+            revenue: [11000000, 10000000],
+            conversion: [32, 35],
+            trend: [8, 3, 6, 10, -2],
+            sparkBars: [
+              [40, 48, 52],
+              [10, 12, 14],
+              [3, 4, 5],
+              [8000000, 9500000, 11000000],
+              [26, 30, 32],
+            ],
+          },
+          KL: {
+            calls: [30, 50],
+            contacts: [8, 15],
+            appointments: [2, 5],
+            revenue: [4500000, 10000000],
+            conversion: [18, 35],
+            trend: [-3, -5, 2, -4, 1],
+            sparkBars: [
+              [20, 25, 30],
+              [5, 6, 8],
+              [1, 1, 2],
+              [3000000, 3800000, 4500000],
+              [15, 16, 18],
+            ],
+          },
+          TH: {
+            calls: [42, 50],
+            contacts: [11, 15],
+            appointments: [4, 5],
+            revenue: [7800000, 10000000],
+            conversion: [25, 35],
+            trend: [2, 4, -2, 6, 3],
+            sparkBars: [
+              [30, 36, 42],
+              [7, 9, 11],
+              [2, 3, 4],
+              [5500000, 6800000, 7800000],
+              [20, 23, 25],
+            ],
+          },
+          DD: {
+            calls: [20, 20],
+            contacts: [18, 20],
+            appointments: [8, 10],
+            revenue: [25000000, 30000000],
+            conversion: [45, 50],
+            trend: [10, 5, 8, 12, 3],
+            sparkBars: [
+              [15, 18, 20],
+              [14, 16, 18],
+              [5, 7, 8],
+              [18000000, 22000000, 25000000],
+              [38, 42, 45],
+            ],
+          },
+        },
+        week: {
+          TN: {
+            calls: [210, 250],
+            contacts: [55, 75],
+            appointments: [18, 25],
+            revenue: [42000000, 50000000],
+            conversion: [30, 35],
+            trend: [4, -1, 6, 2, 3],
+            sparkBars: [
+              [150, 180, 210],
+              [35, 45, 55],
+              [10, 14, 18],
+              [28000000, 35000000, 42000000],
+              [24, 28, 30],
+            ],
+          },
+          HM: {
+            calls: [185, 250],
+            contacts: [48, 75],
+            appointments: [14, 25],
+            revenue: [35000000, 50000000],
+            conversion: [24, 35],
+            trend: [2, 3, -2, 1, 5],
+            sparkBars: [
+              [120, 150, 185],
+              [30, 38, 48],
+              [8, 11, 14],
+              [22000000, 28000000, 35000000],
+              [20, 22, 24],
+            ],
+          },
+          VT: {
+            calls: [260, 250],
+            contacts: [68, 75],
+            appointments: [22, 25],
+            revenue: [55000000, 50000000],
+            conversion: [34, 35],
+            trend: [7, 4, 5, 9, -1],
+            sparkBars: [
+              [180, 220, 260],
+              [45, 58, 68],
+              [14, 18, 22],
+              [38000000, 48000000, 55000000],
+              [28, 32, 34],
+            ],
+          },
+          KL: {
+            calls: [150, 250],
+            contacts: [35, 75],
+            appointments: [10, 25],
+            revenue: [22000000, 50000000],
+            conversion: [16, 35],
+            trend: [-4, -2, 3, -5, 2],
+            sparkBars: [
+              [100, 120, 150],
+              [22, 28, 35],
+              [6, 8, 10],
+              [14000000, 18000000, 22000000],
+              [12, 14, 16],
+            ],
+          },
+          TH: {
+            calls: [220, 250],
+            contacts: [58, 75],
+            appointments: [20, 25],
+            revenue: [45000000, 50000000],
+            conversion: [28, 35],
+            trend: [3, 5, -1, 4, 2],
+            sparkBars: [
+              [160, 190, 220],
+              [38, 48, 58],
+              [12, 16, 20],
+              [30000000, 38000000, 45000000],
+              [22, 26, 28],
+            ],
+          },
+          DD: {
+            calls: [100, 100],
+            contacts: [88, 100],
+            appointments: [40, 50],
+            revenue: [120000000, 150000000],
+            conversion: [48, 50],
+            trend: [8, 6, 9, 11, 4],
+            sparkBars: [
+              [70, 85, 100],
+              [60, 75, 88],
+              [28, 34, 40],
+              [80000000, 100000000, 120000000],
+              [40, 44, 48],
+            ],
+          },
+        },
+        month: {
+          TN: {
+            calls: [850, 1000],
+            contacts: [220, 300],
+            appointments: [72, 100],
+            revenue: [180000000, 200000000],
+            conversion: [31, 35],
+            trend: [3, 0, 5, 1, 4],
+            sparkBars: [
+              [600, 720, 850],
+              [140, 180, 220],
+              [40, 56, 72],
+              [120000000, 150000000, 180000000],
+              [26, 29, 31],
+            ],
+          },
+          HM: {
+            calls: [720, 1000],
+            contacts: [190, 300],
+            appointments: [58, 100],
+            revenue: [145000000, 200000000],
+            conversion: [25, 35],
+            trend: [1, 4, -3, 2, 6],
+            sparkBars: [
+              [500, 600, 720],
+              [120, 155, 190],
+              [35, 46, 58],
+              [90000000, 118000000, 145000000],
+              [20, 23, 25],
+            ],
+          },
+          VT: {
+            calls: [1050, 1000],
+            contacts: [280, 300],
+            appointments: [90, 100],
+            revenue: [230000000, 200000000],
+            conversion: [36, 35],
+            trend: [6, 3, 7, 8, -1],
+            sparkBars: [
+              [750, 900, 1050],
+              [180, 230, 280],
+              [60, 76, 90],
+              [160000000, 195000000, 230000000],
+              [30, 34, 36],
+            ],
+          },
+          KL: {
+            calls: [580, 1000],
+            contacts: [140, 300],
+            appointments: [38, 100],
+            revenue: [95000000, 200000000],
+            conversion: [15, 35],
+            trend: [-5, -3, 1, -4, 3],
+            sparkBars: [
+              [400, 480, 580],
+              [90, 115, 140],
+              [24, 30, 38],
+              [60000000, 78000000, 95000000],
+              [12, 13, 15],
+            ],
+          },
+          TH: {
+            calls: [900, 1000],
+            contacts: [240, 300],
+            appointments: [80, 100],
+            revenue: [195000000, 200000000],
+            conversion: [29, 35],
+            trend: [4, 2, -1, 5, 3],
+            sparkBars: [
+              [650, 780, 900],
+              [160, 200, 240],
+              [52, 66, 80],
+              [130000000, 165000000, 195000000],
+              [24, 27, 29],
+            ],
+          },
+          DD: {
+            calls: [400, 400],
+            contacts: [350, 400],
+            appointments: [160, 200],
+            revenue: [500000000, 600000000],
+            conversion: [50, 50],
+            trend: [9, 7, 10, 12, 5],
+            sparkBars: [
+              [280, 340, 400],
+              [240, 300, 350],
+              [110, 136, 160],
+              [340000000, 420000000, 500000000],
+              [42, 46, 50],
+            ],
+          },
+        },
+      };
 
-const sampleData = {
-  today: {
-    TN: { calls: [45, 50], contacts: [12, 15], appointments: [4, 5], revenue: [8500000, 10000000], conversion: [28, 35], trend: [5, -2, 8, 3, -1], sparkBars: [[30,45,50],[8,10,12],[2,3,4],[5000000,7000000,8500000],[20,25,28]] },
-    HM: { calls: [38, 50], contacts: [10, 15], appointments: [3, 5], revenue: [6200000, 10000000], conversion: [22, 35], trend: [3, 5, -1, 2, 4], sparkBars: [[25,30,38],[6,8,10],[1,2,3],[4000000,5500000,6200000],[18,20,22]] },
-    VT: { calls: [52, 50], contacts: [14, 15], appointments: [5, 5], revenue: [11000000, 10000000], conversion: [32, 35], trend: [8, 3, 6, 10, -2], sparkBars: [[40,48,52],[10,12,14],[3,4,5],[8000000,9500000,11000000],[26,30,32]] },
-    KL: { calls: [30, 50], contacts: [8, 15], appointments: [2, 5], revenue: [4500000, 10000000], conversion: [18, 35], trend: [-3, -5, 2, -4, 1], sparkBars: [[20,25,30],[5,6,8],[1,1,2],[3000000,3800000,4500000],[15,16,18]] },
-    TH: { calls: [42, 50], contacts: [11, 15], appointments: [4, 5], revenue: [7800000, 10000000], conversion: [25, 35], trend: [2, 4, -2, 6, 3], sparkBars: [[30,36,42],[7,9,11],[2,3,4],[5500000,6800000,7800000],[20,23,25]] },
-    DD: { calls: [20, 20], contacts: [18, 20], appointments: [8, 10], revenue: [25000000, 30000000], conversion: [45, 50], trend: [10, 5, 8, 12, 3], sparkBars: [[15,18,20],[14,16,18],[5,7,8],[18000000,22000000,25000000],[38,42,45]] },
-  },
-  week: {
-    TN: { calls: [210, 250], contacts: [55, 75], appointments: [18, 25], revenue: [42000000, 50000000], conversion: [30, 35], trend: [4, -1, 6, 2, 3], sparkBars: [[150,180,210],[35,45,55],[10,14,18],[28000000,35000000,42000000],[24,28,30]] },
-    HM: { calls: [185, 250], contacts: [48, 75], appointments: [14, 25], revenue: [35000000, 50000000], conversion: [24, 35], trend: [2, 3, -2, 1, 5], sparkBars: [[120,150,185],[30,38,48],[8,11,14],[22000000,28000000,35000000],[20,22,24]] },
-    VT: { calls: [260, 250], contacts: [68, 75], appointments: [22, 25], revenue: [55000000, 50000000], conversion: [34, 35], trend: [7, 4, 5, 9, -1], sparkBars: [[180,220,260],[45,58,68],[14,18,22],[38000000,48000000,55000000],[28,32,34]] },
-    KL: { calls: [150, 250], contacts: [35, 75], appointments: [10, 25], revenue: [22000000, 50000000], conversion: [16, 35], trend: [-4, -2, 3, -5, 2], sparkBars: [[100,120,150],[22,28,35],[6,8,10],[14000000,18000000,22000000],[12,14,16]] },
-    TH: { calls: [220, 250], contacts: [58, 75], appointments: [20, 25], revenue: [45000000, 50000000], conversion: [28, 35], trend: [3, 5, -1, 4, 2], sparkBars: [[160,190,220],[38,48,58],[12,16,20],[30000000,38000000,45000000],[22,26,28]] },
-    DD: { calls: [100, 100], contacts: [88, 100], appointments: [40, 50], revenue: [120000000, 150000000], conversion: [48, 50], trend: [8, 6, 9, 11, 4], sparkBars: [[70,85,100],[60,75,88],[28,34,40],[80000000,100000000,120000000],[40,44,48]] },
-  },
-  month: {
-    TN: { calls: [850, 1000], contacts: [220, 300], appointments: [72, 100], revenue: [180000000, 200000000], conversion: [31, 35], trend: [3, 0, 5, 1, 4], sparkBars: [[600,720,850],[140,180,220],[40,56,72],[120000000,150000000,180000000],[26,29,31]] },
-    HM: { calls: [720, 1000], contacts: [190, 300], appointments: [58, 100], revenue: [145000000, 200000000], conversion: [25, 35], trend: [1, 4, -3, 2, 6], sparkBars: [[500,600,720],[120,155,190],[35,46,58],[90000000,118000000,145000000],[20,23,25]] },
-    VT: { calls: [1050, 1000], contacts: [280, 300], appointments: [90, 100], revenue: [230000000, 200000000], conversion: [36, 35], trend: [6, 3, 7, 8, -1], sparkBars: [[750,900,1050],[180,230,280],[60,76,90],[160000000,195000000,230000000],[30,34,36]] },
-    KL: { calls: [580, 1000], contacts: [140, 300], appointments: [38, 100], revenue: [95000000, 200000000], conversion: [15, 35], trend: [-5, -3, 1, -4, 3], sparkBars: [[400,480,580],[90,115,140],[24,30,38],[60000000,78000000,95000000],[12,13,15]] },
-    TH: { calls: [900, 1000], contacts: [240, 300], appointments: [80, 100], revenue: [195000000, 200000000], conversion: [29, 35], trend: [4, 2, -1, 5, 3], sparkBars: [[650,780,900],[160,200,240],[52,66,80],[130000000,165000000,195000000],[24,27,29]] },
-    DD: { calls: [400, 400], contacts: [350, 400], appointments: [160, 200], revenue: [500000000, 600000000], conversion: [50, 50], trend: [9, 7, 10, 12, 5], sparkBars: [[280,340,400],[240,300,350],[110,136,160],[340000000,420000000,500000000],[42,46,50]] },
-  }
-};
+      let currentTab = 'today';
+      let currentMember = 'TN';
 
-let currentTab = 'today';
-let currentMember = 'TN';
+      // ===== CLOCK =====
+      function updateClock() {
+        const now = new Date();
+        document.getElementById('clockText').textContent = now.toLocaleTimeString('vi-VN', { hour12: false });
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
 
-// ===== CLOCK =====
-function updateClock() {
-  const now = new Date();
-  document.getElementById('clockText').textContent = now.toLocaleTimeString('vi-VN', { hour12: false });
-}
-setInterval(updateClock, 1000);
-updateClock();
+      // ===== THEME =====
+      function toggleTheme() {
+        const html = document.documentElement;
+        if (html.classList.contains('dark-theme')) {
+          html.classList.remove('dark-theme', 'dark');
+          html.classList.add('light-theme');
+        } else {
+          html.classList.remove('light-theme');
+          html.classList.add('dark-theme', 'dark');
+        }
+      }
 
-// ===== THEME =====
-function toggleTheme() {
-  const html = document.documentElement;
-  if (html.classList.contains('dark-theme')) {
-    html.classList.remove('dark-theme', 'dark');
-    html.classList.add('light-theme');
-  } else {
-    html.classList.remove('light-theme');
-    html.classList.add('dark-theme', 'dark');
-  }
-}
+      // ===== MODAL =====
+      function openModal(memberId) {
+        if (memberId) currentMember = memberId;
+        const m = members.find((x) => x.id === currentMember);
+        document.getElementById('modalMemberName').textContent = m.name;
+        document.getElementById('modalSubtitle').textContent = m.role + ' · Online';
+        document.getElementById('modalOverlay').classList.add('active');
+        renderKPIs();
+        renderLeaderboard();
+      }
+      function closeModal() {
+        document.getElementById('modalOverlay').classList.remove('active');
+      }
+      function handleOverlayClick(e) {
+        if (e.target === document.getElementById('modalOverlay')) closeModal();
+      }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+      });
 
-// ===== MODAL =====
-function openModal(memberId) {
-  if (memberId) currentMember = memberId;
-  const m = members.find(x => x.id === currentMember);
-  document.getElementById('modalMemberName').textContent = m.name;
-  document.getElementById('modalSubtitle').textContent = m.role + ' · Online';
-  document.getElementById('modalOverlay').classList.add('active');
-  renderKPIs();
-  renderLeaderboard();
-}
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('active');
-}
-function handleOverlayClick(e) {
-  if (e.target === document.getElementById('modalOverlay')) closeModal();
-}
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+      // ===== TAB SWITCH =====
+      function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-pill').forEach((p) => {
+          p.classList.toggle('active', p.dataset.tab === tab);
+        });
+        const labels = { today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này' };
+        document.getElementById('leaderboardPeriod').textContent = labels[tab];
+        renderKPIs();
+        renderLeaderboard();
+      }
 
-// ===== TAB SWITCH =====
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab-pill').forEach(p => {
-    p.classList.toggle('active', p.dataset.tab === tab);
-  });
-  const labels = { today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này' };
-  document.getElementById('leaderboardPeriod').textContent = labels[tab];
-  renderKPIs();
-  renderLeaderboard();
-}
+      // ===== HELPER =====
+      function formatNumber(n) {
+        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+        return n.toString();
+      }
 
-// ===== HELPER =====
-function formatNumber(n) {
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
-  return n.toString();
-}
+      function getStatusBadge(pct) {
+        if (pct >= 70) return { text: 'Tốt', cls: 'badge-good' };
+        if (pct >= 50) return { text: 'TB', cls: 'badge-mid' };
+        return { text: 'Cần cải thiện', cls: 'badge-low' };
+      }
 
-function getStatusBadge(pct) {
-  if (pct >= 70) return { text: 'Tốt', cls: 'badge-good' };
-  if (pct >= 50) return { text: 'TB', cls: 'badge-mid' };
-  return { text: 'Cần cải thiện', cls: 'badge-low' };
-}
+      function isDark() {
+        return document.documentElement.classList.contains('dark-theme');
+      }
 
-function isDark() {
-  return document.documentElement.classList.contains('dark-theme');
-}
+      // ===== RENDER KPIs =====
+      function renderKPIs() {
+        const data = sampleData[currentTab][currentMember];
+        const grid1 = document.getElementById('kpiGrid');
+        const grid2 = document.getElementById('kpiGridRow2');
+        grid1.innerHTML = '';
+        grid2.innerHTML = '';
 
-// ===== RENDER KPIs =====
-function renderKPIs() {
-  const data = sampleData[currentTab][currentMember];
-  const grid1 = document.getElementById('kpiGrid');
-  const grid2 = document.getElementById('kpiGridRow2');
-  grid1.innerHTML = '';
-  grid2.innerHTML = '';
+        kpiConfig.forEach((kpi, i) => {
+          const [current, target] = data[kpi.key];
+          const pct = Math.min(Math.round((current / target) * 100), 100);
+          const status = getStatusBadge(pct);
+          const trendVal = data.trend[i];
+          const trendUp = trendVal >= 0;
+          const sparkData = data.sparkBars[i];
+          const sparkMax = Math.max(...sparkData);
 
-  kpiConfig.forEach((kpi, i) => {
-    const [current, target] = data[kpi.key];
-    const pct = Math.min(Math.round((current / target) * 100), 100);
-    const status = getStatusBadge(pct);
-    const trendVal = data.trend[i];
-    const trendUp = trendVal >= 0;
-    const sparkData = data.sparkBars[i];
-    const sparkMax = Math.max(...sparkData);
+          const radius = 40;
+          const circumference = 2 * Math.PI * radius;
+          const dashArray = (pct / 100) * circumference;
 
-    const radius = 40;
-    const circumference = 2 * Math.PI * radius;
-    const dashArray = (pct / 100) * circumference;
-
-    const card = document.createElement('div');
-    card.className = 'glass-card rounded-xl p-3 flex flex-col items-center';
-    card.innerHTML = `
+          const card = document.createElement('div');
+          card.className = 'glass-card rounded-xl p-3 flex flex-col items-center';
+          card.innerHTML = `
       <!-- SVG Donut -->
       <div class="relative w-[100px] h-[100px] mb-2">
         <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
@@ -454,11 +905,13 @@ function renderKPIs() {
       <div class="w-full rounded-lg p-2.5" style="background: ${isDark() ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'};">
         <!-- Sparkline bars -->
         <div class="flex items-end gap-0.5 h-[18px] mb-1.5">
-          ${sparkData.map((v, si) => {
-            const h = Math.max(4, (v / sparkMax) * 18);
-            const opacity = 0.3 + (si / (sparkData.length - 1)) * 0.7;
-            return `<div class="spark-bar" style="height:${h}px; background:${kpi.color}; opacity:${opacity}; width:8px;"></div>`;
-          }).join('')}
+          ${sparkData
+            .map((v, si) => {
+              const h = Math.max(4, (v / sparkMax) * 18);
+              const opacity = 0.3 + (si / (sparkData.length - 1)) * 0.7;
+              return `<div class="spark-bar" style="height:${h}px; background:${kpi.color}; opacity:${opacity}; width:8px;"></div>`;
+            })
+            .join('')}
         </div>
         <!-- Label -->
         <div class="text-xs font-bold dark:text-white text-forced-dark mb-1">${kpi.label}</div>
@@ -476,49 +929,49 @@ function renderKPIs() {
       </div>
     `;
 
-    if (i < 3) grid1.appendChild(card);
-    else grid2.appendChild(card);
-  });
-}
+          if (i < 3) grid1.appendChild(card);
+          else grid2.appendChild(card);
+        });
+      }
 
-// ===== RENDER LEADERBOARD =====
-function renderLeaderboard() {
-  const tabData = sampleData[currentTab];
-  // Calculate total score for each member
-  const scores = members.map(m => {
-    const d = tabData[m.id];
-    const pcts = kpiConfig.map((kpi, i) => {
-      const [cur, tar] = d[kpi.key];
-      return Math.min((cur / tar) * 100, 100);
-    });
-    const avg = pcts.reduce((a, b) => a + b, 0) / pcts.length;
-    return { ...m, avg: Math.round(avg), pcts };
-  });
-  scores.sort((a, b) => b.avg - a.avg);
+      // ===== RENDER LEADERBOARD =====
+      function renderLeaderboard() {
+        const tabData = sampleData[currentTab];
+        // Calculate total score for each member
+        const scores = members.map((m) => {
+          const d = tabData[m.id];
+          const pcts = kpiConfig.map((kpi, i) => {
+            const [cur, tar] = d[kpi.key];
+            return Math.min((cur / tar) * 100, 100);
+          });
+          const avg = pcts.reduce((a, b) => a + b, 0) / pcts.length;
+          return { ...m, avg: Math.round(avg), pcts };
+        });
+        scores.sort((a, b) => b.avg - a.avg);
 
-  const podiumContainer = document.getElementById('podiumContainer');
-  const rankRows = document.getElementById('rankRows');
-  podiumContainer.innerHTML = '';
-  rankRows.innerHTML = '';
+        const podiumContainer = document.getElementById('podiumContainer');
+        const rankRows = document.getElementById('rankRows');
+        podiumContainer.innerHTML = '';
+        rankRows.innerHTML = '';
 
-  // Podium order: [1] center, [0] left (#2), [2] right (#3)
-  const podiumOrder = [1, 0, 2]; // display positions: left=#2, center=#1, right=#3
-  const podiumHeights = [130, 170, 100];
-  const podiumRanks = [2, 1, 3];
-  const medals = ['🥈', '🥇', '🥉'];
+        // Podium order: [1] center, [0] left (#2), [2] right (#3)
+        const podiumOrder = [1, 0, 2]; // display positions: left=#2, center=#1, right=#3
+        const podiumHeights = [130, 170, 100];
+        const podiumRanks = [2, 1, 3];
+        const medals = ['🥈', '🥇', '🥉'];
 
-  podiumOrder.forEach((displayIdx, posIdx) => {
-    const s = scores[displayIdx];
-    const height = podiumHeights[posIdx];
-    const rank = podiumRanks[posIdx];
-    const delay = posIdx * 0.2;
-    const isFirst = rank === 1;
+        podiumOrder.forEach((displayIdx, posIdx) => {
+          const s = scores[displayIdx];
+          const height = podiumHeights[posIdx];
+          const rank = podiumRanks[posIdx];
+          const delay = posIdx * 0.2;
+          const isFirst = rank === 1;
 
-    const col = document.createElement('div');
-    col.className = 'flex flex-col items-center podium-animate';
-    col.style.animationDelay = `${delay}s`;
+          const col = document.createElement('div');
+          col.className = 'flex flex-col items-center podium-animate';
+          col.style.animationDelay = `${delay}s`;
 
-    col.innerHTML = `
+          col.innerHTML = `
       <!-- Avatar -->
       <div class="relative mb-2">
         <div class="w-10 h-10 rounded-full bg-gradient-to-br ${s.gradient} flex items-center justify-center text-white text-sm font-bold ${isFirst ? 'avatar-glow' : ''} cursor-pointer" onclick="event.stopPropagation(); openModal('${s.id}')">
@@ -530,11 +983,15 @@ function renderLeaderboard() {
       <span class="text-[10px] text-gold font-bold mb-2">${s.avg}%</span>
       <!-- Mini metric bars -->
       <div class="flex gap-0.5 mb-2">
-        ${s.pcts.map((p, mi) => `
+        ${s.pcts
+          .map(
+            (p, mi) => `
           <div class="flex flex-col items-center gap-0.5" title="${kpiConfig[mi].label}: ${Math.round(p)}%">
             <div class="w-[6px] rounded-sm" style="height:${Math.max(4, p * 0.3)}px; background:${kpiConfig[mi].color};"></div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
       <!-- Podium block -->
       <div class="w-20 rounded-t-lg flex items-end justify-center relative overflow-hidden" style="height:${height}px; background: linear-gradient(to top, ${s.color}22, ${s.color}08);">
@@ -542,18 +999,18 @@ function renderLeaderboard() {
         <span class="text-2xl font-black opacity-10 mb-2">${rank}</span>
       </div>
     `;
-    podiumContainer.appendChild(col);
-  });
+          podiumContainer.appendChild(col);
+        });
 
-  // Rows 4-6
-  for (let i = 3; i < Math.min(6, scores.length); i++) {
-    const s = scores[i];
-    const row = document.createElement('div');
-    row.className = 'glass-card rounded-lg px-3 py-2.5 flex items-center gap-3 podium-animate cursor-pointer';
-    row.style.animationDelay = `${0.6 + (i - 3) * 0.15}s`;
-    row.onclick = () => openModal(s.id);
+        // Rows 4-6
+        for (let i = 3; i < Math.min(6, scores.length); i++) {
+          const s = scores[i];
+          const row = document.createElement('div');
+          row.className = 'glass-card rounded-lg px-3 py-2.5 flex items-center gap-3 podium-animate cursor-pointer';
+          row.style.animationDelay = `${0.6 + (i - 3) * 0.15}s`;
+          row.onclick = () => openModal(s.id);
 
-    row.innerHTML = `
+          row.innerHTML = `
       <span class="text-xs font-bold opacity-40 w-5 text-center">${i + 1}</span>
       <div class="w-8 h-8 rounded-full bg-gradient-to-br ${s.gradient} flex items-center justify-center text-white text-[11px] font-bold">${s.id}</div>
       <div class="flex-1 min-w-0">
@@ -567,35 +1024,40 @@ function renderLeaderboard() {
       </div>
       <!-- Mini horizontal bars -->
       <div class="hidden sm:flex flex-col gap-[3px] w-[60px]">
-        ${s.pcts.map((p, mi) => `
+        ${s.pcts
+          .map(
+            (p, mi) => `
           <div class="h-[3px] rounded-full" style="background:${isDark() ? '#1a1a1a' : '#e5e5e5'};">
             <div class="mini-hbar" style="width:${p}%; background:${kpiConfig[mi].color};"></div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
     `;
-    rankRows.appendChild(row);
-  }
+          rankRows.appendChild(row);
+        }
 
-  // Re-trigger animations
-  setTimeout(() => {
-    document.querySelectorAll('.podium-animate').forEach(el => {
-      el.style.animation = 'none';
-      el.offsetHeight; // force reflow
-      el.style.animation = '';
-    });
-  }, 10);
-}
+        // Re-trigger animations
+        setTimeout(() => {
+          document.querySelectorAll('.podium-animate').forEach((el) => {
+            el.style.animation = 'none';
+            el.offsetHeight; // force reflow
+            el.style.animation = '';
+          });
+        }, 10);
+      }
 
-// ===== AVATAR CLICK (header bubbles) =====
-document.querySelectorAll('#avatarStack > div[class*="rounded-full"]').forEach((el, i) => {
-  if (i < members.length - 1) { // exclude the count badge
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openModal(members[i].id);
-    });
-  }
-});
-</script>
-</body>
+      // ===== AVATAR CLICK (header bubbles) =====
+      document.querySelectorAll('#avatarStack > div[class*="rounded-full"]').forEach((el, i) => {
+        if (i < members.length - 1) {
+          // exclude the count badge
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openModal(members[i].id);
+          });
+        }
+      });
+    </script>
+  </body>
 </html>

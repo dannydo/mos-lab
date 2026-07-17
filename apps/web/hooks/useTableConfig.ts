@@ -4,62 +4,22 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ColumnConfig } from '@mos-lab/shared';
 import { apiClient } from '../lib/api-client';
 import { message } from 'antd';
-import * as Icons from '@ant-design/icons';
+import {
+  AVAILABLE_ICONS,
+  getDefaultIcon,
+  renderIconHelper,
+  getDynamicLucideIcon,
+  getCustomIconComponent,
+} from '../components/IconSystem';
 
-// List of available custom icons for selection
-export const AVAILABLE_ICONS = [
-  { value: '', label: 'Mặc định (Auto)' },
-  { value: 'UserOutlined', label: 'User (Cá nhân)' },
-  { value: 'TeamOutlined', label: 'Team (Nhóm)' },
-  { value: 'PhoneOutlined', label: 'Phone (Điện thoại)' },
-  { value: 'CalendarOutlined', label: 'Calendar (Lịch hẹn)' },
-  { value: 'ClockCircleOutlined', label: 'Clock (Giờ giấc)' },
-  { value: 'ShopOutlined', label: 'Shop (Chi nhánh)' },
-  { value: 'GiftOutlined', label: 'Gift (Khuyến mãi)' },
-  { value: 'MessageOutlined', label: 'Message (Ghi chú)' },
-  { value: 'SolutionOutlined', label: 'CV/Nhân viên' },
-  { value: 'InfoCircleOutlined', label: 'Info (Trạng thái)' },
-  { value: 'StarOutlined', label: 'Star (Sao)' },
-  { value: 'TagOutlined', label: 'Tag (Nhãn)' },
-  { value: 'HeartOutlined', label: 'Heart (Yêu thích)' },
-  { value: 'SettingOutlined', label: 'Settings (Hành động)' },
-  { value: 'none', label: 'Không có icon' },
-];
-
-// Helper to determine the default icon for a column key
-export const getDefaultIcon = (key: string): string => {
-  const k = key.toLowerCase();
-  if (k.includes('index') || k === 'stt') return 'OrderedListOutlined';
-  if (k.includes('time') || k.includes('date') || k === 'bookingdatetime') return 'CalendarOutlined';
-  if (k.includes('create')) return 'ClockCircleOutlined';
-  if (k.includes('booker')) return 'UserOutlined';
-  if (k.includes('customer') || k === 'client') return 'UserOutlined';
-  if (k.includes('phone') || k === 'sđt') return 'PhoneOutlined';
-  if (k.includes('branch') || k === 'chinhanh') return 'ShopOutlined';
-  if (k.includes('group') || k === 'nhom') return 'ClusterOutlined';
-  if (k.includes('channel')) return 'ShareAltOutlined';
-  if (k.includes('promo')) return 'GiftOutlined';
-  if (k.includes('cv')) return 'SolutionOutlined';
-  if (k.includes('note') || k.includes('notes')) return 'MessageOutlined';
-  if (k.includes('status') || k.includes('trangthai')) return 'InfoCircleOutlined';
-  if (k.includes('action')) return 'SettingOutlined';
-  if (k === 'cc') return 'CustomerServiceOutlined';
-  return '';
-};
-
-// Helper to render Ant Design icon dynamically
-export const renderIconHelper = (iconName: string) => {
-  if (!iconName || iconName === 'none') return null;
-  const IconComponent = (Icons as any)[iconName];
-  return IconComponent ? React.createElement(IconComponent, { style: { marginRight: '6px' } }) : null;
-};
+export { AVAILABLE_ICONS, getDefaultIcon, renderIconHelper, getDynamicLucideIcon, getCustomIconComponent };
 
 export function useTableConfig(tableId: string, staticColumns: any[]) {
   const [loading, setLoading] = useState(true);
   const [configVisible, setConfigVisible] = useState(false);
   const [rawConfig, setRawConfig] = useState<ColumnConfig[]>([]);
   const [mergedColumns, setMergedColumns] = useState<any[]>([]);
-  
+
   // Keep reference to staticColumns to avoid re-renders and circular dependencies
   const staticColsRef = useRef(staticColumns);
   staticColsRef.current = staticColumns;
@@ -68,7 +28,7 @@ export function useTableConfig(tableId: string, staticColumns: any[]) {
   const createDefaultConfigFromStatic = useCallback((staticCols: any[]): ColumnConfig[] => {
     return staticCols.map((col) => {
       const key = (col.key || col.dataIndex) as string;
-      const titleText = typeof col.title === 'string' ? col.title : (col.key || col.dataIndex || 'Cột');
+      const titleText = typeof col.title === 'string' ? col.title : col.key || col.dataIndex || 'Cột';
       return {
         key,
         title: titleText,
@@ -109,7 +69,7 @@ export function useTableConfig(tableId: string, staticColumns: any[]) {
         });
 
         // Preserving the sorting order from saved configuration
-        const savedOrder = activeConfig.map(c => c.key);
+        const savedOrder = activeConfig.map((c) => c.key);
         mergedList.sort((a, b) => {
           const aIndex = savedOrder.indexOf(a.key);
           const bIndex = savedOrder.indexOf(b.key);
@@ -171,23 +131,26 @@ export function useTableConfig(tableId: string, staticColumns: any[]) {
   };
 
   // 5. Column resizing on-the-fly directly from table drags
-  const handleColumnResize = useCallback(async (key: string, width: number) => {
-    setRawConfig((prev) => {
-      const updated = prev.map((col) => {
-        if (col.key === key) {
-          return { ...col, width };
-        }
-        return col;
-      });
+  const handleColumnResize = useCallback(
+    async (key: string, width: number) => {
+      setRawConfig((prev) => {
+        const updated = prev.map((col) => {
+          if (col.key === key) {
+            return { ...col, width };
+          }
+          return col;
+        });
 
-      // Save to server asynchronously without blocking/loading state
-      apiClient.tableConfig.save(tableId, updated, false).catch((err) => {
-        console.error('Failed to auto-save column width:', err);
-      });
+        // Save to server asynchronously without blocking/loading state
+        apiClient.tableConfig.save(tableId, updated, false).catch((err) => {
+          console.error('Failed to auto-save column width:', err);
+        });
 
-      return updated;
-    });
-  }, [tableId]);
+        return updated;
+      });
+    },
+    [tableId]
+  );
 
   // 6. Merge rawConfig metadata with static column definitions (functions, renders, align)
   useEffect(() => {
@@ -197,7 +160,7 @@ export function useTableConfig(tableId: string, staticColumns: any[]) {
     }
 
     const configMap = new Map(rawConfig.map((col, index) => [col.key, { ...col, index }]));
-    
+
     const merged = staticColsRef.current
       .map((staticCol) => {
         const key = (staticCol.key || staticCol.dataIndex) as string;

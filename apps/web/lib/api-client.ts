@@ -1,10 +1,10 @@
 import api from './api';
-import { 
-  Customer, 
-  ListCustomersParams, 
-  ListCustomersResponse, 
+import {
+  Customer,
+  ListCustomersParams,
+  ListCustomersResponse,
   CustomerStatsResponse,
-  LoginRequest, 
+  LoginRequest,
   LoginResponse,
   Staff,
   DailyPlan,
@@ -14,7 +14,7 @@ import {
   CustomerWeeklyProgress,
   UserRole,
   ColumnConfig,
-  BulkDeleteCustomersResponse
+  BulkDeleteCustomersResponse,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -24,7 +24,12 @@ export const apiClient = {
       const response = await api.post('/auth/login', data);
       return response.data;
     },
-    google: async (data: { credential?: string; isMock?: boolean; email?: string; name?: string }): Promise<LoginResponse> => {
+    google: async (data: {
+      credential?: string;
+      isMock?: boolean;
+      email?: string;
+      name?: string;
+    }): Promise<LoginResponse> => {
       const response = await api.post('/auth/google', data);
       return response.data;
     },
@@ -35,7 +40,7 @@ export const apiClient = {
     impersonate: async (userId: number): Promise<LoginResponse> => {
       const response = await api.post('/auth/impersonate', { userId });
       return response.data;
-    }
+    },
   },
 
   customers: {
@@ -107,14 +112,28 @@ export const apiClient = {
       const response = await api.post('/customers/bulk-delete', { ids });
       return response.data;
     },
-    update: async (id: number, data: { name: string; email: string | null; gender: string | null; dob: string | null; phones: Array<{ id?: number; phone_number: string; is_disabled?: boolean; is_deleted?: boolean }> }): Promise<any> => {
+    update: async (
+      id: number,
+      data: {
+        name: string;
+        email: string | null;
+        gender: string | null;
+        dob: string | null;
+        phones: Array<{ id?: number; phone_number: string; is_disabled?: boolean; is_deleted?: boolean }>;
+      }
+    ): Promise<any> => {
       const response = await api.put(`/customers/${id}`, data);
       return response.data;
-    }
+    },
   },
 
   plans: {
-    create: async (data: { legacyUserId: number; date?: string; bucket?: string; priority?: number }): Promise<DailyPlan> => {
+    create: async (data: {
+      legacyUserId: number;
+      date?: string;
+      bucket?: string;
+      priority?: number;
+    }): Promise<DailyPlan> => {
       const response = await api.post('/plans', data);
       return response.data;
     },
@@ -137,7 +156,7 @@ export const apiClient = {
     getSuggestions: async (): Promise<any> => {
       const response = await api.get('/plans/suggest');
       return response.data;
-    }
+    },
   },
 
   calls: {
@@ -148,11 +167,16 @@ export const apiClient = {
     listByCustomer: async (customerId: number): Promise<CallLog[]> => {
       const response = await api.get(`/calls/${customerId}`);
       return response.data;
-    }
+    },
   },
 
   kpi: {
-    getSummary: async (params: { startDate: string; endDate: string; staffId?: string; role?: string }): Promise<KPISummary & { salary?: any }> => {
+    getSummary: async (params: {
+      startDate: string;
+      endDate: string;
+      staffId?: string;
+      role?: string;
+    }): Promise<KPISummary & { salary?: any }> => {
       const response = await api.get('/kpi/summary', { params });
       return response.data;
     },
@@ -175,7 +199,7 @@ export const apiClient = {
     getBookerAppointments: async (params: any): Promise<any> => {
       const response = await api.get('/kpi/booker-appointments', { params });
       return response.data;
-    }
+    },
   },
 
   nyc: {
@@ -186,7 +210,7 @@ export const apiClient = {
     updateConfig: async (configs: any): Promise<any> => {
       const response = await api.put('/nyc/config', configs);
       return response.data;
-    }
+    },
   },
 
   staff: {
@@ -209,7 +233,7 @@ export const apiClient = {
     delete: async (id: number): Promise<{ success: boolean }> => {
       const response = await api.delete(`/staff/${id}`);
       return response.data;
-    }
+    },
   },
 
   roles: {
@@ -228,7 +252,7 @@ export const apiClient = {
     delete: async (key: string): Promise<{ success: boolean }> => {
       const response = await api.delete(`/roles/${key}`);
       return response.data;
-    }
+    },
   },
 
   savedFilters: {
@@ -243,22 +267,28 @@ export const apiClient = {
     delete: async (id: number): Promise<{ success: boolean }> => {
       const response = await api.delete(`/saved-filters/${id}`);
       return response.data;
-    }
+    },
   },
 
   tableConfig: {
-    get: async (tableId: string): Promise<{ userConfig: ColumnConfig[] | null; defaultConfig: ColumnConfig[] | null }> => {
+    get: async (
+      tableId: string
+    ): Promise<{ userConfig: ColumnConfig[] | null; defaultConfig: ColumnConfig[] | null }> => {
       const response = await api.get(`/table-config/${tableId}`);
       return response.data;
     },
-    save: async (tableId: string, columns: ColumnConfig[], saveAsDefault?: boolean): Promise<{ success: boolean; message: string }> => {
+    save: async (
+      tableId: string,
+      columns: ColumnConfig[],
+      saveAsDefault?: boolean
+    ): Promise<{ success: boolean; message: string }> => {
       const response = await api.post(`/table-config/${tableId}`, { columns, saveAsDefault });
       return response.data;
     },
     reset: async (tableId: string): Promise<{ success: boolean; message: string }> => {
       const response = await api.post(`/table-config/${tableId}/reset`);
       return response.data;
-    }
+    },
   },
 
   omicall: {
@@ -278,14 +308,18 @@ export const apiClient = {
       const response = await api.get('/omicall/config');
       return response.data;
     },
-    saveConfig: async (data: { staffId: number; extension: string; phoneNumber?: string; sipPassword?: string }): Promise<any> => {
+    saveConfig: async (data: {
+      staffId: number;
+      extension: string;
+      phoneNumber?: string;
+      sipPassword?: string;
+    }): Promise<any> => {
       const response = await api.post('/omicall/config', data);
       return response.data;
     },
     deleteConfig: async (staffId: number): Promise<{ success: boolean }> => {
       const response = await api.delete(`/omicall/config/${staffId}`);
       return response.data;
-    }
-  }
+    },
+  },
 };
-

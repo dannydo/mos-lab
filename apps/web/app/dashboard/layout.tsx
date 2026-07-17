@@ -17,7 +17,7 @@ import {
   SolutionOutlined,
   ClockCircleOutlined,
   ShareAltOutlined,
-  AudioOutlined
+  AudioOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
@@ -75,25 +75,25 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
 
   // Group customer pages into a SubMenu
   const customerChildren: any[] = [];
-  
+
   if (userRole === 'admin') {
     customerChildren.push({
       key: 'customers-all',
       label: 'Tất cả KH',
-      onClick: () => router.push('/dashboard/customers?assignedStaffId=all')
+      onClick: () => router.push('/dashboard/customers?assignedStaffId=all'),
     });
   }
-  
+
   customerChildren.push(
     {
       key: 'my-customers',
       label: 'KH của tôi',
-      onClick: () => router.push('/dashboard/customers?assignedStaffId=me')
+      onClick: () => router.push('/dashboard/customers?assignedStaffId=me'),
     },
     {
       key: 'referrals',
       label: 'KH giới thiệu',
-      onClick: () => router.push('/dashboard/referrals')
+      onClick: () => router.push('/dashboard/referrals'),
     }
   );
 
@@ -101,14 +101,14 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     key: 'today',
     icon: <ClockCircleOutlined />,
     label: 'Hôm nay',
-    onClick: () => router.push('/dashboard/today')
+    onClick: () => router.push('/dashboard/today'),
   });
 
   menuItems.push({
     key: 'customers-parent',
     icon: <TeamOutlined />,
     label: 'Khách hàng',
-    children: customerChildren
+    children: customerChildren,
   });
 
   // Other menus for both roles
@@ -117,37 +117,37 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
       key: 'nyc',
       icon: <ClockCircleOutlined />,
       label: 'Chiến dịch NYC',
-      onClick: () => router.push('/dashboard/nyc')
+      onClick: () => router.push('/dashboard/nyc'),
     },
     {
       key: 'my-appointments',
       icon: <CalendarOutlined />,
       label: 'Lịch hẹn của tôi',
-      onClick: () => router.push('/dashboard/appointments')
+      onClick: () => router.push('/dashboard/appointments'),
     },
     {
       key: 'plans',
       icon: <CalendarOutlined />,
       label: 'Kế hoạch gọi',
-      onClick: () => router.push('/dashboard/plans')
+      onClick: () => router.push('/dashboard/plans'),
     },
     {
       key: 'calls',
       icon: <PhoneOutlined />,
       label: 'Lịch sử cuộc gọi',
-      onClick: () => router.push('/dashboard/calls')
+      onClick: () => router.push('/dashboard/calls'),
     },
     {
       key: 'omicall',
       icon: <AudioOutlined />,
       label: 'Cuộc gọi OmiCall (AI)',
-      onClick: () => router.push('/dashboard/omicall')
+      onClick: () => router.push('/dashboard/omicall'),
     },
     {
       key: 'kpi',
       icon: <BarChartOutlined />,
       label: 'KPI hiệu suất',
-      onClick: () => router.push('/dashboard/kpi')
+      onClick: () => router.push('/dashboard/kpi'),
     }
   );
 
@@ -157,7 +157,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
       key: 'staff',
       icon: <SolutionOutlined />,
       label: 'Nhân sự (HR)',
-      onClick: () => router.push('/dashboard/staff')
+      onClick: () => router.push('/dashboard/staff'),
     });
   }
 
@@ -172,7 +172,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
       style={{
         background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
         paddingTop: '8px',
-        borderRight: 0
+        borderRight: 0,
       }}
       className="antd-custom-menu"
     />
@@ -190,11 +190,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const res = await api.get('/staff');
       const list = res.data || [];
       const now = dayjs();
-      
+
       const filtered = list.filter((m: any) => {
         const isUserActive = m.isActive === true || m.isActive === 1 || m.isActive === '1';
         const isOnline = !!(m.lastActiveAt && now.diff(dayjs(m.lastActiveAt), 'minute') < 5);
-        
+
         const storedUserStr = typeof window !== 'undefined' ? localStorage.getItem('mos_user') : null;
         let currentUserId = '';
         if (storedUserStr) {
@@ -204,29 +204,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
         return isUserActive && isOnline && m.id !== currentUserId;
       });
-      
+
       const mapped = filtered.map((m: any) => {
         const initials = m.displayName
-          ? m.displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+          ? m.displayName
+              .split(' ')
+              .map((n: string) => n[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase()
           : m.username?.slice(0, 2).toUpperCase() || '??';
-        
+
         const memberColorMap: Record<string, string> = {
           TN: 'linear-gradient(135deg, #EC4899, #DB2777)',
           HM: 'linear-gradient(135deg, #A855F7, #9333EA)',
           VT: 'linear-gradient(135deg, #06B6D4, #0891B2)',
           KL: 'linear-gradient(135deg, #10B981, #059669)',
           TH: 'linear-gradient(135deg, #F97316, #EA580C)',
-          DD: 'linear-gradient(135deg, #D4A84B, #B8902F)'
+          DD: 'linear-gradient(135deg, #D4A84B, #B8902F)',
         };
-        
+
         return {
           id: m.id,
           initials: initials,
           name: m.displayName || m.username,
-          color: memberColorMap[initials] || 'linear-gradient(135deg, #6B7280, #4B5563)'
+          color: memberColorMap[initials] || 'linear-gradient(135deg, #6B7280, #4B5563)',
         };
       });
-      
+
       setOnlineMembers(mapped);
     } catch (err) {
       console.error('Fetch online staff error:', err);
@@ -301,7 +306,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (loading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center" style={{ background: token.colorBgLayout, color: token.colorText }}>
+      <div
+        className="flex h-screen w-screen items-center justify-center"
+        style={{ background: token.colorBgLayout, color: token.colorText }}
+      >
         Tải thông tin phiên đăng nhập...
       </div>
     );
@@ -312,15 +320,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {
         key: 'profile',
         label: `Tài khoản: ${user?.displayName}`,
-        disabled: true
+        disabled: true,
       },
       {
         key: 'role',
         label: `Vai trò: ${user?.role?.toUpperCase()}`,
-        disabled: true
+        disabled: true,
       },
       {
-        type: 'divider' as const
+        type: 'divider' as const,
       },
       {
         key: 'telesales_dashboard',
@@ -329,241 +337,268 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         onClick: () => {
           setSelectedMemberId('DD');
           setIsDashboardVisible(true);
-        }
+        },
       },
       {
-        type: 'divider' as const
+        type: 'divider' as const,
       },
       {
         key: 'logout',
         danger: true,
         icon: <LogoutOutlined />,
         label: 'Đăng xuất',
-        onClick: handleLogout
-      }
-    ]
+        onClick: handleLogout,
+      },
+    ],
   };
 
   return (
     <OmiCallProvider>
       <Layout style={{ minHeight: '100vh' }}>
-      <Sider 
-        trigger={null} 
-        collapsible 
-        collapsed={collapsed}
-        style={{
-          background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
-          borderRight: `1px solid ${token.colorBorderSecondary}`
-        }}
-      >
-        <div 
-          className="flex items-center justify-center"
+        <Sider
+          trigger={null}
+          collapsible
+          collapsed={collapsed}
           style={{
-            height: '64px',
             background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
-            color: token.colorPrimary,
-            fontSize: collapsed ? '16px' : '18px',
-            fontWeight: 'bold',
-            letterSpacing: '1px'
+            borderRight: `1px solid ${token.colorBorderSecondary}`,
           }}
         >
-          {collapsed ? 'WL' : 'WINGS LASHES'}
-        </div>
-        <Suspense fallback={null}>
-          <SidebarMenu themeMode={themeMode} token={token} userRole={user?.role} />
-        </Suspense>
-      </Sider>
-
-      <div className="sidebar-toggle-container">
-        <Button
-          onClick={toggleSidebar}
-          icon={collapsed ? <RightOutlined style={{ fontSize: '10px' }} /> : <LeftOutlined style={{ fontSize: '10px' }} />}
-          className="sidebar-toggle-btn"
-          style={{
-            position: 'absolute',
-            top: '72px',
-            left: collapsed ? '68px' : '188px',
-            width: '24px',
-            height: '24px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 0,
-            background: themeMode === 'dark' ? '#141414' : '#ffffff',
-            border: `1px solid ${themeMode === 'dark' ? '#303030' : '#d9d9d9'}`,
-            color: '#D4A84B',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-            cursor: 'pointer',
-            transition: 'left 0.2s ease, opacity 0.3s ease, background 0.3s',
-            zIndex: 1010,
-            opacity: 0,
-            pointerEvents: 'auto'
-          }}
-        />
-      </div>
-      
-      <Layout style={{ background: token.colorBgLayout }}>
-        <Header 
-          style={{ 
-            padding: '0 24px', 
-            background: token.colorBgContainer, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'flex-end',
-            borderBottom: `1px solid ${token.colorBorderSecondary}`
-          }}
-        >
-          
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            {isImpersonating && (
-              <Tag 
-                color="warning" 
-                style={{ 
-                  marginRight: '16px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '8px', 
-                  padding: '4px 12px',
-                  borderRadius: '6px',
-                  border: '1px solid #D4A84B',
-                  background: themeMode === 'dark' ? '#2b2111' : '#fffbe6'
-                }}
-              >
-                <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#d46b08', fontSize: '13px' }}>
-                  Đang giả lập: <strong>{user?.displayName}</strong>
-                </span>
-                <Button 
-                  type="primary" 
-                  danger 
-                  size="small" 
-                  onClick={handleExitImpersonation}
-                  style={{ height: '22px', display: 'flex', alignItems: 'center', fontSize: '11px', padding: '0 8px' }}
-                >
-                  Thoát
-                </Button>
-              </Tag>
-            )}
-            {/* Online User Avatar Bubbles Stack */}
-            {onlineMembers.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', marginRight: '16px' }} className="flex-shrink-0">
-                {onlineMembers.map((m, idx) => (
-                  <div 
-                    key={m.id}
-                    onClick={() => {
-                      setSelectedMemberId(m.initials);
-                      setIsDashboardVisible(true);
-                    }}
-                    className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 cursor-pointer hover:scale-110 hover:z-30 transition-all shadow-sm avatar-breath shrink-0 flex-shrink-0 select-none"
-                    style={{ background: m.color, zIndex: 20 - idx, marginLeft: idx > 0 ? '-10px' : '0', borderColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}
-                    title={m.name}
-                  >
-                    {m.initials}
-                    <span 
-                      className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 flex items-center justify-center"
-                      style={{ borderColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}
-                    >
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <Button 
-              type="text" 
-              icon={themeMode === 'dark' ? <SunOutlined style={{ color: '#FAAD14' }} /> : <MoonOutlined style={{ color: '#1890ff' }} />} 
-              onClick={toggleTheme}
-              style={{ 
-                fontSize: '16px', 
-                marginRight: '16px',
-                color: token.colorText,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            />
-            <Dropdown menu={userMenu} placement="bottomRight" arrow>
-              <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                <Avatar src={user?.avatarUrl || undefined} icon={<UserOutlined />} style={{ backgroundColor: token.colorPrimary, color: '#000' }} />
-              </div>
-            </Dropdown>
+          <div
+            className="flex items-center justify-center"
+            style={{
+              height: '64px',
+              background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
+              borderBottom: `1px solid ${token.colorBorderSecondary}`,
+              color: token.colorPrimary,
+              fontSize: collapsed ? '16px' : '18px',
+              fontWeight: 'bold',
+              letterSpacing: '1px',
+            }}
+          >
+            {collapsed ? 'WL' : 'WINGS LASHES'}
           </div>
-        </Header>
-        
-        <Content
-          style={{
-            margin: '24px',
-            padding: '24px',
-            background: token.colorBgContainer,
-            borderRadius: '8px',
-            minHeight: 280,
-            border: `1px solid ${token.colorBorderSecondary}`,
-            overflow: 'initial',
-            color: token.colorText
-          }}
-        >
-          {children}
-        </Content>
-      </Layout>
+          <Suspense fallback={null}>
+            <SidebarMenu themeMode={themeMode} token={token} userRole={user?.role} />
+          </Suspense>
+        </Sider>
 
-      <TelesalesDashboardModal 
-        visible={isDashboardVisible} 
-        onClose={() => setIsDashboardVisible(false)} 
-        initialMemberId={selectedMemberId} 
-      />
+        <div className="sidebar-toggle-container">
+          <Button
+            onClick={toggleSidebar}
+            icon={
+              collapsed ? <RightOutlined style={{ fontSize: '10px' }} /> : <LeftOutlined style={{ fontSize: '10px' }} />
+            }
+            className="sidebar-toggle-btn"
+            style={{
+              position: 'absolute',
+              top: '72px',
+              left: collapsed ? '68px' : '188px',
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              background: themeMode === 'dark' ? '#141414' : '#ffffff',
+              border: `1px solid ${themeMode === 'dark' ? '#303030' : '#d9d9d9'}`,
+              color: '#D4A84B',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+              cursor: 'pointer',
+              transition: 'left 0.2s ease, opacity 0.3s ease, background 0.3s',
+              zIndex: 1010,
+              opacity: 0,
+              pointerEvents: 'auto',
+            }}
+          />
+        </div>
 
-      <style jsx global>{`
-        /* Override Ant Design dark sidebar menu hover/select colors */
-        .antd-custom-menu .ant-menu-item-selected {
-          background-color: #D4A84B !important;
-        }
-        .antd-custom-menu .ant-menu-item-selected .ant-menu-title-content,
-        .antd-custom-menu .ant-menu-item-selected .anticon {
-          color: #000000 !important;
-        }
-        
-        /* Keep black color on selected item hover */
-        .antd-custom-menu .ant-menu-item-selected:hover,
-        .antd-custom-menu .ant-menu-item-selected:hover .ant-menu-title-content,
-        .antd-custom-menu .ant-menu-item-selected:hover .anticon {
-          color: #000000 !important;
-          background-color: #D4A84B !important;
-        }
+        <Layout style={{ background: token.colorBgLayout }}>
+          <Header
+            style={{
+              padding: '0 24px',
+              background: token.colorBgContainer,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              borderBottom: `1px solid ${token.colorBorderSecondary}`,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {isImpersonating && (
+                <Tag
+                  color="warning"
+                  style={{
+                    marginRight: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #D4A84B',
+                    background: themeMode === 'dark' ? '#2b2111' : '#fffbe6',
+                  }}
+                >
+                  <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#d46b08', fontSize: '13px' }}>
+                    Đang giả lập: <strong>{user?.displayName}</strong>
+                  </span>
+                  <Button
+                    type="primary"
+                    danger
+                    size="small"
+                    onClick={handleExitImpersonation}
+                    style={{
+                      height: '22px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '11px',
+                      padding: '0 8px',
+                    }}
+                  >
+                    Thoát
+                  </Button>
+                </Tag>
+              )}
+              {/* Online User Avatar Bubbles Stack */}
+              {onlineMembers.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', marginRight: '16px' }} className="flex-shrink-0">
+                  {onlineMembers.map((m, idx) => (
+                    <div
+                      key={m.id}
+                      onClick={() => {
+                        setSelectedMemberId(m.initials);
+                        setIsDashboardVisible(true);
+                      }}
+                      className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 cursor-pointer hover:scale-110 hover:z-30 transition-all shadow-sm avatar-breath shrink-0 flex-shrink-0 select-none"
+                      style={{
+                        background: m.color,
+                        zIndex: 20 - idx,
+                        marginLeft: idx > 0 ? '-10px' : '0',
+                        borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
+                      }}
+                      title={m.name}
+                    >
+                      {m.initials}
+                      <span
+                        className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 flex items-center justify-center"
+                        style={{ borderColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}
+                      >
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-        /* Hover styles for normal items */
-        .antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover {
-          background-color: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : 'rgba(212, 168, 75, 0.08)'} !important;
-        }
-        .antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover .ant-menu-title-content,
-        .antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover .anticon {
-          color: #D4A84B !important;
-        }
+              <Button
+                type="text"
+                icon={
+                  themeMode === 'dark' ? (
+                    <SunOutlined style={{ color: '#FAAD14' }} />
+                  ) : (
+                    <MoonOutlined style={{ color: '#1890ff' }} />
+                  )
+                }
+                onClick={toggleTheme}
+                style={{
+                  fontSize: '16px',
+                  marginRight: '16px',
+                  color: token.colorText,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              />
+              <Dropdown menu={userMenu} placement="bottomRight" arrow>
+                <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                  <Avatar
+                    src={user?.avatarUrl || undefined}
+                    icon={<UserOutlined />}
+                    style={{ backgroundColor: token.colorPrimary, color: '#000' }}
+                  />
+                </div>
+              </Dropdown>
+            </div>
+          </Header>
 
-        /* Show toggle button on sidebar hover */
-        .ant-layout-sider:hover + .sidebar-toggle-container .sidebar-toggle-btn,
-        .sidebar-toggle-container:hover .sidebar-toggle-btn {
-          opacity: 1 !important;
-        }
+          <Content
+            style={{
+              margin: '24px',
+              padding: '24px',
+              background: token.colorBgContainer,
+              borderRadius: '8px',
+              minHeight: 280,
+              border: `1px solid ${token.colorBorderSecondary}`,
+              overflow: 'initial',
+              color: token.colorText,
+            }}
+          >
+            {children}
+          </Content>
+        </Layout>
 
-        /* Hide OmiCall LiveTalk chat widget and its warning alerts */
-        #omi_nvd,
-        #omiLiveTalk,
-        [id^="omi_"],
-        [class*="omi-lt-"] {
-          display: none !important;
-        }
+        <TelesalesDashboardModal
+          visible={isDashboardVisible}
+          onClose={() => setIsDashboardVisible(false)}
+          initialMemberId={selectedMemberId}
+        />
 
-        /* Avatar gentle breathing animation */
-        @keyframes avatarBreath {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        .avatar-breath {
-          animation: avatarBreath 3s infinite ease-in-out;
-        }
-      `}</style>
+        <style jsx global>{`
+          /* Override Ant Design dark sidebar menu hover/select colors */
+          .antd-custom-menu .ant-menu-item-selected {
+            background-color: #d4a84b !important;
+          }
+          .antd-custom-menu .ant-menu-item-selected .ant-menu-title-content,
+          .antd-custom-menu .ant-menu-item-selected .anticon {
+            color: #000000 !important;
+          }
+
+          /* Keep black color on selected item hover */
+          .antd-custom-menu .ant-menu-item-selected:hover,
+          .antd-custom-menu .ant-menu-item-selected:hover .ant-menu-title-content,
+          .antd-custom-menu .ant-menu-item-selected:hover .anticon {
+            color: #000000 !important;
+            background-color: #d4a84b !important;
+          }
+
+          /* Hover styles for normal items */
+          .antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover {
+            background-color: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : 'rgba(212, 168, 75, 0.08)'} !important;
+          }
+          .antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover .ant-menu-title-content,
+          .antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover .anticon {
+            color: #d4a84b !important;
+          }
+
+          /* Show toggle button on sidebar hover */
+          .ant-layout-sider:hover + .sidebar-toggle-container .sidebar-toggle-btn,
+          .sidebar-toggle-container:hover .sidebar-toggle-btn {
+            opacity: 1 !important;
+          }
+
+          /* Hide OmiCall LiveTalk chat widget and its warning alerts */
+          #omi_nvd,
+          #omiLiveTalk,
+          [id^='omi_'],
+          [class*='omi-lt-'] {
+            display: none !important;
+          }
+
+          /* Avatar gentle breathing animation */
+          @keyframes avatarBreath {
+            0%,
+            100% {
+              transform: scale(1);
+            }
+            50% {
+              transform: scale(1.05);
+            }
+          }
+          .avatar-breath {
+            animation: avatarBreath 3s infinite ease-in-out;
+          }
+        `}</style>
       </Layout>
       <OmiCallWidget />
     </OmiCallProvider>

@@ -1,21 +1,36 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Drawer, List, Checkbox, Input, Button, Space, Divider, Tooltip, theme, InputNumber, Alert, Select } from 'antd';
-import { 
-  ArrowUpOutlined, 
-  ArrowDownOutlined, 
-  EyeOutlined, 
-  EyeInvisibleOutlined, 
-  UndoOutlined, 
+import {
+  Drawer,
+  List,
+  Checkbox,
+  Input,
+  Button,
+  Space,
+  Divider,
+  Tooltip,
+  theme,
+  InputNumber,
+  Alert,
+  Select,
+} from 'antd';
+import {
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
+  UndoOutlined,
   SaveOutlined,
   SettingOutlined,
   HolderOutlined,
-  SearchOutlined
+  SearchOutlined,
 } from '@ant-design/icons';
 import { ColumnConfig } from '@mos-lab/shared';
 import { AVAILABLE_ICONS, getDefaultIcon, renderIconHelper } from '../hooks/useTableConfig';
-import { IconPickerModal } from './IconPickerModal';
+import dynamic from 'next/dynamic';
+
+const IconPickerModal = dynamic(() => import('./IconPickerModal').then((m) => m.IconPickerModal), { ssr: false });
 
 interface TableConfigDrawerProps {
   visible: boolean;
@@ -123,7 +138,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
     const draggedItem = nextCols[draggedIndex];
     nextCols.splice(draggedIndex, 1);
     nextCols.splice(index, 0, draggedItem);
-    
+
     setColumns(nextCols);
     setDraggedIndex(null);
   };
@@ -168,26 +183,20 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
         body: {
           padding: '16px',
           background: token.colorBgLayout,
-        }
+        },
       }}
       extra={
-        <Button 
-          type="text" 
-          icon={<UndoOutlined />} 
-          onClick={handleReset} 
-          loading={resetting}
-          danger
-        >
+        <Button type="text" icon={<UndoOutlined />} onClick={handleReset} loading={resetting} danger>
           Reset mặc định
         </Button>
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '16px' }}>
-        <Alert 
-          message="Hướng dẫn" 
-          description="Kéo thả để sắp xếp lại thứ tự cột hoặc sử dụng các nút Mũi tên. Tích chọn để ẩn/hiển thị cột." 
-          type="info" 
-          showIcon 
+        <Alert
+          message="Hướng dẫn"
+          description="Kéo thả để sắp xếp lại thứ tự cột hoặc sử dụng các nút Mũi tên. Tích chọn để ẩn/hiển thị cột."
+          type="info"
+          showIcon
           style={{ fontSize: '12px' }}
         />
 
@@ -226,10 +235,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
                       <HolderOutlined />
                     </div>
 
-                    <Checkbox
-                      checked={item.visible}
-                      onChange={() => handleToggleVisibility(index)}
-                    />
+                    <Checkbox checked={item.visible} onChange={() => handleToggleVisibility(index)} />
 
                     <div style={{ flex: 1 }}>
                       <Input
@@ -275,7 +281,16 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
                     </Space>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '8px', paddingLeft: '24px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                      marginTop: '8px',
+                      paddingLeft: '24px',
+                    }}
+                  >
                     <span style={{ fontSize: '11px', color: token.colorTextDescription }}>Độ rộng (px):</span>
                     <InputNumber
                       size="small"
@@ -297,7 +312,9 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
                       </Button>
                     )}
 
-                    <span style={{ fontSize: '11px', color: token.colorTextDescription, marginLeft: '8px' }}>Icon:</span>
+                    <span style={{ fontSize: '11px', color: token.colorTextDescription, marginLeft: '8px' }}>
+                      Icon:
+                    </span>
                     <Space size={4}>
                       <Select
                         size="small"
@@ -307,7 +324,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
                         options={AVAILABLE_ICONS}
                         popupMatchSelectWidth={false}
                       />
-                      <Tooltip title="Tìm kiếm tất cả icon Ant Design">
+                      <Tooltip title="Tìm kiếm tất cả icon Ant Design & Lucide">
                         <Button
                           size="small"
                           icon={<SearchOutlined />}
@@ -328,13 +345,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
         <Divider style={{ margin: '8px 0' }} />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <Button
-            type="primary"
-            icon={<SaveOutlined />}
-            onClick={() => handleSave(false)}
-            loading={saving}
-            block
-          >
+          <Button type="primary" icon={<SaveOutlined />} onClick={() => handleSave(false)} loading={saving} block>
             Lưu cấu hình cá nhân
           </Button>
 
@@ -354,7 +365,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
           )}
         </div>
       </div>
-      
+
       <IconPickerModal
         open={pickerOpen}
         onClose={() => {
@@ -366,7 +377,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
             handleSelectIcon(activeColIndex, iconName);
           }
         }}
-        value={activeColIndex !== null ? (columns[activeColIndex]?.icon || '') : ''}
+        value={activeColIndex !== null ? columns[activeColIndex]?.icon || '' : ''}
       />
     </Drawer>
   );

@@ -18,7 +18,7 @@ import {
   Col,
   Badge,
   Spin,
-  Space
+  Space,
 } from 'antd';
 import {
   UserOutlined,
@@ -30,7 +30,7 @@ import {
   FormOutlined,
   LeftOutlined,
   CheckCircleOutlined,
-  HeartFilled
+  HeartFilled,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
@@ -48,7 +48,7 @@ interface RescheduleBookingModalProps {
 const STORES = [
   { id: 16, name: 'Estella Place' },
   { id: 6, name: 'De Tham' },
-  { id: 2, name: 'Phan Xích Long' }
+  { id: 2, name: 'Phan Xích Long' },
 ];
 
 const getOffDaysText = (offDays?: string[]) => {
@@ -60,16 +60,22 @@ const getOffDaysText = (offDays?: string[]) => {
     '4': 'T5',
     '5': 'T6',
     '6': 'T7',
-    '7': 'CN'
+    '7': 'CN',
   };
-  return 'Off: ' + offDays.map(d => weekdayMap[d]).filter(Boolean).join(', ');
+  return (
+    'Off: ' +
+    offDays
+      .map((d) => weekdayMap[d])
+      .filter(Boolean)
+      .join(', ')
+  );
 };
 
 export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   open,
   booking,
   onClose,
-  onSuccess
+  onSuccess,
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
@@ -103,7 +109,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       const res = await api.get('/customers/services');
       const list = res.data || [];
       setServices(list);
-      
+
       if (booking?.services && booking.services.length > 0) {
         const currentSrvName = booking.services[0];
         const matched = list.find((s: any) => s.name.toLowerCase() === currentSrvName.toLowerCase());
@@ -119,22 +125,30 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   };
 
   const hasActiveLowerLashCombo = (balances: any[]) => {
-    return balances.some(cb => {
+    return balances.some((cb) => {
       const isCountActive = (cb.normalCount || 0) + (cb.retainCount || 0) > 0;
       const isExpired = cb.dateExpired ? new Date(cb.dateExpired) < new Date() : false;
       const name = (cb.serviceName || '').toLowerCase();
-      const isLower = name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
+      const isLower =
+        name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
       return isCountActive && !isExpired && isLower;
     });
   };
 
   const hasActiveUpperLashCombo = (balances: any[]) => {
-    return balances.some(cb => {
+    return balances.some((cb) => {
       const isCountActive = (cb.normalCount || 0) + (cb.retainCount || 0) > 0;
       const isExpired = cb.dateExpired ? new Date(cb.dateExpired) < new Date() : false;
       const name = (cb.serviceName || '').toLowerCase();
-      const isUpper = name.includes('trên') || name.includes('volume') || name.includes('classic') || name.includes('lashes') || name.includes('katun') || name.includes('mi ');
-      const isLower = name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
+      const isUpper =
+        name.includes('trên') ||
+        name.includes('volume') ||
+        name.includes('classic') ||
+        name.includes('lashes') ||
+        name.includes('katun') ||
+        name.includes('mi ');
+      const isLower =
+        name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
       return isCountActive && !isExpired && isUpper && !isLower;
     });
   };
@@ -151,8 +165,9 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
   useEffect(() => {
     if (open && booking?.customerId) {
-      api.get(`/customers/${booking.customerId}/detailed`)
-        .then(res => {
+      api
+        .get(`/customers/${booking.customerId}/detailed`)
+        .then((res) => {
           const bookings = res.data.bookings || [];
           const balances = res.data.comboBalances || [];
           setComboBalances(balances);
@@ -160,7 +175,12 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           const techCounts: { [key: string]: number } = {};
           bookings.forEach((b: any) => {
             const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-            if (isCompleted && b.technicianName && b.technicianName !== 'Unknown' && b.technicianName !== 'Kỹ thuật viên') {
+            if (
+              isCompleted &&
+              b.technicianName &&
+              b.technicianName !== 'Unknown' &&
+              b.technicianName !== 'Kỹ thuật viên'
+            ) {
               const name = b.technicianName.trim();
               if (!name.includes('(Đã nghỉ)')) {
                 techCounts[name] = (techCounts[name] || 0) + 1;
@@ -170,7 +190,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           const sorted = Object.entries(techCounts)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
-          setFavoriteTechs(sorted.slice(0, 2).map(t => t.name));
+          setFavoriteTechs(sorted.slice(0, 2).map((t) => t.name));
 
           // Count services in completed bookings
           const srvCounts: { [key: string]: number } = {};
@@ -185,7 +205,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           const sortedSrvs = Object.entries(srvCounts)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
-          setSuggestedServices(sortedSrvs.slice(0, 1).map(s => s.name));
+          setSuggestedServices(sortedSrvs.slice(0, 1).map((s) => s.name));
 
           // Count branches in bookings
           const branchCounts: { [key: number]: number } = {};
@@ -201,13 +221,13 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             .sort((a, b) => b.count - a.count);
           if (sortedBranches.length > 0) {
             const topStoreId = sortedBranches[0].id;
-            const matchedStore = STORES.find(s => s.id === topStoreId);
+            const matchedStore = STORES.find((s) => s.id === topStoreId);
             if (matchedStore) {
               setSuggestedBranch(matchedStore);
             }
           }
         })
-        .catch(err => console.error('Failed to fetch favorite technicians in reschedule:', err));
+        .catch((err) => console.error('Failed to fetch favorite technicians in reschedule:', err));
     } else {
       setFavoriteTechs([]);
       setComboBalances([]);
@@ -222,11 +242,10 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       setCurrentStep(0);
       setSelectedCV(null);
       fetchServices();
-      
+
       // Map branch name to store object
-      const matchedStore = STORES.find(
-        s => s.name === booking.branchName || booking.branchName?.includes(s.name)
-      ) || STORES[0];
+      const matchedStore =
+        STORES.find((s) => s.name === booking.branchName || booking.branchName?.includes(s.name)) || STORES[0];
       setSelectedCN(matchedStore);
 
       // Set date & note & slot
@@ -235,7 +254,11 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       setSelectedSlot(booking.bookingTime || null);
 
       // Fetch staff directory
-      fetchStaff(booking.bookingDate ? dayjs(booking.bookingDate).format('YYYY-MM-DD') : dayjs().add(1, 'day').format('YYYY-MM-DD'));
+      fetchStaff(
+        booking.bookingDate
+          ? dayjs(booking.bookingDate).format('YYYY-MM-DD')
+          : dayjs().add(1, 'day').format('YYYY-MM-DD')
+      );
     }
   }, [open, booking]);
 
@@ -257,7 +280,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     setLoadingStaff(true);
     try {
       const res = await api.get('/customers/staff', {
-        params: { date: dateStr }
+        params: { date: dateStr },
       });
       const staff = res.data || [];
       setStaffList(staff);
@@ -286,8 +309,8 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         params: {
           date: bookingDate.format('YYYY-MM-DD'),
           storeName: selectedCN.name,
-          technicianId: selectedCV?.id || undefined
-        }
+          technicianId: selectedCV?.id || undefined,
+        },
       });
       setSlotMatrix(res.data || {});
     } catch (err) {
@@ -316,7 +339,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     setSelectedCV(cv);
     // Auto map branch/store if KTV belongs to a store
     if (cv && cv.notes) {
-      const matchedStore = STORES.find(s => s.name === cv.notes) || STORES[0];
+      const matchedStore = STORES.find((s) => s.name === cv.notes) || STORES[0];
       setSelectedCN(matchedStore);
     }
     // Auto adjust booking date if current date is specialist's off day
@@ -326,17 +349,21 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       if (cv.offDays.includes(dbDayStr)) {
         const adjustedDate = getNextAvailableDate(bookingDate, cv);
         setBookingDate(adjustedDate);
-        message.info(`Đã tự động chuyển ngày sang ngày làm việc tiếp theo của chuyên viên: ${adjustedDate.format('DD/MM/YYYY')}`);
+        message.info(
+          `Đã tự động chuyển ngày sang ngày làm việc tiếp theo của chuyên viên: ${adjustedDate.format('DD/MM/YYYY')}`
+        );
       }
     }
     setCurrentStep(1);
   };
 
   const getGroupedKTVs = () => {
-    const ktvs = staffList.filter(s => s.role === 'technician' || s.role === 'specialist' || s.notes?.includes('KTV'));
+    const ktvs = staffList.filter(
+      (s) => s.role === 'technician' || s.role === 'specialist' || s.notes?.includes('KTV')
+    );
     const groups: { [storeName: string]: any[] } = {};
 
-    ktvs.forEach(staff => {
+    ktvs.forEach((staff) => {
       const store = staff.notes || 'Khác';
       if (!groups[store]) {
         groups[store] = [];
@@ -348,8 +375,10 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   };
 
   const getFavoriteKTVs = () => {
-    const ktvs = staffList.filter(s => s.role === 'technician' || s.role === 'specialist' || s.notes?.includes('KTV'));
-    return ktvs.filter(staff => favoriteTechs.includes(staff.displayName?.trim()));
+    const ktvs = staffList.filter(
+      (s) => s.role === 'technician' || s.role === 'specialist' || s.notes?.includes('KTV')
+    );
+    return ktvs.filter((staff) => favoriteTechs.includes(staff.displayName?.trim()));
   };
 
   const handleReschedule = async () => {
@@ -372,7 +401,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         bookingDate: bookingDate.format('YYYY-MM-DD'),
         bookingTime: selectedSlot,
         bookingNote: checkAndAppendLowerLashNote(bookingNote, comboBalances),
-        serviceId: selectedService?.id || null
+        serviceId: selectedService?.id || null,
       };
 
       await api.put(`/customers/booking/${booking.id}`, payload);
@@ -392,16 +421,18 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     const afternoon: string[] = [];
     const night: string[] = [];
 
-    Object.keys(slotMatrix).sort().forEach(time => {
-      const hour = parseInt(time.split(':')[0], 10);
-      if (hour < 12) {
-        morning.push(time);
-      } else if (hour < 18) {
-        afternoon.push(time);
-      } else {
-        night.push(time);
-      }
-    });
+    Object.keys(slotMatrix)
+      .sort()
+      .forEach((time) => {
+        const hour = parseInt(time.split(':')[0], 10);
+        if (hour < 12) {
+          morning.push(time);
+        } else if (hour < 18) {
+          afternoon.push(time);
+        } else {
+          night.push(time);
+        }
+      });
 
     return { morning, afternoon, night };
   };
@@ -423,8 +454,8 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       styles={{
         body: {
           padding: '24px',
-          background: themeMode === 'dark' ? '#0f172a' : '#f8fafc'
-        }
+          background: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
+        },
       }}
     >
       <div style={{ marginBottom: '24px' }}>
@@ -432,11 +463,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           size="small"
           current={currentStep}
           onChange={(step) => setCurrentStep(step)}
-          items={[
-            { title: 'Chuyên viên' },
-            { title: 'Dịch vụ & KH & Khung giờ' },
-            { title: 'Xác nhận' }
-          ]}
+          items={[{ title: 'Chuyên viên' }, { title: 'Dịch vụ & KH & Khung giờ' }, { title: 'Xác nhận' }]}
           style={{ marginBottom: '24px' }}
         />
       </div>
@@ -449,9 +476,9 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             size="small"
             styles={{ body: { padding: '16px' } }}
             style={{
-              borderColor: selectedCV === null ? '#D4A84B' : (themeMode === 'dark' ? '#334155' : '#e2e8f0'),
+              borderColor: selectedCV === null ? '#D4A84B' : themeMode === 'dark' ? '#334155' : '#e2e8f0',
               boxShadow: selectedCV === null ? '0 0 0 1px #D4A84B' : 'none',
-              backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff'
+              backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
             }}
             onClick={() => selectCVOption(null)}
           >
@@ -471,15 +498,17 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           {/* Favorite Stylist Suggestion Section */}
           {favoriteTechs.length > 0 && getFavoriteKTVs().length > 0 && (
             <div style={{ marginTop: '8px' }}>
-              <div style={{ 
-                fontWeight: 'bold', 
-                fontSize: '13px', 
-                color: '#db2777', 
-                marginBottom: '8px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '6px' 
-              }}>
+              <div
+                style={{
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  color: '#db2777',
+                  marginBottom: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
                 <HeartFilled style={{ color: '#db2777' }} /> GỢI Ý CHUYÊN VIÊN ƯA THÍCH CỦA KHÁCH
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -492,22 +521,32 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                       size="small"
                       styles={{ body: { padding: '12px 16px' } }}
                       style={{
-                        borderColor: isSelected ? '#db2777' : (themeMode === 'dark' ? '#4f1a30' : '#fbcfe8'),
-                        backgroundColor: isSelected 
-                          ? (themeMode === 'dark' ? 'rgba(219, 39, 119, 0.15)' : 'rgba(219, 39, 119, 0.05)') 
-                          : (themeMode === 'dark' ? '#1e293b' : '#ffffff'),
+                        borderColor: isSelected ? '#db2777' : themeMode === 'dark' ? '#4f1a30' : '#fbcfe8',
+                        backgroundColor: isSelected
+                          ? themeMode === 'dark'
+                            ? 'rgba(219, 39, 119, 0.15)'
+                            : 'rgba(219, 39, 119, 0.05)'
+                          : themeMode === 'dark'
+                            ? '#1e293b'
+                            : '#ffffff',
                         boxShadow: isSelected ? '0 0 0 1px #db2777' : 'none',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
                       }}
                       onClick={() => selectCVOption(staff)}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                          <Avatar src={staff.avatar || staff.avatarUrl || undefined} icon={<UserOutlined />} style={{ backgroundColor: '#db2777' }} />
+                          <Avatar
+                            src={staff.avatar || staff.avatarUrl || undefined}
+                            icon={<UserOutlined />}
+                            style={{ backgroundColor: '#db2777' }}
+                          />
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <div style={{ fontWeight: 'bold', color: token.colorText }}>{staff.displayName}</div>
-                              <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>Ưa thích nhất</Tag>
+                              <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>
+                                Ưa thích nhất
+                              </Tag>
                             </div>
                             <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
                               Chi nhánh: {staff.notes || 'Khác'}
@@ -532,35 +571,44 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           </div>
 
           {loadingStaff ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '40px 0',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
               <Spin />
               <div style={{ color: '#888', fontSize: '13px' }}>Đang tải danh sách chuyên viên...</div>
             </div>
           ) : (
             Object.entries(getGroupedKTVs()).map(([storeName, members]) => (
               <div key={storeName} style={{ marginBottom: '24px' }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '8px', 
-                  marginBottom: '12px', 
-                  paddingBottom: '6px',
-                  borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`
-                }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '12px',
+                    paddingBottom: '6px',
+                    borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                  }}
+                >
                   <HomeOutlined style={{ color: '#D4A84B' }} />
-                  <span style={{ fontWeight: 'bold', fontSize: '13.5px', color: token.colorText }}>
-                    {storeName}
-                  </span>
-                  <Badge 
-                    count={members.length} 
-                    style={{ 
-                      backgroundColor: themeMode === 'dark' ? '#334155' : '#f1f5f9', 
+                  <span style={{ fontWeight: 'bold', fontSize: '13.5px', color: token.colorText }}>{storeName}</span>
+                  <Badge
+                    count={members.length}
+                    style={{
+                      backgroundColor: themeMode === 'dark' ? '#334155' : '#f1f5f9',
                       color: themeMode === 'dark' ? '#cbd5e1' : '#64748b',
-                      boxShadow: 'none'
-                    }} 
+                      boxShadow: 'none',
+                    }}
                   />
                 </div>
-                
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {members.map((staff: any) => (
                     <Card
@@ -569,21 +617,28 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                       size="small"
                       styles={{ body: { padding: '12px 16px' } }}
                       style={{
-                        borderColor: selectedCV?.id === staff.id ? '#D4A84B' : (themeMode === 'dark' ? '#334155' : '#e2e8f0'),
+                        borderColor:
+                          selectedCV?.id === staff.id ? '#D4A84B' : themeMode === 'dark' ? '#334155' : '#e2e8f0',
                         backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
                         boxShadow: selectedCV?.id === staff.id ? '0 0 0 1px #D4A84B' : 'none',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
                       }}
                       onClick={() => selectCVOption(staff)}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                          <Avatar src={staff.avatar || staff.avatarUrl || undefined} icon={<UserOutlined />} style={{ backgroundColor: '#D4A84B' }} />
+                          <Avatar
+                            src={staff.avatar || staff.avatarUrl || undefined}
+                            icon={<UserOutlined />}
+                            style={{ backgroundColor: '#D4A84B' }}
+                          />
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <div style={{ fontWeight: 'bold', color: token.colorText }}>{staff.displayName}</div>
                               {favoriteTechs.includes(staff.displayName?.trim()) && (
-                                <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>Ưa thích</Tag>
+                                <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>
+                                  Ưa thích
+                                </Tag>
                               )}
                             </div>
                             <div style={{ fontSize: '12px', color: '#888' }}>
@@ -609,14 +664,13 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       {/* STEP 1: SERVICE & CUSTOMER & SLOT SELECT */}
       {currentStep === 1 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
           {/* Branch Check */}
           <div>
             <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
               <HomeOutlined /> CHI NHÁNH ĐẶT LỊCH (CN)
             </h4>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {STORES.map(s => {
+              {STORES.map((s) => {
                 const isSelected = selectedCN?.id === s.id;
                 return (
                   <div
@@ -632,28 +686,26 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                       fontSize: '13px',
                       fontWeight: '600',
                       transition: 'all 0.2s',
-                      background: isSelected 
-                        ? '#D4A84B' 
-                        : (themeMode === 'dark' ? '#1e293b' : '#f3f4f6'),
-                      border: `1px solid ${isSelected ? '#D4A84B' : (themeMode === 'dark' ? '#334155' : '#e5e7eb')}`,
-                      color: isSelected ? '#fff' : (themeMode === 'dark' ? '#cbd5e1' : '#4b5563'),
+                      background: isSelected ? '#D4A84B' : themeMode === 'dark' ? '#1e293b' : '#f3f4f6',
+                      border: `1px solid ${isSelected ? '#D4A84B' : themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
+                      color: isSelected ? '#fff' : themeMode === 'dark' ? '#cbd5e1' : '#4b5563',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '4px'
+                      gap: '4px',
                     }}
                   >
                     <span>{s.name}</span>
                     {suggestedBranch?.id === s.id && (
-                      <Tag 
-                        color={isSelected ? "magenta" : "orange"} 
-                        style={{ 
-                          marginLeft: '6px', 
-                          marginRight: 0, 
-                          fontSize: '10px', 
+                      <Tag
+                        color={isSelected ? 'magenta' : 'orange'}
+                        style={{
+                          marginLeft: '6px',
+                          marginRight: 0,
+                          fontSize: '10px',
                           padding: '0 6px',
                           border: 'none',
                           borderRadius: '4px',
-                          fontWeight: 'bold'
+                          fontWeight: 'bold',
                         }}
                       >
                         💖 Hay đi
@@ -664,17 +716,21 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
               })}
             </div>
             {selectedCV && selectedCV.notes && selectedCV.notes !== selectedCN?.name && (
-              <div style={{
-                color: '#faad14',
-                background: 'rgba(250, 173, 20, 0.08)',
-                border: '1px solid #ffe58f',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: '500',
-                marginTop: '8px'
-              }}>
-                ⚠️ Chuyên viên <strong>{selectedCV.displayName}</strong> thuộc chi nhánh <strong>{selectedCV.notes}</strong>, không thuộc chi nhánh <strong>{selectedCN?.name}</strong> đang chọn.
+              <div
+                style={{
+                  color: '#faad14',
+                  background: 'rgba(250, 173, 20, 0.08)',
+                  border: '1px solid #ffe58f',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  marginTop: '8px',
+                }}
+              >
+                ⚠️ Chuyên viên <strong>{selectedCV.displayName}</strong> thuộc chi nhánh{' '}
+                <strong>{selectedCV.notes}</strong>, không thuộc chi nhánh <strong>{selectedCN?.name}</strong> đang
+                chọn.
               </div>
             )}
           </div>
@@ -689,16 +745,16 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             styles={{ body: { padding: '16px' } }}
             style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff', borderColor: '#e5e7eb' }}
           >
-            <div style={{
-              padding: '10px',
-              background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fdf9f0',
-              border: '1px solid #ffe58f',
-              borderRadius: '6px'
-            }}>
+            <div
+              style={{
+                padding: '10px',
+                background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fdf9f0',
+                border: '1px solid #ffe58f',
+                borderRadius: '6px',
+              }}
+            >
               <div style={{ fontWeight: 'bold', color: token.colorText }}>{booking?.customerName || 'Khách Hàng'}</div>
-              <div style={{ fontSize: '12px', color: '#888' }}>
-                SĐT: {booking?.customerPhone || '-'}
-              </div>
+              <div style={{ fontSize: '12px', color: '#888' }}>SĐT: {booking?.customerPhone || '-'}</div>
             </div>
           </Card>
 
@@ -709,43 +765,46 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             </h4>
             <Select
               showSearch
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
+              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
               style={{ width: '100%' }}
               placeholder="Chọn hoặc tìm dịch vụ..."
               value={selectedService?.id}
               onChange={(val) => {
-                const srv = services.find(s => s.id === val);
+                const srv = services.find((s) => s.id === val);
                 setSelectedService(srv);
               }}
-              options={services.map(s => ({
+              options={services.map((s) => ({
                 value: s.id,
-                label: s.id === 0 
-                  ? `${s.name} (${s.duration} phút)`
-                  : `${s.name} - ${s.price.toLocaleString('vi-VN')}đ (${s.duration} phút)`
+                label:
+                  s.id === 0
+                    ? `${s.name} (${s.duration} phút)`
+                    : `${s.name} - ${s.price.toLocaleString('vi-VN')}đ (${s.duration} phút)`,
               }))}
             />
 
             {/* Favorite Service Suggestion */}
-            {suggestedServices.filter(sName => services.some(active => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)).length > 0 && (
+            {suggestedServices.filter((sName) =>
+              services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
+            ).length > 0 && (
               <div style={{ marginTop: '6px', fontSize: '12px' }}>
                 <span style={{ color: '#fa8c16', fontWeight: 'bold' }}>⭐ Dòng mi khách hay đi nhất: </span>
                 {suggestedServices
-                  .filter(sName => services.some(active => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0))
-                  .map(sName => {
+                  .filter((sName) =>
+                    services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
+                  )
+                  .map((sName) => {
                     return (
-                      <span 
+                      <span
                         key={sName}
-                        style={{ 
-                          color: themeMode === 'dark' ? '#ffa940' : '#d87a16', 
-                          textDecoration: 'underline', 
+                        style={{
+                          color: themeMode === 'dark' ? '#ffa940' : '#d87a16',
+                          textDecoration: 'underline',
                           cursor: 'pointer',
                           fontWeight: 'bold',
-                          marginLeft: '4px'
+                          marginLeft: '4px',
                         }}
                         onClick={() => {
-                          const matchedSrv = services.find(s => s.name.toLowerCase() === sName.toLowerCase());
+                          const matchedSrv = services.find((s) => s.name.toLowerCase() === sName.toLowerCase());
                           if (matchedSrv) {
                             setSelectedService(matchedSrv);
                             message.success(`Đã chọn dòng mi hay dùng: ${matchedSrv.name}`);
@@ -772,7 +831,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                     .filter((cb: any) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0)
                     .map((cb: any) => {
                       return (
-                        <div 
+                        <div
                           key={cb.id}
                           style={{
                             padding: '8px 12px',
@@ -784,11 +843,14 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                             color: token.colorText,
                             display: 'flex',
                             justifyContent: 'space-between',
-                            alignItems: 'center'
+                            alignItems: 'center',
                           }}
                           onClick={() => {
                             const cleanName = cb.serviceName.split('(')[0].trim().toLowerCase();
-                            const matchedSrv = services.find(s => s.name.toLowerCase().includes(cleanName) || cleanName.includes(s.name.toLowerCase()));
+                            const matchedSrv = services.find(
+                              (s) =>
+                                s.name.toLowerCase().includes(cleanName) || cleanName.includes(s.name.toLowerCase())
+                            );
                             if (matchedSrv) {
                               setSelectedService(matchedSrv);
                               message.success(`Đã chọn dòng mi từ Combo: ${matchedSrv.name}`);
@@ -803,7 +865,9 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                               Còn lại: {cb.normalCount || 0} mới | {cb.retainCount || 0} dặm
                             </div>
                           </div>
-                          <Tag color="magenta" style={{ margin: 0, fontSize: '10px' }}>Chọn</Tag>
+                          <Tag color="magenta" style={{ margin: 0, fontSize: '10px' }}>
+                            Chọn
+                          </Tag>
                         </div>
                       );
                     })}
@@ -817,7 +881,16 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
           {/* SLOT AVAILABILITY MATRIX */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '16px',
+                flexWrap: 'wrap',
+                gap: '10px',
+              }}
+            >
               <div>
                 <span style={{ fontSize: '12px', color: '#888' }}>Ngày hẹn mới:</span>
                 <DatePicker
@@ -856,33 +929,70 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             </h3>
 
             <Spin spinning={loadingSlots}>
-              <div style={{
-                background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                borderRadius: '8px',
-                padding: '20px',
-                maxHeight: 'calc(100vh - 420px)',
-                overflowY: 'auto'
-              }}>
+              <div
+                style={{
+                  background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+                  border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
+                  borderRadius: '8px',
+                  padding: '20px',
+                  maxHeight: 'calc(100vh - 420px)',
+                  overflowY: 'auto',
+                }}
+              >
                 {/* Slot Matrix Legend */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', fontSize: '11px', color: '#888', marginBottom: '16px' }}>
-                  <span><span style={{ color: '#d4a84b' }}>🟡</span> 1-2 chỗ trống</span>
-                  <span><span style={{ color: '#ef4444' }}>🔴</span> 0 chỗ trống (Hết)</span>
-                  <span><span style={{ padding: '2px 4px', background: '#ef4444', color: '#fff', borderRadius: '3px', fontSize: '9px', fontWeight: 'bold' }}>-1</span> Overbook</span>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: '12px',
+                    fontSize: '11px',
+                    color: '#888',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <span>
+                    <span style={{ color: '#d4a84b' }}>🟡</span> 1-2 chỗ trống
+                  </span>
+                  <span>
+                    <span style={{ color: '#ef4444' }}>🔴</span> 0 chỗ trống (Hết)
+                  </span>
+                  <span>
+                    <span
+                      style={{
+                        padding: '2px 4px',
+                        background: '#ef4444',
+                        color: '#fff',
+                        borderRadius: '3px',
+                        fontSize: '9px',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      -1
+                    </span>{' '}
+                    Overbook
+                  </span>
                 </div>
 
                 {/* Render Category slots */}
                 {[
                   { title: 'Morning (Sáng)', list: morning },
                   { title: 'Afternoon (Chiều)', list: afternoon },
-                  { title: 'Night (Tối)', list: night }
-                ].map(cat => (
+                  { title: 'Night (Tối)', list: night },
+                ].map((cat) => (
                   <div key={cat.title} style={{ marginBottom: '20px' }}>
-                    <div style={{ fontWeight: 'bold', color: '#888', fontSize: '12px', marginBottom: '10px', textTransform: 'uppercase' }}>
+                    <div
+                      style={{
+                        fontWeight: 'bold',
+                        color: '#888',
+                        fontSize: '12px',
+                        marginBottom: '10px',
+                        textTransform: 'uppercase',
+                      }}
+                    >
                       {cat.title}
                     </div>
                     <Row gutter={[12, 12]}>
-                      {cat.list.map(time => {
+                      {cat.list.map((time) => {
                         const slotInfo = slotMatrix[time] || { available: 0, roster: 0 };
                         const availableVal = slotInfo.available;
                         const isActive = selectedSlot === time;
@@ -898,7 +1008,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                           fontWeight: 'bold',
                           borderRadius: '50%',
                           padding: '0 4px',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
                         };
 
                         if (availableVal > 2) {
@@ -906,7 +1016,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                             ...badgeStyle,
                             background: themeMode === 'dark' ? '#0f172a' : '#f3f4f6',
                             color: themeMode === 'dark' ? '#94a3b8' : '#6b7280',
-                            border: `1px solid ${themeMode === 'dark' ? '#334155' : '#d9d9d9'}`
+                            border: `1px solid ${themeMode === 'dark' ? '#334155' : '#d9d9d9'}`,
                           };
                         } else if (availableVal === 1 || availableVal === 2) {
                           badgeStyle = {
@@ -915,7 +1025,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                             color: themeMode === 'dark' ? '#d4a84b' : '#d46b08',
                             border: `1px solid ${themeMode === 'dark' ? '#d4a84b' : '#ffe58f'}`,
                             borderRadius: '11px',
-                            minWidth: '26px'
+                            minWidth: '26px',
                           };
                         } else if (availableVal === 0) {
                           badgeStyle = {
@@ -924,7 +1034,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                             color: '#ef4444',
                             border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : '#ffccc7'}`,
                             borderRadius: '11px',
-                            minWidth: '26px'
+                            minWidth: '26px',
                           };
                         } else {
                           badgeStyle = {
@@ -933,10 +1043,10 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                             color: '#ffffff',
                             border: '1px solid #ef4444',
                             borderRadius: '11px',
-                            minWidth: '26px'
+                            minWidth: '26px',
                           };
                         }
-                        
+
                         // Determine slot frame styles matching the badge colors
                         let frameStyle: React.CSSProperties = {
                           flex: 1,
@@ -946,7 +1056,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                           fontWeight: '600',
                           fontSize: '12px',
                           padding: '5px 8px',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
                         };
 
                         if (isActive) {
@@ -954,7 +1064,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                             ...frameStyle,
                             background: '#D4A84B',
                             border: '1px solid #D4A84B',
-                            color: '#fff'
+                            color: '#fff',
                           };
                         } else {
                           if (availableVal > 2) {
@@ -962,45 +1072,40 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                               ...frameStyle,
                               background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
                               border: `1px solid ${themeMode === 'dark' ? '#334155' : '#d9d9d9'}`,
-                              color: themeMode === 'dark' ? '#cbd5e1' : '#1f2937'
+                              color: themeMode === 'dark' ? '#cbd5e1' : '#1f2937',
                             };
                           } else if (availableVal === 1 || availableVal === 2) {
                             frameStyle = {
                               ...frameStyle,
                               background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.08)' : '#fffbe6',
                               border: `1px solid ${themeMode === 'dark' ? '#d4a84b' : '#ffe58f'}`,
-                              color: themeMode === 'dark' ? '#d4a84b' : '#d46b08'
+                              color: themeMode === 'dark' ? '#d4a84b' : '#d46b08',
                             };
                           } else if (availableVal === 0) {
                             frameStyle = {
                               ...frameStyle,
                               background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.05)' : '#fff1f0',
                               border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : '#ffccc7'}`,
-                              color: '#ef4444'
+                              color: '#ef4444',
                             };
                           } else {
                             frameStyle = {
                               ...frameStyle,
                               background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.1)' : '#fff1f0',
                               border: '1px solid #ef4444',
-                              color: '#ef4444'
+                              color: '#ef4444',
                             };
                           }
                         }
-                        
+
                         return (
                           <Col span={6} key={time}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <div 
-                                style={frameStyle}
-                                onClick={() => setSelectedSlot(time)}
-                              >
+                              <div style={frameStyle} onClick={() => setSelectedSlot(time)}>
                                 {time}
                               </div>
 
-                              <div style={badgeStyle}>
-                                {availableVal}
-                              </div>
+                              <div style={badgeStyle}>{availableVal}</div>
                             </div>
                           </Col>
                         );
@@ -1016,9 +1121,9 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             <Button style={{ flex: 1 }} onClick={() => setCurrentStep(0)} icon={<LeftOutlined />}>
               Quay lại
             </Button>
-            <Button 
-              type="primary" 
-              onClick={() => setCurrentStep(2)} 
+            <Button
+              type="primary"
+              onClick={() => setCurrentStep(2)}
               disabled={!selectedSlot || !selectedCN}
               style={{ flex: 2, backgroundColor: '#D4A84B', borderColor: '#D4A84B', color: '#000', fontWeight: 'bold' }}
             >
@@ -1031,7 +1136,6 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       {/* STEP 2: CONFIRM & BOOK */}
       {currentStep === 2 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
           {/* Summary Card */}
           <Card
             title={<span style={{ color: '#D4A84B', fontWeight: 'bold' }}>TỔNG HỢP CHI TIẾT DỜI LỊCH</span>}
@@ -1039,35 +1143,38 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13.5px' }}>
               <div>
-                <span style={{ color: '#888' }}>Khách hàng:</span>{' '}
-                <strong>{booking?.customerName}</strong> ({booking?.customerPhone || 'N/A'})
+                <span style={{ color: '#888' }}>Khách hàng:</span> <strong>{booking?.customerName}</strong> (
+                {booking?.customerPhone || 'N/A'})
               </div>
               <div>
-                <span style={{ color: '#888' }}>Chi nhánh mới:</span>{' '}
-                <strong>{selectedCN?.name}</strong>
+                <span style={{ color: '#888' }}>Chi nhánh mới:</span> <strong>{selectedCN?.name}</strong>
               </div>
               <div>
                 <span style={{ color: '#888' }}>Chuyên viên mới:</span>{' '}
                 <strong>{selectedCV ? selectedCV.displayName : 'Chuyên viên tự do'}</strong>
               </div>
               {selectedCV && selectedCV.notes && selectedCV.notes !== selectedCN?.name && (
-                <div style={{
-                  color: '#faad14',
-                  background: 'rgba(250, 173, 20, 0.1)',
-                  border: '1px solid #ffe58f',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
-                  fontSize: '12.5px',
-                  fontWeight: '500',
-                  marginTop: '4px',
-                  marginBottom: '4px'
-                }}>
-                  ⚠️ Chuyên viên <strong>{selectedCV.displayName}</strong> thuộc chi nhánh <strong>{selectedCV.notes}</strong>, không thuộc chi nhánh <strong>{selectedCN?.name}</strong> đã chọn!
+                <div
+                  style={{
+                    color: '#faad14',
+                    background: 'rgba(250, 173, 20, 0.1)',
+                    border: '1px solid #ffe58f',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12.5px',
+                    fontWeight: '500',
+                    marginTop: '4px',
+                    marginBottom: '4px',
+                  }}
+                >
+                  ⚠️ Chuyên viên <strong>{selectedCV.displayName}</strong> thuộc chi nhánh{' '}
+                  <strong>{selectedCV.notes}</strong>, không thuộc chi nhánh <strong>{selectedCN?.name}</strong> đã
+                  chọn!
                 </div>
               )}
               <div>
-                <span style={{ color: '#888' }}>Giờ hẹn mới:</span>{' '}
-                <strong>{selectedSlot}</strong> ngày <strong>{bookingDate.format('DD/MM/YYYY')}</strong>
+                <span style={{ color: '#888' }}>Giờ hẹn mới:</span> <strong>{selectedSlot}</strong> ngày{' '}
+                <strong>{bookingDate.format('DD/MM/YYYY')}</strong>
               </div>
               <div>
                 <span style={{ color: '#888' }}>Dịch vụ / Dòng mi:</span>{' '}
@@ -1078,9 +1185,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
           {/* Reschedule note */}
           <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
-              GHI CHÚ DỜI LỊCH (RESCHEDULE NOTE)
-            </h4>
+            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>GHI CHÚ DỜI LỊCH (RESCHEDULE NOTE)</h4>
             <TextArea
               rows={4}
               placeholder="Nhập lý do dời lịch hoặc các ghi chú đặc biệt khác..."
@@ -1094,10 +1199,10 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             <Button style={{ flex: 1 }} onClick={() => setCurrentStep(1)}>
               Quay lại
             </Button>
-            <Button 
-              type="primary" 
-              loading={submitting} 
-              style={{ flex: 2, backgroundColor: '#52c41a', borderColor: '#52c41a', fontWeight: 'bold' }} 
+            <Button
+              type="primary"
+              loading={submitting}
+              style={{ flex: 2, backgroundColor: '#52c41a', borderColor: '#52c41a', fontWeight: 'bold' }}
               onClick={handleReschedule}
               icon={<CheckCircleOutlined />}
             >

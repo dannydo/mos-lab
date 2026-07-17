@@ -7,7 +7,7 @@ export interface StaffKPI {
   totalAnswered: number;
   totalBooked: number;
   totalRenewed: number;
-  
+
   // Joined relation fields
   staffName?: string;
 }

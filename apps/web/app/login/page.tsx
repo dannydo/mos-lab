@@ -36,13 +36,17 @@ export default function LoginPage() {
       if ((window as any).google) {
         try {
           (window as any).google.accounts.id.initialize({
-            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '648958464510-tedkbs4n8dmrgfjhqegcien7r0u7ed9g.apps.googleusercontent.com',
+            client_id:
+              process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+              '648958464510-tedkbs4n8dmrgfjhqegcien7r0u7ed9g.apps.googleusercontent.com',
             callback: handleGoogleLogin,
           });
-          (window as any).google.accounts.id.renderButton(
-            document.getElementById('google-signin-btn'),
-            { theme: 'dark', size: 'large', type: 'standard', width: 350 }
-          );
+          (window as any).google.accounts.id.renderButton(document.getElementById('google-signin-btn'), {
+            theme: 'dark',
+            size: 'large',
+            type: 'standard',
+            width: 350,
+          });
         } catch (err) {
           console.error('Google accounts initialize error:', err);
         }
@@ -60,11 +64,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const response = await api.post('/auth/google', {
-        credential: googleResponse.credential
+        credential: googleResponse.credential,
       });
 
       const { token, user } = response.data;
-      
+
       localStorage.setItem('mos_token', token);
       localStorage.setItem('mos_user', JSON.stringify(user));
 
@@ -85,11 +89,11 @@ export default function LoginPage() {
       const response = await api.post('/auth/google', {
         isMock: true,
         email: emailToMock,
-        name: nameToMock
+        name: nameToMock,
       });
 
       const { token, user } = response.data;
-      
+
       localStorage.setItem('mos_token', token);
       localStorage.setItem('mos_user', JSON.stringify(user));
 
@@ -113,7 +117,7 @@ export default function LoginPage() {
       });
 
       const { token, user } = response.data;
-      
+
       localStorage.setItem('mos_token', token);
       localStorage.setItem('mos_user', JSON.stringify(user));
 
@@ -129,24 +133,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div 
+    <div
       className="flex items-center justify-center min-h-screen"
       style={{
         background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)',
-        padding: '20px'
+        padding: '20px',
       }}
     >
-      <Card 
-        style={{ 
-          width: 400, 
-          borderRadius: 12, 
+      <Card
+        style={{
+          width: 400,
+          borderRadius: 12,
           boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
           background: '#141414',
-          border: '1px solid #2a2a2a'
+          border: '1px solid #2a2a2a',
         }}
       >
         <div className="text-center mb-8">
-          <div 
+          <div
             className="mx-auto mb-4 flex items-center justify-center"
             style={{
               width: 70,
@@ -156,22 +160,27 @@ export default function LoginPage() {
               fontSize: '28px',
               color: '#000',
               fontWeight: 'bold',
-              boxShadow: '0 0 15px rgba(212, 168, 75, 0.4)'
+              boxShadow: '0 0 15px rgba(212, 168, 75, 0.4)',
             }}
           >
             W
           </div>
-          <Title level={3} style={{ color: '#D4A84B', margin: 0 }}>WINGS LASHES</Title>
+          <Title level={3} style={{ color: '#D4A84B', margin: 0 }}>
+            WINGS LASHES
+          </Title>
           <Text style={{ color: '#888' }}>Living Lab CRM — Telesales Portal</Text>
         </div>
 
         <div className="flex flex-col items-center gap-3 w-full">
           {/* Real Google GSI button */}
-          <div id="google-signin-btn" style={{ minHeight: '40px', width: '100%', display: 'flex', justifyContent: 'center' }}></div>
+          <div
+            id="google-signin-btn"
+            style={{ minHeight: '40px', width: '100%', display: 'flex', justifyContent: 'center' }}
+          ></div>
 
           {/* Dev Mock login selection */}
-          {process.env.NODE_ENV !== 'production' && (
-            !showMockOptions ? (
+          {process.env.NODE_ENV !== 'production' &&
+            (!showMockOptions ? (
               <Button
                 type="default"
                 icon={<GoogleOutlined />}
@@ -182,14 +191,31 @@ export default function LoginPage() {
                   borderColor: '#333',
                   color: '#D4A84B',
                   height: '40px',
-                  fontWeight: '500'
+                  fontWeight: '500',
                 }}
               >
                 Mock Google Sign-In Options (Dev)
               </Button>
             ) : (
-              <div style={{ width: '100%', background: '#1c1c1c', padding: '12px', borderRadius: '8px', border: '1px solid #333' }}>
-                <div style={{ color: '#888', fontSize: '11px', marginBottom: '8px', textAlign: 'center', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+              <div
+                style={{
+                  width: '100%',
+                  background: '#1c1c1c',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid #333',
+                }}
+              >
+                <div
+                  style={{
+                    color: '#888',
+                    fontSize: '11px',
+                    marginBottom: '8px',
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    letterSpacing: '0.5px',
+                  }}
+                >
                   MOCK LOGIN (LOCAL DEV ONLY)
                 </div>
                 <div className="flex flex-col gap-2" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -197,7 +223,13 @@ export default function LoginPage() {
                     size="middle"
                     onClick={() => handleMockGoogleLogin('danny.do@wingslashes.com', 'Danny Wings')}
                     loading={loading}
-                    style={{ background: '#262626', borderColor: '#434343', color: '#D4A84B', width: '100%', textAlign: 'left' }}
+                    style={{
+                      background: '#262626',
+                      borderColor: '#434343',
+                      color: '#D4A84B',
+                      width: '100%',
+                      textAlign: 'left',
+                    }}
                   >
                     Danny Wings (danny.do@wingslashes.com)
                   </Button>
@@ -205,14 +237,20 @@ export default function LoginPage() {
                     size="middle"
                     onClick={() => handleMockGoogleLogin('danhdo@gmail.com', 'Danh Do')}
                     loading={loading}
-                    style={{ background: '#262626', borderColor: '#434343', color: '#D4A84B', width: '100%', textAlign: 'left' }}
+                    style={{
+                      background: '#262626',
+                      borderColor: '#434343',
+                      color: '#D4A84B',
+                      width: '100%',
+                      textAlign: 'left',
+                    }}
                   >
                     Danh Do (danhdo@gmail.com)
                   </Button>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                    <Input 
-                      size="middle" 
-                      placeholder="Custom email..." 
+                    <Input
+                      size="middle"
+                      placeholder="Custom email..."
                       value={mockEmail}
                       onChange={(e) => setMockEmail(e.target.value)}
                       style={{ background: '#1f1f1f', border: '1px solid #333', color: '#fff' }}
@@ -239,14 +277,13 @@ export default function LoginPage() {
                   </div>
                 </div>
               </div>
-            )
-          )}
+            ))}
         </div>
 
         {!showPasswordForm ? (
           <div style={{ textAlign: 'center', marginTop: '24px' }}>
-            <Text 
-              style={{ color: '#888', cursor: 'pointer', textDecoration: 'underline' }} 
+            <Text
+              style={{ color: '#888', cursor: 'pointer', textDecoration: 'underline' }}
               onClick={() => setShowPasswordForm(true)}
             >
               Hoặc đăng nhập bằng tài khoản & mật khẩu
@@ -265,40 +302,34 @@ export default function LoginPage() {
               size="large"
               layout="vertical"
             >
-              <Form.Item
-                name="username"
-                rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
-              >
-                <Input 
-                  prefix={<UserOutlined style={{ color: '#888' }} />} 
-                  placeholder="Tên đăng nhập" 
+              <Form.Item name="username" rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}>
+                <Input
+                  prefix={<UserOutlined style={{ color: '#888' }} />}
+                  placeholder="Tên đăng nhập"
                   style={{
                     background: '#1f1f1f',
                     border: '1px solid #333',
-                    color: '#fff'
+                    color: '#fff',
                   }}
                 />
               </Form.Item>
 
-              <Form.Item
-                name="password"
-                rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
-              >
+              <Form.Item name="password" rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}>
                 <Input.Password
                   prefix={<LockOutlined style={{ color: '#888' }} />}
                   placeholder="Mật khẩu"
                   style={{
                     background: '#1f1f1f',
                     border: '1px solid #333',
-                    color: '#fff'
+                    color: '#fff',
                   }}
                 />
               </Form.Item>
 
               <Form.Item className="mt-6 mb-2">
-                <Button 
-                  type="primary" 
-                  htmlType="submit" 
+                <Button
+                  type="primary"
+                  htmlType="submit"
                   loading={loading}
                   block
                   style={{
@@ -306,17 +337,17 @@ export default function LoginPage() {
                     borderColor: '#D4A84B',
                     color: '#000',
                     fontWeight: '600',
-                    height: '45px'
+                    height: '45px',
                   }}
                 >
                   ĐĂNG NHẬP
                 </Button>
               </Form.Item>
             </Form>
-            
+
             <div style={{ textAlign: 'center', marginTop: '12px' }}>
-              <Text 
-                style={{ color: '#888', cursor: 'pointer', textDecoration: 'underline' }} 
+              <Text
+                style={{ color: '#888', cursor: 'pointer', textDecoration: 'underline' }}
                 onClick={() => setShowPasswordForm(false)}
               >
                 Quay lại đăng nhập Google

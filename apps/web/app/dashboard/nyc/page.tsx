@@ -26,7 +26,7 @@ import {
   Spin,
   Timeline,
   Drawer,
-  Tooltip
+  Tooltip,
 } from 'antd';
 import {
   SearchOutlined,
@@ -46,7 +46,7 @@ import {
   InfoCircleOutlined,
   InboxOutlined,
   WarningOutlined,
-  CloseCircleFilled
+  CloseCircleFilled,
 } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../lib/api';
@@ -79,7 +79,7 @@ const TAB_KEYS = [
   { id: 'NYC_90', name: 'NYC 90', rangeText: '61 - 90 ngày', minDays: 61, maxDays: 90 },
   { id: 'NYC_180', name: 'NYC 180', rangeText: '91 - 180 ngày', minDays: 91, maxDays: 180 },
   { id: 'NYC_365', name: 'NYC 365', rangeText: '181 - 365 ngày', minDays: 181, maxDays: 365 },
-  { id: 'NYC_365plus', name: 'NYC 365+', rangeText: '> 365 ngày', minDays: 366, maxDays: undefined }
+  { id: 'NYC_365plus', name: 'NYC 365+', rangeText: '> 365 ngày', minDays: 366, maxDays: undefined },
 ];
 
 const formatDuration = (secs: number) => {
@@ -96,14 +96,14 @@ export default function NycCampaignPage() {
     if (!bookings || bookings.length === 0) return 'N/A';
     const dayCounts = Array(7).fill(0);
     const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-    
-    bookings.forEach(b => {
+
+    bookings.forEach((b) => {
       if (b.bookingDate) {
         const day = new Date(b.bookingDate).getDay();
         dayCounts[day]++;
       }
     });
-    
+
     let maxIndex = 0;
     let maxVal = 0;
     dayCounts.forEach((val, idx) => {
@@ -112,7 +112,7 @@ export default function NycCampaignPage() {
         maxIndex = idx;
       }
     });
-    
+
     return maxVal > 0 ? `${dayNames[maxIndex]} (${maxVal} lần)` : 'N/A';
   };
 
@@ -162,7 +162,7 @@ export default function NycCampaignPage() {
     totalNYC: 0,
     nyc30Count: 0,
     bookedRate: 0,
-    todayCalls: 0
+    todayCalls: 0,
   });
 
   // Dropdown lists
@@ -214,7 +214,7 @@ export default function NycCampaignPage() {
     const modalContainer = wrapperEl.firstElementChild as HTMLElement;
     const modalEl = modalContainer ? (modalContainer.firstElementChild as HTMLElement) : null;
     const listEl = document.getElementById('nyc-touchpoints-list') as HTMLElement;
-    
+
     console.log('Found modalEl:', modalEl);
     console.log('Found listEl:', listEl);
 
@@ -222,18 +222,18 @@ export default function NycCampaignPage() {
     const startY = e.clientY;
     const startWidth = modalEl ? modalEl.offsetWidth : modalWidth;
     const startHeight = listEl ? listEl.offsetHeight + 200 : modalHeight;
-    
+
     console.log(`Start X: ${startX}, Y: ${startY}, Width: ${startWidth}, Height: ${startHeight}`);
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
-      
+
       const newWidth = Math.max(500, Math.min(1600, startWidth + deltaX));
       const newHeight = Math.max(400, Math.min(1000, startHeight + deltaY));
-      
+
       console.log(`Dragging... DeltaX: ${deltaX}, DeltaY: ${deltaY} => NewWidth: ${newWidth}, NewHeight: ${newHeight}`);
-      
+
       if (modalEl) {
         modalEl.style.setProperty('width', `${newWidth}px`, 'important');
       }
@@ -246,17 +246,17 @@ export default function NycCampaignPage() {
       console.log('Resize Mouseup triggered.');
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-      
+
       const finalX = upEvent.clientX - startX;
       const finalY = upEvent.clientY - startY;
       const finalWidth = Math.max(500, Math.min(1600, startWidth + finalX));
       const finalHeight = Math.max(400, Math.min(1000, startHeight + finalY));
-      
+
       console.log(`Final dimensions: Width: ${finalWidth}, Height: ${finalHeight}`);
-      
+
       setModalWidth(finalWidth);
       setModalHeight(finalHeight);
-      
+
       localStorage.setItem('mos_nyc_settings_modal_width', finalWidth.toString());
       localStorage.setItem('mos_nyc_settings_modal_height', finalHeight.toString());
     };
@@ -264,7 +264,7 @@ export default function NycCampaignPage() {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   };
-  
+
   // Settings Form
   const [settingsForm] = Form.useForm();
   const [selectedConfigTab, setSelectedConfigTab] = useState<string>('NYC_30');
@@ -275,7 +275,7 @@ export default function NycCampaignPage() {
     customerName: string;
     planId?: number | null;
   } | null>(null);
-  
+
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [orderHistory, setOrderHistory] = useState<any[]>([]);
   const [callHistory, setCallHistory] = useState<any[]>([]);
@@ -314,7 +314,7 @@ export default function NycCampaignPage() {
     try {
       const todayStr = new Date().toISOString().split('T')[0];
       const response = await api.get('/plans/weekly', {
-        params: { weekStart: todayStr } // Fetch current week to find today's planned
+        params: { weekStart: todayStr }, // Fetch current week to find today's planned
       });
       const plannedIds: number[] = [];
       const mondayStr = todayStr; // Simplified check
@@ -373,8 +373,8 @@ export default function NycCampaignPage() {
       const kpiRes = await api.get('/kpi/summary', {
         params: {
           startDate: new Date().toISOString().split('T')[0],
-          endDate: new Date().toISOString().split('T')[0]
-        }
+          endDate: new Date().toISOString().split('T')[0],
+        },
       });
 
       let totalCalledToday = 0;
@@ -400,9 +400,8 @@ export default function NycCampaignPage() {
         totalNYC,
         nyc30Count,
         bookedRate,
-        todayCalls: totalCalledToday
+        todayCalls: totalCalledToday,
       });
-
     } catch (err) {
       console.error('Failed to fetch stats:', err);
     }
@@ -419,7 +418,7 @@ export default function NycCampaignPage() {
           const params: any = {
             bucket: 'NOT_COMBO_LIVE',
             daysSinceLastVisitMin: tp.daysMin.toString(),
-            daysSinceLastVisitMax: tp.daysMax.toString()
+            daysSinceLastVisitMax: tp.daysMax.toString(),
           };
           if (assignedStaffId && assignedStaffId !== 'all') {
             params.assignedStaffId = assignedStaffId;
@@ -446,7 +445,7 @@ export default function NycCampaignPage() {
         bucket: 'NOT_COMBO_LIVE',
         page: currentPage.toString(),
         limit: pageSize.toString(),
-        sort: sortField
+        sort: sortField,
       };
 
       if (assignedStaffId && assignedStaffId !== 'all') {
@@ -460,14 +459,14 @@ export default function NycCampaignPage() {
       // Determine days range based on touchpoint or active tab
       if (activeTouchpointKey !== 'ALL') {
         const activeTouchpoints = configs[activeTab] || [];
-        const touch = activeTouchpoints.find(t => t.key === activeTouchpointKey);
+        const touch = activeTouchpoints.find((t) => t.key === activeTouchpointKey);
         if (touch) {
           params.daysSinceLastVisitMin = touch.daysMin.toString();
           params.daysSinceLastVisitMax = touch.daysMax.toString();
         }
       } else {
         // Fallback to active tab bounds
-        const currentTabInfo = TAB_KEYS.find(t => t.id === activeTab);
+        const currentTabInfo = TAB_KEYS.find((t) => t.id === activeTab);
         if (currentTabInfo) {
           params.daysSinceLastVisitMin = currentTabInfo.minDays.toString();
           if (currentTabInfo.maxDays !== undefined) {
@@ -502,7 +501,17 @@ export default function NycCampaignPage() {
     if (Object.keys(configs).length > 0) {
       fetchCustomerList();
     }
-  }, [configs, currentPage, pageSize, activeTab, activeTouchpointKey, searchQuery, sortField, assignedStaffId, fetchCustomerList]);
+  }, [
+    configs,
+    currentPage,
+    pageSize,
+    activeTab,
+    activeTouchpointKey,
+    searchQuery,
+    sortField,
+    assignedStaffId,
+    fetchCustomerList,
+  ]);
 
   // Reset pagination when filter updates
   useEffect(() => {
@@ -514,10 +523,10 @@ export default function NycCampaignPage() {
     try {
       await api.post('/plans', {
         legacyUserId: customerId,
-        date: new Date().toISOString().split('T')[0]
+        date: new Date().toISOString().split('T')[0],
       });
       message.success('Đã thêm khách hàng vào kế hoạch gọi hôm nay!');
-      setDailyPlanList(prev => [...prev, customerId]);
+      setDailyPlanList((prev) => [...prev, customerId]);
     } catch (err: any) {
       console.error('Failed to add to call plan:', err);
       message.error(err.response?.data?.message || 'Không thể thêm khách hàng.');
@@ -528,7 +537,7 @@ export default function NycCampaignPage() {
     setSelectedPlanInfo({
       legacyUserId: customer.id,
       customerName: customer.name,
-      planId: null // Independent touchpoint call
+      planId: null, // Independent touchpoint call
     });
     setCallModalVisible(true);
   };
@@ -562,11 +571,11 @@ export default function NycCampaignPage() {
   const handleSaveConfig = async () => {
     try {
       const values = await settingsForm.validateFields();
-      
+
       // Update local state temporarily for selected tab
       const updatedConfigs = {
         ...configs,
-        [selectedConfigTab]: values.touchpoints
+        [selectedConfigTab]: values.touchpoints,
       };
 
       await api.put('/nyc/config', updatedConfigs);
@@ -595,29 +604,29 @@ export default function NycCampaignPage() {
               { key: '3', label: 'Chạm 3', daysMin: 3, daysMax: 3, color: 'cyan' },
               { key: '7', label: 'Chạm 7', daysMin: 7, daysMax: 7, color: 'green' },
               { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'orange' },
-              { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'red' }
+              { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'red' },
             ],
             NYC_60: [
               { key: '35', label: 'Chạm 35', daysMin: 31, daysMax: 35, color: 'blue' },
               { key: '45', label: 'Chạm 45', daysMin: 41, daysMax: 45, color: 'orange' },
-              { key: '55', label: 'Chạm 55', daysMin: 51, daysMax: 55, color: 'red' }
+              { key: '55', label: 'Chạm 55', daysMin: 51, daysMax: 55, color: 'red' },
             ],
             NYC_90: [
               { key: '70', label: 'Chạm 70', daysMin: 65, daysMax: 70, color: 'blue' },
-              { key: '80', label: 'Chạm 80', daysMin: 75, daysMax: 80, color: 'orange' }
+              { key: '80', label: 'Chạm 80', daysMin: 75, daysMax: 80, color: 'orange' },
             ],
             NYC_180: [
               { key: '100', label: 'Chạm 100', daysMin: 95, daysMax: 100, color: 'blue' },
-              { key: '150', label: 'Chạm 150', daysMin: 145, daysMax: 150, color: 'orange' }
+              { key: '150', label: 'Chạm 150', daysMin: 145, daysMax: 150, color: 'orange' },
             ],
             NYC_365: [
               { key: '200', label: 'Chạm 200', daysMin: 195, daysMax: 200, color: 'blue' },
-              { key: '300', label: 'Chạm 300', daysMin: 295, daysMax: 300, color: 'orange' }
+              { key: '300', label: 'Chạm 300', daysMin: 295, daysMax: 300, color: 'orange' },
             ],
             NYC_365plus: [
               { key: '400', label: 'Chạm 400', daysMin: 395, daysMax: 400, color: 'blue' },
-              { key: '500', label: 'Chạm 500', daysMin: 495, daysMax: 500, color: 'orange' }
-            ]
+              { key: '500', label: 'Chạm 500', daysMin: 495, daysMax: 500, color: 'orange' },
+            ],
           };
           await api.put('/nyc/config', defaultConfigs);
           message.success('Đã khôi phục cài đặt mặc định thành công.');
@@ -627,7 +636,7 @@ export default function NycCampaignPage() {
           console.error(err);
           message.error('Khôi phục thất bại.');
         }
-      }
+      },
     });
   };
 
@@ -642,7 +651,9 @@ export default function NycCampaignPage() {
 
   const getRowClassName = (record: Customer) => {
     // 1. check callback date ("có hẹn gọi lại -> màu hy vọng")
-    const hasCallback = record.callbackDate ? new Date(record.callbackDate) >= new Date(new Date().setHours(0,0,0,0)) : false;
+    const hasCallback = record.callbackDate
+      ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
+      : false;
     if (hasCallback) {
       return themeMode === 'dark' ? 'row-hope-dark' : 'row-hope-light';
     }
@@ -661,7 +672,13 @@ export default function NycCampaignPage() {
     const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
     if (isBookingInPast) {
       const state = record.lastBookingState;
-      const isMissed = state && state !== 'Completed' && state !== 'ServiceCompleted' && state !== 'CheckIn' && state !== 'CheckOut' && state !== 'ServiceStart';
+      const isMissed =
+        state &&
+        state !== 'Completed' &&
+        state !== 'ServiceCompleted' &&
+        state !== 'CheckIn' &&
+        state !== 'CheckOut' &&
+        state !== 'ServiceStart';
       if (isMissed) {
         return themeMode === 'dark' ? 'row-missed-dark' : 'row-missed-light';
       }
@@ -683,7 +700,7 @@ export default function NycCampaignPage() {
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: Customer) => (
-        <Space 
+        <Space
           style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
           onClick={() => handleOpenDetailModal(record)}
         >
@@ -694,14 +711,11 @@ export default function NycCampaignPage() {
               backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5',
               color: '#D4A84B',
               border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
-              flexShrink: 0
+              flexShrink: 0,
             }}
           />
           <div>
-            <div 
-              style={{ fontWeight: '600', color: token.colorText }}
-              className="hover:underline transition-all"
-            >
+            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline transition-all">
               {text}
             </div>
             <div style={{ fontSize: '12px', color: token.colorTextDescription }}>{record.phone}</div>
@@ -717,7 +731,9 @@ export default function NycCampaignPage() {
       sorter: true,
       render: (days: number | null, record: Customer) => {
         // 1. check callback date ("có hẹn gọi lại")
-        const hasCallback = record.callbackDate ? new Date(record.callbackDate) >= new Date(new Date().setHours(0,0,0,0)) : false;
+        const hasCallback = record.callbackDate
+          ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
+          : false;
         if (hasCallback) {
           const callbackFormatted = dayjs(record.callbackDate).format('DD/MM/YYYY');
           return (
@@ -746,7 +762,13 @@ export default function NycCampaignPage() {
         const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
         if (isBookingInPast) {
           const state = record.lastBookingState;
-          const isMissed = state && state !== 'Completed' && state !== 'ServiceCompleted' && state !== 'CheckIn' && state !== 'CheckOut' && state !== 'ServiceStart';
+          const isMissed =
+            state &&
+            state !== 'Completed' &&
+            state !== 'ServiceCompleted' &&
+            state !== 'CheckIn' &&
+            state !== 'CheckOut' &&
+            state !== 'ServiceStart';
           if (isMissed) {
             let missedDays = days;
             if (record.lastBookingDate) {
@@ -767,19 +789,26 @@ export default function NycCampaignPage() {
 
         // 4. normal daysSinceLastVisit ("số dương -> chưa ghé x days, bình thường")
         return days !== null ? `${days} ngày` : <Text style={{ color: '#888' }}>Chưa từng đến</Text>;
-      }
+      },
     },
     {
       title: 'Tổng Chi Tiêu',
       dataIndex: 'totalSpent',
       key: 'totalSpent',
-      render: (val: number) => formatVND(val)
+      render: (val: number) => formatVND(val),
     },
     {
       title: 'Booker phụ trách',
       dataIndex: 'assignedStaff',
       key: 'assignedStaff',
-      render: (staff: any) => staff ? <Tag color="cyan">{staff.displayName}</Tag> : <Text type="secondary" style={{ fontStyle: 'italic' }}>Chưa phân bổ</Text>
+      render: (staff: any) =>
+        staff ? (
+          <Tag color="cyan">{staff.displayName}</Tag>
+        ) : (
+          <Text type="secondary" style={{ fontStyle: 'italic' }}>
+            Chưa phân bổ
+          </Text>
+        ),
     },
     {
       title: 'Ngày gọi gần nhất',
@@ -787,7 +816,7 @@ export default function NycCampaignPage() {
       render: (_: any, record: Customer) => {
         if (!record.lastCall?.createdAt) return '-';
         return dayjs(record.lastCall.createdAt).format('DD/MM/YYYY HH:mm');
-      }
+      },
     },
     {
       title: 'Thời lượng',
@@ -795,7 +824,7 @@ export default function NycCampaignPage() {
       render: (_: any, record: Customer) => {
         if (record.lastCall?.durationSec === undefined || record.lastCall?.durationSec === null) return '-';
         return formatDuration(record.lastCall.durationSec);
-      }
+      },
     },
     {
       title: 'Trạng thái cuộc gọi',
@@ -810,7 +839,7 @@ export default function NycCampaignPage() {
         else if (result === 'BUSY') color = 'orange';
         else if (result === 'FAILED' || result === 'WRONG_NUMBER') color = 'error';
         return <Tag color={color}>{label}</Tag>;
-      }
+      },
     },
     {
       title: 'Ghi chú cuộc gọi',
@@ -824,7 +853,7 @@ export default function NycCampaignPage() {
             <span style={{ cursor: 'pointer' }}>{compactNote}</span>
           </Tooltip>
         );
-      }
+      },
     },
     {
       title: 'Thao tác',
@@ -864,8 +893,8 @@ export default function NycCampaignPage() {
             </Tooltip>
           </Space>
         );
-      }
-    }
+      },
+    },
   ];
 
   // History columns for details modal
@@ -879,7 +908,8 @@ export default function NycCampaignPage() {
       title: 'Ngày đặt',
       dataIndex: 'dateCreated',
       key: 'dateCreated',
-      render: (dateStr: string) => new Date(dateStr).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      render: (dateStr: string) =>
+        new Date(dateStr).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     },
     {
       title: 'Tổng tiền',
@@ -891,8 +921,8 @@ export default function NycCampaignPage() {
       title: 'Trạng thái',
       dataIndex: 'orderState',
       key: 'orderState',
-      render: (val: string) => <Tag color={val === 'Completed' ? 'green' : 'orange'}>{val}</Tag>
-    }
+      render: (val: string) => <Tag color={val === 'Completed' ? 'green' : 'orange'}>{val}</Tag>,
+    },
   ];
 
   const {
@@ -930,13 +960,13 @@ export default function NycCampaignPage() {
               options={[
                 { value: 'all', label: 'Tất cả nhân sự' },
                 { value: 'unassigned', label: 'Chưa phân bổ' },
-                ...staffList.map(s => ({ value: s.id.toString(), label: s.displayName }))
+                ...staffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),
               ]}
             />
           )}
-          <Button 
-            type="primary" 
-            icon={<CalendarOutlined />} 
+          <Button
+            type="primary"
+            icon={<CalendarOutlined />}
             style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B', fontWeight: 'bold' }}
             onClick={() => setBookingWizardVisible(true)}
           >
@@ -963,12 +993,15 @@ export default function NycCampaignPage() {
             style={{
               background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fff',
               border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#e8e8e8'}`,
-              borderRadius: '8px'
+              borderRadius: '8px',
             }}
           >
-            <Text type="secondary" style={{ fontSize: '13px' }}>Tổng Khách Hàng NYC</Text>
+            <Text type="secondary" style={{ fontSize: '13px' }}>
+              Tổng Khách Hàng NYC
+            </Text>
             <div style={{ fontSize: '26px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}>
-              {overallStats.totalNYC} <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>khách</span>
+              {overallStats.totalNYC}{' '}
+              <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>khách</span>
             </div>
           </Card>
         </Col>
@@ -978,12 +1011,15 @@ export default function NycCampaignPage() {
             style={{
               background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fff',
               border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#e8e8e8'}`,
-              borderRadius: '8px'
+              borderRadius: '8px',
             }}
           >
-            <Text type="secondary" style={{ fontSize: '13px' }}>NYC 30 (Quan trọng nhất)</Text>
+            <Text type="secondary" style={{ fontSize: '13px' }}>
+              NYC 30 (Quan trọng nhất)
+            </Text>
             <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#D4A84B', marginTop: '4px' }}>
-              {overallStats.nyc30Count} <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>khách</span>
+              {overallStats.nyc30Count}{' '}
+              <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>khách</span>
             </div>
           </Card>
         </Col>
@@ -993,12 +1029,17 @@ export default function NycCampaignPage() {
             style={{
               background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fff',
               border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#e8e8e8'}`,
-              borderRadius: '8px'
+              borderRadius: '8px',
             }}
           >
-            <Text type="secondary" style={{ fontSize: '13px' }}>Hiệu suất Đặt Lịch (Booked Rate)</Text>
+            <Text type="secondary" style={{ fontSize: '13px' }}>
+              Hiệu suất Đặt Lịch (Booked Rate)
+            </Text>
             <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#52C41A', marginTop: '4px' }}>
-              {overallStats.bookedRate}% <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>đặt lịch</span>
+              {overallStats.bookedRate}%{' '}
+              <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
+                đặt lịch
+              </span>
             </div>
           </Card>
         </Col>
@@ -1008,12 +1049,17 @@ export default function NycCampaignPage() {
             style={{
               background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fff',
               border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#e8e8e8'}`,
-              borderRadius: '8px'
+              borderRadius: '8px',
             }}
           >
-            <Text type="secondary" style={{ fontSize: '13px' }}>Đã gọi hôm nay</Text>
+            <Text type="secondary" style={{ fontSize: '13px' }}>
+              Đã gọi hôm nay
+            </Text>
             <div style={{ fontSize: '26px', fontWeight: 'bold', color: token.colorPrimary, marginTop: '4px' }}>
-              {overallStats.todayCalls} <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>cuộc gọi</span>
+              {overallStats.todayCalls}{' '}
+              <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
+                cuộc gọi
+              </span>
             </div>
           </Card>
         </Col>
@@ -1028,7 +1074,7 @@ export default function NycCampaignPage() {
         }}
         type="card"
         style={{ marginBottom: '16px' }}
-        items={TAB_KEYS.map(tab => ({
+        items={TAB_KEYS.map((tab) => ({
           key: tab.id,
           label: (
             <Space>
@@ -1037,12 +1083,12 @@ export default function NycCampaignPage() {
                 count={getActiveTabLabelCount(tab.id)}
                 overflowCount={9999}
                 style={{
-                  backgroundColor: activeTab === tab.id ? '#D4A84B' : (themeMode === 'dark' ? '#333' : '#e8e8e8'),
-                  color: activeTab === tab.id ? '#000' : (themeMode === 'dark' ? '#fff' : '#666')
+                  backgroundColor: activeTab === tab.id ? '#D4A84B' : themeMode === 'dark' ? '#333' : '#e8e8e8',
+                  color: activeTab === tab.id ? '#000' : themeMode === 'dark' ? '#fff' : '#666',
                 }}
               />
             </Space>
-          )
+          ),
         }))}
       />
 
@@ -1052,7 +1098,7 @@ export default function NycCampaignPage() {
           background: themeMode === 'dark' ? '#141414' : '#ffffff',
           border: `1px solid ${token.colorBorderSecondary}`,
           marginBottom: '24px',
-          borderRadius: '8px'
+          borderRadius: '8px',
         }}
       >
         <div className="flex flex-col gap-6">
@@ -1066,44 +1112,59 @@ export default function NycCampaignPage() {
                 </Button>
               )}
             </div>
-            
+
             {activeTouchpointsList.length === 0 ? (
               <div style={{ padding: '20px 0', textAlign: 'center', color: token.colorTextDescription }}>
                 Chưa cấu hình chạm nào cho mốc thời gian này.
               </div>
             ) : (
-              <Row gutter={[12, 12]} justify="start" style={{ overflowX: 'auto', flexWrap: 'nowrap', paddingBottom: '8px' }}>
+              <Row
+                gutter={[12, 12]}
+                justify="start"
+                style={{ overflowX: 'auto', flexWrap: 'nowrap', paddingBottom: '8px' }}
+              >
                 <Col flex="0 0 160px">
                   <div
                     onClick={() => setActiveTouchpointKey('ALL')}
                     style={{
                       border: `1px solid ${activeTouchpointKey === 'ALL' ? token.colorPrimary : token.colorBorderSecondary}`,
-                      background: activeTouchpointKey === 'ALL' 
-                        ? (themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : 'rgba(212, 168, 75, 0.08)')
-                        : (themeMode === 'dark' ? '#000' : '#fafafa'),
+                      background:
+                        activeTouchpointKey === 'ALL'
+                          ? themeMode === 'dark'
+                            ? 'rgba(212, 168, 75, 0.15)'
+                            : 'rgba(212, 168, 75, 0.08)'
+                          : themeMode === 'dark'
+                            ? '#000'
+                            : '#fafafa',
                       borderRadius: '8px',
                       padding: '12px',
                       cursor: 'pointer',
                       textAlign: 'center',
                       transition: 'all 0.2s',
-                      boxShadow: activeTouchpointKey === 'ALL' ? '0 0 10px rgba(212, 168, 75, 0.3)' : 'none'
+                      boxShadow: activeTouchpointKey === 'ALL' ? '0 0 10px rgba(212, 168, 75, 0.3)' : 'none',
                     }}
                   >
-                    <BookOutlined style={{ fontSize: '18px', color: activeTouchpointKey === 'ALL' ? token.colorPrimary : '#888' }} />
-                    <div style={{ fontWeight: '600', marginTop: '6px', fontSize: '13px', color: token.colorText }}>Tất cả</div>
-                    <Text type="secondary" style={{ fontSize: '11px' }}>Toàn bộ danh sách</Text>
+                    <BookOutlined
+                      style={{ fontSize: '18px', color: activeTouchpointKey === 'ALL' ? token.colorPrimary : '#888' }}
+                    />
+                    <div style={{ fontWeight: '600', marginTop: '6px', fontSize: '13px', color: token.colorText }}>
+                      Tất cả
+                    </div>
+                    <Text type="secondary" style={{ fontSize: '11px' }}>
+                      Toàn bộ danh sách
+                    </Text>
                   </div>
                 </Col>
 
                 {activeTouchpointsList.map((tp) => {
                   const isActive = activeTouchpointKey === tp.key;
                   const count = touchpointCounts[tp.key] || 0;
-                  
+
                   // Compute tag color mapping
                   let tagBg = 'rgba(136, 136, 136, 0.1)';
                   let tagBorder = '#888';
                   let activeGlow = 'rgba(136, 136, 136, 0.3)';
-                  
+
                   if (tp.color === 'blue') {
                     tagBg = 'rgba(24, 144, 255, 0.1)';
                     tagBorder = '#1890ff';
@@ -1136,23 +1197,31 @@ export default function NycCampaignPage() {
                         onClick={() => setActiveTouchpointKey(tp.key)}
                         style={{
                           border: `1px solid ${isActive ? tagBorder : token.colorBorderSecondary}`,
-                          background: isActive ? tagBg : (themeMode === 'dark' ? '#000' : '#ffffff'),
+                          background: isActive ? tagBg : themeMode === 'dark' ? '#000' : '#ffffff',
                           borderRadius: '8px',
                           padding: '12px',
                           cursor: 'pointer',
                           position: 'relative',
                           transition: 'all 0.2s',
-                          boxShadow: isActive ? `0 0 12px ${activeGlow}` : 'none'
+                          boxShadow: isActive ? `0 0 12px ${activeGlow}` : 'none',
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Tag color={tp.color}>{tp.label}</Tag>
-                          <Badge count={count} style={{ backgroundColor: tagBorder, color: '#fff' }} overflowCount={999} />
+                          <Badge
+                            count={count}
+                            style={{ backgroundColor: tagBorder, color: '#fff' }}
+                            overflowCount={999}
+                          />
                         </div>
-                        <div style={{ fontWeight: 'bold', marginTop: '10px', fontSize: '14px', color: token.colorText }}>
+                        <div
+                          style={{ fontWeight: 'bold', marginTop: '10px', fontSize: '14px', color: token.colorText }}
+                        >
                           {tp.daysMin === tp.daysMax ? `${tp.daysMin} ngày` : `${tp.daysMin} - ${tp.daysMax} ngày`}
                         </div>
-                        <div style={{ fontSize: '11px', color: token.colorTextDescription, marginTop: '2px' }}>Chưa quay lại tiệm</div>
+                        <div style={{ fontSize: '11px', color: token.colorTextDescription, marginTop: '2px' }}>
+                          Chưa quay lại tiệm
+                        </div>
                       </div>
                     </Col>
                   );
@@ -1183,7 +1252,7 @@ export default function NycCampaignPage() {
               }
               size="large"
             />
-            
+
             <Space>
               <Text type="secondary">Sắp xếp theo:</Text>
               <Select
@@ -1197,13 +1266,13 @@ export default function NycCampaignPage() {
                   { value: 'totalSpent_asc', label: 'Chi tiêu thấp nhất' },
                   { value: 'name_asc', label: 'Tên chữ cái (A-Z)' },
                   { value: 'name_desc', label: 'Tên chữ cái (Z-A)' },
-                  { value: 'id_desc', label: 'Khách hàng mới nhất' }
+                  { value: 'id_desc', label: 'Khách hàng mới nhất' },
                 ]}
               />
               <Tooltip title="Cấu hình hiển thị cột">
-                <Button 
-                  type="text" 
-                  icon={<SettingOutlined style={{ color: token.colorTextDescription }} />} 
+                <Button
+                  type="text"
+                  icon={<SettingOutlined style={{ color: token.colorTextDescription }} />}
                   onClick={openNycConfig}
                 />
               </Tooltip>
@@ -1222,8 +1291,8 @@ export default function NycCampaignPage() {
         rowClassName={getRowClassName}
         components={{
           header: {
-            cell: ResizableHeaderCell
-          }
+            cell: ResizableHeaderCell,
+          },
         }}
         scroll={{ x: 'max-content' }}
         pagination={{
@@ -1236,11 +1305,11 @@ export default function NycCampaignPage() {
             setPageSize(size);
             localStorage.setItem('mos_nyc_pageSize', String(size));
           },
-          style: { marginTop: '16px' }
+          style: { marginTop: '16px' },
         }}
         bordered
         style={{
-          background: themeMode === 'dark' ? '#000000' : token.colorBgContainer
+          background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
         }}
         className="antd-custom-table"
       />
@@ -1266,7 +1335,7 @@ export default function NycCampaignPage() {
             id: cust.id,
             name: cust.name,
             phone: cust.phone,
-            bucket: cust.bucket
+            bucket: cust.bucket,
           });
           setBookingWizardVisible(true);
         }}
@@ -1282,7 +1351,6 @@ export default function NycCampaignPage() {
         }}
         onSuccess={fetchCustomerList}
       />
-
 
       {/* SETTINGS TEMPLATES CONFIG MODAL (Admin only) */}
       <Modal
@@ -1308,15 +1376,13 @@ export default function NycCampaignPage() {
             style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}
           >
             Lưu thành Template chung
-          </Button>
+          </Button>,
         ]}
         width={modalWidth}
         style={{ top: 50 }}
         modalRender={(node) => (
           <div style={{ position: 'relative', pointerEvents: 'none' }}>
-            <div style={{ pointerEvents: 'auto' }}>
-              {node}
-            </div>
+            <div style={{ pointerEvents: 'auto' }}>{node}</div>
             <div
               onMouseDown={handleResizeMouseDown}
               style={{
@@ -1334,7 +1400,7 @@ export default function NycCampaignPage() {
                 background: 'transparent',
                 pointerEvents: 'auto',
                 userSelect: 'none',
-                WebkitUserSelect: 'none'
+                WebkitUserSelect: 'none',
               }}
             >
               <div
@@ -1344,7 +1410,7 @@ export default function NycCampaignPage() {
                   borderBottom: `3px solid ${token.colorPrimary}`,
                   borderRight: `3px solid ${token.colorPrimary}`,
                   borderRadius: '0 0 3px 0',
-                  pointerEvents: 'none'
+                  pointerEvents: 'none',
                 }}
               />
             </div>
@@ -1353,7 +1419,8 @@ export default function NycCampaignPage() {
       >
         <div style={{ margin: '12px 0 20px 0' }}>
           <Text type="secondary">
-            Thiết lập các mốc chạm cho từng tab NYC. Bản lưu này sẽ được xuất bản thành mẫu chung (Template) để mọi nhân sự Online Consultant cùng áp dụng.
+            Thiết lập các mốc chạm cho từng tab NYC. Bản lưu này sẽ được xuất bản thành mẫu chung (Template) để mọi nhân
+            sự Online Consultant cùng áp dụng.
           </Text>
         </div>
 
@@ -1363,7 +1430,7 @@ export default function NycCampaignPage() {
             value={selectedConfigTab}
             onChange={handleConfigTabChange}
             style={{ width: 220 }}
-            options={TAB_KEYS.map(t => ({ value: t.id, label: `${t.name} (${t.rangeText})` }))}
+            options={TAB_KEYS.map((t) => ({ value: t.id, label: `${t.name} (${t.rangeText})` }))}
           />
         </div>
 
@@ -1371,7 +1438,15 @@ export default function NycCampaignPage() {
           <Form.List name="touchpoints">
             {(fields, { add, remove }) => (
               <>
-                <div id="nyc-touchpoints-list" style={{ height: `${modalHeight - 200}px`, minHeight: '200px', overflowY: 'auto', paddingRight: '8px' }}>
+                <div
+                  id="nyc-touchpoints-list"
+                  style={{
+                    height: `${modalHeight - 200}px`,
+                    minHeight: '200px',
+                    overflowY: 'auto',
+                    paddingRight: '8px',
+                  }}
+                >
                   {fields.map(({ key, name, ...restField }) => (
                     <Card
                       key={key}
@@ -1379,7 +1454,7 @@ export default function NycCampaignPage() {
                       style={{
                         marginBottom: '12px',
                         background: themeMode === 'dark' ? '#141414' : '#fafafa',
-                        borderColor: token.colorBorderSecondary
+                        borderColor: token.colorBorderSecondary,
                       }}
                     >
                       <Row gutter={12} align="middle">
@@ -1427,7 +1502,7 @@ export default function NycCampaignPage() {
                                 { value: 'green', label: 'Green' },
                                 { value: 'orange', label: 'Orange' },
                                 { value: 'red', label: 'Red' },
-                                { value: 'gold', label: 'Gold' }
+                                { value: 'gold', label: 'Gold' },
                               ]}
                             />
                           </Form.Item>
@@ -1439,7 +1514,7 @@ export default function NycCampaignPage() {
                           />
                         </Col>
                       </Row>
-                      
+
                       {/* Hidden key field */}
                       <Form.Item
                         {...restField}
@@ -1456,7 +1531,9 @@ export default function NycCampaignPage() {
                 <Form.Item>
                   <Button
                     type="dashed"
-                    onClick={() => add({ key: `tp_${Date.now()}`, label: 'Chạm mới', daysMin: 3, daysMax: 3, color: 'blue' })}
+                    onClick={() =>
+                      add({ key: `tp_${Date.now()}`, label: 'Chạm mới', daysMin: 3, daysMax: 3, color: 'blue' })
+                    }
                     block
                     icon={<PlusOutlined />}
                   >
@@ -1484,7 +1561,7 @@ export default function NycCampaignPage() {
           background: ${themeMode === 'dark' ? '#000000' : '#ffffff'} !important;
           color: ${themeMode === 'dark' ? '#ccc' : '#333'} !important;
         }
-        
+
         .dark-theme .antd-custom-table .ant-table-thead > tr > th {
           background: #141414 !important;
           color: #fff !important;

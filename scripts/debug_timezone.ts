@@ -3,31 +3,31 @@ import { PrismaClient as LegacyPrismaClient } from '../apps/api/src/generated/le
 const legacy = new LegacyPrismaClient({
   datasources: {
     db: {
-      url: "mysql://root:chickisslove@127.0.0.1:3306/management"
-    }
-  }
+      url: 'mysql://root:chickisslove@127.0.0.1:3306/management',
+    },
+  },
 });
 
 async function main() {
   try {
     await legacy.$connect();
-    
+
     const targetDateStr = '2026-07-12';
     const startOfDay = new Date(targetDateStr + 'T00:00:00.000Z');
     const endOfDay = new Date(targetDateStr + 'T23:59:59.999Z');
 
-    console.log("Prisma startOfDay:", startOfDay.toISOString());
-    console.log("Prisma endOfDay:", endOfDay.toISOString());
+    console.log('Prisma startOfDay:', startOfDay.toISOString());
+    console.log('Prisma endOfDay:', endOfDay.toISOString());
 
     // Prisma query
     const prismaOrders = await legacy.order.findMany({
       where: {
         date_created: {
           gte: startOfDay,
-          lte: endOfDay
+          lte: endOfDay,
         },
-        order_state: { not: 'Cancelled' }
-      }
+        order_state: { not: 'Cancelled' },
+      },
     });
 
     console.log(`Prisma found ${prismaOrders.length} orders`);
@@ -42,15 +42,14 @@ async function main() {
     console.log(`Raw SQL found ${rawOrders.length} orders`);
 
     // Let's print the IDs of prismaOrders and rawOrders to see the difference
-    const prismaIds = prismaOrders.map(o => Number(o.id)).sort((a,b)=>a-b);
-    const rawIds = rawOrders.map(o => Number(o.id)).sort((a,b)=>a-b);
+    const prismaIds = prismaOrders.map((o) => Number(o.id)).sort((a, b) => a - b);
+    const rawIds = rawOrders.map((o) => Number(o.id)).sort((a, b) => a - b);
 
-    const onlyInPrisma = prismaIds.filter(id => !rawIds.includes(id));
-    const onlyInRaw = rawIds.filter(id => !prismaIds.includes(id));
+    const onlyInPrisma = prismaIds.filter((id) => !rawIds.includes(id));
+    const onlyInRaw = rawIds.filter((id) => !prismaIds.includes(id));
 
-    console.log("Only in Prisma:", onlyInPrisma);
-    console.log("Only in Raw:", onlyInRaw);
-
+    console.log('Only in Prisma:', onlyInPrisma);
+    console.log('Only in Raw:', onlyInRaw);
   } catch (err) {
     console.error(err);
   } finally {

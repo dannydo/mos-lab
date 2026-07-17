@@ -10,13 +10,13 @@ async function run() {
   if (count > 0) {
     const minMax = await crm.crmCallLog.aggregate({
       _min: { createdAt: true },
-      _max: { createdAt: true }
+      _max: { createdAt: true },
     });
     console.log('crm_call_log min/max date:', minMax);
 
     const recent = await crm.crmCallLog.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 5
+      take: 5,
     });
     console.log('Recent 5 calls in CRM:', recent);
   }

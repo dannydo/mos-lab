@@ -27,7 +27,7 @@ import {
   Tooltip,
   Popconfirm,
   Checkbox,
-  Tabs
+  Tabs,
 } from 'antd';
 import {
   UserOutlined,
@@ -45,7 +45,7 @@ import {
   EnvironmentOutlined,
   KeyOutlined,
   BgColorsOutlined,
-  SafetyCertificateOutlined
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
@@ -79,7 +79,7 @@ const PRESET_COLORS = [
   { value: 'pink', label: 'Pink' },
   { value: 'geekblue', label: 'Geek Blue' },
   { value: 'magenta', label: 'Magenta' },
-  { value: 'lime', label: 'Lime' }
+  { value: 'lime', label: 'Lime' },
 ];
 
 export default function StaffPage() {
@@ -92,7 +92,9 @@ export default function StaffPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [rolesLoading, setRolesLoading] = useState(false);
-  const [legacyStaffList, setLegacyStaffList] = useState<{ id: number; name: string; phone?: string | null; email?: string | null }[]>([]);
+  const [legacyStaffList, setLegacyStaffList] = useState<
+    { id: number; name: string; phone?: string | null; email?: string | null }[]
+  >([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -206,7 +208,7 @@ export default function StaffPage() {
         emergencyPhone: staff.emergencyPhone,
         notes: staff.notes,
         password: '',
-        legacyStaffId: staff.legacyStaffId || null
+        legacyStaffId: staff.legacyStaffId || null,
       });
     } else {
       staffForm.resetFields();
@@ -214,7 +216,7 @@ export default function StaffPage() {
         role: roles[0]?.key || 'telesales',
         isActive: true,
         gender: 'Other',
-        legacyStaffId: null
+        legacyStaffId: null,
       });
     }
     setIsStaffModalOpen(true);
@@ -319,7 +321,7 @@ export default function StaffPage() {
         viewKPI: role.viewKPI,
         viewTeamKPI: role.viewTeamKPI,
         manageStaff: role.manageStaff,
-        description: role.description
+        description: role.description,
       });
     } else {
       roleForm.resetFields();
@@ -327,7 +329,7 @@ export default function StaffPage() {
         color: 'default',
         viewKPI: false,
         viewTeamKPI: false,
-        manageStaff: false
+        manageStaff: false,
       });
     }
     setIsRoleModalOpen(true);
@@ -374,48 +376,51 @@ export default function StaffPage() {
       key: 'name',
       render: (_: any, record: Staff) => {
         const initials = record.displayName
-          ? record.displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+          ? record.displayName
+              .split(' ')
+              .map((n) => n[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase()
           : '??';
         const isOnline = !!(record.lastActiveAt && dayjs().diff(dayjs(record.lastActiveAt), 'minute') < 5);
         return (
           <Space>
             <Badge dot={isOnline} status="success" offset={[-2, 28]}>
-              <Avatar 
+              <Avatar
                 src={record.avatarUrl || undefined}
                 icon={!record.avatarUrl ? <UserOutlined /> : undefined}
-                style={{ 
-                  backgroundColor: token.colorPrimary, 
+                style={{
+                  backgroundColor: token.colorPrimary,
                   color: '#000',
-                  fontWeight: '600'
+                  fontWeight: '600',
                 }}
               >
                 {initials}
               </Avatar>
             </Badge>
             <div>
-              <Text style={{ fontWeight: 600, display: 'block', color: token.colorText }}>
-                {record.displayName}
-              </Text>
+              <Text style={{ fontWeight: 600, display: 'block', color: token.colorText }}>{record.displayName}</Text>
               <Text type="secondary" style={{ fontSize: '12px' }}>
                 {record.username}
               </Text>
             </div>
           </Space>
         );
-      }
+      },
     },
     {
       title: 'Vai trò',
       dataIndex: 'role',
       key: 'role',
       render: (roleKey: string) => {
-        const matched = roles.find(r => r.key === roleKey);
+        const matched = roles.find((r) => r.key === roleKey);
         return (
           <Tag color={matched?.color || 'default'} style={{ fontWeight: '500', borderRadius: '4px' }}>
             {matched?.name || roleKey}
           </Tag>
         );
-      }
+      },
     },
     {
       title: 'Liên hệ',
@@ -431,19 +436,30 @@ export default function StaffPage() {
           {record.email ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
               <MailOutlined style={{ color: '#888' }} />
-              <Text type="secondary" style={{ fontSize: '12px' }}>{record.email}</Text>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {record.email}
+              </Text>
             </div>
-          ) : (
-            record.phone ? null : <Text type="secondary" italic style={{ fontSize: '12px' }}>Chưa cập nhật</Text>
+          ) : record.phone ? null : (
+            <Text type="secondary" italic style={{ fontSize: '12px' }}>
+              Chưa cập nhật
+            </Text>
           )}
         </div>
-      )
+      ),
     },
     {
       title: 'Ngày vào làm',
       dataIndex: 'joinedAt',
       key: 'joinedAt',
-      render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY') : <Text type="secondary" italic style={{ fontSize: '12px' }}>Chưa thiết lập</Text>
+      render: (date: string) =>
+        date ? (
+          dayjs(date).format('DD/MM/YYYY')
+        ) : (
+          <Text type="secondary" italic style={{ fontSize: '12px' }}>
+            Chưa thiết lập
+          </Text>
+        ),
     },
     {
       title: 'Đăng nhập cuối',
@@ -459,7 +475,7 @@ export default function StaffPage() {
 
         const lastLogin = dayjs(record.lastLoginAt);
         const now = dayjs();
-        
+
         let lastLoginStr = '';
         if (lastLogin.isSame(now, 'day')) {
           lastLoginStr = `Hôm nay ${lastLogin.format('HH:mm')}`;
@@ -469,12 +485,8 @@ export default function StaffPage() {
           lastLoginStr = lastLogin.format('DD/MM/YYYY HH:mm');
         }
 
-        return (
-          <Text style={{ fontSize: '13px', fontWeight: '500', color: token.colorText }}>
-            {lastLoginStr}
-          </Text>
-        );
-      }
+        return <Text style={{ fontSize: '13px', fontWeight: '500', color: token.colorText }}>{lastLoginStr}</Text>;
+      },
     },
     {
       title: 'Lần cuối online',
@@ -514,12 +526,8 @@ export default function StaffPage() {
           }
         }
 
-        return (
-          <Text style={{ fontSize: '13px', color: token.colorTextDescription }}>
-            {activeStatusText}
-          </Text>
-        );
-      }
+        return <Text style={{ fontSize: '13px', color: token.colorTextDescription }}>{activeStatusText}</Text>;
+      },
     },
     {
       title: 'Trạng thái',
@@ -527,14 +535,10 @@ export default function StaffPage() {
       width: 150,
       render: (_: any, record: Staff) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
-          <Switch
-            checked={record.isActive}
-            onChange={(checked) => handleToggleActive(record, checked)}
-            size="small"
-          />
+          <Switch checked={record.isActive} onChange={(checked) => handleToggleActive(record, checked)} size="small" />
           <Badge status={record.isActive ? 'success' : 'default'} text={record.isActive ? 'Active' : 'Locked'} />
         </div>
-      )
+      ),
     },
     {
       title: 'Thao tác',
@@ -579,16 +583,13 @@ export default function StaffPage() {
                 cancelText="Hủy"
                 okButtonProps={{ danger: true }}
               >
-                <Button
-                  type="text"
-                  icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />}
-                />
+                <Button type="text" icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />} />
               </Popconfirm>
             </Tooltip>
           </Space>
         );
-      }
-    }
+      },
+    },
   ];
 
   // Table columns for Roles Management
@@ -607,33 +608,63 @@ export default function StaffPage() {
             </Tooltip>
           )}
         </Space>
-      )
+      ),
     },
     {
       title: 'Mã (Key)',
       dataIndex: 'key',
       key: 'key',
-      render: (key: string) => <code style={{ fontSize: '12px', background: themeMode === 'dark' ? '#222' : '#f5f5f5', padding: '2px 6px', borderRadius: '4px' }}>{key}</code>
+      render: (key: string) => (
+        <code
+          style={{
+            fontSize: '12px',
+            background: themeMode === 'dark' ? '#222' : '#f5f5f5',
+            padding: '2px 6px',
+            borderRadius: '4px',
+          }}
+        >
+          {key}
+        </code>
+      ),
     },
     {
       title: 'Quyền hạn (Permissions)',
       key: 'permissions',
       render: (_: any, record: Role) => (
         <Space wrap size={[4, 8]}>
-          {record.viewKPI && <Tag color="blue" bordered={false}>Xem KPI cá nhân</Tag>}
-          {record.viewTeamKPI && <Tag color="purple" bordered={false}>Xem KPI nhóm</Tag>}
-          {record.manageStaff && <Tag color="red" bordered={false}>Quản lý nhân sự</Tag>}
+          {record.viewKPI && (
+            <Tag color="blue" bordered={false}>
+              Xem KPI cá nhân
+            </Tag>
+          )}
+          {record.viewTeamKPI && (
+            <Tag color="purple" bordered={false}>
+              Xem KPI nhóm
+            </Tag>
+          )}
+          {record.manageStaff && (
+            <Tag color="red" bordered={false}>
+              Quản lý nhân sự
+            </Tag>
+          )}
           {!record.viewKPI && !record.viewTeamKPI && !record.manageStaff && (
-            <Text type="secondary" italic style={{ fontSize: '12px' }}>Không có quyền đặc biệt</Text>
+            <Text type="secondary" italic style={{ fontSize: '12px' }}>
+              Không có quyền đặc biệt
+            </Text>
           )}
         </Space>
-      )
+      ),
     },
     {
       title: 'Mô tả',
       dataIndex: 'description',
       key: 'description',
-      render: (desc: string) => desc || <Text type="secondary" italic style={{ fontSize: '12px' }}>Không có mô tả</Text>
+      render: (desc: string) =>
+        desc || (
+          <Text type="secondary" italic style={{ fontSize: '12px' }}>
+            Không có mô tả
+          </Text>
+        ),
     },
     {
       title: 'Thao tác',
@@ -648,7 +679,7 @@ export default function StaffPage() {
               onClick={() => openRoleModal(record)}
             />
           </Tooltip>
-          <Tooltip title={record.isSystem ? "Không thể xóa vai trò mặc định của hệ thống" : "Xóa vai trò"}>
+          <Tooltip title={record.isSystem ? 'Không thể xóa vai trò mặc định của hệ thống' : 'Xóa vai trò'}>
             <Popconfirm
               title="Xóa vai trò"
               description={`Bạn có chắc chắn muốn xóa vai trò "${record.name}"?`}
@@ -658,17 +689,12 @@ export default function StaffPage() {
               cancelText="Hủy"
               okButtonProps={{ danger: true }}
             >
-              <Button
-                type="text"
-                danger
-                disabled={record.isSystem}
-                icon={<DeleteOutlined />}
-              />
+              <Button type="text" danger disabled={record.isSystem} icon={<DeleteOutlined />} />
             </Popconfirm>
           </Tooltip>
         </Space>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -694,7 +720,7 @@ export default function StaffPage() {
                 borderColor: '#D4A84B',
                 color: '#000',
                 fontWeight: '600',
-                borderRadius: '6px'
+                borderRadius: '6px',
               }}
             >
               Thêm Nhân Viên
@@ -709,7 +735,7 @@ export default function StaffPage() {
                 borderColor: '#D4A84B',
                 color: '#000',
                 fontWeight: '600',
-                borderRadius: '6px'
+                borderRadius: '6px',
               }}
             >
               Thêm Vai Trò
@@ -739,7 +765,7 @@ export default function StaffPage() {
                     marginBottom: '20px',
                     background: themeMode === 'dark' ? '#141414' : token.colorBgContainer,
                     border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`,
-                    borderRadius: '8px'
+                    borderRadius: '8px',
                   }}
                 >
                   <Row gutter={16}>
@@ -762,7 +788,9 @@ export default function StaffPage() {
                       >
                         <Option value="all">Tất cả vai trò</Option>
                         {roles.map((r) => (
-                          <Option key={r.key} value={r.key}>{r.name}</Option>
+                          <Option key={r.key} value={r.key}>
+                            {r.name}
+                          </Option>
                         ))}
                       </Select>
                     </Col>
@@ -779,7 +807,7 @@ export default function StaffPage() {
                       </Select>
                     </Col>
                     <Col xs={24} sm={24} md={2} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <Button 
+                      <Button
                         onClick={() => {
                           setSearchQuery('');
                           setFilterRole('all');
@@ -808,15 +836,15 @@ export default function StaffPage() {
                       setCurrentPage(page);
                       setPageSize(size);
                       localStorage.setItem('mos_staff_pageSize', String(size));
-                    }
+                    },
                   }}
                   style={{
-                    background: themeMode === 'dark' ? '#141414' : '#fff'
+                    background: themeMode === 'dark' ? '#141414' : '#fff',
                   }}
                   className="antd-custom-table"
                 />
               </>
-            )
+            ),
           },
           {
             key: 'roles',
@@ -834,12 +862,12 @@ export default function StaffPage() {
                 loading={rolesLoading}
                 pagination={false}
                 style={{
-                  background: themeMode === 'dark' ? '#141414' : '#fff'
+                  background: themeMode === 'dark' ? '#141414' : '#fff',
                 }}
                 className="antd-custom-table"
               />
-            )
-          }
+            ),
+          },
         ]}
       />
 
@@ -856,7 +884,7 @@ export default function StaffPage() {
         width={700}
         destroyOnHidden
         style={{
-          background: themeMode === 'dark' ? '#141414' : '#fff'
+          background: themeMode === 'dark' ? '#141414' : '#fff',
         }}
       >
         <Form
@@ -866,7 +894,7 @@ export default function StaffPage() {
           style={{ marginTop: '20px' }}
           autoComplete="off"
         >
-          <StaffTabsContent 
+          <StaffTabsContent
             themeMode={themeMode}
             token={token}
             editingStaff={editingStaff}
@@ -892,15 +920,10 @@ export default function StaffPage() {
         width={600}
         destroyOnHidden
         style={{
-          background: themeMode === 'dark' ? '#141414' : '#fff'
+          background: themeMode === 'dark' ? '#141414' : '#fff',
         }}
       >
-        <Form
-          form={roleForm}
-          layout="vertical"
-          onFinish={handleRoleSubmit}
-          style={{ marginTop: '20px' }}
-        >
+        <Form form={roleForm} layout="vertical" onFinish={handleRoleSubmit} style={{ marginTop: '20px' }}>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -915,10 +938,17 @@ export default function StaffPage() {
                 }
                 rules={[
                   { required: true, message: 'Vui lòng nhập mã định danh!' },
-                  { pattern: /^[a-z0-9-_]+$/, message: 'Mã định danh chỉ gồm chữ thường viết liền, gạch ngang, gạch dưới!' }
+                  {
+                    pattern: /^[a-z0-9-_]+$/,
+                    message: 'Mã định danh chỉ gồm chữ thường viết liền, gạch ngang, gạch dưới!',
+                  },
                 ]}
               >
-                <Input placeholder="ví dụ: admin-assistant" disabled={!!editingRole} prefix={<KeyOutlined style={{ color: '#888' }} />} />
+                <Input
+                  placeholder="ví dụ: admin-assistant"
+                  disabled={!!editingRole}
+                  prefix={<KeyOutlined style={{ color: '#888' }} />}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -955,10 +985,7 @@ export default function StaffPage() {
             </Col>
           </Row>
 
-          <Form.Item
-            name="description"
-            label={<Text style={{ color: token.colorText }}>Mô tả vai trò</Text>}
-          >
+          <Form.Item name="description" label={<Text style={{ color: token.colorText }}>Mô tả vai trò</Text>}>
             <TextArea rows={2} placeholder="Nhiệm vụ, phạm vi công việc của nhóm quyền..." />
           </Form.Item>
 
@@ -973,7 +1000,7 @@ export default function StaffPage() {
             style={{
               background: themeMode === 'dark' ? '#1c1c1c' : '#fafafa',
               border: `1px solid ${themeMode === 'dark' ? '#2d2d2d' : '#e8e8e8'}`,
-              marginBottom: '20px'
+              marginBottom: '20px',
             }}
           >
             <Row gutter={[16, 16]}>
@@ -981,7 +1008,9 @@ export default function StaffPage() {
                 <Form.Item name="viewKPI" valuePropName="checked" style={{ marginBottom: 4 }}>
                   <Checkbox disabled={editingRole?.key === 'admin'}>
                     <Text style={{ fontWeight: 500 }}>Xem báo cáo KPI cá nhân (`viewKPI`)</Text>
-                    <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>Cho phép xem hiệu suất kế hoạch cuộc gọi, lịch hẹn của riêng tài khoản này.</Paragraph>
+                    <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
+                      Cho phép xem hiệu suất kế hoạch cuộc gọi, lịch hẹn của riêng tài khoản này.
+                    </Paragraph>
                   </Checkbox>
                 </Form.Item>
               </Col>
@@ -989,7 +1018,9 @@ export default function StaffPage() {
                 <Form.Item name="viewTeamKPI" valuePropName="checked" style={{ marginBottom: 4 }}>
                   <Checkbox disabled={editingRole?.key === 'admin'}>
                     <Text style={{ fontWeight: 500 }}>Xem báo cáo KPI Nhóm (`viewTeamKPI`)</Text>
-                    <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>Cho phép xem bảng xếp hạng (leaderboard) và hiệu suất KPI của cả đội nhóm.</Paragraph>
+                    <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
+                      Cho phép xem bảng xếp hạng (leaderboard) và hiệu suất KPI của cả đội nhóm.
+                    </Paragraph>
                   </Checkbox>
                 </Form.Item>
               </Col>
@@ -997,7 +1028,9 @@ export default function StaffPage() {
                 <Form.Item name="manageStaff" valuePropName="checked" style={{ marginBottom: 4 }}>
                   <Checkbox disabled={editingRole?.key === 'admin'}>
                     <Text style={{ fontWeight: 500 }}>Quản lý Nhân sự & Vai trò (`manageStaff`)</Text>
-                    <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>Toàn quyền truy cập tab quản trị, thêm/sửa/xóa nhân viên, cấu hình nhóm quyền.</Paragraph>
+                    <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
+                      Toàn quyền truy cập tab quản trị, thêm/sửa/xóa nhân viên, cấu hình nhóm quyền.
+                    </Paragraph>
                   </Checkbox>
                 </Form.Item>
               </Col>
@@ -1014,7 +1047,7 @@ export default function StaffPage() {
                 background: '#D4A84B',
                 borderColor: '#D4A84B',
                 color: '#000',
-                fontWeight: '600'
+                fontWeight: '600',
               }}
             >
               {editingRole ? 'Lưu thay đổi' : 'Tạo vai trò mới'}
@@ -1039,12 +1072,12 @@ export default function StaffPage() {
           body: {
             background: themeMode === 'dark' ? '#141414' : '#fafafa',
             color: token.colorText,
-            padding: '24px'
+            padding: '24px',
           },
           header: {
             background: themeMode === 'dark' ? '#1d1d1d' : '#fff',
-            borderBottom: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`
-          }
+            borderBottom: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`,
+          },
         }}
       >
         {selectedStaff && (
@@ -1060,11 +1093,16 @@ export default function StaffPage() {
                   color: '#000',
                   fontSize: '32px',
                   fontWeight: 'bold',
-                  boxShadow: '0 4px 12px rgba(212, 168, 75, 0.25)'
+                  boxShadow: '0 4px 12px rgba(212, 168, 75, 0.25)',
                 }}
               >
                 {selectedStaff.displayName
-                  ? selectedStaff.displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+                  ? selectedStaff.displayName
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()
                   : '??'}
               </Avatar>
               <div>
@@ -1075,8 +1113,8 @@ export default function StaffPage() {
                   @{selectedStaff.username}
                 </Paragraph>
                 <Space>
-                  <Tag color={roles.find(r => r.key === selectedStaff.role)?.color || 'default'}>
-                    {roles.find(r => r.key === selectedStaff.role)?.name || selectedStaff.role}
+                  <Tag color={roles.find((r) => r.key === selectedStaff.role)?.color || 'default'}>
+                    {roles.find((r) => r.key === selectedStaff.role)?.name || selectedStaff.role}
                   </Tag>
                   <Tag color={selectedStaff.isActive ? 'success' : 'error'}>
                     {selectedStaff.isActive ? 'Đang hoạt động' : 'Tài khoản khóa'}
@@ -1088,7 +1126,13 @@ export default function StaffPage() {
             <Divider style={{ margin: '16px 0' }} />
 
             {/* General Info */}
-            <Descriptions title={<Text style={{ color: '#D4A84B', fontSize: '15px', fontWeight: 'bold' }}>Thông tin cơ bản</Text>} column={1} bordered size="small" style={{ marginBottom: '24px' }}>
+            <Descriptions
+              title={<Text style={{ color: '#D4A84B', fontSize: '15px', fontWeight: 'bold' }}>Thông tin cơ bản</Text>}
+              column={1}
+              bordered
+              size="small"
+              style={{ marginBottom: '24px' }}
+            >
               <Descriptions.Item label="ID nhân sự">{selectedStaff.id}</Descriptions.Item>
               <Descriptions.Item label="Họ và tên">{selectedStaff.displayName}</Descriptions.Item>
               <Descriptions.Item label="Tên đăng nhập (Username)">
@@ -1099,21 +1143,46 @@ export default function StaffPage() {
                   </Tooltip>
                 </Space>
               </Descriptions.Item>
-              <Descriptions.Item label="Email liên hệ">{selectedStaff.email || <Text type="secondary" italic>Chưa khai báo</Text>}</Descriptions.Item>
-              <Descriptions.Item label="Số điện thoại">{selectedStaff.phone || <Text type="secondary" italic>Chưa khai báo</Text>}</Descriptions.Item>
+              <Descriptions.Item label="Email liên hệ">
+                {selectedStaff.email || (
+                  <Text type="secondary" italic>
+                    Chưa khai báo
+                  </Text>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Số điện thoại">
+                {selectedStaff.phone || (
+                  <Text type="secondary" italic>
+                    Chưa khai báo
+                  </Text>
+                )}
+              </Descriptions.Item>
               <Descriptions.Item label="Tài khoản Wings Lashes">
                 {selectedStaff.legacyStaffId ? (
                   <Text style={{ fontWeight: '500', color: token.colorPrimary }}>
-                    {legacyStaffList.find(s => s.id === selectedStaff.legacyStaffId)?.name || `ID: ${selectedStaff.legacyStaffId}`}
+                    {legacyStaffList.find((s) => s.id === selectedStaff.legacyStaffId)?.name ||
+                      `ID: ${selectedStaff.legacyStaffId}`}
                   </Text>
                 ) : (
-                  <Text type="secondary" italic>Chưa liên kết (Tự động đối khớp bằng tên)</Text>
+                  <Text type="secondary" italic>
+                    Chưa liên kết (Tự động đối khớp bằng tên)
+                  </Text>
                 )}
               </Descriptions.Item>
             </Descriptions>
 
             {/* HR specific data */}
-            <Descriptions title={<Text style={{ color: '#D4A84B', fontSize: '15px', fontWeight: 'bold' }}>Thông tin nhân sự & Công việc</Text>} column={1} bordered size="small" style={{ marginBottom: '24px' }}>
+            <Descriptions
+              title={
+                <Text style={{ color: '#D4A84B', fontSize: '15px', fontWeight: 'bold' }}>
+                  Thông tin nhân sự & Công việc
+                </Text>
+              }
+              column={1}
+              bordered
+              size="small"
+              style={{ marginBottom: '24px' }}
+            >
               <Descriptions.Item label="Ngày bắt đầu làm việc">
                 {selectedStaff.joinedAt ? (
                   <Space>
@@ -1121,11 +1190,19 @@ export default function StaffPage() {
                     <Text>{dayjs(selectedStaff.joinedAt).format('DD [tháng] MM, YYYY')}</Text>
                   </Space>
                 ) : (
-                  <Text type="secondary" italic>Chưa thiết lập</Text>
+                  <Text type="secondary" italic>
+                    Chưa thiết lập
+                  </Text>
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày sinh">
-                {selectedStaff.birthDate ? dayjs(selectedStaff.birthDate).format('DD/MM/YYYY') : <Text type="secondary" italic>Chưa thiết lập</Text>}
+                {selectedStaff.birthDate ? (
+                  dayjs(selectedStaff.birthDate).format('DD/MM/YYYY')
+                ) : (
+                  <Text type="secondary" italic>
+                    Chưa thiết lập
+                  </Text>
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="Giới tính">
                 {selectedStaff.gender === 'Male' ? 'Nam' : selectedStaff.gender === 'Female' ? 'Nữ' : 'Khác'}
@@ -1137,7 +1214,9 @@ export default function StaffPage() {
                     <span>{selectedStaff.address}</span>
                   </span>
                 ) : (
-                  <Text type="secondary" italic>Chưa cập nhật</Text>
+                  <Text type="secondary" italic>
+                    Chưa cập nhật
+                  </Text>
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày tạo tài khoản">
@@ -1146,23 +1225,37 @@ export default function StaffPage() {
             </Descriptions>
 
             {/* Emergency Contact */}
-            <Descriptions title={<Text style={{ color: '#D4A84B', fontSize: '15px', fontWeight: 'bold' }}>Liên hệ khẩn cấp</Text>} column={1} bordered size="small" style={{ marginBottom: '24px' }}>
+            <Descriptions
+              title={<Text style={{ color: '#D4A84B', fontSize: '15px', fontWeight: 'bold' }}>Liên hệ khẩn cấp</Text>}
+              column={1}
+              bordered
+              size="small"
+              style={{ marginBottom: '24px' }}
+            >
               <Descriptions.Item label="Người liên hệ">
-                {selectedStaff.emergencyContact || <Text type="secondary" italic>Chưa khai báo</Text>}
+                {selectedStaff.emergencyContact || (
+                  <Text type="secondary" italic>
+                    Chưa khai báo
+                  </Text>
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="Số điện thoại liên hệ">
-                {selectedStaff.emergencyPhone || <Text type="secondary" italic>Chưa khai báo</Text>}
+                {selectedStaff.emergencyPhone || (
+                  <Text type="secondary" italic>
+                    Chưa khai báo
+                  </Text>
+                )}
               </Descriptions.Item>
             </Descriptions>
 
             {/* Notes */}
             {selectedStaff.notes && (
-              <Card 
-                title={<Text style={{ color: '#D4A84B', fontSize: '14px', fontWeight: 'bold' }}>Ghi chú nội bộ</Text>} 
+              <Card
+                title={<Text style={{ color: '#D4A84B', fontSize: '14px', fontWeight: 'bold' }}>Ghi chú nội bộ</Text>}
                 size="small"
-                style={{ 
+                style={{
                   background: themeMode === 'dark' ? '#1c1c1c' : '#fff',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`
+                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
                 }}
               >
                 <Text style={{ whiteSpace: 'pre-wrap' }}>{selectedStaff.notes}</Text>
@@ -1176,21 +1269,21 @@ export default function StaffPage() {
 }
 
 // Subcomponent for organization tabs inside Add/Edit Modal
-function StaffTabsContent({ 
-  themeMode, 
-  token, 
-  editingStaff, 
-  submitting, 
-  form, 
+function StaffTabsContent({
+  themeMode,
+  token,
+  editingStaff,
+  submitting,
+  form,
   roles,
   onCancel,
-  legacyStaffList
-}: { 
-  themeMode: string; 
-  token: any; 
-  editingStaff: Staff | null; 
-  submitting: boolean; 
-  form: any; 
+  legacyStaffList,
+}: {
+  themeMode: string;
+  token: any;
+  editingStaff: Staff | null;
+  submitting: boolean;
+  form: any;
   roles: Role[];
   onCancel: () => void;
   legacyStaffList: { id: number; name: string; phone?: string | null; email?: string | null }[];
@@ -1200,7 +1293,13 @@ function StaffTabsContent({
   return (
     <div>
       {/* Custom simple visual tab headers */}
-      <div style={{ display: 'flex', borderBottom: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`, marginBottom: '20px' }}>
+      <div
+        style={{
+          display: 'flex',
+          borderBottom: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`,
+          marginBottom: '20px',
+        }}
+      >
         <button
           type="button"
           onClick={() => setActiveTab('account')}
@@ -1211,7 +1310,7 @@ function StaffTabsContent({
             borderBottom: activeTab === 'account' ? '2px solid #D4A84B' : 'none',
             color: activeTab === 'account' ? '#D4A84B' : token.colorTextDescription,
             fontWeight: activeTab === 'account' ? 'bold' : 'normal',
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
         >
           Thông tin tài khoản
@@ -1226,7 +1325,7 @@ function StaffTabsContent({
             borderBottom: activeTab === 'profile' ? '2px solid #D4A84B' : 'none',
             color: activeTab === 'profile' ? '#D4A84B' : token.colorTextDescription,
             fontWeight: activeTab === 'profile' ? 'bold' : 'normal',
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
         >
           Hồ sơ nhân sự (HR)
@@ -1249,11 +1348,11 @@ function StaffTabsContent({
                 }
                 rules={[
                   { required: true, message: 'Vui lòng nhập tên đăng nhập!' },
-                  { min: 3, message: 'Tên đăng nhập tối thiểu phải có 3 ký tự!' }
+                  { min: 3, message: 'Tên đăng nhập tối thiểu phải có 3 ký tự!' },
                 ]}
               >
-                <Input 
-                  placeholder="nguyenvan@gmail.com hoặc nguyenvan" 
+                <Input
+                  placeholder="nguyenvan@gmail.com hoặc nguyenvan"
                   prefix={<UserOutlined style={{ color: '#888' }} />}
                   autoComplete="new-username"
                 />
@@ -1279,7 +1378,9 @@ function StaffTabsContent({
               >
                 <Select placeholder="Chọn vai trò">
                   {roles.map((r) => (
-                    <Option key={r.key} value={r.key}>{r.name}</Option>
+                    <Option key={r.key} value={r.key}>
+                      {r.name}
+                    </Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -1290,14 +1391,20 @@ function StaffTabsContent({
                 label={
                   <Space>
                     <Text style={{ color: token.colorText }}>Mật khẩu đăng nhập</Text>
-                    <Tooltip title={editingStaff ? "Để trống nếu không muốn thay đổi mật khẩu đăng nhập trực tiếp" : "Mật khẩu cho đăng nhập thủ công bằng tài khoản. Không bắt buộc nếu chỉ dùng Google Auth."}>
+                    <Tooltip
+                      title={
+                        editingStaff
+                          ? 'Để trống nếu không muốn thay đổi mật khẩu đăng nhập trực tiếp'
+                          : 'Mật khẩu cho đăng nhập thủ công bằng tài khoản. Không bắt buộc nếu chỉ dùng Google Auth.'
+                      }
+                    >
                       <InfoCircleOutlined style={{ color: '#888' }} />
                     </Tooltip>
                   </Space>
                 }
               >
-                <Input.Password 
-                  placeholder={editingStaff ? "Nhập mật khẩu mới để reset" : "Nhập mật khẩu tài khoản"} 
+                <Input.Password
+                  placeholder={editingStaff ? 'Nhập mật khẩu mới để reset' : 'Nhập mật khẩu tài khoản'}
                   prefix={<LockOutlined style={{ color: '#888' }} />}
                   autoComplete="new-password"
                 />
@@ -1331,10 +1438,16 @@ function StaffTabsContent({
                   </Space>
                 }
               >
-                <Select placeholder="Chọn tài khoản Wings Lashes liên kết" allowClear showSearch optionFilterProp="children">
+                <Select
+                  placeholder="Chọn tài khoản Wings Lashes liên kết"
+                  allowClear
+                  showSearch
+                  optionFilterProp="children"
+                >
                   {legacyStaffList.map((item) => (
                     <Option key={item.id} value={item.id}>
-                      {item.name} {item.phone ? ` - ${item.phone}` : ''} {item.email ? ` - ${item.email}` : ''} (ID: {item.id})
+                      {item.name} {item.phone ? ` - ${item.phone}` : ''} {item.email ? ` - ${item.email}` : ''} (ID:{' '}
+                      {item.id})
                     </Option>
                   ))}
                 </Select>
@@ -1355,10 +1468,7 @@ function StaffTabsContent({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                name="phone"
-                label={<Text style={{ color: token.colorText }}>Số điện thoại</Text>}
-              >
+              <Form.Item name="phone" label={<Text style={{ color: token.colorText }}>Số điện thoại</Text>}>
                 <Input placeholder="0901234567" prefix={<PhoneOutlined style={{ color: '#888' }} />} />
               </Form.Item>
             </Col>
@@ -1366,26 +1476,17 @@ function StaffTabsContent({
 
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item
-                name="joinedAt"
-                label={<Text style={{ color: token.colorText }}>Ngày vào làm</Text>}
-              >
+              <Form.Item name="joinedAt" label={<Text style={{ color: token.colorText }}>Ngày vào làm</Text>}>
                 <DatePicker style={{ width: '100%' }} placeholder="Chọn ngày" format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item
-                name="birthDate"
-                label={<Text style={{ color: token.colorText }}>Ngày sinh</Text>}
-              >
+              <Form.Item name="birthDate" label={<Text style={{ color: token.colorText }}>Ngày sinh</Text>}>
                 <DatePicker style={{ width: '100%' }} placeholder="Chọn ngày" format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item
-                name="gender"
-                label={<Text style={{ color: token.colorText }}>Giới tính</Text>}
-              >
+              <Form.Item name="gender" label={<Text style={{ color: token.colorText }}>Giới tính</Text>}>
                 <Select placeholder="Chọn giới tính">
                   <Option value="Male">Nam</Option>
                   <Option value="Female">Nữ</Option>
@@ -1397,10 +1498,7 @@ function StaffTabsContent({
 
           <Row gutter={16}>
             <Col span={24}>
-              <Form.Item
-                name="address"
-                label={<Text style={{ color: token.colorText }}>Địa chỉ thường trú</Text>}
-              >
+              <Form.Item name="address" label={<Text style={{ color: token.colorText }}>Địa chỉ thường trú</Text>}>
                 <Input placeholder="Số nhà, Tên đường, Quận/Huyện, Tỉnh/TP" />
               </Form.Item>
             </Col>
@@ -1427,10 +1525,7 @@ function StaffTabsContent({
 
           <Row gutter={16}>
             <Col span={24}>
-              <Form.Item
-                name="notes"
-                label={<Text style={{ color: token.colorText }}>Ghi chú nhân sự</Text>}
-              >
+              <Form.Item name="notes" label={<Text style={{ color: token.colorText }}>Ghi chú nhân sự</Text>}>
                 <TextArea rows={3} placeholder="Ghi chú về năng lực, đãi ngộ, thông tin hợp đồng,..." />
               </Form.Item>
             </Col>
@@ -1450,7 +1545,7 @@ function StaffTabsContent({
             background: '#D4A84B',
             borderColor: '#D4A84B',
             color: '#000',
-            fontWeight: '600'
+            fontWeight: '600',
           }}
         >
           {editingStaff ? 'Lưu thay đổi' : 'Tạo mới nhân viên'}

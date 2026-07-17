@@ -1,493 +1,503 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Modern Industry Header Mockups - 10 Thiết kế Giao diện Best Practice</title>
-  <style>
-    :root {
-      --bg-dark: #09090b; /* Shadcn zinc-950 */
-      --card-dark: #18181b; /* Shadcn zinc-900 */
-      --border-dark: #27272a; /* Shadcn zinc-800 */
-      --text-main: #fafafa;
-      --text-muted: #a1a1aa;
-      
-      /* Modern SaaS Accents */
-      --linear-purple: #5e6ad2;
-      --vercel-black: #000000;
-      --notion-brown: #37352f;
-      --slack-green: #2bac76;
-      --discord-active: #23a55a;
-      --discord-idle: #f0b232;
-      --discord-dnd: #f23f43;
-      --intercom-blue: #1f8eed;
-      --shadcn-primary: #3b82f6;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Modern Industry Header Mockups - 10 Thiết kế Giao diện Best Practice</title>
+    <style>
+      :root {
+        --bg-dark: #09090b; /* Shadcn zinc-950 */
+        --card-dark: #18181b; /* Shadcn zinc-900 */
+        --border-dark: #27272a; /* Shadcn zinc-800 */
+        --text-main: #fafafa;
+        --text-muted: #a1a1aa;
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-    }
+        /* Modern SaaS Accents */
+        --linear-purple: #5e6ad2;
+        --vercel-black: #000000;
+        --notion-brown: #37352f;
+        --slack-green: #2bac76;
+        --discord-active: #23a55a;
+        --discord-idle: #f0b232;
+        --discord-dnd: #f23f43;
+        --intercom-blue: #1f8eed;
+        --shadcn-primary: #3b82f6;
+      }
 
-    body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          'Helvetica Neue',
+          Arial,
+          'Noto Sans',
+          sans-serif;
+      }
 
-    /* Sidebar Navigation */
-    .sidebar {
-      width: 320px;
-      background-color: #0c0c0e;
-      border-right: 1px solid var(--border-dark);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
+      body {
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
 
-    .sidebar-header {
-      padding: 24px;
-      border-bottom: 1px solid var(--border-dark);
-      background: linear-gradient(135deg, var(--linear-purple), #27272a);
-      color: #fff;
-    }
+      /* Sidebar Navigation */
+      .sidebar {
+        width: 320px;
+        background-color: #0c0c0e;
+        border-right: 1px solid var(--border-dark);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
 
-    .sidebar-header h1 {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
+      .sidebar-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--border-dark);
+        background: linear-gradient(135deg, var(--linear-purple), #27272a);
+        color: #fff;
+      }
 
-    .sidebar-header p {
-      font-size: 10px;
-      opacity: 0.8;
-      font-weight: 600;
-      margin-top: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+      .sidebar-header h1 {
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      }
 
-    .nav-list {
-      list-style: none;
-      overflow-y: auto;
-      flex: 1;
-      padding: 12px;
-    }
+      .sidebar-header p {
+        font-size: 10px;
+        opacity: 0.8;
+        font-weight: 600;
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
 
-    .nav-item {
-      padding: 12px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-bottom: 6px;
-      transition: all 0.2s ease;
-      border: 1px solid transparent;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+      .nav-list {
+        list-style: none;
+        overflow-y: auto;
+        flex: 1;
+        padding: 12px;
+      }
 
-    .nav-item:hover {
-      background-color: rgba(94, 106, 210, 0.08);
-      border-color: rgba(94, 106, 210, 0.15);
-    }
+      .nav-item {
+        padding: 12px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-bottom: 6px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
 
-    .nav-item.active {
-      background-color: var(--linear-purple);
-      color: #fff;
-      font-weight: 600;
-    }
+      .nav-item:hover {
+        background-color: rgba(94, 106, 210, 0.08);
+        border-color: rgba(94, 106, 210, 0.15);
+      }
 
-    .nav-index {
-      font-size: 9px;
-      background-color: rgba(255, 255, 255, 0.12);
-      width: 18px;
-      height: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-    }
+      .nav-item.active {
+        background-color: var(--linear-purple);
+        color: #fff;
+        font-weight: 600;
+      }
 
-    .nav-title {
-      font-size: 13px;
-      flex: 1;
-      line-height: 1.3;
-    }
+      .nav-index {
+        font-size: 9px;
+        background-color: rgba(255, 255, 255, 0.12);
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+      }
 
-    /* Main Preview Container */
-    .preview-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      background-color: #09090b;
-      position: relative;
-    }
+      .nav-title {
+        font-size: 13px;
+        flex: 1;
+        line-height: 1.3;
+      }
 
-    .preview-header {
-      padding: 24px;
-      border-bottom: 1px solid var(--border-dark);
-      background-color: #0c0c0e;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+      /* Main Preview Container */
+      .preview-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background-color: #09090b;
+        position: relative;
+      }
 
-    .preview-info h2 {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
+      .preview-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--border-dark);
+        background-color: #0c0c0e;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
 
-    .preview-info p {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
+      .preview-info h2 {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+      }
 
-    /* Simulated App Header Viewport */
-    .viewport {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-      background: radial-gradient(circle at center, #18181b 0%, #09090b 100%);
-    }
+      .preview-info p {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
 
-    .simulated-header {
-      width: 95%;
-      max-width: 950px;
-      height: 56px;
-      background-color: #121214;
-      border: 1px solid var(--border-dark);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      box-shadow: 0 4px 30px rgba(0,0,0,0.4);
-      position: relative;
-    }
+      /* Simulated App Header Viewport */
+      .viewport {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        background: radial-gradient(circle at center, #18181b 0%, #09090b 100%);
+      }
 
-    .brand-section {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-main);
-    }
+      .simulated-header {
+        width: 95%;
+        max-width: 950px;
+        height: 56px;
+        background-color: #121214;
+        border: 1px solid var(--border-dark);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+        position: relative;
+      }
 
-    .brand-logo-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background-color: var(--linear-purple);
-    }
+      .brand-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-main);
+      }
 
-    .right-header-controls {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+      .brand-logo-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: var(--linear-purple);
+      }
 
-    /* Base Modern Avatar Style */
-    .m-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--text-main);
-      background-color: #27272a;
-      border: 1.5px solid #121214;
-      cursor: pointer;
-      position: relative;
-      transition: all 0.2s ease;
-    }
+      .right-header-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
 
-    .m-avatar:hover {
-      transform: translateY(-2px);
-      z-index: 10 !important;
-    }
+      /* Base Modern Avatar Style */
+      .m-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-main);
+        background-color: #27272a;
+        border: 1.5px solid #121214;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s ease;
+      }
 
-    .m-avatar.me {
-      box-shadow: 0 0 0 1.5px var(--linear-purple);
-    }
+      .m-avatar:hover {
+        transform: translateY(-2px);
+        z-index: 10 !important;
+      }
 
-    .m-avatar.me::after {
-      content: 'Me';
-      position: absolute;
-      bottom: -11px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 7px;
-      background-color: var(--linear-purple);
-      color: #fff;
-      padding: 0px 3px;
-      border-radius: 3px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
+      .m-avatar.me {
+        box-shadow: 0 0 0 1.5px var(--linear-purple);
+      }
 
-    /* 1. Linear Design Style */
-    .design-linear-stack {
-      display: flex;
-      align-items: center;
-    }
-    .design-linear-stack .m-avatar {
-      margin-left: -6px;
-      opacity: 0.85;
-      background-color: #1e1e20;
-      border-color: #121214;
-    }
-    .design-linear-stack .m-avatar:hover {
-      opacity: 1;
-    }
+      .m-avatar.me::after {
+        content: 'Me';
+        position: absolute;
+        bottom: -11px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 7px;
+        background-color: var(--linear-purple);
+        color: #fff;
+        padding: 0px 3px;
+        border-radius: 3px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
 
-    /* 2. Notion Style */
-    .design-notion-layout {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .notion-avatar {
-      border-radius: 4px !important;
-      border: 1px solid var(--border-dark) !important;
-    }
+      /* 1. Linear Design Style */
+      .design-linear-stack {
+        display: flex;
+        align-items: center;
+      }
+      .design-linear-stack .m-avatar {
+        margin-left: -6px;
+        opacity: 0.85;
+        background-color: #1e1e20;
+        border-color: #121214;
+      }
+      .design-linear-stack .m-avatar:hover {
+        opacity: 1;
+      }
 
-    /* 3. Slack Active Style */
-    .slack-active-dot {
-      position: absolute;
-      bottom: -1px;
-      right: -1px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: var(--slack-green);
-      border: 1.5px solid #121214;
-    }
+      /* 2. Notion Style */
+      .design-notion-layout {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .notion-avatar {
+        border-radius: 4px !important;
+        border: 1px solid var(--border-dark) !important;
+      }
 
-    /* 4. Vercel Style */
-    .design-vercel-stack {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .vercel-dropdown-trigger {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      color: var(--text-muted);
-      cursor: pointer;
-    }
+      /* 3. Slack Active Style */
+      .slack-active-dot {
+        position: absolute;
+        bottom: -1px;
+        right: -1px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--slack-green);
+        border: 1.5px solid #121214;
+      }
 
-    /* 5. Discord Style Status */
-    .discord-status {
-      position: absolute;
-      bottom: -2px;
-      right: -2px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      border: 2px solid #121214;
-    }
+      /* 4. Vercel Style */
+      .design-vercel-stack {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .vercel-dropdown-trigger {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
 
-    /* 6. Intercom Support pill */
-    .design-intercom-pill {
-      background-color: rgba(31, 142, 237, 0.1);
-      border: 1px solid rgba(31, 142, 237, 0.2);
-      padding: 4px 10px;
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 11px;
-      color: var(--intercom-blue);
-    }
+      /* 5. Discord Style Status */
+      .discord-status {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid #121214;
+      }
 
-    /* 7. Zoom Video Huddle Standby */
-    .design-zoom-stack {
-      display: flex;
-      gap: 4px;
-    }
-    .zoom-standby-indicator {
-      position: absolute;
-      top: -3px;
-      right: -3px;
-      background-color: var(--shadcn-primary);
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      border: 1.5px solid #121214;
-    }
+      /* 6. Intercom Support pill */
+      .design-intercom-pill {
+        background-color: rgba(31, 142, 237, 0.1);
+        border: 1px solid rgba(31, 142, 237, 0.2);
+        padding: 4px 10px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        color: var(--intercom-blue);
+      }
 
-    /* 8. Shadcn Facepile style */
-    .design-shadcn-facepile {
-      display: flex;
-      align-items: center;
-    }
-    .design-shadcn-facepile .m-avatar {
-      margin-left: -8px;
-      border: 2px solid #121214;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .design-shadcn-facepile .m-avatar:first-child {
-      margin-left: 0;
-    }
+      /* 7. Zoom Video Huddle Standby */
+      .design-zoom-stack {
+        display: flex;
+        gap: 4px;
+      }
+      .zoom-standby-indicator {
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        background-color: var(--shadcn-primary);
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 1.5px solid #121214;
+      }
 
-    /* 9. Figma Follow Cursor spotlight */
-    .design-figma-spotlight {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .figma-spotlight-btn {
-      background-color: transparent;
-      border: 1px solid var(--border-dark);
-      color: var(--text-muted);
-      border-radius: 4px;
-      padding: 3px 8px;
-      font-size: 10px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .figma-spotlight-btn:hover {
-      background-color: #27272a;
-      color: white;
-    }
+      /* 8. Shadcn Facepile style */
+      .design-shadcn-facepile {
+        display: flex;
+        align-items: center;
+      }
+      .design-shadcn-facepile .m-avatar {
+        margin-left: -8px;
+        border: 2px solid #121214;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .design-shadcn-facepile .m-avatar:first-child {
+        margin-left: 0;
+      }
 
-    /* 10. Salesforce Lightning Grid Card Dropdown */
-    .design-lightning-dropdown {
-      display: flex;
-      align-items: center;
-      background-color: #1c1c1f;
-      border: 1px solid var(--border-dark);
-      padding: 4px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-      gap: 8px;
-    }
+      /* 9. Figma Follow Cursor spotlight */
+      .design-figma-spotlight {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .figma-spotlight-btn {
+        background-color: transparent;
+        border: 1px solid var(--border-dark);
+        color: var(--text-muted);
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .figma-spotlight-btn:hover {
+        background-color: #27272a;
+        color: white;
+      }
 
-    /* Details Panel */
-    .details-panel {
-      padding: 24px;
-      background-color: #0c0c0e;
-      border-top: 1px solid var(--border-dark);
-      font-size: 14px;
-      line-height: 1.6;
-    }
+      /* 10. Salesforce Lightning Grid Card Dropdown */
+      .design-lightning-dropdown {
+        display: flex;
+        align-items: center;
+        background-color: #1c1c1f;
+        border: 1px solid var(--border-dark);
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        gap: 8px;
+      }
 
-    .details-panel h3 {
-      font-size: 16px;
-      color: var(--linear-purple);
-      margin-bottom: 8px;
-      font-weight: 700;
-    }
+      /* Details Panel */
+      .details-panel {
+        padding: 24px;
+        background-color: #0c0c0e;
+        border-top: 1px solid var(--border-dark);
+        font-size: 14px;
+        line-height: 1.6;
+      }
 
-    .industry-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: bold;
-      margin-top: 8px;
-      background-color: rgba(94, 106, 210, 0.15);
-      color: var(--linear-purple);
-    }
-  </style>
-</head>
-<body>
+      .details-panel h3 {
+        font-size: 16px;
+        color: var(--linear-purple);
+        margin-bottom: 8px;
+        font-weight: 700;
+      }
 
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <h1>MODERN INDUSTRY</h1>
-      <p>10 SaaS Best Practice Mockups</p>
-    </div>
-    <ul class="nav-list" id="navList">
-      <!-- Generated dynamically -->
-    </ul>
-  </div>
-
-  <!-- Main Viewport -->
-  <div class="preview-container">
-    <div class="preview-header">
-      <div class="preview-info">
-        <h2 id="conceptTitle">Tên thiết kế</h2>
-        <p id="conceptDesc">Mô tả ngắn gọn.</p>
+      .industry-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: bold;
+        margin-top: 8px;
+        background-color: rgba(94, 106, 210, 0.15);
+        color: var(--linear-purple);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>MODERN INDUSTRY</h1>
+        <p>10 SaaS Best Practice Mockups</p>
       </div>
-      <div class="industry-badge" id="conceptBadge">
-        MODERN INDUSTRY BEST PRACTICE
-      </div>
+      <ul class="nav-list" id="navList">
+        <!-- Generated dynamically -->
+      </ul>
     </div>
 
-    <div class="viewport">
-      <div class="simulated-header">
-        <div class="brand-section">
-          <div class="brand-logo-dot"></div>
-          <div>Dashboard - Wings Lashes CRM</div>
+    <!-- Main Viewport -->
+    <div class="preview-container">
+      <div class="preview-header">
+        <div class="preview-info">
+          <h2 id="conceptTitle">Tên thiết kế</h2>
+          <p id="conceptDesc">Mô tả ngắn gọn.</p>
         </div>
-        
-        <!-- Target Area where the mockup will load -->
-        <div class="right-header-controls" id="mockupTarget">
-          <!-- Interactive Mockup Loads Here -->
+        <div class="industry-badge" id="conceptBadge">MODERN INDUSTRY BEST PRACTICE</div>
+      </div>
+
+      <div class="viewport">
+        <div class="simulated-header">
+          <div class="brand-section">
+            <div class="brand-logo-dot"></div>
+            <div>Dashboard - Wings Lashes CRM</div>
+          </div>
+
+          <!-- Target Area where the mockup will load -->
+          <div class="right-header-controls" id="mockupTarget">
+            <!-- Interactive Mockup Loads Here -->
+          </div>
         </div>
+      </div>
+
+      <!-- Description Details -->
+      <div class="details-panel">
+        <h3>Thực tế trong ngành (SaaS UX Rationale)</h3>
+        <p id="conceptDetails">Đang tải...</p>
       </div>
     </div>
 
-    <!-- Description Details -->
-    <div class="details-panel">
-      <h3>Thực tế trong ngành (SaaS UX Rationale)</h3>
-      <p id="conceptDetails">Đang tải...</p>
-    </div>
-  </div>
-
-  <script>
-    const concepts = [
-      {
-        id: 1,
-        title: "1. Linear Style (Phong cách tối giản Linear)",
-        desc: "Thiết kế mượt mà, xám đen đơn sắc, có độ trong suốt và phân tách cao.",
-        details: "Linear sử dụng các vòng tròn avatar đơn sắc nhỏ gọn (28px), màu sắc hơi chìm vào nền (opacity: 0.85) và chỉ sáng hẳn lên khi hover. Rất phù hợp với phong cách lập trình viên/tác vụ chuyên sâu.",
-        html: `
+    <script>
+      const concepts = [
+        {
+          id: 1,
+          title: '1. Linear Style (Phong cách tối giản Linear)',
+          desc: 'Thiết kế mượt mà, xám đen đơn sắc, có độ trong suốt và phân tách cao.',
+          details:
+            'Linear sử dụng các vòng tròn avatar đơn sắc nhỏ gọn (28px), màu sắc hơi chìm vào nền (opacity: 0.85) và chỉ sáng hẳn lên khi hover. Rất phù hợp với phong cách lập trình viên/tác vụ chuyên sâu.',
+          html: `
           <div class="design-linear-stack">
             <div class="m-avatar" style="z-index: 4;">DW</div>
             <div class="m-avatar" style="z-index: 3;">TN</div>
             <div class="m-avatar" style="z-index: 2;">BH</div>
             <div class="m-avatar me" style="z-index: 1;">DD</div>
           </div>
-        `
-      },
-      {
-        id: 2,
-        title: "2. Notion Page Viewers (Avatar vuông Notion)",
-        desc: "Các khối avatar góc vuông mềm mại, xếp hàng tối giản đặc trưng của Notion.",
-        details: "Notion sử dụng avatar dạng hình vuông bo góc tròn nhẹ (border-radius: 4px) thay vì hình tròn. Thiết kế này tạo cảm giác văn bản tài liệu sạch sẽ, trực quan và dễ bố trí.",
-        html: `
+        `,
+        },
+        {
+          id: 2,
+          title: '2. Notion Page Viewers (Avatar vuông Notion)',
+          desc: 'Các khối avatar góc vuông mềm mại, xếp hàng tối giản đặc trưng của Notion.',
+          details:
+            'Notion sử dụng avatar dạng hình vuông bo góc tròn nhẹ (border-radius: 4px) thay vì hình tròn. Thiết kế này tạo cảm giác văn bản tài liệu sạch sẽ, trực quan và dễ bố trí.',
+          html: `
           <div class="design-notion-layout">
             <div class="m-avatar notion-avatar">DW</div>
             <div class="m-avatar notion-avatar">TN</div>
             <div class="m-avatar notion-avatar me">DD</div>
           </div>
-        `
-      },
-      {
-        id: 3,
-        title: "3. Slack Active Ring (Chấm trạng thái góc avatar)",
-        desc: "Tập trung vào avatar của tôi với chấm xanh góc dưới thể hiện hoạt động.",
-        details: "Slack tập trung vào trạng thái cá nhân của bạn (Me). Avatar của bạn sẽ có một chấm tròn xanh lá cây sắc sảo ở góc dưới bên phải để phản ánh trạng thái live/active của chính tài khoản đăng nhập.",
-        html: `
+        `,
+        },
+        {
+          id: 3,
+          title: '3. Slack Active Ring (Chấm trạng thái góc avatar)',
+          desc: 'Tập trung vào avatar của tôi với chấm xanh góc dưới thể hiện hoạt động.',
+          details:
+            'Slack tập trung vào trạng thái cá nhân của bạn (Me). Avatar của bạn sẽ có một chấm tròn xanh lá cây sắc sảo ở góc dưới bên phải để phản ánh trạng thái live/active của chính tài khoản đăng nhập.',
+          html: `
           <div class="design-sheets-row" style="gap: 12px;">
             <div class="m-avatar me">
               DD
@@ -495,14 +505,15 @@
             </div>
             <div style="font-size: 12px; color: var(--text-muted);">Hoạt động</div>
           </div>
-        `
-      },
-      {
-        id: 4,
-        title: "4. Vercel Collaborators List (Bố cục Vercel)",
-        desc: "Hiển thị số lượng và nút dropdown nhỏ để xem chi tiết danh sách triển khai.",
-        details: "Bố cục tối giản của Vercel: chỉ hiển thị 2-3 avatar đầu tiên kèm theo một nhãn dropdown bên phải chỉ ra số lượng người đang thao tác trên dự án. Rất phù hợp để kiểm soát deploy hoặc quản lý nhóm.",
-        html: `
+        `,
+        },
+        {
+          id: 4,
+          title: '4. Vercel Collaborators List (Bố cục Vercel)',
+          desc: 'Hiển thị số lượng và nút dropdown nhỏ để xem chi tiết danh sách triển khai.',
+          details:
+            'Bố cục tối giản của Vercel: chỉ hiển thị 2-3 avatar đầu tiên kèm theo một nhãn dropdown bên phải chỉ ra số lượng người đang thao tác trên dự án. Rất phù hợp để kiểm soát deploy hoặc quản lý nhóm.',
+          html: `
           <div class="design-vercel-stack">
             <div class="design-linear-stack">
               <div class="m-avatar">DW</div>
@@ -512,14 +523,15 @@
               <span>+2 Booker</span> ▾
             </div>
           </div>
-        `
-      },
-      {
-        id: 5,
-        title: "5. Discord Status Rings (Cắt góc trạng thái Discord)",
-        desc: "Các lát trạng thái (Online, DND, Idle) cắt trực tiếp vào góc viền avatar.",
-        details: "Phong cách Discord: Chấm trạng thái (Online - Xanh, Idle - Vàng, DND - Đỏ) được cắt âm trực tiếp vào viền của avatar bằng SVG mask/border, tránh việc chấm tròn đè lên hình ảnh khuôn mặt.",
-        html: `
+        `,
+        },
+        {
+          id: 5,
+          title: '5. Discord Status Rings (Cắt góc trạng thái Discord)',
+          desc: 'Các lát trạng thái (Online, DND, Idle) cắt trực tiếp vào góc viền avatar.',
+          details:
+            'Phong cách Discord: Chấm trạng thái (Online - Xanh, Idle - Vàng, DND - Đỏ) được cắt âm trực tiếp vào viền của avatar bằng SVG mask/border, tránh việc chấm tròn đè lên hình ảnh khuôn mặt.',
+          html: `
           <div class="design-sheets-row" style="gap: 8px;">
             <div class="m-avatar me">
               DD
@@ -534,14 +546,15 @@
               <span class="discord-status" style="background-color: var(--discord-dnd);"></span>
             </div>
           </div>
-        `
-      },
-      {
-        id: 6,
-        title: "6. Intercom Live Agent Pill (Hộp phản hồi Intercom)",
-        desc: "Khối kén hiển thị hình ảnh hỗ trợ viên kèm thời gian phản hồi ước tính.",
-        details: "Intercom sử dụng hộp capsule gom nhóm các admin hỗ trợ online, bên cạnh có hiển thị text ước tính thời gian phản hồi (Ví dụ: 'Phản hồi trong 5 phút'). Tăng độ tin cậy và chuyên nghiệp cho CRM.",
-        html: `
+        `,
+        },
+        {
+          id: 6,
+          title: '6. Intercom Live Agent Pill (Hộp phản hồi Intercom)',
+          desc: 'Khối kén hiển thị hình ảnh hỗ trợ viên kèm thời gian phản hồi ước tính.',
+          details:
+            "Intercom sử dụng hộp capsule gom nhóm các admin hỗ trợ online, bên cạnh có hiển thị text ước tính thời gian phản hồi (Ví dụ: 'Phản hồi trong 5 phút'). Tăng độ tin cậy và chuyên nghiệp cho CRM.",
+          html: `
           <div class="design-intercom-pill">
             <div class="design-linear-stack">
               <div class="m-avatar me" style="width:20px; height:20px; font-size:8px;">DD</div>
@@ -549,14 +562,15 @@
             </div>
             <span>Support online</span>
           </div>
-        `
-      },
-      {
-        id: 7,
-        title: "7. Zoom Standby Video Stack (Đầu nối Zoom Meet)",
-        desc: "Avatar có camera/micro mini để kích hoạt gọi nhanh trực tuyến.",
-        details: "Phong cách gọi điện nhóm trực tuyến (Zoom / Slack Huddles). Mỗi avatar online có một chấm camera nhỏ trên đầu. Khi rê chuột vào sẽ hiện phím nhanh để 'Bật camera / Call chéo' ngay lập tức.",
-        html: `
+        `,
+        },
+        {
+          id: 7,
+          title: '7. Zoom Standby Video Stack (Đầu nối Zoom Meet)',
+          desc: 'Avatar có camera/micro mini để kích hoạt gọi nhanh trực tuyến.',
+          details:
+            "Phong cách gọi điện nhóm trực tuyến (Zoom / Slack Huddles). Mỗi avatar online có một chấm camera nhỏ trên đầu. Khi rê chuột vào sẽ hiện phím nhanh để 'Bật camera / Call chéo' ngay lập tức.",
+          html: `
           <div class="design-zoom-stack">
             <div class="m-avatar me">
               DD
@@ -567,80 +581,83 @@
               <span class="zoom-standby-indicator" style="background-color: #ef4444;"></span>
             </div>
           </div>
-        `
-      },
-      {
-        id: 8,
-        title: "8. Shadcn Facepile (Thiết kế Shadcn UI)",
-        desc: "Thiết kế kinh điển của thư viện Shadcn/Tailwind UI với viền đen sắc nét.",
-        details: "Phong cách thiết kế thịnh hành nhất hiện nay trong các sản phẩm SaaS hiện đại. Các avatar có độ đè lớp sâu (-8px), viền cực kỳ sắc nét trên nền tối và đổ bóng mờ tạo chiều sâu lớp giao diện.",
-        html: `
+        `,
+        },
+        {
+          id: 8,
+          title: '8. Shadcn Facepile (Thiết kế Shadcn UI)',
+          desc: 'Thiết kế kinh điển của thư viện Shadcn/Tailwind UI với viền đen sắc nét.',
+          details:
+            'Phong cách thiết kế thịnh hành nhất hiện nay trong các sản phẩm SaaS hiện đại. Các avatar có độ đè lớp sâu (-8px), viền cực kỳ sắc nét trên nền tối và đổ bóng mờ tạo chiều sâu lớp giao diện.',
+          html: `
           <div class="design-shadcn-facepile">
             <div class="m-avatar me" style="z-index: 4;">DD</div>
             <div class="m-avatar" style="z-index: 3;">DW</div>
             <div class="m-avatar" style="z-index: 2;">TN</div>
             <div class="m-avatar" style="background-color: #27272a; color: #a1a1aa; font-size: 9px; z-index: 1;">+1</div>
           </div>
-        `
-      },
-      {
-        id: 9,
-        title: "9. Figma Cursor Spotlight (Theo dõi con trỏ)",
-        desc: "Nút bấm 'Spotlight' bên cạnh avatar để theo dõi trực tiếp thao tác của Booker.",
-        details: "Lấy cảm hứng từ tính năng Spotlight của Figma. Khi bạn click vào nút 'Spotlight' bên cạnh avatar của Booker nào, màn hình của bạn sẽ tự động cuộn đến bảng/vị trí Booker đó đang chỉnh sửa.",
-        html: `
+        `,
+        },
+        {
+          id: 9,
+          title: '9. Figma Cursor Spotlight (Theo dõi con trỏ)',
+          desc: "Nút bấm 'Spotlight' bên cạnh avatar để theo dõi trực tiếp thao tác của Booker.",
+          details:
+            "Lấy cảm hứng từ tính năng Spotlight của Figma. Khi bạn click vào nút 'Spotlight' bên cạnh avatar của Booker nào, màn hình của bạn sẽ tự động cuộn đến bảng/vị trí Booker đó đang chỉnh sửa.",
+          html: `
           <div class="design-figma-spotlight">
             <div class="m-avatar">TN</div>
             <button class="figma-spotlight-btn" onclick="alert('Đang theo dõi màn hình của Tâm Nguyễn!')">
               🎯 Spotlight
             </button>
           </div>
-        `
-      },
-      {
-        id: 10,
-        title: "10. Salesforce Lightning Grid (Khối lưới Salesforce)",
-        desc: "Hộp bảng hiển thị tóm tắt ngắn gọn số lượng active theo nhóm.",
-        details: "Salesforce Lightning sử dụng các khối dropdown góc cạnh hiển thị tóm lược thông tin nhân sự. Thích hợp cho môi trường doanh nghiệp nghiêm túc, đề cao tính chính xác của dữ liệu.",
-        html: `
+        `,
+        },
+        {
+          id: 10,
+          title: '10. Salesforce Lightning Grid (Khối lưới Salesforce)',
+          desc: 'Hộp bảng hiển thị tóm tắt ngắn gọn số lượng active theo nhóm.',
+          details:
+            'Salesforce Lightning sử dụng các khối dropdown góc cạnh hiển thị tóm lược thông tin nhân sự. Thích hợp cho môi trường doanh nghiệp nghiêm túc, đề cao tính chính xác của dữ liệu.',
+          html: `
           <div class="design-lightning-dropdown" onclick="alert('Mở báo cáo tổng quan hoạt động trong ngày!')">
             <span>👥 Booker: <strong>3 Active</strong></span> ▾
           </div>
-        `
-      }
-    ];
+        `,
+        },
+      ];
 
-    // Populate Sidebar
-    const navList = document.getElementById('navList');
-    concepts.forEach((concept, index) => {
-      const li = document.createElement('li');
-      li.className = `nav-item ${index === 0 ? 'active' : ''}`;
-      li.innerHTML = `
+      // Populate Sidebar
+      const navList = document.getElementById('navList');
+      concepts.forEach((concept, index) => {
+        const li = document.createElement('li');
+        li.className = `nav-item ${index === 0 ? 'active' : ''}`;
+        li.innerHTML = `
         <span class="nav-index">${concept.id}</span>
         <span class="nav-title">${concept.title.split('. ')[1]}</span>
       `;
-      li.onclick = () => selectConcept(index);
-      navList.appendChild(li);
-    });
-
-    // Select Concept Logic
-    function selectConcept(index) {
-      // Toggle nav active states
-      const items = document.querySelectorAll('.nav-item');
-      items.forEach((item, idx) => {
-        if (idx === index) item.classList.add('active');
-        else item.classList.remove('active');
+        li.onclick = () => selectConcept(index);
+        navList.appendChild(li);
       });
 
-      const selected = concepts[index];
-      document.getElementById('conceptTitle').innerText = selected.title;
-      document.getElementById('conceptDesc').innerText = selected.desc;
-      document.getElementById('conceptDetails').innerText = selected.details;
-      document.getElementById('mockupTarget').innerHTML = selected.html;
-    }
+      // Select Concept Logic
+      function selectConcept(index) {
+        // Toggle nav active states
+        const items = document.querySelectorAll('.nav-item');
+        items.forEach((item, idx) => {
+          if (idx === index) item.classList.add('active');
+          else item.classList.remove('active');
+        });
 
-    // Initialize first concept
-    selectConcept(0);
-  </script>
-</body>
+        const selected = concepts[index];
+        document.getElementById('conceptTitle').innerText = selected.title;
+        document.getElementById('conceptDesc').innerText = selected.desc;
+        document.getElementById('conceptDetails').innerText = selected.details;
+        document.getElementById('mockupTarget').innerHTML = selected.html;
+      }
+
+      // Initialize first concept
+      selectConcept(0);
+    </script>
+  </body>
 </html>

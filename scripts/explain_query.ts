@@ -10,7 +10,7 @@ async function run() {
     LEFT JOIN \`order\` o ON o.id = usbt.order_id
     WHERE usbt.user_service_balance_id IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
   `);
-  
+
   explain.forEach((row, i) => {
     console.log(`Row ${i + 1}:`);
     for (const [key, val] of Object.entries(row)) {

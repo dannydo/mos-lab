@@ -3,15 +3,15 @@ import { PrismaClient as LegacyPrismaClient } from '../apps/api/src/generated/le
 const legacy = new LegacyPrismaClient({
   datasources: {
     db: {
-      url: "mysql://root:chickisslove@127.0.0.1:3306/management"
-    }
-  }
+      url: 'mysql://root:chickisslove@127.0.0.1:3306/management',
+    },
+  },
 });
 
 async function main() {
   try {
     await legacy.$connect();
-    
+
     const targetDateStr = '2026-07-12';
     const bookingDateOnlyDate = new Date(targetDateStr + 'T00:00:00.000Z');
     const startOfDay = new Date(targetDateStr + 'T00:00:00.000Z');
@@ -19,29 +19,29 @@ async function main() {
 
     const comingOrders = await legacy.order.findMany({
       where: {
-        OR: [
-          { booking_date_only: bookingDateOnlyDate },
-          { booking_date_start: { gte: startOfDay, lte: endOfDay } }
-        ],
-        order_state: { not: 'Cancelled' }
-      }
+        OR: [{ booking_date_only: bookingDateOnlyDate }, { booking_date_start: { gte: startOfDay, lte: endOfDay } }],
+        order_state: { not: 'Cancelled' },
+      },
     });
 
     console.log(`Coming Today (${targetDateStr}) total orders: ${comingOrders.length}`);
 
     // Fetch balances and txns for these users
-    const userIds = Array.from(new Set(comingOrders.map(o => o.user_id)));
+    const userIds = Array.from(new Set(comingOrders.map((o) => o.user_id)));
     const userBalances = await legacy.user_service_balance.findMany({
-      where: { user_id: { in: userIds } }
+      where: { user_id: { in: userIds } },
     });
 
-    const balanceIds = userBalances.map(b => b.id);
-    const userBalanceTransactions = balanceIds.length > 0 ? await legacy.$queryRaw<any[]>`
+    const balanceIds = userBalances.map((b) => b.id);
+    const userBalanceTransactions =
+      balanceIds.length > 0
+        ? await legacy.$queryRaw<any[]>`
       SELECT usbt.*, o.booking_date_start as o_booking_date_start
       FROM user_service_balance_transaction usbt
       LEFT JOIN \`order\` o ON o.id = usbt.order_id
       WHERE usbt.user_service_balance_id IN (${Prisma.join(balanceIds)})
-    ` : [];
+    `
+        : [];
 
     const txnsByBalanceId = new Map<number, any[]>();
     for (const t of userBalanceTransactions) {
@@ -56,15 +56,15 @@ async function main() {
 
     const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
       const bTime = bookingDateStart || orderCreatedDate;
-      const userBals = userBalances.filter(b => b.user_id === userId);
-      
+      const userBals = userBalances.filter((b) => b.user_id === userId);
+
       for (const usb of userBals) {
         if (new Date(usb.date_created) >= new Date(bTime)) {
           continue;
         }
 
-        const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-          new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+        const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
+          (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
         );
 
         txnsBefore.sort((a, b) => {
@@ -77,18 +77,23 @@ async function main() {
         const lastTxnBefore = txnsBefore[0];
 
         const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-        const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
+        const isNotExpired =
+          !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
 
         let countLeft = 0;
-        if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
+        if (
+          lastTxnBefore &&
+          lastTxnBefore.total_normal_count_left !== null &&
+          lastTxnBefore.total_retain_count_left !== null
+        ) {
           countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
         } else {
-          const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-            new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
+          const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
+            (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
           );
-          
+
           let usedAfter = 0;
-          txnsAfterOrAt.forEach(t => {
+          txnsAfterOrAt.forEach((t) => {
             if (t.used_staff_id !== null) {
               usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
             }
@@ -111,8 +116,7 @@ async function main() {
       }
     }
 
-    console.log("Coming Today Combo Live count:", liveCount);
-
+    console.log('Coming Today Combo Live count:', liveCount);
   } catch (err) {
     console.error(err);
   } finally {

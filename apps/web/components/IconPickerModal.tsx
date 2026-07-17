@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Modal, Input, theme } from 'antd';
+import { Modal, Input, theme, Tabs } from 'antd';
 import * as Icons from '@ant-design/icons';
+import dynamicIconImports from 'lucide-react/dynamicIconImports';
+import { getDynamicLucideIcon, getCustomIconComponent, CUSTOM_ICONS } from './IconSystem';
 
 interface IconPickerModalProps {
   open: boolean;
@@ -11,14 +13,55 @@ interface IconPickerModalProps {
   value?: string;
 }
 
-export const IconPickerModal: React.FC<IconPickerModalProps> = ({
-  open,
-  onClose,
-  onSelect,
-  value,
-}) => {
+interface IconButtonProps {
+  name: string;
+  isSelected: boolean;
+  onSelect: () => void;
+  icon: React.ReactNode;
+  label: string;
+  token: any;
+}
+
+const IconButton: React.FC<IconButtonProps> = ({ name, isSelected, onSelect, icon, label, token }) => {
+  return (
+    <button
+      onClick={onSelect}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '8px',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        height: '70px',
+        gap: '6px',
+      }}
+      title={name}
+      className={isSelected ? 'icon-picker-btn icon-picker-btn-selected' : 'icon-picker-btn'}
+    >
+      {icon}
+      <span
+        style={{
+          fontSize: '10px',
+          fontWeight: '500',
+          maxWidth: '100%',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          color: isSelected ? token.colorPrimary : token.colorTextSecondary,
+        }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+};
+
+export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose, onSelect, value }) => {
   const { token } = theme.useToken();
   const [searchText, setSearchText] = useState('');
+  const [activeTab, setActiveTab] = useState<'antd' | 'lucide' | 'custom'>('antd');
 
   // 1. Persistent Size States
   const [modalWidth, setModalWidth] = useState<number>(600);
@@ -40,27 +83,59 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
           height: Math.max(400, window.innerHeight - 260),
         });
       };
-      
+
       updateMaxDimensions();
       window.addEventListener('resize', updateMaxDimensions);
       return () => window.removeEventListener('resize', updateMaxDimensions);
     }
   }, []);
 
-  // 3. Get and filter outlined icons
+  // Determine correct initial tab based on selection value
+  useEffect(() => {
+    if (open) {
+      setSearchText('');
+      if (value && value.startsWith('lucide:')) {
+        setActiveTab('lucide');
+      } else if (value && value.startsWith('custom:')) {
+        setActiveTab('custom');
+      } else {
+        setActiveTab('antd');
+      }
+    }
+  }, [open, value]);
+
+  // 3. Get and filter Ant Design outlined icons
   const outlinedIcons = useMemo(() => {
     return Object.keys(Icons)
       .filter((name) => name.endsWith('Outlined') && typeof (Icons as any)[name] === 'object')
       .sort();
   }, []);
 
-  const filteredIcons = useMemo(() => {
+  const filteredAntdIcons = useMemo(() => {
     if (!searchText) return outlinedIcons;
     const query = searchText.toLowerCase();
     return outlinedIcons.filter((name) => name.toLowerCase().includes(query));
   }, [searchText, outlinedIcons]);
 
-  // 4. Mouse Drag Resizing Handlers
+  // 4. Get and filter Lucide icons
+  const lucideIcons = useMemo(() => {
+    return Object.keys(dynamicIconImports).sort();
+  }, []);
+
+  const filteredLucideIcons = useMemo(() => {
+    if (!searchText) return lucideIcons;
+    const query = searchText.toLowerCase();
+    return lucideIcons.filter((name) => name.toLowerCase().includes(query));
+  }, [searchText, lucideIcons]);
+
+  // 5. Get and filter Custom icons
+  const filteredCustomIcons = useMemo(() => {
+    if (!searchText) return CUSTOM_ICONS;
+    const query = searchText.toLowerCase();
+    return CUSTOM_ICONS.filter((name) => name.toLowerCase().includes(query));
+  }, [searchText]);
+
+  // 6. Mouse Drag Resizing Handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -101,9 +176,16 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  const hasNoIcons =
+    activeTab === 'antd'
+      ? filteredAntdIcons.length === 0
+      : activeTab === 'lucide'
+        ? filteredLucideIcons.length === 0
+        : filteredCustomIcons.length === 0;
+
   return (
     <Modal
-      title="Chọn Icon từ thư viện Ant Design"
+      title="Chọn Icon từ thư viện"
       open={open}
       onCancel={onClose}
       footer={null}
@@ -112,16 +194,28 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
         body: {
           padding: '16px 16px 24px 16px',
           position: 'relative',
-        }
+        },
       }}
     >
       <Input.Search
         placeholder="Tìm kiếm icon (ví dụ: user, phone, check, heart...)"
         value={searchText}
         onChange={(e) => setSearchText(e.target.value)}
-        style={{ marginBottom: '16px' }}
+        style={{ marginBottom: '12px' }}
         allowClear
         autoFocus
+      />
+
+      <Tabs
+        activeKey={activeTab}
+        onChange={(key) => setActiveTab(key as 'antd' | 'lucide' | 'custom')}
+        style={{ marginBottom: '12px' }}
+        size="small"
+        items={[
+          { key: 'antd', label: `Ant Design (${filteredAntdIcons.length})` },
+          { key: 'lucide', label: `Lucide (${filteredLucideIcons.length})` },
+          { key: 'custom', label: `Custom (${filteredCustomIcons.length})` },
+        ]}
       />
 
       <div
@@ -156,60 +250,93 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
             color: ${token.colorPrimary} !important;
           }
         `}</style>
-        {filteredIcons.map((name) => {
-          const IconComp = (Icons as any)[name];
-          const isSelected = value === name;
-          return (
-            <button
-              key={name}
-              onClick={() => {
-                onSelect(name);
-                onClose();
-              }}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                height: '70px',
-                gap: '6px',
-              }}
-              title={name}
-              className={isSelected ? "icon-picker-btn icon-picker-btn-selected" : "icon-picker-btn"}
-            >
-              {IconComp && React.createElement(IconComp, { 
-                style: { 
-                  fontSize: '20px', 
-                  color: isSelected ? token.colorPrimary : token.colorTextSecondary 
-                } 
+
+        {activeTab === 'antd'
+          ? filteredAntdIcons.map((name) => {
+              const IconComp = (Icons as any)[name];
+              const isSelected = value === name;
+              return (
+                <IconButton
+                  key={name}
+                  name={name}
+                  isSelected={isSelected}
+                  onSelect={() => {
+                    onSelect(name);
+                    onClose();
+                  }}
+                  icon={
+                    IconComp &&
+                    React.createElement(IconComp, {
+                      style: {
+                        fontSize: '20px',
+                        color: isSelected ? token.colorPrimary : token.colorTextSecondary,
+                      },
+                    })
+                  }
+                  label={name.replace('Outlined', '')}
+                  token={token}
+                />
+              );
+            })
+          : activeTab === 'lucide'
+            ? filteredLucideIcons.map((name) => {
+                const IconComp = getDynamicLucideIcon(name);
+                const isSelected = value === `lucide:${name}`;
+                return (
+                  <IconButton
+                    key={name}
+                    name={name}
+                    isSelected={isSelected}
+                    onSelect={() => {
+                      onSelect(`lucide:${name}`);
+                      onClose();
+                    }}
+                    icon={
+                      IconComp &&
+                      React.createElement(IconComp, {
+                        size: 20,
+                        style: {
+                          color: isSelected ? token.colorPrimary : token.colorTextSecondary,
+                        },
+                      })
+                    }
+                    label={name}
+                    token={token}
+                  />
+                );
+              })
+            : filteredCustomIcons.map((name) => {
+                const isSelected = value === name;
+                const customIcon = getCustomIconComponent(name, {
+                  size: 20,
+                  style: {
+                    color: isSelected ? token.colorPrimary : token.colorTextSecondary,
+                  },
+                });
+                return (
+                  <IconButton
+                    key={name}
+                    name={name}
+                    isSelected={isSelected}
+                    onSelect={() => {
+                      onSelect(name);
+                      onClose();
+                    }}
+                    icon={customIcon}
+                    label={name.replace('custom:', '')}
+                    token={token}
+                  />
+                );
               })}
-              <span
-                style={{
-                  fontSize: '10px',
-                  fontWeight: '500',
-                  maxWidth: '100%',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  color: isSelected ? token.colorPrimary : token.colorTextSecondary,
-                }}
-              >
-                {name.replace('Outlined', '')}
-              </span>
-            </button>
-          );
-        })}
-        {filteredIcons.length === 0 && (
+
+        {hasNoIcons && (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '32px', color: token.colorTextSecondary }}>
             Không tìm thấy icon nào phù hợp
           </div>
         )}
       </div>
 
-      {/* Persistent Resize Handle at the bottom-right corner */}
+      {/* Resize Handle */}
       <div
         onMouseDown={handleMouseDown}
         style={{
@@ -229,7 +356,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
         title="Kéo để thay đổi kích thước bảng"
       >
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.6, cursor: 'se-resize' }}>
-          <path d="M10 0 L0 10 M10 4 L4 10 M10 8 L8 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M10 0 L0 10 M10 4 L4 10 M10 8 L8 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </div>
     </Modal>

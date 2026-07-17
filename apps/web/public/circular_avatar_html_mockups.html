@@ -1,443 +1,457 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Circular Avatar Header Mockups - 10 Thiết kế Giao diện Hình Tròn</title>
-  <style>
-    :root {
-      --bg-dark: #0b0f19;
-      --card-dark: #151f32;
-      --border-dark: #27374d;
-      --text-main: #f1f6f9;
-      --text-muted: #9ba4b5;
-      
-      --accent-blue: #3b82f6;
-      --accent-green: #10b981;
-      --accent-amber: #f59e0b;
-      --accent-rose: #f43f5e;
-      --accent-purple: #8b5cf6;
-      --accent-me: #eab308; /* Gold/yellow for "Me" */
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Circular Avatar Header Mockups - 10 Thiết kế Giao diện Hình Tròn</title>
+    <style>
+      :root {
+        --bg-dark: #0b0f19;
+        --card-dark: #151f32;
+        --border-dark: #27374d;
+        --text-main: #f1f6f9;
+        --text-muted: #9ba4b5;
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
+        --accent-blue: #3b82f6;
+        --accent-green: #10b981;
+        --accent-amber: #f59e0b;
+        --accent-rose: #f43f5e;
+        --accent-purple: #8b5cf6;
+        --accent-me: #eab308; /* Gold/yellow for "Me" */
+      }
 
-    body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
 
-    /* Sidebar Navigation */
-    .sidebar {
-      width: 320px;
-      background-color: #080b11;
-      border-right: 1px solid var(--border-dark);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
+      body {
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
 
-    .sidebar-header {
-      padding: 24px;
-      border-bottom: 1px solid var(--border-dark);
-      background: linear-gradient(135deg, var(--accent-rose), var(--accent-purple));
-      color: #fff;
-    }
+      /* Sidebar Navigation */
+      .sidebar {
+        width: 320px;
+        background-color: #080b11;
+        border-right: 1px solid var(--border-dark);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
 
-    .sidebar-header h1 {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
+      .sidebar-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--border-dark);
+        background: linear-gradient(135deg, var(--accent-rose), var(--accent-purple));
+        color: #fff;
+      }
 
-    .sidebar-header p {
-      font-size: 10px;
-      opacity: 0.8;
-      font-weight: 600;
-      margin-top: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+      .sidebar-header h1 {
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      }
 
-    .nav-list {
-      list-style: none;
-      overflow-y: auto;
-      flex: 1;
-      padding: 12px;
-    }
+      .sidebar-header p {
+        font-size: 10px;
+        opacity: 0.8;
+        font-weight: 600;
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
 
-    .nav-item {
-      padding: 12px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-bottom: 6px;
-      transition: all 0.2s ease;
-      border: 1px solid transparent;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+      .nav-list {
+        list-style: none;
+        overflow-y: auto;
+        flex: 1;
+        padding: 12px;
+      }
 
-    .nav-item:hover {
-      background-color: rgba(244, 63, 94, 0.08);
-      border-color: rgba(244, 63, 94, 0.15);
-    }
+      .nav-item {
+        padding: 12px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-bottom: 6px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
 
-    .nav-item.active {
-      background-color: var(--accent-rose);
-      color: #fff;
-      font-weight: 600;
-    }
+      .nav-item:hover {
+        background-color: rgba(244, 63, 94, 0.08);
+        border-color: rgba(244, 63, 94, 0.15);
+      }
 
-    .nav-index {
-      font-size: 9px;
-      background-color: rgba(255, 255, 255, 0.12);
-      width: 18px;
-      height: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-    }
+      .nav-item.active {
+        background-color: var(--accent-rose);
+        color: #fff;
+        font-weight: 600;
+      }
 
-    .nav-title {
-      font-size: 13px;
-      flex: 1;
-      line-height: 1.3;
-    }
+      .nav-index {
+        font-size: 9px;
+        background-color: rgba(255, 255, 255, 0.12);
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+      }
 
-    /* Main Preview Container */
-    .preview-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      background-color: #090d16;
-      position: relative;
-    }
+      .nav-title {
+        font-size: 13px;
+        flex: 1;
+        line-height: 1.3;
+      }
 
-    .preview-header {
-      padding: 24px;
-      border-bottom: 1px solid var(--border-dark);
-      background-color: #0c1220;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+      /* Main Preview Container */
+      .preview-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background-color: #090d16;
+        position: relative;
+      }
 
-    .preview-info h2 {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
+      .preview-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--border-dark);
+        background-color: #0c1220;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
 
-    .preview-info p {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
+      .preview-info h2 {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+      }
 
-    /* Simulated App Header Viewport */
-    .viewport {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-      background: radial-gradient(circle at center, #151f32 0%, #090d16 100%);
-    }
+      .preview-info p {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
 
-    .simulated-header {
-      width: 95%;
-      max-width: 950px;
-      height: 60px;
-      background-color: #101726;
-      border: 1px solid var(--border-dark);
-      border-radius: 30px; /* Fully pill-shaped modern header */
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-      position: relative;
-    }
+      /* Simulated App Header Viewport */
+      .viewport {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        background: radial-gradient(circle at center, #151f32 0%, #090d16 100%);
+      }
 
-    .brand-section {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-main);
-    }
+      .simulated-header {
+        width: 95%;
+        max-width: 950px;
+        height: 60px;
+        background-color: #101726;
+        border: 1px solid var(--border-dark);
+        border-radius: 30px; /* Fully pill-shaped modern header */
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        position: relative;
+      }
 
-    .brand-logo-circle {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background-color: var(--accent-rose);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 11px;
-      color: white;
-    }
+      .brand-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-main);
+      }
 
-    .right-header-controls {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+      .brand-logo-circle {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background-color: var(--accent-rose);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 11px;
+        color: white;
+      }
 
-    /* Strict Circular Avatar Base Style */
-    .c-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50% !important; /* Forces perfect circle */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-main);
-      background-color: #1d273a;
-      border: 2px solid #101726;
-      cursor: pointer;
-      position: relative;
-      transition: all 0.2s ease-in-out;
-    }
+      .right-header-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
 
-    .c-avatar:hover {
-      transform: scale(1.1);
-      z-index: 20 !important;
-    }
+      /* Strict Circular Avatar Base Style */
+      .c-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50% !important; /* Forces perfect circle */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-main);
+        background-color: #1d273a;
+        border: 2px solid #101726;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s ease-in-out;
+      }
 
-    /* Mark "Me" avatar clearly */
-    .c-avatar.me {
-      border-color: var(--accent-me);
-    }
+      .c-avatar:hover {
+        transform: scale(1.1);
+        z-index: 20 !important;
+      }
 
-    .c-avatar.me::after {
-      content: 'Me';
-      position: absolute;
-      bottom: -11px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 7px;
-      background-color: var(--accent-me);
-      color: #000;
-      padding: 0px 4px;
-      border-radius: 3px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
+      /* Mark "Me" avatar clearly */
+      .c-avatar.me {
+        border-color: var(--accent-me);
+      }
 
-    /* 1. Pulse concentric ring style */
-    .design-pulse-ring-stack {
-      display: flex;
-      gap: 10px;
-    }
-    .pulse-ring-avatar {
-      position: relative;
-    }
-    .pulse-ring-avatar::before {
-      content: '';
-      position: absolute;
-      top: -4px;
-      left: -4px;
-      right: -4px;
-      bottom: -4px;
-      border-radius: 50%;
-      border: 1px solid var(--accent-green);
-      animation: circlePulse 2s infinite ease-out;
-      opacity: 0;
-      pointer-events: none;
-    }
-    @keyframes circlePulse {
-      0% { transform: scale(0.9); opacity: 0.8; }
-      100% { transform: scale(1.3); opacity: 0; }
-    }
+      .c-avatar.me::after {
+        content: 'Me';
+        position: absolute;
+        bottom: -11px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 7px;
+        background-color: var(--accent-me);
+        color: #000;
+        padding: 0px 4px;
+        border-radius: 3px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
 
-    /* 2. Dotted Orbit Ring */
-    .design-dotted-orbit {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .orbit-avatar {
-      border: 2px dashed var(--accent-blue) !important;
-      animation: spinOrbit 12s linear infinite;
-    }
-    @keyframes spinOrbit {
-      100% { transform: rotate(360deg); }
-    }
+      /* 1. Pulse concentric ring style */
+      .design-pulse-ring-stack {
+        display: flex;
+        gap: 10px;
+      }
+      .pulse-ring-avatar {
+        position: relative;
+      }
+      .pulse-ring-avatar::before {
+        content: '';
+        position: absolute;
+        top: -4px;
+        left: -4px;
+        right: -4px;
+        bottom: -4px;
+        border-radius: 50%;
+        border: 1px solid var(--accent-green);
+        animation: circlePulse 2s infinite ease-out;
+        opacity: 0;
+        pointer-events: none;
+      }
+      @keyframes circlePulse {
+        0% {
+          transform: scale(0.9);
+          opacity: 0.8;
+        }
+        100% {
+          transform: scale(1.3);
+          opacity: 0;
+        }
+      }
 
-    /* 3. Double concentric rings for roles */
-    .design-double-ring {
-      display: flex;
-      gap: 8px;
-    }
-    .double-ring-avatar {
-      box-shadow: 0 0 0 2px var(--accent-purple);
-    }
+      /* 2. Dotted Orbit Ring */
+      .design-dotted-orbit {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .orbit-avatar {
+        border: 2px dashed var(--accent-blue) !important;
+        animation: spinOrbit 12s linear infinite;
+      }
+      @keyframes spinOrbit {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
 
-    /* 4. Action icons overlays */
-    .action-overlay-badge {
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background-color: #1e293b;
-      border: 1px solid var(--border-dark);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 8px;
-    }
+      /* 3. Double concentric rings for roles */
+      .design-double-ring {
+        display: flex;
+        gap: 8px;
+      }
+      .double-ring-avatar {
+        box-shadow: 0 0 0 2px var(--accent-purple);
+      }
 
-    /* 5. Curved Corner stack */
-    .design-curved-corner {
-      display: flex;
-      position: relative;
-    }
-    .design-curved-corner .c-avatar {
-      margin-left: -8px;
-      border-color: #101726;
-    }
+      /* 4. Action icons overlays */
+      .action-overlay-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background-color: #1e293b;
+        border: 1px solid var(--border-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+      }
 
-    /* 6. Frosted Glass Container */
-    .design-glass-disc {
-      background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 3px 10px;
-      border-radius: 24px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    }
+      /* 5. Curved Corner stack */
+      .design-curved-corner {
+        display: flex;
+        position: relative;
+      }
+      .design-curved-corner .c-avatar {
+        margin-left: -8px;
+        border-color: #101726;
+      }
 
-    /* 7. Floating Presence Dot */
-    .presence-corner-dot {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      border: 1px solid #101726;
-    }
+      /* 6. Frosted Glass Container */
+      .design-glass-disc {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 3px 10px;
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      }
 
-    /* 8. Slideout on hover */
-    .design-slideout-hover {
-      display: flex;
-    }
-    .design-slideout-hover .c-avatar {
-      margin-left: -8px;
-      transition: margin-left 0.25s ease, transform 0.2s;
-    }
-    .design-slideout-hover:hover .c-avatar {
-      margin-left: 6px;
-    }
-    .design-slideout-hover .c-avatar:first-child {
-      margin-left: 0;
-    }
+      /* 7. Floating Presence Dot */
+      .presence-corner-dot {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 1px solid #101726;
+      }
 
-    /* 9. Compact double-deck list */
-    .design-double-deck {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .deck-row {
-      display: flex;
-      gap: 4px;
-    }
-    .deck-row .c-avatar {
-      width: 22px;
-      height: 22px;
-      font-size: 8px;
-      border-width: 1px;
-    }
+      /* 8. Slideout on hover */
+      .design-slideout-hover {
+        display: flex;
+      }
+      .design-slideout-hover .c-avatar {
+        margin-left: -8px;
+        transition:
+          margin-left 0.25s ease,
+          transform 0.2s;
+      }
+      .design-slideout-hover:hover .c-avatar {
+        margin-left: 6px;
+      }
+      .design-slideout-hover .c-avatar:first-child {
+        margin-left: 0;
+      }
 
-    /* 10. Floating sticker offset */
-    .design-sticker-offset {
-      display: flex;
-    }
-    .design-sticker-offset .c-avatar {
-      margin-left: -6px;
-      border: 2.5px solid #fff !important; /* Thick white sticker offset */
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-      color: #000;
-    }
-  </style>
-</head>
-<body>
+      /* 9. Compact double-deck list */
+      .design-double-deck {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .deck-row {
+        display: flex;
+        gap: 4px;
+      }
+      .deck-row .c-avatar {
+        width: 22px;
+        height: 22px;
+        font-size: 8px;
+        border-width: 1px;
+      }
 
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <h1>CIRCULAR AVATAR</h1>
-      <p>10 Strictly Circle Mockups</p>
-    </div>
-    <ul class="nav-list" id="navList">
-      <!-- Generated dynamically -->
-    </ul>
-  </div>
-
-  <!-- Main Viewport -->
-  <div class="preview-container">
-    <div class="preview-header">
-      <div class="preview-info">
-        <h2 id="conceptTitle">Tên thiết kế</h2>
-        <p id="conceptDesc">Mô tả ngắn gọn.</p>
+      /* 10. Floating sticker offset */
+      .design-sticker-offset {
+        display: flex;
+      }
+      .design-sticker-offset .c-avatar {
+        margin-left: -6px;
+        border: 2.5px solid #fff !important; /* Thick white sticker offset */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        color: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>CIRCULAR AVATAR</h1>
+        <p>10 Strictly Circle Mockups</p>
       </div>
-      <div class="industry-badge" id="conceptBadge" style="background-color: rgba(244, 63, 94, 0.15); color: var(--accent-rose);">
-        STRICT CIRCLE AVATAR DESIGN
-      </div>
+      <ul class="nav-list" id="navList">
+        <!-- Generated dynamically -->
+      </ul>
     </div>
 
-    <div class="viewport">
-      <div class="simulated-header">
-        <div class="brand-section">
-          <div class="brand-logo-circle">W</div>
-          <div>Bảng Điều Hành CRM Booker</div>
+    <!-- Main Viewport -->
+    <div class="preview-container">
+      <div class="preview-header">
+        <div class="preview-info">
+          <h2 id="conceptTitle">Tên thiết kế</h2>
+          <p id="conceptDesc">Mô tả ngắn gọn.</p>
         </div>
-        
-        <!-- Target Area where the mockup will load -->
-        <div class="right-header-controls" id="mockupTarget">
-          <!-- Interactive Mockup Loads Here -->
+        <div
+          class="industry-badge"
+          id="conceptBadge"
+          style="background-color: rgba(244, 63, 94, 0.15); color: var(--accent-rose)"
+        >
+          STRICT CIRCLE AVATAR DESIGN
         </div>
+      </div>
+
+      <div class="viewport">
+        <div class="simulated-header">
+          <div class="brand-section">
+            <div class="brand-logo-circle">W</div>
+            <div>Bảng Điều Hành CRM Booker</div>
+          </div>
+
+          <!-- Target Area where the mockup will load -->
+          <div class="right-header-controls" id="mockupTarget">
+            <!-- Interactive Mockup Loads Here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Description Details -->
+      <div class="details-panel">
+        <h3>Đặc điểm thiết kế hình tròn (Strict Circle Rationale)</h3>
+        <p id="conceptDetails">Đang tải...</p>
       </div>
     </div>
 
-    <!-- Description Details -->
-    <div class="details-panel">
-      <h3>Đặc điểm thiết kế hình tròn (Strict Circle Rationale)</h3>
-      <p id="conceptDetails">Đang tải...</p>
-    </div>
-  </div>
-
-  <script>
-    const concepts = [
-      {
-        id: 1,
-        title: "1. Pulse Ring Wave (Sóng vòng tròn đồng tâm)",
-        desc: "Avatar tròn có thêm hiệu ứng sóng xung kích nhấp nháy loang rộng ra xung quanh.",
-        details: "Tận dụng các keyframe CSS để tạo vòng tròn xung quanh avatar phát sóng loang dần ra ngoài rồi mờ đi. Rất thích hợp để thể hiện trạng thái hoạt động trực tuyến có tính cấp thiết cao.",
-        html: `
+    <script>
+      const concepts = [
+        {
+          id: 1,
+          title: '1. Pulse Ring Wave (Sóng vòng tròn đồng tâm)',
+          desc: 'Avatar tròn có thêm hiệu ứng sóng xung kích nhấp nháy loang rộng ra xung quanh.',
+          details:
+            'Tận dụng các keyframe CSS để tạo vòng tròn xung quanh avatar phát sóng loang dần ra ngoài rồi mờ đi. Rất thích hợp để thể hiện trạng thái hoạt động trực tuyến có tính cấp thiết cao.',
+          html: `
           <div class="design-pulse-ring-stack">
             <div class="pulse-ring-avatar">
               <div class="c-avatar me" style="background-color: var(--accent-me);">DD</div>
@@ -449,40 +463,43 @@
               <div class="c-avatar" style="background-color: var(--accent-rose);">TN</div>
             </div>
           </div>
-        `
-      },
-      {
-        id: 2,
-        title: "2. Dotted Orbit Ring (Vòng quay quỹ đạo nét đứt)",
-        desc: "Đường viền của avatar là nét đứt liên tục quay chậm thể hiện quá trình kết nối.",
-        details: "Một phá cách công nghệ cực đẹp. Vòng ngoài avatar được thiết kế là đường dashed (nét đứt) liên tục xoay tròn chậm rãi, mang ngụ ý hệ thống đang đồng bộ dữ liệu vị trí Booker thời gian thực.",
-        html: `
+        `,
+        },
+        {
+          id: 2,
+          title: '2. Dotted Orbit Ring (Vòng quay quỹ đạo nét đứt)',
+          desc: 'Đường viền của avatar là nét đứt liên tục quay chậm thể hiện quá trình kết nối.',
+          details:
+            'Một phá cách công nghệ cực đẹp. Vòng ngoài avatar được thiết kế là đường dashed (nét đứt) liên tục xoay tròn chậm rãi, mang ngụ ý hệ thống đang đồng bộ dữ liệu vị trí Booker thời gian thực.',
+          html: `
           <div class="design-dotted-orbit">
             <div class="c-avatar me orbit-avatar" style="background-color: var(--accent-me);">DD</div>
             <div class="c-avatar orbit-avatar" style="background-color: var(--accent-blue); animation-duration: 8s;">DW</div>
             <div class="c-avatar orbit-avatar" style="background-color: var(--accent-rose); animation-duration: 16s;">TN</div>
           </div>
-        `
-      },
-      {
-        id: 3,
-        title: "3. Concentric Role Rings (Hào quang phân vai đa tầng)",
-        desc: "Avatar tròn được lồng thêm 1 vòng viền ngoài biểu thị cấp bậc quản trị.",
-        details: "Avatar của nhân viên được bảo bọc bởi một vòng viền ngoài mỏng cách đều 2px. Màu sắc vòng viền ngoài chỉ rõ cấp bậc của họ: Đỏ cho Admin, Tím cho Booker, Xanh lá cho Telesales.",
-        html: `
+        `,
+        },
+        {
+          id: 3,
+          title: '3. Concentric Role Rings (Hào quang phân vai đa tầng)',
+          desc: 'Avatar tròn được lồng thêm 1 vòng viền ngoài biểu thị cấp bậc quản trị.',
+          details:
+            'Avatar của nhân viên được bảo bọc bởi một vòng viền ngoài mỏng cách đều 2px. Màu sắc vòng viền ngoài chỉ rõ cấp bậc của họ: Đỏ cho Admin, Tím cho Booker, Xanh lá cho Telesales.',
+          html: `
           <div class="design-double-ring">
             <div class="c-avatar me double-ring-avatar" style="background-color: var(--accent-me); box-shadow: 0 0 0 2px var(--accent-me);">DD</div>
             <div class="c-avatar double-ring-avatar" style="background-color: var(--accent-blue); box-shadow: 0 0 0 2px var(--accent-blue);">DW</div>
             <div class="c-avatar double-ring-avatar" style="background-color: var(--accent-rose); box-shadow: 0 0 0 2px var(--accent-rose);">TN</div>
           </div>
-        `
-      },
-      {
-        id: 4,
-        title: "4. Status Symbol Overlays (Huy hiệu hành động góc)",
-        desc: "Góc trên avatar tròn có biểu tượng hành động mini (Viết, Đọc, Nghỉ).",
-        details: "Thiết kế thực dụng cao cho quản lý cuộc gọi. Trên đầu mỗi avatar tròn là một huy hiệu tròn siêu nhỏ chứa biểu tượng hành động: 📝 (đang soạn thảo), 🔍 (đang lọc báo cáo), 🛌 (đang treo máy).",
-        html: `
+        `,
+        },
+        {
+          id: 4,
+          title: '4. Status Symbol Overlays (Huy hiệu hành động góc)',
+          desc: 'Góc trên avatar tròn có biểu tượng hành động mini (Viết, Đọc, Nghỉ).',
+          details:
+            'Thiết kế thực dụng cao cho quản lý cuộc gọi. Trên đầu mỗi avatar tròn là một huy hiệu tròn siêu nhỏ chứa biểu tượng hành động: 📝 (đang soạn thảo), 🔍 (đang lọc báo cáo), 🛌 (đang treo máy).',
+          html: `
           <div class="design-sheets-row" style="gap: 8px;">
             <div class="c-avatar me" style="background-color: var(--accent-me);">
               DD
@@ -497,41 +514,44 @@
               <span class="action-overlay-badge">🛌</span>
             </div>
           </div>
-        `
-      },
-      {
-        id: 5,
-        title: "5. Semi-Arc Stack Corner (Xếp lớp góc bo tròn)",
-        desc: "Chuỗi avatar tròn xếp chéo góc theo đường viền bo tròn của Header.",
-        details: "Tối ưu thẩm mỹ cho các header có góc bo tròn rộng. Các avatar hình tròn xếp lớp đè chéo nhẹ lên nhau, di chuyển chệch hướng tạo cảm giác dòng chảy mềm mại ôm sát góc phải.",
-        html: `
+        `,
+        },
+        {
+          id: 5,
+          title: '5. Semi-Arc Stack Corner (Xếp lớp góc bo tròn)',
+          desc: 'Chuỗi avatar tròn xếp chéo góc theo đường viền bo tròn của Header.',
+          details:
+            'Tối ưu thẩm mỹ cho các header có góc bo tròn rộng. Các avatar hình tròn xếp lớp đè chéo nhẹ lên nhau, di chuyển chệch hướng tạo cảm giác dòng chảy mềm mại ôm sát góc phải.',
+          html: `
           <div class="design-curved-corner">
             <div class="c-avatar me" style="background-color: var(--accent-me); z-index: 3;">DD</div>
             <div class="c-avatar" style="background-color: var(--accent-blue); z-index: 2;">DW</div>
             <div class="c-avatar" style="background-color: var(--accent-rose); z-index: 1;">TN</div>
           </div>
-        `
-      },
-      {
-        id: 6,
-        title: "6. Glassmorphic Disc (Đĩa thủy tinh mờ)",
-        desc: "Đặt nhóm avatar tròn bên trong hộp kén hiệu ứng kính mờ thời thượng.",
-        details: "Sử dụng đặc tính Glassmorphism cao cấp: Một khay nền mờ bo tròn (backdrop-filter: blur(10px)) ôm trọn nhóm avatar tròn bên trong. Tạo cảm giác nổi bật và sang trọng trên nền tối sâu.",
-        html: `
+        `,
+        },
+        {
+          id: 6,
+          title: '6. Glassmorphic Disc (Đĩa thủy tinh mờ)',
+          desc: 'Đặt nhóm avatar tròn bên trong hộp kén hiệu ứng kính mờ thời thượng.',
+          details:
+            'Sử dụng đặc tính Glassmorphism cao cấp: Một khay nền mờ bo tròn (backdrop-filter: blur(10px)) ôm trọn nhóm avatar tròn bên trong. Tạo cảm giác nổi bật và sang trọng trên nền tối sâu.',
+          html: `
           <div class="design-glass-disc">
             <span style="font-size: 9px; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Team</span>
             <div class="c-avatar me" style="background-color: var(--accent-me); width: 24px; height: 24px; font-size: 9px;">DD</div>
             <div class="c-avatar" style="background-color: var(--accent-blue); width: 24px; height: 24px; font-size: 9px;">DW</div>
             <div class="c-avatar" style="background-color: var(--accent-rose); width: 24px; height: 24px; font-size: 9px;">TN</div>
           </div>
-        `
-      },
-      {
-        id: 7,
-        title: "7. Float Presence Corner Dot (Đèn báo lơ lửng)",
-        desc: "Chấm tròn báo online đặt lơ lửng độc lập ở góc ngoài avatar.",
-        details: "Chấm xanh báo trực tuyến nằm tách rời hẳn ra khỏi đường viền avatar bằng cách sử dụng absolute định vị vượt biên, tạo nét tinh nghịch và dễ quan sát trạng thái kết nối.",
-        html: `
+        `,
+        },
+        {
+          id: 7,
+          title: '7. Float Presence Corner Dot (Đèn báo lơ lửng)',
+          desc: 'Chấm tròn báo online đặt lơ lửng độc lập ở góc ngoài avatar.',
+          details:
+            'Chấm xanh báo trực tuyến nằm tách rời hẳn ra khỏi đường viền avatar bằng cách sử dụng absolute định vị vượt biên, tạo nét tinh nghịch và dễ quan sát trạng thái kết nối.',
+          html: `
           <div class="design-sheets-row" style="gap: 8px;">
             <div class="c-avatar me" style="background-color: var(--accent-me);">
               DD
@@ -546,27 +566,29 @@
               <span class="presence-corner-dot" style="background-color: var(--accent-green);"></span>
             </div>
           </div>
-        `
-      },
-      {
-        id: 8,
-        title: "8. Expandable Hover Slide (Co giãn tách lớp)",
-        desc: "Khi hover vào cụm avatar, toàn bộ hình tròn sẽ tự động giãn cách xa nhau.",
-        details: "Tương tác vi mô cực kỳ thú vị. Bình thường các avatar tròn xếp lớp đè chồng lên nhau để tiết kiệm diện tích. Khi người dùng di chuột vào cụm, CSS transition sẽ kích hoạt đẩy các avatar giãn rộng ra đầy đủ.",
-        html: `
+        `,
+        },
+        {
+          id: 8,
+          title: '8. Expandable Hover Slide (Co giãn tách lớp)',
+          desc: 'Khi hover vào cụm avatar, toàn bộ hình tròn sẽ tự động giãn cách xa nhau.',
+          details:
+            'Tương tác vi mô cực kỳ thú vị. Bình thường các avatar tròn xếp lớp đè chồng lên nhau để tiết kiệm diện tích. Khi người dùng di chuột vào cụm, CSS transition sẽ kích hoạt đẩy các avatar giãn rộng ra đầy đủ.',
+          html: `
           <div class="design-slideout-hover">
             <div class="c-avatar me" style="background-color: var(--accent-me);">DD</div>
             <div class="c-avatar" style="background-color: var(--accent-blue);">DW</div>
             <div class="c-avatar" style="background-color: var(--accent-rose);">TN</div>
           </div>
-        `
-      },
-      {
-        id: 9,
-        title: "9. Double-Deck Circular Grid (Khối lưới tròn hai tầng)",
-        desc: "Chia cụm avatar thành hai hàng ngang mini xếp đều nhau trong góc hẹp.",
-        details: "Giải pháp cho không gian header siêu hẹp nhưng lượng người online lớn. Sử dụng các vòng tròn nhỏ 22px xếp thành hai tầng (Tầng trên cho Admin/Leader, Tầng dưới cho Booker/Telesales).",
-        html: `
+        `,
+        },
+        {
+          id: 9,
+          title: '9. Double-Deck Circular Grid (Khối lưới tròn hai tầng)',
+          desc: 'Chia cụm avatar thành hai hàng ngang mini xếp đều nhau trong góc hẹp.',
+          details:
+            'Giải pháp cho không gian header siêu hẹp nhưng lượng người online lớn. Sử dụng các vòng tròn nhỏ 22px xếp thành hai tầng (Tầng trên cho Admin/Leader, Tầng dưới cho Booker/Telesales).',
+          html: `
           <div class="design-double-deck">
             <div class="deck-row">
               <div class="c-avatar me" style="background-color: var(--accent-me);">DD</div>
@@ -577,54 +599,55 @@
               <div class="c-avatar" style="background-color: var(--accent-purple);">BH</div>
             </div>
           </div>
-        `
-      },
-      {
-        id: 10,
-        title: "10. Sticker Offset Disc (Hiệu ứng nhãn dán sticker)",
-        desc: "Avatar có viền trắng dày rực rỡ và đổ bóng khối dạng nhãn dán.",
-        details: "Phong cách nghệ thuật Pop-Art trẻ trung: Các avatar tròn có phần viền trắng dày nổi bật (2.5px) kết hợp đổ bóng sâu có độ mờ lớn, giúp avatar trông nổi hẳn lên trên mặt phẳng Header như những nhãn dán sticker.",
-        html: `
+        `,
+        },
+        {
+          id: 10,
+          title: '10. Sticker Offset Disc (Hiệu ứng nhãn dán sticker)',
+          desc: 'Avatar có viền trắng dày rực rỡ và đổ bóng khối dạng nhãn dán.',
+          details:
+            'Phong cách nghệ thuật Pop-Art trẻ trung: Các avatar tròn có phần viền trắng dày nổi bật (2.5px) kết hợp đổ bóng sâu có độ mờ lớn, giúp avatar trông nổi hẳn lên trên mặt phẳng Header như những nhãn dán sticker.',
+          html: `
           <div class="design-sticker-offset">
             <div class="c-avatar me" style="background-color: #fbbf24; z-index: 3;">DD</div>
             <div class="c-avatar" style="background-color: #60a5fa; z-index: 2;">DW</div>
             <div class="c-avatar" style="background-color: #f472b6; z-index: 1;">TN</div>
           </div>
-        `
-      }
-    ];
+        `,
+        },
+      ];
 
-    // Populate Sidebar
-    const navList = document.getElementById('navList');
-    concepts.forEach((concept, index) => {
-      const li = document.createElement('li');
-      li.className = `nav-item ${index === 0 ? 'active' : ''}`;
-      li.innerHTML = `
+      // Populate Sidebar
+      const navList = document.getElementById('navList');
+      concepts.forEach((concept, index) => {
+        const li = document.createElement('li');
+        li.className = `nav-item ${index === 0 ? 'active' : ''}`;
+        li.innerHTML = `
         <span class="nav-index">${concept.id}</span>
         <span class="nav-title">${concept.title.split('. ')[1]}</span>
       `;
-      li.onclick = () => selectConcept(index);
-      navList.appendChild(li);
-    });
-
-    // Select Concept Logic
-    function selectConcept(index) {
-      // Toggle nav active states
-      const items = document.querySelectorAll('.nav-item');
-      items.forEach((item, idx) => {
-        if (idx === index) item.classList.add('active');
-        else item.classList.remove('active');
+        li.onclick = () => selectConcept(index);
+        navList.appendChild(li);
       });
 
-      const selected = concepts[index];
-      document.getElementById('conceptTitle').innerText = selected.title;
-      document.getElementById('conceptDesc').innerText = selected.desc;
-      document.getElementById('conceptDetails').innerText = selected.details;
-      document.getElementById('mockupTarget').innerHTML = selected.html;
-    }
+      // Select Concept Logic
+      function selectConcept(index) {
+        // Toggle nav active states
+        const items = document.querySelectorAll('.nav-item');
+        items.forEach((item, idx) => {
+          if (idx === index) item.classList.add('active');
+          else item.classList.remove('active');
+        });
 
-    // Initialize first concept
-    selectConcept(0);
-  </script>
-</body>
+        const selected = concepts[index];
+        document.getElementById('conceptTitle').innerText = selected.title;
+        document.getElementById('conceptDesc').innerText = selected.desc;
+        document.getElementById('conceptDetails').innerText = selected.details;
+        document.getElementById('mockupTarget').innerHTML = selected.html;
+      }
+
+      // Initialize first concept
+      selectConcept(0);
+    </script>
+  </body>
 </html>

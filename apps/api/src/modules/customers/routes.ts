@@ -6,11 +6,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // GET /api/customers
   // Query legs DB, compute buckets, handle pagination, search, sorting
   fastify.get('/customers', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { 
-      bucket, 
-      search, 
-      page = '1', 
-      limit = '20', 
+    const {
+      bucket,
+      search,
+      page = '1',
+      limit = '20',
       sort = 'id_desc',
       daysSinceLastVisitMin,
       daysSinceLastVisitMax,
@@ -26,7 +26,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMax,
       assignedStaffId,
       trash,
-      ids
+      ids,
     } = request.query as {
       bucket?: BucketType | 'ALL';
       search?: string;
@@ -66,23 +66,28 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     try {
       // Determine what joins and select fields we need in the inner query to optimize performance
-      const needContact = (search && search.trim() !== '');
-      const needServiceBalance = (bucket && bucket !== 'ALL');
-      
-      const needSpent = (totalSpentMin !== undefined && totalSpentMin !== '') || 
-                        (totalSpentMax !== undefined && totalSpentMax !== '') || 
-                        (sort === 'totalSpent_desc' || sort === 'totalSpent_asc');
-      
-      const needVisits = (totalVisitsMin !== undefined && totalVisitsMin !== '') || 
-                         (totalVisitsMax !== undefined && totalVisitsMax !== '');
-      
-      const needPromo = (promoUsed !== undefined && promoUsed !== 'all') || 
-                        (promoCountMin !== undefined && promoCountMin !== '') || 
-                        (promoCountMax !== undefined && promoCountMax !== '');
-      
-      const needReferrals = (referralUsed !== undefined && referralUsed !== 'all') || 
-                            (referralCountMin !== undefined && referralCountMin !== '') || 
-                            (referralCountMax !== undefined && referralCountMax !== '');
+      const needContact = search && search.trim() !== '';
+      const needServiceBalance = bucket && bucket !== 'ALL';
+
+      const needSpent =
+        (totalSpentMin !== undefined && totalSpentMin !== '') ||
+        (totalSpentMax !== undefined && totalSpentMax !== '') ||
+        sort === 'totalSpent_desc' ||
+        sort === 'totalSpent_asc';
+
+      const needVisits =
+        (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
+        (totalVisitsMax !== undefined && totalVisitsMax !== '');
+
+      const needPromo =
+        (promoUsed !== undefined && promoUsed !== 'all') ||
+        (promoCountMin !== undefined && promoCountMin !== '') ||
+        (promoCountMax !== undefined && promoCountMax !== '');
+
+      const needReferrals =
+        (referralUsed !== undefined && referralUsed !== 'all') ||
+        (referralCountMin !== undefined && referralCountMin !== '') ||
+        (referralCountMax !== undefined && referralCountMax !== '');
 
       const needOrderCounts = needSpent || needVisits;
 
@@ -136,13 +141,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
       let excludedUserIds: number[] | null = null;
 
       if (ids && ids.trim() !== '') {
-        allowedUserIds = ids.split(',').map(Number).filter(n => !isNaN(n));
+        allowedUserIds = ids
+          .split(',')
+          .map(Number)
+          .filter((n) => !isNaN(n));
       } else if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') {
         if (effectiveAssignedStaffId === 'unassigned') {
           const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-            select: { legacyUserId: true }
+            select: { legacyUserId: true },
           });
-          excludedUserIds = allAssignments.map(a => a.legacyUserId);
+          excludedUserIds = allAssignments.map((a) => a.legacyUserId);
         } else {
           let targetStaffId = adminUser.id;
           if (effectiveAssignedStaffId !== 'me') {
@@ -151,9 +159,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           if (!isNaN(targetStaffId)) {
             const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
               where: { staffId: targetStaffId },
-              select: { legacyUserId: true }
+              select: { legacyUserId: true },
             });
-            allowedUserIds = assignments.map(a => a.legacyUserId);
+            allowedUserIds = assignments.map((a) => a.legacyUserId);
             if (allowedUserIds.length === 0) {
               return {
                 data: [],
@@ -161,8 +169,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
                   total: 0,
                   page: pageNum,
                   limit: limitNum,
-                  pages: 0
-                }
+                  pages: 0,
+                },
               };
             }
           }
@@ -270,9 +278,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         innerParams.push(parseInt(referralCountMax, 10));
       }
 
-      const innerWhereString = innerWhereClauses.length > 0 
-        ? `WHERE ${innerWhereClauses.join(' AND ')}` 
-        : '';
+      const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
 
       // Sorting
       let innerOrderBy = 'ORDER BY u.id DESC';
@@ -391,32 +397,35 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const [dataResult, countResult] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(querySql, ...dataParams),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(countSql, ...countParams)
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(countSql, ...countParams),
       ]);
 
       const total = Number(countResult[0]?.total || 0);
 
       // Fetch assignments for the returned customers
       const customerIds = dataResult.map((row: any) => Number(row.id));
-      const assignments = customerIds.length > 0
-        ? await fastify.prisma.crm.crmCustomerAssignment.findMany({
-            where: { legacyUserId: { in: customerIds } },
-            include: { staff: true }
-          })
-        : [];
+      const assignments =
+        customerIds.length > 0
+          ? await fastify.prisma.crm.crmCustomerAssignment.findMany({
+              where: { legacyUserId: { in: customerIds } },
+              include: { staff: true },
+            })
+          : [];
 
       const assignmentMap = new Map();
-      assignments.forEach(a => {
+      assignments.forEach((a) => {
         assignmentMap.set(a.legacyUserId, {
           id: a.staff.id,
           displayName: a.staff.displayName,
-          username: a.staff.username
+          username: a.staff.username,
         });
       });
 
       // Fetch latest bookings for the returned customers
-      const latestBookings = customerIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-        `SELECT o.user_id as userId, o.booking_date_start as bookingDate, o.order_state as orderState
+      const latestBookings =
+        customerIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+              `SELECT o.user_id as userId, o.booking_date_start as bookingDate, o.order_state as orderState
          FROM \`order\` o
          WHERE o.id IN (
            SELECT MAX(id)
@@ -424,48 +433,55 @@ export async function customerRoutes(fastify: FastifyInstance) {
            WHERE user_id IN (${customerIds.join(',')})
            GROUP BY user_id
          )`
-      ) : [];
+            )
+          : [];
 
       const bookingMap = new Map();
-      latestBookings.forEach(b => {
+      latestBookings.forEach((b) => {
         bookingMap.set(Number(b.userId), {
           bookingDate: b.bookingDate,
-          orderState: b.orderState
+          orderState: b.orderState,
         });
       });
 
       // Fetch latest call logs with callbacks for the returned customers
-      const latestCallbacks = customerIds.length > 0 ? await fastify.prisma.crm.crmCallLog.findMany({
-        where: {
-          legacyUserId: { in: customerIds },
-          callbackDate: { not: null }
-        },
-        orderBy: { createdAt: 'desc' }
-      }) : [];
+      const latestCallbacks =
+        customerIds.length > 0
+          ? await fastify.prisma.crm.crmCallLog.findMany({
+              where: {
+                legacyUserId: { in: customerIds },
+                callbackDate: { not: null },
+              },
+              orderBy: { createdAt: 'desc' },
+            })
+          : [];
 
       const callbackMap = new Map();
-      latestCallbacks.forEach(c => {
+      latestCallbacks.forEach((c) => {
         if (!callbackMap.has(c.legacyUserId)) {
           callbackMap.set(c.legacyUserId, c.callbackDate);
         }
       });
 
       // Fetch latest call logs for the returned customers
-      const latestCalls = customerIds.length > 0 ? await fastify.prisma.crm.crmCallLog.findMany({
-        where: {
-          legacyUserId: { in: customerIds }
-        },
-        orderBy: { createdAt: 'desc' }
-      }) : [];
+      const latestCalls =
+        customerIds.length > 0
+          ? await fastify.prisma.crm.crmCallLog.findMany({
+              where: {
+                legacyUserId: { in: customerIds },
+              },
+              orderBy: { createdAt: 'desc' },
+            })
+          : [];
 
       const latestCallMap = new Map();
-      latestCalls.forEach(c => {
+      latestCalls.forEach((c) => {
         if (!latestCallMap.has(c.legacyUserId)) {
           latestCallMap.set(c.legacyUserId, {
             createdAt: c.createdAt.toISOString(),
             durationSec: c.durationSec,
             callResult: c.callResult,
-            note: c.note
+            note: c.note,
           });
         }
       });
@@ -491,17 +507,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
           totalPromotionsUsed: Number(row.totalPromotionsUsed || 0),
           totalReferrals: Number(row.totalReferrals || 0),
           bucket: row.bucket as BucketType,
-          comboBalance: row.bucket !== 'SINGLE' ? {
-            normalCount: Number(row.normalCount || 0),
-            retainCount: Number(row.retainCount || 0),
-            expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null
-          } : null,
+          comboBalance:
+            row.bucket !== 'SINGLE'
+              ? {
+                  normalCount: Number(row.normalCount || 0),
+                  retainCount: Number(row.retainCount || 0),
+                  expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null,
+                }
+              : null,
           assignedStaff: assigned,
           avatar: row.avatar,
           lastBookingState: booking ? booking.orderState : null,
           lastBookingDate: booking && booking.bookingDate ? new Date(booking.bookingDate).toISOString() : null,
           callbackDate: callbackDateVal ? new Date(callbackDateVal).toISOString().split('T')[0] : null,
-          lastCall: lastCallVal
+          lastCall: lastCallVal,
         };
       });
 
@@ -511,14 +530,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           total,
           page: pageNum,
           limit: limitNum,
-          pages: Math.ceil(total / limitNum)
-        }
+          pages: Math.ceil(total / limitNum),
+        },
       };
     } catch (error: any) {
       fastify.log.error('Get customers list error:', error);
-      return reply.status(500).send({ 
-        error: 'Internal Server Error', 
-        message: 'Failed to retrieve customers' 
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve customers',
       });
     }
   });
@@ -526,7 +545,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // GET /api/customers/stats
   // Return count per bucket (COMBO_LIVE, COMBO_DEAD, SINGLE)
   fastify.get('/customers/stats', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { 
+    const {
       search,
       ids,
       daysSinceLastVisitMin,
@@ -542,8 +561,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMin,
       referralCountMax,
       assignedStaffId,
-      trash
-    } = request.query as { 
+      trash,
+    } = request.query as {
       search?: string;
       ids?: string;
       daysSinceLastVisitMin?: string;
@@ -572,19 +591,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     try {
       // Determine what joins and select fields we need in the inner query to optimize performance
-      const needSpent = (totalSpentMin !== undefined && totalSpentMin !== '') || 
-                        (totalSpentMax !== undefined && totalSpentMax !== '');
-      
-      const needVisits = (totalVisitsMin !== undefined && totalVisitsMin !== '') || 
-                         (totalVisitsMax !== undefined && totalVisitsMax !== '');
-      
-      const needPromo = (promoUsed !== undefined && promoUsed !== 'all') || 
-                        (promoCountMin !== undefined && promoCountMin !== '') || 
-                        (promoCountMax !== undefined && promoCountMax !== '');
-      
-      const needReferrals = (referralUsed !== undefined && referralUsed !== 'all') || 
-                            (referralCountMin !== undefined && referralCountMin !== '') || 
-                            (referralCountMax !== undefined && referralCountMax !== '');
+      const needSpent =
+        (totalSpentMin !== undefined && totalSpentMin !== '') || (totalSpentMax !== undefined && totalSpentMax !== '');
+
+      const needVisits =
+        (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
+        (totalVisitsMax !== undefined && totalVisitsMax !== '');
+
+      const needPromo =
+        (promoUsed !== undefined && promoUsed !== 'all') ||
+        (promoCountMin !== undefined && promoCountMin !== '') ||
+        (promoCountMax !== undefined && promoCountMax !== '');
+
+      const needReferrals =
+        (referralUsed !== undefined && referralUsed !== 'all') ||
+        (referralCountMin !== undefined && referralCountMin !== '') ||
+        (referralCountMax !== undefined && referralCountMax !== '');
 
       const needOrderCounts = needSpent || needVisits;
 
@@ -633,13 +655,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
       let excludedUserIds: number[] | null = null;
 
       if (ids && ids.trim() !== '') {
-        allowedUserIds = ids.split(',').map(Number).filter(n => !isNaN(n));
+        allowedUserIds = ids
+          .split(',')
+          .map(Number)
+          .filter((n) => !isNaN(n));
       } else if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') {
         if (effectiveAssignedStaffId === 'unassigned') {
           const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-            select: { legacyUserId: true }
+            select: { legacyUserId: true },
           });
-          excludedUserIds = allAssignments.map(a => a.legacyUserId);
+          excludedUserIds = allAssignments.map((a) => a.legacyUserId);
         } else {
           let targetStaffId = adminUser.id;
           if (effectiveAssignedStaffId !== 'me') {
@@ -648,15 +673,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
           if (!isNaN(targetStaffId)) {
             const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
               where: { staffId: targetStaffId },
-              select: { legacyUserId: true }
+              select: { legacyUserId: true },
             });
-            allowedUserIds = assignments.map(a => a.legacyUserId);
+            allowedUserIds = assignments.map((a) => a.legacyUserId);
             if (allowedUserIds.length === 0) {
               return {
                 total: 0,
                 comboLive: 0,
                 comboDead: 0,
-                single: 0
+                single: 0,
               };
             }
           }
@@ -751,9 +776,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         innerParams.push(parseInt(referralCountMax, 10));
       }
 
-      const innerWhereString = innerWhereClauses.length > 0 
-        ? `WHERE ${innerWhereClauses.join(' AND ')}` 
-        : '';
+      const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
 
       const statsSql = `
         SELECT 
@@ -770,13 +793,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
       `;
 
       const statsResult = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(statsSql, ...innerParams);
-      
+
       const stats = {
         total: 0,
         comboLive: 0,
         comboDead: 0,
         single: 0,
-        notComboLive: 0
+        notComboLive: 0,
       };
 
       statsResult.forEach((row: any) => {
@@ -792,9 +815,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return stats;
     } catch (error: any) {
       fastify.log.error('Get customers stats error:', error);
-      return reply.status(500).send({ 
-        error: 'Internal Server Error', 
-        message: 'Failed to retrieve stats' 
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve stats',
       });
     }
   });
@@ -802,10 +825,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // GET /api/customers/random-ids
   // Retrieve random customer IDs matching the current filters (only unassigned by default)
   fastify.get('/customers/random-ids', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { 
-      bucket, 
-      search, 
-      limit = '20', 
+    const {
+      bucket,
+      search,
+      limit = '20',
       daysSinceLastVisitMin,
       daysSinceLastVisitMax,
       totalSpentMin,
@@ -818,24 +841,27 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralUsed,
       referralCountMin,
       referralCountMax,
-      excludeAssigned = 'true'
+      excludeAssigned = 'true',
     } = request.query as any;
 
     const limitNum = parseInt(limit, 10) || 20;
 
     try {
-      const needContact = (search && search.trim() !== '');
-      const needServiceBalance = (bucket && bucket !== 'ALL');
-      const needSpent = (totalSpentMin !== undefined && totalSpentMin !== '') || 
-                        (totalSpentMax !== undefined && totalSpentMax !== '');
-      const needVisits = (totalVisitsMin !== undefined && totalVisitsMin !== '') || 
-                         (totalVisitsMax !== undefined && totalVisitsMax !== '');
-      const needPromo = (promoUsed !== undefined && promoUsed !== 'all') || 
-                        (promoCountMin !== undefined && promoCountMin !== '') || 
-                        (promoCountMax !== undefined && promoCountMax !== '');
-      const needReferrals = (referralUsed !== undefined && referralUsed !== 'all') || 
-                            (referralCountMin !== undefined && referralCountMin !== '') || 
-                            (referralCountMax !== undefined && referralCountMax !== '');
+      const needContact = search && search.trim() !== '';
+      const needServiceBalance = bucket && bucket !== 'ALL';
+      const needSpent =
+        (totalSpentMin !== undefined && totalSpentMin !== '') || (totalSpentMax !== undefined && totalSpentMax !== '');
+      const needVisits =
+        (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
+        (totalVisitsMax !== undefined && totalVisitsMax !== '');
+      const needPromo =
+        (promoUsed !== undefined && promoUsed !== 'all') ||
+        (promoCountMin !== undefined && promoCountMin !== '') ||
+        (promoCountMax !== undefined && promoCountMax !== '');
+      const needReferrals =
+        (referralUsed !== undefined && referralUsed !== 'all') ||
+        (referralCountMin !== undefined && referralCountMin !== '') ||
+        (referralCountMax !== undefined && referralCountMax !== '');
 
       const needOrderCounts = needSpent || needVisits;
 
@@ -887,9 +913,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       if (excludeAssigned === 'true') {
         const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-          select: { legacyUserId: true }
+          select: { legacyUserId: true },
         });
-        const excludedUserIds = allAssignments.map(a => a.legacyUserId);
+        const excludedUserIds = allAssignments.map((a) => a.legacyUserId);
         if (excludedUserIds.length > 0) {
           innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
         }
@@ -971,9 +997,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         innerParams.push(parseInt(referralCountMax, 10));
       }
 
-      const innerWhereString = innerWhereClauses.length > 0 
-        ? `WHERE ${innerWhereClauses.join(' AND ')}` 
-        : '';
+      const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
 
       const query = `
         SELECT u.id
@@ -986,25 +1010,24 @@ export async function customerRoutes(fastify: FastifyInstance) {
       innerParams.push(limitNum);
 
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(query, ...innerParams);
-      const ids = rows.map(r => Number(r.id));
+      const ids = rows.map((r) => Number(r.id));
 
       return { ids };
     } catch (error: any) {
       fastify.log.error('Get random customer ids error:', error);
-      return reply.status(500).send({ 
-        error: 'Internal Server Error', 
-        message: 'Failed to retrieve random customer IDs' 
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve random customer IDs',
       });
     }
   });
-
 
   // GET /api/saved-filters
   // Retrieve saved customer filters
   fastify.get('/saved-filters', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
       const config = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: 'CUSTOMER_SAVED_FILTERS' }
+        where: { key: 'CUSTOMER_SAVED_FILTERS' },
       });
       if (!config) {
         return [];
@@ -1031,7 +1054,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     try {
       const config = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: 'CUSTOMER_SAVED_FILTERS' }
+        where: { key: 'CUSTOMER_SAVED_FILTERS' },
       });
 
       let filters: any[] = [];
@@ -1044,11 +1067,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         id: filterId,
         name,
         criteria,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
 
       if (id) {
-        const idx = filters.findIndex(f => f.id === id);
+        const idx = filters.findIndex((f) => f.id === id);
         if (idx > -1) {
           filters[idx] = newFilter;
         } else {
@@ -1061,7 +1084,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       await fastify.prisma.crm.crmConfig.upsert({
         where: { key: 'CUSTOMER_SAVED_FILTERS' },
         update: { value: JSON.stringify(filters) },
-        create: { key: 'CUSTOMER_SAVED_FILTERS', value: JSON.stringify(filters) }
+        create: { key: 'CUSTOMER_SAVED_FILTERS', value: JSON.stringify(filters) },
       });
 
       return newFilter;
@@ -1078,7 +1101,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     try {
       const config = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: 'CUSTOMER_SAVED_FILTERS' }
+        where: { key: 'CUSTOMER_SAVED_FILTERS' },
       });
 
       if (!config) {
@@ -1086,11 +1109,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       let filters: any[] = JSON.parse(config.value);
-      filters = filters.filter(f => f.id !== id);
+      filters = filters.filter((f) => f.id !== id);
 
       await fastify.prisma.crm.crmConfig.update({
         where: { key: 'CUSTOMER_SAVED_FILTERS' },
-        data: { value: JSON.stringify(filters) }
+        data: { value: JSON.stringify(filters) },
       });
 
       return { success: true };
@@ -1130,23 +1153,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
       `;
 
       const dbServices = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(query);
-      
-      const mappedServices = dbServices.map(s => ({
+
+      const mappedServices = dbServices.map((s) => ({
         id: Number(s.id),
         name: s.name,
         price: s.price !== null && s.price !== undefined ? Number(s.price) : 0,
-        duration: s.duration !== null && s.duration !== undefined ? Number(s.duration) : 90
+        duration: s.duration !== null && s.duration !== undefined ? Number(s.duration) : 90,
       }));
 
-      const finalServices = [
-        { id: 0, name: 'Any Lashes / Any Services', price: 0, duration: 90 },
-        ...mappedServices
-      ];
+      const finalServices = [{ id: 0, name: 'Any Lashes / Any Services', price: 0, duration: 90 }, ...mappedServices];
 
       return finalServices;
     } catch (err) {
       request.log.error(err, 'Failed to fetch services list');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tải danh sách dịch vụ từ hệ thống.' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: 'Không thể tải danh sách dịch vụ từ hệ thống.' });
     }
   });
 
@@ -1155,7 +1177,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.get('/customers/staff', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string };
     if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập danh sách nhân viên.' });
+      return reply
+        .status(403)
+        .send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập danh sách nhân viên.' });
     }
     const { date } = request.query as { date?: string };
     try {
@@ -1166,9 +1190,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           id: true,
           username: true,
           displayName: true,
-          role: true
+          role: true,
         },
-        orderBy: { displayName: 'asc' }
+        orderBy: { displayName: 'asc' },
       });
 
       // 2. Fetch KTVs from legacy core tables
@@ -1180,7 +1204,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
          FROM staff_working_shift_schedule 
          WHERE is_disabled = 0 AND user_id IS NOT NULL`
       );
-      
+
       const schedulesByUserId: { [uid: number]: any[] } = {};
       for (const s of allSchedules) {
         const uid = Number(s.user_id);
@@ -1196,7 +1220,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
          GROUP BY from_user_id, weekday`
       );
 
-      const weekOffsByUserId: { [uid: number]: { weekday: number, cnt: number }[] } = {};
+      const weekOffsByUserId: { [uid: number]: { weekday: number; cnt: number }[] } = {};
       for (const r of weekOffRows) {
         const uid = Number(r.userId);
         const day = Number(r.weekday);
@@ -1213,14 +1237,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
 
         const list = schedulesByUserId[userId] || [];
-        const worksAll = list.some(s => s.type === 'Day' && s.type_value === 'All');
+        const worksAll = list.some((s) => s.type === 'Day' && s.type_value === 'All');
         if (worksAll) return [];
-        const workingWeekdays = list
-          .filter(s => s.type === 'Weekday')
-          .map(s => s.type_value);
+        const workingWeekdays = list.filter((s) => s.type === 'Weekday').map((s) => s.type_value);
         if (workingWeekdays.length === 0) return [];
         const allWeekdays = ['1', '2', '3', '4', '5', '6', '7'];
-        return allWeekdays.filter(w => !workingWeekdays.includes(w));
+        return allWeekdays.filter((w) => !workingWeekdays.includes(w));
       };
 
       if (date) {
@@ -1256,9 +1278,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
             `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved'`,
             date
           );
-          const offUserIds = dayOffs.map(d => Number(d.from_user_id));
+          const offUserIds = dayOffs.map((d) => Number(d.from_user_id));
 
-          activeKTVs = schedules.filter(s => !offUserIds.includes(Number(s.user_id)));
+          activeKTVs = schedules.filter((s) => !offUserIds.includes(Number(s.user_id)));
         }
 
         mappedKTVs = activeKTVs.map((ktv) => {
@@ -1274,7 +1296,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             role: 'technician',
             notes: storeNotes,
             avatar: ktv.avatar,
-            offDays: getKTVOffDays(Number(ktv.user_id))
+            offDays: getKTVOffDays(Number(ktv.user_id)),
           };
         });
       } else {
@@ -1298,7 +1320,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             role: 'technician',
             notes: storeNotes,
             avatar: ktv.avatar,
-            offDays: getKTVOffDays(Number(ktv.user_id))
+            offDays: getKTVOffDays(Number(ktv.user_id)),
           };
         });
       }
@@ -1321,12 +1343,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
          WHERE p.is_disabled = 0
          ORDER BY p.id DESC`
       );
-      return promotions.map(p => ({
+      return promotions.map((p) => ({
         id: Number(p.id),
         name: p.name || p.promotionKey || `Khuyến mãi #${p.id}`,
         promotionKey: p.promotionKey,
         discountPercentage: Number(p.discountPercentage),
-        discountAmount: Number(p.discountAmount)
+        discountAmount: Number(p.discountAmount),
       }));
     } catch (error: any) {
       fastify.log.error('Get promotions error:', error);
@@ -1370,11 +1392,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       );
 
       // 3. Fetch all referral transactions at once for active referrers only
-      const referrerIds = referrers.map(r => Number(r.referrerId));
-      const referralTxs = referrerIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-        `SELECT user_id as referrerId, amount, tracking_key FROM user_balance_transaction 
+      const referrerIds = referrers.map((r) => Number(r.referrerId));
+      const referralTxs =
+        referrerIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+              `SELECT user_id as referrerId, amount, tracking_key FROM user_balance_transaction 
          WHERE template_id = 7 AND currency_id = 3 AND user_id IN (${referrerIds.join(',')})`
-      ) : [];
+            )
+          : [];
 
       // Map of referrerId -> Map of referredId -> rewardAmount
       const referrerRewardMaps = new Map<number, Map<number, number>>();
@@ -1389,12 +1414,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
             const referredId = Number(keyObj.user_id);
             if (referredId && refId) {
               const amt = Number(tx.amount);
-              
+
               if (!referrerRewardMaps.has(refId)) {
                 referrerRewardMaps.set(refId, new Map<number, number>());
               }
               referrerRewardMaps.get(refId)!.set(referredId, amt);
-              
+
               referrerTotalRewards.set(refId, (referrerTotalRewards.get(refId) || 0) + amt);
             }
           }
@@ -1423,14 +1448,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
         } else {
           const refRewardMap = referrerRewardMaps.get(refId);
-          const rewardDiamonds = refRewardMap ? (refRewardMap.get(friendId) || 0) : 0;
+          const rewardDiamonds = refRewardMap ? refRewardMap.get(friendId) || 0 : 0;
 
           refMap.set(friendId, {
             id: friendId,
             name: rf.referredName || 'Khách hàng',
             phone: rf.referredPhone || '',
             dateCreated: rf.dateCreated ? new Date(rf.dateCreated).toISOString() : null,
-            rewardDiamonds
+            rewardDiamonds,
           });
         }
       }
@@ -1440,7 +1465,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         friendsMap.set(refId, Array.from(refMap.values()));
       }
 
-      const result = referrers.map(r => {
+      const result = referrers.map((r) => {
         const refId = Number(r.referrerId);
         return {
           referrerId: refId,
@@ -1448,7 +1473,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           referrerPhone: r.referrerPhone || '',
           totalReferred: Number(r.totalReferred),
           totalRewardDiamonds: referrerTotalRewards.get(refId) || 0,
-          referredUsers: friendsMap.get(refId) || []
+          referredUsers: friendsMap.get(refId) || [],
         };
       });
 
@@ -1459,7 +1484,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
-    // POST /api/customers/booking
+  // POST /api/customers/booking
   // Create a new booking (order and order_service) in the legacy core database
   fastify.post('/customers/booking', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
@@ -1482,20 +1507,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
       bookingChannel,
       bookingNote,
       promotionId,
-      referralPhone
+      referralPhone,
     } = request.body as any;
 
     try {
       // Find matching legacy user ID by CRM user (Strictly require direct link)
       const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
         where: { id: user.id },
-        select: { legacyStaffId: true }
+        select: { legacyStaffId: true },
       });
 
       if (!crmStaff || !crmStaff.legacyStaffId) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: 'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.'
+          message:
+            'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.',
         });
       }
 
@@ -1514,7 +1540,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (!validStaffId) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: 'Tài khoản liên kết bên hệ thống cũ không tồn tại hoặc đã bị xóa. Vui lòng liên hệ Admin.'
+          message: 'Tài khoản liên kết bên hệ thống cũ không tồn tại hoặc đã bị xóa. Vui lòng liên hệ Admin.',
         });
       }
 
@@ -1528,9 +1554,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (referrerContact.length > 0) {
           referrerUserId = Number(referrerContact[0].user_id);
         } else {
-          return reply.status(400).send({ 
-            error: 'Bad Request', 
-            message: `Không tìm thấy tài khoản người giới thiệu với SĐT: ${referralPhone}. Vui lòng kiểm tra lại.` 
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: `Không tìm thấy tài khoản người giới thiệu với SĐT: ${referralPhone}. Vui lòng kiểm tra lại.`,
           });
         }
       }
@@ -1545,9 +1571,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           validStaffId
         );
 
-        const lastInsertedUser = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-          `SELECT LAST_INSERT_ID() as id`
-        );
+        const lastInsertedUser = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`SELECT LAST_INSERT_ID() as id`);
         if (lastInsertedUser.length === 0 || !lastInsertedUser[0].id) {
           throw new Error('Failed to create new user ID in legacy database.');
         }
@@ -1565,15 +1589,32 @@ export async function customerRoutes(fastify: FastifyInstance) {
             is_leaved, is_deleted, date_created, language_id, access_user_group_ids,
             is_academy, is_temporary, referrer_user_id
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
-          finalCustomerId, 11, 1, 1, randPasscode, 'Client', firstName, lastName, newCustomerName, storeId, 0, 
-          0, 0, 1, '', 0, 0, referrerUserId
+          finalCustomerId,
+          11,
+          1,
+          1,
+          randPasscode,
+          'Client',
+          firstName,
+          lastName,
+          newCustomerName,
+          storeId,
+          0,
+          0,
+          0,
+          1,
+          '',
+          0,
+          0,
+          referrerUserId
         );
 
         if (newCustomerPhone) {
           await fastify.prisma.legacy.$executeRawUnsafe(
             `INSERT INTO user_contact (user_id, phone_number, is_disabled, date_created)
              VALUES (?, ?, 0, NOW())`,
-            finalCustomerId, newCustomerPhone
+            finalCustomerId,
+            newCustomerPhone
           );
         }
       } else {
@@ -1581,7 +1622,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (referrerUserId) {
           await fastify.prisma.legacy.$executeRawUnsafe(
             `UPDATE user_profile SET referrer_user_id = ? WHERE user_id = ? AND referrer_user_id IS NULL`,
-            referrerUserId, finalCustomerId
+            referrerUserId,
+            finalCustomerId
           );
         }
       }
@@ -1605,7 +1647,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         srvPrice = Number(srvInfo[0].price || 0);
         srvDuration = Number(srvInfo[0].duration || 90);
       }
-      
+
       // If virtual service 0 was selected, keep the price 0 and duration 90
       if (serviceId === 0) {
         srvPrice = 0;
@@ -1628,7 +1670,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           campaignId = promoRows[0].campaign_id ? Number(promoRows[0].campaign_id) : null;
           const pct = Number(promoRows[0].discount_percentage || 0);
           const amt = Number(promoRows[0].discount_amount || 0);
-          
+
           if (pct > 0) {
             discountAmount = Math.round((srvPrice * pct) / 100);
           } else if (amt > 0) {
@@ -1663,7 +1705,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      let finalBookingNote = (bookingNote || '').trim();
+      const finalBookingNote = (bookingNote || '').trim();
 
       // 6. Create the booking order
       const orderKey = 'booking_' + Math.random().toString(36).substring(2, 12);
@@ -1675,8 +1717,28 @@ export async function customerRoutes(fastify: FastifyInstance) {
           last_day_order_completed, combo_sale_required, is_new, is_debt, date_created, date_updated,
           promotion_id, selected_promotion_id, campaign_id
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?)`,
-        11, 1, validStaffId, orderKey, storeId, finalCustomerId, 1, finalBookingNote, bookingChannel || 'FB', srvDuration,
-        mysqlStart, mysqlEnd, 1, finalPrice, 'New', 0, 0, 1, 0, selectedPromoId, selectedPromoId, campaignId
+        11,
+        1,
+        validStaffId,
+        orderKey,
+        storeId,
+        finalCustomerId,
+        1,
+        finalBookingNote,
+        bookingChannel || 'FB',
+        srvDuration,
+        mysqlStart,
+        mysqlEnd,
+        1,
+        finalPrice,
+        'New',
+        0,
+        0,
+        1,
+        0,
+        selectedPromoId,
+        selectedPromoId,
+        campaignId
       );
 
       // Get inserted order ID
@@ -1695,8 +1757,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           created_staff_id, order_id, client_store_id, assigned_staff_id, 
           booking_note, booking_duration_minute, booking_date_start, booking_date_end, date_created
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        validStaffId, orderId, storeId, technicianId || null, 
-        finalBookingNote, srvDuration, mysqlStart, mysqlEnd
+        validStaffId,
+        orderId,
+        storeId,
+        technicianId || null,
+        finalBookingNote,
+        srvDuration,
+        mysqlStart,
+        mysqlEnd
       );
 
       // 5. Create order_service record
@@ -1707,35 +1775,55 @@ export async function customerRoutes(fastify: FastifyInstance) {
           duration_minute, quantity, service_price, discount_amount, paid_credit_amount, 
           tax_amount, balance_price, upgrade_price, downgrade_price, refund_price, total_price, date_created
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        11, 1, finalCustomerId, orderId, finalServiceId, 'Normal', 'LashesTop', 'new', technicianId, technicianId,
-        srvDuration, 1, srvPrice, discountAmount, 0, 0, 0, 0, 0, 0, finalPrice
+        11,
+        1,
+        finalCustomerId,
+        orderId,
+        finalServiceId,
+        'Normal',
+        'LashesTop',
+        'new',
+        technicianId,
+        technicianId,
+        srvDuration,
+        1,
+        srvPrice,
+        discountAmount,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        finalPrice
       );
 
       // 6. Update user's last_order_booking date
       await fastify.prisma.legacy.$executeRawUnsafe(
         `UPDATE user_profile SET last_order_booking = ? WHERE user_id = ?`,
-        mysqlStart, finalCustomerId
+        mysqlStart,
+        finalCustomerId
       );
 
       // 7. Check and assign customer to the logged-in CRM staff member if not already assigned
       const existingAssignment = await fastify.prisma.crm.crmCustomerAssignment.findUnique({
-        where: { legacyUserId: finalCustomerId }
+        where: { legacyUserId: finalCustomerId },
       });
 
       if (!existingAssignment) {
         const crmStaffExists = await fastify.prisma.crm.crmStaff.findUnique({
-          where: { id: user.id }
+          where: { id: user.id },
         });
-        
+
         if (crmStaffExists) {
           await fastify.prisma.crm.crmCustomerAssignment.create({
             data: {
               legacyUserId: finalCustomerId,
               staffId: user.id,
-              assignedBy: user.id
-            }
+              assignedBy: user.id,
+            },
           });
-          
+
           const batchId = `alloc_auto_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
           await fastify.prisma.crm.crmAssignmentHistory.create({
             data: {
@@ -1743,8 +1831,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
               legacyUserId: finalCustomerId,
               prevStaffId: null,
               newStaffId: user.id,
-              assignedBy: user.id
-            }
+              assignedBy: user.id,
+            },
           });
         }
       }
@@ -1754,12 +1842,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       fastify.log.error('[Booking] Failed to create booking:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: error.message || 'Failed to create booking'
+        message: error.message || 'Failed to create booking',
       });
     }
   });
 
-  
   // PUT /api/customers/booking/:id
   // Reschedule an existing booking
   fastify.put('/customers/booking/:id', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -1774,30 +1861,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'ID lịch hẹn không hợp lệ' });
     }
 
-    const {
-      storeId,
-      storeName,
-      technicianId,
-      technicianName,
-      bookingDate,
-      bookingTime,
-      bookingNote,
-      serviceId
-    } = request.body as {
-      storeId: number;
-      storeName: string;
-      technicianId: number | null;
-      technicianName?: string;
-      bookingDate: string; // YYYY-MM-DD
-      bookingTime: string; // HH:mm
-      bookingNote?: string | null;
-      serviceId?: number | null;
-    };
+    const { storeId, storeName, technicianId, technicianName, bookingDate, bookingTime, bookingNote, serviceId } =
+      request.body as {
+        storeId: number;
+        storeName: string;
+        technicianId: number | null;
+        technicianName?: string;
+        bookingDate: string; // YYYY-MM-DD
+        bookingTime: string; // HH:mm
+        bookingNote?: string | null;
+        serviceId?: number | null;
+      };
 
     if (!storeId || !bookingDate || !bookingTime) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Các thông tin Chi nhánh, Ngày đặt và Khung giờ trống là bắt buộc'
+        message: 'Các thông tin Chi nhánh, Ngày đặt và Khung giờ trống là bắt buộc',
       });
     }
 
@@ -1805,13 +1884,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // Verify that the current user has linked legacy staff account
       const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
         where: { id: user.id },
-        select: { legacyStaffId: true }
+        select: { legacyStaffId: true },
       });
 
       if (!crmStaff || !crmStaff.legacyStaffId) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: 'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.'
+          message:
+            'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.',
         });
       }
 
@@ -1822,7 +1902,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (staffExists.length === 0) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: 'Tài khoản liên kết bên hệ thống cũ không tồn tại hoặc đã bị xóa. Vui lòng liên hệ Admin.'
+          message: 'Tài khoản liên kết bên hệ thống cũ không tồn tại hoặc đã bị xóa. Vui lòng liên hệ Admin.',
         });
       }
 
@@ -1860,8 +1940,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const duration = (serviceId !== undefined && serviceId !== null) ? srvDuration : (Number(order.booking_duration_minute) || 90);
-      const totalPrice = (serviceId !== undefined && serviceId !== null) ? srvPrice : Number(order.total_price || 0);
+      const duration =
+        serviceId !== undefined && serviceId !== null ? srvDuration : Number(order.booking_duration_minute) || 90;
+      const totalPrice = serviceId !== undefined && serviceId !== null ? srvPrice : Number(order.total_price || 0);
 
       // 3. Calculate new dates
       const startStr = `${bookingDate} ${bookingTime}:00`;
@@ -1905,8 +1986,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           created_staff_id, order_id, client_store_id, assigned_staff_id, 
           booking_note, booking_duration_minute, booking_date_start, booking_date_end, date_created
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        crmStaff.legacyStaffId, orderId, storeId, technicianId || null, 
-        bookingNote || null, duration, mysqlStart, mysqlEnd
+        crmStaff.legacyStaffId,
+        orderId,
+        storeId,
+        technicianId || null,
+        bookingNote || null,
+        duration,
+        mysqlStart,
+        mysqlEnd
       );
 
       // 5. Update order_service record KTV assignment & service details
@@ -1940,13 +2027,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // 5. Update user's last_order_booking date
       await fastify.prisma.legacy.$executeRawUnsafe(
         `UPDATE user_profile SET last_order_booking = ? WHERE user_id = ?`,
-        mysqlStart, finalCustomerId
+        mysqlStart,
+        finalCustomerId
       );
 
       return reply.send({ success: true, orderId });
     } catch (err: any) {
       fastify.log.error(err, 'Reschedule booking error:');
-      return reply.status(500).send({ error: 'Internal Server Error', message: err.message || 'Không thể dời lịch hẹn.' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: err.message || 'Không thể dời lịch hẹn.' });
     }
   });
 
@@ -1987,7 +2077,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, orderId });
     } catch (err: any) {
       fastify.log.error(err, 'Cancel booking error:');
-      return reply.status(500).send({ error: 'Internal Server Error', message: err.message || 'Không thể hủy lịch hẹn.' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: err.message || 'Không thể hủy lịch hẹn.' });
     }
   });
 
@@ -1996,7 +2088,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.delete('/customers/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number };
     if (user.role !== 'admin') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép xóa khách hàng.' });
+      return reply
+        .status(403)
+        .send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép xóa khách hàng.' });
     }
 
     const { id } = request.params as { id: string };
@@ -2054,7 +2148,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, customerId });
     } catch (err: any) {
       fastify.log.error(err, 'Delete customer error:');
-      return reply.status(500).send({ error: 'Internal Server Error', message: err.message || 'Không thể xóa khách hàng.' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: err.message || 'Không thể xóa khách hàng.' });
     }
   });
 
@@ -2063,7 +2159,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.post('/customers/bulk-delete', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number };
     if (user.role !== 'admin') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép xóa khách hàng.' });
+      return reply
+        .status(403)
+        .send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép xóa khách hàng.' });
     }
 
     const { ids } = request.body as { ids: number[] };
@@ -2071,7 +2169,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Danh sách ID khách hàng không hợp lệ.' });
     }
 
-    const customerIds = ids.map(id => parseInt(id as any, 10)).filter(id => !isNaN(id));
+    const customerIds = ids.map((id) => parseInt(id as any, 10)).filter((id) => !isNaN(id));
     if (customerIds.length === 0) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Danh sách ID khách hàng không chứa ID hợp lệ.' });
     }
@@ -2081,27 +2179,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
         let deletedCount = 0;
         for (const customerId of customerIds) {
           // 1. Verify user exists in the user table
-          const users = await tx.$queryRawUnsafe<any[]>(
-            `SELECT id FROM \`user\` WHERE id = ?`,
-            customerId
-          );
+          const users = await tx.$queryRawUnsafe<any[]>(`SELECT id FROM \`user\` WHERE id = ?`, customerId);
 
           if (users.length === 0) {
             continue;
           }
 
           // 2. Check if user_profile row exists
-          const profiles = await tx.$queryRawUnsafe<any[]>(
-            `SELECT id FROM user_profile WHERE user_id = ?`,
-            customerId
-          );
+          const profiles = await tx.$queryRawUnsafe<any[]>(`SELECT id FROM user_profile WHERE user_id = ?`, customerId);
 
           if (profiles.length > 0) {
             // Update is_deleted to 1
-            await tx.$executeRawUnsafe(
-              `UPDATE user_profile SET is_deleted = 1 WHERE user_id = ?`,
-              customerId
-            );
+            await tx.$executeRawUnsafe(`UPDATE user_profile SET is_deleted = 1 WHERE user_id = ?`, customerId);
           } else {
             // Insert a new user_profile row with is_deleted = 1
             await tx.$executeRawUnsafe(
@@ -2132,7 +2221,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, count });
     } catch (err: any) {
       fastify.log.error(err, 'Bulk delete customers error:');
-      return reply.status(500).send({ error: 'Internal Server Error', message: err.message || 'Không thể xóa hàng loạt khách hàng.' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: err.message || 'Không thể xóa hàng loạt khách hàng.' });
     }
   });
 
@@ -2141,7 +2232,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.post('/customers/:id/restore', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number };
     if (user.role !== 'admin') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép khôi phục khách hàng.' });
+      return reply
+        .status(403)
+        .send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép khôi phục khách hàng.' });
     }
 
     const { id } = request.params as { id: string };
@@ -2199,7 +2292,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, customerId });
     } catch (err: any) {
       fastify.log.error(err, 'Restore customer error:');
-      return reply.status(500).send({ error: 'Internal Server Error', message: err.message || 'Không thể khôi phục khách hàng.' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: err.message || 'Không thể khôi phục khách hàng.' });
     }
   });
 
@@ -2220,33 +2315,33 @@ export async function customerRoutes(fastify: FastifyInstance) {
     try {
       // 1. Get current assignments for all selected customerIds to know prevStaffId
       const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-        where: { legacyUserId: { in: customerIds } }
+        where: { legacyUserId: { in: customerIds } },
       });
-      const assignmentMap = new Map(currentAssignments.map(a => [a.legacyUserId, a.staffId]));
+      const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
 
       // 2. Generate a unique batch ID
       const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
       // 3. Perform upserts and create history entries in a transaction
       await fastify.prisma.crm.$transaction([
-        ...customerIds.map(cid => 
+        ...customerIds.map((cid) =>
           fastify.prisma.crm.crmCustomerAssignment.upsert({
             where: { legacyUserId: cid },
             update: { staffId, assignedBy: adminUser.id },
-            create: { legacyUserId: cid, staffId, assignedBy: adminUser.id }
+            create: { legacyUserId: cid, staffId, assignedBy: adminUser.id },
           })
         ),
-        ...customerIds.map(cid => 
+        ...customerIds.map((cid) =>
           fastify.prisma.crm.crmAssignmentHistory.create({
             data: {
               batchId,
               legacyUserId: cid,
               prevStaffId: assignmentMap.get(cid) ?? null,
               newStaffId: staffId,
-              assignedBy: adminUser.id
-            }
+              assignedBy: adminUser.id,
+            },
           })
-        )
+        ),
       ]);
 
       return { success: true, count: customerIds.length, batchId };
@@ -2263,7 +2358,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const adminUser = request.user as { id: number; role: string };
 
     if (adminUser.role !== 'admin') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền hủy phân bổ khách hàng.' });
+      return reply
+        .status(403)
+        .send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền hủy phân bổ khách hàng.' });
     }
 
     if (!customerIds || !Array.isArray(customerIds) || customerIds.length === 0) {
@@ -2273,9 +2370,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
     try {
       // 1. Get current assignments for all selected customerIds
       const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-        where: { legacyUserId: { in: customerIds } }
+        where: { legacyUserId: { in: customerIds } },
       });
-      const assignmentMap = new Map(currentAssignments.map(a => [a.legacyUserId, a.staffId]));
+      const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
 
       // 2. Generate a unique batch ID
       const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -2283,19 +2380,19 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // 3. Perform deletes and create history entries in a transaction
       await fastify.prisma.crm.$transaction([
         fastify.prisma.crm.crmCustomerAssignment.deleteMany({
-          where: { legacyUserId: { in: customerIds } }
+          where: { legacyUserId: { in: customerIds } },
         }),
-        ...customerIds.map(cid => 
+        ...customerIds.map((cid) =>
           fastify.prisma.crm.crmAssignmentHistory.create({
             data: {
               batchId,
               legacyUserId: cid,
               prevStaffId: assignmentMap.get(cid) ?? null,
               newStaffId: null,
-              assignedBy: adminUser.id
-            }
+              assignedBy: adminUser.id,
+            },
           })
-        )
+        ),
       ]);
 
       return { success: true, count: customerIds.length, batchId };
@@ -2327,13 +2424,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         take: limitNum,
         include: {
           newStaff: { select: { displayName: true } },
-          assigner: { select: { displayName: true } }
-        }
+          assigner: { select: { displayName: true } },
+        },
       });
 
       // 2. Fetch total count of distinct batches
       const allBatches = await fastify.prisma.crm.crmAssignmentHistory.groupBy({
-        by: ['batchId']
+        by: ['batchId'],
       });
       const total = allBatches.length;
 
@@ -2344,22 +2441,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
             total: 0,
             page: pageNum,
             limit: limitNum,
-            pages: 0
-          }
+            pages: 0,
+          },
         };
       }
 
       // 3. For each distinct batch, fetch the total count of customers and if the batch is undone
-      const batchIds = distinctHistory.map(h => h.batchId);
+      const batchIds = distinctHistory.map((h) => h.batchId);
       const batchStats = await fastify.prisma.crm.crmAssignmentHistory.groupBy({
         by: ['batchId', 'isUndone'],
         where: { batchId: { in: batchIds } },
-        _count: { id: true }
+        _count: { id: true },
       });
 
       // Group stats by batchId
       const statsMap = new Map<string, { count: number; isUndone: boolean }>();
-      batchStats.forEach(stat => {
+      batchStats.forEach((stat) => {
         const existing = statsMap.get(stat.batchId);
         if (existing) {
           existing.count += stat._count.id;
@@ -2367,12 +2464,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         } else {
           statsMap.set(stat.batchId, {
             count: stat._count.id,
-            isUndone: !!stat.isUndone
+            isUndone: !!stat.isUndone,
           });
         }
       });
 
-      const data = distinctHistory.map(h => {
+      const data = distinctHistory.map((h) => {
         const stat = statsMap.get(h.batchId) || { count: 0, isUndone: false };
         return {
           batchId: h.batchId,
@@ -2381,7 +2478,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           newStaffName: h.newStaff?.displayName || null,
           customerCount: stat.count,
           isUndone: !!h.isUndone || stat.isUndone,
-          undoneAt: h.undoneAt
+          undoneAt: h.undoneAt,
         };
       });
 
@@ -2391,46 +2488,53 @@ export async function customerRoutes(fastify: FastifyInstance) {
           total,
           page: pageNum,
           limit: limitNum,
-          pages: Math.ceil(total / limitNum)
-        }
+          pages: Math.ceil(total / limitNum),
+        },
       };
     } catch (error: any) {
       fastify.log.error({ err: error }, 'Get assignment history error');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve assignment history' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: 'Failed to retrieve assignment history' });
     }
   });
 
   // GET /api/customers/assignment-history/:batchId/details
   // Get detailed list of customers assigned in a batch
-  fastify.get('/customers/assignment-history/:batchId/details', { preHandler: [requireAuth] }, async (request, reply) => {
-    const adminUser = request.user as { id: number; role: string };
-    if (adminUser.role !== 'admin') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền xem chi tiết phân bổ.' });
-    }
-
-    const { batchId } = request.params as { batchId: string };
-    if (!batchId) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'batchId is required' });
-    }
-
-    try {
-      const historyRecords = await fastify.prisma.crm.crmAssignmentHistory.findMany({
-        where: { batchId },
-        include: {
-          prevStaff: { select: { displayName: true } },
-          newStaff: { select: { displayName: true } }
-        },
-        orderBy: { id: 'asc' }
-      });
-
-      if (historyRecords.length === 0) {
-        return { data: [] };
+  fastify.get(
+    '/customers/assignment-history/:batchId/details',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const adminUser = request.user as { id: number; role: string };
+      if (adminUser.role !== 'admin') {
+        return reply
+          .status(403)
+          .send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền xem chi tiết phân bổ.' });
       }
 
-      const customerIds = historyRecords.map(r => r.legacyUserId);
+      const { batchId } = request.params as { batchId: string };
+      if (!batchId) {
+        return reply.status(400).send({ error: 'Bad Request', message: 'batchId is required' });
+      }
 
-      // Fetch customer names and phones from legacy database using queryRawUnsafe
-      const legacyCustomers = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      try {
+        const historyRecords = await fastify.prisma.crm.crmAssignmentHistory.findMany({
+          where: { batchId },
+          include: {
+            prevStaff: { select: { displayName: true } },
+            newStaff: { select: { displayName: true } },
+          },
+          orderBy: { id: 'asc' },
+        });
+
+        if (historyRecords.length === 0) {
+          return { data: [] };
+        }
+
+        const customerIds = historyRecords.map((r) => r.legacyUserId);
+
+        // Fetch customer names and phones from legacy database using queryRawUnsafe
+        const legacyCustomers = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT 
           u.id,
           up.full_name as fullName,
@@ -2445,28 +2549,34 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE u.id IN (${customerIds.join(',')})
       `);
 
-      const customerMap = new Map(legacyCustomers.map(c => [Number(c.id), c]));
+        const customerMap = new Map(legacyCustomers.map((c) => [Number(c.id), c]));
 
-      const data = historyRecords.map(r => {
-        const legacyCust = customerMap.get(r.legacyUserId) || { fullName: `Khách hàng #${r.legacyUserId}`, phone: 'N/A' };
-        return {
-          id: r.id,
-          legacyUserId: r.legacyUserId,
-          fullName: legacyCust.fullName || `Khách hàng #${r.legacyUserId}`,
-          phone: legacyCust.phone || 'N/A',
-          prevStaffName: r.prevStaff?.displayName || 'Chưa phân bổ',
-          newStaffName: r.newStaff?.displayName || 'Gỡ Booker',
-          isUndone: r.isUndone === true || (r.isUndone as any) === 1,
-          undoneAt: r.undoneAt
-        };
-      });
+        const data = historyRecords.map((r) => {
+          const legacyCust = customerMap.get(r.legacyUserId) || {
+            fullName: `Khách hàng #${r.legacyUserId}`,
+            phone: 'N/A',
+          };
+          return {
+            id: r.id,
+            legacyUserId: r.legacyUserId,
+            fullName: legacyCust.fullName || `Khách hàng #${r.legacyUserId}`,
+            phone: legacyCust.phone || 'N/A',
+            prevStaffName: r.prevStaff?.displayName || 'Chưa phân bổ',
+            newStaffName: r.newStaff?.displayName || 'Gỡ Booker',
+            isUndone: r.isUndone === true || (r.isUndone as any) === 1,
+            undoneAt: r.undoneAt,
+          };
+        });
 
-      return { data };
-    } catch (error: any) {
-      fastify.log.error({ err: error }, 'Get assignment history details error');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve assignment history details' });
+        return { data };
+      } catch (error: any) {
+        fastify.log.error({ err: error }, 'Get assignment history details error');
+        return reply
+          .status(500)
+          .send({ error: 'Internal Server Error', message: 'Failed to retrieve assignment history details' });
+      }
     }
-  });
+  );
 
   // POST /api/customers/assignment-history/undo
   // Undo a batch of assignments
@@ -2484,30 +2594,33 @@ export async function customerRoutes(fastify: FastifyInstance) {
     try {
       // 1. Find all history records for this batch that are not undone
       const historyRecords = await fastify.prisma.crm.crmAssignmentHistory.findMany({
-        where: { batchId, isUndone: false }
+        where: { batchId, isUndone: false },
       });
 
       if (historyRecords.length === 0) {
-        return reply.status(400).send({ error: 'Bad Request', message: 'Đợt phân bổ này không tồn tại hoặc đã được hoàn tác trước đó.' });
+        return reply
+          .status(400)
+          .send({ error: 'Bad Request', message: 'Đợt phân bổ này không tồn tại hoặc đã được hoàn tác trước đó.' });
       }
 
-      const customerIds = historyRecords.map(r => r.legacyUserId);
+      const customerIds = historyRecords.map((r) => r.legacyUserId);
       const newStaffId = historyRecords[0].newStaffId;
 
       // 2. Fetch current assignments of these customers to check if they've changed
       const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-        where: { legacyUserId: { in: customerIds } }
+        where: { legacyUserId: { in: customerIds } },
       });
-      const currentMap = new Map(currentAssignments.map(a => [a.legacyUserId, a.staffId]));
+      const currentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
 
       // 3. Determine which assignments can be safely reverted (where current staff matches newStaffId of the batch)
       const assignmentsToRevert: typeof historyRecords = [];
       for (const record of historyRecords) {
         const currentStaffId = currentMap.get(record.legacyUserId);
-        
-        const isCurrentMatch = (newStaffId === null && currentStaffId === undefined) || 
-                              (newStaffId !== null && currentStaffId === newStaffId);
-                              
+
+        const isCurrentMatch =
+          (newStaffId === null && currentStaffId === undefined) ||
+          (newStaffId !== null && currentStaffId === newStaffId);
+
         if (isCurrentMatch) {
           assignmentsToRevert.push(record);
         }
@@ -2518,13 +2631,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         for (const record of assignmentsToRevert) {
           if (record.prevStaffId === null) {
             await tx.crmCustomerAssignment.deleteMany({
-              where: { legacyUserId: record.legacyUserId }
+              where: { legacyUserId: record.legacyUserId },
             });
           } else {
             await tx.crmCustomerAssignment.upsert({
               where: { legacyUserId: record.legacyUserId },
               update: { staffId: record.prevStaffId, assignedBy: adminUser.id },
-              create: { legacyUserId: record.legacyUserId, staffId: record.prevStaffId, assignedBy: adminUser.id }
+              create: { legacyUserId: record.legacyUserId, staffId: record.prevStaffId, assignedBy: adminUser.id },
             });
           }
         }
@@ -2534,16 +2647,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
           where: { batchId },
           data: {
             isUndone: true,
-            undoneAt: new Date()
-          }
+            undoneAt: new Date(),
+          },
         });
       });
 
-      return { 
-        success: true, 
-        revertedCount: assignmentsToRevert.length, 
+      return {
+        success: true,
+        revertedCount: assignmentsToRevert.length,
         totalCount: historyRecords.length,
-        skippedCount: historyRecords.length - assignmentsToRevert.length
+        skippedCount: historyRecords.length - assignmentsToRevert.length,
       };
     } catch (error: any) {
       fastify.log.error({ err: error }, 'Undo assignment error');
@@ -2567,11 +2680,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
           where: {
             legacyUserId: customerId,
-            staffId: user.id
-          }
+            staffId: user.id,
+          },
         });
         if (!assigned) {
-          return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin khách hàng này.' });
+          return reply
+            .status(403)
+            .send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin khách hàng này.' });
         }
       }
       const sql = `
@@ -2619,21 +2734,24 @@ export async function customerRoutes(fastify: FastifyInstance) {
         lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
         daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
         bucket: row.bucket as BucketType,
-        comboBalance: row.bucket !== 'SINGLE' ? {
-          normalCount: Number(row.normalCount || 0),
-          retainCount: Number(row.retainCount || 0),
-          expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null
-        } : null,
+        comboBalance:
+          row.bucket !== 'SINGLE'
+            ? {
+                normalCount: Number(row.normalCount || 0),
+                retainCount: Number(row.retainCount || 0),
+                expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null,
+              }
+            : null,
         avatar: row.avatar,
-        isDeleted: row.isDeleted === 1
+        isDeleted: row.isDeleted === 1,
       };
 
       return customer;
     } catch (error: any) {
       fastify.log.error('Get customer by id error:', error);
-      return reply.status(500).send({ 
-        error: 'Internal Server Error', 
-        message: 'Failed to retrieve customer' 
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve customer',
       });
     }
   });
@@ -2654,11 +2772,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
           where: {
             legacyUserId: customerId,
-            staffId: user.id
-          }
+            staffId: user.id,
+          },
         });
         if (!assigned) {
-          return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền xem lịch sử của khách hàng này.' });
+          return reply
+            .status(403)
+            .send({ error: 'Forbidden', message: 'Bạn không có quyền xem lịch sử của khách hàng này.' });
         }
       }
       // Query completed orders for the customer
@@ -2684,15 +2804,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
         dateCreated: new Date(row.dateCreated).toISOString(),
         totalPrice: Number(row.totalPrice || 0),
         orderState: row.orderState,
-        bookingChannel: row.bookingChannel
+        bookingChannel: row.bookingChannel,
       }));
 
       return history;
     } catch (error: any) {
       fastify.log.error('Get customer order history error:', error);
-      return reply.status(500).send({ 
-        error: 'Internal Server Error', 
-        message: 'Failed to retrieve customer order history' 
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve customer order history',
       });
     }
   });
@@ -2709,11 +2829,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
-      where: { legacyUserId: customerId }
+      where: { legacyUserId: customerId },
     });
     if (user.role !== 'admin') {
       if (!assigned || assigned.staffId !== user.id) {
-        return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền chỉnh sửa thông tin khách hàng này.' });
+        return reply
+          .status(403)
+          .send({ error: 'Forbidden', message: 'Bạn không có quyền chỉnh sửa thông tin khách hàng này.' });
       }
     }
 
@@ -2750,7 +2872,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (profileCount.length > 0) {
         await fastify.prisma.legacy.$executeRawUnsafe(
           `UPDATE user_profile SET full_name = ?, first_name = ?, last_name = ? WHERE user_id = ?`,
-          name, firstName, lastName, customerId
+          name,
+          firstName,
+          lastName,
+          customerId
         );
       } else {
         const randPasscode = Math.random().toString(36).substring(2, 8);
@@ -2761,13 +2886,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
             is_leaved, is_deleted, date_created, language_id, access_user_group_ids,
             is_academy, is_temporary
           ) VALUES (?, 11, 1, 1, ?, 'Client', ?, ?, ?, 1, 0, 0, 0, NOW(), 1, '', 0, 0)`,
-          customerId, randPasscode, firstName, lastName, name
+          customerId,
+          randPasscode,
+          firstName,
+          lastName,
+          name
         );
       }
 
       await fastify.prisma.legacy.$executeRawUnsafe(
         `UPDATE user SET email = ?, gender = ?, date_of_birth = ? WHERE id = ?`,
-        email || null, gender || null, dobDate, customerId
+        email || null,
+        gender || null,
+        dobDate,
+        customerId
       );
 
       if (Array.isArray(phones)) {
@@ -2776,18 +2908,24 @@ export async function customerRoutes(fastify: FastifyInstance) {
             if (p.id) {
               await fastify.prisma.legacy.$executeRawUnsafe(
                 `DELETE FROM user_contact WHERE id = ? AND user_id = ?`,
-                p.id, customerId
+                p.id,
+                customerId
               );
             }
           } else if (p.id) {
             await fastify.prisma.legacy.$executeRawUnsafe(
               `UPDATE user_contact SET phone_number = ?, is_disabled = ? WHERE id = ? AND user_id = ?`,
-              p.phone_number, p.is_disabled ? 1 : 0, p.id, customerId
+              p.phone_number,
+              p.is_disabled ? 1 : 0,
+              p.id,
+              customerId
             );
           } else {
             await fastify.prisma.legacy.$executeRawUnsafe(
               `INSERT INTO user_contact (user_id, phone_number, is_disabled, date_created) VALUES (?, ?, ?, NOW())`,
-              customerId, p.phone_number, p.is_disabled ? 1 : 0
+              customerId,
+              p.phone_number,
+              p.is_disabled ? 1 : 0
             );
           }
         }
@@ -2798,7 +2936,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       fastify.log.error('Update customer error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi hệ thống khi cập nhật thông tin khách hàng.'
+        message: 'Lỗi hệ thống khi cập nhật thông tin khách hàng.',
       });
     }
   });
@@ -2818,13 +2956,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // 1. Authorization check & Fetch CRM Assignment for Online Consultant
       const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
         where: { legacyUserId: customerId },
-        include: { staff: true }
+        include: { staff: true },
       });
       const onlineConsultantName = assigned?.staff?.displayName || 'Chưa phân bổ';
 
       if (user.role !== 'admin') {
         if (!assigned || assigned.staffId !== user.id) {
-          return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin chi tiết khách hàng này.' });
+          return reply
+            .status(403)
+            .send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin chi tiết khách hàng này.' });
         }
       }
 
@@ -2864,7 +3004,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // Fetch all phone numbers associated with the customer
       const userContacts = await fastify.prisma.legacy.user_contact.findMany({
-        where: { user_id: customerId }
+        where: { user_id: customerId },
       });
 
       // 3. Fetch LTV and Total Visits in a single query
@@ -2965,11 +3105,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
          LIMIT 1`,
         customerId
       );
-      const referrer = referrerRow.length > 0 ? {
-        id: Number(referrerRow[0].id),
-        name: referrerRow[0].name,
-        phone: referrerRow[0].phone
-      } : null;
+      const referrer =
+        referrerRow.length > 0
+          ? {
+              id: Number(referrerRow[0].id),
+              name: referrerRow[0].name,
+              phone: referrerRow[0].phone,
+            }
+          : null;
 
       // Fetch Referred Users list (Who this customer referred)
       const referredUsers = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
@@ -3026,7 +3169,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             name: ru.name || 'Khách hàng',
             phone: ru.phone || '',
             dateCreated: ru.dateCreated ? new Date(ru.dateCreated).toISOString() : null,
-            rewardDiamonds: rewardMap.get(friendId) || 0
+            rewardDiamonds: rewardMap.get(friendId) || 0,
           });
         }
       }
@@ -3066,19 +3209,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const [bookingsRaw, servicesRaw] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(bookingsSql, customerId),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(servicesSql, customerId)
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(servicesSql, customerId),
       ]);
 
-      const bookingIds = bookingsRaw.map(b => Number(b.id));
-      const orderServicesDetails = bookingIds.length > 0 ? await fastify.prisma.legacy.order_service.findMany({
-        where: { order_id: { in: bookingIds } },
-        select: {
-          order_id: true,
-          assigned_staff_id: true,
-          check_in_staff_id: true,
-          check_out_staff_id: true
-        }
-      }) : [];
+      const bookingIds = bookingsRaw.map((b) => Number(b.id));
+      const orderServicesDetails =
+        bookingIds.length > 0
+          ? await fastify.prisma.legacy.order_service.findMany({
+              where: { order_id: { in: bookingIds } },
+              select: {
+                order_id: true,
+                assigned_staff_id: true,
+                check_in_staff_id: true,
+                check_out_staff_id: true,
+              },
+            })
+          : [];
 
       const staffUserIds = new Set<number>();
       for (const b of bookingsRaw) {
@@ -3090,16 +3236,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (os.check_in_staff_id) staffUserIds.add(Number(os.check_in_staff_id));
         if (os.check_out_staff_id) staffUserIds.add(Number(os.check_out_staff_id));
       }
-      
+
       const staffIdArray = Array.from(staffUserIds);
-      const staffProfiles = staffIdArray.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const staffProfiles =
+        staffIdArray.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT user_id as userId, full_name as fullName, is_disabled as isDisabled, is_leaved as isLeaved
         FROM user_profile
         WHERE user_id IN (${staffIdArray.join(',')})
-      `) : [];
-      const staffNamesMap = new Map<number, string>(staffProfiles.map(s => [Number(s.userId), s.fullName]));
+      `)
+          : [];
+      const staffNamesMap = new Map<number, string>(staffProfiles.map((s) => [Number(s.userId), s.fullName]));
       const staffInactiveMap = new Map<number, boolean>(
-        staffProfiles.map(s => [Number(s.userId), s.isDisabled === 1 || s.isDisabled === true || s.isLeaved === 1 || s.isLeaved === true])
+        staffProfiles.map((s) => [
+          Number(s.userId),
+          s.isDisabled === 1 || s.isDisabled === true || s.isLeaved === 1 || s.isLeaved === true,
+        ])
       );
 
       // Map services to bookings
@@ -3110,11 +3262,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         servicesByOrderId.set(Number(s.orderId), list);
       }
 
-      const formattedBookings = bookingsRaw.map(b => {
-        const orderSvs = orderServicesDetails.filter(os => Number(os.order_id) === Number(b.id));
-        const checkInStaffId = orderSvs.find(os => os.check_in_staff_id)?.check_in_staff_id;
-        const checkOutStaffId = orderSvs.find(os => os.check_out_staff_id)?.check_out_staff_id;
-        const firstCvStaffId = b.technicianId || orderSvs.find(os => os.assigned_staff_id)?.assigned_staff_id;
+      const formattedBookings = bookingsRaw.map((b) => {
+        const orderSvs = orderServicesDetails.filter((os) => Number(os.order_id) === Number(b.id));
+        const checkInStaffId = orderSvs.find((os) => os.check_in_staff_id)?.check_in_staff_id;
+        const checkOutStaffId = orderSvs.find((os) => os.check_out_staff_id)?.check_out_staff_id;
+        const firstCvStaffId = b.technicianId || orderSvs.find((os) => os.assigned_staff_id)?.assigned_staff_id;
 
         return {
           id: b.id,
@@ -3130,12 +3282,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
             const isInactive = staffInactiveMap.get(Number(firstCvStaffId));
             return isInactive ? `${name} (Đã nghỉ)` : name;
           })(),
-          ccInName: checkInStaffId ? (staffNamesMap.get(Number(checkInStaffId)) || 'Tư vấn viên') : 'Unknown',
-          ccOutName: checkOutStaffId ? (staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên') : 'Unknown',
-          bookerName: b.createdStaffId ? (staffNamesMap.get(Number(b.createdStaffId)) || 'Unknown') : 'Unknown',
+          ccInName: checkInStaffId ? staffNamesMap.get(Number(checkInStaffId)) || 'Tư vấn viên' : 'Unknown',
+          ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên' : 'Unknown',
+          bookerName: b.createdStaffId ? staffNamesMap.get(Number(b.createdStaffId)) || 'Unknown' : 'Unknown',
           technicianId: firstCvStaffId ? Number(firstCvStaffId) : null,
           storeId: b.storeId ? Number(b.storeId) : null,
-          services: servicesByOrderId.get(Number(b.id)) || []
+          services: servicesByOrderId.get(Number(b.id)) || [],
         };
       });
 
@@ -3154,27 +3306,27 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ORDER BY un.date_created DESC
       `;
       const notesRaw = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(notesSql, customerId);
-      const formattedNotes = notesRaw.map(n => ({
+      const formattedNotes = notesRaw.map((n) => ({
         id: Number(n.id),
         note: n.note || '',
         isSticky: Boolean(n.isSticky),
         isIssue: Boolean(n.isIssue),
         dateCreated: n.dateCreated ? new Date(n.dateCreated).toISOString() : null,
-        staffName: n.staffName
+        staffName: n.staffName,
       }));
 
       // 8. Fetch CRM Call Logs
       const logs = await fastify.prisma.crm.crmCallLog.findMany({
         where: { legacyUserId: customerId },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       });
-      const staffIds = Array.from(new Set(logs.map(l => l.staffId)));
+      const staffIds = Array.from(new Set(logs.map((l) => l.staffId)));
       const staffList = await fastify.prisma.crm.crmStaff.findMany({
         where: { id: { in: staffIds } },
-        select: { id: true, displayName: true }
+        select: { id: true, displayName: true },
       });
-      const staffMap = new Map(staffList.map(s => [s.id, s.displayName]));
-      const formattedCalls = logs.map(log => ({
+      const staffMap = new Map(staffList.map((s) => [s.id, s.displayName]));
+      const formattedCalls = logs.map((log) => ({
         id: log.id,
         planId: log.planId,
         callType: log.callType,
@@ -3184,7 +3336,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         outcome: log.outcome,
         callbackDate: log.callbackDate ? new Date(log.callbackDate).toISOString().split('T')[0] : null,
         createdAt: log.createdAt.toISOString(),
-        staffName: staffMap.get(log.staffId) || 'Unknown Staff'
+        staffName: staffMap.get(log.staffId) || 'Unknown Staff',
       }));
 
       const comboWalletBalance = comboBalances.reduce((sum, cb) => {
@@ -3196,10 +3348,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
           id: row.id,
           name: row.name,
           phone: row.phone,
-          phones: userContacts.map(uc => ({
+          phones: userContacts.map((uc) => ({
             id: uc.id,
             phone_number: uc.phone_number,
-            is_disabled: uc.is_disabled
+            is_disabled: uc.is_disabled,
           })),
           email: row.email,
           gender: row.gender,
@@ -3210,7 +3362,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           avatar: row.avatar,
           onlineConsultant: onlineConsultantName,
           onlineConsultantId: assigned?.staffId || null,
-          isDeleted: row.isDeleted === 1
+          isDeleted: row.isDeleted === 1,
         },
         stats: {
           totalSpent: totalSpent,
@@ -3218,9 +3370,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           comboCount: Number(row.normalCount || 0) + Number(row.retainCount || 0),
           comboWalletBalance: comboWalletBalance,
           gemBalance: gemBalance,
-          avgFrequency: avgFrequency
+          avgFrequency: avgFrequency,
         },
-        comboBalances: comboBalances.map(cb => ({
+        comboBalances: comboBalances.map((cb) => ({
           id: Number(cb.id),
           serviceId: cb.serviceId,
           serviceGroup: cb.serviceGroup,
@@ -3233,7 +3385,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           packageNormalCount: cb.packageNormalCount ? Number(cb.packageNormalCount) : null,
           packageKey: cb.packageKey,
           creatorStaffName: cb.creatorStaffName || null,
-          packagePrice: cb.packagePrice ? Number(cb.packagePrice) : null
+          packagePrice: cb.packagePrice ? Number(cb.packagePrice) : null,
         })),
         bookings: formattedBookings,
         notes: formattedNotes,
@@ -3260,12 +3412,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
               case 6:
                 return 'Cám ơn đã sử dụng dịch vụ tại Wings (Lần đầu)';
               case 7:
-                return trans.referredName 
-                  ? `Thưởng giới thiệu bạn ${trans.referredName.trim()}` 
+                return trans.referredName
+                  ? `Thưởng giới thiệu bạn ${trans.referredName.trim()}`
                   : 'Bạn vừa nhận được kim cương từ việc giới thiệu bạn';
               case 8:
-                return trans.bookingDateStart 
-                  ? `Thanh toán lịch hẹn ngày ${formatDate(trans.bookingDateStart)}` 
+                return trans.bookingDateStart
+                  ? `Thanh toán lịch hẹn ngày ${formatDate(trans.bookingDateStart)}`
                   : 'Bạn vừa sử dụng kim cương cho dịch vụ';
               case 12:
                 return 'Đăng ký thành công chương trình giới thiệu nhận Kim Cương';
@@ -3273,8 +3425,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 return 'Trừ kim cương do khách hàng phản hồi cần điều chỉnh (Fix)';
               case 22:
               case 28:
-                return trans.staffName 
-                  ? `Nhận kim cương từ nhân viên ${trans.staffName}` 
+                return trans.staffName
+                  ? `Nhận kim cương từ nhân viên ${trans.staffName}`
                   : 'Nhận kim cương từ cửa hàng';
               case 29:
                 return 'Chuyển kim cương cho tài khoản khác';
@@ -3307,25 +3459,24 @@ export async function customerRoutes(fastify: FastifyInstance) {
             }
           };
 
-          return gemTransactions.map(t => ({
+          return gemTransactions.map((t) => ({
             id: Number(t.id),
             method: t.method,
             amount: Number(t.amount),
             balance: Number(t.balance),
             description: formatGemDescription(t),
             dateCreated: t.dateCreated ? new Date(t.dateCreated).toISOString() : null,
-            staffName: t.staffName || 'Hệ thống'
+            staffName: t.staffName || 'Hệ thống',
           }));
         })(),
         referrer: referrer,
-        referredUsers: formattedReferred
+        referredUsers: formattedReferred,
       };
-
     } catch (error: any) {
       fastify.log.error('Get detailed customer error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to retrieve detailed customer profile'
+        message: 'Failed to retrieve detailed customer profile',
       });
     }
   });
@@ -3371,7 +3522,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       if (filterByStaff) {
         const staff = await fastify.prisma.crm.crmStaff.findUnique({
-          where: { id: targetStaffId }
+          where: { id: targetStaffId },
         });
 
         if (staff) {
@@ -3379,7 +3530,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           // Strip " CC" suffix from name if it exists to match legacy user full_name
           const cleanName = staff.displayName.replace(/\s+CC$/i, '').trim();
 
-          const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `
             SELECT up.user_id as userId
             FROM \`staff_profile\` sp
             JOIN \`user_profile\` up ON sp.user_id = up.user_id
@@ -3387,7 +3539,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
               AND (up.full_name = ? OR up.full_name = ?)
             ORDER BY up.user_id DESC
             LIMIT 1
-          `, cleanName, cleanName + ' ');
+          `,
+            cleanName,
+            cleanName + ' '
+          );
 
           if (profiles.length > 0) {
             staffLegacyId = Number(profiles[0].userId);
@@ -3400,9 +3555,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (filterByStaff) {
         const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
           where: { staffId: targetStaffId },
-          select: { legacyUserId: true }
+          select: { legacyUserId: true },
         });
-        assignedCustomerIds = assignments.map(a => Number(a.legacyUserId));
+        assignedCustomerIds = assignments.map((a) => Number(a.legacyUserId));
       }
 
       // If staff selected but no corresponding legacy user found AND no assigned customers, return empty list
@@ -3504,8 +3659,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const result = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(sql, ...params);
 
       // 4. Fetch payment details and service details for completed/active orders to calculate financial metrics
-      const orderIds = result.map(o => Number(o.id));
-      const completedOrderIds = result.filter(o => o.orderState === 'Completed').map(o => Number(o.id));
+      const orderIds = result.map((o) => Number(o.id));
+      const completedOrderIds = result.filter((o) => o.orderState === 'Completed').map((o) => Number(o.id));
 
       const orderPaymentMap = new Map<number, { tips: number; debt: number; totalPaid: number }>();
       if (completedOrderIds.length > 0) {
@@ -3516,11 +3671,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         `);
         orderPayments.forEach((op: any) => {
           const existing = orderPaymentMap.get(Number(op.orderId)) || { tips: 0, debt: 0, totalPaid: 0 };
-          const paidSum = Number(op.paidCredit || 0) + Number(op.paidCash || 0) + Number(op.paidCard || 0) + Number(op.paidBank || 0);
+          const paidSum =
+            Number(op.paidCredit || 0) + Number(op.paidCash || 0) + Number(op.paidCard || 0) + Number(op.paidBank || 0);
           orderPaymentMap.set(Number(op.orderId), {
             tips: existing.tips + Number(op.tipAmount || 0),
             debt: existing.debt + Number(op.debt || 0),
-            totalPaid: existing.totalPaid + paidSum
+            totalPaid: existing.totalPaid + paidSum,
           });
         });
       }
@@ -3529,20 +3685,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const serviceNameMap = new Map<number, string>();
       if (orderIds.length > 0) {
         const orderServices = await fastify.prisma.legacy.order_service.findMany({
-          where: { order_id: { in: orderIds } }
+          where: { order_id: { in: orderIds } },
         });
-        orderServices.forEach(os => {
+        orderServices.forEach((os) => {
           const l = orderServicesMap.get(os.order_id) || [];
           l.push(os);
           orderServicesMap.set(os.order_id, l);
         });
 
-        const serviceIds = Array.from(new Set(orderServices.map(os => os.service_id)));
+        const serviceIds = Array.from(new Set(orderServices.map((os) => os.service_id)));
         if (serviceIds.length > 0) {
           const serviceLanguages = await fastify.prisma.legacy.service_language.findMany({
-            where: { service_id: { in: serviceIds } }
+            where: { service_id: { in: serviceIds } },
           });
-          serviceLanguages.forEach(sl => {
+          serviceLanguages.forEach((sl) => {
             serviceNameMap.set(sl.service_id, sl.service_name);
           });
         }
@@ -3550,7 +3706,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // Fetch config
       const conf = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: 'BOOKER_SALARY_CONFIG' }
+        where: { key: 'BOOKER_SALARY_CONFIG' },
       });
       let config: any = {
         baseSalary: 5500000,
@@ -3559,7 +3715,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         clientBonusRefill: { discount30: 9000, discount50: 6000, discountMore: 1000 },
         doneBonusTiers: [],
         missedBonusTiers: [],
-        revBonusTiers: []
+        revBonusTiers: [],
       };
       if (conf) {
         try {
@@ -3594,16 +3750,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const allOrdersInRange = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(allOrdersSql, ...allOrdersParams);
 
       // Collect all customer IDs from both allOrdersInRange and the paginated result
-      const allRangeUserIds = allOrdersInRange.map(o => Number(o.userId)).filter(id => !isNaN(id));
-      const paginatedUserIds = result.map(o => Number(o.userId)).filter(id => !isNaN(id));
+      const allRangeUserIds = allOrdersInRange.map((o) => Number(o.userId)).filter((id) => !isNaN(id));
+      const paginatedUserIds = result.map((o) => Number(o.userId)).filter((id) => !isNaN(id));
       const customerIds = Array.from(new Set([...allRangeUserIds, ...paginatedUserIds]));
 
-      const userBalances = customerIds.length > 0 ? await fastify.prisma.legacy.user_service_balance.findMany({
-        where: { user_id: { in: customerIds } }
-      }) : [];
+      const userBalances =
+        customerIds.length > 0
+          ? await fastify.prisma.legacy.user_service_balance.findMany({
+              where: { user_id: { in: customerIds } },
+            })
+          : [];
 
-      const balanceIds = userBalances.map(b => b.id);
-      const userBalanceTransactions = balanceIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const balanceIds = userBalances.map((b) => b.id);
+      const userBalanceTransactions =
+        balanceIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                usbt.retain_count, usbt.used_staff_id, usbt.order_id,
@@ -3611,7 +3772,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         FROM user_service_balance_transaction usbt
         LEFT JOIN \`order\` o ON o.id = usbt.order_id
         WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-      `) : [];
+      `)
+          : [];
 
       const txnsByBalanceId = new Map<number, any[]>();
       for (const t of userBalanceTransactions) {
@@ -3626,15 +3788,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
         const bTime = bookingDateStart || orderCreatedDate;
-        const userBals = userBalances.filter(b => b.user_id === userId);
-        
+        const userBals = userBalances.filter((b) => b.user_id === userId);
+
         for (const usb of userBals) {
           if (new Date(usb.date_created) >= new Date(bTime)) {
             continue;
           }
 
-          const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-            new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+          const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
+            (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
           );
 
           txnsBefore.sort((a, b) => {
@@ -3647,18 +3809,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
           const lastTxnBefore = txnsBefore[0];
 
           const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-          const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
+          const isNotExpired =
+            !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
           let countLeft = 0;
-          if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
+          if (
+            lastTxnBefore &&
+            lastTxnBefore.total_normal_count_left !== null &&
+            lastTxnBefore.total_retain_count_left !== null
+          ) {
             countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
           } else {
-            const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-              new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
+            const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
+              (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
             );
-            
+
             let usedAfter = 0;
-            txnsAfterOrAt.forEach(t => {
+            txnsAfterOrAt.forEach((t) => {
               if (t.used_staff_id !== null) {
                 usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
               }
@@ -3674,8 +3841,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return false;
       };
 
-      const summaryCompletedOrders = allOrdersInRange.filter(o => o.orderState === 'Completed');
-      const summaryCompletedOrderIds = summaryCompletedOrders.map(o => Number(o.id));
+      const summaryCompletedOrders = allOrdersInRange.filter((o) => o.orderState === 'Completed');
+      const summaryCompletedOrderIds = summaryCompletedOrders.map((o) => Number(o.id));
 
       let summaryTotalTips = 0;
       let summaryClientBonus = 0;
@@ -3687,33 +3854,33 @@ export async function customerRoutes(fastify: FastifyInstance) {
           FROM \`order_payment\`
           WHERE order_id IN (${summaryCompletedOrderIds.join(',')})
         `);
-        summaryPayments.forEach(p => {
+        summaryPayments.forEach((p) => {
           summaryTotalTips += Number(p.tipAmount || 0);
         });
 
         const summaryServices = await fastify.prisma.legacy.order_service.findMany({
-          where: { order_id: { in: summaryCompletedOrderIds } }
+          where: { order_id: { in: summaryCompletedOrderIds } },
         });
 
-        const summaryServiceIds = Array.from(new Set(summaryServices.map(os => os.service_id)));
+        const summaryServiceIds = Array.from(new Set(summaryServices.map((os) => os.service_id)));
         const summaryServiceNameMap = new Map<number, string>();
         if (summaryServiceIds.length > 0) {
           const summaryServiceLanguages = await fastify.prisma.legacy.service_language.findMany({
-            where: { service_id: { in: summaryServiceIds } }
+            where: { service_id: { in: summaryServiceIds } },
           });
-          summaryServiceLanguages.forEach(sl => {
+          summaryServiceLanguages.forEach((sl) => {
             summaryServiceNameMap.set(sl.service_id, sl.service_name);
           });
         }
 
         const summaryServicesMap = new Map<number, any[]>();
-        summaryServices.forEach(os => {
+        summaryServices.forEach((os) => {
           const list = summaryServicesMap.get(os.order_id) || [];
           list.push(os);
           summaryServicesMap.set(os.order_id, list);
         });
 
-        summaryCompletedOrders.forEach(o => {
+        summaryCompletedOrders.forEach((o) => {
           summaryTotalNetRev += Number(o.totalPrice || 0);
           const list = summaryServicesMap.get(Number(o.id)) || [];
           if (list.length > 0) {
@@ -3723,7 +3890,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 primaryService = os;
               }
             }
-            const serviceName = summaryServiceNameMap.get(primaryService.service_id) || "Unknown";
+            const serviceName = summaryServiceNameMap.get(primaryService.service_id) || 'Unknown';
             let discountPercent = 0;
             if (primaryService.service_price > 0) {
               discountPercent = Math.round((primaryService.discount_amount / primaryService.service_price) * 100);
@@ -3758,9 +3925,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const now = new Date();
       // Filter for past or present bookings (up to today/now) to calculate rates
-      const pastOrPresentOrders = allOrdersInRange.filter(o => o.bookingDateStart ? new Date(o.bookingDateStart) <= now : true);
+      const pastOrPresentOrders = allOrdersInRange.filter((o) =>
+        o.bookingDateStart ? new Date(o.bookingDateStart) <= now : true
+      );
       const totalPlanned = pastOrPresentOrders.length;
-      const totalCheckin = pastOrPresentOrders.filter(o => o.orderState === 'Completed').length;
+      const totalCheckin = pastOrPresentOrders.filter((o) => o.orderState === 'Completed').length;
       const checkInRate = totalPlanned > 0 ? (totalCheckin / totalPlanned) * 100 : 0;
       const baseSalary = config.baseSalary || 0;
 
@@ -3772,7 +3941,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // Usually, it's completed count in the selected period, so using summaryCompletedOrders.length (which is overall completed count) is correct.
       // Let's use overall completed orders for Done bonus tiers.
       const overallCompletedCount = summaryCompletedOrders.length;
-      const matchedDone = sortedDoneTiers.find(t => overallCompletedCount >= t.minCount);
+      const matchedDone = sortedDoneTiers.find((t) => overallCompletedCount >= t.minCount);
       if (matchedDone) {
         doneBonus = matchedDone.bonus;
         doneLevelCount = matchedDone.minCount;
@@ -3784,7 +3953,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const missedRatePct = totalPlanned > 0 ? (missedCount / totalPlanned) * 100 : 0;
       const sortedMissedTiers = [...(config.missedBonusTiers || [])].sort((a, b) => a.maxRate - b.maxRate);
       if (totalPlanned > 0) {
-        const matchedMissed = sortedMissedTiers.find(t => missedRatePct <= t.maxRate);
+        const matchedMissed = sortedMissedTiers.find((t) => missedRatePct <= t.maxRate);
         if (matchedMissed) {
           missedBonus = matchedMissed.bonus;
           missedLevelRate = matchedMissed.maxRate;
@@ -3797,7 +3966,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       let revLevelRate = 0;
       let revLevelMin = 0;
       const sortedRevTiers = [...(config.revBonusTiers || [])].sort((a, b) => b.minRev - a.minRev);
-      const matchedRev = sortedRevTiers.find(t => summaryTotalNetRev >= t.minRev);
+      const matchedRev = sortedRevTiers.find((t) => summaryTotalNetRev >= t.minRev);
       if (matchedRev) {
         revBonus = Math.round(summaryTotalNetRev * matchedRev.rate);
         revLevelRate = matchedRev.rate;
@@ -3832,7 +4001,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           if (primaryService) {
             serviceName = serviceNameMap.get(primaryService.service_id) || 'Không rõ';
             price = primaryService.service_price;
-            
+
             if (primaryService.service_price > 0) {
               discountPercent = Math.round((primaryService.discount_amount / primaryService.service_price) * 100);
             }
@@ -3864,7 +4033,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return {
           id: Number(row.id),
           orderKey: row.orderKey,
-          bookingDateStart: row.bookingDateStart ? new Date(row.bookingDateStart).toISOString().replace('Z', '+07:00') : null,
+          bookingDateStart: row.bookingDateStart
+            ? new Date(row.bookingDateStart).toISOString().replace('Z', '+07:00')
+            : null,
           bookingDateEnd: row.bookingDateEnd ? new Date(row.bookingDateEnd).toISOString().replace('Z', '+07:00') : null,
           bookingNote: row.bookingNote,
           bookingChannel: row.bookingChannel,
@@ -3881,7 +4052,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           tipAmount: Number(tipAmount || 0),
           bookingBonus: Number(bookingBonus || 0),
           technicianId: row.technicianId ? Number(row.technicianId) : null,
-          storeId: row.storeId ? Number(row.storeId) : null
+          storeId: row.storeId ? Number(row.storeId) : null,
         };
       });
 
@@ -3905,14 +4076,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           revLevelRate,
           revLevelMin,
           totalNetRev: summaryTotalNetRev,
-          totalSalary
-        }
+          totalSalary,
+        },
       };
     } catch (error: any) {
       fastify.log.error(error);
-      return reply.status(500).send({ 
-        error: 'Internal Server Error', 
-        message: error.message || 'Failed to retrieve appointments' 
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: error.message || 'Failed to retrieve appointments',
       });
     }
   });
@@ -3935,7 +4106,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         'De Tham': 6,
         'Estella Place': 16,
         'Phan Xích Long': 2,
-        'PXL': 2
+        PXL: 2,
       };
       const storeId = storeNameToIdMap[storeName] || 6;
 
@@ -3950,14 +4121,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
          FROM staff_working_shift sws
          JOIN user_profile up ON sws.user_id = up.user_id
          WHERE sws.date = ? AND sws.client_store_id = ? AND up.provider = 'Staff' AND up.user_group_id = 4 AND up.is_disabled = 0 AND up.is_leaved = 0 AND up.is_deleted = 0`,
-        date, storeId
+        date,
+        storeId
       );
 
       if (instantiatedShifts.length > 0) {
-        roster = instantiatedShifts.map(s => ({
+        roster = instantiatedShifts.map((s) => ({
           staff_name: s.full_name,
           shift_start: s.start_time_str,
-          shift_end: s.end_time_str
+          shift_end: s.end_time_str,
         }));
       } else {
         // Fall back to schedule templates
@@ -3968,11 +4140,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
            WHERE s.is_disabled = 0 
              AND (s.client_store_id = ? OR ((s.client_store_id = 4 OR s.client_store_id IS NULL) AND up.client_store_id = ?))
              AND up.provider = 'Staff' AND up.user_group_id = 4 AND up.is_disabled = 0 AND up.is_leaved = 0 AND up.is_deleted = 0`,
-          storeId, storeId
+          storeId,
+          storeId
         );
 
         // Filter schedules matching today's weekday / all days
-        const matchedSchedules = schedules.filter(s => {
+        const matchedSchedules = schedules.filter((s) => {
           if (s.type === 'Day' && s.type_value === 'All') return true;
           if (s.type === 'Weekday' && s.type_value === weekdayStr) return true;
           return false;
@@ -3983,14 +4156,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved'`,
           date
         );
-        const offUserIds = dayOffs.map(d => Number(d.from_user_id));
+        const offUserIds = dayOffs.map((d) => Number(d.from_user_id));
 
         roster = matchedSchedules
-          .filter(s => !offUserIds.includes(Number(s.user_id)))
-          .map(s => ({
+          .filter((s) => !offUserIds.includes(Number(s.user_id)))
+          .map((s) => ({
             staff_name: s.full_name,
             shift_start: s.start_time_str,
-            shift_end: s.end_time_str
+            shift_end: s.end_time_str,
           }));
       }
 
@@ -4002,13 +4175,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         );
         if (ktvProfile.length > 0) {
           const ktvFullName = ktvProfile[0].full_name;
-          roster = roster.filter(r => r.staff_name === ktvFullName);
+          roster = roster.filter((r) => r.staff_name === ktvFullName);
         } else {
           const staff = await fastify.prisma.crm.crmStaff.findUnique({
-            where: { id: parseInt(technicianId, 10) }
+            where: { id: parseInt(technicianId, 10) },
           });
           if (staff) {
-            roster = roster.filter(r => r.staff_name === staff.displayName);
+            roster = roster.filter((r) => r.staff_name === staff.displayName);
           }
         }
       }
@@ -4017,7 +4190,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       let apptsQuery = `SELECT time_start, duration 
                         FROM wingsctrl_appointments 
                         WHERE store = ? AND DATE(time_start) = ? AND status != 'cancelled'`;
-      let apptsParams: any[] = [storeName, date];
+      const apptsParams: any[] = [storeName, date];
 
       if (technicianId) {
         const ktvProfile = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
@@ -4030,7 +4203,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           apptsParams.push(ktvFullName);
         } else {
           const staff = await fastify.prisma.crm.crmStaff.findUnique({
-            where: { id: parseInt(technicianId, 10) }
+            where: { id: parseInt(technicianId, 10) },
           });
           if (staff) {
             apptsQuery += ` AND specialist_name = ?`;
@@ -4050,7 +4223,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const timeStr = current.toISOString().split('T')[1].slice(0, 5);
 
         // Calculate active roster count at this slot time
-        const activeRoster = roster.filter(r => {
+        const activeRoster = roster.filter((r) => {
           let rStart = '';
           if (r.shift_start instanceof Date) {
             rStart = r.shift_start.toISOString().split('T')[1].slice(0, 5);
@@ -4073,7 +4246,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
 
         // Calculate active appointments at this slot time
-        const activeAppointments = appointments.filter(a => {
+        const activeAppointments = appointments.filter((a) => {
           const aStartStr = new Date(a.time_start).toISOString().split('T')[1].slice(0, 5);
           const aStart = new Date(a.time_start);
           const aEnd = new Date(aStart.getTime() + a.duration * 60000);
@@ -4087,7 +4260,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         matrix[timeStr] = {
           available,
-          roster: rosterCount
+          roster: rosterCount,
         };
 
         // Advance by 15 mins
@@ -4106,7 +4279,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.get('/nyc/config', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
       const config = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: 'NYC_TOUCHPOINTS_CONFIG' }
+        where: { key: 'NYC_TOUCHPOINTS_CONFIG' },
       });
       if (config) {
         return JSON.parse(config.value);
@@ -4118,36 +4291,36 @@ export async function customerRoutes(fastify: FastifyInstance) {
           { key: '3', label: 'Chạm 3', daysMin: 3, daysMax: 3, color: 'cyan' },
           { key: '7', label: 'Chạm 7', daysMin: 7, daysMax: 7, color: 'green' },
           { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'orange' },
-          { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'red' }
+          { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'red' },
         ],
         NYC_60: [
           { key: '35', label: 'Chạm 35', daysMin: 31, daysMax: 35, color: 'blue' },
           { key: '45', label: 'Chạm 45', daysMin: 41, daysMax: 45, color: 'orange' },
-          { key: '55', label: 'Chạm 55', daysMin: 51, daysMax: 55, color: 'red' }
+          { key: '55', label: 'Chạm 55', daysMin: 51, daysMax: 55, color: 'red' },
         ],
         NYC_90: [
           { key: '70', label: 'Chạm 70', daysMin: 65, daysMax: 70, color: 'blue' },
-          { key: '80', label: 'Chạm 80', daysMin: 75, daysMax: 80, color: 'orange' }
+          { key: '80', label: 'Chạm 80', daysMin: 75, daysMax: 80, color: 'orange' },
         ],
         NYC_180: [
           { key: '100', label: 'Chạm 100', daysMin: 95, daysMax: 100, color: 'blue' },
-          { key: '150', label: 'Chạm 150', daysMin: 145, daysMax: 150, color: 'orange' }
+          { key: '150', label: 'Chạm 150', daysMin: 145, daysMax: 150, color: 'orange' },
         ],
         NYC_365: [
           { key: '200', label: 'Chạm 200', daysMin: 195, daysMax: 200, color: 'blue' },
-          { key: '300', label: 'Chạm 300', daysMin: 295, daysMax: 300, color: 'orange' }
+          { key: '300', label: 'Chạm 300', daysMin: 295, daysMax: 300, color: 'orange' },
         ],
         NYC_365plus: [
           { key: '400', label: 'Chạm 400', daysMin: 395, daysMax: 400, color: 'blue' },
-          { key: '500', label: 'Chạm 500', daysMin: 495, daysMax: 500, color: 'orange' }
-        ]
+          { key: '500', label: 'Chạm 500', daysMin: 495, daysMax: 500, color: 'orange' },
+        ],
       };
       return defaultConfigs;
     } catch (error: any) {
       fastify.log.error('Get NYC config error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to retrieve touchpoint config'
+        message: 'Failed to retrieve touchpoint config',
       });
     }
   });
@@ -4159,7 +4332,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     if (user.role !== 'admin') {
       return reply.status(403).send({
         error: 'Forbidden',
-        message: 'Chỉ Admin mới có quyền cấu hình touchpoints.'
+        message: 'Chỉ Admin mới có quyền cấu hình touchpoints.',
       });
     }
 
@@ -4167,7 +4340,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     if (typeof configs !== 'object' || configs === null) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Configs must be an object'
+        message: 'Configs must be an object',
       });
     }
 
@@ -4176,14 +4349,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (!Array.isArray(touchpoints)) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: `Touchpoints for tab ${tabKey} must be an array`
+          message: `Touchpoints for tab ${tabKey} must be an array`,
         });
       }
       for (const tp of touchpoints) {
         if (!tp.key || !tp.label || typeof tp.daysMin !== 'number' || typeof tp.daysMax !== 'number') {
           return reply.status(400).send({
             error: 'Bad Request',
-            message: `Mỗi touchpoint trong tab ${tabKey} phải có key, label, daysMin, và daysMax hợp lệ.`
+            message: `Mỗi touchpoint trong tab ${tabKey} phải có key, label, daysMin, và daysMax hợp lệ.`,
           });
         }
       }
@@ -4194,18 +4367,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
         where: { key: 'NYC_TOUCHPOINTS_CONFIG' },
         create: {
           key: 'NYC_TOUCHPOINTS_CONFIG',
-          value: JSON.stringify(configs)
+          value: JSON.stringify(configs),
         },
         update: {
-          value: JSON.stringify(configs)
-        }
+          value: JSON.stringify(configs),
+        },
       });
       return { success: true, message: 'Đã lưu cấu hình template touchpoints thành công.' };
     } catch (error: any) {
       fastify.log.error('Save NYC config error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to save touchpoint config'
+        message: 'Failed to save touchpoint config',
       });
     }
   });
@@ -4214,11 +4387,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.get('/dashboard/today', { preHandler: [requireAuth] }, async (request, reply) => {
     const { date } = request.query as { date?: string };
     const getVnDateStr = () => {
-      const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' });
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
       return formatter.format(new Date());
     };
     const targetDateStr = date || getVnDateStr();
-    
+
     // booking_date_only needs timezone-naive date at UTC midnight
     const bookingDateOnlyDate = new Date(targetDateStr + 'T00:00:00.000Z');
 
@@ -4229,14 +4407,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     const toActualDate = (dbDate: Date | null | undefined) => {
       if (!dbDate) return new Date(0);
-      return new Date(Date.UTC(
-        dbDate.getUTCFullYear(),
-        dbDate.getUTCMonth(),
-        dbDate.getUTCDate(),
-        dbDate.getUTCHours(),
-        dbDate.getUTCMinutes(),
-        dbDate.getUTCSeconds()
-      ) - 7 * 3600 * 1000);
+      return new Date(
+        Date.UTC(
+          dbDate.getUTCFullYear(),
+          dbDate.getUTCMonth(),
+          dbDate.getUTCDate(),
+          dbDate.getUTCHours(),
+          dbDate.getUTCMinutes(),
+          dbDate.getUTCSeconds()
+        ) -
+          7 * 3600 * 1000
+      );
     };
 
     const formatDbTime = (dbDate: Date | null | undefined) => {
@@ -4249,63 +4430,67 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // Get active Telesales/OC names from CRM database (including Tâm Nguyễn who also does telesales)
       const crmTelesales = await fastify.prisma.crm.crmStaff.findMany({
         where: {
-          OR: [
-            { role: 'telesales' },
-            { displayName: { in: ['Tâm Nguyễn'] } }
-          ],
-          isActive: true
+          OR: [{ role: 'telesales' }, { displayName: { in: ['Tâm Nguyễn'] } }],
+          isActive: true,
         },
-        select: { displayName: true }
+        select: { displayName: true },
       });
-      const telesalesNames = new Set(crmTelesales.map(s => s.displayName.trim().toLowerCase()));
+      const telesalesNames = new Set(crmTelesales.map((s) => s.displayName.trim().toLowerCase()));
       // 1. Query bookings created today
       const bookingsOrders = await fastify.prisma.legacy.order.findMany({
         where: {
           date_created: {
             gte: startOfDay,
-            lte: endOfDay
+            lte: endOfDay,
           },
-          order_state: { not: 'Cancelled' }
+          order_state: { not: 'Cancelled' },
         },
-        orderBy: { date_created: 'desc' }
+        orderBy: { date_created: 'desc' },
       });
 
       // 2. Query coming today
       const comingOrders = await fastify.prisma.legacy.order.findMany({
         where: {
-          OR: [
-            { booking_date_only: bookingDateOnlyDate },
-            { booking_date_start: { gte: startOfDay, lte: endOfDay } }
-          ],
-          order_state: { not: 'Cancelled' }
+          OR: [{ booking_date_only: bookingDateOnlyDate }, { booking_date_start: { gte: startOfDay, lte: endOfDay } }],
+          order_state: { not: 'Cancelled' },
         },
-        orderBy: { booking_date_start: 'asc' }
+        orderBy: { booking_date_start: 'asc' },
       });
 
-      const userIds = Array.from(new Set([
-        ...bookingsOrders.map(o => o.user_id),
-        ...comingOrders.map(o => o.user_id)
-      ])).filter((id): id is number => id !== null && id !== undefined && !isNaN(Number(id)) && Number(id) > 0);
-      
-      const userProfiles = userIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const userIds = Array.from(
+        new Set([...bookingsOrders.map((o) => o.user_id), ...comingOrders.map((o) => o.user_id)])
+      ).filter((id): id is number => id !== null && id !== undefined && !isNaN(Number(id)) && Number(id) > 0);
+
+      const userProfiles =
+        userIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT up.user_id as userId, up.full_name as fullName, up.avatar, u.email, u.gender, u.date_of_birth as dob
         FROM \`user_profile\` up
         LEFT JOIN \`user\` u ON up.user_id = u.id
         WHERE up.user_id IN (${userIds.join(',')})
-      `) : [];
+      `)
+          : [];
 
-      const userContacts = userIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const userContacts =
+        userIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT user_id as userId, phone_number as phoneNumber
         FROM \`user_contact\`
         WHERE user_id IN (${userIds.join(',')}) AND is_disabled = 0
-      `) : [];
+      `)
+          : [];
 
-      const userBalances = userIds.length > 0 ? await fastify.prisma.legacy.user_service_balance.findMany({
-        where: { user_id: { in: userIds } }
-      }) : [];
+      const userBalances =
+        userIds.length > 0
+          ? await fastify.prisma.legacy.user_service_balance.findMany({
+              where: { user_id: { in: userIds } },
+            })
+          : [];
 
-      const balanceIds = userBalances.map(b => b.id);
-      const userBalanceTransactions = balanceIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const balanceIds = userBalances.map((b) => b.id);
+      const userBalanceTransactions =
+        balanceIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                usbt.retain_count, usbt.used_staff_id, usbt.order_id,
@@ -4313,7 +4498,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         FROM user_service_balance_transaction usbt
         LEFT JOIN \`order\` o ON o.id = usbt.order_id
         WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-      `) : [];
+      `)
+          : [];
 
       // Index transactions by balance ID for O(1) lookups
       const txnsByBalanceId = new Map<number, any[]>();
@@ -4327,35 +4513,42 @@ export async function customerRoutes(fastify: FastifyInstance) {
         list.push(t);
       }
 
-      const allOrderIds = Array.from(new Set([
-        ...bookingsOrders.map(o => o.id),
-        ...comingOrders.map(o => o.id)
-      ]));
+      const allOrderIds = Array.from(new Set([...bookingsOrders.map((o) => o.id), ...comingOrders.map((o) => o.id)]));
 
-      const allOrderServices = allOrderIds.length > 0 ? await fastify.prisma.legacy.order_service.findMany({
-        where: { order_id: { in: allOrderIds } }
-      }) : [];
+      const allOrderServices =
+        allOrderIds.length > 0
+          ? await fastify.prisma.legacy.order_service.findMany({
+              where: { order_id: { in: allOrderIds } },
+            })
+          : [];
 
-      const profileMap = new Map(userProfiles.map(p => [Number(p.userId), p]));
-      const contactMap = new Map(userContacts.map(c => [Number(c.userId), c.phoneNumber]));
+      const profileMap = new Map(userProfiles.map((p) => [Number(p.userId), p]));
+      const contactMap = new Map(userContacts.map((c) => [Number(c.userId), c.phoneNumber]));
 
       // Query promotions used by orders
-      const promoIds = Array.from(new Set([
-        ...bookingsOrders.map(o => o.promotion_id).filter(id => id !== null && id !== undefined),
-        ...bookingsOrders.map(o => o.selected_promotion_id).filter(id => id !== null && id !== undefined),
-        ...comingOrders.map(o => o.promotion_id).filter(id => id !== null && id !== undefined),
-        ...comingOrders.map(o => o.selected_promotion_id).filter(id => id !== null && id !== undefined),
-        ...allOrderServices.map(os => os.promotion_id).filter(id => id !== null && id !== undefined)
-      ].map(id => Number(id)))).filter(id => !isNaN(id) && id > 0);
+      const promoIds = Array.from(
+        new Set(
+          [
+            ...bookingsOrders.map((o) => o.promotion_id).filter((id) => id !== null && id !== undefined),
+            ...bookingsOrders.map((o) => o.selected_promotion_id).filter((id) => id !== null && id !== undefined),
+            ...comingOrders.map((o) => o.promotion_id).filter((id) => id !== null && id !== undefined),
+            ...comingOrders.map((o) => o.selected_promotion_id).filter((id) => id !== null && id !== undefined),
+            ...allOrderServices.map((os) => os.promotion_id).filter((id) => id !== null && id !== undefined),
+          ].map((id) => Number(id))
+        )
+      ).filter((id) => !isNaN(id) && id > 0);
 
-      const promotions = promoIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const promotions =
+        promoIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT p.id, p.promotion_key as promotionKey, pl.promotion_name as name
         FROM promotion p
         LEFT JOIN promotion_language pl ON p.id = pl.promotion_id AND pl.language_id = 1
         WHERE p.id IN (${promoIds.join(',')})
-      `) : [];
+      `)
+          : [];
 
-      const promoMap = new Map(promotions.map(p => [Number(p.id), p.name || p.promotionKey || `PROMO-${p.id}`]));
+      const promoMap = new Map(promotions.map((p) => [Number(p.id), p.name || p.promotionKey || `PROMO-${p.id}`]));
 
       const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT up.user_id as userId, up.full_name as fullName
@@ -4363,13 +4556,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         JOIN \`user_profile\` up ON sp.user_id = up.user_id
         WHERE up.provider = 'Staff' AND up.is_disabled = 0
       `);
-      const staffMap = new Map(staffProfiles.map(s => [Number(s.userId), s.fullName]));
+      const staffMap = new Map(staffProfiles.map((s) => [Number(s.userId), s.fullName]));
 
       // Exact legacy PHP combo active helper function
       const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
         const bTime = bookingDateStart || orderCreatedDate;
-        const userBals = userBalances.filter(b => b.user_id === userId);
-        
+        const userBals = userBalances.filter((b) => b.user_id === userId);
+
         for (const usb of userBals) {
           // Condition 1: usb.date_created < booking_date_start
           if (new Date(usb.date_created) >= new Date(bTime)) {
@@ -4377,8 +4570,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
 
           // Get all transactions for this balance before this booking
-          const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-            new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+          const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
+            (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
           );
 
           // Order them desc by time, then id desc
@@ -4393,20 +4586,25 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
           // Condition 2: date_expired at that time is null or >= booking_date_start
           const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-          const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
+          const isNotExpired =
+            !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
           // Condition 3: count left at that time > 0
           let countLeft = 0;
-          if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
+          if (
+            lastTxnBefore &&
+            lastTxnBefore.total_normal_count_left !== null &&
+            lastTxnBefore.total_retain_count_left !== null
+          ) {
             countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
           } else {
             // If no transaction before or counts are null, calculate based on current count + all transactions that used sessions after or at the booking
-            const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-              new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
+            const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
+              (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
             );
-            
+
             let usedAfter = 0;
-            txnsAfterOrAt.forEach(t => {
+            txnsAfterOrAt.forEach((t) => {
               if (t.used_staff_id !== null) {
                 usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
               }
@@ -4442,33 +4640,37 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         // Check active combo using exact legacy logic
         const hasLiveCombo = checkHasLiveCombo(o.user_id, o.booking_date_start, o.date_created);
-        const userBal = userBalances.filter(b => b.user_id === o.user_id);
-        const group = hasLiveCombo ? 'combo_live' : (userBal.length > 0 ? 'combo_dead' : 'single');
+        const userBal = userBalances.filter((b) => b.user_id === o.user_id);
+        const group = hasLiveCombo ? 'combo_live' : userBal.length > 0 ? 'combo_dead' : 'single';
 
         const booker = staffMap.get(Number(o.created_staff_id)) || o.booking_channels || 'System';
 
-        const orderSvs = allOrderServices.filter(cs => cs.order_id === o.id);
-        const firstPromoSv = orderSvs.find(cs => cs.promotion_id !== null && cs.promotion_id !== undefined);
+        const orderSvs = allOrderServices.filter((cs) => cs.order_id === o.id);
+        const firstPromoSv = orderSvs.find((cs) => cs.promotion_id !== null && cs.promotion_id !== undefined);
         const pId = firstPromoSv?.promotion_id || o.promotion_id || o.selected_promotion_id;
-        const promoName = pId ? (promoMap.get(Number(pId)) || `PROMO-${pId}`) : null;
+        const promoName = pId ? promoMap.get(Number(pId)) || `PROMO-${pId}` : null;
 
-        const firstCvStaffId = o.assigned_staff_id || (orderSvs.length > 0 ? orderSvs.find(cs => cs.assigned_staff_id !== null)?.assigned_staff_id : null);
-        const cvRequested = firstCvStaffId ? (staffMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên') : 'Chưa phân công';
+        const firstCvStaffId =
+          o.assigned_staff_id ||
+          (orderSvs.length > 0 ? orderSvs.find((cs) => cs.assigned_staff_id !== null)?.assigned_staff_id : null);
+        const cvRequested = firstCvStaffId ? staffMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên' : 'Chưa phân công';
 
         let status: 'completed' | 'serving' | 'confirmed' | 'pending' | 'late' = 'pending';
         if (o.order_state === 'Completed') {
           status = 'completed';
-        } else if ([
-          'CheckIn',
-          'Consultation',
-          'Preparation',
-          'ServiceStart',
-          'ServiceCleaned',
-          'ServiceEnd',
-          'ServiceCompleted',
-          'CheckOut',
-          'Parking'
-        ].includes(o.order_state)) {
+        } else if (
+          [
+            'CheckIn',
+            'Consultation',
+            'Preparation',
+            'ServiceStart',
+            'ServiceCleaned',
+            'ServiceEnd',
+            'ServiceCompleted',
+            'CheckOut',
+            'Parking',
+          ].includes(o.order_state)
+        ) {
           status = 'serving';
         } else if (o.order_state === 'Confirmed' || o.order_state === 'New' || o.order_state === 'Approved') {
           const now = new Date();
@@ -4490,12 +4692,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
           promo: promoName,
           booker,
           channel: o.booking_channels || 'N/A',
-          branchName: o.client_store_id === 2 ? 'PXL' : (o.client_store_id === 16 ? 'Estella' : 'Đề Thám'),
+          branchName: o.client_store_id === 2 ? 'PXL' : o.client_store_id === 16 ? 'Estella' : 'Đề Thám',
           bookingDateTime: formatBookingDateTime(o.booking_date_start),
           requestedCv: cvRequested,
           status,
           bookingNote: o.booking_note || '',
-          createdTime: new Date(o.date_created).toLocaleTimeString('vi-VN', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false }),
+          createdTime: new Date(o.date_created).toLocaleTimeString('vi-VN', {
+            timeZone: 'UTC',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          }),
           avatarColor: ['#1890ff', '#722ed1', '#f5222d', '#fa8c16', '#52c41a', '#13c2c2', '#eb2f96'][index % 7],
           code: String(o.id),
           email,
@@ -4508,14 +4715,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           daysAway: 'Hôm nay',
           oc: booker,
           historyService: o.booking_note || 'Nối mi',
-          historyBranch: o.client_store_id === 1 ? 'Đề Thám' : (o.client_store_id === 2 ? 'PXL' : 'Estella Place'),
+          historyBranch: o.client_store_id === 1 ? 'Đề Thám' : o.client_store_id === 2 ? 'PXL' : 'Estella Place',
           historyCv: 'N/A',
           historyCcIn: booker,
           historyCcOut: booker,
           historyBooker: booker,
           historyDate: new Date(o.date_created).toLocaleString('vi-VN', { timeZone: 'UTC' }),
           historyStatus: o.order_state === 'Completed' ? 'Hoàn thành' : 'Đã xác nhận',
-          historyNote: o.booking_note || ''
+          historyNote: o.booking_note || '',
         };
 
         const isOc = telesalesNames.has(booker.trim().toLowerCase());
@@ -4528,41 +4735,57 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       });
 
-      const comingOrderIds = comingOrders.map(o => o.id);
-      
-      const comingServices = comingOrderIds.length > 0 ? await fastify.prisma.legacy.order_service.findMany({
-        where: { order_id: { in: comingOrderIds } }
-      }) : [];
+      const comingOrderIds = comingOrders.map((o) => o.id);
 
-      const comingServiceIds = Array.from(new Set(comingServices.map(cs => cs.service_id)));
-      const serviceLangs = comingServiceIds.length > 0 ? await fastify.prisma.legacy.service_language.findMany({
-        where: { service_id: { in: comingServiceIds } }
-      }) : [];
-      const serviceLangMap = new Map(serviceLangs.map(sl => [sl.service_id, sl.service_name]));
+      const comingServices =
+        comingOrderIds.length > 0
+          ? await fastify.prisma.legacy.order_service.findMany({
+              where: { order_id: { in: comingOrderIds } },
+            })
+          : [];
 
-      const comingProducts = comingOrderIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const comingServiceIds = Array.from(new Set(comingServices.map((cs) => cs.service_id)));
+      const serviceLangs =
+        comingServiceIds.length > 0
+          ? await fastify.prisma.legacy.service_language.findMany({
+              where: { service_id: { in: comingServiceIds } },
+            })
+          : [];
+      const serviceLangMap = new Map(serviceLangs.map((sl) => [sl.service_id, sl.service_name]));
+
+      const comingProducts =
+        comingOrderIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT * FROM \`order_product\` WHERE order_id IN (${comingOrderIds.join(',')})
-      `) : [];
+      `)
+          : [];
 
-      const comingCombos = comingOrderIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const comingCombos =
+        comingOrderIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT * FROM \`order_service_combo\` WHERE order_id IN (${comingOrderIds.join(',')})
-      `) : [];
+      `)
+          : [];
 
       // Get active CCs (check-in/out in the last 30 days and user_profile.is_disabled = 0)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      const activeCcRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+
+      const activeCcRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `
         SELECT DISTINCT s.staffId
         FROM (
           SELECT DISTINCT check_in_staff_id as staffId FROM \`order_service\` WHERE check_in_staff_id IS NOT NULL AND check_in_staff_id > 0 AND date_created >= ?
           UNION
           SELECT DISTINCT check_out_staff_id as staffId FROM \`order_service\` WHERE check_out_staff_id IS NOT NULL AND check_out_staff_id > 0 AND date_created >= ?
         ) s
-      `, thirtyDaysAgo, thirtyDaysAgo);
+      `,
+        thirtyDaysAgo,
+        thirtyDaysAgo
+      );
 
-      const activeCcIds = activeCcRows.map(r => Number(r.staffId)).filter(id => !isNaN(id) && id > 0);
-      let activeCcs: { id: number; name: string; branch: 'detham' | 'pxl' | 'estella' }[] = [];
+      const activeCcIds = activeCcRows.map((r) => Number(r.staffId)).filter((id) => !isNaN(id) && id > 0);
+      const activeCcs: { id: number; name: string; branch: 'detham' | 'pxl' | 'estella' }[] = [];
 
       if (activeCcIds.length > 0) {
         const ccProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -4602,7 +4825,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           const ccId = Number(p.userId);
           const pref = ccCountsMap.get(ccId);
           const prefStoreId = pref ? pref.storeId : null;
-          
+
           let branch: 'detham' | 'pxl' | 'estella' | null = null;
           if (prefStoreId === 6) branch = 'detham';
           else if (prefStoreId === 2) branch = 'pxl';
@@ -4612,7 +4835,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             activeCcs.push({
               id: ccId,
               name: p.fullName.trim(),
-              branch
+              branch,
             });
           }
         }
@@ -4624,7 +4847,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
          FROM staff_working_shift_schedule 
          WHERE is_disabled = 0 AND user_id IS NOT NULL`
       );
-      
+
       const schedulesByUserId: { [uid: number]: any[] } = {};
       for (const s of allSchedules) {
         const uid = Number(s.user_id);
@@ -4640,7 +4863,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
          GROUP BY from_user_id, weekday`
       );
 
-      const weekOffsByUserId: { [uid: number]: { weekday: number, cnt: number }[] } = {};
+      const weekOffsByUserId: { [uid: number]: { weekday: number; cnt: number }[] } = {};
       for (const r of weekOffRows) {
         const uid = Number(r.userId);
         const day = Number(r.weekday);
@@ -4657,14 +4880,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
 
         const list = schedulesByUserId[userId] || [];
-        const worksAll = list.some(s => s.type === 'Day' && s.type_value === 'All');
+        const worksAll = list.some((s) => s.type === 'Day' && s.type_value === 'All');
         if (worksAll) return [];
-        const workingWeekdays = list
-          .filter(s => s.type === 'Weekday')
-          .map(s => s.type_value);
+        const workingWeekdays = list.filter((s) => s.type === 'Weekday').map((s) => s.type_value);
         if (workingWeekdays.length === 0) return [];
         const allWeekdays = ['1', '2', '3', '4', '5', '6', '7'];
-        return allWeekdays.filter(w => !workingWeekdays.includes(w));
+        return allWeekdays.filter((w) => !workingWeekdays.includes(w));
       };
 
       // 3. Query specific day-offs for target date
@@ -4673,7 +4894,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
          WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved' AND from_user_id IS NOT NULL`,
         targetDateStr
       );
-      const offUserIds = new Set(dayOffs.map(d => Number(d.from_user_id)));
+      const offUserIds = new Set(dayOffs.map((d) => Number(d.from_user_id)));
 
       // 4. Query active CVs (technicians)
       const activeCvs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -4686,13 +4907,33 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const weekdayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
 
       const branchDetailMap: Record<string, any> = {
-        detham: { revLe: 0, revCombo: 0, revProduct: 0, netLe: 0, netCombo: 0, netProduct: 0, cc: [], cv: [], coming: [] },
+        detham: {
+          revLe: 0,
+          revCombo: 0,
+          revProduct: 0,
+          netLe: 0,
+          netCombo: 0,
+          netProduct: 0,
+          cc: [],
+          cv: [],
+          coming: [],
+        },
         pxl: { revLe: 0, revCombo: 0, revProduct: 0, netLe: 0, netCombo: 0, netProduct: 0, cc: [], cv: [], coming: [] },
-        estella: { revLe: 0, revCombo: 0, revProduct: 0, netLe: 0, netCombo: 0, netProduct: 0, cc: [], cv: [], coming: [] }
+        estella: {
+          revLe: 0,
+          revCombo: 0,
+          revProduct: 0,
+          netLe: 0,
+          netCombo: 0,
+          netProduct: 0,
+          cc: [],
+          cv: [],
+          coming: [],
+        },
       };
 
       // Pre-populate active CCs for each branch
-      activeCcs.forEach(cc => {
+      activeCcs.forEach((cc) => {
         branchDetailMap[cc.branch].cc.push({
           id: cc.id,
           name: cc.name,
@@ -4708,7 +4949,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           netCombo: 0,
           netProduct: 0,
           shift: 'off',
-          attendance: 'none'
+          attendance: 'none',
         });
       });
 
@@ -4721,9 +4962,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const phone = contactMap.get(o.user_id) || '';
         const name = uProfile?.fullName || 'Khách hàng';
 
-        const orderSvs = comingServices.filter(cs => cs.order_id === o.id);
-        const serviceName = orderSvs.length > 0 ? (serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ') : 'Dịch vụ';
-        
+        const orderSvs = comingServices.filter((cs) => cs.order_id === o.id);
+        const serviceName = orderSvs.length > 0 ? serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ' : 'Dịch vụ';
+
         let cvName = 'Chưa phân công';
         if (o.assigned_staff_id) {
           cvName = staffMap.get(Number(o.assigned_staff_id)) || 'Kỹ thuật viên';
@@ -4734,29 +4975,33 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const booker = staffMap.get(Number(o.created_staff_id)) || o.booking_channels || 'System';
 
         let ccName = 'Chưa nhận';
-        const checkInStaffId = orderSvs.find(cs => cs.check_in_staff_id)?.check_in_staff_id || orderSvs.find(cs => cs.check_out_staff_id)?.check_out_staff_id;
+        const checkInStaffId =
+          orderSvs.find((cs) => cs.check_in_staff_id)?.check_in_staff_id ||
+          orderSvs.find((cs) => cs.check_out_staff_id)?.check_out_staff_id;
         if (checkInStaffId) {
           ccName = staffMap.get(Number(checkInStaffId)) || 'Tư vấn viên';
         }
 
         const hasLiveCombo = checkHasLiveCombo(o.user_id, o.booking_date_start, o.date_created);
-        const userBal = userBalances.filter(b => b.user_id === o.user_id);
-        const group = hasLiveCombo ? 'combo_live' : (userBal.length > 0 ? 'combo_dead' : 'single');
+        const userBal = userBalances.filter((b) => b.user_id === o.user_id);
+        const group = hasLiveCombo ? 'combo_live' : userBal.length > 0 ? 'combo_dead' : 'single';
 
         let status: 'completed' | 'serving' | 'confirmed' | 'pending' | 'late' = 'pending';
         if (o.order_state === 'Completed') {
           status = 'completed';
-        } else if ([
-          'CheckIn',
-          'Consultation',
-          'Preparation',
-          'ServiceStart',
-          'ServiceCleaned',
-          'ServiceEnd',
-          'ServiceCompleted',
-          'CheckOut',
-          'Parking'
-        ].includes(o.order_state)) {
+        } else if (
+          [
+            'CheckIn',
+            'Consultation',
+            'Preparation',
+            'ServiceStart',
+            'ServiceCleaned',
+            'ServiceEnd',
+            'ServiceCompleted',
+            'CheckOut',
+            'Parking',
+          ].includes(o.order_state)
+        ) {
           status = 'serving';
         } else if (o.order_state === 'Confirmed' || o.order_state === 'New' || o.order_state === 'Approved') {
           const now = new Date();
@@ -4768,21 +5013,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
         }
 
-        const orderServices = comingServices.filter(cs => cs.order_id === o.id);
-        const orderCombos = comingCombos.filter(c => Number(c.order_id) === o.id);
-        const orderProducts = comingProducts.filter(p => Number(p.order_id) === o.id);
+        const orderServices = comingServices.filter((cs) => cs.order_id === o.id);
+        const orderCombos = comingCombos.filter((c) => Number(c.order_id) === o.id);
+        const orderProducts = comingProducts.filter((p) => Number(p.order_id) === o.id);
 
-        const totalTax = orderServices.reduce((sum, s) => sum + Number(s.tax_amount || 0), 0) +
-                         orderCombos.reduce((sum, c) => sum + Number(c.tax_amount || 0), 0) +
-                         orderProducts.reduce((sum, p) => sum + Number(p.tax_amount || 0), 0);
+        const totalTax =
+          orderServices.reduce((sum, s) => sum + Number(s.tax_amount || 0), 0) +
+          orderCombos.reduce((sum, c) => sum + Number(c.tax_amount || 0), 0) +
+          orderProducts.reduce((sum, p) => sum + Number(p.tax_amount || 0), 0);
 
-        const firstPromoSv = orderSvs.find(cs => cs.promotion_id !== null && cs.promotion_id !== undefined);
+        const firstPromoSv = orderSvs.find((cs) => cs.promotion_id !== null && cs.promotion_id !== undefined);
         const pId = firstPromoSv?.promotion_id || o.promotion_id || o.selected_promotion_id;
-        const promoName = pId ? (promoMap.get(Number(pId)) || `PROMO-${pId}`) : null;
+        const promoName = pId ? promoMap.get(Number(pId)) || `PROMO-${pId}` : null;
 
         const isOc = telesalesNames.has(booker.trim().toLowerCase());
         const comboRev = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0), 0);
-        const category = (group === 'combo_live' || comboRev > 0) ? 'combo' : (isOc ? 'oc' : 'other');
+        const category = group === 'combo_live' || comboRev > 0 ? 'combo' : isOc ? 'oc' : 'other';
 
         const comingItem = {
           key: String(o.id),
@@ -4813,7 +5059,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           dob: uProfile?.dob ? new Date(uProfile.dob).toLocaleDateString('en-CA') : 'N/A',
           daysAway: 'Hôm nay',
           favoriteDay: 'N/A',
-          oc: booker
+          oc: booker,
         };
 
         branchDetailMap[branchKey].coming.push(comingItem);
@@ -4845,8 +5091,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
             }
           }
 
-          const comboNet = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0) - Number(c.tax_amount || 0), 0);
-          const productNet = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0) - Number(p.tax_amount || 0), 0);
+          const comboNet = orderCombos.reduce(
+            (sum, c) => sum + Number(c.total_price || 0) - Number(c.tax_amount || 0),
+            0
+          );
+          const productNet = orderProducts.reduce(
+            (sum, p) => sum + Number(p.total_price || 0) - Number(p.tax_amount || 0),
+            0
+          );
           const orderNet = orderTotal - totalTax;
 
           let finalNetCombo = comboNet;
@@ -4885,18 +5137,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const normalizeName = (name: string) => (name || '').trim().toLowerCase();
 
       // Fetch working shifts for today
-      const workingShifts = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const workingShifts = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `
         SELECT * FROM \`staff_working_shift\` WHERE \`date\` = ?
-      `, targetDateStr);
+      `,
+        targetDateStr
+      );
 
       const shiftMap = new Map<number, any>();
-      workingShifts.forEach(ws => {
+      workingShifts.forEach((ws) => {
         shiftMap.set(Number(ws.user_id), ws);
       });
 
       const getShiftType = (startTime: any, endTime: any): 'sáng' | 'chiều' | 'full' => {
         if (!startTime) return 'full';
-        
+
         let startStr = '';
         if (typeof startTime === 'string') {
           startStr = startTime;
@@ -4927,14 +5182,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
       };
 
       // Update CCs' shift, attendance, and doing from actual check-in records (workingShifts)
-      Object.keys(branchDetailMap).forEach(bKey => {
+      Object.keys(branchDetailMap).forEach((bKey) => {
         branchDetailMap[bKey].cc.forEach((cc: any) => {
           const wsRecord = shiftMap.get(cc.id);
-          
+
           let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
           const list = schedulesByUserId[cc.id] || [];
-          const todaySchedule = list.find(s => s.type === 'Weekday' && s.type_value === weekdayStr) ||
-                                list.find(s => s.type === 'Day' && s.type_value === 'All');
+          const todaySchedule =
+            list.find((s) => s.type === 'Weekday' && s.type_value === weekdayStr) ||
+            list.find((s) => s.type === 'Day' && s.type_value === 'All');
           if (todaySchedule) {
             shift = getShiftType(todaySchedule.start_time, todaySchedule.end_time);
           }
@@ -4945,9 +5201,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
             const sorted = [...weekOffs].sort((a, b) => b.cnt - a.cnt);
             isWeekOff = String(sorted[0].weekday) === weekdayStr;
           } else if (list.length > 0) {
-            const worksAll = list.some(s => s.type === 'Day' && s.type_value === 'All');
+            const worksAll = list.some((s) => s.type === 'Day' && s.type_value === 'All');
             if (!worksAll) {
-              const workingWeekdays = list.filter(s => s.type === 'Weekday').map(s => s.type_value);
+              const workingWeekdays = list.filter((s) => s.type === 'Weekday').map((s) => s.type_value);
               if (workingWeekdays.length > 0 && !workingWeekdays.includes(weekdayStr)) {
                 isWeekOff = true;
               }
@@ -4984,7 +5240,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       // Calculate and populate Chuyên viên (CV) list for each branch
-      activeCvs.forEach(cv => {
+      activeCvs.forEach((cv) => {
         const storeId = Number(cv.storeId);
         let bKey = 'estella';
         if (storeId === 6) bKey = 'detham';
@@ -4993,36 +5249,36 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const cvId = Number(cv.userId);
         const normName = normalizeName(cv.fullName);
 
-         // Check if weekly off or specific day off
-         const offDays = getKTVOffDays(cvId);
-         const isWeeklyOff = offDays.includes(weekdayStr);
-         const hasSpecificDayOff = offUserIds.has(cvId);
-         const isOff = isWeeklyOff || hasSpecificDayOff;
+        // Check if weekly off or specific day off
+        const offDays = getKTVOffDays(cvId);
+        const isWeeklyOff = offDays.includes(weekdayStr);
+        const hasSpecificDayOff = offUserIds.has(cvId);
+        const isOff = isWeeklyOff || hasSpecificDayOff;
 
-         // Check actual check-in/out record (workingShifts)
-         const wsRecord = shiftMap.get(cvId);
-         
-         let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
-         if (isOff) {
-           shift = 'off';
-         } else {
-           // Determine scheduled shift from staff_working_shift_schedule
-           const list = schedulesByUserId[cvId] || [];
-           const todaySchedule = list.find(s => s.type === 'Weekday' && s.type_value === weekdayStr) ||
-                                 list.find(s => s.type === 'Day' && s.type_value === 'All');
-           if (todaySchedule) {
-             shift = getShiftType(todaySchedule.start_time, todaySchedule.end_time);
-           }
-         }
-         
- 
-         let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
-         let doing = isOff ? 'Nghỉ phép' : 'Chưa check-in';
+        // Check actual check-in/out record (workingShifts)
+        const wsRecord = shiftMap.get(cvId);
+
+        let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
+        if (isOff) {
+          shift = 'off';
+        } else {
+          // Determine scheduled shift from staff_working_shift_schedule
+          const list = schedulesByUserId[cvId] || [];
+          const todaySchedule =
+            list.find((s) => s.type === 'Weekday' && s.type_value === weekdayStr) ||
+            list.find((s) => s.type === 'Day' && s.type_value === 'All');
+          if (todaySchedule) {
+            shift = getShiftType(todaySchedule.start_time, todaySchedule.end_time);
+          }
+        }
+
+        let attendance: 'none' | 'checked_in' | 'checked_out' | 'late' = 'none';
+        let doing = isOff ? 'Nghỉ phép' : 'Chưa check-in';
 
         if (wsRecord) {
-           if (!isOff || wsRecord.check_in_staff_task_id !== null) {
-             shift = getShiftType(wsRecord.start_time, wsRecord.end_time);
-           }
+          if (!isOff || wsRecord.check_in_staff_task_id !== null) {
+            shift = getShiftType(wsRecord.start_time, wsRecord.end_time);
+          }
           if (wsRecord.check_out_staff_task_id !== null) {
             attendance = 'checked_out';
             doing = 'Đã về';
@@ -5033,11 +5289,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
 
         // Get orders assigned to this CV
-        const staffOrders = comingOrders.filter(o => {
+        const staffOrders = comingOrders.filter((o) => {
           if (o.assigned_staff_id === cvId) return true;
           const assignedName = staffMap.get(Number(o.assigned_staff_id));
           if (assignedName && normalizeName(assignedName) === normName) return true;
-          const orderSvs = comingServices.filter(cs => cs.order_id === o.id);
+          const orderSvs = comingServices.filter((cs) => cs.order_id === o.id);
           for (const cs of orderSvs) {
             if (cs.assigned_staff_id === cvId) return true;
             const csAssignedName = staffMap.get(Number(cs.assigned_staff_id));
@@ -5050,7 +5306,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         if (!isOff && attendance === 'checked_in') {
           // Find active order
-          const activeOrder = staffOrders.find(o => {
+          const activeOrder = staffOrders.find((o) => {
             if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
             if (!o.booking_date_start || !o.booking_date_end) return false;
             const start = toActualDate(o.booking_date_start);
@@ -5064,37 +5320,40 @@ export async function customerRoutes(fastify: FastifyInstance) {
             const parts = custName.split(' ');
             const shortCustName = parts.length > 2 ? parts.slice(-2).join(' ') : custName;
 
-            const orderSvs = comingServices.filter(cs => cs.order_id === activeOrder.id);
-            const svName = orderSvs.length > 0 ? (serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ') : 'Dịch vụ';
+            const orderSvs = comingServices.filter((cs) => cs.order_id === activeOrder.id);
+            const svName = orderSvs.length > 0 ? serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ' : 'Dịch vụ';
 
             const start = toActualDate(activeOrder.booking_date_start);
             const end = toActualDate(activeOrder.booking_date_end);
             const totalMin = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
-            const elapsedMin = Math.max(0, Math.min(totalMin, Math.round((refTime.getTime() - start.getTime()) / 60000)));
+            const elapsedMin = Math.max(
+              0,
+              Math.min(totalMin, Math.round((refTime.getTime() - start.getTime()) / 60000))
+            );
 
             doing = `[${elapsedMin}/${totalMin}] ${shortCustName}: ${svName}`;
             status = 'busy';
           } else {
             // Find next upcoming order
             const upcoming = staffOrders
-              .filter(o => {
+              .filter((o) => {
                 if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
                 if (!o.booking_date_start) return false;
                 return toActualDate(o.booking_date_start) > refTime;
               })
-              .sort((a, b) => toActualDate(a.booking_date_start).getTime() - toActualDate(b.booking_date_start).getTime());
+              .sort(
+                (a, b) => toActualDate(a.booking_date_start).getTime() - toActualDate(b.booking_date_start).getTime()
+              );
 
             if (upcoming.length > 0) {
               const nextOrder = upcoming[0];
               const timeStr = formatDbTime(nextOrder.booking_date_start);
-              const orderSvs = comingServices.filter(cs => cs.order_id === nextOrder.id);
-              const svName = orderSvs.length > 0 ? (serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ') : 'Dịch vụ';
+              const orderSvs = comingServices.filter((cs) => cs.order_id === nextOrder.id);
+              const svName = orderSvs.length > 0 ? serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ' : 'Dịch vụ';
               doing = `Chờ khách: ${svName} (${timeStr})`;
             }
           }
         }
-
-
 
         branchDetailMap[bKey].cv.push({
           name: cv.fullName.trim(),
@@ -5102,14 +5361,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           clients: isOff ? 0 : staffOrders.length,
           shift,
           attendance,
-          status
+          status,
         });
       });
 
       // Helper function to find and move CC to their active branch today
       const getOrMoveCC = (ccId: number, targetBranchKey: string) => {
         let ccObj: any = null;
-        Object.keys(branchDetailMap).forEach(k => {
+        Object.keys(branchDetailMap).forEach((k) => {
           const foundIdx = branchDetailMap[k].cc.findIndex((c: any) => c.id === ccId);
           if (foundIdx !== -1) {
             ccObj = branchDetailMap[k].cc[foundIdx];
@@ -5137,7 +5396,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             netCombo: 0,
             netProduct: 0,
             shift: 'full',
-            attendance: 'checked_in'
+            attendance: 'checked_in',
           };
         }
 
@@ -5151,20 +5410,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
       };
 
       // Calculate today's CC statistics from today's orders
-      comingOrders.forEach(o => {
+      comingOrders.forEach((o) => {
         let bKey = 'detham';
         if (o.client_store_id === 2) bKey = 'pxl';
         else if (o.client_store_id === 16) bKey = 'estella';
 
-        const orderSvs = comingServices.filter(cs => cs.order_id === o.id);
+        const orderSvs = comingServices.filter((cs) => cs.order_id === o.id);
         if (orderSvs.length === 0) return;
 
         // Check-in CC
-        const checkInStaffId = orderSvs.find(cs => cs.check_in_staff_id)?.check_in_staff_id;
+        const checkInStaffId = orderSvs.find((cs) => cs.check_in_staff_id)?.check_in_staff_id;
         if (checkInStaffId) {
           const ccId = Number(checkInStaffId);
           const cc = getOrMoveCC(ccId, bKey);
-          
+
           if (['CheckIn', 'Parking', 'Consultation', 'Preparation'].includes(o.order_state)) {
             cc.doing = 'Đang hỗ trợ khách check-in';
             if (cc.attendance !== 'checked_out') {
@@ -5174,7 +5433,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
 
         // Check-out CC
-        const checkOutStaffId = orderSvs.find(cs => cs.check_out_staff_id)?.check_out_staff_id;
+        const checkOutStaffId = orderSvs.find((cs) => cs.check_out_staff_id)?.check_out_staff_id;
         if (checkOutStaffId) {
           const ccId = Number(checkOutStaffId);
           const cc = getOrMoveCC(ccId, bKey);
@@ -5187,13 +5446,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
 
           if (o.order_state === 'Completed') {
-            const orderServices = comingServices.filter(cs => cs.order_id === o.id);
-            const orderCombos = comingCombos.filter(c => Number(c.order_id) === o.id);
-            const orderProducts = comingProducts.filter(p => Number(p.order_id) === o.id);
+            const orderServices = comingServices.filter((cs) => cs.order_id === o.id);
+            const orderCombos = comingCombos.filter((c) => Number(c.order_id) === o.id);
+            const orderProducts = comingProducts.filter((p) => Number(p.order_id) === o.id);
 
-            const totalTax = orderServices.reduce((sum, s) => sum + Number(s.tax_amount || 0), 0) +
-                             orderCombos.reduce((sum, c) => sum + Number(c.tax_amount || 0), 0) +
-                             orderProducts.reduce((sum, p) => sum + Number(p.tax_amount || 0), 0);
+            const totalTax =
+              orderServices.reduce((sum, s) => sum + Number(s.tax_amount || 0), 0) +
+              orderCombos.reduce((sum, c) => sum + Number(c.tax_amount || 0), 0) +
+              orderProducts.reduce((sum, p) => sum + Number(p.tax_amount || 0), 0);
 
             const comboRev = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0), 0);
             const productRev = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0), 0);
@@ -5221,8 +5481,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
               }
             }
 
-            const comboNet = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0) - Number(c.tax_amount || 0), 0);
-            const productNet = orderProducts.reduce((sum, p) => sum + Number(p.total_price || 0) - Number(p.tax_amount || 0), 0);
+            const comboNet = orderCombos.reduce(
+              (sum, c) => sum + Number(c.total_price || 0) - Number(c.tax_amount || 0),
+              0
+            );
+            const productNet = orderProducts.reduce(
+              (sum, p) => sum + Number(p.total_price || 0) - Number(p.tax_amount || 0),
+              0
+            );
             const orderNet = orderTotal - totalTax;
 
             let finalNetCombo = comboNet;
@@ -5263,11 +5529,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       // Compute unique clients count for each CC today, and set default idle states
-      Object.keys(branchDetailMap).forEach(bKey => {
+      Object.keys(branchDetailMap).forEach((bKey) => {
         branchDetailMap[bKey].cc.forEach((cc: any) => {
           const ccId = cc.id;
-          const ccServices = comingServices.filter(s => s.check_in_staff_id === ccId || s.check_out_staff_id === ccId);
-          const uniqueOrders = new Set(ccServices.map(s => s.order_id));
+          const ccServices = comingServices.filter(
+            (s) => s.check_in_staff_id === ccId || s.check_out_staff_id === ccId
+          );
+          const uniqueOrders = new Set(ccServices.map((s) => s.order_id));
           cc.clients = uniqueOrders.size;
 
           if (cc.clients > 0 && cc.doing === 'Nghỉ phép tuần') {
@@ -5284,16 +5552,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
         branchesData: branchDetailMap,
         bookingsCombo,
         bookingsOc,
-        bookingsOther
+        bookingsOther,
       });
-
     } catch (error: any) {
       fastify.log.error(error, 'Fetch dashboard today error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi hệ thống khi tải dữ liệu vận hành hôm nay.'
+        message: 'Lỗi hệ thống khi tải dữ liệu vận hành hôm nay.',
       });
     }
   });
-
 }

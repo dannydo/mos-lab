@@ -15,7 +15,7 @@ const telesalesList = [
   { name: 'Thục Nghi', email: 'thucnghi@masteros.app' },
   { name: 'An Nam', email: 'annam@masteros.app' },
   { name: 'Yến Vy', email: 'yenvy@masteros.app' },
-  { name: 'Quang Khải CC', email: 'quangkhaicc@masteros.app' }
+  { name: 'Quang Khải CC', email: 'quangkhaicc@masteros.app' },
 ];
 
 async function run() {
@@ -40,7 +40,7 @@ async function run() {
         displayName: ts.name,
         role: 'telesales',
         isActive: true,
-        email: ts.email
+        email: ts.email,
       },
       create: {
         username: ts.email,
@@ -48,8 +48,8 @@ async function run() {
         passwordHash: passwordHash,
         role: 'telesales',
         isActive: true,
-        email: ts.email
-      }
+        email: ts.email,
+      },
     });
   }
 

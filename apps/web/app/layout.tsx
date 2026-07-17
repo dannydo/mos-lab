@@ -20,9 +20,7 @@ export default function RootLayout({
     <html lang="vi" className="h-full">
       <body className="h-full m-0 p-0 antialiased">
         <AntdRegistry>
-          <ThemeProvider>
-            {children}
-          </ThemeProvider>
+          <ThemeProvider>{children}</ThemeProvider>
         </AntdRegistry>
       </body>
     </html>

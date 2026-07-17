@@ -10,31 +10,31 @@ export async function authRoutes(fastify: FastifyInstance) {
     const { username, password } = request.body as LoginRequest;
 
     if (!username || !password) {
-      return reply.status(400).send({ 
-        error: 'Bad Request', 
-        message: 'Username and password are required' 
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Username and password are required',
       });
     }
 
     try {
       // Find staff in CRM DB
       const staff = await fastify.prisma.crm.crmStaff.findUnique({
-        where: { username }
+        where: { username },
       });
 
       if (!staff || !staff.isActive) {
-        return reply.status(401).send({ 
-          error: 'Unauthorized', 
-          message: 'Invalid username or password' 
+        return reply.status(401).send({
+          error: 'Unauthorized',
+          message: 'Invalid username or password',
         });
       }
 
       // Check password
       const isPasswordValid = await bcrypt.compare(password, staff.passwordHash);
       if (!isPasswordValid) {
-        return reply.status(401).send({ 
-          error: 'Unauthorized', 
-          message: 'Invalid username or password' 
+        return reply.status(401).send({
+          error: 'Unauthorized',
+          message: 'Invalid username or password',
         });
       }
 
@@ -42,7 +42,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         id: staff.id,
         username: staff.username,
         displayName: staff.displayName,
-        role: staff.role as any
+        role: staff.role as any,
       };
 
       // Sign JWT
@@ -52,7 +52,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const now = new Date();
       const updatedStaff = await fastify.prisma.crm.crmStaff.update({
         where: { id: staff.id },
-        data: { lastLoginAt: now, lastActiveAt: now }
+        data: { lastLoginAt: now, lastActiveAt: now },
       });
 
       const response: LoginResponse = {
@@ -65,16 +65,16 @@ export async function authRoutes(fastify: FastifyInstance) {
           isActive: updatedStaff.isActive,
           createdAt: updatedStaff.createdAt.toISOString(),
           lastLoginAt: updatedStaff.lastLoginAt ? updatedStaff.lastLoginAt.toISOString() : null,
-          lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null
-        }
+          lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null,
+        },
       };
 
       return response;
     } catch (error: any) {
       fastify.log.error('Login error:', error);
-      return reply.status(500).send({ 
-        error: 'Internal Server Error', 
-        message: 'Something went wrong' 
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Something went wrong',
       });
     }
   });
@@ -84,9 +84,9 @@ export async function authRoutes(fastify: FastifyInstance) {
     const { credential, isMock, email: mockEmail, name: mockName } = request.body as any;
 
     if (!credential && !isMock) {
-      return reply.status(400).send({ 
-        error: 'Bad Request', 
-        message: 'Google credential is required' 
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Google credential is required',
       });
     }
 
@@ -107,13 +107,13 @@ export async function authRoutes(fastify: FastifyInstance) {
         } catch (error) {
           return reply.status(401).send({
             error: 'Unauthorized',
-            message: 'Invalid Google credential'
+            message: 'Invalid Google credential',
           });
         }
         if (tokenInfo.email_verified !== 'true') {
           return reply.status(401).send({
             error: 'Unauthorized',
-            message: 'Google email not verified'
+            message: 'Google email not verified',
           });
         }
         email = tokenInfo.email;
@@ -123,21 +123,21 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       // Find staff in CRM DB
       let staff = await fastify.prisma.crm.crmStaff.findUnique({
-        where: { username: email }
+        where: { username: email },
       });
 
       if (!staff) {
         // Try to match email prefix (e.g., "bichphuong" from "bichphuong@gmail.com")
         const emailPrefix = email.split('@')[0];
         staff = await fastify.prisma.crm.crmStaff.findUnique({
-          where: { username: emailPrefix }
+          where: { username: emailPrefix },
         });
       }
 
       if (!staff) {
         // Try to match by the email field
         staff = await fastify.prisma.crm.crmStaff.findFirst({
-          where: { email: email }
+          where: { email: email },
         });
       }
 
@@ -152,17 +152,17 @@ export async function authRoutes(fastify: FastifyInstance) {
             data: {
               username: email,
               displayName: name,
-              role: (email === 'danhdo@gmail.com' || isDanny) ? 'admin' : 'telesales',
+              role: email === 'danhdo@gmail.com' || isDanny ? 'admin' : 'telesales',
               passwordHash,
               isActive: true,
               email: email,
-              avatarUrl: picture
-            }
+              avatarUrl: picture,
+            },
           });
         } else {
           return reply.status(403).send({
             error: 'Forbidden',
-            message: `Email ${email} không có quyền truy cập Wings Lashes CRM. Vui lòng liên hệ Admin.`
+            message: `Email ${email} không có quyền truy cập Wings Lashes CRM. Vui lòng liên hệ Admin.`,
           });
         }
       } else {
@@ -170,7 +170,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         if (picture && staff.avatarUrl !== picture) {
           staff = await fastify.prisma.crm.crmStaff.update({
             where: { id: staff.id },
-            data: { avatarUrl: picture }
+            data: { avatarUrl: picture },
           });
         }
       }
@@ -178,7 +178,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       if (!staff.isActive) {
         return reply.status(401).send({
           error: 'Unauthorized',
-          message: 'Tài khoản đã bị khóa'
+          message: 'Tài khoản đã bị khóa',
         });
       }
 
@@ -186,7 +186,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         id: staff.id,
         username: staff.username,
         displayName: staff.displayName,
-        role: staff.role as any
+        role: staff.role as any,
       };
 
       // Sign JWT
@@ -196,7 +196,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const now = new Date();
       const updatedStaff = await fastify.prisma.crm.crmStaff.update({
         where: { id: staff.id },
-        data: { lastLoginAt: now, lastActiveAt: now }
+        data: { lastLoginAt: now, lastActiveAt: now },
       });
 
       const response: LoginResponse = {
@@ -210,16 +210,16 @@ export async function authRoutes(fastify: FastifyInstance) {
           avatarUrl: updatedStaff.avatarUrl,
           createdAt: updatedStaff.createdAt.toISOString(),
           lastLoginAt: updatedStaff.lastLoginAt ? updatedStaff.lastLoginAt.toISOString() : null,
-          lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null
-        }
+          lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null,
+        },
       };
 
       return response;
     } catch (error: any) {
       fastify.log.error('Google login error:', error);
-      return reply.status(500).send({ 
-        error: 'Internal Server Error', 
-        message: 'Something went wrong' 
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Something went wrong',
       });
     }
   });
@@ -230,13 +230,13 @@ export async function authRoutes(fastify: FastifyInstance) {
 
     try {
       const staff = await fastify.prisma.crm.crmStaff.findUnique({
-        where: { id: user.id }
+        where: { id: user.id },
       });
 
       if (!staff || !staff.isActive) {
-        return reply.status(404).send({ 
-          error: 'Not Found', 
-          message: 'User not found or inactive' 
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'User not found or inactive',
         });
       }
 
@@ -250,14 +250,14 @@ export async function authRoutes(fastify: FastifyInstance) {
           avatarUrl: staff.avatarUrl,
           createdAt: staff.createdAt.toISOString(),
           lastLoginAt: staff.lastLoginAt ? staff.lastLoginAt.toISOString() : null,
-          lastActiveAt: staff.lastActiveAt ? staff.lastActiveAt.toISOString() : null
-        }
+          lastActiveAt: staff.lastActiveAt ? staff.lastActiveAt.toISOString() : null,
+        },
       };
     } catch (error: any) {
       fastify.log.error('Get profile error:', error);
-      return reply.status(500).send({ 
-        error: 'Internal Server Error', 
-        message: 'Failed to retrieve profile' 
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve profile',
       });
     }
   });
@@ -269,7 +269,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     if (currentUser.role !== 'admin') {
       return reply.status(403).send({
         error: 'Forbidden',
-        message: 'Quyền truy cập bị từ chối. Chỉ Admin mới có thể thực hiện chức năng này.'
+        message: 'Quyền truy cập bị từ chối. Chỉ Admin mới có thể thực hiện chức năng này.',
       });
     }
 
@@ -278,33 +278,33 @@ export async function authRoutes(fastify: FastifyInstance) {
     if (!userId) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Yêu cầu Target userId'
+        message: 'Yêu cầu Target userId',
       });
     }
 
     try {
       const targetStaff = await fastify.prisma.crm.crmStaff.findUnique({
-        where: { id: userId }
+        where: { id: userId },
       });
 
       if (!targetStaff) {
         return reply.status(404).send({
           error: 'Not Found',
-          message: 'Không tìm thấy người dùng đích'
+          message: 'Không tìm thấy người dùng đích',
         });
       }
 
       if (!targetStaff.isActive) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: 'Không thể đăng nhập dưới quyền tài khoản đang bị khóa'
+          message: 'Không thể đăng nhập dưới quyền tài khoản đang bị khóa',
         });
       }
 
       if (targetStaff.role === 'admin') {
         return reply.status(403).send({
           error: 'Forbidden',
-          message: 'Không được phép đăng nhập dưới quyền của Admin khác'
+          message: 'Không được phép đăng nhập dưới quyền của Admin khác',
         });
       }
 
@@ -312,7 +312,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         id: targetStaff.id,
         username: targetStaff.username,
         displayName: targetStaff.displayName,
-        role: targetStaff.role as any
+        role: targetStaff.role as any,
       };
 
       const token = fastify.jwt.sign(payload, { expiresIn: '7d' });
@@ -326,14 +326,14 @@ export async function authRoutes(fastify: FastifyInstance) {
           role: targetStaff.role as any,
           isActive: targetStaff.isActive,
           avatarUrl: targetStaff.avatarUrl,
-          createdAt: targetStaff.createdAt.toISOString()
-        }
+          createdAt: targetStaff.createdAt.toISOString(),
+        },
       };
     } catch (error: any) {
       fastify.log.error('Impersonation error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Đăng nhập giả lập thất bại'
+        message: 'Đăng nhập giả lập thất bại',
       });
     }
   });

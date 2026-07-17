@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+dist/
+out/
+build/
+
+# Generated
+apps/api/src/generated/
+pnpm-lock.yaml
+
+# Config
+.turbo/
+.vercel/

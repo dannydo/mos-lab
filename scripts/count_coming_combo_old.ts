@@ -3,15 +3,15 @@ import { PrismaClient as LegacyPrismaClient } from '../apps/api/src/generated/le
 const legacy = new LegacyPrismaClient({
   datasources: {
     db: {
-      url: "mysql://root:chickisslove@127.0.0.1:3306/management"
-    }
-  }
+      url: 'mysql://root:chickisslove@127.0.0.1:3306/management',
+    },
+  },
 });
 
 async function main() {
   try {
     await legacy.$connect();
-    
+
     // Date range
     const targetDateStr = '2026-07-12';
     const bookingDateOnlyDate = new Date(targetDateStr + 'T00:00:00.000Z');
@@ -21,41 +21,38 @@ async function main() {
     // Fetch coming today
     const comingOrders = await legacy.order.findMany({
       where: {
-        OR: [
-          { booking_date_only: bookingDateOnlyDate },
-          { booking_date_start: { gte: startOfDay, lte: endOfDay } }
-        ],
-        order_state: { not: 'Cancelled' }
-      }
+        OR: [{ booking_date_only: bookingDateOnlyDate }, { booking_date_start: { gte: startOfDay, lte: endOfDay } }],
+        order_state: { not: 'Cancelled' },
+      },
     });
 
-    const allOrderIds = comingOrders.map(o => o.id);
+    const allOrderIds = comingOrders.map((o) => o.id);
     const orderServicesMap = new Map<number, any[]>();
     const serviceNameMap = new Map<number, string>();
 
     if (allOrderIds.length > 0) {
       const orderServices = await legacy.order_service.findMany({
-        where: { order_id: { in: allOrderIds } }
+        where: { order_id: { in: allOrderIds } },
       });
-      orderServices.forEach(os => {
+      orderServices.forEach((os) => {
         const list = orderServicesMap.get(os.order_id) || [];
         list.push(os);
         orderServicesMap.set(os.order_id, list);
       });
 
-      const serviceIds = Array.from(new Set(orderServices.map(os => os.service_id)));
+      const serviceIds = Array.from(new Set(orderServices.map((os) => os.service_id)));
       if (serviceIds.length > 0) {
         const serviceLanguages = await legacy.service_language.findMany({
-          where: { service_id: { in: serviceIds } }
+          where: { service_id: { in: serviceIds } },
         });
-        serviceLanguages.forEach(sl => {
+        serviceLanguages.forEach((sl) => {
           serviceNameMap.set(sl.service_id, sl.service_name);
         });
       }
     }
 
     let oldComboCount = 0;
-    comingOrders.forEach(o => {
+    comingOrders.forEach((o) => {
       const orderServicesList = orderServicesMap.get(o.id) || [];
       let primaryService = orderServicesList[0];
       for (const os of orderServicesList) {
@@ -64,16 +61,17 @@ async function main() {
         }
       }
 
-      const serviceName = primaryService ? (serviceNameMap.get(primaryService.service_id) || 'Unknown') : 'Unknown';
-      const isComboOld = serviceName.toLowerCase().includes('combo') || (primaryService?.service_type || '').toLowerCase().includes('combo');
-      
+      const serviceName = primaryService ? serviceNameMap.get(primaryService.service_id) || 'Unknown' : 'Unknown';
+      const isComboOld =
+        serviceName.toLowerCase().includes('combo') ||
+        (primaryService?.service_type || '').toLowerCase().includes('combo');
+
       if (isComboOld) {
         oldComboCount++;
       }
     });
 
-    console.log("Old logic Coming Today combo count:", oldComboCount);
-
+    console.log('Old logic Coming Today combo count:', oldComboCount);
   } catch (err) {
     console.error(err);
   } finally {

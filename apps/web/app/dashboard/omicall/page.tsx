@@ -18,7 +18,7 @@ import {
   Modal,
   Form,
   Popconfirm,
-  message
+  message,
 } from 'antd';
 import {
   SearchOutlined,
@@ -30,7 +30,7 @@ import {
   SettingOutlined,
   CopyOutlined,
   PlayCircleOutlined,
-  EyeOutlined
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
@@ -59,10 +59,7 @@ export default function OmicallLogsPage() {
   const [totalLogs, setTotalLogs] = useState(0);
 
   // Filter States
-  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
-    dayjs().subtract(30, 'day'),
-    dayjs()
-  ]);
+  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([dayjs().subtract(30, 'day'), dayjs()]);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [happyFilter, setHappyFilter] = useState<string>('ALL');
   const [aiFilter, setAiFilter] = useState<string>('ALL');
@@ -109,7 +106,7 @@ export default function OmicallLogsPage() {
       const params: any = {
         page: currentPage,
         limit: pageSize,
-        direction: 'outbound'
+        direction: 'outbound',
       };
 
       if (dateRange && dateRange[0] && dateRange[1]) {
@@ -203,7 +200,7 @@ export default function OmicallLogsPage() {
     configForm.setFieldsValue({
       extension: staff.extension || '',
       sipPassword: '',
-      phoneNumber: staff.phoneNumber || ''
+      phoneNumber: staff.phoneNumber || '',
     });
     setConfigModalOpen(true);
   };
@@ -212,17 +209,17 @@ export default function OmicallLogsPage() {
     try {
       const values = await configForm.validateFields();
       setSubmittingConfig(true);
-      
+
       const payload: any = {
         staffId: selectedStaffForConfig.staffId,
         extension: values.extension.trim(),
-        phoneNumber: values.phoneNumber ? values.phoneNumber.trim() : null
+        phoneNumber: values.phoneNumber ? values.phoneNumber.trim() : null,
       };
 
       if (values.sipPassword && values.sipPassword.trim()) {
         payload.sipPassword = values.sipPassword.trim();
       }
-      
+
       await apiClient.omicall.saveConfig(payload);
 
       message.success(`Đã cập nhật máy lẻ cho ${selectedStaffForConfig.displayName}`);
@@ -260,27 +257,53 @@ export default function OmicallLogsPage() {
       ANSWER: 'success',
       NOANSWER: 'default',
       BUSY: 'warning',
-      CANCEL: 'error'
+      CANCEL: 'error',
     };
     return <Tag color={colors[status] || 'default'}>{status}</Tag>;
   };
 
   const renderAIStatus = (status: string) => {
     switch (status) {
-      case 'DONE': return <Tag color="success">DONE</Tag>;
-      case 'PROCESSING': return <Tag color="processing"><Spin size="small" style={{ marginRight: '6px' }} />PROCESSING</Tag>;
-      case 'FAILED': return <Tag color="error">FAILED</Tag>;
-      case 'WAITING_RECORDING': return <Tag color="orange">WAITING RECORDING</Tag>;
-      default: return <Tag color="default">PENDING</Tag>;
+      case 'DONE':
+        return <Tag color="success">DONE</Tag>;
+      case 'PROCESSING':
+        return (
+          <Tag color="processing">
+            <Spin size="small" style={{ marginRight: '6px' }} />
+            PROCESSING
+          </Tag>
+        );
+      case 'FAILED':
+        return <Tag color="error">FAILED</Tag>;
+      case 'WAITING_RECORDING':
+        return <Tag color="orange">WAITING RECORDING</Tag>;
+      default:
+        return <Tag color="default">PENDING</Tag>;
     }
   };
 
   const renderHappyStatus = (status: string) => {
     switch (status) {
-      case 'APPROVED': return <Tag color="success" style={{ fontWeight: 'bold' }}>ĐỒNG Ý</Tag>;
-      case 'REJECTED': return <Tag color="error" style={{ fontWeight: 'bold' }}>TỪ CHỐI</Tag>;
-      case 'PENDING_APPROVAL': return <Tag color="warning" style={{ fontWeight: 'bold' }}>CHỜ DUYỆT</Tag>;
-      default: return <Tag color="default">CHƯA XÉT</Tag>;
+      case 'APPROVED':
+        return (
+          <Tag color="success" style={{ fontWeight: 'bold' }}>
+            ĐỒNG Ý
+          </Tag>
+        );
+      case 'REJECTED':
+        return (
+          <Tag color="error" style={{ fontWeight: 'bold' }}>
+            TỪ CHỐI
+          </Tag>
+        );
+      case 'PENDING_APPROVAL':
+        return (
+          <Tag color="warning" style={{ fontWeight: 'bold' }}>
+            CHỜ DUYỆT
+          </Tag>
+        );
+      default:
+        return <Tag color="default">CHƯA XÉT</Tag>;
     }
   };
 
@@ -298,71 +321,72 @@ export default function OmicallLogsPage() {
               {uuid.slice(0, 8)}...{uuid.slice(-8)}
             </Text>
           </Tooltip>
-          <Button 
-            icon={<CopyOutlined />} 
-            type="text" 
-            size="small" 
+          <Button
+            icon={<CopyOutlined />}
+            type="text"
+            size="small"
             onClick={() => handleCopyUuid(uuid)}
             style={{ color: token.colorTextDescription }}
           />
         </Space>
-      )
+      ),
     },
     {
       title: 'Thời gian gọi',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 170,
-      render: (val: string) => <span>{new Date(val).toLocaleString('vi-VN')}</span>
+      render: (val: string) => <span>{new Date(val).toLocaleString('vi-VN')}</span>,
     },
     {
       title: 'Nhân viên',
       dataIndex: ['staff', 'displayName'],
       key: 'staffName',
-      render: (val: string, record: any) => <strong>{val || `Staff ID: ${record.staffId}`}</strong>
+      render: (val: string, record: any) => <strong>{val || `Staff ID: ${record.staffId}`}</strong>,
     },
     {
       title: 'Khách hàng',
       dataIndex: 'destinationNumber',
       key: 'destinationNumber',
-      render: (val: string) => <span style={{ color: token.colorPrimary, fontWeight: '500' }}>{val}</span>
+      render: (val: string) => <span style={{ color: token.colorPrimary, fontWeight: '500' }}>{val}</span>,
     },
     {
       title: 'Thời lượng',
       dataIndex: 'duration',
       key: 'duration',
-      render: (val: number) => <span>{formatDuration(val)}</span>
+      render: (val: number) => <span>{formatDuration(val)}</span>,
     },
     {
       title: 'Kết quả',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => renderCallStatus(status)
+      render: (status: string) => renderCallStatus(status),
     },
     {
       title: 'Trạng thái AI',
       dataIndex: 'analysisStatus',
       key: 'analysisStatus',
-      render: (status: string) => renderAIStatus(status)
+      render: (status: string) => renderAIStatus(status),
     },
     {
       title: 'Tiếng cười (AI)',
       dataIndex: 'laughCount',
       key: 'laughCount',
       align: 'center' as const,
-      render: (val: number) => (
+      render: (val: number) =>
         val > 0 ? (
           <Tag color="purple" style={{ fontWeight: 'bold' }}>
             <SmileOutlined /> {val}
           </Tag>
-        ) : <span>0</span>
-      )
+        ) : (
+          <span>0</span>
+        ),
     },
     {
       title: 'Happy Call',
       dataIndex: 'happyCallStatus',
       key: 'happyCallStatus',
-      render: (status: string) => renderHappyStatus(status)
+      render: (status: string) => renderHappyStatus(status),
     },
     {
       title: 'Hành động',
@@ -378,13 +402,13 @@ export default function OmicallLogsPage() {
             background: '#D4A84B',
             borderColor: '#D4A84B',
             color: 'black',
-            fontWeight: '500'
+            fontWeight: '500',
           }}
         >
           Chi tiết & QA
         </Button>
-      )
-    }
+      ),
+    },
   ];
 
   const configsColumns = [
@@ -395,47 +419,58 @@ export default function OmicallLogsPage() {
       render: (val: string, record: any) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{val}</div>
-          <Text type="secondary" style={{ fontSize: '12px' }}>{record.username}</Text>
+          <Text type="secondary" style={{ fontSize: '12px' }}>
+            {record.username}
+          </Text>
         </div>
-      )
+      ),
     },
     {
       title: 'Vai trò',
       dataIndex: 'role',
       key: 'role',
-      render: (val: string) => <Tag color={val === 'admin' ? 'red' : 'blue'}>{val.toUpperCase()}</Tag>
+      render: (val: string) => <Tag color={val === 'admin' ? 'red' : 'blue'}>{val.toUpperCase()}</Tag>,
     },
     {
       title: 'Số máy lẻ (OmiCall Extension)',
       dataIndex: 'extension',
       key: 'extension',
-      render: (val: string | null) => (
+      render: (val: string | null) =>
         val ? (
-          <Tag color="success" style={{ fontSize: '14px', padding: '4px 8px', fontWeight: 'bold' }}>{val}</Tag>
+          <Tag color="success" style={{ fontSize: '14px', padding: '4px 8px', fontWeight: 'bold' }}>
+            {val}
+          </Tag>
         ) : (
-          <Tag color="default" style={{ color: token.colorTextDescription }}>Chưa cấu hình</Tag>
-        )
-      )
+          <Tag color="default" style={{ color: token.colorTextDescription }}>
+            Chưa cấu hình
+          </Tag>
+        ),
     },
     {
       title: 'Caller ID / Hotline',
       dataIndex: 'phoneNumber',
       key: 'phoneNumber',
-      render: (val: string | null) => val || <Text type="secondary" style={{ fontStyle: 'italic', fontSize: '13px' }}>Không có</Text>
+      render: (val: string | null) =>
+        val || (
+          <Text type="secondary" style={{ fontStyle: 'italic', fontSize: '13px' }}>
+            Không có
+          </Text>
+        ),
     },
     {
       title: 'Mật khẩu SIP WebRTC',
       dataIndex: 'hasSipPassword',
       key: 'hasSipPassword',
-      render: (val: boolean, record: any) => (
+      render: (val: boolean, record: any) =>
         record.extension ? (
           val ? (
             <Tag color="blue">● Đã cấu hình</Tag>
           ) : (
             <Tag color="warning">● Chưa cấu hình</Tag>
           )
-        ) : <Text type="secondary">-</Text>
-      )
+        ) : (
+          <Text type="secondary">-</Text>
+        ),
     },
     {
       title: 'Thao tác',
@@ -443,11 +478,7 @@ export default function OmicallLogsPage() {
       width: 220,
       render: (_: any, record: any) => (
         <Space size="middle">
-          <Button
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => handleOpenConfigModal(record)}
-          >
+          <Button icon={<EditOutlined />} size="small" onClick={() => handleOpenConfigModal(record)}>
             Cấu hình
           </Button>
           {record.extension && (
@@ -457,18 +488,14 @@ export default function OmicallLogsPage() {
               okText="Đồng ý"
               cancelText="Hủy"
             >
-              <Button
-                icon={<DeleteOutlined />}
-                size="small"
-                danger
-              >
+              <Button icon={<DeleteOutlined />} size="small" danger>
                 Gỡ gán
               </Button>
             </Popconfirm>
           )}
         </Space>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -489,7 +516,7 @@ export default function OmicallLogsPage() {
         style={{
           background: token.colorBgContainer,
           borderColor: token.colorBorderSecondary,
-          borderRadius: '12px'
+          borderRadius: '12px',
         }}
         styles={{ body: { padding: '20px' } }}
       >
@@ -507,15 +534,17 @@ export default function OmicallLogsPage() {
               children: (
                 <div>
                   {/* FILTERS TOOLBAR */}
-                  <div 
+                  <div
                     className="flex flex-wrap items-center gap-4 mb-6 p-4 rounded-lg"
                     style={{
                       background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5',
-                      border: `1px solid ${token.colorBorderSecondary}`
+                      border: `1px solid ${token.colorBorderSecondary}`,
                     }}
                   >
                     <div className="flex flex-col gap-1">
-                      <span style={{ fontSize: '12px', fontWeight: '500', color: token.colorTextSecondary }}>Khoảng thời gian:</span>
+                      <span style={{ fontSize: '12px', fontWeight: '500', color: token.colorTextSecondary }}>
+                        Khoảng thời gian:
+                      </span>
                       <RangePicker
                         value={dateRange}
                         onChange={(dates) => {
@@ -527,7 +556,9 @@ export default function OmicallLogsPage() {
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <span style={{ fontSize: '12px', fontWeight: '500', color: token.colorTextSecondary }}>Kết quả cuộc gọi:</span>
+                      <span style={{ fontSize: '12px', fontWeight: '500', color: token.colorTextSecondary }}>
+                        Kết quả cuộc gọi:
+                      </span>
                       <Select
                         value={statusFilter}
                         onChange={setStatusFilter}
@@ -537,13 +568,15 @@ export default function OmicallLogsPage() {
                           { value: 'ANSWER', label: 'ANSWER (Bắt máy)' },
                           { value: 'NOANSWER', label: 'NOANSWER (Lỡ)' },
                           { value: 'BUSY', label: 'BUSY (Bận)' },
-                          { value: 'CANCEL', label: 'CANCEL (Hủy)' }
+                          { value: 'CANCEL', label: 'CANCEL (Hủy)' },
                         ]}
                       />
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <span style={{ fontSize: '12px', fontWeight: '500', color: token.colorTextSecondary }}>Trạng thái Happy Call:</span>
+                      <span style={{ fontSize: '12px', fontWeight: '500', color: token.colorTextSecondary }}>
+                        Trạng thái Happy Call:
+                      </span>
                       <Select
                         value={happyFilter}
                         onChange={setHappyFilter}
@@ -553,13 +586,15 @@ export default function OmicallLogsPage() {
                           { value: 'APPROVED', label: 'Đồng ý' },
                           { value: 'REJECTED', label: 'Từ chối' },
                           { value: 'PENDING_APPROVAL', label: 'Chờ duyệt' },
-                          { value: 'NONE', label: 'Chưa xét' }
+                          { value: 'NONE', label: 'Chưa xét' },
                         ]}
                       />
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <span style={{ fontSize: '12px', fontWeight: '500', color: token.colorTextSecondary }}>Trạng thái AI:</span>
+                      <span style={{ fontSize: '12px', fontWeight: '500', color: token.colorTextSecondary }}>
+                        Trạng thái AI:
+                      </span>
                       <Select
                         value={aiFilter}
                         onChange={setAiFilter}
@@ -569,14 +604,16 @@ export default function OmicallLogsPage() {
                           { value: 'PENDING', label: 'PENDING (Chờ)' },
                           { value: 'PROCESSING', label: 'PROCESSING (Đang chạy)' },
                           { value: 'DONE', label: 'DONE (Hoàn thành)' },
-                          { value: 'FAILED', label: 'FAILED (Lỗi)' }
+                          { value: 'FAILED', label: 'FAILED (Lỗi)' },
                         ]}
                       />
                     </div>
 
                     {isAdmin && (
                       <div className="flex flex-col gap-1">
-                        <span style={{ fontSize: '12px', fontWeight: '500', color: token.colorTextSecondary }}>Nhân viên:</span>
+                        <span style={{ fontSize: '12px', fontWeight: '500', color: token.colorTextSecondary }}>
+                          Nhân viên:
+                        </span>
                         <Select
                           value={staffFilter}
                           onChange={setStaffFilter}
@@ -587,7 +624,7 @@ export default function OmicallLogsPage() {
                           }
                           options={[
                             { value: 'ALL', label: 'Tất cả nhân viên' },
-                            ...staffList.map(s => ({ value: s.id.toString(), label: s.displayName }))
+                            ...staffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),
                           ]}
                         />
                       </div>
@@ -598,7 +635,10 @@ export default function OmicallLogsPage() {
                         <Button
                           type="primary"
                           icon={<SearchOutlined />}
-                          onClick={() => { setCurrentPage(1); fetchLogs(); }}
+                          onClick={() => {
+                            setCurrentPage(1);
+                            fetchLogs();
+                          }}
                           style={{ background: token.colorPrimary, borderColor: token.colorPrimary }}
                         >
                           Tìm kiếm
@@ -633,12 +673,12 @@ export default function OmicallLogsPage() {
                       showSizeChanger: true,
                       pageSizeOptions: ['10', '20', '50'],
                       onChange: handlePageChange,
-                      locale: { items_per_page: '/ trang' }
+                      locale: { items_per_page: '/ trang' },
                     }}
                     className="antd-custom-table"
                   />
                 </div>
-              )
+              ),
             },
             ...(isAdmin
               ? [
@@ -652,7 +692,9 @@ export default function OmicallLogsPage() {
                     children: (
                       <div>
                         <Paragraph style={{ color: token.colorTextSecondary, marginBottom: '20px' }}>
-                          Mỗi Telesales / Booker cần được gán chính xác mã số máy lẻ (Extension) tương ứng trên hệ thống tổng đài OmiCall. Webhook OmiCall gửi dữ liệu cuộc gọi về hệ thống sẽ dựa trên mã máy lẻ này để gán KPI cuộc gọi và bản ghi AI phân tích chính xác cho từng nhân viên.
+                          Mỗi Telesales / Booker cần được gán chính xác mã số máy lẻ (Extension) tương ứng trên hệ thống
+                          tổng đài OmiCall. Webhook OmiCall gửi dữ liệu cuộc gọi về hệ thống sẽ dựa trên mã máy lẻ này
+                          để gán KPI cuộc gọi và bản ghi AI phân tích chính xác cho từng nhân viên.
                         </Paragraph>
 
                         <Table
@@ -664,10 +706,10 @@ export default function OmicallLogsPage() {
                           className="antd-custom-table"
                         />
                       </div>
-                    )
-                  }
+                    ),
+                  },
                 ]
-              : [])
+              : []),
           ]}
         />
       </Card>
@@ -689,12 +731,12 @@ export default function OmicallLogsPage() {
             label="Mã máy lẻ (OmiCall Extension ID):"
             rules={[
               { required: true, message: 'Vui lòng nhập mã máy lẻ extension' },
-              { pattern: /^[0-9]+$/, message: 'Mã máy lẻ phải là các chữ số' }
+              { pattern: /^[0-9]+$/, message: 'Mã máy lẻ phải là các chữ số' },
             ]}
           >
             <Input placeholder="Ví dụ: 101, 102, 103..." maxLength={10} />
           </Form.Item>
-          
+
           <Form.Item
             name="sipPassword"
             label="Mật khẩu SIP WebRTC (SIP Password):"
@@ -702,13 +744,11 @@ export default function OmicallLogsPage() {
           >
             <Input.Password placeholder="Nhập mật khẩu máy nhánh WebRTC" />
           </Form.Item>
-          
+
           <Form.Item
             name="phoneNumber"
             label="Số Hotline hiển thị (Outbound Caller ID):"
-            rules={[
-              { pattern: /^[0-9]+$/, message: 'Số điện thoại không hợp lệ' }
-            ]}
+            rules={[{ pattern: /^[0-9]+$/, message: 'Số điện thoại không hợp lệ' }]}
           >
             <Input placeholder="Ví dụ: 02871012345" maxLength={20} />
           </Form.Item>

@@ -1,395 +1,559 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi" class="dark-theme dark">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>V3A – Semi-circle Gauge + Trophy Podium | Online Users</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-  darkMode: 'class',
-  theme: {
-    extend: {
-      colors: {
-        gold: '#D4A84B',
-        darkBg: '#0A0A0A',
-        darkCard: '#141414',
-        darkBorder: '#262626',
-      },
-      fontFamily: {
-        jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>V3A – Semi-circle Gauge + Trophy Podium | Online Users</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              gold: '#D4A84B',
+              darkBg: '#0A0A0A',
+              darkCard: '#141414',
+              darkBorder: '#262626',
+            },
+            fontFamily: {
+              jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
-    }
-  }
-}
-</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.4s, color 0.4s; }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition:
+          background 0.4s,
+          color 0.4s;
+      }
 
-  /* ── Dark / Light Theme ── */
-  .dark-theme body { background: #0A0A0A; color: #e5e5e5; }
-  .light-theme body { background: #f5f5f5; color: #1a1a1a; }
+      /* ── Dark / Light Theme ── */
+      .dark-theme body {
+        background: #0a0a0a;
+        color: #e5e5e5;
+      }
+      .light-theme body {
+        background: #f5f5f5;
+        color: #1a1a1a;
+      }
 
-  /* ── Glass Card ── */
-  .glass-card {
-    background: rgba(20,20,20,0.65);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid #262626;
-    border-radius: 16px;
-  }
-  .light-theme .glass-card {
-    background: rgba(255,255,255,0.72);
-    border-color: #e0e0e0;
-  }
+      /* ── Glass Card ── */
+      .glass-card {
+        background: rgba(20, 20, 20, 0.65);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid #262626;
+        border-radius: 16px;
+      }
+      .light-theme .glass-card {
+        background: rgba(255, 255, 255, 0.72);
+        border-color: #e0e0e0;
+      }
 
-  /* ── Breathing Animation ── */
-  @keyframes breathe {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.08); }
-  }
-  .avatar-breathe { animation: breathe 3s ease-in-out infinite; }
+      /* ── Breathing Animation ── */
+      @keyframes breathe {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.08);
+        }
+      }
+      .avatar-breathe {
+        animation: breathe 3s ease-in-out infinite;
+      }
 
-  /* ── Online Pulse Dot ── */
-  @keyframes pulse-ring {
-    0% { transform: scale(1); opacity: 1; }
-    100% { transform: scale(2.2); opacity: 0; }
-  }
-  .pulse-dot {
-    position: absolute; bottom: 0; right: 0;
-    width: 10px; height: 10px;
-    background: #22c55e; border-radius: 50%;
-    border: 2px solid #0A0A0A;
-    z-index: 5;
-  }
-  .light-theme .pulse-dot { border-color: #f5f5f5; }
-  .pulse-dot::after {
-    content: ''; position: absolute; inset: -2px;
-    border-radius: 50%; background: #22c55e;
-    animation: pulse-ring 1.8s ease-out infinite;
-  }
+      /* ── Online Pulse Dot ── */
+      @keyframes pulse-ring {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(2.2);
+          opacity: 0;
+        }
+      }
+      .pulse-dot {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 10px;
+        height: 10px;
+        background: #22c55e;
+        border-radius: 50%;
+        border: 2px solid #0a0a0a;
+        z-index: 5;
+      }
+      .light-theme .pulse-dot {
+        border-color: #f5f5f5;
+      }
+      .pulse-dot::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 50%;
+        background: #22c55e;
+        animation: pulse-ring 1.8s ease-out infinite;
+      }
 
-  /* ── Modal Animation ── */
-  @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.88) translateY(20px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  .modal-animate { animation: modalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      /* ── Modal Animation ── */
+      @keyframes modalIn {
+        from {
+          opacity: 0;
+          transform: scale(0.88) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      .modal-animate {
+        animation: modalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
 
-  /* ── Gauge Stroke Transition ── */
-  .gauge-progress { transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1); }
+      /* ── Gauge Stroke Transition ── */
+      .gauge-progress {
+        transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-  /* ── Crown Bounce ── */
-  @keyframes crownBounce {
-    0%, 100% { transform: translateY(0) rotate(-3deg); }
-    50% { transform: translateY(-4px) rotate(3deg); }
-  }
-  .crown-bounce { animation: crownBounce 2s ease-in-out infinite; }
+      /* ── Crown Bounce ── */
+      @keyframes crownBounce {
+        0%,
+        100% {
+          transform: translateY(0) rotate(-3deg);
+        }
+        50% {
+          transform: translateY(-4px) rotate(3deg);
+        }
+      }
+      .crown-bounce {
+        animation: crownBounce 2s ease-in-out infinite;
+      }
 
-  /* ── Scrollbar ── */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-  .light-theme ::-webkit-scrollbar-thumb { background: #ccc; }
+      /* ── Scrollbar ── */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 4px;
+      }
+      .light-theme ::-webkit-scrollbar-thumb {
+        background: #ccc;
+      }
 
-  /* ── Tab Pill ── */
-  .tab-pill {
-    padding: 6px 18px; border-radius: 9999px; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all 0.3s; border: 1px solid transparent;
-    background: transparent; color: #888;
-  }
-  .tab-pill:hover { color: #D4A84B; }
-  .tab-pill.active {
-    background: linear-gradient(135deg, #D4A84B, #c49a3f);
-    color: #000; border-color: #D4A84B;
-    box-shadow: 0 0 18px rgba(212,168,75,0.3);
-  }
+      /* ── Tab Pill ── */
+      .tab-pill {
+        padding: 6px 18px;
+        border-radius: 9999px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 1px solid transparent;
+        background: transparent;
+        color: #888;
+      }
+      .tab-pill:hover {
+        color: #d4a84b;
+      }
+      .tab-pill.active {
+        background: linear-gradient(135deg, #d4a84b, #c49a3f);
+        color: #000;
+        border-color: #d4a84b;
+        box-shadow: 0 0 18px rgba(212, 168, 75, 0.3);
+      }
 
-  /* ── Podium ── */
-  .podium-bar {
-    border-radius: 10px 10px 0 0;
-    background: linear-gradient(180deg, rgba(212,168,75,0.15), rgba(212,168,75,0.03));
-    border: 1px solid #262626;
-    border-bottom: none;
-    transition: height 0.6s cubic-bezier(0.4,0,0.2,1);
-  }
-  .light-theme .podium-bar {
-    background: linear-gradient(180deg, rgba(212,168,75,0.12), rgba(212,168,75,0.03));
-    border-color: #ddd;
-  }
+      /* ── Podium ── */
+      .podium-bar {
+        border-radius: 10px 10px 0 0;
+        background: linear-gradient(180deg, rgba(212, 168, 75, 0.15), rgba(212, 168, 75, 0.03));
+        border: 1px solid #262626;
+        border-bottom: none;
+        transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .light-theme .podium-bar {
+        background: linear-gradient(180deg, rgba(212, 168, 75, 0.12), rgba(212, 168, 75, 0.03));
+        border-color: #ddd;
+      }
 
-  /* ── Rank Row ── */
-  .rank-row {
-    transition: background 0.2s;
-    border-radius: 10px;
-  }
-  .rank-row:hover { background: rgba(212,168,75,0.06); }
-</style>
-</head>
-<body class="min-h-screen font-jakarta">
-
-<!-- ═══════════════════ HEADER ═══════════════════ -->
-<header class="fixed top-0 left-0 right-0 z-50 glass-card mx-3 mt-3 px-5 py-3 flex items-center justify-between" style="border-radius:14px;">
-  <!-- Logo -->
-  <div class="flex items-center gap-3">
-    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center">
-      <span class="text-black font-extrabold text-sm">WL</span>
-    </div>
-    <span class="text-sm font-bold tracking-wide hidden sm:block">WORKSPACE</span>
-  </div>
-
-  <!-- Center: Bubble Avatars -->
-  <div class="flex items-center">
-    <div class="flex -space-x-3 items-center" id="bubbleStack">
-      <!-- TN -->
-      <div class="relative cursor-pointer avatar-breathe" style="animation-delay:0s;" onclick="openModal(0)">
-        <div class="w-10 h-10 rounded-full bg-rose-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-darkBg dark:ring-darkBg">TN</div>
-        <span class="pulse-dot"></span>
-      </div>
-      <!-- HM -->
-      <div class="relative cursor-pointer avatar-breathe" style="animation-delay:0.4s;" onclick="openModal(1)">
-        <div class="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-darkBg dark:ring-darkBg">HM</div>
-        <span class="pulse-dot"></span>
-      </div>
-      <!-- VT -->
-      <div class="relative cursor-pointer avatar-breathe" style="animation-delay:0.8s;" onclick="openModal(2)">
-        <div class="w-10 h-10 rounded-full bg-violet-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-darkBg dark:ring-darkBg">VT</div>
-        <span class="pulse-dot"></span>
-      </div>
-      <!-- KL -->
-      <div class="relative cursor-pointer avatar-breathe" style="animation-delay:1.2s;" onclick="openModal(3)">
-        <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-darkBg dark:ring-darkBg">KL</div>
-        <span class="pulse-dot"></span>
-      </div>
-      <!-- TH -->
-      <div class="relative cursor-pointer avatar-breathe" style="animation-delay:1.6s;" onclick="openModal(4)">
-        <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-darkBg dark:ring-darkBg">TH</div>
-        <span class="pulse-dot"></span>
-      </div>
-    </div>
-    <!-- Online Count Badge -->
-    <div class="ml-3 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 flex items-center gap-1.5">
-      <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
-      6 online
-    </div>
-  </div>
-
-  <!-- Right: Clock + Theme + DD -->
-  <div class="flex items-center gap-3">
-    <div class="text-xs font-medium opacity-60" id="liveClock">--:--:--</div>
-    <!-- Theme Toggle -->
-    <button onclick="toggleTheme()" class="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-white/10" id="themeBtn">
-      <i class="fas fa-moon text-sm text-gold" id="themeIcon"></i>
-    </button>
-    <!-- DD Avatar -->
-    <div class="relative cursor-pointer avatar-breathe" style="animation-delay:2s;" onclick="openModal(5)">
-      <div class="w-10 h-10 rounded-full bg-gold flex items-center justify-center text-black text-xs font-bold ring-2 ring-gold/40">DD</div>
-      <span class="pulse-dot"></span>
-    </div>
-  </div>
-</header>
-
-<!-- ═══════════════════ MODAL BACKDROP ═══════════════════ -->
-<div id="modalBackdrop" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4" onclick="closeModal(event)">
-  <div id="modalContent" class="glass-card modal-animate w-full overflow-hidden" style="max-width:820px;" onclick="event.stopPropagation()">
-
-    <!-- Modal Header -->
-    <div class="p-5 pb-4 flex items-center gap-4 border-b border-darkBorder">
-      <div class="relative">
-        <div id="modalAvatar" class="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold ring-2 ring-gold/30 avatar-breathe"></div>
-        <span class="pulse-dot" style="width:12px;height:12px;"></span>
-      </div>
-      <div class="flex-1">
-        <div class="flex items-center gap-2">
-          <span id="modalName" class="text-lg font-bold"></span>
-          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/20">Telesales</span>
+      /* ── Rank Row ── */
+      .rank-row {
+        transition: background 0.2s;
+        border-radius: 10px;
+      }
+      .rank-row:hover {
+        background: rgba(212, 168, 75, 0.06);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen font-jakarta">
+    <!-- ═══════════════════ HEADER ═══════════════════ -->
+    <header
+      class="fixed top-0 left-0 right-0 z-50 glass-card mx-3 mt-3 px-5 py-3 flex items-center justify-between"
+      style="border-radius: 14px"
+    >
+      <!-- Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center">
+          <span class="text-black font-extrabold text-sm">WL</span>
         </div>
-        <div class="flex items-center gap-1.5 mt-1 text-xs text-emerald-400">
+        <span class="text-sm font-bold tracking-wide hidden sm:block">WORKSPACE</span>
+      </div>
+
+      <!-- Center: Bubble Avatars -->
+      <div class="flex items-center">
+        <div class="flex -space-x-3 items-center" id="bubbleStack">
+          <!-- TN -->
+          <div class="relative cursor-pointer avatar-breathe" style="animation-delay: 0s" onclick="openModal(0)">
+            <div
+              class="w-10 h-10 rounded-full bg-rose-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-darkBg dark:ring-darkBg"
+            >
+              TN
+            </div>
+            <span class="pulse-dot"></span>
+          </div>
+          <!-- HM -->
+          <div class="relative cursor-pointer avatar-breathe" style="animation-delay: 0.4s" onclick="openModal(1)">
+            <div
+              class="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-darkBg dark:ring-darkBg"
+            >
+              HM
+            </div>
+            <span class="pulse-dot"></span>
+          </div>
+          <!-- VT -->
+          <div class="relative cursor-pointer avatar-breathe" style="animation-delay: 0.8s" onclick="openModal(2)">
+            <div
+              class="w-10 h-10 rounded-full bg-violet-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-darkBg dark:ring-darkBg"
+            >
+              VT
+            </div>
+            <span class="pulse-dot"></span>
+          </div>
+          <!-- KL -->
+          <div class="relative cursor-pointer avatar-breathe" style="animation-delay: 1.2s" onclick="openModal(3)">
+            <div
+              class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-darkBg dark:ring-darkBg"
+            >
+              KL
+            </div>
+            <span class="pulse-dot"></span>
+          </div>
+          <!-- TH -->
+          <div class="relative cursor-pointer avatar-breathe" style="animation-delay: 1.6s" onclick="openModal(4)">
+            <div
+              class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-darkBg dark:ring-darkBg"
+            >
+              TH
+            </div>
+            <span class="pulse-dot"></span>
+          </div>
+        </div>
+        <!-- Online Count Badge -->
+        <div
+          class="ml-3 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 flex items-center gap-1.5"
+        >
           <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
-          Đang hoạt động
+          6 online
         </div>
       </div>
-      <button onclick="closeModal()" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors">
-        <i class="fas fa-times text-sm opacity-50"></i>
-      </button>
-    </div>
 
-    <!-- Tabs -->
-    <div class="flex justify-center gap-2 p-4 pb-2">
-      <button class="tab-pill active" onclick="switchTab(0, this)">Hôm nay</button>
-      <button class="tab-pill" onclick="switchTab(1, this)">Tuần này</button>
-      <button class="tab-pill" onclick="switchTab(2, this)">Tháng này</button>
-    </div>
-
-    <!-- ── Semi-circle Gauges ── -->
-    <div class="px-5 pt-2 pb-4">
-      <div class="flex flex-wrap justify-center gap-4" id="gaugesContainer">
-        <!-- Gauges rendered by JS -->
-      </div>
-    </div>
-
-    <!-- ── Podium Leaderboard ── -->
-    <div class="px-5 pb-5">
-      <div class="flex items-center gap-2 mb-4">
-        <i class="fas fa-trophy text-gold text-sm"></i>
-        <span class="text-sm font-bold">Bảng xếp hạng</span>
-      </div>
-
-      <!-- Top 3 Podium -->
-      <div class="flex items-end justify-center gap-3 mb-5" style="height:200px;">
-        <!-- #2 -->
-        <div class="flex flex-col items-center" style="width:120px;">
-          <div class="relative mb-2">
-            <div id="pod2avatar" class="w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-sky-400/30"></div>
-            <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-400 flex items-center justify-center text-[10px] font-bold text-white">2</div>
+      <!-- Right: Clock + Theme + DD -->
+      <div class="flex items-center gap-3">
+        <div class="text-xs font-medium opacity-60" id="liveClock">--:--:--</div>
+        <!-- Theme Toggle -->
+        <button
+          onclick="toggleTheme()"
+          class="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-white/10"
+          id="themeBtn"
+        >
+          <i class="fas fa-moon text-sm text-gold" id="themeIcon"></i>
+        </button>
+        <!-- DD Avatar -->
+        <div class="relative cursor-pointer avatar-breathe" style="animation-delay: 2s" onclick="openModal(5)">
+          <div
+            class="w-10 h-10 rounded-full bg-gold flex items-center justify-center text-black text-xs font-bold ring-2 ring-gold/40"
+          >
+            DD
           </div>
-          <span id="pod2name" class="text-xs font-semibold mb-1 truncate w-full text-center"></span>
-          <span id="pod2score" class="text-[11px] opacity-50 mb-2"></span>
-          <div class="podium-bar w-full" style="height:100px;"></div>
-        </div>
-        <!-- #1 -->
-        <div class="flex flex-col items-center" style="width:130px;">
-          <i class="fas fa-crown text-gold text-xl mb-1 crown-bounce"></i>
-          <div class="relative mb-2">
-            <div id="pod1avatar" class="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold ring-2 ring-gold/40"></div>
-            <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gold flex items-center justify-center text-[10px] font-bold text-black">1</div>
-          </div>
-          <span id="pod1name" class="text-xs font-semibold mb-1 truncate w-full text-center"></span>
-          <span id="pod1score" class="text-[11px] opacity-50 mb-2"></span>
-          <div class="podium-bar w-full" style="height:140px; border-color: rgba(212,168,75,0.3);"></div>
-        </div>
-        <!-- #3 -->
-        <div class="flex flex-col items-center" style="width:120px;">
-          <div class="relative mb-2">
-            <div id="pod3avatar" class="w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-amber-500/30"></div>
-            <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-700 flex items-center justify-center text-[10px] font-bold text-white">3</div>
-          </div>
-          <span id="pod3name" class="text-xs font-semibold mb-1 truncate w-full text-center"></span>
-          <span id="pod3score" class="text-[11px] opacity-50 mb-2"></span>
-          <div class="podium-bar w-full" style="height:70px;"></div>
+          <span class="pulse-dot"></span>
         </div>
       </div>
+    </header>
 
-      <!-- #4-6 Rows -->
-      <div class="space-y-2" id="rankRows">
-        <!-- Rendered by JS -->
+    <!-- ═══════════════════ MODAL BACKDROP ═══════════════════ -->
+    <div
+      id="modalBackdrop"
+      class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4"
+      onclick="closeModal(event)"
+    >
+      <div
+        id="modalContent"
+        class="glass-card modal-animate w-full overflow-hidden"
+        style="max-width: 820px"
+        onclick="event.stopPropagation()"
+      >
+        <!-- Modal Header -->
+        <div class="p-5 pb-4 flex items-center gap-4 border-b border-darkBorder">
+          <div class="relative">
+            <div
+              id="modalAvatar"
+              class="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold ring-2 ring-gold/30 avatar-breathe"
+            ></div>
+            <span class="pulse-dot" style="width: 12px; height: 12px"></span>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <span id="modalName" class="text-lg font-bold"></span>
+              <span
+                class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/20"
+                >Telesales</span
+              >
+            </div>
+            <div class="flex items-center gap-1.5 mt-1 text-xs text-emerald-400">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+              Đang hoạt động
+            </div>
+          </div>
+          <button
+            onclick="closeModal()"
+            class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+          >
+            <i class="fas fa-times text-sm opacity-50"></i>
+          </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex justify-center gap-2 p-4 pb-2">
+          <button class="tab-pill active" onclick="switchTab(0, this)">Hôm nay</button>
+          <button class="tab-pill" onclick="switchTab(1, this)">Tuần này</button>
+          <button class="tab-pill" onclick="switchTab(2, this)">Tháng này</button>
+        </div>
+
+        <!-- ── Semi-circle Gauges ── -->
+        <div class="px-5 pt-2 pb-4">
+          <div class="flex flex-wrap justify-center gap-4" id="gaugesContainer">
+            <!-- Gauges rendered by JS -->
+          </div>
+        </div>
+
+        <!-- ── Podium Leaderboard ── -->
+        <div class="px-5 pb-5">
+          <div class="flex items-center gap-2 mb-4">
+            <i class="fas fa-trophy text-gold text-sm"></i>
+            <span class="text-sm font-bold">Bảng xếp hạng</span>
+          </div>
+
+          <!-- Top 3 Podium -->
+          <div class="flex items-end justify-center gap-3 mb-5" style="height: 200px">
+            <!-- #2 -->
+            <div class="flex flex-col items-center" style="width: 120px">
+              <div class="relative mb-2">
+                <div
+                  id="pod2avatar"
+                  class="w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-sky-400/30"
+                ></div>
+                <div
+                  class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-400 flex items-center justify-center text-[10px] font-bold text-white"
+                >
+                  2
+                </div>
+              </div>
+              <span id="pod2name" class="text-xs font-semibold mb-1 truncate w-full text-center"></span>
+              <span id="pod2score" class="text-[11px] opacity-50 mb-2"></span>
+              <div class="podium-bar w-full" style="height: 100px"></div>
+            </div>
+            <!-- #1 -->
+            <div class="flex flex-col items-center" style="width: 130px">
+              <i class="fas fa-crown text-gold text-xl mb-1 crown-bounce"></i>
+              <div class="relative mb-2">
+                <div
+                  id="pod1avatar"
+                  class="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold ring-2 ring-gold/40"
+                ></div>
+                <div
+                  class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gold flex items-center justify-center text-[10px] font-bold text-black"
+                >
+                  1
+                </div>
+              </div>
+              <span id="pod1name" class="text-xs font-semibold mb-1 truncate w-full text-center"></span>
+              <span id="pod1score" class="text-[11px] opacity-50 mb-2"></span>
+              <div class="podium-bar w-full" style="height: 140px; border-color: rgba(212, 168, 75, 0.3)"></div>
+            </div>
+            <!-- #3 -->
+            <div class="flex flex-col items-center" style="width: 120px">
+              <div class="relative mb-2">
+                <div
+                  id="pod3avatar"
+                  class="w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-amber-500/30"
+                ></div>
+                <div
+                  class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-700 flex items-center justify-center text-[10px] font-bold text-white"
+                >
+                  3
+                </div>
+              </div>
+              <span id="pod3name" class="text-xs font-semibold mb-1 truncate w-full text-center"></span>
+              <span id="pod3score" class="text-[11px] opacity-50 mb-2"></span>
+              <div class="podium-bar w-full" style="height: 70px"></div>
+            </div>
+          </div>
+
+          <!-- #4-6 Rows -->
+          <div class="space-y-2" id="rankRows">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- ═══════════════════ MAIN (background placeholder) ═══════════════════ -->
-<main class="pt-24 px-6 pb-10 max-w-5xl mx-auto">
-  <div class="text-center py-20 opacity-30">
-    <i class="fas fa-users text-4xl mb-3"></i>
-    <p class="text-sm">Nhấn vào avatar để xem chi tiết KPI</p>
-  </div>
-</main>
+    <!-- ═══════════════════ MAIN (background placeholder) ═══════════════════ -->
+    <main class="pt-24 px-6 pb-10 max-w-5xl mx-auto">
+      <div class="text-center py-20 opacity-30">
+        <i class="fas fa-users text-4xl mb-3"></i>
+        <p class="text-sm">Nhấn vào avatar để xem chi tiết KPI</p>
+      </div>
+    </main>
 
-<!-- ═══════════════════ JAVASCRIPT ═══════════════════ -->
-<script>
-// ── Team Data ──
-const team = [
-  { id:'TN', name:'Thanh Ngân',  bg:'bg-rose-500',    color:'#f43f5e', ring:'ring-rose-400/30' },
-  { id:'HM', name:'Hoàng Minh', bg:'bg-sky-500',     color:'#0ea5e9', ring:'ring-sky-400/30' },
-  { id:'VT', name:'Vũ Thảo',    bg:'bg-violet-500',  color:'#8b5cf6', ring:'ring-violet-400/30' },
-  { id:'KL', name:'Khánh Linh', bg:'bg-emerald-500', color:'#10b981', ring:'ring-emerald-400/30' },
-  { id:'TH', name:'Trung Hiếu', bg:'bg-orange-500',  color:'#f97316', ring:'ring-orange-400/30' },
-  { id:'DD', name:'Danny Do',   bg:'bg-gold',        color:'#D4A84B', ring:'ring-gold/40', textColor:'text-black' },
-];
+    <!-- ═══════════════════ JAVASCRIPT ═══════════════════ -->
+    <script>
+      // ── Team Data ──
+      const team = [
+        { id: 'TN', name: 'Thanh Ngân', bg: 'bg-rose-500', color: '#f43f5e', ring: 'ring-rose-400/30' },
+        { id: 'HM', name: 'Hoàng Minh', bg: 'bg-sky-500', color: '#0ea5e9', ring: 'ring-sky-400/30' },
+        { id: 'VT', name: 'Vũ Thảo', bg: 'bg-violet-500', color: '#8b5cf6', ring: 'ring-violet-400/30' },
+        { id: 'KL', name: 'Khánh Linh', bg: 'bg-emerald-500', color: '#10b981', ring: 'ring-emerald-400/30' },
+        { id: 'TH', name: 'Trung Hiếu', bg: 'bg-orange-500', color: '#f97316', ring: 'ring-orange-400/30' },
+        { id: 'DD', name: 'Danny Do', bg: 'bg-gold', color: '#D4A84B', ring: 'ring-gold/40', textColor: 'text-black' },
+      ];
 
-// ── KPI Config ──
-const kpis = [
-  { label:'Calls',   icon:'fa-phone',       color:'#3b82f6' },
-  { label:'Pickups', icon:'fa-phone-flip',   color:'#10b981' },
-  { label:'Happy',   icon:'fa-face-smile',   color:'#f59e0b' },
-  { label:'Booked',  icon:'fa-calendar-check',color:'#8b5cf6' },
-  { label:'Done',    icon:'fa-circle-check', color:'#D4A84B' },
-];
+      // ── KPI Config ──
+      const kpis = [
+        { label: 'Calls', icon: 'fa-phone', color: '#3b82f6' },
+        { label: 'Pickups', icon: 'fa-phone-flip', color: '#10b981' },
+        { label: 'Happy', icon: 'fa-face-smile', color: '#f59e0b' },
+        { label: 'Booked', icon: 'fa-calendar-check', color: '#8b5cf6' },
+        { label: 'Done', icon: 'fa-circle-check', color: '#D4A84B' },
+      ];
 
-// ── Sample Data (per member × tab) ──
-const sampleData = {
-  today: [
-    [45,80],[28,50],[12,20],[8,15],[5,10],
-  ],
-  week: [
-    [180,400],[120,250],[55,100],[35,75],[22,50],
-  ],
-  month: [
-    [650,1600],[420,1000],[195,400],[130,300],[85,200],
-  ],
-};
+      // ── Sample Data (per member × tab) ──
+      const sampleData = {
+        today: [
+          [45, 80],
+          [28, 50],
+          [12, 20],
+          [8, 15],
+          [5, 10],
+        ],
+        week: [
+          [180, 400],
+          [120, 250],
+          [55, 100],
+          [35, 75],
+          [22, 50],
+        ],
+        month: [
+          [650, 1600],
+          [420, 1000],
+          [195, 400],
+          [130, 300],
+          [85, 200],
+        ],
+      };
 
-// Slight random variation per member
-function getMemberData(memberIdx, tabIdx) {
-  const tabKey = ['today','week','month'][tabIdx];
-  const base = sampleData[tabKey];
-  const seed = memberIdx * 7 + 3;
-  return base.map(([cur,target],i) => {
-    const variation = 1 + ((seed * (i+1) * 13) % 30 - 15) / 100;
-    const val = Math.min(target, Math.max(1, Math.round(cur * variation)));
-    return [val, target];
-  });
-}
+      // Slight random variation per member
+      function getMemberData(memberIdx, tabIdx) {
+        const tabKey = ['today', 'week', 'month'][tabIdx];
+        const base = sampleData[tabKey];
+        const seed = memberIdx * 7 + 3;
+        return base.map(([cur, target], i) => {
+          const variation = 1 + (((seed * (i + 1) * 13) % 30) - 15) / 100;
+          const val = Math.min(target, Math.max(1, Math.round(cur * variation)));
+          return [val, target];
+        });
+      }
 
-// ── Leaderboard ──
-const leaderboard = [
-  { idx:0, id:'TN', name:'Thanh Ngân',  score:92, bg:'bg-rose-500',    color:'#f43f5e' },
-  { idx:5, id:'DD', name:'Danny Do',    score:88, bg:'bg-gold',        color:'#D4A84B', textColor:'text-black' },
-  { idx:1, id:'HM', name:'Hoàng Minh',  score:81, bg:'bg-sky-500',     color:'#0ea5e9' },
-  { idx:3, id:'KL', name:'Khánh Linh',  score:75, bg:'bg-emerald-500', color:'#10b981' },
-  { idx:2, id:'VT', name:'Vũ Thảo',     score:68, bg:'bg-violet-500',  color:'#8b5cf6' },
-  { idx:4, id:'TH', name:'Trung Hiếu',  score:62, bg:'bg-orange-500',  color:'#f97316' },
-];
+      // ── Leaderboard ──
+      const leaderboard = [
+        { idx: 0, id: 'TN', name: 'Thanh Ngân', score: 92, bg: 'bg-rose-500', color: '#f43f5e' },
+        { idx: 5, id: 'DD', name: 'Danny Do', score: 88, bg: 'bg-gold', color: '#D4A84B', textColor: 'text-black' },
+        { idx: 1, id: 'HM', name: 'Hoàng Minh', score: 81, bg: 'bg-sky-500', color: '#0ea5e9' },
+        { idx: 3, id: 'KL', name: 'Khánh Linh', score: 75, bg: 'bg-emerald-500', color: '#10b981' },
+        { idx: 2, id: 'VT', name: 'Vũ Thảo', score: 68, bg: 'bg-violet-500', color: '#8b5cf6' },
+        { idx: 4, id: 'TH', name: 'Trung Hiếu', score: 62, bg: 'bg-orange-500', color: '#f97316' },
+      ];
 
-// ── State ──
-let currentMember = 0;
-let currentTab = 0;
-let isDark = true;
+      // ── State ──
+      let currentMember = 0;
+      let currentTab = 0;
+      let isDark = true;
 
-// ── Clock ──
-function updateClock() {
-  const now = new Date();
-  document.getElementById('liveClock').textContent = now.toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-}
-setInterval(updateClock, 1000);
-updateClock();
+      // ── Clock ──
+      function updateClock() {
+        const now = new Date();
+        document.getElementById('liveClock').textContent = now.toLocaleTimeString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
 
-// ── Theme Toggle ──
-function toggleTheme() {
-  isDark = !isDark;
-  const html = document.documentElement;
-  if (isDark) {
-    html.classList.add('dark-theme','dark');
-    html.classList.remove('light-theme');
-    document.getElementById('themeIcon').className = 'fas fa-moon text-sm text-gold';
-  } else {
-    html.classList.add('light-theme');
-    html.classList.remove('dark-theme','dark');
-    document.getElementById('themeIcon').className = 'fas fa-sun text-sm text-gold';
-  }
-}
+      // ── Theme Toggle ──
+      function toggleTheme() {
+        isDark = !isDark;
+        const html = document.documentElement;
+        if (isDark) {
+          html.classList.add('dark-theme', 'dark');
+          html.classList.remove('light-theme');
+          document.getElementById('themeIcon').className = 'fas fa-moon text-sm text-gold';
+        } else {
+          html.classList.add('light-theme');
+          html.classList.remove('dark-theme', 'dark');
+          document.getElementById('themeIcon').className = 'fas fa-sun text-sm text-gold';
+        }
+      }
 
-// ── Build Semi-circle Gauge SVG ──
-function buildGauge(kpiIdx, current, target, animate) {
-  const kpi = kpis[kpiIdx];
-  const pct = Math.min(100, Math.round((current / target) * 100));
-  const r = 48;
-  const cx = 60, cy = 63;
-  // Semi-circle arc length = π × r
-  const halfCircumference = Math.PI * r;
-  const progressLength = (pct / 100) * halfCircumference;
+      // ── Build Semi-circle Gauge SVG ──
+      function buildGauge(kpiIdx, current, target, animate) {
+        const kpi = kpis[kpiIdx];
+        const pct = Math.min(100, Math.round((current / target) * 100));
+        const r = 48;
+        const cx = 60,
+          cy = 63;
+        // Semi-circle arc length = π × r
+        const halfCircumference = Math.PI * r;
+        const progressLength = (pct / 100) * halfCircumference;
 
-  // startAngle = 180° (left), endAngle = 0° (right) → we rotate so arc goes from left to right
-  // Using a circle with stroke-dasharray trick: show only the top half
-  // Circle at (cx, cy), r, rotated so that 0° is at the left of the semicircle
-  const dashOffset = animate ? (halfCircumference - progressLength) : halfCircumference;
+        // startAngle = 180° (left), endAngle = 0° (right) → we rotate so arc goes from left to right
+        // Using a circle with stroke-dasharray trick: show only the top half
+        // Circle at (cx, cy), r, rotated so that 0° is at the left of the semicircle
+        const dashOffset = animate ? halfCircumference - progressLength : halfCircumference;
 
-  return `
+        return `
     <div class="flex flex-col items-center" style="width:140px;">
       <!-- Icon -->
       <div class="w-8 h-8 rounded-lg flex items-center justify-center mb-1.5" 
@@ -439,129 +603,137 @@ function buildGauge(kpiIdx, current, target, animate) {
       </div>
     </div>
   `;
-}
+      }
 
-// ── Render Gauges ──
-function renderGauges(memberIdx, tabIdx, animate = true) {
-  const data = getMemberData(memberIdx, tabIdx);
-  const container = document.getElementById('gaugesContainer');
-  container.innerHTML = data.map((d, i) => buildGauge(i, d[0], d[1], false)).join('');
+      // ── Render Gauges ──
+      function renderGauges(memberIdx, tabIdx, animate = true) {
+        const data = getMemberData(memberIdx, tabIdx);
+        const container = document.getElementById('gaugesContainer');
+        container.innerHTML = data.map((d, i) => buildGauge(i, d[0], d[1], false)).join('');
 
-  if (animate) {
-    // Trigger animation after paint
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        container.querySelectorAll('.gauge-progress').forEach(el => {
-          const targetOffset = el.getAttribute('data-target-offset');
-          el.style.strokeDashoffset = targetOffset;
-        });
-      });
-    });
-  } else {
-    container.querySelectorAll('.gauge-progress').forEach(el => {
-      const targetOffset = el.getAttribute('data-target-offset');
-      el.style.strokeDashoffset = targetOffset;
-    });
-  }
-}
+        if (animate) {
+          // Trigger animation after paint
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              container.querySelectorAll('.gauge-progress').forEach((el) => {
+                const targetOffset = el.getAttribute('data-target-offset');
+                el.style.strokeDashoffset = targetOffset;
+              });
+            });
+          });
+        } else {
+          container.querySelectorAll('.gauge-progress').forEach((el) => {
+            const targetOffset = el.getAttribute('data-target-offset');
+            el.style.strokeDashoffset = targetOffset;
+          });
+        }
+      }
 
-// ── Render Podium ──
-function renderPodium() {
-  // #1
-  const p1 = leaderboard[0];
-  document.getElementById('pod1avatar').className = `w-14 h-14 rounded-full ${p1.bg} flex items-center justify-center ${p1.textColor||'text-white'} text-lg font-bold ring-2 ring-gold/40`;
-  document.getElementById('pod1avatar').textContent = p1.id;
-  document.getElementById('pod1name').textContent = p1.name;
-  document.getElementById('pod1score').textContent = p1.score + ' pts';
-  // #2
-  const p2 = leaderboard[1];
-  document.getElementById('pod2avatar').className = `w-12 h-12 rounded-full ${p2.bg} flex items-center justify-center ${p2.textColor||'text-white'} text-sm font-bold ring-2 ring-sky-400/30`;
-  document.getElementById('pod2avatar').textContent = p2.id;
-  document.getElementById('pod2name').textContent = p2.name;
-  document.getElementById('pod2score').textContent = p2.score + ' pts';
-  // #3
-  const p3 = leaderboard[2];
-  document.getElementById('pod3avatar').className = `w-12 h-12 rounded-full ${p3.bg} flex items-center justify-center ${p3.textColor||'text-white'} text-sm font-bold ring-2 ring-amber-500/30`;
-  document.getElementById('pod3avatar').textContent = p3.id;
-  document.getElementById('pod3name').textContent = p3.name;
-  document.getElementById('pod3score').textContent = p3.score + ' pts';
+      // ── Render Podium ──
+      function renderPodium() {
+        // #1
+        const p1 = leaderboard[0];
+        document.getElementById('pod1avatar').className =
+          `w-14 h-14 rounded-full ${p1.bg} flex items-center justify-center ${p1.textColor || 'text-white'} text-lg font-bold ring-2 ring-gold/40`;
+        document.getElementById('pod1avatar').textContent = p1.id;
+        document.getElementById('pod1name').textContent = p1.name;
+        document.getElementById('pod1score').textContent = p1.score + ' pts';
+        // #2
+        const p2 = leaderboard[1];
+        document.getElementById('pod2avatar').className =
+          `w-12 h-12 rounded-full ${p2.bg} flex items-center justify-center ${p2.textColor || 'text-white'} text-sm font-bold ring-2 ring-sky-400/30`;
+        document.getElementById('pod2avatar').textContent = p2.id;
+        document.getElementById('pod2name').textContent = p2.name;
+        document.getElementById('pod2score').textContent = p2.score + ' pts';
+        // #3
+        const p3 = leaderboard[2];
+        document.getElementById('pod3avatar').className =
+          `w-12 h-12 rounded-full ${p3.bg} flex items-center justify-center ${p3.textColor || 'text-white'} text-sm font-bold ring-2 ring-amber-500/30`;
+        document.getElementById('pod3avatar').textContent = p3.id;
+        document.getElementById('pod3name').textContent = p3.name;
+        document.getElementById('pod3score').textContent = p3.score + ' pts';
 
-  // #4-6
-  const rows = document.getElementById('rankRows');
-  rows.innerHTML = leaderboard.slice(3).map((m, ri) => `
+        // #4-6
+        const rows = document.getElementById('rankRows');
+        rows.innerHTML = leaderboard
+          .slice(3)
+          .map(
+            (m, ri) => `
     <div class="rank-row flex items-center gap-3 px-4 py-2.5">
-      <span class="w-6 text-center text-xs font-bold opacity-40">${ri+4}</span>
-      <div class="w-8 h-8 rounded-full ${m.bg} flex items-center justify-center ${m.textColor||'text-white'} text-[11px] font-bold">${m.id}</div>
+      <span class="w-6 text-center text-xs font-bold opacity-40">${ri + 4}</span>
+      <div class="w-8 h-8 rounded-full ${m.bg} flex items-center justify-center ${m.textColor || 'text-white'} text-[11px] font-bold">${m.id}</div>
       <span class="flex-1 text-sm font-medium">${m.name}</span>
       <span class="text-xs font-semibold opacity-60">${m.score} pts</span>
       <div class="w-20 h-1.5 rounded-full bg-white/5 overflow-hidden">
         <div class="h-full rounded-full" style="width:${m.score}%; background:${m.color};"></div>
       </div>
     </div>
-  `).join('');
-}
+  `
+          )
+          .join('');
+      }
 
-// ── Open Modal ──
-function openModal(memberIdx) {
-  currentMember = memberIdx;
-  currentTab = 0;
-  const m = team[memberIdx];
+      // ── Open Modal ──
+      function openModal(memberIdx) {
+        currentMember = memberIdx;
+        currentTab = 0;
+        const m = team[memberIdx];
 
-  // Set avatar
-  const avatar = document.getElementById('modalAvatar');
-  avatar.className = `w-14 h-14 rounded-full ${m.bg} flex items-center justify-center ${m.textColor||'text-white'} text-lg font-bold ring-2 ${m.ring} avatar-breathe`;
-  avatar.textContent = m.id;
+        // Set avatar
+        const avatar = document.getElementById('modalAvatar');
+        avatar.className = `w-14 h-14 rounded-full ${m.bg} flex items-center justify-center ${m.textColor || 'text-white'} text-lg font-bold ring-2 ${m.ring} avatar-breathe`;
+        avatar.textContent = m.id;
 
-  // Set name
-  document.getElementById('modalName').textContent = m.name;
+        // Set name
+        document.getElementById('modalName').textContent = m.name;
 
-  // Reset tabs
-  document.querySelectorAll('.tab-pill').forEach((t,i) => {
-    t.classList.toggle('active', i === 0);
-  });
+        // Reset tabs
+        document.querySelectorAll('.tab-pill').forEach((t, i) => {
+          t.classList.toggle('active', i === 0);
+        });
 
-  // Render gauges
-  renderGauges(memberIdx, 0, true);
+        // Render gauges
+        renderGauges(memberIdx, 0, true);
 
-  // Render podium
-  renderPodium();
+        // Render podium
+        renderPodium();
 
-  // Show modal
-  const backdrop = document.getElementById('modalBackdrop');
-  backdrop.classList.remove('hidden');
-  backdrop.classList.add('flex');
+        // Show modal
+        const backdrop = document.getElementById('modalBackdrop');
+        backdrop.classList.remove('hidden');
+        backdrop.classList.add('flex');
 
-  // Re-trigger animation
-  const content = document.getElementById('modalContent');
-  content.classList.remove('modal-animate');
-  void content.offsetWidth;
-  content.classList.add('modal-animate');
-}
+        // Re-trigger animation
+        const content = document.getElementById('modalContent');
+        content.classList.remove('modal-animate');
+        void content.offsetWidth;
+        content.classList.add('modal-animate');
+      }
 
-// ── Close Modal ──
-function closeModal(e) {
-  if (e && e.target !== document.getElementById('modalBackdrop')) return;
-  const backdrop = document.getElementById('modalBackdrop');
-  backdrop.classList.add('hidden');
-  backdrop.classList.remove('flex');
-}
+      // ── Close Modal ──
+      function closeModal(e) {
+        if (e && e.target !== document.getElementById('modalBackdrop')) return;
+        const backdrop = document.getElementById('modalBackdrop');
+        backdrop.classList.add('hidden');
+        backdrop.classList.remove('flex');
+      }
 
-// ── Switch Tab ──
-function switchTab(tabIdx, btnEl) {
-  currentTab = tabIdx;
-  document.querySelectorAll('.tab-pill').forEach(t => t.classList.remove('active'));
-  btnEl.classList.add('active');
-  renderGauges(currentMember, tabIdx, true);
-}
+      // ── Switch Tab ──
+      function switchTab(tabIdx, btnEl) {
+        currentTab = tabIdx;
+        document.querySelectorAll('.tab-pill').forEach((t) => t.classList.remove('active'));
+        btnEl.classList.add('active');
+        renderGauges(currentMember, tabIdx, true);
+      }
 
-// ── ESC to close ──
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    const backdrop = document.getElementById('modalBackdrop');
-    backdrop.classList.add('hidden');
-    backdrop.classList.remove('flex');
-  }
-});
-</script>
-</body>
+      // ── ESC to close ──
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const backdrop = document.getElementById('modalBackdrop');
+          backdrop.classList.add('hidden');
+          backdrop.classList.remove('flex');
+        }
+      });
+    </script>
+  </body>
 </html>

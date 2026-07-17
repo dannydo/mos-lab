@@ -1,711 +1,703 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mockup 2 - Side Drawer Workspace (Dark)</title>
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    :root {
-      --primary: #D4A84B;
-      --primary-hover: #E5BA60;
-      --primary-light: rgba(212, 168, 75, 0.1);
-      --bg: #0F172A;
-      --card-bg: #1E293B;
-      --text: #F8FAFC;
-      --text-muted: #94A3B8;
-      --border: #334155;
-      --red: #EF4444;
-      --red-light: rgba(239, 68, 68, 0.15);
-      --green: #10B981;
-      --green-light: rgba(16, 185, 129, 0.15);
-      --blue: #3B82F6;
-      --blue-light: rgba(59, 130, 246, 0.15);
-      --orange: #F59E0B;
-      --orange-light: rgba(245, 158, 11, 0.15);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: #020617;
-      color: var(--text);
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    /* Drawer Wrapper simulating background overlay */
-    .drawer-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(2, 6, 23, 0.7);
-      backdrop-filter: blur(8px);
-      z-index: 10;
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    /* Main Drawer Container */
-    .drawer-container {
-      width: 80%;
-      max-width: 1100px;
-      height: 100%;
-      background: var(--bg);
-      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
-      display: flex;
-      flex-direction: column;
-      animation: slideIn 0.3s ease-out;
-      z-index: 20;
-      border-left: 1px solid var(--border);
-    }
-
-    @keyframes slideIn {
-      from { transform: translateX(100%); }
-      to { transform: translateX(0); }
-    }
-
-    /* Header */
-    .drawer-header {
-      padding: 20px 24px;
-      background: var(--card-bg);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-    .profile-section {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .avatar-wrapper {
-      position: relative;
-    }
-
-    .avatar {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: var(--primary-light);
-      border: 2px solid var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      color: var(--primary-hover);
-      font-size: 24px;
-    }
-
-    .status-badge {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      background: var(--orange);
-      color: white;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 10px;
-      border: 2px solid var(--card-bg);
-    }
-
-    .customer-meta h2 {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .customer-meta .sub-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-top: 4px;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .sub-info span {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .close-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-    }
-
-    .close-btn:hover {
-      background: var(--border);
-      color: var(--text);
-    }
-
-    /* Drawer Content */
-    .drawer-content {
-      flex: 1;
-      overflow-y: auto;
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 20px;
-      padding: 24px;
-    }
-
-    /* Left Sidebar of Drawer */
-    .drawer-sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      padding: 16px;
-    }
-
-    .card-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 8px;
-    }
-
-    .info-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      font-size: 14px;
-    }
-
-    .info-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .info-label {
-      color: var(--text-muted);
-    }
-
-    .info-value {
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .kpi-box {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px;
-      text-align: center;
-      transition: border-color 0.2s;
-    }
-
-    .kpi-box:hover {
-      border-color: var(--primary);
-    }
-
-    .kpi-val {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--primary-hover);
-    }
-
-    .kpi-lbl {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    .combo-badge {
-      background: var(--orange-light);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      padding: 8px 12px;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
-
-    .combo-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--orange);
-    }
-
-    .combo-progress {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      margin-top: 4px;
-      font-weight: 600;
-      color: var(--text-muted);
-    }
-
-    /* Right Main Panel of Drawer */
-    .drawer-main {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    /* Custom Tabs */
-    .tabs-nav {
-      display: flex;
-      gap: 8px;
-      border-bottom: 1px solid var(--border);
-      background: var(--card-bg);
-      padding: 8px 16px 0;
-      border-radius: 12px 12px 0 0;
-      border: 1px solid var(--border);
-      border-bottom: none;
-    }
-
-    .tab-btn {
-      padding: 10px 16px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-muted);
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .tab-btn:hover {
-      color: var(--text);
-    }
-
-    .tab-btn.active {
-      color: var(--primary-hover);
-      border-bottom-color: var(--primary);
-    }
-
-    .tab-badge {
-      background: var(--border);
-      color: var(--text-muted);
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 10px;
-    }
-
-    .tab-btn.active .tab-badge {
-      background: var(--primary-light);
-      color: var(--primary-hover);
-    }
-
-    /* Tab content container */
-    .tab-content {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 0 0 12px 12px;
-      padding: 20px;
-      min-height: 400px;
-    }
-
-    /* Timeline style for Bookings */
-    .timeline {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .timeline-item {
-      display: flex;
-      gap: 16px;
-      position: relative;
-    }
-
-    .timeline-item::before {
-      content: '';
-      position: absolute;
-      left: 19px;
-      top: 36px;
-      bottom: -20px;
-      width: 2px;
-      background: var(--border);
-    }
-
-    .timeline-item:last-child::before {
-      display: none;
-    }
-
-    .timeline-badge {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--bg);
-      border: 2px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1;
-      flex-shrink: 0;
-    }
-
-    .timeline-badge.booked {
-      border-color: var(--green);
-      background: var(--green-light);
-      color: var(--green);
-    }
-
-    .timeline-badge.cancelled {
-      border-color: var(--red);
-      background: var(--red-light);
-      color: var(--red);
-    }
-
-    .timeline-body {
-      background: rgba(15, 23, 42, 0.4);
-      border-radius: 8px;
-      padding: 14px;
-      flex: 1;
-      border: 1px solid var(--border);
-    }
-
-    .timeline-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      align-items: center;
-    }
-
-    .service-title {
-      font-weight: 700;
-      font-size: 14px;
-    }
-
-    .booking-date {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .technician {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .booking-note {
-      font-size: 13px;
-      font-style: italic;
-      color: var(--text);
-      background: var(--card-bg);
-      border-left: 3px solid var(--primary);
-      padding: 6px 10px;
-      margin-top: 8px;
-      border-radius: 0 4px 4px 0;
-    }
-
-    /* Pinned and warning notes */
-    .note-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .note-card {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 16px;
-      position: relative;
-    }
-
-    .note-card.warning {
-      border-color: var(--red);
-      background: var(--red-light);
-    }
-
-    .note-card.normal {
-      background: var(--bg);
-    }
-
-    .note-meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 8px;
-    }
-
-    .note-content {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text);
-    }
-
-    /* Calls list */
-    .call-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .call-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 14px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-    }
-
-    .call-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .call-status-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .call-status-icon.success {
-      background: var(--green-light);
-      color: var(--green);
-    }
-
-    .call-status-icon.missed {
-      background: var(--red-light);
-      color: var(--red);
-    }
-
-    .call-time {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Simulated Background -->
-  <div style="padding: 24px; color: white;">
-    <h2>Trang Danh Sách Khách Hàng (Đang ẩn dưới)</h2>
-    <p style="margin-top: 10px; opacity: 0.3;">Click vào khách hàng "Lưu" để trượt Drawer chi tiết...</p>
-  </div>
-
-  <!-- Drawer Overlay -->
-  <div class="drawer-overlay">
-    <div class="drawer-container">
-      
-      <!-- Drawer Header -->
-      <div class="drawer-header">
-        <div class="profile-section">
-          <div class="avatar-wrapper">
-            <div class="avatar">L</div>
-            <div class="status-badge">COMBO</div>
-          </div>
-          <div class="customer-meta">
-            <h2>Lưu <span style="color: var(--primary); font-size: 16px;">⭐⭐⭐⭐⭐</span></h2>
-            <div class="sub-info">
-              <span><i data-lucide="phone" style="width: 14px; height: 14px;"></i> 0989.687.579</span>
-              <span><i data-lucide="mail" style="width: 14px; height: 14px;"></i> user35962@orb.local</span>
-              <span><i data-lucide="hash" style="width: 14px; height: 14px;"></i> KH: 35962 (ID cũ: 285)</span>
-            </div>
-          </div>
-        </div>
-        <button class="close-btn">
-          <i data-lucide="x" style="width: 24px; height: 24px;"></i>
-        </button>
-      </div>
-
-      <!-- Drawer Content Grid -->
-      <div class="drawer-content">
-        
-        <!-- Sidebar: Info & Stats -->
-        <div class="drawer-sidebar">
-          
-          <!-- Card 1: Key Metrics -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="trending-up" style="width: 16px; height: 16px;"></i>Chỉ Số Tích Luỹ</div>
-            <div class="kpi-grid">
-              <div class="kpi-box">
-                <div class="kpi-val">42.35M</div>
-                <div class="kpi-lbl">LTV (Doanh thu)</div>
-              </div>
-              <div class="kpi-box">
-                <div class="kpi-val">285</div>
-                <div class="kpi-lbl">Tổng đặt lịch</div>
-              </div>
-              <div class="kpi-box">
-                <div class="kpi-val" style="color: var(--orange);">3.00M</div>
-                <div class="kpi-lbl">Số dư ví combo</div>
-              </div>
-              <div class="kpi-box">
-                <div class="kpi-val" style="color: var(--green);">-0.3</div>
-                <div class="kpi-lbl">Tần suất (Avg)</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 2: Personal Profile Details -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="user" style="width: 16px; height: 16px;"></i>Thông Tin Cá Nhân</div>
-            <div class="info-list">
-              <div class="info-item">
-                <span class="info-label">Giới tính:</span>
-                <span class="info-value">Nữ</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Ngày sinh:</span>
-                <span class="info-value">10-03-2023</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Nhóm phân loại:</span>
-                <span class="info-value" style="color: var(--red); font-weight: 700;">COMBO_DEAD</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Số ngày chưa quay lại:</span>
-                <span class="info-value" style="color: var(--red);">1 ngày</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 3: Active Combo Status -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="package" style="width: 16px; height: 16px;"></i>Gói Dịch Vụ Đang Chạy</div>
-            <div class="combo-badge">
-              <div class="combo-title">New Flawless Mink 1110</div>
-              <div style="font-size: 12px; color: var(--text); margin-top: 4px;">Combo (7 + 3 flawless mink)</div>
-              <div class="combo-progress">
-                <span>Còn lại: 3 buổi</span>
-                <span style="color: var(--text-muted);">Mua ngày: 09/07/2026</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Main Panel: Tabs and Detailed Lists -->
-        <div class="drawer-main">
-          
-          <div class="tabs-nav">
-            <button class="tab-btn active">
-              Lịch sử đặt lịch <span class="tab-badge">285</span>
-            </button>
-            <button class="tab-btn">
-              Nhật ký ghi chú <span class="tab-badge" style="background: var(--red-light); color: var(--red);">3</span>
-            </button>
-            <button class="tab-btn">
-              Lịch sử cuộc gọi <span class="tab-badge">4</span>
-            </button>
-          </div>
-
-          <div class="tab-content">
-            
-            <!-- Bookings List Tab -->
-            <div class="timeline">
-              
-              <!-- Booking Item 1 -->
-              <div class="timeline-item">
-                <div class="timeline-badge booked">
-                  <i data-lucide="check" style="width: 18px; height: 18px;"></i>
-                </div>
-                <div class="timeline-body">
-                  <div class="timeline-header">
-                    <span class="service-title">New Flawless Mink 1110 - Combo</span>
-                    <span class="booking-date">Hôm qua, 10/07/2026 14:30</span>
-                  </div>
-                  <div style="font-size: 13px; font-weight: 500;">Chi nhánh: Estella Place</div>
-                  <div class="technician">
-                    <i data-lucide="user-check" style="width: 13px; height: 13px;"></i> Kỹ thuật viên: Yến Vy
-                  </div>
-                  <div class="booking-note">
-                    9/7 chị đi
-                  </div>
-                </div>
-              </div>
-
-              <!-- Booking Item 2 -->
-              <div class="timeline-item">
-                <div class="timeline-badge booked">
-                  <i data-lucide="check" style="width: 18px; height: 18px;"></i>
-                </div>
-                <div class="timeline-body">
-                  <div class="timeline-header">
-                    <span class="service-title">New Flawless Mink 1110 - Combo</span>
-                    <span class="booking-date">19/06/2026 15:00</span>
-                  </div>
-                  <div style="font-size: 13px; font-weight: 500;">Chi nhánh: Estella Place</div>
-                  <div class="technician">
-                    <i data-lucide="user-check" style="width: 13px; height: 13px;"></i> Kỹ thuật viên: Yến Vy
-                  </div>
-                  <div class="booking-note">
-                    SN 9/7/26 (có hỗ trợ cộng thêm 3 tháng)
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mockup 2 - Side Drawer Workspace (Dark)</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      :root {
+        --primary: #d4a84b;
+        --primary-hover: #e5ba60;
+        --primary-light: rgba(212, 168, 75, 0.1);
+        --bg: #0f172a;
+        --card-bg: #1e293b;
+        --text: #f8fafc;
+        --text-muted: #94a3b8;
+        --border: #334155;
+        --red: #ef4444;
+        --red-light: rgba(239, 68, 68, 0.15);
+        --green: #10b981;
+        --green-light: rgba(16, 185, 129, 0.15);
+        --blue: #3b82f6;
+        --blue-light: rgba(59, 130, 246, 0.15);
+        --orange: #f59e0b;
+        --orange-light: rgba(245, 158, 11, 0.15);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: #020617;
+        color: var(--text);
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      /* Drawer Wrapper simulating background overlay */
+      .drawer-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(2, 6, 23, 0.7);
+        backdrop-filter: blur(8px);
+        z-index: 10;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      /* Main Drawer Container */
+      .drawer-container {
+        width: 80%;
+        max-width: 1100px;
+        height: 100%;
+        background: var(--bg);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        animation: slideIn 0.3s ease-out;
+        z-index: 20;
+        border-left: 1px solid var(--border);
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+        }
+        to {
+          transform: translateX(0);
+        }
+      }
+
+      /* Header */
+      .drawer-header {
+        padding: 20px 24px;
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .profile-section {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .avatar-wrapper {
+        position: relative;
+      }
+
+      .avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--primary-light);
+        border: 2px solid var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: var(--primary-hover);
+        font-size: 24px;
+      }
+
+      .status-badge {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: var(--orange);
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 10px;
+        border: 2px solid var(--card-bg);
+      }
+
+      .customer-meta h2 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .customer-meta .sub-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      .sub-info span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .close-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
+
+      .close-btn:hover {
+        background: var(--border);
+        color: var(--text);
+      }
+
+      /* Drawer Content */
+      .drawer-content {
+        flex: 1;
+        overflow-y: auto;
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 20px;
+        padding: 24px;
+      }
+
+      /* Left Sidebar of Drawer */
+      .drawer-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        padding: 16px;
+      }
+
+      .card-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+      }
+
+      .info-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        font-size: 14px;
+      }
+
+      .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .info-label {
+        color: var(--text-muted);
+      }
+
+      .info-value {
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .kpi-box {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        transition: border-color 0.2s;
+      }
+
+      .kpi-box:hover {
+        border-color: var(--primary);
+      }
+
+      .kpi-val {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary-hover);
+      }
+
+      .kpi-lbl {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .combo-badge {
+        background: var(--orange-light);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        padding: 8px 12px;
+        border-radius: 8px;
+        margin-top: 10px;
+      }
+
+      .combo-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--orange);
+      }
+
+      .combo-progress {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        margin-top: 4px;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+
+      /* Right Main Panel of Drawer */
+      .drawer-main {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* Custom Tabs */
+      .tabs-nav {
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid var(--border);
+        background: var(--card-bg);
+        padding: 8px 16px 0;
+        border-radius: 12px 12px 0 0;
+        border: 1px solid var(--border);
+        border-bottom: none;
+      }
+
+      .tab-btn {
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .tab-btn:hover {
+        color: var(--text);
+      }
+
+      .tab-btn.active {
+        color: var(--primary-hover);
+        border-bottom-color: var(--primary);
+      }
+
+      .tab-badge {
+        background: var(--border);
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 10px;
+      }
+
+      .tab-btn.active .tab-badge {
+        background: var(--primary-light);
+        color: var(--primary-hover);
+      }
+
+      /* Tab content container */
+      .tab-content {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 0 0 12px 12px;
+        padding: 20px;
+        min-height: 400px;
+      }
+
+      /* Timeline style for Bookings */
+      .timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .timeline-item {
+        display: flex;
+        gap: 16px;
+        position: relative;
+      }
+
+      .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 19px;
+        top: 36px;
+        bottom: -20px;
+        width: 2px;
+        background: var(--border);
+      }
+
+      .timeline-item:last-child::before {
+        display: none;
+      }
+
+      .timeline-badge {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--bg);
+        border: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+        flex-shrink: 0;
+      }
+
+      .timeline-badge.booked {
+        border-color: var(--green);
+        background: var(--green-light);
+        color: var(--green);
+      }
+
+      .timeline-badge.cancelled {
+        border-color: var(--red);
+        background: var(--red-light);
+        color: var(--red);
+      }
+
+      .timeline-body {
+        background: rgba(15, 23, 42, 0.4);
+        border-radius: 8px;
+        padding: 14px;
+        flex: 1;
+        border: 1px solid var(--border);
+      }
+
+      .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        align-items: center;
+      }
+
+      .service-title {
+        font-weight: 700;
+        font-size: 14px;
+      }
+
+      .booking-date {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .technician {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      .booking-note {
+        font-size: 13px;
+        font-style: italic;
+        color: var(--text);
+        background: var(--card-bg);
+        border-left: 3px solid var(--primary);
+        padding: 6px 10px;
+        margin-top: 8px;
+        border-radius: 0 4px 4px 0;
+      }
+
+      /* Pinned and warning notes */
+      .note-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .note-card {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 16px;
+        position: relative;
+      }
+
+      .note-card.warning {
+        border-color: var(--red);
+        background: var(--red-light);
+      }
+
+      .note-card.normal {
+        background: var(--bg);
+      }
+
+      .note-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 8px;
+      }
+
+      .note-content {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      /* Calls list */
+      .call-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .call-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+
+      .call-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .call-status-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .call-status-icon.success {
+        background: var(--green-light);
+        color: var(--green);
+      }
+
+      .call-status-icon.missed {
+        background: var(--red-light);
+        color: var(--red);
+      }
+
+      .call-time {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Simulated Background -->
+    <div style="padding: 24px; color: white">
+      <h2>Trang Danh Sách Khách Hàng (Đang ẩn dưới)</h2>
+      <p style="margin-top: 10px; opacity: 0.3">Click vào khách hàng "Lưu" để trượt Drawer chi tiết...</p>
     </div>
-  </div>
 
-  <script>
-    // Initialize Lucide icons
-    lucide.createIcons();
-  </script>
-</body>
+    <!-- Drawer Overlay -->
+    <div class="drawer-overlay">
+      <div class="drawer-container">
+        <!-- Drawer Header -->
+        <div class="drawer-header">
+          <div class="profile-section">
+            <div class="avatar-wrapper">
+              <div class="avatar">L</div>
+              <div class="status-badge">COMBO</div>
+            </div>
+            <div class="customer-meta">
+              <h2>Lưu <span style="color: var(--primary); font-size: 16px">⭐⭐⭐⭐⭐</span></h2>
+              <div class="sub-info">
+                <span><i data-lucide="phone" style="width: 14px; height: 14px"></i> 0989.687.579</span>
+                <span><i data-lucide="mail" style="width: 14px; height: 14px"></i> user35962@orb.local</span>
+                <span><i data-lucide="hash" style="width: 14px; height: 14px"></i> KH: 35962 (ID cũ: 285)</span>
+              </div>
+            </div>
+          </div>
+          <button class="close-btn">
+            <i data-lucide="x" style="width: 24px; height: 24px"></i>
+          </button>
+        </div>
+
+        <!-- Drawer Content Grid -->
+        <div class="drawer-content">
+          <!-- Sidebar: Info & Stats -->
+          <div class="drawer-sidebar">
+            <!-- Card 1: Key Metrics -->
+            <div class="card">
+              <div class="card-title">
+                <i data-lucide="trending-up" style="width: 16px; height: 16px"></i>Chỉ Số Tích Luỹ
+              </div>
+              <div class="kpi-grid">
+                <div class="kpi-box">
+                  <div class="kpi-val">42.35M</div>
+                  <div class="kpi-lbl">LTV (Doanh thu)</div>
+                </div>
+                <div class="kpi-box">
+                  <div class="kpi-val">285</div>
+                  <div class="kpi-lbl">Tổng đặt lịch</div>
+                </div>
+                <div class="kpi-box">
+                  <div class="kpi-val" style="color: var(--orange)">3.00M</div>
+                  <div class="kpi-lbl">Số dư ví combo</div>
+                </div>
+                <div class="kpi-box">
+                  <div class="kpi-val" style="color: var(--green)">-0.3</div>
+                  <div class="kpi-lbl">Tần suất (Avg)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: Personal Profile Details -->
+            <div class="card">
+              <div class="card-title">
+                <i data-lucide="user" style="width: 16px; height: 16px"></i>Thông Tin Cá Nhân
+              </div>
+              <div class="info-list">
+                <div class="info-item">
+                  <span class="info-label">Giới tính:</span>
+                  <span class="info-value">Nữ</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Ngày sinh:</span>
+                  <span class="info-value">10-03-2023</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Nhóm phân loại:</span>
+                  <span class="info-value" style="color: var(--red); font-weight: 700">COMBO_DEAD</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Số ngày chưa quay lại:</span>
+                  <span class="info-value" style="color: var(--red)">1 ngày</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: Active Combo Status -->
+            <div class="card">
+              <div class="card-title">
+                <i data-lucide="package" style="width: 16px; height: 16px"></i>Gói Dịch Vụ Đang Chạy
+              </div>
+              <div class="combo-badge">
+                <div class="combo-title">New Flawless Mink 1110</div>
+                <div style="font-size: 12px; color: var(--text); margin-top: 4px">Combo (7 + 3 flawless mink)</div>
+                <div class="combo-progress">
+                  <span>Còn lại: 3 buổi</span>
+                  <span style="color: var(--text-muted)">Mua ngày: 09/07/2026</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Panel: Tabs and Detailed Lists -->
+          <div class="drawer-main">
+            <div class="tabs-nav">
+              <button class="tab-btn active">Lịch sử đặt lịch <span class="tab-badge">285</span></button>
+              <button class="tab-btn">
+                Nhật ký ghi chú <span class="tab-badge" style="background: var(--red-light); color: var(--red)">3</span>
+              </button>
+              <button class="tab-btn">Lịch sử cuộc gọi <span class="tab-badge">4</span></button>
+            </div>
+
+            <div class="tab-content">
+              <!-- Bookings List Tab -->
+              <div class="timeline">
+                <!-- Booking Item 1 -->
+                <div class="timeline-item">
+                  <div class="timeline-badge booked">
+                    <i data-lucide="check" style="width: 18px; height: 18px"></i>
+                  </div>
+                  <div class="timeline-body">
+                    <div class="timeline-header">
+                      <span class="service-title">New Flawless Mink 1110 - Combo</span>
+                      <span class="booking-date">Hôm qua, 10/07/2026 14:30</span>
+                    </div>
+                    <div style="font-size: 13px; font-weight: 500">Chi nhánh: Estella Place</div>
+                    <div class="technician">
+                      <i data-lucide="user-check" style="width: 13px; height: 13px"></i> Kỹ thuật viên: Yến Vy
+                    </div>
+                    <div class="booking-note">9/7 chị đi</div>
+                  </div>
+                </div>
+
+                <!-- Booking Item 2 -->
+                <div class="timeline-item">
+                  <div class="timeline-badge booked">
+                    <i data-lucide="check" style="width: 18px; height: 18px"></i>
+                  </div>
+                  <div class="timeline-body">
+                    <div class="timeline-header">
+                      <span class="service-title">New Flawless Mink 1110 - Combo</span>
+                      <span class="booking-date">19/06/2026 15:00</span>
+                    </div>
+                    <div style="font-size: 13px; font-weight: 500">Chi nhánh: Estella Place</div>
+                    <div class="technician">
+                      <i data-lucide="user-check" style="width: 13px; height: 13px"></i> Kỹ thuật viên: Yến Vy
+                    </div>
+                    <div class="booking-note">SN 9/7/26 (có hỗ trợ cộng thêm 3 tháng)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Initialize Lucide icons
+      lucide.createIcons();
+    </script>
+  </body>
 </html>

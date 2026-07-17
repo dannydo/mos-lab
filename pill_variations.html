@@ -1,477 +1,855 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi" class="dark-theme">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Telesales Timeline Pill Redesign - 30 Variations</title>
-  <!-- Google Fonts: Inter & Outfit -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;600;700&display=swap" rel="stylesheet">
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Tailwind Config -->
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            outfit: ['Outfit', 'sans-serif'],
-            mono: ['Fira Code', 'monospace'],
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Telesales Timeline Pill Redesign - 30 Variations</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind Config -->
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              outfit: ['Outfit', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            },
+            colors: {
+              gold: {
+                DEFAULT: '#D4A84B',
+                light: '#E6C275',
+                dark: '#B8902F',
+              },
+            },
           },
-          colors: {
-            gold: {
-              DEFAULT: '#D4A84B',
-              light: '#E6C275',
-              dark: '#B8902F',
-            }
-          }
-        }
+        },
+      };
+    </script>
+    <style>
+      /* Global overrides to align with theme */
+      .dark-theme {
+        background-color: #0d1117;
+        color: #e6edf3;
       }
-    }
-  </script>
-  <style>
-    /* Global overrides to align with theme */
-    .dark-theme {
-      background-color: #0d1117;
-      color: #e6edf3;
-    }
-    .light-theme {
-      background-color: #f6f8fa;
-      color: #1f2328;
-    }
-    .font-outfit {
-      font-family: 'Outfit', sans-serif;
-    }
-    /* Timeline connecting line */
-    .timeline-line {
-      position: absolute;
-      top: 50%;
-      left: 5%;
-      right: 5%;
-      height: 2px;
-      transform: translateY(-50%);
-      z-index: 1;
-    }
-  </style>
-</head>
-<body class="p-6 md:p-12 transition-colors duration-300 dark-theme">
-
-  <!-- Title & Controls Section -->
-  <div class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-gray-200 dark:border-white/10 pb-6">
-    <div>
-      <h1 class="text-3xl md:text-4xl font-outfit font-black tracking-tight bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-400 bg-clip-text text-transparent">
-        Pill Timeline Redesign - 30 Variations
-      </h1>
-      <p class="text-sm text-slate-500 dark:text-gray-400 mt-2 font-sans">
-        Dưới đây là <strong>10 Biến thể mới (Số bên trên, Chữ bên dưới)</strong>, kế đến là 10 Biến thể Capsule (Chữ bên trên, Số bên dưới), và 10 Layouts ban đầu.
-      </p>
-    </div>
-    
-    <!-- Theme Switcher & Actions -->
-    <div class="flex items-center gap-4 shrink-0 font-sans">
-      <div class="flex bg-gray-200 dark:bg-white/5 p-1 rounded-xl border border-gray-300 dark:border-white/10">
-        <button onclick="setTheme('dark')" id="btn-dark" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md">
-          Tối (Dark)
-        </button>
-        <button onclick="setTheme('light')" id="btn-light" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white">
-          Sáng (Light)
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="max-w-7xl mx-auto space-y-16">
-
-    <!-- ================= PHẦN 1: 10 BIẾN THỂ SỐ BÊN TRÊN - CHỮ BÊN DƯỚI (NEW) ================= -->
-    <div>
-      <div class="border-b-2 border-pink-500 pb-2 mb-8">
-        <h2 class="text-2xl font-black text-pink-500 font-outfit uppercase tracking-wider">Phần 1: 10 Biến Thể Số Ở Trên - Chữ Ở Dưới</h2>
-        <p class="text-xs text-slate-500 dark:text-gray-400">Thiết kế đảo ngược: Đưa con số (Target) lên trên với kích thước cực đại (đạt 14px - 16px) làm trọng tâm thị giác, nhãn chữ nhỏ ở dưới.</p>
+      .light-theme {
+        background-color: #f6f8fa;
+        color: #1f2328;
+      }
+      .font-outfit {
+        font-family: 'Outfit', sans-serif;
+      }
+      /* Timeline connecting line */
+      .timeline-line {
+        position: absolute;
+        top: 50%;
+        left: 5%;
+        right: 5%;
+        height: 2px;
+        transform: translateY(-50%);
+        z-index: 1;
+      }
+    </style>
+  </head>
+  <body class="p-6 md:p-12 transition-colors duration-300 dark-theme">
+    <!-- Title & Controls Section -->
+    <div
+      class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-gray-200 dark:border-white/10 pb-6"
+    >
+      <div>
+        <h1
+          class="text-3xl md:text-4xl font-outfit font-black tracking-tight bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-400 bg-clip-text text-transparent"
+        >
+          Pill Timeline Redesign - 30 Variations
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-gray-400 mt-2 font-sans">
+          Dưới đây là <strong>10 Biến thể mới (Số bên trên, Chữ bên dưới)</strong>, kế đến là 10 Biến thể Capsule (Chữ
+          bên trên, Số bên dưới), và 10 Layouts ban đầu.
+        </p>
       </div>
 
-      <div class="space-y-8">
-        <!-- Var 3.1: Premium Aurora Outline (Số Trên - Chữ Dưới) -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm">
-          <div class="mb-4">
-            <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.1</span>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">Aurora Outline (Số Trên - Chữ Dưới)</h3>
-            <p class="text-xs text-slate-500 dark:text-gray-400">Viền gradient neon mỏng cho Active. Số to nằm trên (font-outfit 14px), nhãn chữ nhỏ nằm dưới (9px).</p>
-          </div>
-          <div class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-3-1 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-3-1', '3.1')">
-                <div class="rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800">
-                  <div class="bg-white dark:bg-neutral-900 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-slate-500 dark:text-gray-400">
-                    <span class="text-sm font-bold font-outfit leading-tight text-slate-700 dark:text-gray-300">225</span>
-                    <span class="text-[9px] font-medium opacity-80">Tháng trước</span>
-                  </div>
-                </div>
-              </div>
-              <div class="style-capsule-3-1 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-3-1', '3.1')">
-                <div class="rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800">
-                  <div class="bg-white dark:bg-neutral-900 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-slate-500 dark:text-gray-400">
-                    <span class="text-sm font-bold font-outfit leading-tight text-slate-700 dark:text-gray-300">56</span>
-                    <span class="text-[9px] font-medium opacity-80">Tuần trước</span>
-                  </div>
-                </div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="style-capsule-3-1 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-3-1', '3.1')">
-                <div class="rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800">
-                  <div class="bg-white dark:bg-neutral-900 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-slate-500 dark:text-gray-400">
-                    <span class="text-sm font-bold font-outfit leading-tight text-slate-700 dark:text-gray-300">9</span>
-                    <span class="text-[9px] font-medium opacity-80">Hôm nay</span>
-                  </div>
-                </div>
-              </div>
-              <div class="style-capsule-3-1 cursor-pointer active" onclick="toggleCapsuleActive(this, 'style-capsule-3-1', '3.1')">
-                <div class="rounded-full p-[1.5px] bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105">
-                  <div class="bg-white dark:bg-neutral-950 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-pink-500 dark:text-pink-400">
-                    <span class="text-base font-black font-outfit leading-tight">225</span>
-                    <span class="text-[9px] font-black text-slate-900 dark:text-white">Tháng này</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <!-- Theme Switcher & Actions -->
+      <div class="flex items-center gap-4 shrink-0 font-sans">
+        <div class="flex bg-gray-200 dark:bg-white/5 p-1 rounded-xl border border-gray-300 dark:border-white/10">
+          <button
+            onclick="setTheme('dark')"
+            id="btn-dark"
+            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md"
+          >
+            Tối (Dark)
+          </button>
+          <button
+            onclick="setTheme('light')"
+            id="btn-light"
+            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white"
+          >
+            Sáng (Light)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto space-y-16">
+      <!-- ================= PHẦN 1: 10 BIẾN THỂ SỐ BÊN TRÊN - CHỮ BÊN DƯỚI (NEW) ================= -->
+      <div>
+        <div class="border-b-2 border-pink-500 pb-2 mb-8">
+          <h2 class="text-2xl font-black text-pink-500 font-outfit uppercase tracking-wider">
+            Phần 1: 10 Biến Thể Số Ở Trên - Chữ Ở Dưới
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-gray-400">
+            Thiết kế đảo ngược: Đưa con số (Target) lên trên với kích thước cực đại (đạt 14px - 16px) làm trọng tâm thị
+            giác, nhãn chữ nhỏ ở dưới.
+          </p>
         </div>
 
-        <!-- Var 3.2: Glassmorphic Frost (Số Trên - Chữ Dưới) -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm">
-          <div class="mb-4">
-            <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.2</span>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">Glassmorphic Frost (Số Trên - Chữ Dưới)</h3>
-            <p class="text-xs text-slate-500 dark:text-gray-400">Kính mờ xuyên thấu, viền trắng mờ mỏng. Số hiển thị màu sắc rực rỡ thu hút, nhãn mờ ở chân.</p>
-          </div>
-          <div class="py-8 px-4 rounded-xl bg-slate-100 dark:bg-slate-900/40 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-3-2 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-3-2', '3.2')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white/40 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-400">
-                  <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300">225</span>
-                  <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500">Tháng trước</span>
-                </div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md flex items-center justify-center shadow-lg z-20">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="style-capsule-3-2 cursor-pointer active" onclick="toggleCapsuleActive(this, 'style-capsule-3-2', '3.2')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-pink-500/10 dark:bg-pink-500/20 backdrop-blur-md border-2 border-pink-500 text-pink-600 dark:text-pink-400 shadow-[0_0_15px_rgba(244,63,94,0.25)] scale-105">
-                  <span class="text-base font-black font-outfit leading-none">225</span>
-                  <span class="text-[9px] font-black mt-1 leading-none text-pink-600 dark:text-pink-300">Tháng này</span>
-                </div>
-              </div>
+        <div class="space-y-8">
+          <!-- Var 3.1: Premium Aurora Outline (Số Trên - Chữ Dưới) -->
+          <div
+            class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm"
+          >
+            <div class="mb-4">
+              <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.1</span>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">Aurora Outline (Số Trên - Chữ Dưới)</h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400">
+                Viền gradient neon mỏng cho Active. Số to nằm trên (font-outfit 14px), nhãn chữ nhỏ nằm dưới (9px).
+              </p>
             </div>
-          </div>
-        </div>
-
-        <!-- Var 3.3: Flat Solid Gradient (Số Trên - Chữ Dưới) -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm">
-          <div class="mb-4">
-            <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.3</span>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">Flat Solid Gradient (Số Trên - Chữ Dưới)</h3>
-            <p class="text-xs text-slate-500 dark:text-gray-400">Pill active đổ đầy nền gradient đỏ hồng rực rỡ, số 15px đậm nét màu trắng tinh khiết nổi bật.</p>
-          </div>
-          <div class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-3-3 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-3-3', '3.3')">
-                <div class="rounded-full px-4 py-2 flex flex-col items-center min-w-[85px] bg-slate-200/50 dark:bg-neutral-800/60 text-slate-500 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-neutral-800 transition-all">
-                  <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300">225</span>
-                  <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500">Tháng trước</span>
-                </div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="style-capsule-3-3 cursor-pointer active" onclick="toggleCapsuleActive(this, 'style-capsule-3-3', '3.3')">
-                <div class="rounded-full px-4 py-2 flex flex-col items-center min-w-[85px] bg-gradient-to-br from-pink-500 via-rose-500 to-red-500 text-white shadow-[0_4px_15px_rgba(244,63,94,0.35)] scale-105 transition-all">
-                  <span class="text-base font-black font-outfit leading-none">225</span>
-                  <span class="text-[9px] font-extrabold mt-1 leading-none opacity-90">Tháng này</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Var 3.4: Double Neon Ring (Số Trên - Chữ Dưới) -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm">
-          <div class="mb-4">
-            <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.4</span>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">Double Neon Ring (Số Trên - Chữ Dưới)</h3>
-            <p class="text-xs text-slate-500 dark:text-gray-400">Hiệu ứng lồng viền kép màu Gradient cho Active, mang phong cách tinh xảo, hiện đại.</p>
-          </div>
-          <div class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-3-4 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-3-4', '3.4')">
-                <div class="rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800">
-                  <div class="rounded-full p-[1px] bg-white dark:bg-neutral-900">
-                    <div class="rounded-full px-4 py-1 flex flex-col items-center min-w-[85px] text-slate-500 dark:text-gray-400">
-                      <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300">225</span>
-                      <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500">Tháng trước</span>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-3-1 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-1', '3.1')"
+                >
+                  <div class="rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800">
+                    <div
+                      class="bg-white dark:bg-neutral-900 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-slate-500 dark:text-gray-400"
+                    >
+                      <span class="text-sm font-bold font-outfit leading-tight text-slate-700 dark:text-gray-300"
+                        >225</span
+                      >
+                      <span class="text-[9px] font-medium opacity-80">Tháng trước</span>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="style-capsule-3-4 cursor-pointer active" onclick="toggleCapsuleActive(this, 'style-capsule-3-4', '3.4')">
-                <div class="rounded-full p-[1px] bg-gradient-to-r from-pink-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.3)] scale-105">
-                  <div class="rounded-full p-[1px] bg-gradient-to-r from-rose-500 to-orange-400">
-                    <div class="rounded-full px-4 py-1 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 text-slate-900 dark:text-white">
-                      <span class="text-sm font-black font-outfit leading-none text-pink-500 dark:text-pink-400">225</span>
-                      <span class="text-[9px] font-black mt-1 leading-none">Tháng này</span>
+                <div
+                  class="style-capsule-3-1 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-1', '3.1')"
+                >
+                  <div class="rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800">
+                    <div
+                      class="bg-white dark:bg-neutral-900 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-slate-500 dark:text-gray-400"
+                    >
+                      <span class="text-sm font-bold font-outfit leading-tight text-slate-700 dark:text-gray-300"
+                        >56</span
+                      >
+                      <span class="text-[9px] font-medium opacity-80">Tuần trước</span>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-3-1 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-1', '3.1')"
+                >
+                  <div class="rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800">
+                    <div
+                      class="bg-white dark:bg-neutral-900 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-slate-500 dark:text-gray-400"
+                    >
+                      <span class="text-sm font-bold font-outfit leading-tight text-slate-700 dark:text-gray-300"
+                        >9</span
+                      >
+                      <span class="text-[9px] font-medium opacity-80">Hôm nay</span>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="style-capsule-3-1 cursor-pointer active"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-1', '3.1')"
+                >
+                  <div
+                    class="rounded-full p-[1.5px] bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105"
+                  >
+                    <div
+                      class="bg-white dark:bg-neutral-950 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-pink-500 dark:text-pink-400"
+                    >
+                      <span class="text-base font-black font-outfit leading-tight">225</span>
+                      <span class="text-[9px] font-black text-slate-900 dark:text-white">Tháng này</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Var 3.5: Clean Outline Ghost (Số Trên - Chữ Dưới) -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm">
-          <div class="mb-4">
-            <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.5</span>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">Clean Outline Ghost (Số Trên - Chữ Dưới)</h3>
-            <p class="text-xs text-slate-500 dark:text-gray-400">Không nền màu đặc, chỉ có khung viền mảnh màu hồng Active. Tạo cảm giác nhẹ nhàng, thông thoáng.</p>
-          </div>
-          <div class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-3-5 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-3-5', '3.5')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] border border-slate-300 dark:border-neutral-800 text-slate-400 dark:text-gray-500 hover:border-slate-400 transition-all bg-white dark:bg-neutral-900/30">
-                  <span class="text-sm font-bold font-outfit leading-none text-slate-500 dark:text-gray-400">225</span>
-                  <span class="text-[9px] font-bold mt-1 leading-none">Tháng trước</span>
+          <!-- Var 3.2: Glassmorphic Frost (Số Trên - Chữ Dưới) -->
+          <div
+            class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm"
+          >
+            <div class="mb-4">
+              <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.2</span>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">Glassmorphic Frost (Số Trên - Chữ Dưới)</h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400">
+                Kính mờ xuyên thấu, viền trắng mờ mỏng. Số hiển thị màu sắc rực rỡ thu hút, nhãn mờ ở chân.
+              </p>
+            </div>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-100 dark:bg-slate-900/40 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-3-2 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-2', '3.2')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white/40 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-400"
+                  >
+                    <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300"
+                      >225</span
+                    >
+                    <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500"
+                      >Tháng trước</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md flex items-center justify-center shadow-lg z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-3-2 cursor-pointer active"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-2', '3.2')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-pink-500/10 dark:bg-pink-500/20 backdrop-blur-md border-2 border-pink-500 text-pink-600 dark:text-pink-400 shadow-[0_0_15px_rgba(244,63,94,0.25)] scale-105"
+                  >
+                    <span class="text-base font-black font-outfit leading-none">225</span>
+                    <span class="text-[9px] font-black mt-1 leading-none text-pink-600 dark:text-pink-300"
+                      >Tháng này</span
+                    >
+                  </div>
                 </div>
               </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20">
-                <span class="text-2xl leading-none">🐥</span>
+            </div>
+          </div>
+
+          <!-- Var 3.3: Flat Solid Gradient (Số Trên - Chữ Dưới) -->
+          <div
+            class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm"
+          >
+            <div class="mb-4">
+              <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.3</span>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">Flat Solid Gradient (Số Trên - Chữ Dưới)</h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400">
+                Pill active đổ đầy nền gradient đỏ hồng rực rỡ, số 15px đậm nét màu trắng tinh khiết nổi bật.
+              </p>
+            </div>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-3-3 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-3', '3.3')"
+                >
+                  <div
+                    class="rounded-full px-4 py-2 flex flex-col items-center min-w-[85px] bg-slate-200/50 dark:bg-neutral-800/60 text-slate-500 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-neutral-800 transition-all"
+                  >
+                    <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300"
+                      >225</span
+                    >
+                    <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500"
+                      >Tháng trước</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-3-3 cursor-pointer active"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-3', '3.3')"
+                >
+                  <div
+                    class="rounded-full px-4 py-2 flex flex-col items-center min-w-[85px] bg-gradient-to-br from-pink-500 via-rose-500 to-red-500 text-white shadow-[0_4px_15px_rgba(244,63,94,0.35)] scale-105 transition-all"
+                  >
+                    <span class="text-base font-black font-outfit leading-none">225</span>
+                    <span class="text-[9px] font-extrabold mt-1 leading-none opacity-90">Tháng này</span>
+                  </div>
+                </div>
               </div>
-              <div class="style-capsule-3-5 cursor-pointer active" onclick="toggleCapsuleActive(this, 'style-capsule-3-5', '3.5')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] border-2 border-pink-500 text-pink-500 dark:text-pink-400 scale-105 shadow-[0_0_10px_rgba(244,63,94,0.15)] bg-white dark:bg-neutral-950">
-                  <span class="text-base font-black font-outfit leading-none">225</span>
-                  <span class="text-[9px] font-extrabold mt-1 leading-none">Tháng này</span>
+            </div>
+          </div>
+
+          <!-- Var 3.4: Double Neon Ring (Số Trên - Chữ Dưới) -->
+          <div
+            class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm"
+          >
+            <div class="mb-4">
+              <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.4</span>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">Double Neon Ring (Số Trên - Chữ Dưới)</h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400">
+                Hiệu ứng lồng viền kép màu Gradient cho Active, mang phong cách tinh xảo, hiện đại.
+              </p>
+            </div>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-3-4 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-4', '3.4')"
+                >
+                  <div class="rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800">
+                    <div class="rounded-full p-[1px] bg-white dark:bg-neutral-900">
+                      <div
+                        class="rounded-full px-4 py-1 flex flex-col items-center min-w-[85px] text-slate-500 dark:text-gray-400"
+                      >
+                        <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300"
+                          >225</span
+                        >
+                        <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500"
+                          >Tháng trước</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-3-4 cursor-pointer active"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-4', '3.4')"
+                >
+                  <div
+                    class="rounded-full p-[1px] bg-gradient-to-r from-pink-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.3)] scale-105"
+                  >
+                    <div class="rounded-full p-[1px] bg-gradient-to-r from-rose-500 to-orange-400">
+                      <div
+                        class="rounded-full px-4 py-1 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 text-slate-900 dark:text-white"
+                      >
+                        <span class="text-sm font-black font-outfit leading-none text-pink-500 dark:text-pink-400"
+                          >225</span
+                        >
+                        <span class="text-[9px] font-black mt-1 leading-none">Tháng này</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Var 3.5: Clean Outline Ghost (Số Trên - Chữ Dưới) -->
+          <div
+            class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm"
+          >
+            <div class="mb-4">
+              <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.5</span>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">Clean Outline Ghost (Số Trên - Chữ Dưới)</h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400">
+                Không nền màu đặc, chỉ có khung viền mảnh màu hồng Active. Tạo cảm giác nhẹ nhàng, thông thoáng.
+              </p>
+            </div>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-3-5 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-5', '3.5')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] border border-slate-300 dark:border-neutral-800 text-slate-400 dark:text-gray-500 hover:border-slate-400 transition-all bg-white dark:bg-neutral-900/30"
+                  >
+                    <span class="text-sm font-bold font-outfit leading-none text-slate-500 dark:text-gray-400"
+                      >225</span
+                    >
+                    <span class="text-[9px] font-bold mt-1 leading-none">Tháng trước</span>
+                  </div>
+                </div>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-3-5 cursor-pointer active"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-5', '3.5')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] border-2 border-pink-500 text-pink-500 dark:text-pink-400 scale-105 shadow-[0_0_10px_rgba(244,63,94,0.15)] bg-white dark:bg-neutral-950"
+                  >
+                    <span class="text-base font-black font-outfit leading-none">225</span>
+                    <span class="text-[9px] font-extrabold mt-1 leading-none">Tháng này</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Var 3.6: Dot Indicator Accent (Số Trên - Chữ Dưới) -->
+          <div
+            class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm"
+          >
+            <div class="mb-4">
+              <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.6</span>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">
+                Dot Indicator Accent (Số Trên - Chữ Dưới)
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400">
+                Bổ sung dấu chấm Active nhấp nháy ở phía chân. Hộp số viền mỏng thanh lịch.
+              </p>
+            </div>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[130px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-3-6 cursor-pointer flex flex-col items-center gap-1"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-6', '3.6')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400 shadow-sm"
+                  >
+                    <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300"
+                      >225</span
+                    >
+                    <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500"
+                      >Tháng trước</span
+                    >
+                  </div>
+                  <div class="w-1.5 h-1.5 rounded-full bg-transparent"></div>
+                </div>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20 -top-[5px] relative"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-3-6 cursor-pointer active flex flex-col items-center gap-1"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-6', '3.6')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-950 border border-slate-400 dark:border-neutral-700 text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] scale-105 transition-all"
+                  >
+                    <span class="text-sm font-black font-outfit leading-none text-pink-500 dark:text-pink-400"
+                      >225</span
+                    >
+                    <span class="text-[9px] font-black mt-1 leading-none">Tháng này</span>
+                  </div>
+                  <div class="w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_8px_#ec4899] animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Var 3.7: 3D Tactile Neumorphic (Số Trên - Chữ Dưới) -->
+          <div
+            class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm"
+          >
+            <div class="mb-4">
+              <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.7</span>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">
+                3D Tactile Neumorphic (Số Trên - Chữ Dưới)
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400">
+                Thiết kế nút bấm nổi khối 3D xúc giác cao cấp, kích thước số to cực độ.
+              </p>
+            </div>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-100 dark:bg-neutral-900/60 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-3-7 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-7', '3.7')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-gray-400 shadow-[2px_2px_5px_rgba(0,0,0,0.08),-2px_-2px_5px_rgba(255,255,255,0.8)] dark:shadow-[2px_2px_5px_rgba(0,0,0,0.3),-2px_-2px_5px_rgba(255,255,255,0.02)] border border-slate-200/50 dark:border-neutral-700/50"
+                  >
+                    <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300"
+                      >225</span
+                    >
+                    <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500"
+                      >Tháng trước</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-slate-100 dark:bg-neutral-900 flex items-center justify-center shadow-md z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-3-7 cursor-pointer active"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-7', '3.7')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-pink-500 text-white scale-105 shadow-[inset_1px_1px_3px_rgba(255,255,255,0.3),inset_-1px_-1px_3px_rgba(0,0,0,0.2),0_4px_10px_rgba(244,63,94,0.3)] border border-pink-600"
+                  >
+                    <span class="text-base font-black font-outfit leading-none">225</span>
+                    <span class="text-[9px] font-black mt-1 leading-none opacity-95">Tháng này</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Var 3.8: Monospace Grid (Số Trên - Chữ Dưới) -->
+          <div
+            class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm"
+          >
+            <div class="mb-4">
+              <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.8</span>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">Monospace Grid (Số Trên - Chữ Dưới)</h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400">
+                Chữ số Monospace to bản, viền mỏng thon gọn. Tạo hình tối giản, số cực kỳ cân đối và dễ nhìn.
+              </p>
+            </div>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-3-8 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-8', '3.8')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400"
+                  >
+                    <span class="text-sm font-bold leading-none text-slate-700 dark:text-gray-300 font-mono">225</span>
+                    <span class="text-[9px] font-bold mt-1 leading-none text-slate-400 dark:text-gray-500"
+                      >Tháng trước</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-3-8 cursor-pointer active"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-8', '3.8')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border-2 border-pink-500 text-slate-900 dark:text-white scale-105 shadow-[0_0_12px_rgba(244,63,94,0.25)]"
+                  >
+                    <span class="text-sm font-black leading-none text-pink-500 dark:text-pink-400 font-mono">225</span>
+                    <span class="text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white"
+                      >Tháng này</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Var 3.9: Progress Dashed Border (Số Trên - Chữ Dưới) -->
+          <div
+            class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm"
+          >
+            <div class="mb-4">
+              <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.9</span>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">
+                Progress Dashed Border (Số Trên - Chữ Dưới)
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400">
+                Viền đứt nét màu hồng Active báo hiệu thời gian vẫn đang tiến hành. Số lớn đặt phía trên.
+              </p>
+            </div>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-3-9 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-9', '3.9')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-400 dark:text-gray-500"
+                  >
+                    <span class="text-sm font-bold leading-none text-slate-700 dark:text-gray-300 font-outfit"
+                      >225</span
+                    >
+                    <span class="text-[9px] font-bold mt-1 leading-none text-slate-400 dark:text-gray-500"
+                      >Tháng trước</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-3-9 cursor-pointer active"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-9', '3.9')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-950 border-2 border-dashed border-pink-500 text-slate-900 dark:text-white scale-105"
+                  >
+                    <span class="text-base font-black leading-none text-pink-500 dark:text-pink-400 font-outfit"
+                      >225</span
+                    >
+                    <span class="text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white"
+                      >Tháng này</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Var 3.10: Gradient Text Accent (Số Trên - Chữ Dưới) -->
+          <div
+            class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm"
+          >
+            <div class="mb-4">
+              <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.10</span>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">
+                Gradient Text Accent (Số Trên - Chữ Dưới)
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400">
+                Làm nổi bật con số Active bằng cách tô màu gradient sáng loáng cho các ký tự số, đem lại trải nghiệm cao
+                cấp.
+              </p>
+            </div>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-3-10 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-10', '3.10')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400"
+                  >
+                    <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300"
+                      >225</span
+                    >
+                    <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500"
+                      >Tháng trước</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-3-10 cursor-pointer active"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-3-10', '3.10')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border border-slate-300 dark:border-neutral-700 text-slate-900 dark:text-white scale-105 shadow-sm"
+                  >
+                    <span
+                      class="text-base font-black font-outfit leading-none bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent"
+                      >225</span
+                    >
+                    <span class="text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white"
+                      >Tháng này</span
+                    >
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Var 3.6: Dot Indicator Accent (Số Trên - Chữ Dưới) -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm">
-          <div class="mb-4">
-            <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.6</span>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">Dot Indicator Accent (Số Trên - Chữ Dưới)</h3>
-            <p class="text-xs text-slate-500 dark:text-gray-400">Bổ sung dấu chấm Active nhấp nháy ở phía chân. Hộp số viền mỏng thanh lịch.</p>
-          </div>
-          <div class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[130px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-3-6 cursor-pointer flex flex-col items-center gap-1" onclick="toggleCapsuleActive(this, 'style-capsule-3-6', '3.6')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400 shadow-sm">
-                  <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300">225</span>
-                  <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500">Tháng trước</span>
-                </div>
-                <div class="w-1.5 h-1.5 rounded-full bg-transparent"></div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20 -top-[5px] relative">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="style-capsule-3-6 cursor-pointer active flex flex-col items-center gap-1" onclick="toggleCapsuleActive(this, 'style-capsule-3-6', '3.6')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-950 border border-slate-400 dark:border-neutral-700 text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] scale-105 transition-all">
-                  <span class="text-sm font-black font-outfit leading-none text-pink-500 dark:text-pink-400">225</span>
-                  <span class="text-[9px] font-black mt-1 leading-none">Tháng này</span>
-                </div>
-                <div class="w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_8px_#ec4899] animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Var 3.7: 3D Tactile Neumorphic (Số Trên - Chữ Dưới) -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm">
-          <div class="mb-4">
-            <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.7</span>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">3D Tactile Neumorphic (Số Trên - Chữ Dưới)</h3>
-            <p class="text-xs text-slate-500 dark:text-gray-400">Thiết kế nút bấm nổi khối 3D xúc giác cao cấp, kích thước số to cực độ.</p>
-          </div>
-          <div class="py-8 px-4 rounded-xl bg-slate-100 dark:bg-neutral-900/60 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-3-7 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-3-7', '3.7')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-gray-400 shadow-[2px_2px_5px_rgba(0,0,0,0.08),-2px_-2px_5px_rgba(255,255,255,0.8)] dark:shadow-[2px_2px_5px_rgba(0,0,0,0.3),-2px_-2px_5px_rgba(255,255,255,0.02)] border border-slate-200/50 dark:border-neutral-700/50">
-                  <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300">225</span>
-                  <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500">Tháng trước</span>
-                </div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-slate-100 dark:bg-neutral-900 flex items-center justify-center shadow-md z-20">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="style-capsule-3-7 cursor-pointer active" onclick="toggleCapsuleActive(this, 'style-capsule-3-7', '3.7')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-pink-500 text-white scale-105 shadow-[inset_1px_1px_3px_rgba(255,255,255,0.3),inset_-1px_-1px_3px_rgba(0,0,0,0.2),0_4px_10px_rgba(244,63,94,0.3)] border border-pink-600">
-                  <span class="text-base font-black font-outfit leading-none">225</span>
-                  <span class="text-[9px] font-black mt-1 leading-none opacity-95">Tháng này</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Var 3.8: Monospace Grid (Số Trên - Chữ Dưới) -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm">
-          <div class="mb-4">
-            <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.8</span>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">Monospace Grid (Số Trên - Chữ Dưới)</h3>
-            <p class="text-xs text-slate-500 dark:text-gray-400">Chữ số Monospace to bản, viền mỏng thon gọn. Tạo hình tối giản, số cực kỳ cân đối và dễ nhìn.</p>
-          </div>
-          <div class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-3-8 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-3-8', '3.8')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400">
-                  <span class="text-sm font-bold leading-none text-slate-700 dark:text-gray-300 font-mono">225</span>
-                  <span class="text-[9px] font-bold mt-1 leading-none text-slate-400 dark:text-gray-500">Tháng trước</span>
-                </div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="style-capsule-3-8 cursor-pointer active" onclick="toggleCapsuleActive(this, 'style-capsule-3-8', '3.8')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border-2 border-pink-500 text-slate-900 dark:text-white scale-105 shadow-[0_0_12px_rgba(244,63,94,0.25)]">
-                  <span class="text-sm font-black leading-none text-pink-500 dark:text-pink-400 font-mono">225</span>
-                  <span class="text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white">Tháng này</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Var 3.9: Progress Dashed Border (Số Trên - Chữ Dưới) -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm">
-          <div class="mb-4">
-            <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.9</span>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">Progress Dashed Border (Số Trên - Chữ Dưới)</h3>
-            <p class="text-xs text-slate-500 dark:text-gray-400">Viền đứt nét màu hồng Active báo hiệu thời gian vẫn đang tiến hành. Số lớn đặt phía trên.</p>
-          </div>
-          <div class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-3-9 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-3-9', '3.9')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-400 dark:text-gray-500">
-                  <span class="text-sm font-bold leading-none text-slate-700 dark:text-gray-300 font-outfit">225</span>
-                  <span class="text-[9px] font-bold mt-1 leading-none text-slate-400 dark:text-gray-500">Tháng trước</span>
-                </div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="style-capsule-3-9 cursor-pointer active" onclick="toggleCapsuleActive(this, 'style-capsule-3-9', '3.9')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-950 border-2 border-dashed border-pink-500 text-slate-900 dark:text-white scale-105">
-                  <span class="text-base font-black leading-none text-pink-500 dark:text-pink-400 font-outfit">225</span>
-                  <span class="text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white">Tháng này</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Var 3.10: Gradient Text Accent (Số Trên - Chữ Dưới) -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01] shadow-sm">
-          <div class="mb-4">
-            <span class="text-xs font-bold text-pink-500 uppercase tracking-widest">Variation 3.10</span>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">Gradient Text Accent (Số Trên - Chữ Dưới)</h3>
-            <p class="text-xs text-slate-500 dark:text-gray-400">Làm nổi bật con số Active bằng cách tô màu gradient sáng loáng cho các ký tự số, đem lại trải nghiệm cao cấp.</p>
-          </div>
-          <div class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-3-10 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-3-10', '3.10')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400">
-                  <span class="text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300">225</span>
-                  <span class="text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500">Tháng trước</span>
-                </div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="style-capsule-3-10 cursor-pointer active" onclick="toggleCapsuleActive(this, 'style-capsule-3-10', '3.10')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border border-slate-300 dark:border-neutral-700 text-slate-900 dark:text-white scale-105 shadow-sm">
-                  <span class="text-base font-black font-outfit leading-none bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">225</span>
-                  <span class="text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white">Tháng này</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
-    </div>
 
-    <!-- ================= PHẦN 2: 10 BIẾN THỂ CAPSULE GỐC (CHỮ TRÊN - SỐ DƯỚI) ================= -->
-    <div>
-      <div class="border-b border-gray-200 dark:border-white/10 pb-2 mb-8">
-        <h2 class="text-2xl font-black text-slate-400 font-outfit uppercase tracking-wider">Phần 2: 10 Biến Thể Capsule Gốc (Chữ Trên - Số Dưới)</h2>
-        <p class="text-xs text-slate-500 dark:text-gray-400">Thiết kế nhộng chuẩn đối xứng nguyên bản, chữ mô tả nằm trên, con số chỉ báo nằm dưới.</p>
-      </div>
+      <!-- ================= PHẦN 2: 10 BIẾN THỂ CAPSULE GỐC (CHỮ TRÊN - SỐ DƯỚI) ================= -->
+      <div>
+        <div class="border-b border-gray-200 dark:border-white/10 pb-2 mb-8">
+          <h2 class="text-2xl font-black text-slate-400 font-outfit uppercase tracking-wider">
+            Phần 2: 10 Biến Thể Capsule Gốc (Chữ Trên - Số Dưới)
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-gray-400">
+            Thiết kế nhộng chuẩn đối xứng nguyên bản, chữ mô tả nằm trên, con số chỉ báo nằm dưới.
+          </p>
+        </div>
 
-      <div class="space-y-8">
-        <!-- Var 1.1 -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01]">
-          <h3 class="text-base font-bold text-slate-800 dark:text-white mb-2">Variation 1.1: Aurora Border Glow (Chữ Trên - Số Dưới)</h3>
-          <div class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-1-1 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-1-1', '1.1')">
-                <div class="p-[1.2px] rounded-full bg-slate-200 dark:bg-neutral-800">
-                  <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 text-slate-500 dark:text-gray-400">
+        <div class="space-y-8">
+          <!-- Var 1.1 -->
+          <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01]">
+            <h3 class="text-base font-bold text-slate-800 dark:text-white mb-2">
+              Variation 1.1: Aurora Border Glow (Chữ Trên - Số Dưới)
+            </h3>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-1-1 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-1-1', '1.1')"
+                >
+                  <div class="p-[1.2px] rounded-full bg-slate-200 dark:bg-neutral-800">
+                    <div
+                      class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 text-slate-500 dark:text-gray-400"
+                    >
+                      <span class="text-[10px] font-bold leading-none">Tháng trước</span>
+                      <span class="text-xs font-extrabold mt-1 leading-none text-slate-400 dark:text-gray-500"
+                        >225</span
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-1-1 cursor-pointer active"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-1-1', '1.1')"
+                >
+                  <div
+                    class="p-[1.5px] rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105"
+                  >
+                    <div
+                      class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-950 text-slate-900 dark:text-white"
+                    >
+                      <span class="text-[10px] font-black leading-none">Tháng này</span>
+                      <span class="text-sm font-black mt-1 leading-none text-pink-500 dark:text-pink-400">225</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Var 1.8 -->
+          <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01]">
+            <h3 class="text-base font-bold text-slate-800 dark:text-white mb-2">
+              Variation 1.8: Monospace Data (Chữ Trên - Số Dưới)
+            </h3>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div
+                  class="style-capsule-1-8 cursor-pointer"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-1-8', '1.8')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400"
+                  >
                     <span class="text-[10px] font-bold leading-none">Tháng trước</span>
-                    <span class="text-xs font-extrabold mt-1 leading-none text-slate-400 dark:text-gray-500">225</span>
+                    <span class="text-sm font-bold mt-0.5 leading-none text-slate-400 dark:text-gray-500 font-mono"
+                      >225</span
+                    >
                   </div>
                 </div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="style-capsule-1-1 cursor-pointer active" onclick="toggleCapsuleActive(this, 'style-capsule-1-1', '1.1')">
-                <div class="p-[1.5px] rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105">
-                  <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-950 text-slate-900 dark:text-white">
-                    <span class="text-[10px] font-black leading-none">Tháng này</span>
-                    <span class="text-sm font-black mt-1 leading-none text-pink-500 dark:text-pink-400">225</span>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div
+                  class="style-capsule-1-8 cursor-pointer active"
+                  onclick="toggleCapsuleActive(this, 'style-capsule-1-8', '1.8')"
+                >
+                  <div
+                    class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border-2 border-pink-500 text-slate-900 dark:text-white scale-105 shadow-[0_0_12px_rgba(244,63,94,0.25)]"
+                  >
+                    <span class="text-[10px] font-black leading-none text-slate-900 dark:text-white">Tháng này</span>
+                    <span class="text-sm font-black mt-0.5 leading-none text-pink-500 dark:text-pink-400 font-mono"
+                      >225</span
+                    >
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Var 1.8 -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01]">
-          <h3 class="text-base font-bold text-slate-800 dark:text-white mb-2">Variation 1.8: Monospace Data (Chữ Trên - Số Dưới)</h3>
-          <div class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="style-capsule-1-8 cursor-pointer" onclick="toggleCapsuleActive(this, 'style-capsule-1-8', '1.8')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400">
-                  <span class="text-[10px] font-bold leading-none">Tháng trước</span>
-                  <span class="text-sm font-bold mt-0.5 leading-none text-slate-400 dark:text-gray-500 font-mono">225</span>
+      <!-- ================= PHẦN 3: 10 LAYOUTS KHÁC NHAU BAN ĐẦU ================= -->
+      <div>
+        <div class="border-b border-gray-200 dark:border-white/10 pb-2 mb-8">
+          <h2 class="text-2xl font-black text-slate-400 font-outfit uppercase tracking-wider">
+            Phần 3: 10 Thiết Kế Layout Thay Thế Khác
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-gray-400">
+            Bố cục hộp chữ nhật, chia cột dọc, đặt nằm ngang, kén tròn, dạng thẻ...
+          </p>
+        </div>
+
+        <div class="space-y-8">
+          <!-- Option 2: Split Segmented Badge -->
+          <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01]">
+            <h3 class="text-base font-bold text-slate-800 dark:text-white mb-2">Option 2: Split Segmented Badge</h3>
+            <div
+              class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]"
+            >
+              <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
+              <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
+                <div class="opt-pill-2 cursor-pointer" onclick="toggleActive(this, 'opt-pill-2')">
+                  <div
+                    class="flex flex-col rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 min-w-[80px] shadow-sm"
+                  >
+                    <span
+                      class="text-[9px] font-bold text-slate-500 dark:text-gray-400 bg-slate-100 dark:bg-neutral-800 py-0.5 text-center px-2"
+                      >Tháng trước</span
+                    >
+                    <span class="text-sm font-black text-slate-700 dark:text-gray-300 py-1 text-center font-outfit"
+                      >225</span
+                    >
+                  </div>
                 </div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="style-capsule-1-8 cursor-pointer active" onclick="toggleCapsuleActive(this, 'style-capsule-1-8', '1.8')">
-                <div class="rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border-2 border-pink-500 text-slate-900 dark:text-white scale-105 shadow-[0_0_12px_rgba(244,63,94,0.25)]">
-                  <span class="text-[10px] font-black leading-none text-slate-900 dark:text-white">Tháng này</span>
-                  <span class="text-sm font-black mt-0.5 leading-none text-pink-500 dark:text-pink-400 font-mono">225</span>
+                <div
+                  class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20"
+                >
+                  <span class="text-2xl leading-none">🐥</span>
+                </div>
+                <div class="opt-pill-2 cursor-pointer active" onclick="toggleActive(this, 'opt-pill-2')">
+                  <div
+                    class="flex flex-col rounded-xl overflow-hidden border border-pink-500 bg-white dark:bg-neutral-955 min-w-[80px] shadow-[0_0_12px_rgba(244,63,94,0.25)] scale-105"
+                  >
+                    <span
+                      class="text-[9px] font-black text-white bg-gradient-to-r from-pink-500 to-rose-500 py-0.5 text-center px-2"
+                      >Tháng này</span
+                    >
+                    <span class="text-sm font-black text-pink-500 dark:text-pink-400 py-1 text-center font-outfit"
+                      >225</span
+                    >
+                  </div>
                 </div>
               </div>
             </div>
@@ -480,288 +858,301 @@
       </div>
     </div>
 
-    <!-- ================= PHẦN 3: 10 LAYOUTS KHÁC NHAU BAN ĐẦU ================= -->
-    <div>
-      <div class="border-b border-gray-200 dark:border-white/10 pb-2 mb-8">
-        <h2 class="text-2xl font-black text-slate-400 font-outfit uppercase tracking-wider">Phần 3: 10 Thiết Kế Layout Thay Thế Khác</h2>
-        <p class="text-xs text-slate-500 dark:text-gray-400">Bố cục hộp chữ nhật, chia cột dọc, đặt nằm ngang, kén tròn, dạng thẻ...</p>
-      </div>
+    <script>
+      // Theme setter
+      function setTheme(theme) {
+        const html = document.documentElement;
+        const btnDark = document.getElementById('btn-dark');
+        const btnLight = document.getElementById('btn-light');
 
-      <div class="space-y-8">
-        <!-- Option 2: Split Segmented Badge -->
-        <div class="p-6 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.01]">
-          <h3 class="text-base font-bold text-slate-800 dark:text-white mb-2">Option 2: Split Segmented Badge</h3>
-          <div class="py-8 px-4 rounded-xl bg-slate-50 dark:bg-black/20 flex items-center justify-center relative min-h-[120px]">
-            <div class="timeline-line bg-slate-300 dark:bg-slate-800"></div>
-            <div class="relative w-full flex justify-between items-center z-10 px-[4%]">
-              <div class="opt-pill-2 cursor-pointer" onclick="toggleActive(this, 'opt-pill-2')">
-                <div class="flex flex-col rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 min-w-[80px] shadow-sm">
-                  <span class="text-[9px] font-bold text-slate-500 dark:text-gray-400 bg-slate-100 dark:bg-neutral-800 py-0.5 text-center px-2">Tháng trước</span>
-                  <span class="text-sm font-black text-slate-700 dark:text-gray-300 py-1 text-center font-outfit">225</span>
-                </div>
-              </div>
-              <div class="w-12 h-12 rounded-full border border-gold/40 dark:border-gold/30 bg-white dark:bg-neutral-900 flex items-center justify-center shadow-lg z-20">
-                <span class="text-2xl leading-none">🐥</span>
-              </div>
-              <div class="opt-pill-2 cursor-pointer active" onclick="toggleActive(this, 'opt-pill-2')">
-                <div class="flex flex-col rounded-xl overflow-hidden border border-pink-500 bg-white dark:bg-neutral-955 min-w-[80px] shadow-[0_0_12px_rgba(244,63,94,0.25)] scale-105">
-                  <span class="text-[9px] font-black text-white bg-gradient-to-r from-pink-500 to-rose-500 py-0.5 text-center px-2">Tháng này</span>
-                  <span class="text-sm font-black text-pink-500 dark:text-pink-400 py-1 text-center font-outfit">225</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <script>
-    // Theme setter
-    function setTheme(theme) {
-      const html = document.documentElement;
-      const btnDark = document.getElementById('btn-dark');
-      const btnLight = document.getElementById('btn-light');
-      
-      if (theme === 'dark') {
-        html.className = 'dark dark-theme';
-        document.body.className = 'p-6 md:p-12 transition-colors duration-300 dark-theme';
-        btnDark.className = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md';
-        btnLight.className = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white';
-      } else {
-        html.className = 'light light-theme';
-        document.body.className = 'p-6 md:p-12 transition-colors duration-300 light-theme';
-        btnLight.className = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md';
-        btnDark.className = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 dark:text-gray-500 hover:text-white dark:hover:text-white';
+        if (theme === 'dark') {
+          html.className = 'dark dark-theme';
+          document.body.className = 'p-6 md:p-12 transition-colors duration-300 dark-theme';
+          btnDark.className =
+            'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md';
+          btnLight.className =
+            'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white';
+        } else {
+          html.className = 'light light-theme';
+          document.body.className = 'p-6 md:p-12 transition-colors duration-300 light-theme';
+          btnLight.className =
+            'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md';
+          btnDark.className =
+            'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 dark:text-gray-500 hover:text-white dark:hover:text-white';
+        }
       }
-    }
 
-    // Toggle active state for Variation (styles of Capsule)
-    function toggleCapsuleActive(element, className, styleId) {
-      const group = document.querySelectorAll('.' + className);
-      group.forEach(el => {
-        el.classList.remove('active');
-        
-        // Reset base classes
-        const outerWrapper = el.firstElementChild;
-        const innerWrapper = outerWrapper.firstElementChild;
-        
-        // 3.X Styles: Number on Top, Label on Bottom
+      // Toggle active state for Variation (styles of Capsule)
+      function toggleCapsuleActive(element, className, styleId) {
+        const group = document.querySelectorAll('.' + className);
+        group.forEach((el) => {
+          el.classList.remove('active');
+
+          // Reset base classes
+          const outerWrapper = el.firstElementChild;
+          const innerWrapper = outerWrapper.firstElementChild;
+
+          // 3.X Styles: Number on Top, Label on Bottom
+          if (styleId === '3.1') {
+            outerWrapper.className =
+              'rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800 transition-all duration-300';
+            innerWrapper.className =
+              'bg-white dark:bg-neutral-900 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-slate-500 dark:text-gray-400';
+            innerWrapper.querySelector('span:first-child').className =
+              'text-sm font-bold font-outfit leading-tight text-slate-700 dark:text-gray-300';
+            innerWrapper.querySelector('span:nth-child(2)').className = 'text-[9px] font-medium opacity-80';
+          } else if (styleId === '3.2') {
+            outerWrapper.className =
+              'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white/40 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-400';
+            outerWrapper.querySelector('span:first-child').className =
+              'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
+            outerWrapper.querySelector('span:nth-child(2)').className =
+              'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
+          } else if (styleId === '3.3') {
+            outerWrapper.className =
+              'rounded-full px-4 py-2 flex flex-col items-center min-w-[85px] bg-slate-200/50 dark:bg-neutral-800/60 text-slate-500 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-neutral-800 transition-all';
+            outerWrapper.querySelector('span:first-child').className =
+              'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
+            outerWrapper.querySelector('span:nth-child(2)').className =
+              'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
+          } else if (styleId === '3.4') {
+            outerWrapper.className = 'rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800';
+            innerWrapper.className = 'rounded-full p-[1px] bg-white dark:bg-neutral-900';
+            const innermost = innerWrapper.firstElementChild;
+            innermost.className =
+              'rounded-full px-4 py-1 flex flex-col items-center min-w-[85px] text-slate-500 dark:text-gray-400';
+            innermost.querySelector('span:first-child').className =
+              'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
+            innermost.querySelector('span:nth-child(2)').className =
+              'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
+          } else if (styleId === '3.5') {
+            outerWrapper.className =
+              'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] border border-slate-300 dark:border-neutral-800 text-slate-400 dark:text-gray-500 hover:border-slate-400 transition-all bg-white dark:bg-neutral-900/30';
+            outerWrapper.querySelector('span:first-child').className =
+              'text-sm font-bold font-outfit leading-none text-slate-500 dark:text-gray-400';
+            outerWrapper.querySelector('span:nth-child(2)').className = 'text-[9px] font-bold mt-1 leading-none';
+          } else if (styleId === '3.6') {
+            const card = el.firstElementChild;
+            card.className =
+              'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400 shadow-sm';
+            card.querySelector('span:first-child').className =
+              'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
+            card.querySelector('span:nth-child(2)').className =
+              'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
+            el.lastElementChild.className = 'w-1.5 h-1.5 rounded-full bg-transparent';
+          } else if (styleId === '3.7') {
+            outerWrapper.className =
+              'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-gray-400 shadow-[2px_2px_5px_rgba(0,0,0,0.08),-2px_-2px_5px_rgba(255,255,255,0.8)] dark:shadow-[2px_2px_5px_rgba(0,0,0,0.3),-2px_-2px_5px_rgba(255,255,255,0.02)] border border-slate-200/50 dark:border-neutral-700/50';
+            outerWrapper.querySelector('span:first-child').className =
+              'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
+            outerWrapper.querySelector('span:nth-child(2)').className =
+              'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
+          } else if (styleId === '3.8') {
+            outerWrapper.className =
+              'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400';
+            outerWrapper.querySelector('span:first-child').className =
+              'text-sm font-bold leading-none text-slate-700 dark:text-gray-300 font-mono';
+            outerWrapper.querySelector('span:nth-child(2)').className =
+              'text-[9px] font-bold mt-1 leading-none text-slate-400 dark:text-gray-500';
+          } else if (styleId === '3.9') {
+            outerWrapper.className =
+              'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-400 dark:text-gray-500';
+            outerWrapper.querySelector('span:first-child').className =
+              'text-sm font-bold leading-none text-slate-700 dark:text-gray-300 font-outfit';
+            outerWrapper.querySelector('span:nth-child(2)').className =
+              'text-[9px] font-bold mt-1 leading-none text-slate-400 dark:text-gray-500';
+          } else if (styleId === '3.10') {
+            outerWrapper.className =
+              'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400';
+            outerWrapper.querySelector('span:first-child').className =
+              'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
+            outerWrapper.querySelector('span:nth-child(2)').className =
+              'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
+          }
+
+          // 1.X Styles: Text on Top, Number on Bottom
+          else if (styleId === '1.1') {
+            outerWrapper.className =
+              'p-[1.2px] rounded-full bg-slate-200 dark:bg-neutral-800 transition-all duration-300';
+            innerWrapper.className =
+              'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 text-slate-500 dark:text-gray-400';
+            innerWrapper.querySelector('span:nth-child(2)').className =
+              'text-xs font-extrabold mt-1 leading-none text-slate-400 dark:text-gray-500';
+          } else if (styleId === '1.8') {
+            outerWrapper.className =
+              'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400';
+            outerWrapper.querySelector('span:nth-child(2)').className =
+              'text-sm font-bold mt-0.5 leading-none text-slate-400 dark:text-gray-500 font-mono';
+          }
+        });
+
+        element.classList.add('active');
+
+        const outer = element.firstElementChild;
+        const inner = outer.firstElementChild;
+
+        // 3.X Styles Active
         if (styleId === '3.1') {
-          outerWrapper.className = 'rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800 transition-all duration-300';
-          innerWrapper.className = 'bg-white dark:bg-neutral-900 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-slate-500 dark:text-gray-400';
-          innerWrapper.querySelector('span:first-child').className = 'text-sm font-bold font-outfit leading-tight text-slate-700 dark:text-gray-300';
-          innerWrapper.querySelector('span:nth-child(2)').className = 'text-[9px] font-medium opacity-80';
+          outer.className =
+            'rounded-full p-[1.5px] bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105';
+          inner.className =
+            'bg-white dark:bg-neutral-955 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-pink-500 dark:text-pink-400';
+          inner.querySelector('span:first-child').className = 'text-base font-black font-outfit leading-tight';
+          inner.querySelector('span:nth-child(2)').className = 'text-[9px] font-black text-slate-900 dark:text-white';
+        } else if (styleId === '3.2') {
+          outer.className =
+            'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-pink-500/10 dark:bg-pink-500/20 backdrop-blur-md border-2 border-pink-500 text-pink-600 dark:text-pink-400 shadow-[0_0_15px_rgba(244,63,94,0.25)] scale-105';
+          outer.querySelector('span:first-child').className = 'text-base font-black font-outfit leading-none';
+          outer.querySelector('span:nth-child(2)').className =
+            'text-[9px] font-black mt-1 leading-none text-pink-600 dark:text-pink-300';
+        } else if (styleId === '3.3') {
+          outer.className =
+            'rounded-full px-4 py-2 flex flex-col items-center min-w-[85px] bg-gradient-to-br from-pink-500 via-rose-500 to-red-500 text-white shadow-[0_4px_15px_rgba(244,63,94,0.35)] scale-105 transition-all';
+          outer.querySelector('span:first-child').className = 'text-base font-black font-outfit leading-none';
+          outer.querySelector('span:nth-child(2)').className = 'text-[9px] font-extrabold mt-1 leading-none opacity-90';
+        } else if (styleId === '3.4') {
+          outer.className =
+            'rounded-full p-[1px] bg-gradient-to-r from-pink-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.3)] scale-105';
+          inner.className = 'rounded-full p-[1px] bg-gradient-to-r from-rose-500 to-orange-400';
+          const innermost = inner.firstElementChild;
+          innermost.className =
+            'rounded-full px-4 py-1 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 text-slate-900 dark:text-white';
+          innermost.querySelector('span:first-child').className =
+            'text-sm font-black font-outfit leading-none text-pink-500 dark:text-pink-400';
+          innermost.querySelector('span:nth-child(2)').className = 'text-[9px] font-black mt-1 leading-none';
+        } else if (styleId === '3.5') {
+          outer.className =
+            'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] border-2 border-pink-500 text-pink-500 dark:text-pink-400 scale-105 shadow-[0_0_10px_rgba(244,63,94,0.15)] bg-white dark:bg-neutral-955';
+          outer.querySelector('span:first-child').className = 'text-base font-black font-outfit leading-none';
+          outer.querySelector('span:nth-child(2)').className = 'text-[9px] font-extrabold mt-1 leading-none';
+        } else if (styleId === '3.6') {
+          const card = element.firstElementChild;
+          card.className =
+            'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border border-slate-400 dark:border-neutral-700 text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] scale-105 transition-all';
+          card.querySelector('span:first-child').className =
+            'text-sm font-black font-outfit leading-none text-pink-500 dark:text-pink-400';
+          card.querySelector('span:nth-child(2)').className = 'text-[9px] font-black mt-1 leading-none';
+          element.lastElementChild.className =
+            'w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_8px_#ec4899] animate-pulse';
+        } else if (styleId === '3.7') {
+          outer.className =
+            'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-pink-500 text-white scale-105 shadow-[inset_1px_1px_3px_rgba(255,255,255,0.3),inset_-1px_-1px_3px_rgba(0,0,0,0.2),0_4px_10px_rgba(244,63,94,0.3)] border border-pink-600';
+          outer.querySelector('span:first-child').className = 'text-base font-black font-outfit leading-none';
+          outer.querySelector('span:nth-child(2)').className = 'text-[9px] font-black mt-1 leading-none opacity-95';
+        } else if (styleId === '3.8') {
+          outer.className =
+            'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border-2 border-pink-500 text-slate-900 dark:text-white scale-105 shadow-[0_0_12px_rgba(244,63,94,0.25)]';
+          outer.querySelector('span:first-child').className =
+            'text-sm font-black leading-none text-pink-500 dark:text-pink-400 font-mono';
+          outer.querySelector('span:nth-child(2)').className =
+            'text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white';
+        } else if (styleId === '3.9') {
+          outer.className =
+            'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-950 border-2 border-dashed border-pink-500 text-slate-900 dark:text-white scale-105';
+          outer.querySelector('span:first-child').className =
+            'text-base font-black leading-none text-pink-500 dark:text-pink-400 font-outfit';
+          outer.querySelector('span:nth-child(2)').className =
+            'text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white';
+        } else if (styleId === '3.10') {
+          outer.className =
+            'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border border-slate-300 dark:border-neutral-700 text-slate-900 dark:text-white scale-105 shadow-sm';
+          outer.querySelector('span:first-child').className =
+            'text-base font-black font-outfit leading-none bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent';
+          outer.querySelector('span:nth-child(2)').className =
+            'text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white';
         }
-        else if (styleId === '3.2') {
-          outerWrapper.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white/40 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-400';
-          outerWrapper.querySelector('span:first-child').className = 'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
-          outerWrapper.querySelector('span:nth-child(2)').className = 'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
-        }
-        else if (styleId === '3.3') {
-          outerWrapper.className = 'rounded-full px-4 py-2 flex flex-col items-center min-w-[85px] bg-slate-200/50 dark:bg-neutral-800/60 text-slate-500 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-neutral-800 transition-all';
-          outerWrapper.querySelector('span:first-child').className = 'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
-          outerWrapper.querySelector('span:nth-child(2)').className = 'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
-        }
-        else if (styleId === '3.4') {
-          outerWrapper.className = 'rounded-full p-[1px] bg-slate-200 dark:bg-neutral-800';
-          innerWrapper.className = 'rounded-full p-[1px] bg-white dark:bg-neutral-900';
-          const innermost = innerWrapper.firstElementChild;
-          innermost.className = 'rounded-full px-4 py-1 flex flex-col items-center min-w-[85px] text-slate-500 dark:text-gray-400';
-          innermost.querySelector('span:first-child').className = 'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
-          innermost.querySelector('span:nth-child(2)').className = 'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
-        }
-        else if (styleId === '3.5') {
-          outerWrapper.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] border border-slate-300 dark:border-neutral-800 text-slate-400 dark:text-gray-500 hover:border-slate-400 transition-all bg-white dark:bg-neutral-900/30';
-          outerWrapper.querySelector('span:first-child').className = 'text-sm font-bold font-outfit leading-none text-slate-500 dark:text-gray-400';
-          outerWrapper.querySelector('span:nth-child(2)').className = 'text-[9px] font-bold mt-1 leading-none';
-        }
-        else if (styleId === '3.6') {
-          const card = el.firstElementChild;
-          card.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400 shadow-sm';
-          card.querySelector('span:first-child').className = 'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
-          card.querySelector('span:nth-child(2)').className = 'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
-          el.lastElementChild.className = 'w-1.5 h-1.5 rounded-full bg-transparent';
-        }
-        else if (styleId === '3.7') {
-          outerWrapper.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-gray-400 shadow-[2px_2px_5px_rgba(0,0,0,0.08),-2px_-2px_5px_rgba(255,255,255,0.8)] dark:shadow-[2px_2px_5px_rgba(0,0,0,0.3),-2px_-2px_5px_rgba(255,255,255,0.02)] border border-slate-200/50 dark:border-neutral-700/50';
-          outerWrapper.querySelector('span:first-child').className = 'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
-          outerWrapper.querySelector('span:nth-child(2)').className = 'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
-        }
-        else if (styleId === '3.8') {
-          outerWrapper.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400';
-          outerWrapper.querySelector('span:first-child').className = 'text-sm font-bold leading-none text-slate-700 dark:text-gray-300 font-mono';
-          outerWrapper.querySelector('span:nth-child(2)').className = 'text-[9px] font-bold mt-1 leading-none text-slate-400 dark:text-gray-500';
-        }
-        else if (styleId === '3.9') {
-          outerWrapper.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-400 dark:text-gray-500';
-          outerWrapper.querySelector('span:first-child').className = 'text-sm font-bold leading-none text-slate-700 dark:text-gray-300 font-outfit';
-          outerWrapper.querySelector('span:nth-child(2)').className = 'text-[9px] font-bold mt-1 leading-none text-slate-400 dark:text-gray-500';
-        }
-        else if (styleId === '3.10') {
-          outerWrapper.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400';
-          outerWrapper.querySelector('span:first-child').className = 'text-sm font-bold font-outfit leading-none text-slate-700 dark:text-gray-300';
-          outerWrapper.querySelector('span:nth-child(2)').className = 'text-[9px] font-medium mt-1 leading-none text-slate-400 dark:text-gray-500';
-        }
-        
-        // 1.X Styles: Text on Top, Number on Bottom
+
+        // 1.X Styles Active
         else if (styleId === '1.1') {
-          outerWrapper.className = 'p-[1.2px] rounded-full bg-slate-200 dark:bg-neutral-800 transition-all duration-300';
-          innerWrapper.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 text-slate-500 dark:text-gray-400';
-          innerWrapper.querySelector('span:nth-child(2)').className = 'text-xs font-extrabold mt-1 leading-none text-slate-400 dark:text-gray-500';
+          outer.className =
+            'p-[1.5px] rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105 transition-all';
+          inner.className =
+            'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 text-slate-900 dark:text-white';
+          inner.querySelector('span:nth-child(2)').className =
+            'text-sm font-black mt-1 leading-none text-pink-500 dark:text-pink-400';
+        } else if (styleId === '1.8') {
+          outer.className =
+            'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border-2 border-pink-500 text-slate-900 dark:text-white scale-105 shadow-[0_0_12px_rgba(244,63,94,0.25)]';
+          outer.querySelector('span:nth-child(2)').className =
+            'text-sm font-black mt-0.5 leading-none text-pink-500 dark:text-pink-400 font-mono';
         }
-        else if (styleId === '1.8') {
-          outerWrapper.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-gray-400';
-          outerWrapper.querySelector('span:nth-child(2)').className = 'text-sm font-bold mt-0.5 leading-none text-slate-400 dark:text-gray-500 font-mono';
-        }
-      });
+      }
 
-      element.classList.add('active');
-      
-      const outer = element.firstElementChild;
-      const inner = outer.firstElementChild;
+      // Toggle active state for original Option styles
+      function toggleActive(element, className) {
+        const group = document.querySelectorAll('.' + className);
+        group.forEach((el) => {
+          el.classList.remove('active');
 
-      // 3.X Styles Active
-      if (styleId === '3.1') {
-        outer.className = 'rounded-full p-[1.5px] bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105';
-        inner.className = 'bg-white dark:bg-neutral-955 px-4 py-1 flex flex-col items-center min-w-[85px] rounded-full text-pink-500 dark:text-pink-400';
-        inner.querySelector('span:first-child').className = 'text-base font-black font-outfit leading-tight';
-        inner.querySelector('span:nth-child(2)').className = 'text-[9px] font-black text-slate-900 dark:text-white';
-      }
-      else if (styleId === '3.2') {
-        outer.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-pink-500/10 dark:bg-pink-500/20 backdrop-blur-md border-2 border-pink-500 text-pink-600 dark:text-pink-400 shadow-[0_0_15px_rgba(244,63,94,0.25)] scale-105';
-        outer.querySelector('span:first-child').className = 'text-base font-black font-outfit leading-none';
-        outer.querySelector('span:nth-child(2)').className = 'text-[9px] font-black mt-1 leading-none text-pink-600 dark:text-pink-300';
-      }
-      else if (styleId === '3.3') {
-        outer.className = 'rounded-full px-4 py-2 flex flex-col items-center min-w-[85px] bg-gradient-to-br from-pink-500 via-rose-500 to-red-500 text-white shadow-[0_4px_15px_rgba(244,63,94,0.35)] scale-105 transition-all';
-        outer.querySelector('span:first-child').className = 'text-base font-black font-outfit leading-none';
-        outer.querySelector('span:nth-child(2)').className = 'text-[9px] font-extrabold mt-1 leading-none opacity-90';
-      }
-      else if (styleId === '3.4') {
-        outer.className = 'rounded-full p-[1px] bg-gradient-to-r from-pink-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.3)] scale-105';
-        inner.className = 'rounded-full p-[1px] bg-gradient-to-r from-rose-500 to-orange-400';
-        const innermost = inner.firstElementChild;
-        innermost.className = 'rounded-full px-4 py-1 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 text-slate-900 dark:text-white';
-        innermost.querySelector('span:first-child').className = 'text-sm font-black font-outfit leading-none text-pink-500 dark:text-pink-400';
-        innermost.querySelector('span:nth-child(2)').className = 'text-[9px] font-black mt-1 leading-none';
-      }
-      else if (styleId === '3.5') {
-        outer.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] border-2 border-pink-500 text-pink-500 dark:text-pink-400 scale-105 shadow-[0_0_10px_rgba(244,63,94,0.15)] bg-white dark:bg-neutral-955';
-        outer.querySelector('span:first-child').className = 'text-base font-black font-outfit leading-none';
-        outer.querySelector('span:nth-child(2)').className = 'text-[9px] font-extrabold mt-1 leading-none';
-      }
-      else if (styleId === '3.6') {
-        const card = element.firstElementChild;
-        card.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border border-slate-400 dark:border-neutral-700 text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] scale-105 transition-all';
-        card.querySelector('span:first-child').className = 'text-sm font-black font-outfit leading-none text-pink-500 dark:text-pink-400';
-        card.querySelector('span:nth-child(2)').className = 'text-[9px] font-black mt-1 leading-none';
-        element.lastElementChild.className = 'w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_8px_#ec4899] animate-pulse';
-      }
-      else if (styleId === '3.7') {
-        outer.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-pink-500 text-white scale-105 shadow-[inset_1px_1px_3px_rgba(255,255,255,0.3),inset_-1px_-1px_3px_rgba(0,0,0,0.2),0_4px_10px_rgba(244,63,94,0.3)] border border-pink-600';
-        outer.querySelector('span:first-child').className = 'text-base font-black font-outfit leading-none';
-        outer.querySelector('span:nth-child(2)').className = 'text-[9px] font-black mt-1 leading-none opacity-95';
-      }
-      else if (styleId === '3.8') {
-        outer.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border-2 border-pink-500 text-slate-900 dark:text-white scale-105 shadow-[0_0_12px_rgba(244,63,94,0.25)]';
-        outer.querySelector('span:first-child').className = 'text-sm font-black leading-none text-pink-500 dark:text-pink-400 font-mono';
-        outer.querySelector('span:nth-child(2)').className = 'text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white';
-      }
-      else if (styleId === '3.9') {
-        outer.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-950 border-2 border-dashed border-pink-500 text-slate-900 dark:text-white scale-105';
-        outer.querySelector('span:first-child').className = 'text-base font-black leading-none text-pink-500 dark:text-pink-400 font-outfit';
-        outer.querySelector('span:nth-child(2)').className = 'text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white';
-      }
-      else if (styleId === '3.10') {
-        outer.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border border-slate-300 dark:border-neutral-700 text-slate-900 dark:text-white scale-105 shadow-sm';
-        outer.querySelector('span:first-child').className = 'text-base font-black font-outfit leading-none bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent';
-        outer.querySelector('span:nth-child(2)').className = 'text-[9px] font-black mt-1 leading-none text-slate-900 dark:text-white';
-      }
-      
-      // 1.X Styles Active
-      else if (styleId === '1.1') {
-        outer.className = 'p-[1.5px] rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.35)] scale-105 transition-all';
-        inner.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 text-slate-900 dark:text-white';
-        inner.querySelector('span:nth-child(2)').className = 'text-sm font-black mt-1 leading-none text-pink-500 dark:text-pink-400';
-      }
-      else if (styleId === '1.8') {
-        outer.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 border-2 border-pink-500 text-slate-900 dark:text-white scale-105 shadow-[0_0_12px_rgba(244,63,94,0.25)]';
-        outer.querySelector('span:nth-child(2)').className = 'text-sm font-black mt-0.5 leading-none text-pink-500 dark:text-pink-400 font-mono';
-      }
-    }
+          // Custom resets for option styles
+          if (className === 'opt-pill-1') {
+            const wrapper = el.querySelector('.p-\\[1\\.5px\\]');
+            const inner = el.querySelector('.rounded-full.px-4');
+            const count = el.querySelector('span:nth-child(2)');
+            const label = el.querySelector('span:first-child');
 
-    // Toggle active state for original Option styles
-    function toggleActive(element, className) {
-      const group = document.querySelectorAll('.' + className);
-      group.forEach(el => {
-        el.classList.remove('active');
-        
-        // Custom resets for option styles
+            wrapper.className = 'p-[1.5px] rounded-full bg-slate-200 dark:bg-neutral-800 transition-all duration-300';
+            inner.className =
+              'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-white';
+            count.className = 'text-[13px] font-black mt-0.5 leading-none text-slate-400 dark:text-gray-500';
+            label.className = 'text-[10px] font-bold leading-none';
+          } else if (className === 'opt-pill-2') {
+            const container = el.querySelector('.flex');
+            const label = el.querySelector('span:first-child');
+            const count = el.querySelector('span:nth-child(2)');
+
+            container.className =
+              'flex flex-col rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 min-w-[80px] shadow-sm hover:border-slate-400 transition-all';
+            label.className =
+              'text-[9px] font-bold text-slate-500 dark:text-gray-400 bg-slate-100 dark:bg-neutral-800 py-0.5 text-center px-2';
+            count.className = 'text-sm font-black text-slate-700 dark:text-gray-300 py-1 text-center font-outfit';
+          } else if (className === 'opt-pill-3') {
+            const card = el.querySelector('.rounded-xl');
+            const label = el.querySelector('span:first-child');
+            const count = el.querySelector('span:nth-child(2)');
+
+            card.className =
+              'rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md p-2 flex flex-col items-center min-w-[76px] hover:scale-105 transition-all';
+            label.className = 'text-[9px] font-medium text-slate-400 dark:text-gray-500 uppercase tracking-wider';
+            count.className = 'text-sm font-black text-slate-700 dark:text-gray-200 font-outfit mt-0.5';
+          }
+        });
+
+        element.classList.add('active');
+
         if (className === 'opt-pill-1') {
-          const wrapper = el.querySelector('.p-\\[1\\.5px\\]');
-          const inner = el.querySelector('.rounded-full.px-4');
-          const count = el.querySelector('span:nth-child(2)');
-          const label = el.querySelector('span:first-child');
-          
-          wrapper.className = 'p-[1.5px] rounded-full bg-slate-200 dark:bg-neutral-800 transition-all duration-300';
-          inner.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-900 text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-white';
-          count.className = 'text-[13px] font-black mt-0.5 leading-none text-slate-400 dark:text-gray-500';
-          label.className = 'text-[10px] font-bold leading-none';
-        }
-        else if (className === 'opt-pill-2') {
-          const container = el.querySelector('.flex');
-          const label = el.querySelector('span:first-child');
-          const count = el.querySelector('span:nth-child(2)');
-          
-          container.className = 'flex flex-col rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 min-w-[80px] shadow-sm hover:border-slate-400 transition-all';
-          label.className = 'text-[9px] font-bold text-slate-500 dark:text-gray-400 bg-slate-100 dark:bg-neutral-800 py-0.5 text-center px-2';
-          count.className = 'text-sm font-black text-slate-700 dark:text-gray-300 py-1 text-center font-outfit';
-        }
-        else if (className === 'opt-pill-3') {
-          const card = el.querySelector('.rounded-xl');
-          const label = el.querySelector('span:first-child');
-          const count = el.querySelector('span:nth-child(2)');
-          
-          card.className = 'rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md p-2 flex flex-col items-center min-w-[76px] hover:scale-105 transition-all';
-          label.className = 'text-[9px] font-medium text-slate-400 dark:text-gray-500 uppercase tracking-wider';
-          count.className = 'text-sm font-black text-slate-700 dark:text-gray-200 font-outfit mt-0.5';
-        }
-      });
+          const wrapper = element.querySelector('.p-\\[1\\.5px\\]');
+          const inner = element.querySelector('.rounded-full.px-4');
+          const count = element.querySelector('span:nth-child(2)');
+          const label = element.querySelector('span:first-child');
 
-      element.classList.add('active');
+          wrapper.className =
+            'p-[1.5px] rounded-full bg-gradient-to-r from-pink-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.3)] scale-105 transition-all';
+          inner.className =
+            'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 text-slate-900 dark:text-white';
+          count.className = 'text-[13px] font-black mt-0.5 leading-none text-pink-500 dark:text-pink-400';
+          label.className = 'text-[10px] font-extrabold leading-none';
+        } else if (className === 'opt-pill-2') {
+          const container = element.querySelector('.flex');
+          const label = element.querySelector('span:first-child');
+          const count = element.querySelector('span:nth-child(2)');
 
-      if (className === 'opt-pill-1') {
-        const wrapper = element.querySelector('.p-\\[1\\.5px\\]');
-        const inner = element.querySelector('.rounded-full.px-4');
-        const count = element.querySelector('span:nth-child(2)');
-        const label = element.querySelector('span:first-child');
-        
-        wrapper.className = 'p-[1.5px] rounded-full bg-gradient-to-r from-pink-500 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.3)] scale-105 transition-all';
-        inner.className = 'rounded-full px-4 py-1.5 flex flex-col items-center min-w-[85px] bg-white dark:bg-neutral-955 text-slate-900 dark:text-white';
-        count.className = 'text-[13px] font-black mt-0.5 leading-none text-pink-500 dark:text-pink-400';
-        label.className = 'text-[10px] font-extrabold leading-none';
+          container.className =
+            'flex flex-col rounded-xl overflow-hidden border border-pink-500 bg-white dark:bg-neutral-955 min-w-[80px] shadow-[0_0_12px_rgba(244,63,94,0.25)] scale-105 transition-all';
+          label.className =
+            'text-[9px] font-black text-white bg-gradient-to-r from-pink-500 to-rose-500 py-0.5 text-center px-2';
+          count.className = 'text-sm font-black text-pink-500 dark:text-pink-400 py-1 text-center font-outfit';
+        } else if (className === 'opt-pill-3') {
+          const card = element.querySelector('.rounded-xl');
+          const label = element.querySelector('span:first-child');
+          const count = element.querySelector('span:nth-child(2)');
+
+          card.className =
+            'rounded-xl border border-pink-500/80 bg-white/95 dark:bg-neutral-955/90 shadow-[0_4px_16px_rgba(244,63,94,0.3)] p-2 flex flex-col items-center min-w-[76px] scale-110 z-20 transition-all';
+          label.className = 'text-[9px] font-extrabold text-pink-500 uppercase tracking-wider';
+          count.className = 'text-base font-black text-slate-900 dark:text-white font-outfit mt-0.5';
+        }
       }
-      else if (className === 'opt-pill-2') {
-        const container = element.querySelector('.flex');
-        const label = element.querySelector('span:first-child');
-        const count = element.querySelector('span:nth-child(2)');
-        
-        container.className = 'flex flex-col rounded-xl overflow-hidden border border-pink-500 bg-white dark:bg-neutral-955 min-w-[80px] shadow-[0_0_12px_rgba(244,63,94,0.25)] scale-105 transition-all';
-        label.className = 'text-[9px] font-black text-white bg-gradient-to-r from-pink-500 to-rose-500 py-0.5 text-center px-2';
-        count.className = 'text-sm font-black text-pink-500 dark:text-pink-400 py-1 text-center font-outfit';
-      }
-      else if (className === 'opt-pill-3') {
-        const card = element.querySelector('.rounded-xl');
-        const label = element.querySelector('span:first-child');
-        const count = element.querySelector('span:nth-child(2)');
-        
-        card.className = 'rounded-xl border border-pink-500/80 bg-white/95 dark:bg-neutral-955/90 shadow-[0_4px_16px_rgba(244,63,94,0.3)] p-2 flex flex-col items-center min-w-[76px] scale-110 z-20 transition-all';
-        label.className = 'text-[9px] font-extrabold text-pink-500 uppercase tracking-wider';
-        count.className = 'text-base font-black text-slate-900 dark:text-white font-outfit mt-0.5';
-      }
-    }
-  </script>
-</body>
+    </script>
+  </body>
 </html>

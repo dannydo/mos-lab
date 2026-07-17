@@ -10,9 +10,19 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "clean": "turbo clean && rm -rf node_modules",
-    "deploy": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/deploy.sh",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.5",
     "turbo": "^2.3.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,json,css,md}": "prettier --write",
+    "apps/web/**/*.{ts,tsx}": "pnpm --filter @mos-lab/web exec eslint --fix",
+    "apps/api/src/**/*.ts": "pnpm --filter @mos-lab/api exec eslint --fix",
+    "packages/shared/src/**/*.ts": "pnpm --filter @mos-lab/shared exec eslint --fix"
   }
 }

@@ -9,8 +9,8 @@ async function main() {
       id: true,
       username: true,
       displayName: true,
-      legacyStaffId: true
-    }
+      legacyStaffId: true,
+    },
   });
   console.log(staff);
 }

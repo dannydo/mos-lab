@@ -15,7 +15,7 @@ export interface Customer {
   totalPromotionsUsed?: number;
   totalReferrals?: number;
   avatar?: string | null;
-  
+
   // Specific combo info if available
   comboBalance?: {
     normalCount: number;
@@ -113,5 +113,3 @@ export interface BulkDeleteCustomersResponse {
   success: boolean;
   count: number;
 }
-
-

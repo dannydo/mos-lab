@@ -4,7 +4,6 @@ import fs from 'fs';
 import path from 'path';
 
 export async function planRoutes(fastify: FastifyInstance) {
-  
   // POST /api/plans
   // Add a customer to a staff's daily plan
   fastify.post('/plans', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -12,9 +11,9 @@ export async function planRoutes(fastify: FastifyInstance) {
     const user = request.user as { id: number };
 
     if (!legacyUserId) {
-      return reply.status(400).send({ 
-        error: 'Bad Request', 
-        message: 'legacyUserId is required' 
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'legacyUserId is required',
       });
     }
 
@@ -26,19 +25,20 @@ export async function planRoutes(fastify: FastifyInstance) {
       const existing = await fastify.prisma.crm.crmDailyPlan.findFirst({
         where: {
           legacyUserId,
-          plannedDate
-        }
+          plannedDate,
+        },
       });
 
       if (existing) {
         return reply.status(409).send({
           error: 'Conflict',
-          message: 'Khách hàng này đã có trong kế hoạch gọi ngày hôm nay.'
+          message: 'Khách hàng này đã có trong kế hoạch gọi ngày hôm nay.',
         });
       }
 
       // 2. Fetch customer bucket from legacy DB
-      const customerRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const customerRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `
         SELECT 
           CASE
             WHEN usb.id IS NULL THEN 'SINGLE'
@@ -49,7 +49,9 @@ export async function planRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_service_balance usb ON u.id = usb.user_id
         WHERE u.id = ?
         LIMIT 1
-      `, legacyUserId);
+      `,
+        legacyUserId
+      );
 
       const bucket = customerRows[0]?.bucket || 'SINGLE';
 
@@ -60,27 +62,27 @@ export async function planRoutes(fastify: FastifyInstance) {
           staffId: user.id,
           plannedDate,
           bucket,
-          status: 'PLANNED'
-        }
+          status: 'PLANNED',
+        },
       });
 
       // 4. Update KPI total planned count using timezone-safe manual upsert
       const todayStr = plannedDate.toISOString().split('T')[0];
       const kpiDate = new Date(todayStr + 'T00:00:00.000Z');
-      
+
       const kpi = await fastify.prisma.crm.crmStaffKpi.findFirst({
         where: {
           staffId: user.id,
-          kpiDate
-        }
+          kpiDate,
+        },
       });
 
       if (kpi) {
         await fastify.prisma.crm.crmStaffKpi.update({
           where: { id: kpi.id },
           data: {
-            totalPlanned: { increment: 1 }
-          }
+            totalPlanned: { increment: 1 },
+          },
         });
       } else {
         await fastify.prisma.crm.crmStaffKpi.create({
@@ -91,8 +93,8 @@ export async function planRoutes(fastify: FastifyInstance) {
             totalCalled: 0,
             totalAnswered: 0,
             totalBooked: 0,
-            totalRenewed: 0
-          }
+            totalRenewed: 0,
+          },
         });
       }
 
@@ -101,7 +103,7 @@ export async function planRoutes(fastify: FastifyInstance) {
       fastify.log.error('Create plan error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to add customer to plan'
+        message: 'Failed to add customer to plan',
       });
     }
   });
@@ -134,12 +136,12 @@ export async function planRoutes(fastify: FastifyInstance) {
           staffId: user.id,
           plannedDate: {
             gte: monday,
-            lte: sunday
-          }
+            lte: sunday,
+          },
         },
         orderBy: {
-          plannedDate: 'asc'
-        }
+          plannedDate: 'asc',
+        },
       });
 
       if (plans.length === 0) {
@@ -147,7 +149,7 @@ export async function planRoutes(fastify: FastifyInstance) {
       }
 
       // Unique user IDs from plans
-      const legacyUserIds = Array.from(new Set(plans.map(p => p.legacyUserId)));
+      const legacyUserIds = Array.from(new Set(plans.map((p) => p.legacyUserId)));
 
       // 2. Fetch customer details from legacy DB in batch
       const placeholder = legacyUserIds.map(() => '?').join(',');
@@ -194,12 +196,12 @@ export async function planRoutes(fastify: FastifyInstance) {
           legacyUserId: { in: legacyUserIds },
           createdAt: {
             gte: monday,
-            lte: sunday
-          }
+            lte: sunday,
+          },
         },
         orderBy: {
-          createdAt: 'asc' // Oldest to newest so that latest call log is mapped last
-        }
+          createdAt: 'asc', // Oldest to newest so that latest call log is mapped last
+        },
       });
 
       // 4. Fetch order checkins in this week for these users
@@ -215,15 +217,15 @@ export async function planRoutes(fastify: FastifyInstance) {
           AND date_created <= ?
       `;
       const ordersData = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-        ordersQuery, 
-        ...legacyUserIds, 
-        `${startStr} 00:00:00`, 
+        ordersQuery,
+        ...legacyUserIds,
+        `${startStr} 00:00:00`,
         `${endStr} 23:59:59`
       );
 
       // Create a map of user profiles for fast lookup
       const customerMap = new Map();
-      customersData.forEach(row => {
+      customersData.forEach((row) => {
         customerMap.set(Number(row.id), {
           id: Number(row.id),
           name: row.name,
@@ -236,24 +238,27 @@ export async function planRoutes(fastify: FastifyInstance) {
           totalSpent: Number(row.totalSpent || 0),
           totalVisits: Number(row.totalVisits || 0),
           bucket: row.bucket,
-          comboBalance: row.bucket !== 'SINGLE' ? {
-            normalCount: Number(row.normalCount || 0),
-            retainCount: Number(row.retainCount || 0),
-            expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null
-          } : null
+          comboBalance:
+            row.bucket !== 'SINGLE'
+              ? {
+                  normalCount: Number(row.normalCount || 0),
+                  retainCount: Number(row.retainCount || 0),
+                  expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null,
+                }
+              : null,
         });
       });
 
       // Map everything to CustomerWeeklyProgress
       // Group plans by user first
       const userPlansMap = new Map<number, typeof plans>();
-      plans.forEach(p => {
+      plans.forEach((p) => {
         const uPlans = userPlansMap.get(p.legacyUserId) || [];
         uPlans.push(p);
         userPlansMap.set(p.legacyUserId, uPlans);
       });
 
-      const result = legacyUserIds.map(uid => {
+      const result = legacyUserIds.map((uid) => {
         const customer = customerMap.get(uid) || {
           id: uid,
           name: 'Khách hàng #' + uid,
@@ -266,13 +271,13 @@ export async function planRoutes(fastify: FastifyInstance) {
           totalSpent: 0,
           totalVisits: 0,
           bucket: 'SINGLE',
-          comboBalance: null
+          comboBalance: null,
         };
 
         const uPlans = userPlansMap.get(uid) || [];
         // Is confirmed if any plan for this user this week has status === 'CONFIRM'
-        const isConfirmed = uPlans.some(p => p.status === 'CONFIRM');
-        const confirmPlan = uPlans.find(p => p.status === 'CONFIRM');
+        const isConfirmed = uPlans.some((p) => p.status === 'CONFIRM');
+        const confirmPlan = uPlans.find((p) => p.status === 'CONFIRM');
 
         // Build 7 daily activities (Monday = 0, Sunday = 6)
         const dailyActivities = Array.from({ length: 7 }).map((_, idx) => {
@@ -281,7 +286,7 @@ export async function planRoutes(fastify: FastifyInstance) {
           const dateStr = currentDate.toLocaleDateString('en-CA');
 
           // Check if there was a call on this date
-          const dateCallLogs = callLogs.filter(cl => {
+          const dateCallLogs = callLogs.filter((cl) => {
             const clDateStr = new Date(cl.createdAt).toLocaleDateString('en-CA');
             return cl.legacyUserId === uid && clDateStr === dateStr;
           });
@@ -290,7 +295,7 @@ export async function planRoutes(fastify: FastifyInstance) {
           const latestCall = hasCall ? dateCallLogs[dateCallLogs.length - 1] : null;
 
           // Check checkin
-          const dateOrders = ordersData.filter(o => {
+          const dateOrders = ordersData.filter((o) => {
             const oDateStr = new Date(o.date_created).toLocaleDateString('en-CA');
             return Number(o.user_id) === uid && oDateStr === dateStr;
           });
@@ -305,7 +310,7 @@ export async function planRoutes(fastify: FastifyInstance) {
             callResult: latestCall?.callResult,
             note: latestCall?.note,
             hasCheckin,
-            orderId
+            orderId,
           };
         });
 
@@ -314,7 +319,7 @@ export async function planRoutes(fastify: FastifyInstance) {
           dailyActivities,
           isConfirmed,
           confirmTime: confirmPlan ? confirmPlan.createdAt.toISOString() : null,
-          planId: uPlans[0]?.id // Return the first plan ID found for this week
+          planId: uPlans[0]?.id, // Return the first plan ID found for this week
         };
       });
 
@@ -323,7 +328,7 @@ export async function planRoutes(fastify: FastifyInstance) {
       fastify.log.error('Weekly timeline error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to retrieve weekly timeline'
+        message: 'Failed to retrieve weekly timeline',
       });
     }
   });
@@ -351,18 +356,21 @@ export async function planRoutes(fastify: FastifyInstance) {
       // Helper function to build lists
       const queryList = async (sql: string, params: any[] = []) => {
         const data = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(sql, ...params);
-        return data.map(row => ({
+        return data.map((row) => ({
           id: row.id,
           name: row.name,
           phone: row.phone,
           lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
           daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
           bucket: row.bucket,
-          comboBalance: row.bucket !== 'SINGLE' ? {
-            normalCount: Number(row.normalCount || 0),
-            retainCount: Number(row.retainCount || 0),
-            expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null
-          } : null
+          comboBalance:
+            row.bucket !== 'SINGLE'
+              ? {
+                  normalCount: Number(row.normalCount || 0),
+                  retainCount: Number(row.retainCount || 0),
+                  expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null,
+                }
+              : null,
         }));
       };
 
@@ -454,7 +462,7 @@ export async function planRoutes(fastify: FastifyInstance) {
         queryList(happyCallSql),
         queryList(single21dSql),
         queryList(combo25dSql),
-        queryList(singleLostSql)
+        queryList(singleLostSql),
       ]);
 
       // Fetch active campaigns
@@ -464,7 +472,8 @@ export async function planRoutes(fastify: FastifyInstance) {
       if (comboT7Ids.length > 0) {
         const sliceIds = comboT7Ids.slice(0, 50); // Fetch smaller list
         const place = sliceIds.map(() => '?').join(',');
-        campaignComboT7 = await queryList(`
+        campaignComboT7 = await queryList(
+          `
           SELECT 
             u.id, 
             COALESCE(up.full_name, 'No Name') as name, 
@@ -485,13 +494,16 @@ export async function planRoutes(fastify: FastifyInstance) {
           LEFT JOIN user_service_balance usb ON u.id = usb.user_id
           WHERE u.id IN (${place})
           LIMIT 10
-        `, sliceIds);
+        `,
+          sliceIds
+        );
       }
 
       if (promoIds.length > 0) {
         const sliceIds = promoIds.slice(0, 50);
         const place = sliceIds.map(() => '?').join(',');
-        campaignPromo2 = await queryList(`
+        campaignPromo2 = await queryList(
+          `
           SELECT 
             u.id, 
             COALESCE(up.full_name, 'No Name') as name, 
@@ -512,7 +524,9 @@ export async function planRoutes(fastify: FastifyInstance) {
           LEFT JOIN user_service_balance usb ON u.id = usb.user_id
           WHERE u.id IN (${place})
           LIMIT 10
-        `, sliceIds);
+        `,
+          sliceIds
+        );
       }
 
       // Fetch planned user IDs this week to exclude them
@@ -521,7 +535,7 @@ export async function planRoutes(fastify: FastifyInstance) {
       const diff = currentMonday.getDate() - day + (day === 0 ? -6 : 1);
       currentMonday.setDate(diff);
       currentMonday.setHours(0, 0, 0, 0);
-      
+
       const currentSunday = new Date(currentMonday);
       currentSunday.setDate(currentMonday.getDate() + 6);
       currentSunday.setHours(23, 59, 59, 999);
@@ -530,24 +544,24 @@ export async function planRoutes(fastify: FastifyInstance) {
         where: {
           plannedDate: {
             gte: currentMonday,
-            lte: currentSunday
-          }
+            lte: currentSunday,
+          },
         },
-        select: { legacyUserId: true }
+        select: { legacyUserId: true },
       });
-      const plannedUserIds = plannedThisWeek.map(p => p.legacyUserId);
+      const plannedUserIds = plannedThisWeek.map((p) => p.legacyUserId);
 
       const myAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
         where: {
           staffId: user.id,
           NOT: {
-            legacyUserId: { in: plannedUserIds }
-          }
+            legacyUserId: { in: plannedUserIds },
+          },
         },
         take: 30,
-        select: { legacyUserId: true }
+        select: { legacyUserId: true },
       });
-      const mySuggestedUserIds = myAssignments.map(a => a.legacyUserId);
+      const mySuggestedUserIds = myAssignments.map((a) => a.legacyUserId);
 
       let myCustomers: any[] = [];
       if (mySuggestedUserIds.length > 0) {
@@ -583,13 +597,13 @@ export async function planRoutes(fastify: FastifyInstance) {
         singleLost,
         campaignComboT7,
         campaignPromo2,
-        myCustomers
+        myCustomers,
       };
     } catch (error: any) {
       fastify.log.error('Get suggests error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to retrieve suggestions'
+        message: 'Failed to retrieve suggestions',
       });
     }
   });
@@ -605,20 +619,20 @@ export async function planRoutes(fastify: FastifyInstance) {
     if (isNaN(planId)) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Invalid plan id'
+        message: 'Invalid plan id',
       });
     }
 
     try {
       // 1. Find daily plan
       const plan = await fastify.prisma.crm.crmDailyPlan.findUnique({
-        where: { id: planId }
+        where: { id: planId },
       });
 
       if (!plan || plan.staffId !== user.id) {
         return reply.status(404).send({
           error: 'Not Found',
-          message: 'Plan not found or unauthorized'
+          message: 'Plan not found or unauthorized',
         });
       }
 
@@ -627,26 +641,26 @@ export async function planRoutes(fastify: FastifyInstance) {
       // 2. Update plan status
       const updatedPlan = await fastify.prisma.crm.crmDailyPlan.update({
         where: { id: planId },
-        data: { status }
+        data: { status },
       });
 
       // 3. Update KPI total booked count using timezone-safe manual upsert
       const planDateStr = new Date(plan.plannedDate).toLocaleDateString('en-CA');
       const kpiDate = new Date(planDateStr + 'T00:00:00.000Z');
- 
+
       const kpi = await fastify.prisma.crm.crmStaffKpi.findFirst({
         where: {
           staffId: user.id,
-          kpiDate
-        }
+          kpiDate,
+        },
       });
 
       if (kpi) {
         await fastify.prisma.crm.crmStaffKpi.update({
           where: { id: kpi.id },
           data: {
-            totalBooked: isConfirmed ? { increment: 1 } : { decrement: 1 }
-          }
+            totalBooked: isConfirmed ? { increment: 1 } : { decrement: 1 },
+          },
         });
       } else {
         await fastify.prisma.crm.crmStaffKpi.create({
@@ -657,8 +671,8 @@ export async function planRoutes(fastify: FastifyInstance) {
             totalCalled: 0,
             totalAnswered: 0,
             totalBooked: isConfirmed ? 1 : 0,
-            totalRenewed: 0
-          }
+            totalRenewed: 0,
+          },
         });
       }
 
@@ -667,9 +681,8 @@ export async function planRoutes(fastify: FastifyInstance) {
       fastify.log.error('Confirm plan error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to update plan confirmation'
+        message: 'Failed to update plan confirmation',
       });
     }
   });
-
 }

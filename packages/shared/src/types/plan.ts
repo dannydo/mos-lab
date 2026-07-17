@@ -11,7 +11,7 @@ export interface DailyPlan {
   priority: number;
   status: PlanStatus;
   createdAt: string;
-  
+
   // Joined relation fields for UI
   customerName?: string;
   customerPhone?: string;

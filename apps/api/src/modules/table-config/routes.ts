@@ -9,12 +9,11 @@ import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
  * - Keys stored in CrmConfig:
  *   - Default/Template config: `table_config:default:${tableId}`
  *   - User-specific config: `table_config:user:${userId}:${tableId}`
- * 
+ *
  * If you need to troubleshoot database structure or queries, refer back to the schema file:
  * file:///Users/dannydo/projects/mos-lab/apps/api/prisma/crm.prisma
  */
 export async function tableConfigRoutes(fastify: FastifyInstance) {
-  
   // GET /api/table-config/:tableId - Get table configurations (user-specific & default)
   fastify.get('/table-config/:tableId', { preHandler: [requireAuth] }, async (request, reply) => {
     const { tableId } = request.params as { tableId: string };
@@ -23,7 +22,7 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
     if (!tableId) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Mã bảng (tableId) là bắt buộc'
+        message: 'Mã bảng (tableId) là bắt buộc',
       });
     }
 
@@ -33,23 +32,23 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
 
       // Fetch user-specific config
       const userRecord = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: userKey }
+        where: { key: userKey },
       });
 
       // Fetch default template config
       const defaultRecord = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: defaultKey }
+        where: { key: defaultKey },
       });
 
       return {
         userConfig: userRecord ? JSON.parse(userRecord.value) : null,
-        defaultConfig: defaultRecord ? JSON.parse(defaultRecord.value) : null
+        defaultConfig: defaultRecord ? JSON.parse(defaultRecord.value) : null,
       };
     } catch (error: any) {
       fastify.log.error(`Fetch table-config error for table ${tableId}:`, error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Không thể lấy cấu hình bảng'
+        message: 'Không thể lấy cấu hình bảng',
       });
     }
   });
@@ -63,7 +62,7 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
     if (!tableId || !Array.isArray(columns)) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Mã bảng (tableId) và danh sách cột (columns) là bắt buộc và phải là mảng'
+        message: 'Mã bảng (tableId) và danh sách cột (columns) là bắt buộc và phải là mảng',
       });
     }
 
@@ -71,7 +70,7 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
       // 1. If trying to save as a default template, verify authorization (must be 'danhdo@gmail.com')
       if (saveAsDefault) {
         const staff = await fastify.prisma.crm.crmStaff.findUnique({
-          where: { id: user.id }
+          where: { id: user.id },
         });
 
         const userEmail = staff?.email;
@@ -80,7 +79,7 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
         if (userEmail !== 'danhdo@gmail.com' && username !== 'danhdo@gmail.com') {
           return reply.status(403).send({
             error: 'Forbidden',
-            message: 'Chỉ email danhdo@gmail.com mới có quyền cập nhật template mặc định'
+            message: 'Chỉ email danhdo@gmail.com mới có quyền cập nhật template mặc định',
           });
         }
 
@@ -89,11 +88,11 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
           where: { key: defaultKey },
           create: {
             key: defaultKey,
-            value: JSON.stringify(columns)
+            value: JSON.stringify(columns),
           },
           update: {
-            value: JSON.stringify(columns)
-          }
+            value: JSON.stringify(columns),
+          },
         });
       }
 
@@ -103,24 +102,24 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
         where: { key: userKey },
         create: {
           key: userKey,
-          value: JSON.stringify(columns)
+          value: JSON.stringify(columns),
         },
         update: {
-          value: JSON.stringify(columns)
-        }
+          value: JSON.stringify(columns),
+        },
       });
 
       return {
         success: true,
-        message: saveAsDefault 
-          ? 'Đã lưu cấu hình làm mặc định hệ thống và áp dụng cho bạn' 
-          : 'Lưu cấu hình cá nhân thành công'
+        message: saveAsDefault
+          ? 'Đã lưu cấu hình làm mặc định hệ thống và áp dụng cho bạn'
+          : 'Lưu cấu hình cá nhân thành công',
       };
     } catch (error: any) {
       fastify.log.error(`Save table-config error for table ${tableId}:`, error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi hệ thống khi lưu cấu hình bảng'
+        message: 'Lỗi hệ thống khi lưu cấu hình bảng',
       });
     }
   });
@@ -133,7 +132,7 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
     if (!tableId) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Mã bảng (tableId) là bắt buộc'
+        message: 'Mã bảng (tableId) là bắt buộc',
       });
     }
 
@@ -142,18 +141,18 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
 
       // Use deleteMany to avoid throwing an error if the config doesn't exist yet
       await fastify.prisma.crm.crmConfig.deleteMany({
-        where: { key: userKey }
+        where: { key: userKey },
       });
 
       return {
         success: true,
-        message: 'Đã reset về cấu hình mặc định thành công'
+        message: 'Đã reset về cấu hình mặc định thành công',
       };
     } catch (error: any) {
       fastify.log.error(`Reset table-config error for table ${tableId}:`, error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi hệ thống khi reset cấu hình bảng'
+        message: 'Lỗi hệ thống khi reset cấu hình bảng',
       });
     }
   });

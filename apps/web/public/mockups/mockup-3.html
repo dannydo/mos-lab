@@ -1,465 +1,517 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mockup 3 - 3-Column Modal (Light)</title>
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    :root {
-      --primary: #D4A84B;
-      --primary-hover: #B3862A;
-      --primary-light: #FDF9F0;
-      --bg: #F3F4F6;
-      --card-bg: #FFFFFF;
-      --text: #1F2937;
-      --text-muted: #6B7280;
-      --border: #E5E7EB;
-      --red: #EF4444;
-      --red-light: #FEE2E2;
-      --green: #10B981;
-      --green-light: #D1FAE5;
-      --orange: #F59E0B;
-      --orange-light: #FEF3C7;
-      --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mockup 3 - 3-Column Modal (Light)</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      :root {
+        --primary: #d4a84b;
+        --primary-hover: #b3862a;
+        --primary-light: #fdf9f0;
+        --bg: #f3f4f6;
+        --card-bg: #ffffff;
+        --text: #1f2937;
+        --text-muted: #6b7280;
+        --border: #e5e7eb;
+        --red: #ef4444;
+        --red-light: #fee2e2;
+        --green: #10b981;
+        --green-light: #d1fae5;
+        --orange: #f59e0b;
+        --orange-light: #fef3c7;
+        --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: #1F2937;
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: #1f2937;
+        color: var(--text);
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
 
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+      }
 
-    .modal-container {
-      width: 95%;
-      max-width: 1280px;
-      height: 90vh;
-      background: var(--bg);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      animation: zoomIn 0.25s ease-out;
-    }
+      .modal-container {
+        width: 95%;
+        max-width: 1280px;
+        height: 90vh;
+        background: var(--bg);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: zoomIn 0.25s ease-out;
+      }
 
-    @keyframes zoomIn {
-      from { transform: scale(0.95); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
+      @keyframes zoomIn {
+        from {
+          transform: scale(0.95);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
 
-    /* Header */
-    .modal-header {
-      padding: 16px 24px;
-      background: var(--card-bg);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+      /* Header */
+      .modal-header {
+        padding: 16px 24px;
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
 
-    .profile-info {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
+      .profile-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
 
-    .avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: var(--primary-light);
-      border: 2px solid var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      color: var(--primary-hover);
-      font-size: 20px;
-    }
+      .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--primary-light);
+        border: 2px solid var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: var(--primary-hover);
+        font-size: 20px;
+      }
 
-    .customer-title h3 {
-      font-size: 18px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+      .customer-title h3 {
+        font-size: 18px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
 
-    .customer-title p {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
+      .customer-title p {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
 
-    .close-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 6px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-    }
+      .close-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
 
-    .close-btn:hover {
-      background: var(--bg);
-      color: var(--text);
-    }
+      .close-btn:hover {
+        background: var(--bg);
+        color: var(--text);
+      }
 
-    /* Three Column Content Grid */
-    .modal-content {
-      flex: 1;
-      overflow: hidden;
-      display: grid;
-      grid-template-columns: 300px 1fr 340px;
-      gap: 16px;
-      padding: 16px;
-    }
+      /* Three Column Content Grid */
+      .modal-content {
+        flex: 1;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 300px 1fr 340px;
+        gap: 16px;
+        padding: 16px;
+      }
 
-    .col {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      height: 100%;
-      overflow: hidden;
-    }
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        height: 100%;
+        overflow: hidden;
+      }
 
-    .col-scroll {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding-right: 4px;
-    }
+      .col-scroll {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-right: 4px;
+      }
 
-    .panel {
-      background: var(--card-bg);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      padding: 16px;
-    }
+      .panel {
+        background: var(--card-bg);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        padding: 16px;
+      }
 
-    .panel-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+      .panel-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
 
-    /* Key metrics */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
+      /* Key metrics */
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
 
-    .kpi-box {
-      background: var(--bg);
-      border-radius: 8px;
-      padding: 10px;
-      text-align: center;
-    }
+      .kpi-box {
+        background: var(--bg);
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+      }
 
-    .kpi-val {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--primary-hover);
-    }
+      .kpi-val {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--primary-hover);
+      }
 
-    .kpi-lbl {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
+      .kpi-lbl {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
 
-    /* Timeline Bookings */
-    .timeline-item {
-      display: flex;
-      gap: 12px;
-      position: relative;
-      padding-bottom: 16px;
-    }
+      /* Timeline Bookings */
+      .timeline-item {
+        display: flex;
+        gap: 12px;
+        position: relative;
+        padding-bottom: 16px;
+      }
 
-    .timeline-item::before {
-      content: '';
-      position: absolute;
-      left: 15px;
-      top: 32px;
-      bottom: 0;
-      width: 2px;
-      background: var(--border);
-    }
+      .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 32px;
+        bottom: 0;
+        width: 2px;
+        background: var(--border);
+      }
 
-    .timeline-item:last-child::before {
-      display: none;
-    }
+      .timeline-item:last-child::before {
+        display: none;
+      }
 
-    .timeline-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: var(--bg);
-      border: 2px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1;
-      flex-shrink: 0;
-    }
+      .timeline-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--bg);
+        border: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+        flex-shrink: 0;
+      }
 
-    .timeline-icon.booked {
-      border-color: var(--green);
-      background: var(--green-light);
-      color: var(--green);
-    }
+      .timeline-icon.booked {
+        border-color: var(--green);
+        background: var(--green-light);
+        color: var(--green);
+      }
 
-    .timeline-card {
-      background: var(--bg);
-      border-radius: 8px;
-      padding: 12px;
-      flex: 1;
-      border: 1px solid var(--border);
-    }
+      .timeline-card {
+        background: var(--bg);
+        border-radius: 8px;
+        padding: 12px;
+        flex: 1;
+        border: 1px solid var(--border);
+      }
 
-    .timeline-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      font-size: 13px;
-    }
+      .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        font-size: 13px;
+      }
 
-    .booking-note {
-      background: var(--card-bg);
-      padding: 6px 10px;
-      border-left: 3px solid var(--primary);
-      margin-top: 6px;
-      font-size: 12px;
-      font-style: italic;
-    }
+      .booking-note {
+        background: var(--card-bg);
+        padding: 6px 10px;
+        border-left: 3px solid var(--primary);
+        margin-top: 6px;
+        font-size: 12px;
+        font-style: italic;
+      }
 
-    /* Pinned and warning notes */
-    .note-card {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 10px;
-    }
+      /* Pinned and warning notes */
+      .note-card {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
 
-    .note-card.warning {
-      border-color: var(--red);
-      background: var(--red-light);
-    }
+      .note-card.warning {
+        border-color: var(--red);
+        background: var(--red-light);
+      }
 
-    .note-card.normal {
-      background: var(--bg);
-    }
+      .note-card.normal {
+        background: var(--bg);
+      }
 
-    /* Call rows */
-    .call-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-bottom: 8px;
-    }
-  </style>
-</head>
-<body>
-
-  <div class="modal-overlay">
-    <div class="modal-container">
-      
-      <!-- Modal Header -->
-      <div class="modal-header">
-        <div class="profile-info">
-          <div class="avatar">L</div>
-          <div class="customer-title">
-            <h3>Lưu <span style="color: var(--primary);">⭐⭐⭐⭐⭐</span></h3>
-            <p>SĐT: 0989.687.579 | Email: user35962@orb.local | Mã: 35962 (ID cũ: 285)</p>
-          </div>
-        </div>
-        <button class="close-btn">
-          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
-        </button>
-      </div>
-
-      <!-- Content Grid -->
-      <div class="modal-content">
-        
-        <!-- Column 1: Stats & Meta -->
-        <div class="col">
-          <div class="panel" style="flex: 1; display: flex; flex-direction: column; gap: 14px;">
-            <div class="panel-title"><i data-lucide="info" style="width: 15px; height: 15px;"></i> Thông tin chung</div>
-            
-            <div class="kpi-grid">
-              <div class="kpi-box">
-                <div class="kpi-val">42.35M</div>
-                <div class="kpi-lbl">LTV</div>
-              </div>
-              <div class="kpi-box">
-                <div class="kpi-val">285</div>
-                <div class="kpi-lbl">Đơn hàng</div>
-              </div>
-            </div>
-
-            <div style="font-size: 13px; display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-              <div><strong style="color: var(--text-muted);">Giới tính:</strong> Nữ</div>
-              <div><strong style="color: var(--text-muted);">Ngày sinh:</strong> 10-03-2023</div>
-              <div><strong style="color: var(--text-muted);">Số ngày chưa quay lại:</strong> <span style="color: var(--red); font-weight: 700;">1 ngày</span></div>
-              <div><strong style="color: var(--text-muted);">Phân loại:</strong> <span style="color: var(--red); font-weight: 700;">COMBO_DEAD</span></div>
-            </div>
-
-            <div style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 12px;">
-              <div style="font-size: 12px; font-weight: 700; color: var(--orange); text-transform: uppercase;">Gói Combo Đang Chạy</div>
-              <div style="background: var(--primary-light); border: 1px solid rgba(212, 168, 75, 0.2); border-radius: 8px; padding: 10px; margin-top: 6px;">
-                <div style="font-size: 13px; font-weight: 700;">New Flawless Mink 1110</div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Còn lại: 3/10 buổi (Avg: -0.3)</div>
-              </div>
+      /* Call rows */
+      .call-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="modal-overlay">
+      <div class="modal-container">
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <div class="profile-info">
+            <div class="avatar">L</div>
+            <div class="customer-title">
+              <h3>Lưu <span style="color: var(--primary)">⭐⭐⭐⭐⭐</span></h3>
+              <p>SĐT: 0989.687.579 | Email: user35962@orb.local | Mã: 35962 (ID cũ: 285)</p>
             </div>
           </div>
+          <button class="close-btn">
+            <i data-lucide="x" style="width: 20px; height: 20px"></i>
+          </button>
         </div>
 
-        <!-- Column 2: Booking Timeline -->
-        <div class="col">
-          <div class="panel" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-            <div class="panel-title"><i data-lucide="calendar" style="width: 15px; height: 15px;"></i> Lịch Sử Đặt Lịch (285)</div>
-            <div class="col-scroll">
-              <div class="timeline-item">
-                <div class="timeline-icon booked"><i data-lucide="check" style="width: 14px; height: 14px;"></i></div>
-                <div class="timeline-card">
-                  <div class="timeline-header">
-                    <strong>New Flawless Mink 1110 - Combo</strong>
-                    <span class="booking-date">10/07/2026 14:30</span>
-                  </div>
-                  <div style="font-size: 11px; color: var(--text-muted);">Chi nhánh: Estella Place | KTV: Yến Vy</div>
-                  <div class="booking-note">9/7 chị đi</div>
+        <!-- Content Grid -->
+        <div class="modal-content">
+          <!-- Column 1: Stats & Meta -->
+          <div class="col">
+            <div class="panel" style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+              <div class="panel-title">
+                <i data-lucide="info" style="width: 15px; height: 15px"></i> Thông tin chung
+              </div>
+
+              <div class="kpi-grid">
+                <div class="kpi-box">
+                  <div class="kpi-val">42.35M</div>
+                  <div class="kpi-lbl">LTV</div>
+                </div>
+                <div class="kpi-box">
+                  <div class="kpi-val">285</div>
+                  <div class="kpi-lbl">Đơn hàng</div>
                 </div>
               </div>
 
-              <div class="timeline-item">
-                <div class="timeline-icon booked"><i data-lucide="check" style="width: 14px; height: 14px;"></i></div>
-                <div class="timeline-card">
-                  <div class="timeline-header">
-                    <strong>New Flawless Mink 1110 - Combo</strong>
-                    <span class="booking-date">19/06/2026 15:00</span>
-                  </div>
-                  <div style="font-size: 11px; color: var(--text-muted);">Chi nhánh: Estella Place | KTV: Yến Vy</div>
-                  <div class="booking-note">SN 9/7/26 (có hỗ trợ cộng thêm 3 tháng)</div>
-                </div>
-              </div>
-
-              <div class="timeline-item">
-                <div class="timeline-icon booked"><i data-lucide="check" style="width: 14px; height: 14px;"></i></div>
-                <div class="timeline-card">
-                  <div class="timeline-header">
-                    <strong>New Flawless Mink 1110 - Combo</strong>
-                    <span class="booking-date">21/04/2026 10:30</span>
-                  </div>
-                  <div style="font-size: 11px; color: var(--text-muted);">Chi nhánh: Estella Place | KTV: Yến Vy</div>
-                  <div class="booking-note">Khách thích mi mềm mi ngắn mi cong nhiều...</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Column 3: Calls & Notes -->
-        <div class="col">
-          <!-- Upper Half: Pinned Notes -->
-          <div class="panel" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; max-height: 50%;">
-            <div class="panel-title"><i data-lucide="edit-3" style="width: 15px; height: 15px;"></i> Nhật ký ghi chú (3)</div>
-            <div class="col-scroll">
-              <div class="note-card warning">
-                <div style="font-size: 13px; font-weight: 600;">Chị chỉ Quấn được mi Tên Năm Nâu</div>
-                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 6px;">
-                  <span>Lâm Vy (Admin)</span>
-                  <span>05/04/2026</span>
-                </div>
-              </div>
-
-              <div class="note-card warning">
-                <div style="font-size: 13px; font-weight: 600;">Chị nói QC KHÔNG CẦN GỌI CHỊ, chị chủ động</div>
-                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 6px;">
-                  <span>Lâm Vy (Admin)</span>
-                  <span>11/11/2025</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Lower Half: Call History -->
-          <div class="panel" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; max-height: 50%;">
-            <div class="panel-title"><i data-lucide="phone-call" style="width: 15px; height: 15px;"></i> Lịch Sử Cuộc Gọi (4)</div>
-            <div class="col-scroll">
-              <div class="call-row">
+              <div style="font-size: 13px; display: flex; flex-direction: column; gap: 8px; margin-top: 10px">
+                <div><strong style="color: var(--text-muted)">Giới tính:</strong> Nữ</div>
+                <div><strong style="color: var(--text-muted)">Ngày sinh:</strong> 10-03-2023</div>
                 <div>
-                  <div style="font-size: 13px; font-weight: 600;">Đã kết nối (15p 26s)</div>
-                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">26/09/2025 14:29</div>
+                  <strong style="color: var(--text-muted)">Số ngày chưa quay lại:</strong>
+                  <span style="color: var(--red); font-weight: 700">1 ngày</span>
                 </div>
-                <i data-lucide="phone-incoming" style="width: 16px; height: 16px; color: var(--green);"></i>
+                <div>
+                  <strong style="color: var(--text-muted)">Phân loại:</strong>
+                  <span style="color: var(--red); font-weight: 700">COMBO_DEAD</span>
+                </div>
               </div>
 
-              <div class="call-row">
-                <div>
-                  <div style="font-size: 13px; font-weight: 600;">Đã kết nối (56s)</div>
-                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">26/08/2025 11:40</div>
+              <div style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 12px">
+                <div style="font-size: 12px; font-weight: 700; color: var(--orange); text-transform: uppercase">
+                  Gói Combo Đang Chạy
                 </div>
-                <i data-lucide="phone-incoming" style="width: 16px; height: 16px; color: var(--green);"></i>
+                <div
+                  style="
+                    background: var(--primary-light);
+                    border: 1px solid rgba(212, 168, 75, 0.2);
+                    border-radius: 8px;
+                    padding: 10px;
+                    margin-top: 6px;
+                  "
+                >
+                  <div style="font-size: 13px; font-weight: 700">New Flawless Mink 1110</div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px">
+                    Còn lại: 3/10 buổi (Avg: -0.3)
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Booking Timeline -->
+          <div class="col">
+            <div class="panel" style="flex: 1; display: flex; flex-direction: column; overflow: hidden">
+              <div class="panel-title">
+                <i data-lucide="calendar" style="width: 15px; height: 15px"></i> Lịch Sử Đặt Lịch (285)
+              </div>
+              <div class="col-scroll">
+                <div class="timeline-item">
+                  <div class="timeline-icon booked"><i data-lucide="check" style="width: 14px; height: 14px"></i></div>
+                  <div class="timeline-card">
+                    <div class="timeline-header">
+                      <strong>New Flawless Mink 1110 - Combo</strong>
+                      <span class="booking-date">10/07/2026 14:30</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted)">Chi nhánh: Estella Place | KTV: Yến Vy</div>
+                    <div class="booking-note">9/7 chị đi</div>
+                  </div>
+                </div>
+
+                <div class="timeline-item">
+                  <div class="timeline-icon booked"><i data-lucide="check" style="width: 14px; height: 14px"></i></div>
+                  <div class="timeline-card">
+                    <div class="timeline-header">
+                      <strong>New Flawless Mink 1110 - Combo</strong>
+                      <span class="booking-date">19/06/2026 15:00</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted)">Chi nhánh: Estella Place | KTV: Yến Vy</div>
+                    <div class="booking-note">SN 9/7/26 (có hỗ trợ cộng thêm 3 tháng)</div>
+                  </div>
+                </div>
+
+                <div class="timeline-item">
+                  <div class="timeline-icon booked"><i data-lucide="check" style="width: 14px; height: 14px"></i></div>
+                  <div class="timeline-card">
+                    <div class="timeline-header">
+                      <strong>New Flawless Mink 1110 - Combo</strong>
+                      <span class="booking-date">21/04/2026 10:30</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted)">Chi nhánh: Estella Place | KTV: Yến Vy</div>
+                    <div class="booking-note">Khách thích mi mềm mi ngắn mi cong nhiều...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 3: Calls & Notes -->
+          <div class="col">
+            <!-- Upper Half: Pinned Notes -->
+            <div
+              class="panel"
+              style="flex: 1; display: flex; flex-direction: column; overflow: hidden; max-height: 50%"
+            >
+              <div class="panel-title">
+                <i data-lucide="edit-3" style="width: 15px; height: 15px"></i> Nhật ký ghi chú (3)
+              </div>
+              <div class="col-scroll">
+                <div class="note-card warning">
+                  <div style="font-size: 13px; font-weight: 600">Chị chỉ Quấn được mi Tên Năm Nâu</div>
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      font-size: 11px;
+                      color: var(--text-muted);
+                      margin-top: 6px;
+                    "
+                  >
+                    <span>Lâm Vy (Admin)</span>
+                    <span>05/04/2026</span>
+                  </div>
+                </div>
+
+                <div class="note-card warning">
+                  <div style="font-size: 13px; font-weight: 600">Chị nói QC KHÔNG CẦN GỌI CHỊ, chị chủ động</div>
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      font-size: 11px;
+                      color: var(--text-muted);
+                      margin-top: 6px;
+                    "
+                  >
+                    <span>Lâm Vy (Admin)</span>
+                    <span>11/11/2025</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lower Half: Call History -->
+            <div
+              class="panel"
+              style="flex: 1; display: flex; flex-direction: column; overflow: hidden; max-height: 50%"
+            >
+              <div class="panel-title">
+                <i data-lucide="phone-call" style="width: 15px; height: 15px"></i> Lịch Sử Cuộc Gọi (4)
+              </div>
+              <div class="col-scroll">
+                <div class="call-row">
+                  <div>
+                    <div style="font-size: 13px; font-weight: 600">Đã kết nối (15p 26s)</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px">26/09/2025 14:29</div>
+                  </div>
+                  <i data-lucide="phone-incoming" style="width: 16px; height: 16px; color: var(--green)"></i>
+                </div>
+
+                <div class="call-row">
+                  <div>
+                    <div style="font-size: 13px; font-weight: 600">Đã kết nối (56s)</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px">26/08/2025 11:40</div>
+                  </div>
+                  <i data-lucide="phone-incoming" style="width: 16px; height: 16px; color: var(--green)"></i>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
       </div>
-
     </div>
-  </div>
 
-  <script>
-    lucide.createIcons();
-  </script>
-</body>
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
 </html>

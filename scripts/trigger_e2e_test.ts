@@ -14,7 +14,7 @@ async function runTest() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Webhook-Secret': WEBHOOK_SECRET
+      'X-Webhook-Secret': WEBHOOK_SECRET,
     },
     body: JSON.stringify({
       call_uuid: TEST_CALL_UUID,
@@ -27,8 +27,8 @@ async function runTest() {
       // Using public sample wav for laughter count validation
       recording_url: 'https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.wav',
       time_start_call: new Date().toISOString(),
-      time_end_call: new Date(Date.now() + 45000).toISOString()
-    })
+      time_end_call: new Date(Date.now() + 45000).toISOString(),
+    }),
   });
 
   if (!response.ok) {
@@ -44,11 +44,13 @@ async function runTest() {
   console.log('⏳ Polling production database for background processing updates...');
   let attempts = 0;
   const maxAttempts = 18; // 3 minutes total (polling every 10s)
-  
+
   const queryDb = () => {
     try {
       const sql = `SELECT analysis_status, status, happy_call_status, laugh_count, duration, bill_sec, LEFT(transcript, 60) AS excerpt, analysis_error FROM crm_omicall_logs WHERE call_uuid = '${TEST_CALL_UUID}'`;
-      const output = execSync(`ssh live-wings "echo \\"${sql}\\" | mysql -u root -pWingsLive2026Base -D mos_lab"`).toString();
+      const output = execSync(
+        `ssh live-wings "echo \\"${sql}\\" | mysql -u root -pWingsLive2026Base -D mos_lab"`
+      ).toString();
       return output;
     } catch (err) {
       console.error('Failed to query remote database:', err.message);
@@ -63,7 +65,7 @@ async function runTest() {
 
     if (output) {
       console.log(output.trim());
-      
+
       if (output.includes('DONE')) {
         console.log('\n🎉 E2E TEST SUCCESSFUL! AI Laughter Detection completed successfully.');
         clearInterval(interval);
@@ -89,7 +91,7 @@ async function runTest() {
   }, 10000);
 }
 
-runTest().catch(err => {
+runTest().catch((err) => {
   console.error('Fatal error during E2E test:', err);
   process.exit(1);
 });

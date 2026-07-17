@@ -16,8 +16,10 @@ export default function ReferralsPage() {
   const [loading, setLoading] = useState(false);
   const [referrers, setReferrers] = useState<any[]>([]);
   const [searchText, setSearchText] = useState('');
-  
-  const [timeFilter, setTimeFilter] = useState<'this_month' | 'last_month' | 'this_year' | 'last_year' | 'all_time'>('all_time');
+
+  const [timeFilter, setTimeFilter] = useState<'this_month' | 'last_month' | 'this_year' | 'last_year' | 'all_time'>(
+    'all_time'
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -72,7 +74,7 @@ export default function ReferralsPage() {
   const isInRange = (dateStr: string | null, filter: string) => {
     if (filter === 'all_time') return true;
     if (!dateStr) return false;
-    
+
     const date = new Date(dateStr);
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -104,9 +106,9 @@ export default function ReferralsPage() {
       this_month: 0,
       last_month: 0,
       this_year: 0,
-      last_year: 0
+      last_year: 0,
     };
-    
+
     for (const r of referrers) {
       const users = r.referredUsers || [];
       let cAllTime = 0;
@@ -114,7 +116,7 @@ export default function ReferralsPage() {
       let cLastMonth = 0;
       let cThisYear = 0;
       let cLastYear = 0;
-      
+
       for (const ru of users) {
         if (isInRange(ru.dateCreated, 'all_time')) cAllTime++;
         if (isInRange(ru.dateCreated, 'this_month')) cThisMonth++;
@@ -122,38 +124,37 @@ export default function ReferralsPage() {
         if (isInRange(ru.dateCreated, 'this_year')) cThisYear++;
         if (isInRange(ru.dateCreated, 'last_year')) cLastYear++;
       }
-      
+
       if (cAllTime > 0) counts.all_time++;
       if (cThisMonth > 0) counts.this_month++;
       if (cLastMonth > 0) counts.last_month++;
       if (cThisYear > 0) counts.this_year++;
       if (cLastYear > 0) counts.last_year++;
     }
-    
+
     return counts;
   }, [referrers]);
 
-  const processedReferrers = referrers.map(r => {
-    const filteredUsers = (r.referredUsers || []).filter((ru: any) => isInRange(ru.dateCreated, timeFilter));
-    const totalReferred = filteredUsers.length;
-    const totalRewardDiamonds = filteredUsers.reduce((sum: number, ru: any) => sum + (ru.rewardDiamonds || 0), 0);
+  const processedReferrers = referrers
+    .map((r) => {
+      const filteredUsers = (r.referredUsers || []).filter((ru: any) => isInRange(ru.dateCreated, timeFilter));
+      const totalReferred = filteredUsers.length;
+      const totalRewardDiamonds = filteredUsers.reduce((sum: number, ru: any) => sum + (ru.rewardDiamonds || 0), 0);
 
-    return {
-      ...r,
-      totalReferred,
-      totalRewardDiamonds,
-      referredUsers: filteredUsers
-    };
-  }).filter(r => r.totalReferred > 0);
+      return {
+        ...r,
+        totalReferred,
+        totalRewardDiamonds,
+        referredUsers: filteredUsers,
+      };
+    })
+    .filter((r) => r.totalReferred > 0);
 
   // Filter local referrers based on name or phone
-  const filteredReferrers = processedReferrers.filter(r => {
+  const filteredReferrers = processedReferrers.filter((r) => {
     const term = searchText.toLowerCase().trim();
     if (!term) return true;
-    return (
-      (r.referrerName || '').toLowerCase().includes(term) ||
-      (r.referrerPhone || '').toLowerCase().includes(term)
-    );
+    return (r.referrerName || '').toLowerCase().includes(term) || (r.referrerPhone || '').toLowerCase().includes(term);
   });
 
   const columns = [
@@ -162,20 +163,22 @@ export default function ReferralsPage() {
       key: 'referrer',
       render: (record: any) => (
         <Space direction="vertical" size={2}>
-          <span 
+          <span
             onClick={() => showCustomerDetails(record.referrerId)}
-            style={{ 
-              fontWeight: 'bold', 
-              color: token.colorPrimary, 
+            style={{
+              fontWeight: 'bold',
+              color: token.colorPrimary,
               cursor: 'pointer',
-              textDecoration: 'underline'
+              textDecoration: 'underline',
             }}
           >
             {record.referrerName}
           </span>
-          <Text type="secondary" style={{ fontSize: '12px' }}>SĐT: {record.referrerPhone}</Text>
+          <Text type="secondary" style={{ fontSize: '12px' }}>
+            SĐT: {record.referrerPhone}
+          </Text>
         </Space>
-      )
+      ),
     },
     {
       title: 'Số người đã giới thiệu',
@@ -186,7 +189,7 @@ export default function ReferralsPage() {
         <Tag color="blue" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
           {val} người bạn
         </Tag>
-      )
+      ),
     },
     {
       title: 'Tổng Kim Cương tích luỹ',
@@ -197,22 +200,22 @@ export default function ReferralsPage() {
         <Tag color="warning" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
           💎 {val} KC
         </Tag>
-      )
+      ),
     },
     {
       title: 'Hành động',
       key: 'actions',
       render: (record: any) => (
-        <Button 
-          type="link" 
-          icon={<EyeOutlined />} 
+        <Button
+          type="link"
+          icon={<EyeOutlined />}
           onClick={() => showCustomerDetails(record.referrerId)}
           style={{ padding: 0 }}
         >
           Xem chi tiết khách hàng
         </Button>
-      )
-    }
+      ),
+    },
   ];
 
   const expandedRowRender = (record: any) => {
@@ -221,29 +224,29 @@ export default function ReferralsPage() {
         title: 'Bạn bè được giới thiệu',
         key: 'name',
         render: (subRec: any) => (
-          <span 
+          <span
             onClick={() => showCustomerDetails(subRec.id)}
-            style={{ 
-              fontWeight: '600', 
-              color: token.colorPrimary, 
+            style={{
+              fontWeight: '600',
+              color: token.colorPrimary,
               cursor: 'pointer',
-              textDecoration: 'underline'
+              textDecoration: 'underline',
             }}
           >
             {subRec.name}
           </span>
-        )
+        ),
       },
       {
         title: 'Số điện thoại',
         dataIndex: 'phone',
-        key: 'phone'
+        key: 'phone',
       },
       {
         title: 'Ngày tham gia',
         dataIndex: 'dateCreated',
         key: 'dateCreated',
-        render: (text: string) => text ? new Date(text).toLocaleDateString('vi-VN') : 'N/A'
+        render: (text: string) => (text ? new Date(text).toLocaleDateString('vi-VN') : 'N/A'),
       },
       {
         title: 'Kim Cương thưởng',
@@ -253,8 +256,8 @@ export default function ReferralsPage() {
           <span style={{ fontWeight: 'bold', color: val > 0 ? '#52c41a' : '#888' }}>
             {val > 0 ? `+${val} 💎` : '0 💎'}
           </span>
-        )
-      }
+        ),
+      },
     ];
 
     return (
@@ -273,29 +276,38 @@ export default function ReferralsPage() {
 
   return (
     <div style={{ padding: '24px', minHeight: '100vh', background: themeMode === 'dark' ? '#0f172a' : '#f8fafc' }}>
-      
       {/* Header card */}
       <Card
         style={{
           marginBottom: '20px',
           background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
           borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
-          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px',
+          }}
+        >
           <Space size={12}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '8px',
-              background: 'rgba(212, 168, 75, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#D4A84B',
-              fontSize: '20px'
-            }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '8px',
+                background: 'rgba(212, 168, 75, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#D4A84B',
+                fontSize: '20px',
+              }}
+            >
               <ShareAltOutlined />
             </div>
             <div>
@@ -325,7 +337,7 @@ export default function ReferralsPage() {
           marginBottom: '16px',
           background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
           borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
-          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
         }}
         styles={{ body: { padding: '0px 16px' } }}
       >
@@ -338,7 +350,7 @@ export default function ReferralsPage() {
             { key: 'this_month', label: `This month (${tabCounts.this_month})` },
             { key: 'last_month', label: `Last month (${tabCounts.last_month})` },
             { key: 'this_year', label: `This Year (${tabCounts.this_year})` },
-            { key: 'last_year', label: `Last Year (${tabCounts.last_year})` }
+            { key: 'last_year', label: `Last Year (${tabCounts.last_year})` },
           ]}
         />
       </Card>
@@ -348,7 +360,7 @@ export default function ReferralsPage() {
         style={{
           background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
           borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
-          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
         }}
         styles={{ body: { padding: '16px' } }}
       >
@@ -363,14 +375,14 @@ export default function ReferralsPage() {
             rowKey="referrerId"
             expandable={{
               expandedRowRender,
-              rowExpandable: record => record.referredUsers && record.referredUsers.length > 0
+              rowExpandable: (record) => record.referredUsers && record.referredUsers.length > 0,
             }}
             pagination={{
               current: currentPage,
               pageSize: pageSize,
               showSizeChanger: true,
               pageSizeOptions: ['10', '20', '50', '100'],
-              onChange: handlePageSizeChange
+              onChange: handlePageSizeChange,
             }}
             bordered
             locale={{ emptyText: 'Không tìm thấy dữ liệu khách giới thiệu.' }}

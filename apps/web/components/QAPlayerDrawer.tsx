@@ -18,7 +18,7 @@ import {
   Typography,
   Divider,
   Row,
-  Col
+  Col,
 } from 'antd';
 import {
   PlayCircleOutlined,
@@ -30,7 +30,7 @@ import {
   CloseOutlined,
   ClockCircleOutlined,
   AudioOutlined,
-  SettingOutlined
+  SettingOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/api';
@@ -44,18 +44,13 @@ interface QAPlayerDrawerProps {
   onVerifySuccess?: () => void;
 }
 
-export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
-  open,
-  omicallLogId,
-  onClose,
-  onVerifySuccess
-}) => {
+export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLogId, onClose, onVerifySuccess }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
 
   const [loading, setLoading] = useState(false);
   const [logDetails, setLogDetails] = useState<any>(null);
-  
+
   // Audio state
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -118,7 +113,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
       const res = await api.post(`/omicall/logs/${omicallLogId}/verify`, {
         happyCallStatus,
         happyCallReason: happyCallReason || null,
-        qaNotes: qaNotes || null
+        qaNotes: qaNotes || null,
       });
       message.success('Cập nhật kết quả thẩm định QA thành công!');
       if (onVerifySuccess) {
@@ -140,7 +135,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play().catch(err => {
+      audioRef.current.play().catch((err) => {
         console.error('Audio play error:', err);
         message.error('Không thể phát file âm thanh này.');
       });
@@ -204,19 +199,27 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
 
   const getHappyCallTagColor = (status: string) => {
     switch (status) {
-      case 'APPROVED': return 'success';
-      case 'REJECTED': return 'error';
-      case 'PENDING_APPROVAL': return 'warning';
-      default: return 'default';
+      case 'APPROVED':
+        return 'success';
+      case 'REJECTED':
+        return 'error';
+      case 'PENDING_APPROVAL':
+        return 'warning';
+      default:
+        return 'default';
     }
   };
 
   const getHappyCallTagLabel = (status: string) => {
     switch (status) {
-      case 'APPROVED': return 'Đồng Ý';
-      case 'REJECTED': return 'Từ Chối';
-      case 'PENDING_APPROVAL': return 'Chờ Duyệt';
-      default: return 'Chưa Duyệt';
+      case 'APPROVED':
+        return 'Đồng Ý';
+      case 'REJECTED':
+        return 'Từ Chối';
+      case 'PENDING_APPROVAL':
+        return 'Chờ Duyệt';
+      default:
+        return 'Chưa Duyệt';
     }
   };
 
@@ -256,7 +259,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
       destroyOnClose
       style={{
         background: themeMode === 'dark' ? '#141414' : '#f9f9f9',
-        color: token.colorText
+        color: token.colorText,
       }}
       styles={{ body: { padding: '20px' } }}
     >
@@ -286,52 +289,68 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                 style={{
                   background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
                   borderColor: token.colorBorderSecondary,
-                  borderRadius: '12px'
+                  borderRadius: '12px',
                 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>Call UUID:</Text>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                      Call UUID:
+                    </Text>
                     <div style={{ wordBreak: 'break-all', fontWeight: '500' }}>{logDetails.callUuid}</div>
                   </div>
                   <Divider style={{ margin: '8px 0' }} />
                   <Row gutter={12}>
                     <Col span={12}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>Telesales:</Text>
-                      <div style={{ fontWeight: '600' }}>{logDetails.staff?.displayName || `Staff - ${logDetails.staffId}`}</div>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        Telesales:
+                      </Text>
+                      <div style={{ fontWeight: '600' }}>
+                        {logDetails.staff?.displayName || `Staff - ${logDetails.staffId}`}
+                      </div>
                     </Col>
                     <Col span={12}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>Khách hàng:</Text>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        Khách hàng:
+                      </Text>
                       <div style={{ fontWeight: '600', color: token.colorPrimary }}>{logDetails.destinationNumber}</div>
                     </Col>
                   </Row>
                   <Divider style={{ margin: '8px 0' }} />
                   <Row gutter={12}>
                     <Col span={8}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>Thời lượng:</Text>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        Thời lượng:
+                      </Text>
                       <div>{formatTime(logDetails.duration)}</div>
                     </Col>
                     <Col span={8}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>Tính cước:</Text>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        Tính cước:
+                      </Text>
                       <div>{formatTime(logDetails.billSec)}</div>
                     </Col>
                     <Col span={8}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>Kết quả:</Text>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        Kết quả:
+                      </Text>
                       <div>
-                        <Tag color={logDetails.status === 'ANSWER' ? 'success' : 'error'}>
-                          {logDetails.status}
-                        </Tag>
+                        <Tag color={logDetails.status === 'ANSWER' ? 'success' : 'error'}>{logDetails.status}</Tag>
                       </div>
                     </Col>
                   </Row>
                   <Divider style={{ margin: '8px 0' }} />
                   <Row gutter={12}>
                     <Col span={12}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>Ngày gọi:</Text>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        Ngày gọi:
+                      </Text>
                       <div>{new Date(logDetails.createdAt).toLocaleString('vi-VN')}</div>
                     </Col>
                     <Col span={12}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>Tiếng cười phát hiện:</Text>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        Tiếng cười phát hiện:
+                      </Text>
                       <div>
                         <Tag color={logDetails.laughCount > 0 ? 'purple' : 'default'} style={{ fontWeight: 'bold' }}>
                           <SmileOutlined /> {logDetails.laughCount || 0} lần
@@ -348,7 +367,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                 style={{
                   background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
                   borderColor: token.colorBorderSecondary,
-                  borderRadius: '12px'
+                  borderRadius: '12px',
                 }}
               >
                 {!logDetails.recordingUrl ? (
@@ -364,7 +383,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                       <Text style={{ fontSize: '12px', fontWeight: '500' }}>{formatTime(currentTime)}</Text>
                       <Text style={{ fontSize: '12px', fontWeight: '500' }}>{formatTime(duration)}</Text>
                     </div>
-                    
+
                     <Slider
                       min={0}
                       max={duration || 100}
@@ -377,7 +396,15 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                     />
 
                     {/* Controls row */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '12px',
+                      }}
+                    >
                       <Space size="middle">
                         <Button
                           icon={<FastBackwardOutlined />}
@@ -390,7 +417,13 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                           type="primary"
                           shape="circle"
                           size="large"
-                          icon={isPlaying ? <PauseCircleOutlined style={{ fontSize: '24px' }} /> : <PlayCircleOutlined style={{ fontSize: '24px' }} />}
+                          icon={
+                            isPlaying ? (
+                              <PauseCircleOutlined style={{ fontSize: '24px' }} />
+                            ) : (
+                              <PlayCircleOutlined style={{ fontSize: '24px' }} />
+                            )
+                          }
                           onClick={togglePlay}
                           style={{
                             background: token.colorPrimary,
@@ -399,7 +432,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                             justifyContent: 'center',
                             alignItems: 'center',
                             width: '50px',
-                            height: '50px'
+                            height: '50px',
                           }}
                         />
                         <Button
@@ -423,7 +456,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                             { value: 1, label: '1.0x' },
                             { value: 1.25, label: '1.25x' },
                             { value: 1.5, label: '1.5x' },
-                            { value: 2, label: '2.0x' }
+                            { value: 2, label: '2.0x' },
                           ]}
                         />
                       </Space>
@@ -439,7 +472,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                 style={{
                   background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
                   borderColor: token.colorBorderSecondary,
-                  borderRadius: '12px'
+                  borderRadius: '12px',
                 }}
               >
                 <Form layout="vertical">
@@ -451,13 +484,25 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                       buttonStyle="solid"
                       className="w-full flex justify-between gap-1"
                     >
-                      <Radio.Button value="APPROVED" className="flex-1 text-center" style={{ borderColor: happyCallStatus === 'APPROVED' ? '#52C41A' : undefined }}>
+                      <Radio.Button
+                        value="APPROVED"
+                        className="flex-1 text-center"
+                        style={{ borderColor: happyCallStatus === 'APPROVED' ? '#52C41A' : undefined }}
+                      >
                         <CheckOutlined style={{ color: '#52C41A' }} /> Đồng ý
                       </Radio.Button>
-                      <Radio.Button value="REJECTED" className="flex-1 text-center" style={{ borderColor: happyCallStatus === 'REJECTED' ? '#FF4D4F' : undefined }}>
+                      <Radio.Button
+                        value="REJECTED"
+                        className="flex-1 text-center"
+                        style={{ borderColor: happyCallStatus === 'REJECTED' ? '#FF4D4F' : undefined }}
+                      >
                         <CloseOutlined style={{ color: '#FF4D4F' }} /> Từ chối
                       </Radio.Button>
-                      <Radio.Button value="PENDING_APPROVAL" className="flex-1 text-center" style={{ borderColor: happyCallStatus === 'PENDING_APPROVAL' ? '#FAAD14' : undefined }}>
+                      <Radio.Button
+                        value="PENDING_APPROVAL"
+                        className="flex-1 text-center"
+                        style={{ borderColor: happyCallStatus === 'PENDING_APPROVAL' ? '#FAAD14' : undefined }}
+                      >
                         Chờ duyệt
                       </Radio.Button>
                     </Radio.Group>
@@ -474,13 +519,13 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                             ? [
                                 { value: 'auto_180s', label: 'Cuộc gọi tự động đạt ≥ 180 giây' },
                                 { value: 'auto_laughter_30s', label: 'Cuộc gọi tự động đạt ≥ 30 giây + có tiếng cười' },
-                                { value: 'manual_approved', label: 'Duyệt thủ công bởi QA Manager' }
+                                { value: 'manual_approved', label: 'Duyệt thủ công bởi QA Manager' },
                               ]
                             : [
                                 { value: 'no_show_outcome', label: 'Khách hàng không phản hồi thực chất' },
                                 { value: 'wrong_number', label: 'Sai số điện thoại / Nhầm máy' },
                                 { value: 'short_spam', label: 'Cuộc gọi rác / thời lượng quá ngắn' },
-                                { value: 'other', label: 'Lý do khác' }
+                                { value: 'other', label: 'Lý do khác' },
                               ]
                         }
                       />
@@ -508,7 +553,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                         color: 'black',
                         fontWeight: '600',
                         height: '40px',
-                        borderRadius: '8px'
+                        borderRadius: '8px',
                       }}
                     >
                       Lưu Kết Quả Thẩm Định
@@ -528,7 +573,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                   style={{
                     background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
                     borderColor: token.colorBorderSecondary,
-                    borderRadius: '12px'
+                    borderRadius: '12px',
                   }}
                   styles={{ body: { padding: '12px' } }}
                 >
@@ -545,7 +590,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                             borderColor: isActive ? '#722ED1' : token.colorBorder,
                             background: isActive ? 'rgba(114, 46, 209, 0.08)' : undefined,
                             fontWeight: isActive ? '600' : 'normal',
-                            borderRadius: '20px'
+                            borderRadius: '20px',
                           }}
                         >
                           {formatTime(laugh.start)} - {formatTime(laugh.end)} ({Math.round(laugh.confidence * 100)}%)
@@ -566,7 +611,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                   borderRadius: '12px',
                   height: laughList.length > 0 ? 'calc(100vh - 280px)' : 'calc(100vh - 195px)',
                   display: 'flex',
-                  flexDirection: 'column'
+                  flexDirection: 'column',
                 }}
                 styles={{ body: { overflowY: 'auto', flex: 1, padding: '16px' } }}
               >
@@ -579,7 +624,9 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                   </div>
                 ) : logDetails.analysisStatus === 'FAILED' ? (
                   <div className="py-10 text-center">
-                    <Text type="danger" style={{ fontWeight: '500' }}>AI xử lý thất bại</Text>
+                    <Text type="danger" style={{ fontWeight: '500' }}>
+                      AI xử lý thất bại
+                    </Text>
                     {logDetails.analysisError && (
                       <Paragraph type="secondary" style={{ marginTop: '8px', fontSize: '13px' }}>
                         Chi tiết: {logDetails.analysisError}
@@ -619,7 +666,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                                 padding: '4px 8px',
                                 borderRadius: '6px',
                                 background: isClose ? 'rgba(212, 168, 75, 0.08)' : 'transparent',
-                                transition: 'background 0.3s ease'
+                                transition: 'background 0.3s ease',
                               }}
                             >
                               <Button
@@ -630,7 +677,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({
                                   color: token.colorPrimary,
                                   fontWeight: '600',
                                   fontSize: '13px',
-                                  height: 'auto'
+                                  height: 'auto',
                                 }}
                                 onClick={() => seekTo(totalSecs)}
                               >

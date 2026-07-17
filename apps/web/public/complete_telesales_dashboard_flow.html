@@ -1,782 +1,1072 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Telesales Header & Popup Flow - 10 Phiên Bản Mới Toanh</title>
-  <style>
-    :root {
-      --bg-dark: #09090b;
-      --card-dark: #121214;
-      --border-dark: #27272a;
-      --text-main: #f4f4f5;
-      --text-muted: #a1a1aa;
-      --wings-gold: #fbbf24;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-
-    body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Left Theme Selection Sidebar */
-    .sidebar-left {
-      width: 320px;
-      background-color: #0c0c0e;
-      border-right: 1px solid var(--border-dark);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .sidebar-header {
-      padding: 24px;
-      border-bottom: 1px solid var(--border-dark);
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-      color: white;
-    }
-
-    .sidebar-header h1 {
-      font-size: 16px;
-      font-weight: 700;
-    }
-
-    .sidebar-header p {
-      font-size: 10px;
-      opacity: 0.8;
-      text-transform: uppercase;
-      margin-top: 4px;
-      font-weight: bold;
-    }
-
-    .nav-list {
-      list-style: none;
-      padding: 12px;
-      overflow-y: auto;
-      flex: 1;
-    }
-
-    .nav-item {
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 12px;
-      cursor: pointer;
-      margin-bottom: 6px;
-      transition: all 0.2s;
-      border: 1px solid transparent;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .nav-item:hover {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .nav-item.active {
-      background-color: #3b82f6;
-      color: white;
-      font-weight: 600;
-    }
-
-    /* Main Showcase Column */
-    .main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      background-color: #09090b;
-      position: relative;
-    }
-
-    .top-toolbar {
-      padding: 16px 24px;
-      background-color: #0c0c0e;
-      border-bottom: 1px solid var(--border-dark);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .toolbar-info h2 {
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .toolbar-info p {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    /* Live Simulated Workspace */
-    .viewport {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at center, #1b2030 0%, #09090b 100%);
-      padding: 40px;
-      position: relative;
-    }
-
-    /* Simulated Header Wrapper */
-    .simulated-header-container {
-      width: 100%;
-      max-width: 960px;
-      height: 60px;
-      background-color: #ffffff;
-      border-bottom: 1px solid #e0e0e0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-      position: absolute;
-      top: 30px;
-      border-radius: 8px;
-    }
-
-    /* Left Area of Simulated Header */
-    .sh-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #3c4043;
-    }
-
-    .sh-sheet-icon {
-      width: 22px;
-      height: 22px;
-      background-color: #0f9d58;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 10px;
-      font-weight: bold;
-    }
-
-    /* Right Area of Simulated Header (Image 1 style) */
-    .sh-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    /* Overlapping Avatars Group */
-    .sh-avatar-group {
-      display: flex;
-      align-items: center;
-    }
-
-    .sh-circle-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: 2px solid #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 700;
-      color: white;
-      cursor: pointer;
-      margin-left: -6px;
-      position: relative;
-      transition: all 0.2s;
-    }
-
-    .sh-circle-avatar:first-child {
-      margin-left: 0;
-    }
-
-    .sh-circle-avatar:hover {
-      transform: translateY(-2px);
-      z-index: 10;
-    }
-
-    /* Icons */
-    .sh-icon-btn {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.15s;
-    }
-
-    .sh-icon-btn:hover {
-      background-color: #f1f3f4;
-    }
-
-    /* Share Button */
-    .sh-share-btn {
-      background-color: #c2e7ff;
-      color: #001d35;
-      border: none;
-      padding: 8px 18px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .sh-share-btn:hover {
-      background-color: #b3dbf6;
-    }
-
-    /* User Profile Trigger on far right */
-    .sh-user-profile {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background-color: #0f0f10;
-      border: 1px solid #ddd;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    /* Dark Mode Theme overrides for Header */
-    .header-dark-mode {
-      background-color: #16171f !important;
-      border-bottom-color: #27272a !important;
-      color: white !important;
-    }
-    .header-dark-mode .sh-left { color: white !important; }
-    .header-dark-mode .sh-circle-avatar { border-color: #16171f !important; }
-    .header-dark-mode .sh-icon-btn:hover { background-color: #27272a !important; }
-    .header-dark-mode .sh-share-btn { background-color: rgba(59, 130, 246, 0.2) !important; color: #60a5fa !important; border: 1px solid rgba(59, 130, 246, 0.3) !important; }
-
-    /* DIM OVERLAY FOR POPUP */
-    .dim-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(8px);
-      display: flex; /* Flex centers the modal */
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      padding: 20px;
-    }
-
-    /* THE POPUP CONTAINER */
-    .popup-wrapper-box {
-      width: 880px;
-      height: 600px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* CSS THEME SCHEMES FOR MODAL POPUP */
-
-    /* 1. Classic Workspace Dark (Default matching Image 2) */
-    .scheme-classic-dark {
-      background-color: #17181c;
-      border: 1px solid rgba(251, 191, 36, 0.3);
-      color: #f4f4f5;
-      border-radius: 28px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-    }
-    .scheme-classic-dark .theme-card { background-color: #1f2025; border: 1px solid #2d2e35; }
-    .scheme-classic-dark .theme-tab-item.active { color: var(--wings-gold); border-bottom-color: var(--wings-gold); }
-    .scheme-classic-dark .theme-close-btn { background: linear-gradient(135deg, #fbbf24, #d97706); color: #000; }
-
-    /* 2. Glassmorphic Cyan/Rose (Ultra Glass) */
-    .scheme-glass-ultra {
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #fff;
-      border-radius: 28px;
-      box-shadow: 0 20px 50px rgba(139, 92, 246, 0.15);
-    }
-    .scheme-glass-ultra .theme-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.06); }
-    .scheme-glass-ultra .theme-tab-item.active { color: #f43f5e; border-bottom-color: #f43f5e; }
-    .scheme-glass-ultra .theme-close-btn { background: linear-gradient(135deg, #f43f5e, #a855f7); color: #fff; }
-
-    /* 3. Neumorphic Slate */
-    .scheme-neumorphic {
-      background-color: #e2e8f0;
-      color: #1e293b;
-      border-radius: 28px;
-      border: 1px solid #cbd5e1;
-      box-shadow: 12px 12px 24px #94a3b8, -12px -12px 24px #ffffff;
-    }
-    .scheme-neumorphic .theme-card { background-color: #e2e8f0; border: none; box-shadow: inset 4px 4px 8px #cbd5e1, inset -4px -4px 8px #ffffff; }
-    .scheme-neumorphic .theme-tab-item.active { color: #3b82f6; border-bottom-color: #3b82f6; }
-    .scheme-neumorphic .theme-close-btn { background-color: #3b82f6; color: #fff; box-shadow: 2px 2px 5px #cbd5e1; }
-
-    /* 4. Linear Developer Purple */
-    .scheme-linear-purple {
-      background-color: #0b0b0f;
-      border: 1px solid #27272a;
-      color: #e4e4e7;
-      border-radius: 6px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-    }
-    .scheme-linear-purple .theme-card { background-color: #121214; border: 1px solid #27272a; }
-    .scheme-linear-purple .theme-tab-item.active { color: #8b5cf6; border-bottom-color: #8b5cf6; }
-    .scheme-linear-purple .theme-close-btn { background-color: #8b5cf6; color: #fff; border-radius: 4px; }
-
-    /* 5. Gradient Mesh (Cyber Glow) */
-    .scheme-gradient-mesh {
-      background: linear-gradient(135deg, #130a24, #050508);
-      border: 1px solid rgba(251, 191, 36, 0.4);
-      color: #fff;
-      border-radius: 28px;
-      box-shadow: 0 20px 50px rgba(251, 191, 36, 0.2);
-    }
-    .scheme-gradient-mesh .theme-card { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255,255,255,0.08); }
-    .scheme-gradient-mesh .theme-tab-item.active { color: #f59e0b; border-bottom-color: #f59e0b; }
-    .scheme-gradient-mesh .theme-close-btn { background: linear-gradient(135deg, #fbbf24, #eab308); color: #000; }
-
-    /* 6. Wings Golden Luxury (High Contrast Brand) */
-    .scheme-wings-luxury {
-      background-color: #050505;
-      border: 2px solid #fbbf24;
-      color: #fff;
-      border-radius: 16px;
-      box-shadow: 0 25px 60px rgba(251, 191, 36, 0.15);
-    }
-    .scheme-wings-luxury .theme-card { background-color: #0f0f10; border: 1px solid #252528; }
-    .scheme-wings-luxury .theme-tab-item.active { color: #fbbf24; border-bottom-color: #fbbf24; }
-    .scheme-wings-luxury .theme-close-btn { background: #fbbf24; color: #000; font-weight: bold; border-radius: 4px; }
-
-    /* 7. Vercel Stark Monochrome */
-    .scheme-vercel-mono {
-      background-color: #000000;
-      border: 1px solid #333333;
-      color: #ffffff;
-      border-radius: 8px;
-    }
-    .scheme-vercel-mono .theme-card { background-color: #111111; border: 1px solid #333333; }
-    .scheme-vercel-mono .theme-tab-item.active { color: #ffffff; border-bottom-color: #ffffff; }
-    .scheme-vercel-mono .theme-close-btn { background-color: #ffffff; color: #000000; border-radius: 4px; }
-
-    /* 8. Retro Pixel 8-Bit */
-    .scheme-retro-game {
-      background-color: #0a1128;
-      border: 3px solid #00f5d4;
-      color: #00f5d4;
-      font-family: 'Courier New', Courier, monospace;
-      border-radius: 0;
-      box-shadow: 10px 10px 0px #00f5d4;
-    }
-    .scheme-retro-game .theme-card { background-color: #121c35; border: 2px solid #00f5d4; }
-    .scheme-retro-game .theme-tab-item.active { color: #ff007f; border-bottom-color: #ff007f; }
-    .scheme-retro-game .theme-close-btn { background-color: #ff007f; color: #fff; border-radius: 0; }
-
-    /* 9. Cyberpunk Neon Riot */
-    .scheme-cyber-neon {
-      background-color: #0d0116;
-      border: 1.5px solid #ff007f;
-      color: #39ff14;
-      border-radius: 20px;
-      box-shadow: 0 0 20px rgba(255, 0, 127, 0.4);
-    }
-    .scheme-cyber-neon .theme-card { background-color: #150225; border: 1px solid #39ff14; }
-    .scheme-cyber-neon .theme-tab-item.active { color: #ff007f; border-bottom-color: #ff007f; }
-    .scheme-cyber-neon .theme-close-btn { background: #39ff14; color: #000; }
-
-    /* 10. Material Design 3 Pastel Light */
-    .scheme-material-pastel {
-      background-color: #fff9f2;
-      border: 1px solid #ffdec2;
-      color: #4a3e3d;
-      border-radius: 32px;
-      box-shadow: 0 15px 30px rgba(255, 222, 194, 0.4);
-    }
-    .scheme-material-pastel .theme-card { background-color: #ffffff; border: 1px solid #ffe8d6; }
-    .scheme-material-pastel .theme-tab-item.active { color: #ff7c3b; border-bottom-color: #ff7c3b; }
-    .scheme-material-pastel .theme-close-btn { background-color: #ff7c3b; color: #fff; border-radius: 24px; }
-
-    /* Detail card formatting */
-    .popup-content-columns {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      padding: 24px 32px;
-      overflow-y: auto;
-    }
-
-    .theme-card {
-      border-radius: 16px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .theme-close-btn {
-      border: none;
-      padding: 10px 24px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    /* Explanation card at the bottom footer */
-    .footer-desc-panel {
-      padding: 20px;
-      background-color: #0c0c0e;
-      border-top: 1px solid var(--border-dark);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .footer-desc-panel h4 {
-      color: #3b82f6;
-      margin-bottom: 4px;
-      font-weight: 700;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Theme selections -->
-  <div class="sidebar-left">
-    <div class="sidebar-header">
-      <h1>TELESALES FLOW</h1>
-      <p>10 Interactive Themes</p>
-    </div>
-    <ul class="nav-list" id="themeList">
-      <div class="nav-section-title">Chọn Theme để Lập Trình (10)</div>
-      <!-- Rendered dynamically -->
-    </ul>
-  </div>
-
-  <!-- Main Viewport Area -->
-  <div class="main-content">
-    <div class="top-toolbar">
-      <div class="toolbar-info">
-        <h2 id="currentThemeName">Mã số thiết kế #1: Classic Workspace Dark</h2>
-        <p>Bấm trực tiếp vào các avatar DW (Danny Wings) hoặc TN (Tâm Nguyễn) trên Header để kiểm tra Popup tương ứng.</p>
-      </div>
-      <div class="combo-badge" id="currentComboLabel">Mã số thiết kế: 1/10</div>
-    </div>
-
-    <!-- Viewport -->
-    <div class="viewport">
-      
-      <!-- Simulated Header row (Image 1 style) -->
-      <div class="simulated-header-container" id="simulatedHeader">
-        <div class="sh-left">
-          <div class="sh-sheet-icon">📊</div>
-          <span>Bảng Tính Lương Booker & KPIs - Wings Lashes</span>
-        </div>
-        <div class="sh-right">
-          <!-- Overlapping Avatars Stack matching Image 1 -->
-          <div class="sh-avatar-group">
-            <div class="sh-circle-avatar" style="background-color: #3b82f6; z-index: 3;" onclick="openStaffDashboard('DW')" title="Danny Wings (Sales)">DW</div>
-            <div class="sh-circle-avatar" style="background-color: #ec4899; z-index: 2;" onclick="openStaffDashboard('TN')" title="Tâm Nguyễn (Telesales)">TN</div>
-          </div>
-          
-          <div class="sh-icon-btn">💬</div>
-          <div class="sh-icon-btn">🎦</div>
-          
-          <button class="sh-share-btn">
-            <span>👥 Share</span>
-          </button>
-          
-          <div class="sh-user-profile" onclick="openStaffDashboard('DD')">
-            <span style="color: var(--wings-gold); font-size: 14px; font-weight: bold;">🪶</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- THE HUGE POPUP MODAL (Image 2 style) -->
-      <div class="dim-overlay" id="dimOverlay">
-        <div class="popup-wrapper-box scheme-classic-dark" id="popupBox">
-          
-          <!-- Popup Header -->
-          <div style="padding: 24px 32px; border-bottom: 1px solid var(--border-dark); display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 16px;">
-              <div id="modalAvatarCircle" style="width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 16px; border: 2.5px solid #10b981;">TN</div>
-              <div>
-                <h3 style="font-size: 16px; font-weight: bold;" id="modalStaffName">Tâm Nguyễn (Telesales)</h3>
-                <p style="font-size: 12px; color: var(--text-muted);" id="modalStaffSub">Senior Booker Coordinator • tam.nguyen@wingslashes.com</p>
-              </div>
-            </div>
-            
-            <div style="background-color: rgba(251, 191, 36, 0.08); border: 1px dashed rgba(251, 191, 36, 0.3); padding: 8px 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px;">
-              <div>
-                <span style="font-size: 9px; color: var(--text-muted); display: block;">TIẾN ĐỘ THÁNG 7</span>
-                <span style="font-size: 12px; font-weight: bold; color: var(--wings-gold);" id="modalSummaryGoal">165 / 200 Booking</span>
-              </div>
-              <div style="width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--wings-gold); border-top-color: transparent;"></div>
-            </div>
-          </div>
-
-          <!-- Tab labels bar -->
-          <div style="display: flex; background-color: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border-dark); padding: 0 32px;">
-            <div style="padding: 14px 20px; font-size: 12px; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent;" class="theme-tab-item active" id="tab0" onclick="switchModalTab(0)">📊 HIỆU SUẤT & PHỄU GỌI</div>
-            <div style="padding: 14px 20px; font-size: 12px; font-weight: bold; color: var(--wings-gold); cursor: pointer; border-bottom: 3px solid var(--wings-gold);" class="theme-tab-item" id="tab1" onclick="switchModalTab(1)">🏆 BẢNG ĐẤU & THÀNH TÍCH</div>
-            <div style="padding: 14px 20px; font-size: 12px; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent;" class="theme-tab-item" id="tab2" onclick="switchModalTab(2)">💵 LƯƠNG THƯỞNG & NHIỆM VỤ</div>
-          </div>
-
-          <!-- Active tab pane layout columns (Currently showing Tab 2) -->
-          <div class="popup-content-columns" id="modalPaneArea">
-            <!-- Loaded dynamically by Javascript to match the screenshot or selected tab -->
-          </div>
-
-          <!-- Popup Footer -->
-          <div style="padding: 16px 32px; border-top: 1px solid var(--border-dark); display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 10px; color: var(--text-muted);">*Dữ liệu thuộc cổng thông tin nội bộ của Wings Lashes. Trực thuộc ban quản trị Danny Do.</span>
-            <button class="theme-close-btn" onclick="closeStaffDashboard()">Hoàn tất & Đóng</button>
-          </div>
-
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Explanation bottom footer -->
-    <div class="footer-desc-panel">
-      <h4 id="footerTitle">Chi tiết concept thiết kế</h4>
-      <p id="footerDesc">Mô tả cấu trúc và định hướng người dùng.</p>
-    </div>
-  </div>
-
-  <script>
-    // Staff metrics database
-    const staffDb = {
-      TN: {
-        name: "Tâm Nguyễn (Telesales)",
-        sub: "Senior Booker Coordinator • tam.nguyen@wingslashes.com",
-        avatar: "TN",
-        avatarColor: "#ec4899",
-        goal: "165 / 200 Booking",
-        streak: "5 Ngày Đạt Target",
-        streakDesc: "Duy trì chuỗi tối thiểu 7 ngày để mở khóa Hệ số thưởng 1.2x",
-        medals: "Mắt Thần (1000 cuộc gọi) và Chiến thần Telesales.",
-        rankList: [
-          { name: "1. Bảo Hân (Leader)", val: "185 đơn", highlight: false },
-          { name: "2. Tâm Nguyễn (Bạn)", val: "165 đơn", highlight: true },
-          { name: "3. Danny Wings", val: "142 đơn", highlight: false }
-        ],
-        gapText: "Khoảng cách đến vị trí Top 1: <strong>20 đơn</strong>. Cố lên bạn ơi!",
-        kpis: [
-          { name: "Hôm nay:", val: "8 / 10 đơn (80%)", width: "80%" },
-          { name: "Tuần này:", val: "38 / 50 đơn (76%)", width: "76%" },
-          { name: "Tháng này:", val: "165 / 200 đơn (82.5%)", width: "82.5%" }
-        ],
-        salary: [
-          { name: "Lương cứng ca trực:", val: "5,500,000đ" },
-          { name: "Hoa hồng Booker (38 đơn):", val: "3,300,000đ" },
-          { name: "Hoa hồng gia hạn (18 đơn):", val: "1,440,000đ" },
-          { name: "Hệ số chuỗi Streak (1.2x):", val: "+948,000đ" },
-          { name: "Lương tạm tính:", val: "11,188,000đ", bold: true }
-        ]
-      },
-      DW: {
-        name: "Danny Wings (Sales)",
-        sub: "Sales Team Leader • danny.wings@wingslashes.com",
-        avatar: "DW",
-        avatarColor: "#3b82f6",
-        goal: "142 / 200 Booking",
-        streak: "3 Ngày Đạt Target",
-        streakDesc: "Bứt phá doanh số ngày để kích hoạt lại chuỗi thần tốc",
-        medals: "Bàn Tay Vàng (Chốt 500 khách) và Chiến binh kiên cường.",
-        rankList: [
-          { name: "1. Bảo Hân (Leader)", val: "185 đơn", highlight: false },
-          { name: "2. Tâm Nguyễn", val: "165 đơn", highlight: false },
-          { name: "3. Danny Wings (Bạn)", val: "142 đơn", highlight: true }
-        ],
-        gapText: "Khoảng cách đến vị trí Top 2: <strong>23 đơn</strong>.",
-        kpis: [
-          { name: "Hôm nay:", val: "6 / 10 đơn (60%)", width: "60%" },
-          { name: "Tuần này:", val: "30 / 50 đơn (60%)", width: "60%" },
-          { name: "Tháng này:", val: "142 / 200 đơn (71.0%)", width: "71%" }
-        ],
-        salary: [
-          { name: "Lương cứng ca trực:", val: "6,000,000đ" },
-          { name: "Hoa hồng chốt đơn (30 đơn):", val: "2,800,000đ" },
-          { name: "Hoa hồng gia hạn (10 đơn):", val: "800,000đ" },
-          { name: "Lương tạm tính:", val: "9,600,000đ", bold: true }
-        ]
-      },
-      DD: {
-        name: "Danny Do (Admin)",
-        sub: "HR & System Administrator • danny.do@wingslashes.com",
-        avatar: "🪶",
-        avatarColor: "#0f0f10",
-        goal: "185 / 200 Booking",
-        streak: "12 Ngày Đạt Target",
-        streakDesc: "Kỷ lục chuỗi làm việc cao nhất toàn chi nhánh CRM",
-        medals: "Quyền Lực Admin (Đã phê chuẩn 15 bảng lương Booker).",
-        rankList: [
-          { name: "1. Danny Do (Bạn)", val: "185 đơn", highlight: true },
-          { name: "2. Tâm Nguyễn", val: "165 đơn", highlight: false },
-          { name: "3. Danny Wings", val: "142 đơn", highlight: false }
-        ],
-        gapText: "Đang dẫn đầu bảng đua thành tích xuất sắc nhất!",
-        kpis: [
-          { name: "Hôm nay:", val: "9 / 10 đơn (90%)", width: "90%" },
-          { name: "Tuần này:", val: "45 / 50 đơn (90%)", width: "90%" },
-          { name: "Tháng này:", val: "185 / 200 đơn (92.5%)", width: "92.5%" }
-        ],
-        salary: [
-          { name: "Lương cơ bản Admin:", val: "12,000,000đ" },
-          { name: "Thưởng chuỗi Streak:", val: "+2,000,000đ" },
-          { name: "Lương tạm tính:", val: "14,000,000đ", bold: true }
-        ]
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Telesales Header & Popup Flow - 10 Phiên Bản Mới Toanh</title>
+    <style>
+      :root {
+        --bg-dark: #09090b;
+        --card-dark: #121214;
+        --border-dark: #27272a;
+        --text-main: #f4f4f5;
+        --text-muted: #a1a1aa;
+        --wings-gold: #fbbf24;
       }
-    };
 
-    // 10 Visual Themes definitions
-    const themes = [
-      { id: 1, name: "1. Classic Workspace Dark", cssClass: "scheme-classic-dark", isDark: true, desc: "Giao diện tối sâu thẳm, các thẻ được viền vàng mỏng sang trọng giống hệt ảnh tham chiếu thứ 2." },
-      { id: 2, name: "2. Glassmorphic Cyan/Rose", cssClass: "scheme-glass-ultra", isDark: true, desc: "Sử dụng các lớp kính mờ cực mạnh (backdrop-filter) kết hợp đường sáng neon xanh ngọc và hồng cánh sen." },
-      { id: 3, name: "3. Neumorphic Slate", cssClass: "scheme-neumorphic", isDark: false, desc: "Giao diện dập nổi lõm tinh xảo tông màu xám lạnh. Tạo cảm giác tương tác vật lý cực tốt." },
-      { id: 4, name: "4. Linear Developer Purple", cssClass: "scheme-linear-purple", isDark: true, desc: "Giao diện siêu phẳng tối giản hoàn toàn, góc vuông cứng cáp với tông màu tím chủ đạo phong cách lập trình." },
-      { id: 5, name: "5. Gradient Mesh Glow", cssClass: "scheme-gradient-mesh", isDark: true, desc: "Dải mây khói màu tím sẫm lan tỏa phía sau lớp kính làm tôn lên các chỉ số KPIs." },
-      { id: 6, name: "6. Wings Golden Luxury", cssClass: "scheme-wings-luxury", isDark: true, desc: "Sử dụng màu đen tuyệt đối làm nền, kết hợp chỉ vàng sáng rực để thể hiện thương hiệu đẳng cấp." },
-      { id: 7, name: "7. Vercel Stark Mono", cssClass: "scheme-vercel-mono", isDark: true, desc: "Không màu sắc rườm rà. Chỉ có đen, xám sẫm và trắng theo ngôn ngữ hình khối tối giản hình học Vercel." },
-      { id: 8, name: "8. Retro Arcade 8-Bit", cssClass: "scheme-retro-game", isDark: true, desc: "Nét chữ pixel, đường viền nét liền xanh ngọc bích cực kỳ cá tính giả lập game thùng." },
-      { id: 9, name: "9. Cyberpunk Neon Riot", cssClass: "scheme-cyber-neon", isDark: true, desc: "Màu hồng dạ quang pha xanh chuối rực rỡ, phản ánh cuộc sống số đầy nổi loạn." },
-      { id: 10, name: "10. Material 3 Pastel", cssClass: "scheme-material-pastel", isDark: false, desc: "Màu kem pastel dịu nhẹ, bo góc siêu tròn và thân thiện cho môi trường công sở mát mắt." }
-    ];
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
 
-    let currentThemeIdx = 0;
-    let activeStaffId = "TN";
-    let activeTabIdx = 1; // Tab 1 by default (Bảng đấu & Thành tích)
+      body {
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
 
-    // Render Themes list
-    const themeList = document.getElementById('themeList');
-    themes.forEach((theme, index) => {
-      const li = document.createElement('li');
-      li.className = `nav-item ${index === 0 ? 'active' : ''}`;
-      li.innerHTML = `
+      /* Left Theme Selection Sidebar */
+      .sidebar-left {
+        width: 320px;
+        background-color: #0c0c0e;
+        border-right: 1px solid var(--border-dark);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .sidebar-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--border-dark);
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        color: white;
+      }
+
+      .sidebar-header h1 {
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .sidebar-header p {
+        font-size: 10px;
+        opacity: 0.8;
+        text-transform: uppercase;
+        margin-top: 4px;
+        font-weight: bold;
+      }
+
+      .nav-list {
+        list-style: none;
+        padding: 12px;
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      .nav-item {
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        cursor: pointer;
+        margin-bottom: 6px;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .nav-item:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+
+      .nav-item.active {
+        background-color: #3b82f6;
+        color: white;
+        font-weight: 600;
+      }
+
+      /* Main Showcase Column */
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background-color: #09090b;
+        position: relative;
+      }
+
+      .top-toolbar {
+        padding: 16px 24px;
+        background-color: #0c0c0e;
+        border-bottom: 1px solid var(--border-dark);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .toolbar-info h2 {
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .toolbar-info p {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      /* Live Simulated Workspace */
+      .viewport {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at center, #1b2030 0%, #09090b 100%);
+        padding: 40px;
+        position: relative;
+      }
+
+      /* Simulated Header Wrapper */
+      .simulated-header-container {
+        width: 100%;
+        max-width: 960px;
+        height: 60px;
+        background-color: #ffffff;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        position: absolute;
+        top: 30px;
+        border-radius: 8px;
+      }
+
+      /* Left Area of Simulated Header */
+      .sh-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #3c4043;
+      }
+
+      .sh-sheet-icon {
+        width: 22px;
+        height: 22px;
+        background-color: #0f9d58;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 10px;
+        font-weight: bold;
+      }
+
+      /* Right Area of Simulated Header (Image 1 style) */
+      .sh-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      /* Overlapping Avatars Group */
+      .sh-avatar-group {
+        display: flex;
+        align-items: center;
+      }
+
+      .sh-circle-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: white;
+        cursor: pointer;
+        margin-left: -6px;
+        position: relative;
+        transition: all 0.2s;
+      }
+
+      .sh-circle-avatar:first-child {
+        margin-left: 0;
+      }
+
+      .sh-circle-avatar:hover {
+        transform: translateY(-2px);
+        z-index: 10;
+      }
+
+      /* Icons */
+      .sh-icon-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.15s;
+      }
+
+      .sh-icon-btn:hover {
+        background-color: #f1f3f4;
+      }
+
+      /* Share Button */
+      .sh-share-btn {
+        background-color: #c2e7ff;
+        color: #001d35;
+        border: none;
+        padding: 8px 18px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .sh-share-btn:hover {
+        background-color: #b3dbf6;
+      }
+
+      /* User Profile Trigger on far right */
+      .sh-user-profile {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #0f0f10;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      /* Dark Mode Theme overrides for Header */
+      .header-dark-mode {
+        background-color: #16171f !important;
+        border-bottom-color: #27272a !important;
+        color: white !important;
+      }
+      .header-dark-mode .sh-left {
+        color: white !important;
+      }
+      .header-dark-mode .sh-circle-avatar {
+        border-color: #16171f !important;
+      }
+      .header-dark-mode .sh-icon-btn:hover {
+        background-color: #27272a !important;
+      }
+      .header-dark-mode .sh-share-btn {
+        background-color: rgba(59, 130, 246, 0.2) !important;
+        color: #60a5fa !important;
+        border: 1px solid rgba(59, 130, 246, 0.3) !important;
+      }
+
+      /* DIM OVERLAY FOR POPUP */
+      .dim-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        display: flex; /* Flex centers the modal */
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        padding: 20px;
+      }
+
+      /* THE POPUP CONTAINER */
+      .popup-wrapper-box {
+        width: 880px;
+        height: 600px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+      }
+
+      /* CSS THEME SCHEMES FOR MODAL POPUP */
+
+      /* 1. Classic Workspace Dark (Default matching Image 2) */
+      .scheme-classic-dark {
+        background-color: #17181c;
+        border: 1px solid rgba(251, 191, 36, 0.3);
+        color: #f4f4f5;
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      }
+      .scheme-classic-dark .theme-card {
+        background-color: #1f2025;
+        border: 1px solid #2d2e35;
+      }
+      .scheme-classic-dark .theme-tab-item.active {
+        color: var(--wings-gold);
+        border-bottom-color: var(--wings-gold);
+      }
+      .scheme-classic-dark .theme-close-btn {
+        background: linear-gradient(135deg, #fbbf24, #d97706);
+        color: #000;
+      }
+
+      /* 2. Glassmorphic Cyan/Rose (Ultra Glass) */
+      .scheme-glass-ultra {
+        background: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(139, 92, 246, 0.15);
+      }
+      .scheme-glass-ultra .theme-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .scheme-glass-ultra .theme-tab-item.active {
+        color: #f43f5e;
+        border-bottom-color: #f43f5e;
+      }
+      .scheme-glass-ultra .theme-close-btn {
+        background: linear-gradient(135deg, #f43f5e, #a855f7);
+        color: #fff;
+      }
+
+      /* 3. Neumorphic Slate */
+      .scheme-neumorphic {
+        background-color: #e2e8f0;
+        color: #1e293b;
+        border-radius: 28px;
+        border: 1px solid #cbd5e1;
+        box-shadow:
+          12px 12px 24px #94a3b8,
+          -12px -12px 24px #ffffff;
+      }
+      .scheme-neumorphic .theme-card {
+        background-color: #e2e8f0;
+        border: none;
+        box-shadow:
+          inset 4px 4px 8px #cbd5e1,
+          inset -4px -4px 8px #ffffff;
+      }
+      .scheme-neumorphic .theme-tab-item.active {
+        color: #3b82f6;
+        border-bottom-color: #3b82f6;
+      }
+      .scheme-neumorphic .theme-close-btn {
+        background-color: #3b82f6;
+        color: #fff;
+        box-shadow: 2px 2px 5px #cbd5e1;
+      }
+
+      /* 4. Linear Developer Purple */
+      .scheme-linear-purple {
+        background-color: #0b0b0f;
+        border: 1px solid #27272a;
+        color: #e4e4e7;
+        border-radius: 6px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      }
+      .scheme-linear-purple .theme-card {
+        background-color: #121214;
+        border: 1px solid #27272a;
+      }
+      .scheme-linear-purple .theme-tab-item.active {
+        color: #8b5cf6;
+        border-bottom-color: #8b5cf6;
+      }
+      .scheme-linear-purple .theme-close-btn {
+        background-color: #8b5cf6;
+        color: #fff;
+        border-radius: 4px;
+      }
+
+      /* 5. Gradient Mesh (Cyber Glow) */
+      .scheme-gradient-mesh {
+        background: linear-gradient(135deg, #130a24, #050508);
+        border: 1px solid rgba(251, 191, 36, 0.4);
+        color: #fff;
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(251, 191, 36, 0.2);
+      }
+      .scheme-gradient-mesh .theme-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .scheme-gradient-mesh .theme-tab-item.active {
+        color: #f59e0b;
+        border-bottom-color: #f59e0b;
+      }
+      .scheme-gradient-mesh .theme-close-btn {
+        background: linear-gradient(135deg, #fbbf24, #eab308);
+        color: #000;
+      }
+
+      /* 6. Wings Golden Luxury (High Contrast Brand) */
+      .scheme-wings-luxury {
+        background-color: #050505;
+        border: 2px solid #fbbf24;
+        color: #fff;
+        border-radius: 16px;
+        box-shadow: 0 25px 60px rgba(251, 191, 36, 0.15);
+      }
+      .scheme-wings-luxury .theme-card {
+        background-color: #0f0f10;
+        border: 1px solid #252528;
+      }
+      .scheme-wings-luxury .theme-tab-item.active {
+        color: #fbbf24;
+        border-bottom-color: #fbbf24;
+      }
+      .scheme-wings-luxury .theme-close-btn {
+        background: #fbbf24;
+        color: #000;
+        font-weight: bold;
+        border-radius: 4px;
+      }
+
+      /* 7. Vercel Stark Monochrome */
+      .scheme-vercel-mono {
+        background-color: #000000;
+        border: 1px solid #333333;
+        color: #ffffff;
+        border-radius: 8px;
+      }
+      .scheme-vercel-mono .theme-card {
+        background-color: #111111;
+        border: 1px solid #333333;
+      }
+      .scheme-vercel-mono .theme-tab-item.active {
+        color: #ffffff;
+        border-bottom-color: #ffffff;
+      }
+      .scheme-vercel-mono .theme-close-btn {
+        background-color: #ffffff;
+        color: #000000;
+        border-radius: 4px;
+      }
+
+      /* 8. Retro Pixel 8-Bit */
+      .scheme-retro-game {
+        background-color: #0a1128;
+        border: 3px solid #00f5d4;
+        color: #00f5d4;
+        font-family: 'Courier New', Courier, monospace;
+        border-radius: 0;
+        box-shadow: 10px 10px 0px #00f5d4;
+      }
+      .scheme-retro-game .theme-card {
+        background-color: #121c35;
+        border: 2px solid #00f5d4;
+      }
+      .scheme-retro-game .theme-tab-item.active {
+        color: #ff007f;
+        border-bottom-color: #ff007f;
+      }
+      .scheme-retro-game .theme-close-btn {
+        background-color: #ff007f;
+        color: #fff;
+        border-radius: 0;
+      }
+
+      /* 9. Cyberpunk Neon Riot */
+      .scheme-cyber-neon {
+        background-color: #0d0116;
+        border: 1.5px solid #ff007f;
+        color: #39ff14;
+        border-radius: 20px;
+        box-shadow: 0 0 20px rgba(255, 0, 127, 0.4);
+      }
+      .scheme-cyber-neon .theme-card {
+        background-color: #150225;
+        border: 1px solid #39ff14;
+      }
+      .scheme-cyber-neon .theme-tab-item.active {
+        color: #ff007f;
+        border-bottom-color: #ff007f;
+      }
+      .scheme-cyber-neon .theme-close-btn {
+        background: #39ff14;
+        color: #000;
+      }
+
+      /* 10. Material Design 3 Pastel Light */
+      .scheme-material-pastel {
+        background-color: #fff9f2;
+        border: 1px solid #ffdec2;
+        color: #4a3e3d;
+        border-radius: 32px;
+        box-shadow: 0 15px 30px rgba(255, 222, 194, 0.4);
+      }
+      .scheme-material-pastel .theme-card {
+        background-color: #ffffff;
+        border: 1px solid #ffe8d6;
+      }
+      .scheme-material-pastel .theme-tab-item.active {
+        color: #ff7c3b;
+        border-bottom-color: #ff7c3b;
+      }
+      .scheme-material-pastel .theme-close-btn {
+        background-color: #ff7c3b;
+        color: #fff;
+        border-radius: 24px;
+      }
+
+      /* Detail card formatting */
+      .popup-content-columns {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        padding: 24px 32px;
+        overflow-y: auto;
+      }
+
+      .theme-card {
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .theme-close-btn {
+        border: none;
+        padding: 10px 24px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      /* Explanation card at the bottom footer */
+      .footer-desc-panel {
+        padding: 20px;
+        background-color: #0c0c0e;
+        border-top: 1px solid var(--border-dark);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .footer-desc-panel h4 {
+        color: #3b82f6;
+        margin-bottom: 4px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Theme selections -->
+    <div class="sidebar-left">
+      <div class="sidebar-header">
+        <h1>TELESALES FLOW</h1>
+        <p>10 Interactive Themes</p>
+      </div>
+      <ul class="nav-list" id="themeList">
+        <div class="nav-section-title">Chọn Theme để Lập Trình (10)</div>
+        <!-- Rendered dynamically -->
+      </ul>
+    </div>
+
+    <!-- Main Viewport Area -->
+    <div class="main-content">
+      <div class="top-toolbar">
+        <div class="toolbar-info">
+          <h2 id="currentThemeName">Mã số thiết kế #1: Classic Workspace Dark</h2>
+          <p>
+            Bấm trực tiếp vào các avatar DW (Danny Wings) hoặc TN (Tâm Nguyễn) trên Header để kiểm tra Popup tương ứng.
+          </p>
+        </div>
+        <div class="combo-badge" id="currentComboLabel">Mã số thiết kế: 1/10</div>
+      </div>
+
+      <!-- Viewport -->
+      <div class="viewport">
+        <!-- Simulated Header row (Image 1 style) -->
+        <div class="simulated-header-container" id="simulatedHeader">
+          <div class="sh-left">
+            <div class="sh-sheet-icon">📊</div>
+            <span>Bảng Tính Lương Booker & KPIs - Wings Lashes</span>
+          </div>
+          <div class="sh-right">
+            <!-- Overlapping Avatars Stack matching Image 1 -->
+            <div class="sh-avatar-group">
+              <div
+                class="sh-circle-avatar"
+                style="background-color: #3b82f6; z-index: 3"
+                onclick="openStaffDashboard('DW')"
+                title="Danny Wings (Sales)"
+              >
+                DW
+              </div>
+              <div
+                class="sh-circle-avatar"
+                style="background-color: #ec4899; z-index: 2"
+                onclick="openStaffDashboard('TN')"
+                title="Tâm Nguyễn (Telesales)"
+              >
+                TN
+              </div>
+            </div>
+
+            <div class="sh-icon-btn">💬</div>
+            <div class="sh-icon-btn">🎦</div>
+
+            <button class="sh-share-btn">
+              <span>👥 Share</span>
+            </button>
+
+            <div class="sh-user-profile" onclick="openStaffDashboard('DD')">
+              <span style="color: var(--wings-gold); font-size: 14px; font-weight: bold">🪶</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- THE HUGE POPUP MODAL (Image 2 style) -->
+        <div class="dim-overlay" id="dimOverlay">
+          <div class="popup-wrapper-box scheme-classic-dark" id="popupBox">
+            <!-- Popup Header -->
+            <div
+              style="
+                padding: 24px 32px;
+                border-bottom: 1px solid var(--border-dark);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+              "
+            >
+              <div style="display: flex; align-items: center; gap: 16px">
+                <div
+                  id="modalAvatarCircle"
+                  style="
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 16px;
+                    border: 2.5px solid #10b981;
+                  "
+                >
+                  TN
+                </div>
+                <div>
+                  <h3 style="font-size: 16px; font-weight: bold" id="modalStaffName">Tâm Nguyễn (Telesales)</h3>
+                  <p style="font-size: 12px; color: var(--text-muted)" id="modalStaffSub">
+                    Senior Booker Coordinator • tam.nguyen@wingslashes.com
+                  </p>
+                </div>
+              </div>
+
+              <div
+                style="
+                  background-color: rgba(251, 191, 36, 0.08);
+                  border: 1px dashed rgba(251, 191, 36, 0.3);
+                  padding: 8px 16px;
+                  border-radius: 12px;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                "
+              >
+                <div>
+                  <span style="font-size: 9px; color: var(--text-muted); display: block">TIẾN ĐỘ THÁNG 7</span>
+                  <span style="font-size: 12px; font-weight: bold; color: var(--wings-gold)" id="modalSummaryGoal"
+                    >165 / 200 Booking</span
+                  >
+                </div>
+                <div
+                  style="
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    border: 3px solid var(--wings-gold);
+                    border-top-color: transparent;
+                  "
+                ></div>
+              </div>
+            </div>
+
+            <!-- Tab labels bar -->
+            <div
+              style="
+                display: flex;
+                background-color: rgba(255, 255, 255, 0.02);
+                border-bottom: 1px solid var(--border-dark);
+                padding: 0 32px;
+              "
+            >
+              <div
+                style="
+                  padding: 14px 20px;
+                  font-size: 12px;
+                  font-weight: bold;
+                  cursor: pointer;
+                  border-bottom: 3px solid transparent;
+                "
+                class="theme-tab-item active"
+                id="tab0"
+                onclick="switchModalTab(0)"
+              >
+                📊 HIỆU SUẤT & PHỄU GỌI
+              </div>
+              <div
+                style="
+                  padding: 14px 20px;
+                  font-size: 12px;
+                  font-weight: bold;
+                  color: var(--wings-gold);
+                  cursor: pointer;
+                  border-bottom: 3px solid var(--wings-gold);
+                "
+                class="theme-tab-item"
+                id="tab1"
+                onclick="switchModalTab(1)"
+              >
+                🏆 BẢNG ĐẤU & THÀNH TÍCH
+              </div>
+              <div
+                style="
+                  padding: 14px 20px;
+                  font-size: 12px;
+                  font-weight: bold;
+                  cursor: pointer;
+                  border-bottom: 3px solid transparent;
+                "
+                class="theme-tab-item"
+                id="tab2"
+                onclick="switchModalTab(2)"
+              >
+                💵 LƯƠNG THƯỞNG & NHIỆM VỤ
+              </div>
+            </div>
+
+            <!-- Active tab pane layout columns (Currently showing Tab 2) -->
+            <div class="popup-content-columns" id="modalPaneArea">
+              <!-- Loaded dynamically by Javascript to match the screenshot or selected tab -->
+            </div>
+
+            <!-- Popup Footer -->
+            <div
+              style="
+                padding: 16px 32px;
+                border-top: 1px solid var(--border-dark);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <span style="font-size: 10px; color: var(--text-muted)"
+                >*Dữ liệu thuộc cổng thông tin nội bộ của Wings Lashes. Trực thuộc ban quản trị Danny Do.</span
+              >
+              <button class="theme-close-btn" onclick="closeStaffDashboard()">Hoàn tất & Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explanation bottom footer -->
+      <div class="footer-desc-panel">
+        <h4 id="footerTitle">Chi tiết concept thiết kế</h4>
+        <p id="footerDesc">Mô tả cấu trúc và định hướng người dùng.</p>
+      </div>
+    </div>
+
+    <script>
+      // Staff metrics database
+      const staffDb = {
+        TN: {
+          name: 'Tâm Nguyễn (Telesales)',
+          sub: 'Senior Booker Coordinator • tam.nguyen@wingslashes.com',
+          avatar: 'TN',
+          avatarColor: '#ec4899',
+          goal: '165 / 200 Booking',
+          streak: '5 Ngày Đạt Target',
+          streakDesc: 'Duy trì chuỗi tối thiểu 7 ngày để mở khóa Hệ số thưởng 1.2x',
+          medals: 'Mắt Thần (1000 cuộc gọi) và Chiến thần Telesales.',
+          rankList: [
+            { name: '1. Bảo Hân (Leader)', val: '185 đơn', highlight: false },
+            { name: '2. Tâm Nguyễn (Bạn)', val: '165 đơn', highlight: true },
+            { name: '3. Danny Wings', val: '142 đơn', highlight: false },
+          ],
+          gapText: 'Khoảng cách đến vị trí Top 1: <strong>20 đơn</strong>. Cố lên bạn ơi!',
+          kpis: [
+            { name: 'Hôm nay:', val: '8 / 10 đơn (80%)', width: '80%' },
+            { name: 'Tuần này:', val: '38 / 50 đơn (76%)', width: '76%' },
+            { name: 'Tháng này:', val: '165 / 200 đơn (82.5%)', width: '82.5%' },
+          ],
+          salary: [
+            { name: 'Lương cứng ca trực:', val: '5,500,000đ' },
+            { name: 'Hoa hồng Booker (38 đơn):', val: '3,300,000đ' },
+            { name: 'Hoa hồng gia hạn (18 đơn):', val: '1,440,000đ' },
+            { name: 'Hệ số chuỗi Streak (1.2x):', val: '+948,000đ' },
+            { name: 'Lương tạm tính:', val: '11,188,000đ', bold: true },
+          ],
+        },
+        DW: {
+          name: 'Danny Wings (Sales)',
+          sub: 'Sales Team Leader • danny.wings@wingslashes.com',
+          avatar: 'DW',
+          avatarColor: '#3b82f6',
+          goal: '142 / 200 Booking',
+          streak: '3 Ngày Đạt Target',
+          streakDesc: 'Bứt phá doanh số ngày để kích hoạt lại chuỗi thần tốc',
+          medals: 'Bàn Tay Vàng (Chốt 500 khách) và Chiến binh kiên cường.',
+          rankList: [
+            { name: '1. Bảo Hân (Leader)', val: '185 đơn', highlight: false },
+            { name: '2. Tâm Nguyễn', val: '165 đơn', highlight: false },
+            { name: '3. Danny Wings (Bạn)', val: '142 đơn', highlight: true },
+          ],
+          gapText: 'Khoảng cách đến vị trí Top 2: <strong>23 đơn</strong>.',
+          kpis: [
+            { name: 'Hôm nay:', val: '6 / 10 đơn (60%)', width: '60%' },
+            { name: 'Tuần này:', val: '30 / 50 đơn (60%)', width: '60%' },
+            { name: 'Tháng này:', val: '142 / 200 đơn (71.0%)', width: '71%' },
+          ],
+          salary: [
+            { name: 'Lương cứng ca trực:', val: '6,000,000đ' },
+            { name: 'Hoa hồng chốt đơn (30 đơn):', val: '2,800,000đ' },
+            { name: 'Hoa hồng gia hạn (10 đơn):', val: '800,000đ' },
+            { name: 'Lương tạm tính:', val: '9,600,000đ', bold: true },
+          ],
+        },
+        DD: {
+          name: 'Danny Do (Admin)',
+          sub: 'HR & System Administrator • danny.do@wingslashes.com',
+          avatar: '🪶',
+          avatarColor: '#0f0f10',
+          goal: '185 / 200 Booking',
+          streak: '12 Ngày Đạt Target',
+          streakDesc: 'Kỷ lục chuỗi làm việc cao nhất toàn chi nhánh CRM',
+          medals: 'Quyền Lực Admin (Đã phê chuẩn 15 bảng lương Booker).',
+          rankList: [
+            { name: '1. Danny Do (Bạn)', val: '185 đơn', highlight: true },
+            { name: '2. Tâm Nguyễn', val: '165 đơn', highlight: false },
+            { name: '3. Danny Wings', val: '142 đơn', highlight: false },
+          ],
+          gapText: 'Đang dẫn đầu bảng đua thành tích xuất sắc nhất!',
+          kpis: [
+            { name: 'Hôm nay:', val: '9 / 10 đơn (90%)', width: '90%' },
+            { name: 'Tuần này:', val: '45 / 50 đơn (90%)', width: '90%' },
+            { name: 'Tháng này:', val: '185 / 200 đơn (92.5%)', width: '92.5%' },
+          ],
+          salary: [
+            { name: 'Lương cơ bản Admin:', val: '12,000,000đ' },
+            { name: 'Thưởng chuỗi Streak:', val: '+2,000,000đ' },
+            { name: 'Lương tạm tính:', val: '14,000,000đ', bold: true },
+          ],
+        },
+      };
+
+      // 10 Visual Themes definitions
+      const themes = [
+        {
+          id: 1,
+          name: '1. Classic Workspace Dark',
+          cssClass: 'scheme-classic-dark',
+          isDark: true,
+          desc: 'Giao diện tối sâu thẳm, các thẻ được viền vàng mỏng sang trọng giống hệt ảnh tham chiếu thứ 2.',
+        },
+        {
+          id: 2,
+          name: '2. Glassmorphic Cyan/Rose',
+          cssClass: 'scheme-glass-ultra',
+          isDark: true,
+          desc: 'Sử dụng các lớp kính mờ cực mạnh (backdrop-filter) kết hợp đường sáng neon xanh ngọc và hồng cánh sen.',
+        },
+        {
+          id: 3,
+          name: '3. Neumorphic Slate',
+          cssClass: 'scheme-neumorphic',
+          isDark: false,
+          desc: 'Giao diện dập nổi lõm tinh xảo tông màu xám lạnh. Tạo cảm giác tương tác vật lý cực tốt.',
+        },
+        {
+          id: 4,
+          name: '4. Linear Developer Purple',
+          cssClass: 'scheme-linear-purple',
+          isDark: true,
+          desc: 'Giao diện siêu phẳng tối giản hoàn toàn, góc vuông cứng cáp với tông màu tím chủ đạo phong cách lập trình.',
+        },
+        {
+          id: 5,
+          name: '5. Gradient Mesh Glow',
+          cssClass: 'scheme-gradient-mesh',
+          isDark: true,
+          desc: 'Dải mây khói màu tím sẫm lan tỏa phía sau lớp kính làm tôn lên các chỉ số KPIs.',
+        },
+        {
+          id: 6,
+          name: '6. Wings Golden Luxury',
+          cssClass: 'scheme-wings-luxury',
+          isDark: true,
+          desc: 'Sử dụng màu đen tuyệt đối làm nền, kết hợp chỉ vàng sáng rực để thể hiện thương hiệu đẳng cấp.',
+        },
+        {
+          id: 7,
+          name: '7. Vercel Stark Mono',
+          cssClass: 'scheme-vercel-mono',
+          isDark: true,
+          desc: 'Không màu sắc rườm rà. Chỉ có đen, xám sẫm và trắng theo ngôn ngữ hình khối tối giản hình học Vercel.',
+        },
+        {
+          id: 8,
+          name: '8. Retro Arcade 8-Bit',
+          cssClass: 'scheme-retro-game',
+          isDark: true,
+          desc: 'Nét chữ pixel, đường viền nét liền xanh ngọc bích cực kỳ cá tính giả lập game thùng.',
+        },
+        {
+          id: 9,
+          name: '9. Cyberpunk Neon Riot',
+          cssClass: 'scheme-cyber-neon',
+          isDark: true,
+          desc: 'Màu hồng dạ quang pha xanh chuối rực rỡ, phản ánh cuộc sống số đầy nổi loạn.',
+        },
+        {
+          id: 10,
+          name: '10. Material 3 Pastel',
+          cssClass: 'scheme-material-pastel',
+          isDark: false,
+          desc: 'Màu kem pastel dịu nhẹ, bo góc siêu tròn và thân thiện cho môi trường công sở mát mắt.',
+        },
+      ];
+
+      let currentThemeIdx = 0;
+      let activeStaffId = 'TN';
+      let activeTabIdx = 1; // Tab 1 by default (Bảng đấu & Thành tích)
+
+      // Render Themes list
+      const themeList = document.getElementById('themeList');
+      themes.forEach((theme, index) => {
+        const li = document.createElement('li');
+        li.className = `nav-item ${index === 0 ? 'active' : ''}`;
+        li.innerHTML = `
         <span class="nav-index">${theme.id}</span>
         <span class="nav-title">${theme.name.split('. ')[1]}</span>
       `;
-      li.onclick = () => {
-        currentThemeIdx = index;
-        applyTheme();
-      };
-      themeList.appendChild(li);
-    });
-
-    // Apply the active theme configuration
-    function applyTheme() {
-      // Toggle nav active
-      const sidebarItems = document.querySelectorAll('.nav-item');
-      sidebarItems.forEach((item, idx) => {
-        if (idx === currentThemeIdx) item.classList.add('active');
-        else item.classList.remove('active');
+        li.onclick = () => {
+          currentThemeIdx = index;
+          applyTheme();
+        };
+        themeList.appendChild(li);
       });
 
-      const selected = themes[currentThemeIdx];
-      document.getElementById('currentThemeName').innerText = `Mã số thiết kế #${selected.id}: ${selected.name.split('. ')[1]}`;
-      document.getElementById('currentComboLabel').innerText = `Mã số thiết kế: ${selected.id}/10`;
-      
-      // Footer info
-      document.getElementById('footerTitle').innerText = `Chi tiết giao diện: ${selected.name}`;
-      document.getElementById('footerDesc').innerText = selected.desc;
+      // Apply the active theme configuration
+      function applyTheme() {
+        // Toggle nav active
+        const sidebarItems = document.querySelectorAll('.nav-item');
+        sidebarItems.forEach((item, idx) => {
+          if (idx === currentThemeIdx) item.classList.add('active');
+          else item.classList.remove('active');
+        });
 
-      // Update simulated header styles
-      const simHeader = document.getElementById('simulatedHeader');
-      if (selected.isDark) {
-        simHeader.classList.add('header-dark-mode');
-      } else {
-        simHeader.classList.remove('header-dark-mode');
+        const selected = themes[currentThemeIdx];
+        document.getElementById('currentThemeName').innerText =
+          `Mã số thiết kế #${selected.id}: ${selected.name.split('. ')[1]}`;
+        document.getElementById('currentComboLabel').innerText = `Mã số thiết kế: ${selected.id}/10`;
+
+        // Footer info
+        document.getElementById('footerTitle').innerText = `Chi tiết giao diện: ${selected.name}`;
+        document.getElementById('footerDesc').innerText = selected.desc;
+
+        // Update simulated header styles
+        const simHeader = document.getElementById('simulatedHeader');
+        if (selected.isDark) {
+          simHeader.classList.add('header-dark-mode');
+        } else {
+          simHeader.classList.remove('header-dark-mode');
+        }
+
+        // Update popup box theme class
+        const popupBox = document.getElementById('popupBox');
+        popupBox.className = `popup-wrapper-box ${selected.cssClass}`;
+
+        // Refresh tab labels colors inside popup depending on theme
+        const tabItems = document.querySelectorAll('.theme-tab-item');
+        tabItems.forEach((tab, index) => {
+          tab.style.color = '';
+          tab.style.borderBottomColor = '';
+          if (index === activeTabIdx) {
+            tab.classList.add('active');
+            if (selected.id === 2) {
+              tab.style.color = '#f43f5e';
+              tab.style.borderBottomColor = '#f43f5e';
+            } else if (selected.id === 3) {
+              tab.style.color = '#3b82f6';
+              tab.style.borderBottomColor = '#3b82f6';
+            } else if (selected.id === 4) {
+              tab.style.color = '#8b5cf6';
+              tab.style.borderBottomColor = '#8b5cf6';
+            } else if (selected.id === 8) {
+              tab.style.color = '#ff007f';
+              tab.style.borderBottomColor = '#ff007f';
+            } else if (selected.id === 9) {
+              tab.style.color = '#ff007f';
+              tab.style.borderBottomColor = '#ff007f';
+            } else if (selected.id === 10) {
+              tab.style.color = '#ff7c3b';
+              tab.style.borderBottomColor = '#ff7c3b';
+            } else {
+              tab.style.color = 'var(--wings-gold)';
+              tab.style.borderBottomColor = 'var(--wings-gold)';
+            }
+          } else {
+            tab.classList.remove('active');
+          }
+        });
+
+        renderActiveTabPane();
       }
 
-      // Update popup box theme class
-      const popupBox = document.getElementById('popupBox');
-      popupBox.className = `popup-wrapper-box ${selected.cssClass}`;
+      // Switch tab inside modal popup
+      function switchModalTab(index) {
+        activeTabIdx = index;
+        applyTheme(); // Re-apply to refresh active borders/colors
+      }
 
-      // Refresh tab labels colors inside popup depending on theme
-      const tabItems = document.querySelectorAll('.theme-tab-item');
-      tabItems.forEach((tab, index) => {
-        tab.style.color = '';
-        tab.style.borderBottomColor = '';
-        if (index === activeTabIdx) {
-          tab.classList.add('active');
-          if (selected.id === 2) {
-            tab.style.color = '#f43f5e';
-            tab.style.borderBottomColor = '#f43f5e';
-          } else if (selected.id === 3) {
-            tab.style.color = '#3b82f6';
-            tab.style.borderBottomColor = '#3b82f6';
-          } else if (selected.id === 4) {
-            tab.style.color = '#8b5cf6';
-            tab.style.borderBottomColor = '#8b5cf6';
-          } else if (selected.id === 8) {
-            tab.style.color = '#ff007f';
-            tab.style.borderBottomColor = '#ff007f';
-          } else if (selected.id === 9) {
-            tab.style.color = '#ff007f';
-            tab.style.borderBottomColor = '#ff007f';
-          } else if (selected.id === 10) {
-            tab.style.color = '#ff7c3b';
-            tab.style.borderBottomColor = '#ff7c3b';
-          } else {
-            tab.style.color = 'var(--wings-gold)';
-            tab.style.borderBottomColor = 'var(--wings-gold)';
-          }
-        } else {
-          tab.classList.remove('active');
-        }
-      });
+      // Render active tab body
+      function renderActiveTabPane() {
+        const paneArea = document.getElementById('modalPaneArea');
+        const staff = staffDb[activeStaffId];
+        const isLight = themes[currentThemeIdx].isDark === false;
+        const progressBg = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)';
 
-      renderActiveTabPane();
-    }
-
-    // Switch tab inside modal popup
-    function switchModalTab(index) {
-      activeTabIdx = index;
-      applyTheme(); // Re-apply to refresh active borders/colors
-    }
-
-    // Render active tab body
-    function renderActiveTabPane() {
-      const paneArea = document.getElementById('modalPaneArea');
-      const staff = staffDb[activeStaffId];
-      const isLight = themes[currentThemeIdx].isDark === false;
-      const progressBg = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)';
-
-      let html = '';
-      if (activeTabIdx === 0) { // KPI & Funnel
-        html = `
+        let html = '';
+        if (activeTabIdx === 0) {
+          // KPI & Funnel
+          html = `
           <!-- Column 1 -->
           <div class="theme-card">
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase;">📊 HIỆU SUẤT ĐÃ ĐẠT</div>
             <div style="display:flex; flex-direction:column; gap:8px;">
-              ${staff.kpis.map(kpi => `
+              ${staff.kpis
+                .map(
+                  (kpi) => `
                 <div>
                   <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
                     <span>${kpi.name}</span><strong>${kpi.val}</strong>
@@ -785,7 +1075,9 @@
                     <div style="width:${kpi.width}; height:100%; background:linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius:3px;"></div>
                   </div>
                 </div>
-              `).join('')}
+              `
+                )
+                .join('')}
             </div>
           </div>
           <!-- Column 2 -->
@@ -804,8 +1096,9 @@
             </div>
           </div>
         `;
-      } else if (activeTabIdx === 1) { // Streaks & Leaderboard (Matches Image 2 exactly)
-        html = `
+        } else if (activeTabIdx === 1) {
+          // Streaks & Leaderboard (Matches Image 2 exactly)
+          html = `
           <!-- Column 1 (Streak Box) -->
           <div class="theme-card" style="text-align: center; justify-content: center; align-items: center;">
             <div style="font-size: 12px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; color: var(--wings-gold); width:100%; text-align:left;">🔥 CHUỖI BÙNG NỔ DOANH SỐ</div>
@@ -823,33 +1116,42 @@
           <div class="theme-card">
             <div style="font-size: 12px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; color: var(--wings-gold);">🥇 BẢNG XẾP HẠNG THI ĐUA</div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
-              ${staff.rankList.map((rank, i) => {
-                const borderHighlight = rank.highlight ? 'border: 1px solid rgba(251,191,36,0.3); background-color: rgba(251,191,36,0.06); font-weight: bold;' : '';
-                return `
+              ${staff.rankList
+                .map((rank, i) => {
+                  const borderHighlight = rank.highlight
+                    ? 'border: 1px solid rgba(251,191,36,0.3); background-color: rgba(251,191,36,0.06); font-weight: bold;'
+                    : '';
+                  return `
                   <div style="display:flex; justify-content:space-between; font-size:12px; padding: 8px 12px; border-radius:8px; ${borderHighlight}">
-                    <span>${i === 0 ? '🥇' : (i === 1 ? '🥈' : '🥉')} ${rank.name}</span>
+                    <span>${i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} ${rank.name}</span>
                     <strong style="${rank.highlight ? 'color: var(--wings-gold);' : ''}">${rank.val}</strong>
                   </div>
                 `;
-              }).join('')}
+                })
+                .join('')}
             </div>
             <div style="font-size:10px; text-align:center; color: var(--text-muted); margin-top:16px; border-top: 1px dashed rgba(255,255,255,0.05); padding-top:12px;">
               ${staff.gapText}
             </div>
           </div>
         `;
-      } else { // Salary & Quests
-        html = `
+        } else {
+          // Salary & Quests
+          html = `
           <!-- Column 1 -->
           <div class="theme-card">
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase;">💵 HOA HỒNG TẠM TÍNH</div>
             <div style="display:flex; flex-direction:column; gap:8px;">
-              ${staff.salary.map(sal => `
+              ${staff.salary
+                .map(
+                  (sal) => `
                 <div style="display:flex; justify-content:space-between; font-size:12px; ${sal.bold ? 'font-weight:bold; border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;' : ''}">
                   <span>${sal.name}</span>
                   <strong style="${sal.bold ? 'color:#10b981;' : ''}">${sal.val}</strong>
                 </div>
-              `).join('')}
+              `
+                )
+                .join('')}
             </div>
           </div>
           <!-- Column 2 -->
@@ -862,34 +1164,34 @@
             </div>
           </div>
         `;
+        }
+
+        paneArea.innerHTML = html;
       }
 
-      paneArea.innerHTML = html;
-    }
+      // Open staff dashboard modal
+      function openStaffDashboard(staffId) {
+        activeStaffId = staffId;
+        const staff = staffDb[staffId];
 
-    // Open staff dashboard modal
-    function openStaffDashboard(staffId) {
-      activeStaffId = staffId;
-      const staff = staffDb[staffId];
+        // Update Header info inside modal
+        document.getElementById('modalAvatarCircle').innerText = staff.avatar;
+        document.getElementById('modalAvatarCircle').style.backgroundColor = staff.avatarColor;
+        document.getElementById('modalStaffName').innerText = staff.name;
+        document.getElementById('modalStaffSub').innerText = staff.sub;
+        document.getElementById('modalSummaryGoal').innerText = staff.goal;
 
-      // Update Header info inside modal
-      document.getElementById('modalAvatarCircle').innerText = staff.avatar;
-      document.getElementById('modalAvatarCircle').style.backgroundColor = staff.avatarColor;
-      document.getElementById('modalStaffName').innerText = staff.name;
-      document.getElementById('modalStaffSub').innerText = staff.sub;
-      document.getElementById('modalSummaryGoal').innerText = staff.goal;
+        document.getElementById('dimOverlay').style.display = 'flex';
+        applyTheme(); // Refresh data bindings
+      }
 
-      document.getElementById('dimOverlay').style.display = 'flex';
-      applyTheme(); // Refresh data bindings
-    }
+      // Close dashboard modal
+      function closeStaffDashboard() {
+        document.getElementById('dimOverlay').style.display = 'none';
+      }
 
-    // Close dashboard modal
-    function closeStaffDashboard() {
-      document.getElementById('dimOverlay').style.display = 'none';
-    }
-
-    // Initialize page
-    openStaffDashboard('TN'); // Default open Tâm Nguyễn
-  </script>
-</body>
+      // Initialize page
+      openStaffDashboard('TN'); // Default open Tâm Nguyễn
+    </script>
+  </body>
 </html>

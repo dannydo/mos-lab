@@ -10,13 +10,13 @@ const DEFAULT_SALARY_CONFIG = {
   clientBonusRefill: {
     discount30: 9000,
     discount50: 6000,
-    discountMore: 1000
+    discountMore: 1000,
   },
   clientBonusFullSet: {
     discount0: 35000,
     discount30: 12000,
     discount50: 6000,
-    discountMore: 1000
+    discountMore: 1000,
   },
   doneBonusTiers: [
     { minCount: 100, bonus: 300000 },
@@ -27,23 +27,23 @@ const DEFAULT_SALARY_CONFIG = {
     { minCount: 350, bonus: 1800000 },
     { minCount: 400, bonus: 2100000 },
     { minCount: 450, bonus: 2400000 },
-    { minCount: 500, bonus: 2700000 }
+    { minCount: 500, bonus: 2700000 },
   ],
   missedBonusTiers: [
     { maxRate: 10, bonus: 1000000 },
     { maxRate: 15, bonus: 500000 },
     { maxRate: 20, bonus: 0 },
     { maxRate: 25, bonus: -500000 },
-    { maxRate: 100, bonus: -1000000 }
+    { maxRate: 100, bonus: -1000000 },
   ],
   revBonusTiers: [
     { minRev: 50000000, rate: 0.007 },
     { minRev: 100000000, rate: 0.008 },
     { minRev: 150000000, rate: 0.009 },
-    { minRev: 200000000, rate: 0.010 },
+    { minRev: 200000000, rate: 0.01 },
     { minRev: 250000000, rate: 0.011 },
-    { minRev: 300000000, rate: 0.012 }
-  ]
+    { minRev: 300000000, rate: 0.012 },
+  ],
 };
 
 async function run() {
@@ -54,7 +54,7 @@ async function run() {
   let config = DEFAULT_SALARY_CONFIG;
   try {
     const crmConfig = await crm.crmConfig.findUnique({
-      where: { key: 'BOOKER_SALARY_CONFIG' }
+      where: { key: 'BOOKER_SALARY_CONFIG' },
     });
     if (crmConfig) {
       config = JSON.parse(crmConfig.value);
@@ -70,20 +70,23 @@ async function run() {
   const staffList = await crm.crmStaff.findMany({
     where: {
       role: 'telesales',
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
-  const staffNames = staffList.map(s => s.displayName);
+  const staffNames = staffList.map((s) => s.displayName);
 
   // Fetch legacy user profiles to map displayNames to legacy user IDs
-  const profiles = await legacy.$queryRawUnsafe<any[]>(`
+  const profiles = await legacy.$queryRawUnsafe<any[]>(
+    `
     SELECT up.user_id as userId, up.full_name as fullName
     FROM \`staff_profile\` sp
     JOIN \`user_profile\` up ON sp.user_id = up.user_id
     WHERE up.provider = 'Staff' AND up.is_disabled = 0
       AND up.full_name IN (${staffNames.map(() => '?').join(',')})
-  `, ...staffNames);
+  `,
+    ...staffNames
+  );
 
   profiles.sort((a: any, b: any) => Number(a.userId) - Number(b.userId));
 
@@ -91,7 +94,7 @@ async function run() {
   const legacyIdToStaffMap = new Map<number, any>();
 
   profiles.forEach((p: any) => {
-    const staff = staffList.find(s => s.displayName.toLowerCase().trim() === p.fullName.toLowerCase().trim());
+    const staff = staffList.find((s) => s.displayName.toLowerCase().trim() === p.fullName.toLowerCase().trim());
     if (staff) {
       staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
       legacyIdToStaffMap.set(Number(p.userId), staff);
@@ -100,15 +103,18 @@ async function run() {
 
   const activeLegacyUserIds = Array.from(staffNameToLegacyIdMap.values());
 
-  const staffStats: Record<number, {
-    doneCount: number;
-    missedCount: number;
-    clientBonus: number;
-    totalTips: number;
-    totalNetRev: number;
-  }> = {};
+  const staffStats: Record<
+    number,
+    {
+      doneCount: number;
+      missedCount: number;
+      clientBonus: number;
+      totalTips: number;
+      totalNetRev: number;
+    }
+  > = {};
 
-  staffList.forEach(s => {
+  staffList.forEach((s) => {
     staffStats[s.id] = { doneCount: 0, missedCount: 0, clientBonus: 0, totalTips: 0, totalNetRev: 0 };
   });
 
@@ -117,7 +123,7 @@ async function run() {
       where: {
         created_staff_id: { in: activeLegacyUserIds },
         booking_date_start: { gte: start, lte: end },
-        order_state: { not: 'Cancelled' }
+        order_state: { not: 'Cancelled' },
       },
       select: {
         id: true,
@@ -126,12 +132,12 @@ async function run() {
         total_price: true,
         user_id: true,
         booking_date_start: true,
-        date_created: true
-      }
+        date_created: true,
+      },
     });
 
-    const completedOrders = allOrders.filter(o => o.order_state === 'Completed');
-    const completedOrderIds = completedOrders.map(o => o.id);
+    const completedOrders = allOrders.filter((o) => o.order_state === 'Completed');
+    const completedOrderIds = completedOrders.map((o) => o.id);
 
     // Fetch tips
     const orderTipsMap = new Map<number, number>();
@@ -152,38 +158,44 @@ async function run() {
     let serviceNameMap = new Map<number, string>();
     if (completedOrderIds.length > 0) {
       const orderServices = await legacy.order_service.findMany({
-        where: { order_id: { in: completedOrderIds } }
+        where: { order_id: { in: completedOrderIds } },
       });
-      orderServices.forEach(os => {
+      orderServices.forEach((os) => {
         const list = orderServicesMap.get(os.order_id) || [];
         list.push(os);
         orderServicesMap.set(os.order_id, list);
       });
 
-      const serviceIds = Array.from(new Set(orderServices.map(os => os.service_id)));
+      const serviceIds = Array.from(new Set(orderServices.map((os) => os.service_id)));
       if (serviceIds.length > 0) {
         const serviceLanguages = await legacy.service_language.findMany({
-          where: { service_id: { in: serviceIds } }
+          where: { service_id: { in: serviceIds } },
         });
-        serviceLanguages.forEach(sl => {
+        serviceLanguages.forEach((sl) => {
           serviceNameMap.set(sl.service_id, sl.service_name);
         });
       }
     }
 
     // Fetch user balances
-    const userIds = Array.from(new Set(allOrders.map(o => o.user_id).filter(id => id !== null))) as number[];
-    const userBalances = userIds.length > 0 ? await legacy.user_service_balance.findMany({
-      where: { user_id: { in: userIds } }
-    }) : [];
+    const userIds = Array.from(new Set(allOrders.map((o) => o.user_id).filter((id) => id !== null))) as number[];
+    const userBalances =
+      userIds.length > 0
+        ? await legacy.user_service_balance.findMany({
+            where: { user_id: { in: userIds } },
+          })
+        : [];
 
-    const balanceIds = userBalances.map(b => b.id);
-    const userBalanceTransactions = balanceIds.length > 0 ? await legacy.$queryRawUnsafe<any[]>(`
+    const balanceIds = userBalances.map((b) => b.id);
+    const userBalanceTransactions =
+      balanceIds.length > 0
+        ? await legacy.$queryRawUnsafe<any[]>(`
       SELECT usbt.*, o.booking_date_start as o_booking_date_start
       FROM user_service_balance_transaction usbt
       LEFT JOIN \`order\` o ON o.id = usbt.order_id
       WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-    `) : [];
+    `)
+        : [];
 
     const txnsByBalanceId = new Map<number, any[]>();
     for (const t of userBalanceTransactions) {
@@ -198,15 +210,15 @@ async function run() {
 
     const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
       const bTime = bookingDateStart || orderCreatedDate;
-      const userBals = userBalances.filter(b => b.user_id === userId);
-      
+      const userBals = userBalances.filter((b) => b.user_id === userId);
+
       for (const usb of userBals) {
         if (new Date(usb.date_created) >= new Date(bTime)) {
           continue;
         }
 
-        const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-          new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+        const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
+          (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
         );
 
         txnsBefore.sort((a, b) => {
@@ -218,18 +230,23 @@ async function run() {
 
         const lastTxnBefore = txnsBefore[0];
         const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-        const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
+        const isNotExpired =
+          !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
 
         let countLeft = 0;
-        if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
+        if (
+          lastTxnBefore &&
+          lastTxnBefore.total_normal_count_left !== null &&
+          lastTxnBefore.total_retain_count_left !== null
+        ) {
           countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
         } else {
-          const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-            new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
+          const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
+            (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
           );
-          
+
           let usedAfter = 0;
-          txnsAfterOrAt.forEach(t => {
+          txnsAfterOrAt.forEach((t) => {
             if (t.used_staff_id !== null) {
               usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
             }
@@ -246,7 +263,7 @@ async function run() {
     };
 
     // Process orders
-    allOrders.forEach(o => {
+    allOrders.forEach((o) => {
       const staff = legacyIdToStaffMap.get(Number(o.created_staff_id));
       if (!staff) return;
 
@@ -264,7 +281,7 @@ async function run() {
             }
           }
 
-          const serviceName = serviceNameMap.get(primaryService.service_id) || "Unknown";
+          const serviceName = serviceNameMap.get(primaryService.service_id) || 'Unknown';
           let discountPercent = 0;
           if (primaryService.service_price > 0) {
             discountPercent = Math.round((primaryService.discount_amount / primaryService.service_price) * 100);
@@ -299,12 +316,16 @@ async function run() {
   // Fetch calls from user_call using raw SQL
   const callStatsMap = new Map<number, { totalCalled: number; totalAnswered: number }>();
   if (activeLegacyUserIds.length > 0) {
-    const calls = await legacy.$queryRawUnsafe<any[]>(`
+    const calls = await legacy.$queryRawUnsafe<any[]>(
+      `
       SELECT created_staff_id as createdStaffId, conversation_duration_second as duration
       FROM \`user_call\`
       WHERE date_created >= ? AND date_created <= ?
         AND created_staff_id IN (${activeLegacyUserIds.join(',')})
-    `, start, end);
+    `,
+      start,
+      end
+    );
 
     calls.forEach((c: any) => {
       const uid = Number(c.createdStaffId);
@@ -321,13 +342,13 @@ async function run() {
   const happyLogs = await crm.crmCallLog.findMany({
     where: {
       createdAt: { gte: start, lte: new Date(end.getTime() + 24 * 60 * 60 * 1000) },
-      planId: { not: null }
+      planId: { not: null },
     },
-    select: { staffId: true, planId: true }
+    select: { staffId: true, planId: true },
   });
 
   const staffPlanIdsMap = new Map<number, number[]>();
-  happyLogs.forEach(log => {
+  happyLogs.forEach((log) => {
     if (log.planId) {
       const list = staffPlanIdsMap.get(log.staffId) || [];
       list.push(log.planId);
@@ -335,19 +356,22 @@ async function run() {
     }
   });
 
-  const allPlanIds = Array.from(new Set(happyLogs.map(l => l.planId as number)));
-  const happyPlans = allPlanIds.length > 0 ? await crm.crmDailyPlan.findMany({
-    where: {
-      id: { in: allPlanIds },
-      bucket: 'happy'
-    },
-    select: { id: true }
-  }) : [];
-  const happyPlanIdsSet = new Set(happyPlans.map(p => p.id));
+  const allPlanIds = Array.from(new Set(happyLogs.map((l) => l.planId as number)));
+  const happyPlans =
+    allPlanIds.length > 0
+      ? await crm.crmDailyPlan.findMany({
+          where: {
+            id: { in: allPlanIds },
+            bucket: 'happy',
+          },
+          select: { id: true },
+        })
+      : [];
+  const happyPlanIdsSet = new Set(happyPlans.map((p) => p.id));
 
   const staffHappyCountMap = new Map<number, number>();
   staffPlanIdsMap.forEach((planIds, staffId) => {
-    const count = planIds.filter(pid => happyPlanIdsSet.has(pid)).length;
+    const count = planIds.filter((pid) => happyPlanIdsSet.has(pid)).length;
     staffHappyCountMap.set(staffId, count);
   });
 
@@ -376,7 +400,7 @@ async function run() {
 
     // 1. Done Bonus
     let doneBonus = 0;
-    const matchedDone = sortedDoneTiers.find(t => stats.doneCount >= t.minCount);
+    const matchedDone = sortedDoneTiers.find((t) => stats.doneCount >= t.minCount);
     if (matchedDone) {
       doneBonus = matchedDone.bonus;
     }
@@ -385,7 +409,7 @@ async function run() {
     let missedBonus = 0;
     if (totalCount > 0) {
       const missedRatePct = missedRate * 100;
-      const matchedMissed = sortedMissedTiers.find(t => missedRatePct <= t.maxRate);
+      const matchedMissed = sortedMissedTiers.find((t) => missedRatePct <= t.maxRate);
       if (matchedMissed) {
         missedBonus = matchedMissed.bonus;
       }
@@ -396,7 +420,7 @@ async function run() {
 
     // 4. Net Rev Bonus
     let revBonus = 0;
-    const matchedRev = sortedRevTiers.find(t => stats.totalNetRev >= t.minRev);
+    const matchedRev = sortedRevTiers.find((t) => stats.totalNetRev >= t.minRev);
     if (matchedRev) {
       revBonus = Math.round(stats.totalNetRev * matchedRev.rate);
     }
@@ -422,7 +446,7 @@ async function run() {
       revBonus,
       totalTips: stats.totalTips,
       totalNetRev: stats.totalNetRev,
-      totalSalary
+      totalSalary,
     });
   }
 

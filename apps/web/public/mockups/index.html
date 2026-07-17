@@ -1,348 +1,369 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Customer Detail Redesign Mockup Showcase</title>
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    :root {
-      --primary: #D4A84B;
-      --primary-hover: #B3862A;
-      --bg: #0F172A;
-      --sidebar-bg: #1E293B;
-      --card-bg: #334155;
-      --text: #F8FAFC;
-      --text-muted: #94A3B8;
-      --border: #475569;
-      --active-item: #334155;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customer Detail Redesign Mockup Showcase</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      :root {
+        --primary: #d4a84b;
+        --primary-hover: #b3862a;
+        --bg: #0f172a;
+        --sidebar-bg: #1e293b;
+        --card-bg: #334155;
+        --text: #f8fafc;
+        --text-muted: #94a3b8;
+        --border: #475569;
+        --active-item: #334155;
+      }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: grid;
-      grid-template-columns: 350px 1fr;
-      height: 100vh;
-      overflow: hidden;
-    }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        height: 100vh;
+        overflow: hidden;
+      }
 
-    /* Sidebar */
-    .sidebar {
-      background: var(--sidebar-bg);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow-y: auto;
-      padding: 24px;
-    }
+      /* Sidebar */
+      .sidebar {
+        background: var(--sidebar-bg);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow-y: auto;
+        padding: 24px;
+      }
 
-    .logo-container {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
+      .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
 
-    .logo-text h1 {
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
+      .logo-text h1 {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
 
-    .logo-text p {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
+      .logo-text p {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
 
-    /* Architectural QA Section */
-    .qa-box {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 24px;
-      font-size: 13px;
-    }
+      /* Architectural QA Section */
+      .qa-box {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 24px;
+        font-size: 13px;
+      }
 
-    .qa-title {
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: var(--primary);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+      .qa-title {
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
 
-    /* Mockups List */
-    .mockups-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+      /* Mockups List */
+      .mockups-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
 
-    .mockup-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding: 12px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
+      .mockup-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
 
-    .mockup-item:hover {
-      border-color: var(--primary);
-      background: rgba(255,255,255,0.05);
-    }
+      .mockup-item:hover {
+        border-color: var(--primary);
+        background: rgba(255, 255, 255, 0.05);
+      }
 
-    .mockup-item.active {
-      background: var(--primary);
-      border-color: var(--primary-hover);
-      color: #0F172A;
-    }
+      .mockup-item.active {
+        background: var(--primary);
+        border-color: var(--primary-hover);
+        color: #0f172a;
+      }
 
-    .mockup-item.active .mockup-desc {
-      color: #1E293B;
-    }
+      .mockup-item.active .mockup-desc {
+        color: #1e293b;
+      }
 
-    .mockup-title {
-      font-weight: 700;
-      font-size: 13.5px;
-    }
+      .mockup-title {
+        font-weight: 700;
+        font-size: 13.5px;
+      }
 
-    .mockup-desc {
-      font-size: 11.5px;
-      color: var(--text-muted);
-    }
+      .mockup-desc {
+        font-size: 11.5px;
+        color: var(--text-muted);
+      }
 
-    /* Main Showcase Area */
-    .main-view {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      background: #020617;
-    }
+      /* Main Showcase Area */
+      .main-view {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: #020617;
+      }
 
-    /* Frame Header Control Bar */
-    .control-bar {
-      padding: 16px 24px;
-      background: var(--sidebar-bg);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-    }
+      /* Frame Header Control Bar */
+      .control-bar {
+        padding: 16px 24px;
+        background: var(--sidebar-bg);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+      }
 
-    .viewport-controls {
-      display: flex;
-      gap: 8px;
-    }
+      .viewport-controls {
+        display: flex;
+        gap: 8px;
+      }
 
-    .control-btn {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
+      .control-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+      }
 
-    .control-btn:hover, .control-btn.active {
-      background: var(--primary);
-      border-color: var(--primary-hover);
-      color: #0F172A;
-    }
+      .control-btn:hover,
+      .control-btn.active {
+        background: var(--primary);
+        border-color: var(--primary-hover);
+        color: #0f172a;
+      }
 
-    /* Show Frame Container */
-    .frame-container {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      overflow: hidden;
-    }
+      /* Show Frame Container */
+      .frame-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        overflow: hidden;
+      }
 
-    .preview-frame {
-      width: 100%;
-      height: 100%;
-      border: none;
-      background: transparent;
-      border-radius: 12px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+      .preview-frame {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: transparent;
+        border-radius: 12px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-    /* Responsive Viewport Classes */
-    .preview-frame.desktop {
-      width: 100%;
-      height: 100%;
-    }
+      /* Responsive Viewport Classes */
+      .preview-frame.desktop {
+        width: 100%;
+        height: 100%;
+      }
 
-    .preview-frame.tablet {
-      width: 768px;
-      height: 1024px;
-      max-height: 100%;
-      border: 8px solid var(--border);
-    }
+      .preview-frame.tablet {
+        width: 768px;
+        height: 1024px;
+        max-height: 100%;
+        border: 8px solid var(--border);
+      }
 
-    .preview-frame.mobile {
-      width: 375px;
-      height: 812px;
-      max-height: 100%;
-      border: 8px solid var(--border);
-    }
-  </style>
-</head>
-<body>
+      .preview-frame.mobile {
+        width: 375px;
+        height: 812px;
+        max-height: 100%;
+        border: 8px solid var(--border);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar List & Guide -->
+    <div class="sidebar">
+      <div class="logo-container">
+        <div class="logo-text">
+          <h1>MOS LAB REDESIGN</h1>
+          <p>Customer Details Showcase</p>
+        </div>
+      </div>
 
-  <!-- Sidebar List & Guide -->
-  <div class="sidebar">
-    <div class="logo-container">
-      <div class="logo-text">
-        <h1>MOS LAB REDESIGN</h1>
-        <p>Customer Details Showcase</p>
+      <!-- Recommendation: Drawer vs Modal -->
+      <div class="qa-box">
+        <div class="qa-title"><i data-lucide="help-circle"></i> Slide Drawer vs Modal?</div>
+        <p style="line-height: 1.5; opacity: 0.9">
+          Nên dùng <strong>Side Slide (Drawer)</strong>. Khách hàng VIP có dữ liệu cực kỳ lớn (285 đặt lịch, cuộc gọi,
+          ghi chú). Drawer giúp tối ưu 100% chiều cao màn hình, cuộn cuộn tự nhiên và giữ ngữ cảnh của danh sách phía
+          sau mà không gây ức chế.
+        </p>
+      </div>
+
+      <!-- Recommendation: Data fields -->
+      <div class="qa-box">
+        <div class="qa-title"><i data-lucide="database"></i> Cần lấy thêm thông tin gì?</div>
+        <p style="line-height: 1.5; opacity: 0.9; font-size: 12.5px">
+          1. <strong>LTV (Doanh thu lũy kế)</strong> &amp; <strong>Ví combo còn lại</strong>.<br />
+          2. <strong>Số lần check-in</strong> &amp; <strong>tần suất (Avg)</strong>.<br />
+          3. <strong>Kỹ thuật viên quen thuộc</strong> &amp; <strong>Chi nhánh thường trực</strong>.<br />
+          4. <strong>Lịch sử ghi chú cuộc gọi cskh phân cấp cảnh báo</strong>.
+        </p>
+      </div>
+
+      <h3
+        style="
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          margin-bottom: 12px;
+          letter-spacing: 1px;
+        "
+      >
+        Chọn Layout Mockup
+      </h3>
+      <div class="mockups-list">
+        <div class="mockup-item active" onclick="loadMockup('mockup-1.html', this)">
+          <div class="mockup-title">1. Drawer Workspace (Light)</div>
+          <div class="mockup-desc">Trượt từ phải qua, chia 2 cột sạch sẽ, tab chi tiết.</div>
+        </div>
+
+        <div class="mockup-item" onclick="loadMockup('mockup-2.html', this)">
+          <div class="mockup-title">2. Drawer Workspace (Dark)</div>
+          <div class="mockup-desc">Không gian làm việc trượt ngang tông màu tối cao cấp.</div>
+        </div>
+
+        <div class="mockup-item" onclick="loadMockup('mockup-3.html', this)">
+          <div class="mockup-title">3. Modal 3-Column (Light)</div>
+          <div class="mockup-desc">Popup rộng 95% màn hình, hiển thị song song 3 luồng thông tin.</div>
+        </div>
+
+        <div class="mockup-item" onclick="loadMockup('mockup-4.html', this)">
+          <div class="mockup-title">4. Modal 3-Column (Dark)</div>
+          <div class="mockup-desc">Popup 3 cột sang xịn mịn trong chế độ Dark Mode.</div>
+        </div>
+
+        <div class="mockup-item" onclick="loadMockup('mockup-5.html', this)">
+          <div class="mockup-title">5. Unified Activity Stream</div>
+          <div class="mockup-desc">Tập hợp Bookings, Ghi chú, Cuộc gọi vào 1 timeline duy nhất.</div>
+        </div>
+
+        <div class="mockup-item" onclick="loadMockup('mockup-6.html', this)">
+          <div class="mockup-title">6. Compact Grid Matrix</div>
+          <div class="mockup-desc">Bố cục bảng lưới gọn gàng cho nhân viên xử lý nhanh.</div>
+        </div>
+
+        <div class="mockup-item" onclick="loadMockup('mockup-7.html', this)">
+          <div class="mockup-title">7. Glassmorphism (Dark)</div>
+          <div class="mockup-desc">Phong cách kính mờ phát sáng siêu sang trọng hiện đại.</div>
+        </div>
+
+        <div class="mockup-item" onclick="loadMockup('mockup-8.html', this)">
+          <div class="mockup-title">8. Minimalist Editorial</div>
+          <div class="mockup-desc">Tối giản tinh tế, tập trung vào font chữ và khoảng trống.</div>
+        </div>
+
+        <div class="mockup-item" onclick="loadMockup('mockup-9.html', this)">
+          <div class="mockup-title">9. Split Pane Layout</div>
+          <div class="mockup-desc">Chia đôi màn hình thành 2 khu vực làm việc độc lập.</div>
+        </div>
+
+        <div class="mockup-item" onclick="loadMockup('mockup-10.html', this)">
+          <div class="mockup-title">10. Customer Journey</div>
+          <div class="mockup-desc">Lộ trình cột mốc phát triển của khách hàng từ lúc bắt đầu.</div>
+        </div>
       </div>
     </div>
 
-    <!-- Recommendation: Drawer vs Modal -->
-    <div class="qa-box">
-      <div class="qa-title"><i data-lucide="help-circle"></i> Slide Drawer vs Modal?</div>
-      <p style="line-height: 1.5; opacity: 0.9;">
-        Nên dùng <strong>Side Slide (Drawer)</strong>. Khách hàng VIP có dữ liệu cực kỳ lớn (285 đặt lịch, cuộc gọi, ghi chú). 
-        Drawer giúp tối ưu 100% chiều cao màn hình, cuộn cuộn tự nhiên và giữ ngữ cảnh của danh sách phía sau mà không gây ức chế.
-      </p>
-    </div>
-
-    <!-- Recommendation: Data fields -->
-    <div class="qa-box">
-      <div class="qa-title"><i data-lucide="database"></i> Cần lấy thêm thông tin gì?</div>
-      <p style="line-height: 1.5; opacity: 0.9; font-size: 12.5px;">
-        1. <strong>LTV (Doanh thu lũy kế)</strong> &amp; <strong>Ví combo còn lại</strong>.<br>
-        2. <strong>Số lần check-in</strong> &amp; <strong>tần suất (Avg)</strong>.<br>
-        3. <strong>Kỹ thuật viên quen thuộc</strong> &amp; <strong>Chi nhánh thường trực</strong>.<br>
-        4. <strong>Lịch sử ghi chú cuộc gọi cskh phân cấp cảnh báo</strong>.
-      </p>
-    </div>
-
-    <h3 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; letter-spacing: 1px;">Chọn Layout Mockup</h3>
-    <div class="mockups-list">
-      
-      <div class="mockup-item active" onclick="loadMockup('mockup-1.html', this)">
-        <div class="mockup-title">1. Drawer Workspace (Light)</div>
-        <div class="mockup-desc">Trượt từ phải qua, chia 2 cột sạch sẽ, tab chi tiết.</div>
+    <!-- Showcase Area -->
+    <div class="main-view">
+      <div class="control-bar">
+        <div>
+          Đang xem: <strong id="current-name" style="color: var(--primary)">1. Drawer Workspace (Light)</strong>
+        </div>
+        <div class="viewport-controls">
+          <button class="control-btn active" onclick="setViewport('desktop', this)">
+            <i data-lucide="monitor" style="width: 14px; height: 14px"></i> Máy tính
+          </button>
+          <button class="control-btn" onclick="setViewport('tablet', this)">
+            <i data-lucide="tablet" style="width: 14px; height: 14px"></i> Máy tính bảng
+          </button>
+          <button class="control-btn" onclick="setViewport('mobile', this)">
+            <i data-lucide="smartphone" style="width: 14px; height: 14px"></i> Điện thoại
+          </button>
+        </div>
       </div>
 
-      <div class="mockup-item" onclick="loadMockup('mockup-2.html', this)">
-        <div class="mockup-title">2. Drawer Workspace (Dark)</div>
-        <div class="mockup-desc">Không gian làm việc trượt ngang tông màu tối cao cấp.</div>
-      </div>
-
-      <div class="mockup-item" onclick="loadMockup('mockup-3.html', this)">
-        <div class="mockup-title">3. Modal 3-Column (Light)</div>
-        <div class="mockup-desc">Popup rộng 95% màn hình, hiển thị song song 3 luồng thông tin.</div>
-      </div>
-
-      <div class="mockup-item" onclick="loadMockup('mockup-4.html', this)">
-        <div class="mockup-title">4. Modal 3-Column (Dark)</div>
-        <div class="mockup-desc">Popup 3 cột sang xịn mịn trong chế độ Dark Mode.</div>
-      </div>
-
-      <div class="mockup-item" onclick="loadMockup('mockup-5.html', this)">
-        <div class="mockup-title">5. Unified Activity Stream</div>
-        <div class="mockup-desc">Tập hợp Bookings, Ghi chú, Cuộc gọi vào 1 timeline duy nhất.</div>
-      </div>
-
-      <div class="mockup-item" onclick="loadMockup('mockup-6.html', this)">
-        <div class="mockup-title">6. Compact Grid Matrix</div>
-        <div class="mockup-desc">Bố cục bảng lưới gọn gàng cho nhân viên xử lý nhanh.</div>
-      </div>
-
-      <div class="mockup-item" onclick="loadMockup('mockup-7.html', this)">
-        <div class="mockup-title">7. Glassmorphism (Dark)</div>
-        <div class="mockup-desc">Phong cách kính mờ phát sáng siêu sang trọng hiện đại.</div>
-      </div>
-
-      <div class="mockup-item" onclick="loadMockup('mockup-8.html', this)">
-        <div class="mockup-title">8. Minimalist Editorial</div>
-        <div class="mockup-desc">Tối giản tinh tế, tập trung vào font chữ và khoảng trống.</div>
-      </div>
-
-      <div class="mockup-item" onclick="loadMockup('mockup-9.html', this)">
-        <div class="mockup-title">9. Split Pane Layout</div>
-        <div class="mockup-desc">Chia đôi màn hình thành 2 khu vực làm việc độc lập.</div>
-      </div>
-
-      <div class="mockup-item" onclick="loadMockup('mockup-10.html', this)">
-        <div class="mockup-title">10. Customer Journey</div>
-        <div class="mockup-desc">Lộ trình cột mốc phát triển của khách hàng từ lúc bắt đầu.</div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Showcase Area -->
-  <div class="main-view">
-    <div class="control-bar">
-      <div>Đang xem: <strong id="current-name" style="color: var(--primary);">1. Drawer Workspace (Light)</strong></div>
-      <div class="viewport-controls">
-        <button class="control-btn active" onclick="setViewport('desktop', this)"><i data-lucide="monitor" style="width: 14px; height: 14px;"></i> Máy tính</button>
-        <button class="control-btn" onclick="setViewport('tablet', this)"><i data-lucide="tablet" style="width: 14px; height: 14px;"></i> Máy tính bảng</button>
-        <button class="control-btn" onclick="setViewport('mobile', this)"><i data-lucide="smartphone" style="width: 14px; height: 14px;"></i> Điện thoại</button>
+      <div class="frame-container">
+        <iframe id="preview-frame" class="preview-frame desktop" src="mockup-1.html"></iframe>
       </div>
     </div>
 
-    <div class="frame-container">
-      <iframe id="preview-frame" class="preview-frame desktop" src="mockup-1.html"></iframe>
-    </div>
-  </div>
+    <script>
+      lucide.createIcons();
 
-  <script>
-    lucide.createIcons();
+      function loadMockup(url, element) {
+        document.querySelectorAll('.mockup-item').forEach((item) => item.classList.remove('active'));
+        element.classList.add('active');
 
-    function loadMockup(url, element) {
-      document.querySelectorAll('.mockup-item').forEach(item => item.classList.remove('active'));
-      element.classList.add('active');
-      
-      const frame = document.getElementById('preview-frame');
-      frame.src = url;
+        const frame = document.getElementById('preview-frame');
+        frame.src = url;
 
-      const title = element.querySelector('.mockup-title').textContent;
-      document.getElementById('current-name').textContent = title;
-    }
+        const title = element.querySelector('.mockup-title').textContent;
+        document.getElementById('current-name').textContent = title;
+      }
 
-    function setViewport(size, button) {
-      document.querySelectorAll('.control-btn').forEach(btn => btn.classList.remove('active'));
-      button.classList.add('active');
+      function setViewport(size, button) {
+        document.querySelectorAll('.control-btn').forEach((btn) => btn.classList.remove('active'));
+        button.classList.add('active');
 
-      const frame = document.getElementById('preview-frame');
-      frame.className = 'preview-frame ' + size;
-    }
-  </script>
-</body>
+        const frame = document.getElementById('preview-frame');
+        frame.className = 'preview-frame ' + size;
+      }
+    </script>
+  </body>
 </html>

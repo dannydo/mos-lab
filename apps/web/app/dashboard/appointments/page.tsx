@@ -2,19 +2,19 @@
 
 import '../../suppress-warnings';
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { 
-  Table, 
-  Tabs, 
-  Button, 
-  Card, 
-  Space, 
-  Radio, 
-  DatePicker, 
-  Avatar, 
-  Tag, 
-  Typography, 
-  message, 
-  Select, 
+import {
+  Table,
+  Tabs,
+  Button,
+  Card,
+  Space,
+  Radio,
+  DatePicker,
+  Avatar,
+  Tag,
+  Typography,
+  message,
+  Select,
   theme,
   Descriptions,
   Modal,
@@ -28,7 +28,7 @@ import {
   Popover,
   Checkbox,
   Slider,
-  Divider
+  Divider,
 } from 'antd';
 import {
   CalendarOutlined,
@@ -38,7 +38,7 @@ import {
   PhoneOutlined,
   EyeOutlined,
   CloseCircleOutlined,
-  SettingOutlined
+  SettingOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -100,30 +100,32 @@ export default function AppointmentsPage() {
     orderState: { visible: true, width: 120, label: 'Trạng thái' },
   };
 
-  const [columnConfig, setColumnConfig] = useState<Record<string, { visible: boolean; width: number; label: string }>>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('appointment_columns_config_v2');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          const merged = { ...defaultColumnConfig };
-          Object.keys(parsed).forEach(key => {
-            if (merged[key as keyof typeof defaultColumnConfig]) {
-              merged[key as keyof typeof defaultColumnConfig] = {
-                ...merged[key as keyof typeof defaultColumnConfig],
-                visible: parsed[key].visible,
-                width: parsed[key].width || merged[key as keyof typeof defaultColumnConfig].width
-              };
-            }
-          });
-          return merged;
-        } catch (e) {
-          return defaultColumnConfig;
+  const [columnConfig, setColumnConfig] = useState<Record<string, { visible: boolean; width: number; label: string }>>(
+    () => {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('appointment_columns_config_v2');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            const merged = { ...defaultColumnConfig };
+            Object.keys(parsed).forEach((key) => {
+              if (merged[key as keyof typeof defaultColumnConfig]) {
+                merged[key as keyof typeof defaultColumnConfig] = {
+                  ...merged[key as keyof typeof defaultColumnConfig],
+                  visible: parsed[key].visible,
+                  width: parsed[key].width || merged[key as keyof typeof defaultColumnConfig].width,
+                };
+              }
+            });
+            return merged;
+          } catch (e) {
+            return defaultColumnConfig;
+          }
         }
       }
+      return defaultColumnConfig;
     }
-    return defaultColumnConfig;
-  });
+  );
 
   const saveColumnConfig = (newConfig: typeof columnConfig) => {
     setColumnConfig(newConfig);
@@ -211,12 +213,13 @@ export default function AppointmentsPage() {
     if (stored) {
       const parsed = JSON.parse(stored);
       setCurrentUser(parsed);
-      
+
       // If admin, load active staff members
       if (parsed.role === 'admin') {
-        api.get('/customers/staff')
-          .then(res => setStaffList(res.data))
-          .catch(err => console.error('Failed to load staff list:', err));
+        api
+          .get('/customers/staff')
+          .then((res) => setStaffList(res.data))
+          .catch((err) => console.error('Failed to load staff list:', err));
       }
     }
   }, []);
@@ -239,7 +242,7 @@ export default function AppointmentsPage() {
         dateTo: dateRange[1].endOf('day').toISOString(),
         type: activeTab,
         page: currentPage,
-        limit: pageSize
+        limit: pageSize,
       };
 
       if (currentUser?.role === 'admin' && selectedStaffId !== 'all') {
@@ -247,17 +250,17 @@ export default function AppointmentsPage() {
       }
 
       const res = await api.get('/customers/appointments', { params });
-      
+
       if (currentPage === 1) {
         setAppointments(res.data.data);
       } else {
-        setAppointments(prev => {
-          const existingIds = new Set(prev.map(item => item.id));
+        setAppointments((prev) => {
+          const existingIds = new Set(prev.map((item) => item.id));
           const newItems = res.data.data.filter((item: any) => !existingIds.has(item.id));
           return [...prev, ...newItems];
         });
       }
-      
+
       setTotal(res.data.total);
       setSummary(res.data.summary || null);
     } catch (err: any) {
@@ -291,13 +294,16 @@ export default function AppointmentsPage() {
   useEffect(() => {
     if (loading || appointments.length >= total || total === 0) return;
 
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        setCurrentPage(prev => prev + 1);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setCurrentPage((prev) => prev + 1);
+        }
+      },
+      {
+        rootMargin: '150px', // Pre-fetch before user reaches the very bottom
       }
-    }, {
-      rootMargin: '150px', // Pre-fetch before user reaches the very bottom
-    });
+    );
 
     const currentSentinel = sentinelRef.current;
     if (currentSentinel) {
@@ -314,7 +320,7 @@ export default function AppointmentsPage() {
   // Quick period navigation
   const handleNavigate = (direction: number) => {
     setCustomRange(null);
-    setReferenceDate(prev => prev.add(direction, viewMode as any));
+    setReferenceDate((prev) => prev.add(direction, viewMode as any));
   };
 
   const getPeriodLabel = () => {
@@ -398,42 +404,47 @@ export default function AppointmentsPage() {
       title: 'Khách hàng',
       key: 'customerName',
       render: (record: Appointment) => (
-        <Space 
-          size="middle" 
+        <Space
+          size="middle"
           style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
           onClick={() => openDetailModal(record.customerId)}
         >
-          <Avatar 
-            src={record.customerAvatar || undefined} 
-            icon={<UserOutlined />} 
-            style={{ 
-              backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5', 
+          <Avatar
+            src={record.customerAvatar || undefined}
+            icon={<UserOutlined />}
+            style={{
+              backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5',
               color: '#D4A84B',
               border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
-              flexShrink: 0
-            }} 
+              flexShrink: 0,
+            }}
           />
           <div>
-            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline">{record.customerName}</div>
+            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline">
+              {record.customerName}
+            </div>
             <div style={{ fontSize: '12px', color: token.colorTextDescription }}>ID: {record.customerId}</div>
           </div>
         </Space>
-      )
+      ),
     },
     {
       title: 'Số Điện Thoại',
       dataIndex: 'customerPhone',
       key: 'customerPhone',
-      render: (phone: string, record: Appointment) => phone ? (
-        <span 
-          className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-          onClick={() => makeCall(phone, record.customerName, record.customerId, record.customerAvatar || undefined)}
-          style={{ color: token.colorText, fontWeight: '600' }}
-        >
-          <PhoneOutlined style={{ color: '#D4A84B' }} />
-          <span>{phone}</span>
-        </span>
-      ) : <Text type="secondary">-</Text>
+      render: (phone: string, record: Appointment) =>
+        phone ? (
+          <span
+            className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
+            onClick={() => makeCall(phone, record.customerName, record.customerId, record.customerAvatar || undefined)}
+            style={{ color: token.colorText, fontWeight: '600' }}
+          >
+            <PhoneOutlined style={{ color: '#D4A84B' }} />
+            <span>{phone}</span>
+          </span>
+        ) : (
+          <Text type="secondary">-</Text>
+        ),
     },
     {
       title: 'Thời Gian Hẹn',
@@ -448,57 +459,58 @@ export default function AppointmentsPage() {
         const start = dayjs(record.bookingDateStart);
         return (
           <Space direction="vertical" size={1}>
-            <span style={{ fontWeight: '600', color: token.colorText }}>
-              {start.format('HH:mm')}
-            </span>
-            <span style={{ fontSize: '12px', color: token.colorTextDescription }}>
-              {start.format('DD/MM/YYYY')}
-            </span>
+            <span style={{ fontWeight: '600', color: token.colorText }}>{start.format('HH:mm')}</span>
+            <span style={{ fontSize: '12px', color: token.colorTextDescription }}>{start.format('DD/MM/YYYY')}</span>
           </Space>
         );
-      }
+      },
     },
     {
       title: 'Giá trị ước tính',
       dataIndex: 'totalPrice',
       key: 'totalPrice',
       sorter: (a: Appointment, b: Appointment) => a.totalPrice - b.totalPrice,
-      render: (price: number) => <span style={{ fontWeight: '500', color: token.colorText }}>{formatVND(price)}</span>
+      render: (price: number) => <span style={{ fontWeight: '500', color: token.colorText }}>{formatVND(price)}</span>,
     },
     {
       title: 'Kênh đặt lịch',
       dataIndex: 'bookingChannel',
       key: 'bookingChannel',
-      render: (channel: string) => <Tag color="orange" style={{ textTransform: 'capitalize' }}>{channel.toLowerCase()}</Tag>
+      render: (channel: string) => (
+        <Tag color="orange" style={{ textTransform: 'capitalize' }}>
+          {channel.toLowerCase()}
+        </Tag>
+      ),
     },
     {
       title: 'Ghi chú đặt lịch',
       dataIndex: 'bookingNote',
       key: 'bookingNote',
-      render: (note: string | null) => note ? (
-        <Tooltip 
-          title={
-            <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
-              {note}
-            </div>
-          }
-          styles={{ root: { maxWidth: '400px' } }}
-        >
-          <Paragraph 
-            ellipsis={{ rows: 2 }} 
-            title=""
-            style={{ 
-              color: themeMode === 'dark' ? token.colorText : token.colorText, 
-              margin: 0, 
-              maxWidth: '100%',
-              whiteSpace: 'normal',
-              wordBreak: 'break-word'
-            }}
+      render: (note: string | null) =>
+        note ? (
+          <Tooltip
+            title={<div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{note}</div>}
+            styles={{ root: { maxWidth: '400px' } }}
           >
-            {note}
-          </Paragraph>
-        </Tooltip>
-      ) : <Text type="secondary" style={{ fontStyle: 'italic' }}>Không có</Text>
+            <Paragraph
+              ellipsis={{ rows: 2 }}
+              title=""
+              style={{
+                color: themeMode === 'dark' ? token.colorText : token.colorText,
+                margin: 0,
+                maxWidth: '100%',
+                whiteSpace: 'normal',
+                wordBreak: 'break-word',
+              }}
+            >
+              {note}
+            </Paragraph>
+          </Tooltip>
+        ) : (
+          <Text type="secondary" style={{ fontStyle: 'italic' }}>
+            Không có
+          </Text>
+        ),
     },
     {
       title: 'Trạng thái',
@@ -520,9 +532,9 @@ export default function AppointmentsPage() {
           const isToday = record.bookingDateStart ? dayjs(record.bookingDateStart).isSame(dayjs(), 'day') : false;
           color = isToday ? 'warning' : 'cyan';
         }
-        
+
         return <Tag color={color}>{state}</Tag>;
-      }
+      },
     },
     {
       title: 'Thao tác',
@@ -531,10 +543,10 @@ export default function AppointmentsPage() {
       render: (record: Appointment) => (
         <Space size="middle">
           <Tooltip title="Chi tiết khách hàng">
-            <Button 
-              type="text" 
-              shape="circle" 
-              icon={<EyeOutlined style={{ fontSize: '16px' }} />} 
+            <Button
+              type="text"
+              shape="circle"
+              icon={<EyeOutlined style={{ fontSize: '16px' }} />}
               onClick={() => openDetailModal(record.customerId)}
               style={{ color: themeMode === 'dark' ? '#D4A84B' : '#D4A84B' }}
             />
@@ -549,13 +561,15 @@ export default function AppointmentsPage() {
                   id: record.id,
                   bookingDate: record.bookingDateStart ? dayjs(record.bookingDateStart).format('YYYY-MM-DD') : '',
                   bookingTime: record.bookingDateStart ? dayjs(record.bookingDateStart).format('HH:mm') : '',
-                  branchName: record.branchName || (record.storeId === 16 ? 'Estella Place' : record.storeId === 6 ? 'De Tham' : 'Phan Xích Long'),
+                  branchName:
+                    record.branchName ||
+                    (record.storeId === 16 ? 'Estella Place' : record.storeId === 6 ? 'De Tham' : 'Phan Xích Long'),
                   technicianName: record.technicianName,
                   technicianId: record.technicianId,
                   bookingNote: record.bookingNote,
                   customerName: record.customerName,
                   customerPhone: record.customerPhone,
-                  customerId: record.customerId
+                  customerId: record.customerId,
                 };
                 setSelectedBookingForReschedule(bookingObj);
                 setRescheduleModalVisible(true);
@@ -572,17 +586,12 @@ export default function AppointmentsPage() {
               onConfirm={() => handleCancelBooking(record.id)}
               okButtonProps={{ danger: true }}
             >
-              <Button
-                type="text"
-                shape="circle"
-                danger
-                icon={<CloseCircleOutlined style={{ fontSize: '16px' }} />}
-              />
+              <Button type="text" shape="circle" danger icon={<CloseCircleOutlined style={{ fontSize: '16px' }} />} />
             </Popconfirm>
           </Tooltip>
         </Space>
-      )
-    }
+      ),
+    },
   ];
 
   const completedColumns = [
@@ -590,33 +599,39 @@ export default function AppointmentsPage() {
       title: 'Khách hàng',
       key: 'customerName',
       render: (record: Appointment) => (
-        <Space 
-          size="middle" 
+        <Space
+          size="middle"
           style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
           onClick={() => openDetailModal(record.customerId)}
         >
-          <Avatar 
-            src={record.customerAvatar || undefined} 
-            icon={<UserOutlined />} 
-            style={{ 
-              backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5', 
+          <Avatar
+            src={record.customerAvatar || undefined}
+            icon={<UserOutlined />}
+            style={{
+              backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5',
               color: '#D4A84B',
               border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
-              flexShrink: 0
-            }} 
+              flexShrink: 0,
+            }}
           />
           <div>
-            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline">{record.customerName}</div>
+            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline">
+              {record.customerName}
+            </div>
             <div style={{ fontSize: '12px', color: token.colorTextDescription }}>ID: {record.customerId}</div>
           </div>
         </Space>
-      )
+      ),
     },
     {
       title: 'Kênh đặt',
       dataIndex: 'bookingChannel',
       key: 'bookingChannel',
-      render: (channel: string) => <Tag color="orange" style={{ textTransform: 'capitalize' }}>{channel?.toLowerCase()}</Tag>
+      render: (channel: string) => (
+        <Tag color="orange" style={{ textTransform: 'capitalize' }}>
+          {channel?.toLowerCase()}
+        </Tag>
+      ),
     },
     {
       title: 'Ngày hẹn',
@@ -631,15 +646,11 @@ export default function AppointmentsPage() {
         const start = dayjs(record.bookingDateStart);
         return (
           <Space direction="vertical" size={1}>
-            <span style={{ fontWeight: '600', color: token.colorText }}>
-              {start.format('HH:mm')}
-            </span>
-            <span style={{ fontSize: '12px', color: token.colorTextDescription }}>
-              {start.format('DD/MM/YYYY')}
-            </span>
+            <span style={{ fontWeight: '600', color: token.colorText }}>{start.format('HH:mm')}</span>
+            <span style={{ fontSize: '12px', color: token.colorTextDescription }}>{start.format('DD/MM/YYYY')}</span>
           </Space>
         );
-      }
+      },
     },
     {
       title: 'Dịch vụ chính',
@@ -651,30 +662,35 @@ export default function AppointmentsPage() {
             Giá: {formatVND(record.servicePrice || 0)} | Giảm: {record.discountPercent || 0}%
           </div>
         </div>
-      )
+      ),
     },
     {
       title: 'Doanh thu Net',
       dataIndex: 'netRevenue',
       key: 'netRevenue',
       sorter: (a: Appointment, b: Appointment) => (a.netRevenue || 0) - (b.netRevenue || 0),
-      render: (val: number) => <span style={{ fontWeight: '500', color: token.colorText }}>{val > 0 ? formatVND(val) : '-'}</span>
+      render: (val: number) => (
+        <span style={{ fontWeight: '500', color: token.colorText }}>{val > 0 ? formatVND(val) : '-'}</span>
+      ),
     },
     {
       title: 'Tiền tips',
       dataIndex: 'tipAmount',
       key: 'tipAmount',
       sorter: (a: Appointment, b: Appointment) => (a.tipAmount || 0) - (b.tipAmount || 0),
-      render: (val: number) => <span style={{ color: token.colorText }}>{val > 0 ? formatVND(val) : '-'}</span>
+      render: (val: number) => <span style={{ color: token.colorText }}>{val > 0 ? formatVND(val) : '-'}</span>,
     },
     {
       title: 'Hoa hồng OC',
       dataIndex: 'bookingBonus',
       key: 'bookingBonus',
       sorter: (a: Appointment, b: Appointment) => (a.bookingBonus || 0) - (b.bookingBonus || 0),
-      render: (val: number) => val > 0 ? (
-        <span style={{ color: '#52C41A', fontWeight: 'bold' }}>+{formatVND(val)}</span>
-      ) : <span style={{ color: token.colorTextDescription }}>-</span>
+      render: (val: number) =>
+        val > 0 ? (
+          <span style={{ color: '#52C41A', fontWeight: 'bold' }}>+{formatVND(val)}</span>
+        ) : (
+          <span style={{ color: token.colorTextDescription }}>-</span>
+        ),
     },
     {
       title: 'Trạng thái',
@@ -696,9 +712,9 @@ export default function AppointmentsPage() {
           const isToday = record.bookingDateStart ? dayjs(record.bookingDateStart).isSame(dayjs(), 'day') : false;
           color = isToday ? 'warning' : 'cyan';
         }
-        
+
         return <Tag color={color}>{state}</Tag>;
-      }
+      },
     },
     {
       title: 'Thao tác',
@@ -706,31 +722,31 @@ export default function AppointmentsPage() {
       width: 80,
       render: (record: Appointment) => (
         <Tooltip title="Chi tiết khách hàng">
-          <Button 
-            type="text" 
-            shape="circle" 
-            icon={<EyeOutlined style={{ fontSize: '16px' }} />} 
+          <Button
+            type="text"
+            shape="circle"
+            icon={<EyeOutlined style={{ fontSize: '16px' }} />}
             onClick={() => openDetailModal(record.customerId)}
             style={{ color: themeMode === 'dark' ? '#D4A84B' : '#D4A84B' }}
           />
         </Tooltip>
-      )
-    }
+      ),
+    },
   ];
 
   const baseColumns = activeTab === 'completed' ? completedColumns : pendingColumns;
   const columns = baseColumns
-    .filter(col => {
+    .filter((col) => {
       if (col.key === 'action') return true;
       const config = columnConfig[col.key as string];
       return config ? config.visible : true;
     })
-    .map(col => {
+    .map((col) => {
       const config = columnConfig[col.key as string];
       if (config) {
         return {
           ...col,
-          width: config.width
+          width: config.width,
         };
       }
       return col;
@@ -744,15 +760,24 @@ export default function AppointmentsPage() {
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
           <div>
-            <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>Quản Lý Lịch Hẹn Của Tôi</Title>
+            <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
+              Quản Lý Lịch Hẹn Của Tôi
+            </Title>
             <Text style={{ color: token.colorTextDescription }}>
               Theo dõi và quản lý lịch hẹn của khách hàng đã được phân bổ cho bạn
             </Text>
           </div>
-          <Button 
-            type="primary" 
-            icon={<CalendarOutlined />} 
-            style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B', height: '38px', borderRadius: '6px', fontWeight: 'bold', marginTop: '4px' }}
+          <Button
+            type="primary"
+            icon={<CalendarOutlined />}
+            style={{
+              backgroundColor: '#D4A84B',
+              borderColor: '#D4A84B',
+              height: '38px',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              marginTop: '4px',
+            }}
             onClick={() => setBookingWizardVisible(true)}
           >
             Đặt lịch mới
@@ -771,15 +796,15 @@ export default function AppointmentsPage() {
               style={{ width: '180px' }}
               options={[
                 { value: 'all', label: 'Tất cả Booker' },
-                ...staffList.map(s => ({ value: s.id.toString(), label: s.displayName }))
+                ...staffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),
               ]}
               placeholder="Chọn Booker"
             />
           )}
 
           <Space wrap>
-            <Radio.Group 
-              value={viewMode} 
+            <Radio.Group
+              value={viewMode}
               onChange={(e) => {
                 const val = e.target.value;
                 setViewMode(val);
@@ -797,59 +822,60 @@ export default function AppointmentsPage() {
 
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <Space.Compact>
-                <Button 
-                  icon={<LeftOutlined />} 
-                  onClick={() => handleNavigate(-1)} 
-                />
-                <Button 
+                <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
+                <Button
                   onClick={() => setPickerOpen(true)}
-                  style={{ 
-                    fontWeight: '600', 
-                    minWidth: '210px', 
-                    textAlign: 'center', 
+                  style={{
+                    fontWeight: '600',
+                    minWidth: '210px',
+                    textAlign: 'center',
                     color: token.colorText,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px'
+                    gap: '8px',
                   }}
                 >
                   {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
                 </Button>
-                <Button 
-                  icon={<RightOutlined />} 
-                  onClick={() => handleNavigate(1)} 
-                />
+                <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
               </Space.Compact>
 
-              <RangePicker 
-                value={dateRange} 
+              <RangePicker
+                value={dateRange}
                 onChange={(dates) => {
                   if (dates) setCustomRange([dates[0]!, dates[1]!]);
                 }}
                 format="DD/MM/YYYY"
                 open={pickerOpen}
                 onOpenChange={(open) => setPickerOpen(open)}
-                style={{ 
-                  position: 'absolute', 
-                  left: 0, 
-                  right: 0, 
-                  bottom: 0, 
-                  height: '100%', 
-                  opacity: 0, 
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: '100%',
+                  opacity: 0,
                   pointerEvents: 'none',
-                  zIndex: -1 
+                  zIndex: -1,
                 }}
               />
             </div>
 
             <Popover
               title={
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '8px',
+                  }}
+                >
                   <span style={{ fontWeight: 'bold' }}>Cấu hình hiển thị cột</span>
-                  <Button 
-                    type="link" 
-                    size="small" 
+                  <Button
+                    type="link"
+                    size="small"
                     onClick={() => saveColumnConfig(defaultColumnConfig)}
                     style={{ padding: 0 }}
                   >
@@ -877,15 +903,13 @@ export default function AppointmentsPage() {
                             onChange={(e) => {
                               saveColumnConfig({
                                 ...columnConfig,
-                                [key]: { ...config, visible: e.target.checked }
+                                [key]: { ...config, visible: e.target.checked },
                               });
                             }}
                           >
                             <span style={{ fontWeight: '500' }}>{config.label}</span>
                           </Checkbox>
-                          <span style={{ fontSize: '12px', color: token.colorTextDescription }}>
-                            {config.width}px
-                          </span>
+                          <span style={{ fontSize: '12px', color: token.colorTextDescription }}>{config.width}px</span>
                         </div>
                         {config.visible && (
                           <div style={{ paddingLeft: '24px', marginTop: '4px' }}>
@@ -897,7 +921,7 @@ export default function AppointmentsPage() {
                               onChange={(val) => {
                                 saveColumnConfig({
                                   ...columnConfig,
-                                  [key]: { ...config, width: val }
+                                  [key]: { ...config, width: val },
                                 });
                               }}
                               tooltip={{ formatter: (v) => `${v}px` }}
@@ -916,8 +940,8 @@ export default function AppointmentsPage() {
       </div>
 
       <Card style={{ background: token.colorBgContainer, borderRadius: '8px' }}>
-        <Tabs 
-          activeKey={activeTab} 
+        <Tabs
+          activeKey={activeTab}
           onChange={(key) => {
             setActiveTab(key as any);
             localStorage.setItem('mos_appointments_activeTab', key);
@@ -929,7 +953,10 @@ export default function AppointmentsPage() {
               label: (
                 <span style={{ fontSize: '15px', fontWeight: '500' }}>
                   Lịch hẹn / Chưa đến
-                  <Badge count={activeTab === 'pending' ? total : 0} style={{ marginLeft: 8, backgroundColor: '#D4A84B' }} />
+                  <Badge
+                    count={activeTab === 'pending' ? total : 0}
+                    style={{ marginLeft: 8, backgroundColor: '#D4A84B' }}
+                  />
                 </span>
               ),
             },
@@ -938,7 +965,10 @@ export default function AppointmentsPage() {
               label: (
                 <span style={{ fontSize: '15px', fontWeight: '500' }}>
                   Khách hàng đã đến
-                  <Badge count={activeTab === 'completed' ? total : 0} style={{ marginLeft: 8, backgroundColor: '#52C41A' }} />
+                  <Badge
+                    count={activeTab === 'completed' ? total : 0}
+                    style={{ marginLeft: 8, backgroundColor: '#52C41A' }}
+                  />
                 </span>
               ),
             },
@@ -949,17 +979,26 @@ export default function AppointmentsPage() {
           <div style={{ marginTop: '16px', marginBottom: '16px' }}>
             <Row gutter={[12, 12]}>
               <Col xs={12} sm={6} md={3}>
-                <div style={{
-                  background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                  borderRadius: '8px',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  height: '100%'
-                }}>
-                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: token.colorTextDescription, textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
+                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
+                    borderRadius: '8px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    height: '100%',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      color: token.colorTextDescription,
+                      textTransform: 'uppercase',
+                    }}
+                  >
                     LỊCH HẸN / CHECK-IN
                   </div>
                   <div style={{ fontSize: '16px', fontWeight: '700', color: token.colorText }}>
@@ -972,66 +1011,95 @@ export default function AppointmentsPage() {
               </Col>
 
               <Col xs={12} sm={6} md={3}>
-                <div style={{
-                  background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                  borderRadius: '8px',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  height: '100%'
-                }}>
-                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: token.colorTextDescription, textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
+                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
+                    borderRadius: '8px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    height: '100%',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      color: token.colorTextDescription,
+                      textTransform: 'uppercase',
+                    }}
+                  >
                     LƯƠNG CỨNG
                   </div>
                   <div style={{ fontSize: '16px', fontWeight: '700', color: token.colorText }}>
                     {formatVND(summary.baseSalary)}
                   </div>
-                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                    Cố định hàng tháng
-                  </div>
+                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>Cố định hàng tháng</div>
                 </div>
               </Col>
 
               <Col xs={12} sm={6} md={3}>
-                <div style={{
-                  background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                  borderRadius: '8px',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  height: '100%'
-                }}>
-                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: token.colorTextDescription, textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
+                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
+                    borderRadius: '8px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    height: '100%',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      color: token.colorTextDescription,
+                      textTransform: 'uppercase',
+                    }}
+                  >
                     HOA HỒNG ĐẶT LỊCH (LIVE)
                   </div>
                   <div style={{ fontSize: '16px', fontWeight: '700', color: '#52C41A' }}>
                     {formatVND(summary.clientBonus)}
                   </div>
-                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                    Cộng dồn đơn thành công
-                  </div>
+                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>Cộng dồn đơn thành công</div>
                 </div>
               </Col>
 
               <Col xs={12} sm={6} md={3}>
-                <div style={{
-                  background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                  borderRadius: '8px',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  height: '100%'
-                }}>
-                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: token.colorTextDescription, textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
+                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
+                    borderRadius: '8px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    height: '100%',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      color: token.colorTextDescription,
+                      textTransform: 'uppercase',
+                    }}
+                  >
                     THƯỞNG MỐC DONE
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: summary.doneBonus > 0 ? '#52C41A' : token.colorText }}>
+                  <div
+                    style={{
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      color: summary.doneBonus > 0 ? '#52C41A' : token.colorText,
+                    }}
+                  >
                     {formatVND(summary.doneBonus)}
                   </div>
                   <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
@@ -1041,25 +1109,38 @@ export default function AppointmentsPage() {
               </Col>
 
               <Col xs={12} sm={6} md={3}>
-                <div style={{
-                  background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                  borderRadius: '8px',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  height: '100%'
-                }}>
-                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: token.colorTextDescription, textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
+                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
+                    borderRadius: '8px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    height: '100%',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      color: token.colorTextDescription,
+                      textTransform: 'uppercase',
+                    }}
+                  >
                     THƯỞNG / PHẠT LỖI
                   </div>
-                  <div style={{
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    color: summary.missedBonus < 0 ? '#FF4D4F' : summary.missedBonus > 0 ? '#52C41A' : token.colorText
-                  }}>
-                    {summary.missedBonus > 0 ? '+' : ''}{formatVND(summary.missedBonus)}
+                  <div
+                    style={{
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      color:
+                        summary.missedBonus < 0 ? '#FF4D4F' : summary.missedBonus > 0 ? '#52C41A' : token.colorText,
+                    }}
+                  >
+                    {summary.missedBonus > 0 ? '+' : ''}
+                    {formatVND(summary.missedBonus)}
                   </div>
                   <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
                     Lỗi {summary.missedRatePct}% (Mốc &lt;= {summary.missedLevelRate || 10}%)
@@ -1068,20 +1149,35 @@ export default function AppointmentsPage() {
               </Col>
 
               <Col xs={12} sm={6} md={3}>
-                <div style={{
-                  background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                  borderRadius: '8px',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  height: '100%'
-                }}>
-                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: token.colorTextDescription, textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
+                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
+                    borderRadius: '8px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    height: '100%',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      color: token.colorTextDescription,
+                      textTransform: 'uppercase',
+                    }}
+                  >
                     THƯỞNG TIPS (7%)
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: summary.tipBonus > 0 ? '#52C41A' : token.colorText }}>
+                  <div
+                    style={{
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      color: summary.tipBonus > 0 ? '#52C41A' : token.colorText,
+                    }}
+                  >
                     {formatVND(summary.tipBonus)}
                   </div>
                   <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
@@ -1091,40 +1187,60 @@ export default function AppointmentsPage() {
               </Col>
 
               <Col xs={12} sm={6} md={3}>
-                <div style={{
-                  background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                  borderRadius: '8px',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  height: '100%'
-                }}>
-                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: token.colorTextDescription, textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
+                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
+                    borderRadius: '8px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    height: '100%',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      color: token.colorTextDescription,
+                      textTransform: 'uppercase',
+                    }}
+                  >
                     THƯỞNG DOANH THU NET
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: summary.revBonus > 0 ? '#52C41A' : token.colorText }}>
+                  <div
+                    style={{
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      color: summary.revBonus > 0 ? '#52C41A' : token.colorText,
+                    }}
+                  >
                     {formatVND(summary.revBonus)}
                   </div>
                   <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                    {summary.revBonus > 0 ? `Đạt mốc ${summary.revLevelMin / 1000000}M (${Math.round(summary.revLevelRate * 100 * 100) / 100}%)` : `Chưa đạt (DS: ${Math.round(summary.totalNetRev/100000)/10}M)`}
+                    {summary.revBonus > 0
+                      ? `Đạt mốc ${summary.revLevelMin / 1000000}M (${Math.round(summary.revLevelRate * 100 * 100) / 100}%)`
+                      : `Chưa đạt (DS: ${Math.round(summary.totalNetRev / 100000) / 10}M)`}
                   </div>
                 </div>
               </Col>
 
               <Col xs={12} sm={6} md={3}>
-                <div style={{
-                  background: themeMode === 'dark' ? '#2c220f' : '#fefaf0',
-                  border: `1px solid #D4A84B`,
-                  borderRadius: '8px',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  height: '100%',
-                  boxShadow: themeMode === 'dark' ? '0 0 10px rgba(212, 168, 75, 0.15)' : '0 0 10px rgba(212, 168, 75, 0.08)'
-                }}>
+                <div
+                  style={{
+                    background: themeMode === 'dark' ? '#2c220f' : '#fefaf0',
+                    border: `1px solid #D4A84B`,
+                    borderRadius: '8px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    height: '100%',
+                    boxShadow:
+                      themeMode === 'dark' ? '0 0 10px rgba(212, 168, 75, 0.15)' : '0 0 10px rgba(212, 168, 75, 0.08)',
+                  }}
+                >
                   <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#D4A84B', textTransform: 'uppercase' }}>
                     TỔNG THU NHẬP (LIVE)
                   </div>
@@ -1153,7 +1269,7 @@ export default function AppointmentsPage() {
             background: token.colorBgContainer,
             border: `1px solid ${token.colorBorderSecondary}`,
             borderRadius: '8px',
-            marginTop: '16px'
+            marginTop: '16px',
           }}
           className="antd-custom-table"
           onRow={(record) => {
@@ -1161,8 +1277,8 @@ export default function AppointmentsPage() {
             const isCompleted = record.orderState === 'Completed';
             const isInService = ['CheckIn', 'ServiceCleaned', 'CheckOut'].includes(record.orderState);
 
-            let style: React.CSSProperties = {};
-            
+            const style: React.CSSProperties = {};
+
             if (isPast && !isCompleted && !isInService) {
               // Past / Missed / Overdue: Soft Red/Coral tone
               style.backgroundColor = themeMode === 'dark' ? '#2d1818' : '#fff1f0';
@@ -1182,17 +1298,17 @@ export default function AppointmentsPage() {
         />
 
         {/* Infinite Scroll Sentinel */}
-        <div 
-          ref={sentinelRef} 
-          style={{ 
-            padding: '20px 0', 
-            textAlign: 'center', 
-            display: 'flex', 
-            justifyContent: 'center', 
+        <div
+          ref={sentinelRef}
+          style={{
+            padding: '20px 0',
+            textAlign: 'center',
+            display: 'flex',
+            justifyContent: 'center',
             alignItems: 'center',
             gap: '10px',
             color: token.colorTextDescription,
-            fontSize: '14px'
+            fontSize: '14px',
           }}
         >
           {loading && appointments.length > 0 && (
@@ -1202,9 +1318,7 @@ export default function AppointmentsPage() {
             </>
           )}
           {!loading && appointments.length >= total && total > 0 && (
-            <span style={{ fontStyle: 'italic', opacity: 0.8 }}>
-              Đã hiển thị tất cả {total} lịch hẹn
-            </span>
+            <span style={{ fontStyle: 'italic', opacity: 0.8 }}>Đã hiển thị tất cả {total} lịch hẹn</span>
           )}
         </div>
       </Card>
@@ -1220,7 +1334,7 @@ export default function AppointmentsPage() {
             id: cust.id,
             name: cust.name,
             phone: cust.phone,
-            bucket: cust.bucket
+            bucket: cust.bucket,
           });
           setBookingWizardVisible(true);
         }}

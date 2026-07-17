@@ -1,543 +1,857 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi" class="dark-theme dark">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WL - Online Users V3E - Radar Chart & Enhanced Podium</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WL - Online Users V3E - Radar Chart & Enhanced Podium</title>
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
 
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { jakarta: ['"Plus Jakarta Sans"', 'sans-serif'] },
-          colors: {
-            gold: '#D4A84B',
-            darkBg: '#0A0A0A',
-            darkCard: '#141414',
-            darkBorder: '#262626',
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: { jakarta: ['"Plus Jakarta Sans"', 'sans-serif'] },
+            colors: {
+              gold: '#D4A84B',
+              darkBg: '#0A0A0A',
+              darkCard: '#141414',
+              darkBorder: '#262626',
+            },
           },
         },
-      },
-    };
-  </script>
-
-  <!-- FontAwesome 6.4 -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-
-    /* ── Glass Card ── */
-    .glass-card {
-      background: rgba(20, 20, 20, 0.6);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .light-theme .glass-card {
-      background: rgba(255, 255, 255, 0.65);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-    }
-
-    /* ── Breathing animation ── */
-    @keyframes breathe {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-    .avatar-breathe { animation: breathe 3s ease-in-out infinite; }
-
-    /* ── Green pulse dot ── */
-    @keyframes pulse-green {
-      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
-      70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-    }
-    .pulse-dot { animation: pulse-green 2s ease-in-out infinite; }
-
-    /* ── Modal animation ── */
-    @keyframes modal-in {
-      from { opacity: 0; transform: scale(0.9) translateY(10px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .modal-animate { animation: modal-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-    /* ── Overlay ── */
-    .overlay {
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-    }
-    .light-theme .overlay { background: rgba(0, 0, 0, 0.35); }
-
-    /* ── Scrollbar ── */
-    .popup-body::-webkit-scrollbar { width: 4px; }
-    .popup-body::-webkit-scrollbar-track { background: transparent; }
-    .popup-body::-webkit-scrollbar-thumb { background: #333; border-radius: 99px; }
-    .light-theme .popup-body::-webkit-scrollbar-thumb { background: #ccc; }
-
-    /* ── Light theme overrides ── */
-    .light-theme body { background: #f5f5f5; color: #1a1a1a; }
-
-    /* ── Radar polygon transition ── */
-    .radar-polygon {
-      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .radar-dot {
-      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* ── Axis glow on hover ── */
-    .legend-item { cursor: pointer; transition: all 0.2s; }
-    .legend-item:hover { transform: translateY(-1px); }
-
-    /* ── Gold ring pulse for #1 ── */
-    @keyframes gold-ring-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 75, 0.5), 0 0 12px 2px rgba(212, 168, 75, 0.2); }
-      50% { box-shadow: 0 0 0 6px rgba(212, 168, 75, 0), 0 0 20px 4px rgba(212, 168, 75, 0.3); }
-    }
-    .gold-ring-pulse { animation: gold-ring-pulse 2s ease-in-out infinite; }
-
-    /* ── Sparkle particles ── */
-    @keyframes sparkle-float {
-      0% { opacity: 0; transform: translate(0, 0) scale(0); }
-      20% { opacity: 1; transform: scale(1); }
-      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
-    }
-    .sparkle-container { position: relative; overflow: visible; }
-    .sparkle {
-      position: absolute;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: #D4A84B;
-      pointer-events: none;
-      animation: sparkle-float 2s ease-out infinite;
-    }
-    .sparkle:nth-child(1) { --tx: -20px; --ty: -30px; left: 30%; top: 20%; animation-delay: 0s; }
-    .sparkle:nth-child(2) { --tx: 25px; --ty: -20px; left: 70%; top: 30%; animation-delay: 0.4s; }
-    .sparkle:nth-child(3) { --tx: -15px; --ty: 25px; left: 40%; top: 60%; animation-delay: 0.8s; }
-    .sparkle:nth-child(4) { --tx: 20px; --ty: -35px; left: 60%; top: 15%; animation-delay: 1.2s; }
-    .sparkle:nth-child(5) { --tx: -25px; --ty: -15px; left: 25%; top: 45%; animation-delay: 1.6s; }
-    .sparkle:nth-child(6) { --tx: 30px; --ty: 20px; left: 75%; top: 50%; animation-delay: 0.2s; }
-    .sparkle:nth-child(7) { --tx: -10px; --ty: -25px; left: 50%; top: 35%; animation-delay: 0.6s; }
-    .sparkle:nth-child(8) { --tx: 15px; --ty: 30px; left: 55%; top: 70%; animation-delay: 1.0s; }
-
-    /* ── Metric bar segments ── */
-    .metric-bar-segment {
-      height: 6px;
-      border-radius: 3px;
-      transition: width 0.6s ease;
-    }
-  </style>
-</head>
-
-<body class="bg-darkBg dark:bg-darkBg text-white dark:text-white font-jakarta min-h-screen transition-colors duration-300">
-  <!-- ═══════════════════════════════════════════ HEADER ═══════════════════════════════════════════ -->
-  <header class="glass-card sticky top-0 z-50 px-4 sm:px-6 py-3 flex items-center justify-between">
-    <!-- Left: Logo -->
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center font-extrabold text-sm text-black tracking-wide shadow-lg shadow-gold/20">
-        WL
-      </div>
-      <div class="hidden sm:block">
-        <h1 class="text-sm font-bold tracking-wide text-white dark:text-white">WINGS LASHES</h1>
-        <p class="text-[10px] text-gray-400 dark:text-gray-500">Telesales Dashboard</p>
-      </div>
-    </div>
-
-    <!-- Right: Online bubbles → Time → Toggle → DD -->
-    <div class="flex items-center gap-3">
-      <!-- Online Bubble Stack -->
-      <div class="flex items-center cursor-pointer" id="bubbleStack" onclick="openModal()">
-        <div class="flex -space-x-2.5">
-          <div class="relative avatar-breathe" style="animation-delay: 0s;">
-            <div class="w-8 h-8 rounded-full bg-rose-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg">TN</div>
-            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
-          </div>
-          <div class="relative avatar-breathe" style="animation-delay: 0.5s;">
-            <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg">HM</div>
-            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
-          </div>
-          <div class="relative avatar-breathe" style="animation-delay: 1s;">
-            <div class="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg">VT</div>
-            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
-          </div>
-          <div class="relative avatar-breathe" style="animation-delay: 1.5s;">
-            <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg">KL</div>
-            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
-          </div>
-          <div class="relative avatar-breathe" style="animation-delay: 2s;">
-            <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg">TH</div>
-            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
-          </div>
-        </div>
-        <!-- Count badge -->
-        <div class="ml-1.5 px-2 py-0.5 rounded-full bg-green-500/15 border border-green-500/30 text-green-400 text-[10px] font-semibold flex items-center gap-1">
-          <span class="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-          6
-        </div>
-      </div>
-
-      <!-- Time -->
-      <div class="hidden sm:flex items-center gap-1.5 text-xs text-gray-400">
-        <i class="fa-regular fa-clock text-[10px]"></i>
-        <span id="headerTime">12:54</span>
-      </div>
-
-      <!-- Divider -->
-      <div class="w-px h-6 bg-darkBorder dark:bg-darkBorder"></div>
-
-      <!-- Theme Toggle -->
-      <button id="themeToggle" onclick="toggleTheme()" class="w-8 h-8 rounded-lg bg-darkCard dark:bg-darkCard border border-darkBorder dark:border-darkBorder flex items-center justify-center text-gray-400 hover:text-gold transition-colors">
-        <i class="fa-solid fa-moon text-sm" id="themeIcon"></i>
-      </button>
-
-      <!-- DD User -->
-      <div class="relative avatar-breathe" style="animation-delay: 0.3s;">
-        <div class="w-9 h-9 rounded-full bg-gold flex items-center justify-center text-[12px] font-bold text-black border-2 border-gold ring-2 ring-gold/40 cursor-pointer" onclick="openModal()">DD</div>
-        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"></span>
-      </div>
-    </div>
-  </header>
-
-  <!-- ═══════════════════════════════════════ MODAL OVERLAY ═══════════════════════════════════════ -->
-  <div id="modalOverlay" class="fixed inset-0 z-[100] overlay hidden items-center justify-center p-4" onclick="closeModal(event)">
-    <div id="modalContent" class="w-full max-w-[820px] max-h-[90vh] rounded-2xl bg-darkCard dark:bg-darkCard border border-darkBorder dark:border-darkBorder shadow-2xl shadow-black/40 flex flex-col modal-animate" onclick="event.stopPropagation()">
-
-      <!-- ── Modal Header ── -->
-      <div class="flex items-center justify-between px-5 pt-5 pb-3">
-        <div class="flex items-center gap-3">
-          <div class="w-[52px] h-[52px] rounded-full bg-rose-500 flex items-center justify-center text-lg font-bold text-white shadow-lg shadow-rose-500/20">
-            TN
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h2 class="text-base font-bold text-white dark:text-white" id="modalName">Thanh Nga</h2>
-              <span class="px-2 py-0.5 rounded-md bg-gold/15 text-gold text-[10px] font-semibold border border-gold/20">Telesales</span>
-            </div>
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <span class="w-2 h-2 bg-green-500 rounded-full pulse-dot"></span>
-              <span class="text-[11px] text-green-400 font-medium">Đang online</span>
-            </div>
-          </div>
-        </div>
-        <button onclick="closeModalDirect()" class="w-8 h-8 rounded-lg bg-white/5 dark:bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
-          <i class="fa-solid fa-xmark text-sm"></i>
-        </button>
-      </div>
-
-      <!-- ── Tabs ── -->
-      <div class="px-5 pb-3">
-        <div class="inline-flex rounded-xl bg-white/5 dark:bg-white/5 p-1 gap-1">
-          <button class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="today" onclick="switchTab('today')">Hôm nay</button>
-          <button class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="week" onclick="switchTab('week')">Tuần này</button>
-          <button class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200" data-tab="month" onclick="switchTab('month')">Tháng này</button>
-        </div>
-      </div>
-
-      <!-- ── Scrollable Body ── -->
-      <div class="popup-body flex-1 overflow-y-auto px-5 pb-5">
-        <!-- Radar Chart Section -->
-        <div class="flex flex-col items-center mb-4">
-          <svg id="radarChart" viewBox="0 0 300 300" class="w-[280px] h-[280px] sm:w-[300px] sm:h-[300px]"></svg>
-        </div>
-
-        <!-- Legend Row -->
-        <div class="flex flex-wrap justify-center gap-3 sm:gap-4 mb-6" id="legendContainer"></div>
-
-        <!-- Divider -->
-        <div class="w-full h-px bg-darkBorder dark:bg-darkBorder mb-5"></div>
-
-        <!-- ── Leaderboard ── -->
-        <div class="mb-2">
-          <h3 class="text-sm font-bold text-white dark:text-white flex items-center gap-2 mb-5">
-            <span class="text-lg">🏆</span> Bảng Xếp Hạng Team Telesales
-          </h3>
-
-          <!-- TOP 3 PODIUM -->
-          <div class="flex items-end justify-center gap-3 sm:gap-4 mb-6" id="podiumSection">
-            <!-- #2 - Left -->
-            <div class="flex flex-col items-center">
-              <div class="relative mb-2">
-                <div class="w-12 h-12 rounded-full bg-gold flex items-center justify-center text-sm font-bold text-black border-2 border-gold ring-2 ring-gold/30 shadow-lg shadow-gold/20">DD</div>
-                <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-[9px] font-bold text-gray-700 dark:text-gray-200">2</span>
-              </div>
-              <p class="text-[11px] font-semibold text-gold mb-1">Danny Do</p>
-              <svg id="miniRadar2" viewBox="0 0 60 60" class="w-[50px] h-[50px] mb-1 opacity-70"></svg>
-              <p class="text-[10px] text-gray-400">Done: <span class="text-white font-semibold">5</span></p>
-              <div class="w-20 sm:w-24 rounded-t-xl mt-2 flex items-end justify-center" style="height: 120px; background: linear-gradient(to top, rgba(156,163,175,0.15), rgba(156,163,175,0.05)); border: 1px solid rgba(156,163,175,0.3); border-bottom: none;">
-                <span class="text-2xl font-extrabold text-gray-400/60 mb-3">2</span>
-              </div>
-            </div>
-
-            <!-- #1 - Center (tallest) with sparkles -->
-            <div class="flex flex-col items-center sparkle-container">
-              <span class="sparkle"></span>
-              <span class="sparkle"></span>
-              <span class="sparkle"></span>
-              <span class="sparkle"></span>
-              <span class="sparkle"></span>
-              <span class="sparkle"></span>
-              <span class="sparkle"></span>
-              <span class="sparkle"></span>
-
-              <div class="text-xl mb-1">👑</div>
-              <div class="relative mb-2">
-                <div class="w-14 h-14 rounded-full bg-rose-500 flex items-center justify-center text-base font-bold text-white border-2 border-gold ring-2 ring-gold/40 shadow-lg shadow-gold/30 gold-ring-pulse">TN</div>
-                <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gold flex items-center justify-center text-[9px] font-bold text-black">1</span>
-              </div>
-              <p class="text-[11px] font-semibold text-white mb-1">Thanh Nga</p>
-              <svg id="miniRadar1" viewBox="0 0 60 60" class="w-[50px] h-[50px] mb-1 opacity-80"></svg>
-              <p class="text-[10px] text-gray-400">Done: <span class="text-gold font-semibold">7</span></p>
-              <div class="w-20 sm:w-24 rounded-t-xl mt-2 flex items-end justify-center" style="height: 160px; background: linear-gradient(to top, rgba(212,168,75,0.2), rgba(212,168,75,0.05)); border: 1px solid rgba(212,168,75,0.4); border-bottom: none;">
-                <span class="text-2xl font-extrabold text-gold/60 mb-3">1</span>
-              </div>
-            </div>
-
-            <!-- #3 - Right -->
-            <div class="flex flex-col items-center">
-              <div class="relative mb-2">
-                <div class="w-12 h-12 rounded-full bg-sky-500 flex items-center justify-center text-sm font-bold text-white border-2 border-orange-400 ring-2 ring-orange-400/30 shadow-lg shadow-orange-400/20">HM</div>
-                <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-orange-400 flex items-center justify-center text-[9px] font-bold text-black">3</span>
-              </div>
-              <p class="text-[11px] font-semibold text-white mb-1">Hoài My</p>
-              <svg id="miniRadar3" viewBox="0 0 60 60" class="w-[50px] h-[50px] mb-1 opacity-70"></svg>
-              <p class="text-[10px] text-gray-400">Done: <span class="text-white font-semibold">5</span></p>
-              <div class="w-20 sm:w-24 rounded-t-xl mt-2 flex items-end justify-center" style="height: 100px; background: linear-gradient(to top, rgba(251,146,60,0.15), rgba(251,146,60,0.05)); border: 1px solid rgba(251,146,60,0.3); border-bottom: none;">
-                <span class="text-2xl font-extrabold text-orange-400/60 mb-3">3</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Podium Base Line -->
-          <div class="w-full max-w-sm mx-auto h-px bg-darkBorder mb-4"></div>
-
-          <!-- Remaining #4, #5, #6 with metric bars -->
-          <div class="space-y-2 max-w-md mx-auto" id="remainingRanks">
-            <!-- #4 -->
-            <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.04]">
-              <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-gray-400">4</span>
-              <div class="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-[10px] font-bold text-white">VT</div>
-              <div class="flex-1">
-                <span class="text-xs font-medium text-white dark:text-white">Vân Trang</span>
-                <div class="flex gap-1 mt-1">
-                  <div class="metric-bar-segment" style="width: 47.5%; background: #3b82f6;" title="Calls: 38/80"></div>
-                  <div class="metric-bar-segment" style="width: 44%; background: #10b981;" title="Pickups: 22/50"></div>
-                  <div class="metric-bar-segment" style="width: 45%; background: #f59e0b;" title="Happy: 9/20"></div>
-                  <div class="metric-bar-segment" style="width: 40%; background: #8b5cf6;" title="Booked: 6/15"></div>
-                  <div class="metric-bar-segment" style="width: 40%; background: #D4A84B;" title="Done: 4/10"></div>
-                </div>
-              </div>
-              <span class="text-xs text-gray-400">Done: <span class="text-white font-semibold">4</span></span>
-            </div>
-            <!-- #5 -->
-            <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.04]">
-              <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-gray-400">5</span>
-              <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] font-bold text-white">KL</div>
-              <div class="flex-1">
-                <span class="text-xs font-medium text-white dark:text-white">Kim Liên</span>
-                <div class="flex gap-1 mt-1">
-                  <div class="metric-bar-segment" style="width: 43.75%; background: #3b82f6;" title="Calls: 35/80"></div>
-                  <div class="metric-bar-segment" style="width: 40%; background: #10b981;" title="Pickups: 20/50"></div>
-                  <div class="metric-bar-segment" style="width: 40%; background: #f59e0b;" title="Happy: 8/20"></div>
-                  <div class="metric-bar-segment" style="width: 33.3%; background: #8b5cf6;" title="Booked: 5/15"></div>
-                  <div class="metric-bar-segment" style="width: 30%; background: #D4A84B;" title="Done: 3/10"></div>
-                </div>
-              </div>
-              <span class="text-xs text-gray-400">Done: <span class="text-white font-semibold">3</span></span>
-            </div>
-            <!-- #6 -->
-            <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.04]">
-              <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-gray-400">6</span>
-              <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-[10px] font-bold text-white">TH</div>
-              <div class="flex-1">
-                <span class="text-xs font-medium text-white dark:text-white">Thu Hà</span>
-                <div class="flex gap-1 mt-1">
-                  <div class="metric-bar-segment" style="width: 37.5%; background: #3b82f6;" title="Calls: 30/80"></div>
-                  <div class="metric-bar-segment" style="width: 36%; background: #10b981;" title="Pickups: 18/50"></div>
-                  <div class="metric-bar-segment" style="width: 35%; background: #f59e0b;" title="Happy: 7/20"></div>
-                  <div class="metric-bar-segment" style="width: 26.7%; background: #8b5cf6;" title="Booked: 4/15"></div>
-                  <div class="metric-bar-segment" style="width: 20%; background: #D4A84B;" title="Done: 2/10"></div>
-                </div>
-              </div>
-              <span class="text-xs text-gray-400">Done: <span class="text-white font-semibold">2</span></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════ MAIN CONTENT ═══════════════════════════════════════════ -->
-  <main class="flex items-center justify-center min-h-[calc(100vh-60px)] px-4">
-    <div class="text-center">
-      <p class="text-gray-500 text-sm mb-2">Click on avatar bubbles or DD to open the popup</p>
-      <button onclick="openModal()" class="px-5 py-2.5 rounded-xl bg-gold text-black text-sm font-semibold hover:bg-gold/90 transition-colors shadow-lg shadow-gold/20">
-        <i class="fa-solid fa-eye mr-2"></i>Open Popup
-      </button>
-    </div>
-  </main>
-
-  <!-- ═══════════════════════════════════════════ JAVASCRIPT ═══════════════════════════════════════════ -->
-  <script>
-    // ── Data ──
-    const kpiData = {
-      today: [
-        { label: 'Calls', icon: 'fa-phone', current: 45, target: 80, color: '#3b82f6' },
-        { label: 'Pickups', icon: 'fa-phone-volume', current: 28, target: 50, color: '#10b981' },
-        { label: 'Happy', icon: 'fa-face-smile', current: 12, target: 20, color: '#f59e0b' },
-        { label: 'Booked', icon: 'fa-calendar-check', current: 8, target: 15, color: '#8b5cf6' },
-        { label: 'Done', icon: 'fa-circle-check', current: 5, target: 10, color: '#D4A84B' },
-      ],
-      week: [
-        { label: 'Calls', icon: 'fa-phone', current: 180, target: 400, color: '#3b82f6' },
-        { label: 'Pickups', icon: 'fa-phone-volume', current: 120, target: 250, color: '#10b981' },
-        { label: 'Happy', icon: 'fa-face-smile', current: 55, target: 100, color: '#f59e0b' },
-        { label: 'Booked', icon: 'fa-calendar-check', current: 35, target: 75, color: '#8b5cf6' },
-        { label: 'Done', icon: 'fa-circle-check', current: 22, target: 50, color: '#D4A84B' },
-      ],
-      month: [
-        { label: 'Calls', icon: 'fa-phone', current: 650, target: 1600, color: '#3b82f6' },
-        { label: 'Pickups', icon: 'fa-phone-volume', current: 420, target: 1000, color: '#10b981' },
-        { label: 'Happy', icon: 'fa-face-smile', current: 195, target: 400, color: '#f59e0b' },
-        { label: 'Booked', icon: 'fa-calendar-check', current: 130, target: 300, color: '#8b5cf6' },
-        { label: 'Done', icon: 'fa-circle-check', current: 85, target: 200, color: '#D4A84B' },
-      ],
-    };
-
-    // Ranking data
-    const rankingData = {
-      today: [
-        { name: 'TN', metrics: [52, 35, 15, 10, 7], targets: [80, 50, 20, 15, 10] },
-        { name: 'DD', metrics: [45, 28, 12, 8, 5], targets: [80, 50, 20, 15, 10] },
-        { name: 'HM', metrics: [42, 26, 11, 7, 5], targets: [80, 50, 20, 15, 10] },
-        { name: 'VT', metrics: [38, 22, 9, 6, 4], targets: [80, 50, 20, 15, 10] },
-        { name: 'KL', metrics: [35, 20, 8, 5, 3], targets: [80, 50, 20, 15, 10] },
-        { name: 'TH', metrics: [30, 18, 7, 4, 2], targets: [80, 50, 20, 15, 10] },
-      ],
-    };
-    rankingData.week = rankingData.today;
-    rankingData.month = rankingData.today;
-
-    const CENTER = 150;
-    const MAX_RADIUS = 120;
-    const ANGLES = [-90, -18, 54, 126, 198].map(a => a * Math.PI / 180);
-
-    let currentTab = 'today';
-    let activeAxis = -1;
-
-    // ── Radar math helpers ──
-    function polarToXY(cx, cy, radius, angleRad) {
-      return {
-        x: cx + radius * Math.cos(angleRad),
-        y: cy + radius * Math.sin(angleRad)
       };
-    }
+    </script>
 
-    function getPentagonPoints(cx, cy, radius) {
-      return ANGLES.map(a => polarToXY(cx, cy, radius, a));
-    }
+    <!-- FontAwesome 6.4 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-    function pointsToString(points) {
-      return points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-    }
-
-    // ── Build radar SVG (main) ──
-    function renderRadarChart(tab) {
-      const svg = document.getElementById('radarChart');
-      const data = kpiData[tab];
-
-      let html = '';
-
-      // Glow filter for active axis
-      if (activeAxis >= 0) {
-        const col = data[activeAxis].color;
-        html += `<defs><filter id="glowFilter" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="${col}" flood-opacity="0.8"/></filter></defs>`;
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
       }
 
-      // Concentric pentagon grid (25%, 50%, 75%, 100%)
-      [0.25, 0.5, 0.75, 1.0].forEach(level => {
-        const pts = getPentagonPoints(CENTER, CENTER, MAX_RADIUS * level);
-        html += `<polygon points="${pointsToString(pts)}" fill="none" stroke="${level === 1 ? '#444' : '#333'}" stroke-width="${level === 1 ? 1 : 0.5}" stroke-dasharray="${level < 1 ? '3,3' : 'none'}"/>`;
-      });
+      /* ── Glass Card ── */
+      .glass-card {
+        background: rgba(20, 20, 20, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .light-theme .glass-card {
+        background: rgba(255, 255, 255, 0.65);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+      }
 
-      // Axes lines
-      ANGLES.forEach(a => {
-        const end = polarToXY(CENTER, CENTER, MAX_RADIUS, a);
-        html += `<line x1="${CENTER}" y1="${CENTER}" x2="${end.x.toFixed(1)}" y2="${end.y.toFixed(1)}" stroke="#333" stroke-width="0.5"/>`;
-      });
+      /* ── Breathing animation ── */
+      @keyframes breathe {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+      .avatar-breathe {
+        animation: breathe 3s ease-in-out infinite;
+      }
 
-      // Axis labels
-      ANGLES.forEach((a, i) => {
-        const pos = polarToXY(CENTER, CENTER, MAX_RADIUS + 18, a);
-        const anchor = Math.abs(pos.x - CENTER) < 5 ? 'middle' : (pos.x > CENTER ? 'start' : 'end');
-        const dy = pos.y < CENTER ? -2 : (pos.y > CENTER + 10 ? 12 : 4);
-        html += `<text x="${pos.x.toFixed(1)}" y="${(pos.y + dy).toFixed(1)}" text-anchor="${anchor}" style="fill: ${data[i].color}; font-size: 10px; font-weight: 600; font-family: 'Plus Jakarta Sans';">${data[i].label}</text>`;
-      });
+      /* ── Green pulse dot ── */
+      @keyframes pulse-green {
+        0% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+        }
+        70% {
+          box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+      }
+      .pulse-dot {
+        animation: pulse-green 2s ease-in-out infinite;
+      }
 
-      // Data polygon
-      const dataPoints = data.map((d, i) => {
-        const ratio = Math.min(d.current / d.target, 1);
-        return polarToXY(CENTER, CENTER, MAX_RADIUS * ratio, ANGLES[i]);
-      });
-      html += `<polygon class="radar-polygon" points="${pointsToString(dataPoints)}" fill="rgba(212,168,75,0.2)" stroke="#D4A84B" stroke-width="2" stroke-linejoin="round"/>`;
+      /* ── Modal animation ── */
+      @keyframes modal-in {
+        from {
+          opacity: 0;
+          transform: scale(0.9) translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      .modal-animate {
+        animation: modal-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
 
-      // Data dots
-      dataPoints.forEach((pt, i) => {
-        const glowing = activeAxis === i;
-        html += `<circle class="radar-dot" cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="${glowing ? 5 : 3.5}" fill="${data[i].color}" stroke="${glowing ? '#fff' : 'none'}" stroke-width="${glowing ? 2 : 0}"${glowing ? ' filter="url(#glowFilter)"' : ''}/>`;
-      });
+      /* ── Overlay ── */
+      .overlay {
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+      }
+      .light-theme .overlay {
+        background: rgba(0, 0, 0, 0.35);
+      }
 
-      svg.innerHTML = html;
-    }
+      /* ── Scrollbar ── */
+      .popup-body::-webkit-scrollbar {
+        width: 4px;
+      }
+      .popup-body::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .popup-body::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 99px;
+      }
+      .light-theme .popup-body::-webkit-scrollbar-thumb {
+        background: #ccc;
+      }
 
-    // ── Build mini radar SVG for podium ──
-    function renderMiniRadar(svgId, memberIndex) {
-      const svg = document.getElementById(svgId);
-      if (!svg) return;
-      const member = rankingData[currentTab][memberIndex];
-      const cx = 30, cy = 30, maxR = 24;
-      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#D4A84B'];
+      /* ── Light theme overrides ── */
+      .light-theme body {
+        background: #f5f5f5;
+        color: #1a1a1a;
+      }
 
-      let html = '';
-      // Grid outlines
-      const pts100 = ANGLES.map(a => polarToXY(cx, cy, maxR, a));
-      html += `<polygon points="${pointsToString(pts100)}" fill="none" stroke="#333" stroke-width="0.5"/>`;
-      const pts50 = ANGLES.map(a => polarToXY(cx, cy, maxR * 0.5, a));
-      html += `<polygon points="${pointsToString(pts50)}" fill="none" stroke="#333" stroke-width="0.3" stroke-dasharray="2,2"/>`;
+      /* ── Radar polygon transition ── */
+      .radar-polygon {
+        transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .radar-dot {
+        transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-      // Data shape
-      const dataPts = member.metrics.map((v, i) => {
-        const ratio = Math.min(v / member.targets[i], 1);
-        return polarToXY(cx, cy, maxR * ratio, ANGLES[i]);
-      });
-      html += `<polygon points="${pointsToString(dataPts)}" fill="rgba(212,168,75,0.15)" stroke="#D4A84B" stroke-width="1.5" stroke-linejoin="round"/>`;
-      dataPts.forEach((pt, i) => {
-        html += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="2" fill="${colors[i]}"/>`;
-      });
+      /* ── Axis glow on hover ── */
+      .legend-item {
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .legend-item:hover {
+        transform: translateY(-1px);
+      }
 
-      svg.innerHTML = html;
-    }
+      /* ── Gold ring pulse for #1 ── */
+      @keyframes gold-ring-pulse {
+        0%,
+        100% {
+          box-shadow:
+            0 0 0 0 rgba(212, 168, 75, 0.5),
+            0 0 12px 2px rgba(212, 168, 75, 0.2);
+        }
+        50% {
+          box-shadow:
+            0 0 0 6px rgba(212, 168, 75, 0),
+            0 0 20px 4px rgba(212, 168, 75, 0.3);
+        }
+      }
+      .gold-ring-pulse {
+        animation: gold-ring-pulse 2s ease-in-out infinite;
+      }
 
-    // ── Legend ──
-    function renderLegend(tab) {
-      const container = document.getElementById('legendContainer');
-      const data = kpiData[tab];
-      const icons = ['fa-phone', 'fa-phone-volume', 'fa-face-smile', 'fa-calendar-check', 'fa-circle-check'];
+      /* ── Sparkle particles ── */
+      @keyframes sparkle-float {
+        0% {
+          opacity: 0;
+          transform: translate(0, 0) scale(0);
+        }
+        20% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: translate(var(--tx), var(--ty)) scale(0);
+        }
+      }
+      .sparkle-container {
+        position: relative;
+        overflow: visible;
+      }
+      .sparkle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #d4a84b;
+        pointer-events: none;
+        animation: sparkle-float 2s ease-out infinite;
+      }
+      .sparkle:nth-child(1) {
+        --tx: -20px;
+        --ty: -30px;
+        left: 30%;
+        top: 20%;
+        animation-delay: 0s;
+      }
+      .sparkle:nth-child(2) {
+        --tx: 25px;
+        --ty: -20px;
+        left: 70%;
+        top: 30%;
+        animation-delay: 0.4s;
+      }
+      .sparkle:nth-child(3) {
+        --tx: -15px;
+        --ty: 25px;
+        left: 40%;
+        top: 60%;
+        animation-delay: 0.8s;
+      }
+      .sparkle:nth-child(4) {
+        --tx: 20px;
+        --ty: -35px;
+        left: 60%;
+        top: 15%;
+        animation-delay: 1.2s;
+      }
+      .sparkle:nth-child(5) {
+        --tx: -25px;
+        --ty: -15px;
+        left: 25%;
+        top: 45%;
+        animation-delay: 1.6s;
+      }
+      .sparkle:nth-child(6) {
+        --tx: 30px;
+        --ty: 20px;
+        left: 75%;
+        top: 50%;
+        animation-delay: 0.2s;
+      }
+      .sparkle:nth-child(7) {
+        --tx: -10px;
+        --ty: -25px;
+        left: 50%;
+        top: 35%;
+        animation-delay: 0.6s;
+      }
+      .sparkle:nth-child(8) {
+        --tx: 15px;
+        --ty: 30px;
+        left: 55%;
+        top: 70%;
+        animation-delay: 1s;
+      }
 
-      container.innerHTML = data.map((d, i) => {
-        const pct = Math.round((d.current / d.target) * 100);
-        const isActive = activeAxis === i;
-        return `
+      /* ── Metric bar segments ── */
+      .metric-bar-segment {
+        height: 6px;
+        border-radius: 3px;
+        transition: width 0.6s ease;
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-darkBg dark:bg-darkBg text-white dark:text-white font-jakarta min-h-screen transition-colors duration-300"
+  >
+    <!-- ═══════════════════════════════════════════ HEADER ═══════════════════════════════════════════ -->
+    <header class="glass-card sticky top-0 z-50 px-4 sm:px-6 py-3 flex items-center justify-between">
+      <!-- Left: Logo -->
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center font-extrabold text-sm text-black tracking-wide shadow-lg shadow-gold/20"
+        >
+          WL
+        </div>
+        <div class="hidden sm:block">
+          <h1 class="text-sm font-bold tracking-wide text-white dark:text-white">WINGS LASHES</h1>
+          <p class="text-[10px] text-gray-400 dark:text-gray-500">Telesales Dashboard</p>
+        </div>
+      </div>
+
+      <!-- Right: Online bubbles → Time → Toggle → DD -->
+      <div class="flex items-center gap-3">
+        <!-- Online Bubble Stack -->
+        <div class="flex items-center cursor-pointer" id="bubbleStack" onclick="openModal()">
+          <div class="flex -space-x-2.5">
+            <div class="relative avatar-breathe" style="animation-delay: 0s">
+              <div
+                class="w-8 h-8 rounded-full bg-rose-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg"
+              >
+                TN
+              </div>
+              <span
+                class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"
+              ></span>
+            </div>
+            <div class="relative avatar-breathe" style="animation-delay: 0.5s">
+              <div
+                class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg"
+              >
+                HM
+              </div>
+              <span
+                class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"
+              ></span>
+            </div>
+            <div class="relative avatar-breathe" style="animation-delay: 1s">
+              <div
+                class="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg"
+              >
+                VT
+              </div>
+              <span
+                class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"
+              ></span>
+            </div>
+            <div class="relative avatar-breathe" style="animation-delay: 1.5s">
+              <div
+                class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg"
+              >
+                KL
+              </div>
+              <span
+                class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"
+              ></span>
+            </div>
+            <div class="relative avatar-breathe" style="animation-delay: 2s">
+              <div
+                class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-[11px] font-bold text-white border-2 border-darkBg dark:border-darkBg"
+              >
+                TH
+              </div>
+              <span
+                class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"
+              ></span>
+            </div>
+          </div>
+          <!-- Count badge -->
+          <div
+            class="ml-1.5 px-2 py-0.5 rounded-full bg-green-500/15 border border-green-500/30 text-green-400 text-[10px] font-semibold flex items-center gap-1"
+          >
+            <span class="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+            6
+          </div>
+        </div>
+
+        <!-- Time -->
+        <div class="hidden sm:flex items-center gap-1.5 text-xs text-gray-400">
+          <i class="fa-regular fa-clock text-[10px]"></i>
+          <span id="headerTime">12:54</span>
+        </div>
+
+        <!-- Divider -->
+        <div class="w-px h-6 bg-darkBorder dark:bg-darkBorder"></div>
+
+        <!-- Theme Toggle -->
+        <button
+          id="themeToggle"
+          onclick="toggleTheme()"
+          class="w-8 h-8 rounded-lg bg-darkCard dark:bg-darkCard border border-darkBorder dark:border-darkBorder flex items-center justify-center text-gray-400 hover:text-gold transition-colors"
+        >
+          <i class="fa-solid fa-moon text-sm" id="themeIcon"></i>
+        </button>
+
+        <!-- DD User -->
+        <div class="relative avatar-breathe" style="animation-delay: 0.3s">
+          <div
+            class="w-9 h-9 rounded-full bg-gold flex items-center justify-center text-[12px] font-bold text-black border-2 border-gold ring-2 ring-gold/40 cursor-pointer"
+            onclick="openModal()"
+          >
+            DD
+          </div>
+          <span
+            class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-[1.5px] border-darkBg pulse-dot"
+          ></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════ MODAL OVERLAY ═══════════════════════════════════════ -->
+    <div
+      id="modalOverlay"
+      class="fixed inset-0 z-[100] overlay hidden items-center justify-center p-4"
+      onclick="closeModal(event)"
+    >
+      <div
+        id="modalContent"
+        class="w-full max-w-[820px] max-h-[90vh] rounded-2xl bg-darkCard dark:bg-darkCard border border-darkBorder dark:border-darkBorder shadow-2xl shadow-black/40 flex flex-col modal-animate"
+        onclick="event.stopPropagation()"
+      >
+        <!-- ── Modal Header ── -->
+        <div class="flex items-center justify-between px-5 pt-5 pb-3">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-[52px] h-[52px] rounded-full bg-rose-500 flex items-center justify-center text-lg font-bold text-white shadow-lg shadow-rose-500/20"
+            >
+              TN
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-base font-bold text-white dark:text-white" id="modalName">Thanh Nga</h2>
+                <span
+                  class="px-2 py-0.5 rounded-md bg-gold/15 text-gold text-[10px] font-semibold border border-gold/20"
+                  >Telesales</span
+                >
+              </div>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span class="w-2 h-2 bg-green-500 rounded-full pulse-dot"></span>
+                <span class="text-[11px] text-green-400 font-medium">Đang online</span>
+              </div>
+            </div>
+          </div>
+          <button
+            onclick="closeModalDirect()"
+            class="w-8 h-8 rounded-lg bg-white/5 dark:bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+          >
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+
+        <!-- ── Tabs ── -->
+        <div class="px-5 pb-3">
+          <div class="inline-flex rounded-xl bg-white/5 dark:bg-white/5 p-1 gap-1">
+            <button
+              class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+              data-tab="today"
+              onclick="switchTab('today')"
+            >
+              Hôm nay
+            </button>
+            <button
+              class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+              data-tab="week"
+              onclick="switchTab('week')"
+            >
+              Tuần này
+            </button>
+            <button
+              class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+              data-tab="month"
+              onclick="switchTab('month')"
+            >
+              Tháng này
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Scrollable Body ── -->
+        <div class="popup-body flex-1 overflow-y-auto px-5 pb-5">
+          <!-- Radar Chart Section -->
+          <div class="flex flex-col items-center mb-4">
+            <svg id="radarChart" viewBox="0 0 300 300" class="w-[280px] h-[280px] sm:w-[300px] sm:h-[300px]"></svg>
+          </div>
+
+          <!-- Legend Row -->
+          <div class="flex flex-wrap justify-center gap-3 sm:gap-4 mb-6" id="legendContainer"></div>
+
+          <!-- Divider -->
+          <div class="w-full h-px bg-darkBorder dark:bg-darkBorder mb-5"></div>
+
+          <!-- ── Leaderboard ── -->
+          <div class="mb-2">
+            <h3 class="text-sm font-bold text-white dark:text-white flex items-center gap-2 mb-5">
+              <span class="text-lg">🏆</span> Bảng Xếp Hạng Team Telesales
+            </h3>
+
+            <!-- TOP 3 PODIUM -->
+            <div class="flex items-end justify-center gap-3 sm:gap-4 mb-6" id="podiumSection">
+              <!-- #2 - Left -->
+              <div class="flex flex-col items-center">
+                <div class="relative mb-2">
+                  <div
+                    class="w-12 h-12 rounded-full bg-gold flex items-center justify-center text-sm font-bold text-black border-2 border-gold ring-2 ring-gold/30 shadow-lg shadow-gold/20"
+                  >
+                    DD
+                  </div>
+                  <span
+                    class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-[9px] font-bold text-gray-700 dark:text-gray-200"
+                    >2</span
+                  >
+                </div>
+                <p class="text-[11px] font-semibold text-gold mb-1">Danny Do</p>
+                <svg id="miniRadar2" viewBox="0 0 60 60" class="w-[50px] h-[50px] mb-1 opacity-70"></svg>
+                <p class="text-[10px] text-gray-400">Done: <span class="text-white font-semibold">5</span></p>
+                <div
+                  class="w-20 sm:w-24 rounded-t-xl mt-2 flex items-end justify-center"
+                  style="
+                    height: 120px;
+                    background: linear-gradient(to top, rgba(156, 163, 175, 0.15), rgba(156, 163, 175, 0.05));
+                    border: 1px solid rgba(156, 163, 175, 0.3);
+                    border-bottom: none;
+                  "
+                >
+                  <span class="text-2xl font-extrabold text-gray-400/60 mb-3">2</span>
+                </div>
+              </div>
+
+              <!-- #1 - Center (tallest) with sparkles -->
+              <div class="flex flex-col items-center sparkle-container">
+                <span class="sparkle"></span>
+                <span class="sparkle"></span>
+                <span class="sparkle"></span>
+                <span class="sparkle"></span>
+                <span class="sparkle"></span>
+                <span class="sparkle"></span>
+                <span class="sparkle"></span>
+                <span class="sparkle"></span>
+
+                <div class="text-xl mb-1">👑</div>
+                <div class="relative mb-2">
+                  <div
+                    class="w-14 h-14 rounded-full bg-rose-500 flex items-center justify-center text-base font-bold text-white border-2 border-gold ring-2 ring-gold/40 shadow-lg shadow-gold/30 gold-ring-pulse"
+                  >
+                    TN
+                  </div>
+                  <span
+                    class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gold flex items-center justify-center text-[9px] font-bold text-black"
+                    >1</span
+                  >
+                </div>
+                <p class="text-[11px] font-semibold text-white mb-1">Thanh Nga</p>
+                <svg id="miniRadar1" viewBox="0 0 60 60" class="w-[50px] h-[50px] mb-1 opacity-80"></svg>
+                <p class="text-[10px] text-gray-400">Done: <span class="text-gold font-semibold">7</span></p>
+                <div
+                  class="w-20 sm:w-24 rounded-t-xl mt-2 flex items-end justify-center"
+                  style="
+                    height: 160px;
+                    background: linear-gradient(to top, rgba(212, 168, 75, 0.2), rgba(212, 168, 75, 0.05));
+                    border: 1px solid rgba(212, 168, 75, 0.4);
+                    border-bottom: none;
+                  "
+                >
+                  <span class="text-2xl font-extrabold text-gold/60 mb-3">1</span>
+                </div>
+              </div>
+
+              <!-- #3 - Right -->
+              <div class="flex flex-col items-center">
+                <div class="relative mb-2">
+                  <div
+                    class="w-12 h-12 rounded-full bg-sky-500 flex items-center justify-center text-sm font-bold text-white border-2 border-orange-400 ring-2 ring-orange-400/30 shadow-lg shadow-orange-400/20"
+                  >
+                    HM
+                  </div>
+                  <span
+                    class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-orange-400 flex items-center justify-center text-[9px] font-bold text-black"
+                    >3</span
+                  >
+                </div>
+                <p class="text-[11px] font-semibold text-white mb-1">Hoài My</p>
+                <svg id="miniRadar3" viewBox="0 0 60 60" class="w-[50px] h-[50px] mb-1 opacity-70"></svg>
+                <p class="text-[10px] text-gray-400">Done: <span class="text-white font-semibold">5</span></p>
+                <div
+                  class="w-20 sm:w-24 rounded-t-xl mt-2 flex items-end justify-center"
+                  style="
+                    height: 100px;
+                    background: linear-gradient(to top, rgba(251, 146, 60, 0.15), rgba(251, 146, 60, 0.05));
+                    border: 1px solid rgba(251, 146, 60, 0.3);
+                    border-bottom: none;
+                  "
+                >
+                  <span class="text-2xl font-extrabold text-orange-400/60 mb-3">3</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Podium Base Line -->
+            <div class="w-full max-w-sm mx-auto h-px bg-darkBorder mb-4"></div>
+
+            <!-- Remaining #4, #5, #6 with metric bars -->
+            <div class="space-y-2 max-w-md mx-auto" id="remainingRanks">
+              <!-- #4 -->
+              <div
+                class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.04]"
+              >
+                <span
+                  class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-gray-400"
+                  >4</span
+                >
+                <div
+                  class="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-[10px] font-bold text-white"
+                >
+                  VT
+                </div>
+                <div class="flex-1">
+                  <span class="text-xs font-medium text-white dark:text-white">Vân Trang</span>
+                  <div class="flex gap-1 mt-1">
+                    <div
+                      class="metric-bar-segment"
+                      style="width: 47.5%; background: #3b82f6"
+                      title="Calls: 38/80"
+                    ></div>
+                    <div
+                      class="metric-bar-segment"
+                      style="width: 44%; background: #10b981"
+                      title="Pickups: 22/50"
+                    ></div>
+                    <div class="metric-bar-segment" style="width: 45%; background: #f59e0b" title="Happy: 9/20"></div>
+                    <div class="metric-bar-segment" style="width: 40%; background: #8b5cf6" title="Booked: 6/15"></div>
+                    <div class="metric-bar-segment" style="width: 40%; background: #d4a84b" title="Done: 4/10"></div>
+                  </div>
+                </div>
+                <span class="text-xs text-gray-400">Done: <span class="text-white font-semibold">4</span></span>
+              </div>
+              <!-- #5 -->
+              <div
+                class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.04]"
+              >
+                <span
+                  class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-gray-400"
+                  >5</span
+                >
+                <div
+                  class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] font-bold text-white"
+                >
+                  KL
+                </div>
+                <div class="flex-1">
+                  <span class="text-xs font-medium text-white dark:text-white">Kim Liên</span>
+                  <div class="flex gap-1 mt-1">
+                    <div
+                      class="metric-bar-segment"
+                      style="width: 43.75%; background: #3b82f6"
+                      title="Calls: 35/80"
+                    ></div>
+                    <div
+                      class="metric-bar-segment"
+                      style="width: 40%; background: #10b981"
+                      title="Pickups: 20/50"
+                    ></div>
+                    <div class="metric-bar-segment" style="width: 40%; background: #f59e0b" title="Happy: 8/20"></div>
+                    <div
+                      class="metric-bar-segment"
+                      style="width: 33.3%; background: #8b5cf6"
+                      title="Booked: 5/15"
+                    ></div>
+                    <div class="metric-bar-segment" style="width: 30%; background: #d4a84b" title="Done: 3/10"></div>
+                  </div>
+                </div>
+                <span class="text-xs text-gray-400">Done: <span class="text-white font-semibold">3</span></span>
+              </div>
+              <!-- #6 -->
+              <div
+                class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.04]"
+              >
+                <span
+                  class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-gray-400"
+                  >6</span
+                >
+                <div
+                  class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-[10px] font-bold text-white"
+                >
+                  TH
+                </div>
+                <div class="flex-1">
+                  <span class="text-xs font-medium text-white dark:text-white">Thu Hà</span>
+                  <div class="flex gap-1 mt-1">
+                    <div
+                      class="metric-bar-segment"
+                      style="width: 37.5%; background: #3b82f6"
+                      title="Calls: 30/80"
+                    ></div>
+                    <div
+                      class="metric-bar-segment"
+                      style="width: 36%; background: #10b981"
+                      title="Pickups: 18/50"
+                    ></div>
+                    <div class="metric-bar-segment" style="width: 35%; background: #f59e0b" title="Happy: 7/20"></div>
+                    <div
+                      class="metric-bar-segment"
+                      style="width: 26.7%; background: #8b5cf6"
+                      title="Booked: 4/15"
+                    ></div>
+                    <div class="metric-bar-segment" style="width: 20%; background: #d4a84b" title="Done: 2/10"></div>
+                  </div>
+                </div>
+                <span class="text-xs text-gray-400">Done: <span class="text-white font-semibold">2</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ MAIN CONTENT ═══════════════════════════════════════════ -->
+    <main class="flex items-center justify-center min-h-[calc(100vh-60px)] px-4">
+      <div class="text-center">
+        <p class="text-gray-500 text-sm mb-2">Click on avatar bubbles or DD to open the popup</p>
+        <button
+          onclick="openModal()"
+          class="px-5 py-2.5 rounded-xl bg-gold text-black text-sm font-semibold hover:bg-gold/90 transition-colors shadow-lg shadow-gold/20"
+        >
+          <i class="fa-solid fa-eye mr-2"></i>Open Popup
+        </button>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════ JAVASCRIPT ═══════════════════════════════════════════ -->
+    <script>
+      // ── Data ──
+      const kpiData = {
+        today: [
+          { label: 'Calls', icon: 'fa-phone', current: 45, target: 80, color: '#3b82f6' },
+          { label: 'Pickups', icon: 'fa-phone-volume', current: 28, target: 50, color: '#10b981' },
+          { label: 'Happy', icon: 'fa-face-smile', current: 12, target: 20, color: '#f59e0b' },
+          { label: 'Booked', icon: 'fa-calendar-check', current: 8, target: 15, color: '#8b5cf6' },
+          { label: 'Done', icon: 'fa-circle-check', current: 5, target: 10, color: '#D4A84B' },
+        ],
+        week: [
+          { label: 'Calls', icon: 'fa-phone', current: 180, target: 400, color: '#3b82f6' },
+          { label: 'Pickups', icon: 'fa-phone-volume', current: 120, target: 250, color: '#10b981' },
+          { label: 'Happy', icon: 'fa-face-smile', current: 55, target: 100, color: '#f59e0b' },
+          { label: 'Booked', icon: 'fa-calendar-check', current: 35, target: 75, color: '#8b5cf6' },
+          { label: 'Done', icon: 'fa-circle-check', current: 22, target: 50, color: '#D4A84B' },
+        ],
+        month: [
+          { label: 'Calls', icon: 'fa-phone', current: 650, target: 1600, color: '#3b82f6' },
+          { label: 'Pickups', icon: 'fa-phone-volume', current: 420, target: 1000, color: '#10b981' },
+          { label: 'Happy', icon: 'fa-face-smile', current: 195, target: 400, color: '#f59e0b' },
+          { label: 'Booked', icon: 'fa-calendar-check', current: 130, target: 300, color: '#8b5cf6' },
+          { label: 'Done', icon: 'fa-circle-check', current: 85, target: 200, color: '#D4A84B' },
+        ],
+      };
+
+      // Ranking data
+      const rankingData = {
+        today: [
+          { name: 'TN', metrics: [52, 35, 15, 10, 7], targets: [80, 50, 20, 15, 10] },
+          { name: 'DD', metrics: [45, 28, 12, 8, 5], targets: [80, 50, 20, 15, 10] },
+          { name: 'HM', metrics: [42, 26, 11, 7, 5], targets: [80, 50, 20, 15, 10] },
+          { name: 'VT', metrics: [38, 22, 9, 6, 4], targets: [80, 50, 20, 15, 10] },
+          { name: 'KL', metrics: [35, 20, 8, 5, 3], targets: [80, 50, 20, 15, 10] },
+          { name: 'TH', metrics: [30, 18, 7, 4, 2], targets: [80, 50, 20, 15, 10] },
+        ],
+      };
+      rankingData.week = rankingData.today;
+      rankingData.month = rankingData.today;
+
+      const CENTER = 150;
+      const MAX_RADIUS = 120;
+      const ANGLES = [-90, -18, 54, 126, 198].map((a) => (a * Math.PI) / 180);
+
+      let currentTab = 'today';
+      let activeAxis = -1;
+
+      // ── Radar math helpers ──
+      function polarToXY(cx, cy, radius, angleRad) {
+        return {
+          x: cx + radius * Math.cos(angleRad),
+          y: cy + radius * Math.sin(angleRad),
+        };
+      }
+
+      function getPentagonPoints(cx, cy, radius) {
+        return ANGLES.map((a) => polarToXY(cx, cy, radius, a));
+      }
+
+      function pointsToString(points) {
+        return points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      }
+
+      // ── Build radar SVG (main) ──
+      function renderRadarChart(tab) {
+        const svg = document.getElementById('radarChart');
+        const data = kpiData[tab];
+
+        let html = '';
+
+        // Glow filter for active axis
+        if (activeAxis >= 0) {
+          const col = data[activeAxis].color;
+          html += `<defs><filter id="glowFilter" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="${col}" flood-opacity="0.8"/></filter></defs>`;
+        }
+
+        // Concentric pentagon grid (25%, 50%, 75%, 100%)
+        [0.25, 0.5, 0.75, 1.0].forEach((level) => {
+          const pts = getPentagonPoints(CENTER, CENTER, MAX_RADIUS * level);
+          html += `<polygon points="${pointsToString(pts)}" fill="none" stroke="${level === 1 ? '#444' : '#333'}" stroke-width="${level === 1 ? 1 : 0.5}" stroke-dasharray="${level < 1 ? '3,3' : 'none'}"/>`;
+        });
+
+        // Axes lines
+        ANGLES.forEach((a) => {
+          const end = polarToXY(CENTER, CENTER, MAX_RADIUS, a);
+          html += `<line x1="${CENTER}" y1="${CENTER}" x2="${end.x.toFixed(1)}" y2="${end.y.toFixed(1)}" stroke="#333" stroke-width="0.5"/>`;
+        });
+
+        // Axis labels
+        ANGLES.forEach((a, i) => {
+          const pos = polarToXY(CENTER, CENTER, MAX_RADIUS + 18, a);
+          const anchor = Math.abs(pos.x - CENTER) < 5 ? 'middle' : pos.x > CENTER ? 'start' : 'end';
+          const dy = pos.y < CENTER ? -2 : pos.y > CENTER + 10 ? 12 : 4;
+          html += `<text x="${pos.x.toFixed(1)}" y="${(pos.y + dy).toFixed(1)}" text-anchor="${anchor}" style="fill: ${data[i].color}; font-size: 10px; font-weight: 600; font-family: 'Plus Jakarta Sans';">${data[i].label}</text>`;
+        });
+
+        // Data polygon
+        const dataPoints = data.map((d, i) => {
+          const ratio = Math.min(d.current / d.target, 1);
+          return polarToXY(CENTER, CENTER, MAX_RADIUS * ratio, ANGLES[i]);
+        });
+        html += `<polygon class="radar-polygon" points="${pointsToString(dataPoints)}" fill="rgba(212,168,75,0.2)" stroke="#D4A84B" stroke-width="2" stroke-linejoin="round"/>`;
+
+        // Data dots
+        dataPoints.forEach((pt, i) => {
+          const glowing = activeAxis === i;
+          html += `<circle class="radar-dot" cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="${glowing ? 5 : 3.5}" fill="${data[i].color}" stroke="${glowing ? '#fff' : 'none'}" stroke-width="${glowing ? 2 : 0}"${glowing ? ' filter="url(#glowFilter)"' : ''}/>`;
+        });
+
+        svg.innerHTML = html;
+      }
+
+      // ── Build mini radar SVG for podium ──
+      function renderMiniRadar(svgId, memberIndex) {
+        const svg = document.getElementById(svgId);
+        if (!svg) return;
+        const member = rankingData[currentTab][memberIndex];
+        const cx = 30,
+          cy = 30,
+          maxR = 24;
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#D4A84B'];
+
+        let html = '';
+        // Grid outlines
+        const pts100 = ANGLES.map((a) => polarToXY(cx, cy, maxR, a));
+        html += `<polygon points="${pointsToString(pts100)}" fill="none" stroke="#333" stroke-width="0.5"/>`;
+        const pts50 = ANGLES.map((a) => polarToXY(cx, cy, maxR * 0.5, a));
+        html += `<polygon points="${pointsToString(pts50)}" fill="none" stroke="#333" stroke-width="0.3" stroke-dasharray="2,2"/>`;
+
+        // Data shape
+        const dataPts = member.metrics.map((v, i) => {
+          const ratio = Math.min(v / member.targets[i], 1);
+          return polarToXY(cx, cy, maxR * ratio, ANGLES[i]);
+        });
+        html += `<polygon points="${pointsToString(dataPts)}" fill="rgba(212,168,75,0.15)" stroke="#D4A84B" stroke-width="1.5" stroke-linejoin="round"/>`;
+        dataPts.forEach((pt, i) => {
+          html += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="2" fill="${colors[i]}"/>`;
+        });
+
+        svg.innerHTML = html;
+      }
+
+      // ── Legend ──
+      function renderLegend(tab) {
+        const container = document.getElementById('legendContainer');
+        const data = kpiData[tab];
+        const icons = ['fa-phone', 'fa-phone-volume', 'fa-face-smile', 'fa-calendar-check', 'fa-circle-check'];
+
+        container.innerHTML = data
+          .map((d, i) => {
+            const pct = Math.round((d.current / d.target) * 100);
+            const isActive = activeAxis === i;
+            return `
           <div class="legend-item flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${isActive ? 'bg-white/10 ring-1 ring-white/20' : 'bg-white/[0.03]'} hover:bg-white/10 transition-all" onclick="toggleAxis(${i})" style="color: ${d.color}">
             <span class="w-2.5 h-2.5 rounded-full inline-block" style="background: ${d.color}; ${isActive ? 'box-shadow: 0 0 8px 2px ' + d.color : ''}"></span>
             <i class="fa-solid ${icons[i]} text-[9px]" style="color: ${d.color}"></i>
@@ -545,103 +859,104 @@
             <span class="text-[9px] text-gray-400 ml-0.5">${d.current}/${d.target} (${pct}%)</span>
           </div>
         `;
-      }).join('');
-    }
+          })
+          .join('');
+      }
 
-    function toggleAxis(idx) {
-      activeAxis = activeAxis === idx ? -1 : idx;
-      renderRadarChart(currentTab);
-      renderLegend(currentTab);
-    }
+      function toggleAxis(idx) {
+        activeAxis = activeAxis === idx ? -1 : idx;
+        renderRadarChart(currentTab);
+        renderLegend(currentTab);
+      }
 
-    // ── Tab Switching ──
-    function switchTab(tab) {
-      currentTab = tab;
-      activeAxis = -1;
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        if (btn.dataset.tab === tab) {
-          btn.classList.add('bg-gold', 'text-black', 'shadow-lg', 'shadow-gold/25');
-          btn.classList.remove('text-gray-400', 'hover:text-white');
-        } else {
-          btn.classList.remove('bg-gold', 'text-black', 'shadow-lg', 'shadow-gold/25');
-          btn.classList.add('text-gray-400', 'hover:text-white');
+      // ── Tab Switching ──
+      function switchTab(tab) {
+        currentTab = tab;
+        activeAxis = -1;
+        document.querySelectorAll('.tab-btn').forEach((btn) => {
+          if (btn.dataset.tab === tab) {
+            btn.classList.add('bg-gold', 'text-black', 'shadow-lg', 'shadow-gold/25');
+            btn.classList.remove('text-gray-400', 'hover:text-white');
+          } else {
+            btn.classList.remove('bg-gold', 'text-black', 'shadow-lg', 'shadow-gold/25');
+            btn.classList.add('text-gray-400', 'hover:text-white');
+          }
+        });
+        renderRadarChart(tab);
+        renderLegend(tab);
+        renderMiniRadar('miniRadar1', 0);
+        renderMiniRadar('miniRadar2', 1);
+        renderMiniRadar('miniRadar3', 2);
+      }
+
+      // ── Modal Open/Close ──
+      function openModal() {
+        const overlay = document.getElementById('modalOverlay');
+        const content = document.getElementById('modalContent');
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        content.classList.remove('modal-animate');
+        void content.offsetWidth;
+        content.classList.add('modal-animate');
+        switchTab(currentTab);
+      }
+
+      function closeModal(e) {
+        if (e.target === document.getElementById('modalOverlay')) {
+          closeModalDirect();
         }
-      });
-      renderRadarChart(tab);
-      renderLegend(tab);
-      renderMiniRadar('miniRadar1', 0);
-      renderMiniRadar('miniRadar2', 1);
-      renderMiniRadar('miniRadar3', 2);
-    }
-
-    // ── Modal Open/Close ──
-    function openModal() {
-      const overlay = document.getElementById('modalOverlay');
-      const content = document.getElementById('modalContent');
-      overlay.classList.remove('hidden');
-      overlay.classList.add('flex');
-      content.classList.remove('modal-animate');
-      void content.offsetWidth;
-      content.classList.add('modal-animate');
-      switchTab(currentTab);
-    }
-
-    function closeModal(e) {
-      if (e.target === document.getElementById('modalOverlay')) {
-        closeModalDirect();
-      }
-    }
-
-    function closeModalDirect() {
-      const overlay = document.getElementById('modalOverlay');
-      overlay.classList.add('hidden');
-      overlay.classList.remove('flex');
-    }
-
-    // ── Theme Toggle ──
-    let isDark = true;
-    function toggleTheme() {
-      isDark = !isDark;
-      const html = document.documentElement;
-      const icon = document.getElementById('themeIcon');
-      const body = document.body;
-
-      if (isDark) {
-        html.className = 'dark-theme dark';
-        icon.className = 'fa-solid fa-moon text-sm';
-        body.classList.remove('bg-gray-50', 'text-gray-900');
-        body.classList.add('bg-darkBg', 'text-white');
-      } else {
-        html.className = 'light-theme';
-        icon.className = 'fa-solid fa-sun text-sm';
-        body.classList.remove('bg-darkBg', 'text-white');
-        body.classList.add('bg-gray-50', 'text-gray-900');
       }
 
-      const borderClass = isDark ? 'border-darkBg' : 'border-gray-50';
-      document.querySelectorAll('.avatar-breathe .rounded-full').forEach(el => {
-        el.classList.remove('border-darkBg', 'border-gray-50');
-        el.classList.add(borderClass);
+      function closeModalDirect() {
+        const overlay = document.getElementById('modalOverlay');
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+      }
+
+      // ── Theme Toggle ──
+      let isDark = true;
+      function toggleTheme() {
+        isDark = !isDark;
+        const html = document.documentElement;
+        const icon = document.getElementById('themeIcon');
+        const body = document.body;
+
+        if (isDark) {
+          html.className = 'dark-theme dark';
+          icon.className = 'fa-solid fa-moon text-sm';
+          body.classList.remove('bg-gray-50', 'text-gray-900');
+          body.classList.add('bg-darkBg', 'text-white');
+        } else {
+          html.className = 'light-theme';
+          icon.className = 'fa-solid fa-sun text-sm';
+          body.classList.remove('bg-darkBg', 'text-white');
+          body.classList.add('bg-gray-50', 'text-gray-900');
+        }
+
+        const borderClass = isDark ? 'border-darkBg' : 'border-gray-50';
+        document.querySelectorAll('.avatar-breathe .rounded-full').forEach((el) => {
+          el.classList.remove('border-darkBg', 'border-gray-50');
+          el.classList.add(borderClass);
+        });
+
+        renderRadarChart(currentTab);
+        renderLegend(currentTab);
+      }
+
+      // ── Clock ──
+      function updateClock() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('headerTime').textContent = `${h}:${m}`;
+      }
+      updateClock();
+      setInterval(updateClock, 30000);
+
+      // ── Keyboard: ESC to close modal ──
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModalDirect();
       });
-
-      renderRadarChart(currentTab);
-      renderLegend(currentTab);
-    }
-
-    // ── Clock ──
-    function updateClock() {
-      const now = new Date();
-      const h = String(now.getHours()).padStart(2, '0');
-      const m = String(now.getMinutes()).padStart(2, '0');
-      document.getElementById('headerTime').textContent = `${h}:${m}`;
-    }
-    updateClock();
-    setInterval(updateClock, 30000);
-
-    // ── Keyboard: ESC to close modal ──
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeModalDirect();
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>

@@ -10,19 +10,22 @@ async function run() {
 
   // Fetch active telesales
   const staffList = await crm.crmStaff.findMany({
-    where: { role: 'telesales', isActive: true }
+    where: { role: 'telesales', isActive: true },
   });
-  const staffNames = staffList.map(s => s.displayName);
+  const staffNames = staffList.map((s) => s.displayName);
 
   // Map legacy profiles
-  const profiles = await legacy.$queryRawUnsafe<any[]>(`
+  const profiles = await legacy.$queryRawUnsafe<any[]>(
+    `
     SELECT up.user_id as userId, up.full_name as fullName
     FROM \`staff_profile\` sp
     JOIN \`user_profile\` up ON sp.user_id = up.user_id
     WHERE up.provider = 'Staff' AND up.is_disabled = 0
       AND up.full_name IN (${staffNames.map(() => '?').join(',')})
-  `, ...staffNames);
-  const activeLegacyUserIds = profiles.map(p => Number(p.userId));
+  `,
+    ...staffNames
+  );
+  const activeLegacyUserIds = profiles.map((p) => Number(p.userId));
 
   if (activeLegacyUserIds.length === 0) {
     console.error('No legacy user IDs found.');
@@ -34,16 +37,19 @@ async function run() {
     where: {
       created_staff_id: { in: activeLegacyUserIds },
       booking_date_start: { gte: startRange, lte: endRange },
-      order_state: { not: 'Cancelled' }
+      order_state: { not: 'Cancelled' },
     },
-    select: { user_id: true }
+    select: { user_id: true },
   });
 
-  const userIds = Array.from(new Set(allOrders.map(o => o.user_id).filter(id => id !== null))) as number[];
-  const userBalances = userIds.length > 0 ? await legacy.user_service_balance.findMany({
-    where: { user_id: { in: userIds } }
-  }) : [];
-  const balanceIds = userBalances.map(b => b.id);
+  const userIds = Array.from(new Set(allOrders.map((o) => o.user_id).filter((id) => id !== null))) as number[];
+  const userBalances =
+    userIds.length > 0
+      ? await legacy.user_service_balance.findMany({
+          where: { user_id: { in: userIds } },
+        })
+      : [];
+  const balanceIds = userBalances.map((b) => b.id);
 
   console.log(`Profiling with ${balanceIds.length} balance IDs...`);
 

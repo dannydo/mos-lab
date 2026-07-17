@@ -8,13 +8,13 @@ const DEFAULT_SALARY_CONFIG = {
   clientBonusRefill: {
     discount30: 9000,
     discount50: 6000,
-    discountMore: 1000
+    discountMore: 1000,
   },
   clientBonusFullSet: {
     discount0: 35000,
     discount30: 12000,
     discount50: 6000,
-    discountMore: 1000
+    discountMore: 1000,
   },
   doneBonusTiers: [
     { minCount: 100, bonus: 300000 },
@@ -25,23 +25,23 @@ const DEFAULT_SALARY_CONFIG = {
     { minCount: 350, bonus: 1800000 },
     { minCount: 400, bonus: 2100000 },
     { minCount: 450, bonus: 2400000 },
-    { minCount: 500, bonus: 2700000 }
+    { minCount: 500, bonus: 2700000 },
   ],
   missedBonusTiers: [
     { maxRate: 10, bonus: 1000000 },
     { maxRate: 15, bonus: 500000 },
     { maxRate: 20, bonus: 0 },
     { maxRate: 25, bonus: -500000 },
-    { maxRate: 100, bonus: -1000000 }
+    { maxRate: 100, bonus: -1000000 },
   ],
   revBonusTiers: [
     { minRev: 50000000, rate: 0.007 },
     { minRev: 100000000, rate: 0.008 },
     { minRev: 150000000, rate: 0.009 },
-    { minRev: 200000000, rate: 0.010 },
+    { minRev: 200000000, rate: 0.01 },
     { minRev: 250000000, rate: 0.011 },
-    { minRev: 300000000, rate: 0.012 }
-  ]
+    { minRev: 300000000, rate: 0.012 },
+  ],
 };
 
 // Global in-memory cache for Booker Salary Config
@@ -54,7 +54,7 @@ async function getSalaryConfig(fastify: FastifyInstance) {
   }
   try {
     const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
-      where: { key: 'BOOKER_SALARY_CONFIG' }
+      where: { key: 'BOOKER_SALARY_CONFIG' },
     });
     if (configRecord) {
       cachedSalaryConfig = JSON.parse(configRecord.value);
@@ -76,33 +76,39 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
     where: {
       role: 'telesales',
       isActive: true,
-      ...(targetStaffId !== undefined ? { id: targetStaffId } : {})
-    }
+      ...(targetStaffId !== undefined ? { id: targetStaffId } : {}),
+    },
   });
 
-  const staffStats: Record<number, {
-    doneCount: number;
-    missedCount: number;
-    clientBonus: number;
-    totalTips: number;
-    totalNetRev: number;
-  }> = {};
+  const staffStats: Record<
+    number,
+    {
+      doneCount: number;
+      missedCount: number;
+      clientBonus: number;
+      totalTips: number;
+      totalNetRev: number;
+    }
+  > = {};
 
-  staffList.forEach(s => {
+  staffList.forEach((s) => {
     staffStats[s.id] = { doneCount: 0, missedCount: 0, clientBonus: 0, totalTips: 0, totalNetRev: 0 };
   });
 
   if (staffList.length > 0) {
-    const staffNames = staffList.map(s => s.displayName);
+    const staffNames = staffList.map((s) => s.displayName);
 
     // Fetch legacy user profiles to map displayNames to legacy user IDs
-    const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+    const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      `
       SELECT up.user_id as userId, up.full_name as fullName
       FROM \`staff_profile\` sp
       JOIN \`user_profile\` up ON sp.user_id = up.user_id
       WHERE up.provider = 'Staff' AND up.is_disabled = 0
         AND up.full_name IN (${staffNames.map(() => '?').join(',')})
-    `, ...staffNames);
+    `,
+      ...staffNames
+    );
 
     // Sort ascending to let duplicates with larger user_id override
     profiles.sort((a: any, b: any) => Number(a.userId) - Number(b.userId));
@@ -111,7 +117,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
     const legacyIdToStaffMap = new Map<number, any>();
 
     profiles.forEach((p: any) => {
-      const staff = staffList.find(s => s.displayName.toLowerCase().trim() === p.fullName.toLowerCase().trim());
+      const staff = staffList.find((s) => s.displayName.toLowerCase().trim() === p.fullName.toLowerCase().trim());
       if (staff) {
         staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
         legacyIdToStaffMap.set(Number(p.userId), staff);
@@ -126,7 +132,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
         where: {
           created_staff_id: { in: activeLegacyUserIds },
           booking_date_start: { gte: start, lte: end },
-          order_state: { not: 'Cancelled' }
+          order_state: { not: 'Cancelled' },
         },
         select: {
           id: true,
@@ -135,13 +141,13 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
           total_price: true,
           user_id: true,
           booking_date_start: true,
-          date_created: true
-        }
+          date_created: true,
+        },
       });
 
       if (allOrders.length > 0) {
-        const completedOrders = allOrders.filter(o => o.order_state === 'Completed');
-        const completedOrderIds = completedOrders.map(o => o.id);
+        const completedOrders = allOrders.filter((o) => o.order_state === 'Completed');
+        const completedOrderIds = completedOrders.map((o) => o.id);
 
         // Fetch tips
         const orderTipsMap = new Map<number, number>();
@@ -159,37 +165,42 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
 
         // Fetch order services for booking bonus
         const orderServicesMap = new Map<number, any[]>();
-        let serviceNameMap = new Map<number, string>();
+        const serviceNameMap = new Map<number, string>();
         if (completedOrderIds.length > 0) {
           const orderServices = await fastify.prisma.legacy.order_service.findMany({
-            where: { order_id: { in: completedOrderIds } }
+            where: { order_id: { in: completedOrderIds } },
           });
-          orderServices.forEach(os => {
+          orderServices.forEach((os) => {
             const list = orderServicesMap.get(os.order_id) || [];
             list.push(os);
             orderServicesMap.set(os.order_id, list);
           });
 
-          const serviceIds = Array.from(new Set(orderServices.map(os => os.service_id)));
+          const serviceIds = Array.from(new Set(orderServices.map((os) => os.service_id)));
           if (serviceIds.length > 0) {
             const serviceLanguages = await fastify.prisma.legacy.service_language.findMany({
-              where: { service_id: { in: serviceIds } }
+              where: { service_id: { in: serviceIds } },
             });
-            serviceLanguages.forEach(sl => {
+            serviceLanguages.forEach((sl) => {
               serviceNameMap.set(sl.service_id, sl.service_name);
             });
           }
         }
 
         // Fetch user balances and transactions for checkHasLiveCombo
-        const userIds = Array.from(new Set(allOrders.map(o => o.user_id).filter(id => id !== null))) as number[];
-        
-        const userBalances = userIds.length > 0 ? await fastify.prisma.legacy.user_service_balance.findMany({
-          where: { user_id: { in: userIds } }
-        }) : [];
+        const userIds = Array.from(new Set(allOrders.map((o) => o.user_id).filter((id) => id !== null))) as number[];
 
-        const balanceIds = userBalances.map(b => b.id);
-        const userBalanceTransactions = balanceIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const userBalances =
+          userIds.length > 0
+            ? await fastify.prisma.legacy.user_service_balance.findMany({
+                where: { user_id: { in: userIds } },
+              })
+            : [];
+
+        const balanceIds = userBalances.map((b) => b.id);
+        const userBalanceTransactions =
+          balanceIds.length > 0
+            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                  usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                  usbt.retain_count, usbt.used_staff_id, usbt.order_id,
@@ -197,7 +208,8 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
           FROM user_service_balance_transaction usbt
           LEFT JOIN \`order\` o ON o.id = usbt.order_id
           WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-        `) : [];
+        `)
+            : [];
 
         const txnsByBalanceId = new Map<number, any[]>();
         for (const t of userBalanceTransactions) {
@@ -212,15 +224,15 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
 
         const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
           const bTime = bookingDateStart || orderCreatedDate;
-          const userBals = userBalances.filter(b => b.user_id === userId);
-          
+          const userBals = userBalances.filter((b) => b.user_id === userId);
+
           for (const usb of userBals) {
             if (new Date(usb.date_created) >= new Date(bTime)) {
               continue;
             }
 
-            const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-              new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+            const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
+              (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
             );
 
             txnsBefore.sort((a, b) => {
@@ -233,18 +245,23 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
             const lastTxnBefore = txnsBefore[0];
 
             const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-            const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
+            const isNotExpired =
+              !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
             let countLeft = 0;
-            if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
+            if (
+              lastTxnBefore &&
+              lastTxnBefore.total_normal_count_left !== null &&
+              lastTxnBefore.total_retain_count_left !== null
+            ) {
               countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
             } else {
-              const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-                new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
+              const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
+                (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
               );
-              
+
               let usedAfter = 0;
-              txnsAfterOrAt.forEach(t => {
+              txnsAfterOrAt.forEach((t) => {
                 if (t.used_staff_id !== null) {
                   usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
                 }
@@ -261,7 +278,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
         };
 
         // Process orders
-        allOrders.forEach(o => {
+        allOrders.forEach((o) => {
           const staff = legacyIdToStaffMap.get(Number(o.created_staff_id));
           if (!staff) return;
 
@@ -280,7 +297,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
                 }
               }
 
-              const serviceName = serviceNameMap.get(primaryService.service_id) || "Unknown";
+              const serviceName = serviceNameMap.get(primaryService.service_id) || 'Unknown';
               let discountPercent = 0;
               if (primaryService.service_price > 0) {
                 discountPercent = Math.round((primaryService.discount_amount / primaryService.service_price) * 100);
@@ -316,24 +333,27 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
   }
 
   // Calculate final salary breakdown for each staff
-  const staffSalaries: Record<number, {
-    baseSalary: number;
-    doneCount: number;
-    missedCount: number;
-    missedRate: number;
-    clientBonus: number;
-    doneBonus: number;
-    missedBonus: number;
-    tipBonus: number;
-    revBonus: number;
-    totalTips: number;
-    totalNetRev: number;
-    totalSalary: number;
-    doneLevelCount?: number;
-    missedLevelRate?: number;
-    revLevelRate?: number;
-    revLevelMin?: number;
-  }> = {};
+  const staffSalaries: Record<
+    number,
+    {
+      baseSalary: number;
+      doneCount: number;
+      missedCount: number;
+      missedRate: number;
+      clientBonus: number;
+      doneBonus: number;
+      missedBonus: number;
+      tipBonus: number;
+      revBonus: number;
+      totalTips: number;
+      totalNetRev: number;
+      totalSalary: number;
+      doneLevelCount?: number;
+      missedLevelRate?: number;
+      revLevelRate?: number;
+      revLevelMin?: number;
+    }
+  > = {};
 
   const sortedDoneTiers = [...config.doneBonusTiers].sort((a, b) => b.minCount - a.minCount);
   const sortedMissedTiers = [...config.missedBonusTiers].sort((a, b) => a.maxRate - b.maxRate);
@@ -348,7 +368,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
     // 1. Done Bonus
     let doneBonus = 0;
     let doneLevelCount = 0;
-    const matchedDone = sortedDoneTiers.find(t => stats.doneCount >= t.minCount);
+    const matchedDone = sortedDoneTiers.find((t) => stats.doneCount >= t.minCount);
     if (matchedDone) {
       doneBonus = matchedDone.bonus;
       doneLevelCount = matchedDone.minCount;
@@ -359,7 +379,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
     let missedLevelRate = 0;
     if (totalCount > 0) {
       const missedRatePct = missedRate * 100;
-      const matchedMissed = sortedMissedTiers.find(t => missedRatePct <= t.maxRate);
+      const matchedMissed = sortedMissedTiers.find((t) => missedRatePct <= t.maxRate);
       if (matchedMissed) {
         missedBonus = matchedMissed.bonus;
         missedLevelRate = matchedMissed.maxRate;
@@ -373,7 +393,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
     let revBonus = 0;
     let revLevelRate = 0;
     let revLevelMin = 0;
-    const matchedRev = sortedRevTiers.find(t => stats.totalNetRev >= t.minRev);
+    const matchedRev = sortedRevTiers.find((t) => stats.totalNetRev >= t.minRev);
     if (matchedRev) {
       revBonus = Math.round(stats.totalNetRev * matchedRev.rate);
       revLevelRate = matchedRev.rate;
@@ -398,7 +418,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
       doneLevelCount,
       missedLevelRate,
       revLevelRate,
-      revLevelMin
+      revLevelMin,
     };
   });
 
@@ -410,17 +430,22 @@ async function calculateConsultantSalaryStats(
   start: Date,
   end: Date,
   targetUserId?: number
-): Promise<Record<number, {
-  role: 'oc';
-  baseSalary: number;
-  salesReward: number;
-  servicingReward: number;
-  growthReward: number;
-  storeServicingReward: number;
-  checkins: number;
-  checkinLateMin: number;
-  totalSalary: number;
-}>> {
+): Promise<
+  Record<
+    number,
+    {
+      role: 'oc';
+      baseSalary: number;
+      salesReward: number;
+      servicingReward: number;
+      growthReward: number;
+      storeServicingReward: number;
+      checkins: number;
+      checkinLateMin: number;
+      totalSalary: number;
+    }
+  >
+> {
   let query = `
     SELECT p.*, u.full_name, u.username
     FROM \`staff_payroll_client_consultant\` p
@@ -481,7 +506,7 @@ async function calculateConsultantSalaryStats(
         storeServicingReward: 0,
         checkins: 0,
         checkinLateMin: 0,
-        totalSalary: 0
+        totalSalary: 0,
       };
     }
 
@@ -505,7 +530,7 @@ function getWeekNumber(d: Date): number {
   const firstThursday = target.valueOf();
   target.setMonth(0, 1);
   if (target.getDay() !== 4) {
-    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+    target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
   }
   return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
 }
@@ -522,7 +547,6 @@ function formatDateTime(d: Date): string {
 }
 
 export async function kpiRoutes(fastify: FastifyInstance) {
-
   // GET /api/kpi/export-booker-salary (Google Sheets / External tool integration)
   fastify.get('/kpi/export-booker-salary', async (request, reply) => {
     const { key, booker, date_from, date_to } = request.query as {
@@ -548,13 +572,17 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       const config = await getSalaryConfig(fastify);
 
       // Find legacyUserId for the requested booker
-      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `
         SELECT up.user_id as userId, up.full_name as fullName
         FROM \`staff_profile\` sp
         JOIN \`user_profile\` up ON sp.user_id = up.user_id
         WHERE up.provider = 'Staff' AND up.is_disabled = 0
           AND (up.full_name = ? OR up.full_name = ?)
-      `, booker, booker + ' ');
+      `,
+        booker,
+        booker + ' '
+      );
 
       if (profiles.length === 0) {
         return reply.status(404).send({ error: 'Not Found', message: `Không tìm thấy thông tin booker: ${booker}` });
@@ -569,21 +597,38 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         where: {
           created_staff_id: legacyUserId,
           booking_date_start: { gte: start, lte: end },
-          order_state: { not: 'Cancelled' }
+          order_state: { not: 'Cancelled' },
         },
-        orderBy: { booking_date_start: 'asc' }
+        orderBy: { booking_date_start: 'asc' },
       });
 
       const rows: any[][] = [];
       rows.push([
-        'ID', 'CLIENT', 'PHONE', 'SOURCE', 'SERVICE', 'PRICE', 'DISCOUNT PERCENT', 'DISCOUNT VALUE',
-        'AMOUNT PAID', 'TIPS', 'DEBT', 'BOOKER', 'BOOKING TYPE', 'BOOKING BONUS', 'COMBO DEDUCTION',
-        'NET REVENUE', 'CHECK-IN VALUE', 'DATE BOOKED', 'DATE CHECK-IN', 'WEEK'
+        'ID',
+        'CLIENT',
+        'PHONE',
+        'SOURCE',
+        'SERVICE',
+        'PRICE',
+        'DISCOUNT PERCENT',
+        'DISCOUNT VALUE',
+        'AMOUNT PAID',
+        'TIPS',
+        'DEBT',
+        'BOOKER',
+        'BOOKING TYPE',
+        'BOOKING BONUS',
+        'COMBO DEDUCTION',
+        'NET REVENUE',
+        'CHECK-IN VALUE',
+        'DATE BOOKED',
+        'DATE CHECK-IN',
+        'WEEK',
       ]);
 
       if (allOrders.length > 0) {
-        const completedOrders = allOrders.filter(o => o.order_state === 'Completed');
-        const completedOrderIds = completedOrders.map(o => o.id);
+        const completedOrders = allOrders.filter((o) => o.order_state === 'Completed');
+        const completedOrderIds = completedOrders.map((o) => o.id);
 
         const orderPaymentMap = new Map<number, { tips: number; debt: number; totalPaid: number }>();
         if (completedOrderIds.length > 0) {
@@ -594,64 +639,81 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           `);
           orderPayments.forEach((op: any) => {
             const existing = orderPaymentMap.get(Number(op.orderId)) || { tips: 0, debt: 0, totalPaid: 0 };
-            const paidSum = Number(op.paidCredit || 0) + Number(op.paidCash || 0) + Number(op.paidCard || 0) + Number(op.paidBank || 0);
+            const paidSum =
+              Number(op.paidCredit || 0) +
+              Number(op.paidCash || 0) +
+              Number(op.paidCard || 0) +
+              Number(op.paidBank || 0);
             orderPaymentMap.set(Number(op.orderId), {
               tips: existing.tips + Number(op.tipAmount || 0),
               debt: existing.debt + Number(op.debt || 0),
-              totalPaid: existing.totalPaid + paidSum
+              totalPaid: existing.totalPaid + paidSum,
             });
           });
         }
 
         const orderServicesMap = new Map<number, any[]>();
-        let serviceNameMap = new Map<number, string>();
+        const serviceNameMap = new Map<number, string>();
         if (completedOrderIds.length > 0) {
           const orderServices = await fastify.prisma.legacy.order_service.findMany({
-            where: { order_id: { in: completedOrderIds } }
+            where: { order_id: { in: completedOrderIds } },
           });
-          orderServices.forEach(os => {
+          orderServices.forEach((os) => {
             const list = orderServicesMap.get(os.order_id) || [];
             list.push(os);
             orderServicesMap.set(os.order_id, list);
           });
 
-          const serviceIds = Array.from(new Set(orderServices.map(os => os.service_id)));
+          const serviceIds = Array.from(new Set(orderServices.map((os) => os.service_id)));
           if (serviceIds.length > 0) {
             const serviceLanguages = await fastify.prisma.legacy.service_language.findMany({
-              where: { service_id: { in: serviceIds } }
+              where: { service_id: { in: serviceIds } },
             });
-            serviceLanguages.forEach(sl => {
+            serviceLanguages.forEach((sl) => {
               serviceNameMap.set(sl.service_id, sl.service_name);
             });
           }
         }
 
         // Fetch client names and phone numbers
-        const customerIds = Array.from(new Set(allOrders.map(o => o.user_id).filter(id => id !== null))) as number[];
-        const userProfiles = customerIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const customerIds = Array.from(
+          new Set(allOrders.map((o) => o.user_id).filter((id) => id !== null))
+        ) as number[];
+        const userProfiles =
+          customerIds.length > 0
+            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT user_id as userId, full_name as fullName
           FROM \`user_profile\`
           WHERE user_id IN (${customerIds.join(',')})
-        `) : [];
-        const userContacts = customerIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        `)
+            : [];
+        const userContacts =
+          customerIds.length > 0
+            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT user_id as userId, phone_number as phoneNumber
           FROM \`user_contact\`
           WHERE user_id IN (${customerIds.join(',')})
-        `) : [];
+        `)
+            : [];
 
         const profileMap = new Map<number, string>();
-        userProfiles.forEach(p => profileMap.set(Number(p.userId), p.fullName));
+        userProfiles.forEach((p) => profileMap.set(Number(p.userId), p.fullName));
 
         const contactMap = new Map<number, string>();
-        userContacts.forEach(c => contactMap.set(Number(c.userId), c.phoneNumber));
+        userContacts.forEach((c) => contactMap.set(Number(c.userId), c.phoneNumber));
 
         // Fetch user balances and transactions for checkHasLiveCombo
-        const userBalances = customerIds.length > 0 ? await fastify.prisma.legacy.user_service_balance.findMany({
-          where: { user_id: { in: customerIds } }
-        }) : [];
+        const userBalances =
+          customerIds.length > 0
+            ? await fastify.prisma.legacy.user_service_balance.findMany({
+                where: { user_id: { in: customerIds } },
+              })
+            : [];
 
-        const balanceIds = userBalances.map(b => b.id);
-        const userBalanceTransactions = balanceIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const balanceIds = userBalances.map((b) => b.id);
+        const userBalanceTransactions =
+          balanceIds.length > 0
+            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                  usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                  usbt.retain_count, usbt.used_staff_id, usbt.order_id,
@@ -659,7 +721,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           FROM user_service_balance_transaction usbt
           LEFT JOIN \`order\` o ON o.id = usbt.order_id
           WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-        `) : [];
+        `)
+            : [];
 
         const txnsByBalanceId = new Map<number, any[]>();
         for (const t of userBalanceTransactions) {
@@ -674,15 +737,15 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
         const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
           const bTime = bookingDateStart || orderCreatedDate;
-          const userBals = userBalances.filter(b => b.user_id === userId);
-          
+          const userBals = userBalances.filter((b) => b.user_id === userId);
+
           for (const usb of userBals) {
             if (new Date(usb.date_created) >= new Date(bTime)) {
               continue;
             }
 
-            const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-              new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+            const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
+              (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
             );
 
             txnsBefore.sort((a, b) => {
@@ -695,18 +758,23 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             const lastTxnBefore = txnsBefore[0];
 
             const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-            const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
+            const isNotExpired =
+              !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
             let countLeft = 0;
-            if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
+            if (
+              lastTxnBefore &&
+              lastTxnBefore.total_normal_count_left !== null &&
+              lastTxnBefore.total_retain_count_left !== null
+            ) {
               countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
             } else {
-              const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-                new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
+              const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
+                (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
               );
-              
+
               let usedAfter = 0;
-              txnsAfterOrAt.forEach(t => {
+              txnsAfterOrAt.forEach((t) => {
                 if (t.used_staff_id !== null) {
                   usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
                 }
@@ -722,7 +790,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           return false;
         };
 
-        allOrders.forEach(o => {
+        allOrders.forEach((o) => {
           const clientName = profileMap.get(Number(o.user_id)) || '';
           const phone = contactMap.get(Number(o.user_id)) || '';
           const source = o.booking_channels || 'ZALO';
@@ -740,7 +808,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
               }
             }
 
-            const serviceName = primaryService ? (serviceNameMap.get(primaryService.service_id) || 'Unknown') : 'Unknown';
+            const serviceName = primaryService ? serviceNameMap.get(primaryService.service_id) || 'Unknown' : 'Unknown';
             const price = primaryService ? primaryService.service_price : 0;
             const discValue = primaryService ? primaryService.discount_amount : 0;
             let discPercent = 0;
@@ -793,7 +861,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
               1, // CHECK-IN VALUE
               plannedDateStr,
               checkinDateStr,
-              weekLabel
+              weekLabel,
             ]);
           } else {
             rows.push([
@@ -816,20 +884,26 @@ export async function kpiRoutes(fastify: FastifyInstance) {
               0,
               plannedDateStr,
               '',
-              weekLabel
+              weekLabel,
             ]);
           }
         });
       }
 
-      const csvContent = rows.map(r => r.map(val => {
-        if (val === null || val === undefined) return '';
-        const strVal = String(val);
-        if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
-          return `"${strVal.replace(/"/g, '""')}"`;
-        }
-        return strVal;
-      }).join(',')).join('\n');
+      const csvContent = rows
+        .map((r) =>
+          r
+            .map((val) => {
+              if (val === null || val === undefined) return '';
+              const strVal = String(val);
+              if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
+                return `"${strVal.replace(/"/g, '""')}"`;
+              }
+              return strVal;
+            })
+            .join(',')
+        )
+        .join('\n');
 
       reply.header('Content-Type', 'text/csv; charset=utf-8');
       reply.header('Content-Disposition', 'attachment; filename=booker-salary.csv');
@@ -852,7 +926,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     if (user.role !== 'admin') {
       return reply.status(403).send({
         error: 'Forbidden',
-        message: 'Chỉ quản trị viên mới có quyền cấu hình công thức lương.'
+        message: 'Chỉ quản trị viên mới có quyền cấu hình công thức lương.',
       });
     }
 
@@ -860,7 +934,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     if (!newConfig || typeof newConfig !== 'object') {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Cấu hình không hợp lệ.'
+        message: 'Cấu hình không hợp lệ.',
       });
     }
 
@@ -870,8 +944,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         update: { value: JSON.stringify(newConfig) },
         create: {
           key: 'BOOKER_SALARY_CONFIG',
-          value: JSON.stringify(newConfig)
-        }
+          value: JSON.stringify(newConfig),
+        },
       });
 
       // Update in-memory cache
@@ -882,7 +956,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       fastify.log.error(err as any, 'Update salary config error');
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi lưu cấu hình lương.'
+        message: 'Lỗi lưu cấu hình lương.',
       });
     }
   });
@@ -891,7 +965,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   fastify.get('/kpi/staff-levels', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
       const config = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: 'STAFF_TARGET_LEVELS' }
+        where: { key: 'STAFF_TARGET_LEVELS' },
       });
       if (!config) {
         return {};
@@ -901,7 +975,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       fastify.log.error(err as any, 'Get staff levels error');
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi tải danh sách cấp độ nhân sự.'
+        message: 'Lỗi tải danh sách cấp độ nhân sự.',
       });
     }
   });
@@ -912,7 +986,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     if (user.role !== 'admin') {
       return reply.status(403).send({
         error: 'Forbidden',
-        message: 'Chỉ quản trị viên mới có quyền cấu hình cấp độ mục tiêu nhân sự.'
+        message: 'Chỉ quản trị viên mới có quyền cấu hình cấp độ mục tiêu nhân sự.',
       });
     }
 
@@ -920,7 +994,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     if (!levelsMap || typeof levelsMap !== 'object') {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Cấu hình cấp độ không hợp lệ.'
+        message: 'Cấu hình cấp độ không hợp lệ.',
       });
     }
 
@@ -930,8 +1004,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         update: { value: JSON.stringify(levelsMap) },
         create: {
           key: 'STAFF_TARGET_LEVELS',
-          value: JSON.stringify(levelsMap)
-        }
+          value: JSON.stringify(levelsMap),
+        },
       });
 
       return { success: true, message: 'Đã cập nhật cấp độ mục tiêu nhân sự thành công.' };
@@ -939,16 +1013,16 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       fastify.log.error(err as any, 'Update staff levels error');
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi lưu cấp độ mục tiêu nhân sự.'
+        message: 'Lỗi lưu cấp độ mục tiêu nhân sự.',
       });
     }
   });
 
   // GET /api/kpi/summary
   fastify.get('/kpi/summary', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { startDate, endDate, staffId, role } = request.query as { 
-      startDate?: string; 
-      endDate?: string; 
+    const { startDate, endDate, staffId, role } = request.query as {
+      startDate?: string;
+      endDate?: string;
       staffId?: string;
       role?: string;
     };
@@ -981,7 +1055,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           totalCheckin = salary.checkins;
           totalEarnings = salary.totalSalary;
         } else {
-          Object.values(salaries).forEach(s => {
+          Object.values(salaries).forEach((s) => {
             totalCheckin += s.checkins;
             totalEarnings += s.totalSalary;
           });
@@ -996,7 +1070,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           totalBooked: 0,
           totalCheckin,
           totalEarnings,
-          salary
+          salary,
         };
       }
 
@@ -1005,20 +1079,26 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         where: {
           role: 'telesales',
           isActive: true,
-          ...(targetStaffId !== undefined ? { id: targetStaffId } : {})
-        }
+          ...(targetStaffId !== undefined ? { id: targetStaffId } : {}),
+        },
       });
 
       const salaries = await calculateBookerSalaryStats(fastify, start, end, targetStaffId);
       const salary = targetStaffId !== undefined ? salaries[targetStaffId] : null;
 
       // Match staff names to legacy user IDs
-      const staffNames = staffList.map(s => s.displayName);
-      const profiles = staffNames.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const staffNames = staffList.map((s) => s.displayName);
+      const profiles =
+        staffNames.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+              `
         SELECT user_id as userId, full_name as fullName
         FROM \`user_profile\`
         WHERE full_name IN (${staffNames.map(() => '?').join(',')})
-      `, ...staffNames) : [];
+      `,
+              ...staffNames
+            )
+          : [];
 
       const staffNameToLegacyIdMap = new Map<string, number>();
       profiles.forEach((p: any) => {
@@ -1027,7 +1107,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
       const legacyUserIds = Array.from(staffNameToLegacyIdMap.values());
 
-      const staffIds = staffList.map(s => s.id);
+      const staffIds = staffList.map((s) => s.id);
       let totalCalled = 0;
       let totalAnswered = 0;
       let totalHappy = 0;
@@ -1037,12 +1117,12 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           where: {
             staffId: { in: staffIds },
             createdAt: { gte: start, lte: end },
-            direction: 'outbound'
+            direction: 'outbound',
           },
           select: {
             status: true,
-            happyCallStatus: true
-          }
+            happyCallStatus: true,
+          },
         });
 
         totalCalled = callLogs.length;
@@ -1062,11 +1142,11 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           where: {
             created_staff_id: { in: legacyUserIds },
             date_created: { gte: start, lte: end },
-            order_state: { not: 'Cancelled' }
+            order_state: { not: 'Cancelled' },
           },
           select: {
-            id: true
-          }
+            id: true,
+          },
         });
         totalBooked = bookedOrders.length;
       }
@@ -1074,7 +1154,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       let totalCheckin = 0;
       let totalEarnings = 0;
 
-      Object.values(salaries).forEach(s => {
+      Object.values(salaries).forEach((s) => {
         totalCheckin += s.doneCount;
         totalEarnings += s.totalSalary;
       });
@@ -1089,13 +1169,13 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         totalBooked,
         totalCheckin,
         totalEarnings: salary ? salary.totalSalary : totalEarnings,
-        salary
+        salary,
       };
     } catch (err: any) {
       fastify.log.error(err as any, 'Summary KPI error');
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to retrieve KPI summary'
+        message: 'Failed to retrieve KPI summary',
       });
     }
   });
@@ -1104,7 +1184,12 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   fastify.get('/kpi/leaderboard', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { id: number; role: string };
 
-    const { startDate, endDate, role, staffIds } = request.query as { startDate?: string; endDate?: string; role?: string; staffIds?: string };
+    const { startDate, endDate, role, staffIds } = request.query as {
+      startDate?: string;
+      endDate?: string;
+      role?: string;
+      staffIds?: string;
+    };
     const startStr = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
     const endStr = endDate || new Date().toLocaleDateString('en-CA');
 
@@ -1115,19 +1200,22 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       if (role === 'oc' || role === 'consultant') {
         const salaries = await calculateConsultantSalaryStats(fastify, start, end);
         const uids = Object.keys(salaries).map(Number);
-        
-        const profiles = uids.length > 0 ? (await fastify.prisma.legacy.$queryRawUnsafe(`
+
+        const profiles =
+          uids.length > 0
+            ? ((await fastify.prisma.legacy.$queryRawUnsafe(`
           SELECT user_id, full_name, username 
           FROM \`user_profile\` 
           WHERE user_id IN (${uids.join(',')})
-        `)) as any[] : [];
+        `)) as any[])
+            : [];
 
         const profileMap = new Map<number, any>();
         profiles.forEach((p: any) => {
           profileMap.set(Number(p.user_id), p);
         });
 
-        const leaderboard = uids.map(uid => {
+        const leaderboard = uids.map((uid) => {
           const sal = salaries[uid];
           const prof = profileMap.get(uid) || {};
 
@@ -1144,7 +1232,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             bookingRate: 0,
             checkinRate: 0,
             totalEarnings: user.role === 'admin' ? sal.totalSalary : 0,
-            salary: user.role === 'admin' ? sal : null
+            salary: user.role === 'admin' ? sal : null,
           };
         });
 
@@ -1158,27 +1246,38 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
       const staffWhere: any = { isActive: true };
       if (staffIds && staffIds.trim() !== '') {
-        staffWhere.id = { in: staffIds.split(',').map(Number).filter(n => !isNaN(n)) };
+        staffWhere.id = {
+          in: staffIds
+            .split(',')
+            .map(Number)
+            .filter((n) => !isNaN(n)),
+        };
       } else {
         staffWhere.role = role || 'telesales';
       }
 
       const staffList = await fastify.prisma.crm.crmStaff.findMany({
         where: staffWhere,
-        select: { id: true, displayName: true, username: true }
+        select: { id: true, displayName: true, username: true },
       });
 
       const salaries = await calculateBookerSalaryStats(fastify, start, end);
 
       // Match staff names to legacy user IDs
-      const staffNames = staffList.map(s => s.displayName);
-      const profiles = staffNames.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const staffNames = staffList.map((s) => s.displayName);
+      const profiles =
+        staffNames.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+              `
         SELECT up.user_id as userId, up.full_name as fullName
         FROM \`staff_profile\` sp
         JOIN \`user_profile\` up ON sp.user_id = up.user_id
         WHERE up.provider = 'Staff' AND up.is_disabled = 0
           AND up.full_name IN (${staffNames.map(() => '?').join(',')})
-      `, ...staffNames) : [];
+      `,
+              ...staffNames
+            )
+          : [];
 
       const staffNameToLegacyIdMap = new Map<string, number>();
       profiles.forEach((p: any) => {
@@ -1186,7 +1285,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       });
 
       const legacyUserIds = Array.from(staffNameToLegacyIdMap.values());
-      const crmStaffIds = staffList.map(s => s.id);
+      const crmStaffIds = staffList.map((s) => s.id);
       const callStatsMap = new Map<number, { totalCalled: number; totalAnswered: number; totalHappy: number }>();
 
       if (crmStaffIds.length > 0) {
@@ -1194,13 +1293,13 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           where: {
             staffId: { in: crmStaffIds },
             createdAt: { gte: start, lte: end },
-            direction: 'outbound'
+            direction: 'outbound',
           },
           select: {
             staffId: true,
             status: true,
-            happyCallStatus: true
-          }
+            happyCallStatus: true,
+          },
         });
 
         callLogs.forEach((c: any) => {
@@ -1223,11 +1322,11 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           where: {
             created_staff_id: { in: legacyUserIds },
             date_created: { gte: start, lte: end },
-            order_state: { not: 'Cancelled' }
+            order_state: { not: 'Cancelled' },
           },
           select: {
-            created_staff_id: true
-          }
+            created_staff_id: true,
+          },
         });
 
         bookedOrders.forEach((o: any) => {
@@ -1254,7 +1353,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           revBonus: 0,
           totalTips: 0,
           totalNetRev: 0,
-          totalSalary: 5500000
+          totalSalary: 5500000,
         };
 
         const totalBooked = legacyUserId ? bookedCountMap.get(legacyUserId) || 0 : 0;
@@ -1282,7 +1381,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           bookingRate,
           checkinRate,
           totalEarnings: user.role === 'admin' ? salary.totalSalary : 0,
-          salary: user.role === 'admin' ? salary : null
+          salary: user.role === 'admin' ? salary : null,
         });
       }
 
@@ -1296,7 +1395,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       fastify.log.error(err as any, 'Leaderboard KPI error');
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to retrieve leaderboard statistics'
+        message: 'Failed to retrieve leaderboard statistics',
       });
     }
   });
@@ -1304,11 +1403,11 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   // GET /api/kpi/booker-appointments
   fastify.get('/kpi/booker-appointments', { preHandler: [requireAuth] }, async (request, reply) => {
     const { staffId, startDate, endDate } = request.query as { staffId?: string; startDate?: string; endDate?: string };
-    
+
     if (!staffId) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Thiếu staffId của Online Consultant.'
+        message: 'Thiếu staffId của Online Consultant.',
       });
     }
 
@@ -1316,18 +1415,18 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     if (isNaN(targetStaffId)) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'staffId không hợp lệ.'
+        message: 'staffId không hợp lệ.',
       });
     }
 
     const staff = await fastify.prisma.crm.crmStaff.findUnique({
-      where: { id: targetStaffId }
+      where: { id: targetStaffId },
     });
 
     if (!staff) {
       return reply.status(404).send({
         error: 'Not Found',
-        message: 'Không tìm thấy nhân viên tương ứng.'
+        message: 'Không tìm thấy nhân viên tương ứng.',
       });
     }
 
@@ -1343,14 +1442,20 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       const config = await getSalaryConfig(fastify);
 
       // Find legacyUserId for the requested booker
-      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `
         SELECT user_id as userId, full_name as fullName
         FROM \`user_profile\`
         WHERE full_name = ? OR full_name = ?
-      `, bookerName, bookerName + ' ');
+      `,
+        bookerName,
+        bookerName + ' '
+      );
 
       if (profiles.length === 0) {
-        return reply.status(404).send({ error: 'Not Found', message: `Không tìm thấy thông tin booker: ${bookerName}` });
+        return reply
+          .status(404)
+          .send({ error: 'Not Found', message: `Không tìm thấy thông tin booker: ${bookerName}` });
       }
 
       // Sort by userId ascending to let duplicates override
@@ -1362,16 +1467,16 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         where: {
           created_staff_id: legacyUserId,
           booking_date_start: { gte: start, lte: end },
-          order_state: { not: 'Cancelled' }
+          order_state: { not: 'Cancelled' },
         },
-        orderBy: { booking_date_start: 'desc' }
+        orderBy: { booking_date_start: 'desc' },
       });
 
       const list: any[] = [];
 
       if (allOrders.length > 0) {
-        const completedOrders = allOrders.filter(o => o.order_state === 'Completed');
-        const completedOrderIds = completedOrders.map(o => o.id);
+        const completedOrders = allOrders.filter((o) => o.order_state === 'Completed');
+        const completedOrderIds = completedOrders.map((o) => o.id);
 
         const orderPaymentMap = new Map<number, { tips: number; debt: number; totalPaid: number }>();
         if (completedOrderIds.length > 0) {
@@ -1382,64 +1487,81 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           `);
           orderPayments.forEach((op: any) => {
             const existing = orderPaymentMap.get(Number(op.orderId)) || { tips: 0, debt: 0, totalPaid: 0 };
-            const paidSum = Number(op.paidCredit || 0) + Number(op.paidCash || 0) + Number(op.paidCard || 0) + Number(op.paidBank || 0);
+            const paidSum =
+              Number(op.paidCredit || 0) +
+              Number(op.paidCash || 0) +
+              Number(op.paidCard || 0) +
+              Number(op.paidBank || 0);
             orderPaymentMap.set(Number(op.orderId), {
               tips: existing.tips + Number(op.tipAmount || 0),
               debt: existing.debt + Number(op.debt || 0),
-              totalPaid: existing.totalPaid + paidSum
+              totalPaid: existing.totalPaid + paidSum,
             });
           });
         }
 
         const orderServicesMap = new Map<number, any[]>();
-        let serviceNameMap = new Map<number, string>();
+        const serviceNameMap = new Map<number, string>();
         if (completedOrderIds.length > 0) {
           const orderServices = await fastify.prisma.legacy.order_service.findMany({
-            where: { order_id: { in: completedOrderIds } }
+            where: { order_id: { in: completedOrderIds } },
           });
-          orderServices.forEach(os => {
+          orderServices.forEach((os) => {
             const l = orderServicesMap.get(os.order_id) || [];
             l.push(os);
             orderServicesMap.set(os.order_id, l);
           });
 
-          const serviceIds = Array.from(new Set(orderServices.map(os => os.service_id)));
+          const serviceIds = Array.from(new Set(orderServices.map((os) => os.service_id)));
           if (serviceIds.length > 0) {
             const serviceLanguages = await fastify.prisma.legacy.service_language.findMany({
-              where: { service_id: { in: serviceIds } }
+              where: { service_id: { in: serviceIds } },
             });
-            serviceLanguages.forEach(sl => {
+            serviceLanguages.forEach((sl) => {
               serviceNameMap.set(sl.service_id, sl.service_name);
             });
           }
         }
 
         // Fetch client names and phone numbers
-        const customerIds = Array.from(new Set(allOrders.map(o => o.user_id).filter(id => id !== null))) as number[];
-        const userProfiles = customerIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const customerIds = Array.from(
+          new Set(allOrders.map((o) => o.user_id).filter((id) => id !== null))
+        ) as number[];
+        const userProfiles =
+          customerIds.length > 0
+            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT user_id as userId, full_name as fullName
           FROM \`user_profile\`
           WHERE user_id IN (${customerIds.join(',')})
-        `) : [];
-        const userContacts = customerIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        `)
+            : [];
+        const userContacts =
+          customerIds.length > 0
+            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT user_id as userId, phone_number as phoneNumber
           FROM \`user_contact\`
           WHERE user_id IN (${customerIds.join(',')})
-        `) : [];
+        `)
+            : [];
 
         const profileMap = new Map<number, string>();
-        userProfiles.forEach(p => profileMap.set(Number(p.userId), p.fullName));
+        userProfiles.forEach((p) => profileMap.set(Number(p.userId), p.fullName));
 
         const contactMap = new Map<number, string>();
-        userContacts.forEach(c => contactMap.set(Number(c.userId), c.phoneNumber));
+        userContacts.forEach((c) => contactMap.set(Number(c.userId), c.phoneNumber));
 
         // Fetch user balances and transactions for checkHasLiveCombo
-        const userBalances = customerIds.length > 0 ? await fastify.prisma.legacy.user_service_balance.findMany({
-          where: { user_id: { in: customerIds } }
-        }) : [];
+        const userBalances =
+          customerIds.length > 0
+            ? await fastify.prisma.legacy.user_service_balance.findMany({
+                where: { user_id: { in: customerIds } },
+              })
+            : [];
 
-        const balanceIds = userBalances.map(b => b.id);
-        const userBalanceTransactions = balanceIds.length > 0 ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const balanceIds = userBalances.map((b) => b.id);
+        const userBalanceTransactions =
+          balanceIds.length > 0
+            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                  usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                  usbt.retain_count, usbt.used_staff_id, usbt.order_id,
@@ -1447,7 +1569,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           FROM user_service_balance_transaction usbt
           LEFT JOIN \`order\` o ON o.id = usbt.order_id
           WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-        `) : [];
+        `)
+            : [];
 
         const txnsByBalanceId = new Map<number, any[]>();
         for (const t of userBalanceTransactions) {
@@ -1462,15 +1585,15 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
         const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
           const bTime = bookingDateStart || orderCreatedDate;
-          const userBals = userBalances.filter(b => b.user_id === userId);
-          
+          const userBals = userBalances.filter((b) => b.user_id === userId);
+
           for (const usb of userBals) {
             if (new Date(usb.date_created) >= new Date(bTime)) {
               continue;
             }
 
-            const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-              new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+            const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
+              (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
             );
 
             txnsBefore.sort((a, b) => {
@@ -1483,18 +1606,23 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             const lastTxnBefore = txnsBefore[0];
 
             const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-            const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
+            const isNotExpired =
+              !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
             let countLeft = 0;
-            if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
+            if (
+              lastTxnBefore &&
+              lastTxnBefore.total_normal_count_left !== null &&
+              lastTxnBefore.total_retain_count_left !== null
+            ) {
               countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
             } else {
-              const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-                new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
+              const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
+                (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
               );
-              
+
               let usedAfter = 0;
-              txnsAfterOrAt.forEach(t => {
+              txnsAfterOrAt.forEach((t) => {
                 if (t.used_staff_id !== null) {
                   usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
                 }
@@ -1510,7 +1638,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           return false;
         };
 
-        allOrders.forEach(o => {
+        allOrders.forEach((o) => {
           const clientName = profileMap.get(Number(o.user_id)) || '';
           const phone = contactMap.get(Number(o.user_id)) || '';
           const source = o.booking_channels || 'ZALO';
@@ -1540,7 +1668,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             if (primaryService) {
               serviceName = serviceNameMap.get(primaryService.service_id) || 'Không rõ';
               price = primaryService.service_price;
-              
+
               if (primaryService.service_price > 0) {
                 discountPercent = Math.round((primaryService.discount_amount / primaryService.service_price) * 100);
               }
@@ -1579,7 +1707,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             discountPercent,
             netRevenue,
             tipAmount,
-            bookingBonus
+            bookingBonus,
           });
         });
       }
@@ -1589,7 +1717,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       fastify.log.error(err as any, 'KPI booker appointments error');
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Không thể truy vấn danh sách lịch hẹn đặt.'
+        message: 'Không thể truy vấn danh sách lịch hẹn đặt.',
       });
     }
   });
@@ -1620,12 +1748,12 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       const logs = await fastify.prisma.crm.crmCallLog.findMany({
         where: {
           createdAt: { gte: start, lte: new Date(end.getTime() + 24 * 60 * 60 * 1000) },
-          ...(targetStaffId !== undefined ? { staffId: targetStaffId } : {})
+          ...(targetStaffId !== undefined ? { staffId: targetStaffId } : {}),
         },
         select: {
           callResult: true,
-          outcome: true
-        }
+          outcome: true,
+        },
       });
 
       const breakdown = {
@@ -1634,10 +1762,10 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         NO_ANSWER: 0,
         BUSY: 0,
         WRONG_NUMBER: 0,
-        OTHERS: 0
+        OTHERS: 0,
       };
 
-      logs.forEach(l => {
+      logs.forEach((l) => {
         if (l.callResult === 'NO_ANSWER') {
           breakdown.NO_ANSWER++;
         } else if (l.callResult === 'BUSY') {
@@ -1656,13 +1784,13 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       const dailyKpis = await fastify.prisma.crm.crmStaffKpi.findMany({
         where: {
           kpiDate: { gte: start, lte: end },
-          ...(targetStaffId !== undefined ? { staffId: targetStaffId } : {})
+          ...(targetStaffId !== undefined ? { staffId: targetStaffId } : {}),
         },
-        orderBy: { kpiDate: 'asc' }
+        orderBy: { kpiDate: 'asc' },
       });
 
       const dailyTrendsMap = new Map<string, { date: string; planned: number; called: number }>();
-      
+
       const current = new Date(start);
       while (current <= end) {
         const dStr = current.toLocaleDateString('en-CA');
@@ -1670,7 +1798,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         current.setDate(current.getDate() + 1);
       }
 
-      dailyKpis.forEach(k => {
+      dailyKpis.forEach((k) => {
         const dStr = k.kpiDate.toLocaleDateString('en-CA');
         const existing = dailyTrendsMap.get(dStr) || { date: dStr, planned: 0, called: 0 };
         existing.planned += k.totalPlanned;
@@ -1682,13 +1810,13 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
       return {
         breakdown,
-        dailyTrends
+        dailyTrends,
       };
     } catch (err: any) {
       fastify.log.error(err as any, 'KPI trends error');
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to retrieve KPI trend statistics'
+        message: 'Failed to retrieve KPI trend statistics',
       });
     }
   });

@@ -1,695 +1,958 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi" class="dark dark-theme">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wingslashes — Telesales Dashboard V3F</title>
-    
+
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        gold: '#D4A84B',
-                        goldLight: '#E8C97A',
-                        goldDark: '#B8912F',
-                        darkBg: '#0A0A0A',
-                        darkCard: '#141414',
-                        darkBorder: '#262626',
-                    },
-                    fontFamily: {
-                        jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    }
-                }
-            }
-        }
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              gold: '#D4A84B',
+              goldLight: '#E8C97A',
+              goldDark: '#B8912F',
+              darkBg: '#0A0A0A',
+              darkCard: '#141414',
+              darkBorder: '#262626',
+            },
+            fontFamily: {
+              jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
+            },
+          },
+        },
+      };
     </script>
-    
+
     <!-- FontAwesome 6.4 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.3s, color 0.3s; }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition:
+          background-color 0.3s,
+          color 0.3s;
+      }
 
-        /* --- Theme Styling (No Global overrides, compliant with rule 2) --- */
-        .dark-theme body {
-            background-color: #0A0A0A;
-            color: #ffffff;
-        }
-        .light-theme body {
-            background-color: #f3f4f6;
-            color: #1f2937;
-        }
+      /* --- Theme Styling (No Global overrides, compliant with rule 2) --- */
+      .dark-theme body {
+        background-color: #0a0a0a;
+        color: #ffffff;
+      }
+      .light-theme body {
+        background-color: #f3f4f6;
+        color: #1f2937;
+      }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(212, 168, 75, 0.25); border-radius: 99px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(212, 168, 75, 0.4); }
-        .scrollbar-none::-webkit-scrollbar { display: none; }
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(212, 168, 75, 0.25);
+        border-radius: 99px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(212, 168, 75, 0.4);
+      }
+      .scrollbar-none::-webkit-scrollbar {
+        display: none;
+      }
 
-        /* Glass Cards */
-        .glass-card {
-            background: rgba(20, 20, 20, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        .light-theme .glass-card {
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-        .light-theme .text-white {
-            color: #1f2937 !important;
-        }
-        .light-theme .text-slate-100 {
-            color: #1f2937 !important;
-        }
-        .light-theme .text-gray-300 {
-            color: #374151 !important;
-        }
-        .light-theme .text-gray-400 {
-            color: #4b5563 !important;
-        }
-        .light-theme .text-gray-500 {
-            color: #6b7280 !important;
-        }
-        .light-theme .dark\:text-gray-300 {
-            color: #374151 !important;
-        }
-        .light-theme .dark\:text-gray-400 {
-            color: #4b5563 !important;
-        }
-        .light-theme .dark\:text-gray-500 {
-            color: #6b7280 !important;
-        }
-        .light-theme .dark\:bg-darkBg {
-            background-color: #f9fafb !important;
-        }
-        .light-theme .dark\:border-white\/10 {
-            border-color: #e5e7eb !important;
-        }
-        .light-theme input {
-            background-color: #ffffff !important;
-            border-color: #d1d5db !important;
-            color: #111827 !important;
-        }
+      /* Glass Cards */
+      .glass-card {
+        background: rgba(20, 20, 20, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .light-theme .glass-card {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+      }
+      .light-theme .text-white {
+        color: #1f2937 !important;
+      }
+      .light-theme .text-slate-100 {
+        color: #1f2937 !important;
+      }
+      .light-theme .text-gray-300 {
+        color: #374151 !important;
+      }
+      .light-theme .text-gray-400 {
+        color: #4b5563 !important;
+      }
+      .light-theme .text-gray-500 {
+        color: #6b7280 !important;
+      }
+      .light-theme .dark\:text-gray-300 {
+        color: #374151 !important;
+      }
+      .light-theme .dark\:text-gray-400 {
+        color: #4b5563 !important;
+      }
+      .light-theme .dark\:text-gray-500 {
+        color: #6b7280 !important;
+      }
+      .light-theme .dark\:bg-darkBg {
+        background-color: #f9fafb !important;
+      }
+      .light-theme .dark\:border-white\/10 {
+        border-color: #e5e7eb !important;
+      }
+      .light-theme input {
+        background-color: #ffffff !important;
+        border-color: #d1d5db !important;
+        color: #111827 !important;
+      }
 
-        /* Avatar Breathing Animation */
-        @keyframes breathe {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.06); }
+      /* Avatar Breathing Animation */
+      @keyframes breathe {
+        0%,
+        100% {
+          transform: scale(1);
         }
-        .avatar-breathe { animation: breathe 3s ease-in-out infinite; }
+        50% {
+          transform: scale(1.06);
+        }
+      }
+      .avatar-breathe {
+        animation: breathe 3s ease-in-out infinite;
+      }
 
-        /* Pulse green dot */
-        @keyframes pulse-green {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
-            70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+      /* Pulse green dot */
+      @keyframes pulse-green {
+        0% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
         }
-        .pulse-dot { animation: pulse-green 2s ease-in-out infinite; }
+        70% {
+          box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+      }
+      .pulse-dot {
+        animation: pulse-green 2s ease-in-out infinite;
+      }
 
-        /* Modal transitions */
-        @keyframes backdropIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+      /* Modal transitions */
+      @keyframes backdropIn {
+        from {
+          opacity: 0;
         }
-        .backdrop-enter { animation: backdropIn 0.3s ease forwards; }
+        to {
+          opacity: 1;
+        }
+      }
+      .backdrop-enter {
+        animation: backdropIn 0.3s ease forwards;
+      }
 
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: scale(0.95) translateY(15px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+      @keyframes modalFadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95) translateY(15px);
         }
-        .modal-enter { animation: modalFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      .modal-enter {
+        animation: modalFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
 
-        /* Donut animation */
-        @keyframes donutDraw {
-            from { stroke-dashoffset: var(--circumference); }
+      /* Donut animation */
+      @keyframes donutDraw {
+        from {
+          stroke-dashoffset: var(--circumference);
         }
-        .donut-animate { animation: donutDraw 1s ease-out forwards; }
+      }
+      .donut-animate {
+        animation: donutDraw 1s ease-out forwards;
+      }
 
-        /* Sparkles for #1 Podium Rank */
-        @keyframes sparkle-float {
-            0% { opacity: 0; transform: translate(0, 0) scale(0); }
-            20% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
+      /* Sparkles for #1 Podium Rank */
+      @keyframes sparkle-float {
+        0% {
+          opacity: 0;
+          transform: translate(0, 0) scale(0);
         }
-        .sparkle-container { position: relative; overflow: visible; }
-        .sparkle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: #D4A84B;
-            pointer-events: none;
-            animation: sparkle-float 2s ease-out infinite;
-            z-index: 50;
+        20% {
+          opacity: 1;
+          transform: scale(1);
         }
-        .sparkle:nth-child(1) { --tx: -20px; --ty: -35px; left: 25%; top: 20%; animation-delay: 0s; }
-        .sparkle:nth-child(2) { --tx: 25px; --ty: -25px; left: 75%; top: 30%; animation-delay: 0.4s; }
-        .sparkle:nth-child(3) { --tx: -15px; --ty: 30px; left: 35%; top: 65%; animation-delay: 0.8s; }
-        .sparkle:nth-child(4) { --tx: 20px; --ty: -40px; left: 65%; top: 15%; animation-delay: 1.2s; }
-        .sparkle:nth-child(5) { --tx: -30px; --ty: -15px; left: 20%; top: 50%; animation-delay: 1.6s; }
+        100% {
+          opacity: 0;
+          transform: translate(var(--tx), var(--ty)) scale(0);
+        }
+      }
+      .sparkle-container {
+        position: relative;
+        overflow: visible;
+      }
+      .sparkle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #d4a84b;
+        pointer-events: none;
+        animation: sparkle-float 2s ease-out infinite;
+        z-index: 50;
+      }
+      .sparkle:nth-child(1) {
+        --tx: -20px;
+        --ty: -35px;
+        left: 25%;
+        top: 20%;
+        animation-delay: 0s;
+      }
+      .sparkle:nth-child(2) {
+        --tx: 25px;
+        --ty: -25px;
+        left: 75%;
+        top: 30%;
+        animation-delay: 0.4s;
+      }
+      .sparkle:nth-child(3) {
+        --tx: -15px;
+        --ty: 30px;
+        left: 35%;
+        top: 65%;
+        animation-delay: 0.8s;
+      }
+      .sparkle:nth-child(4) {
+        --tx: 20px;
+        --ty: -40px;
+        left: 65%;
+        top: 15%;
+        animation-delay: 1.2s;
+      }
+      .sparkle:nth-child(5) {
+        --tx: -30px;
+        --ty: -15px;
+        left: 20%;
+        top: 50%;
+        animation-delay: 1.6s;
+      }
 
-        /* Gold glow ring for #1 */
-        @keyframes gold-ring-pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 75, 0.4), 0 0 10px 1px rgba(212, 168, 75, 0.15); }
-            50% { box-shadow: 0 0 0 6px rgba(212, 168, 75, 0), 0 0 18px 3px rgba(212, 168, 75, 0.25); }
+      /* Gold glow ring for #1 */
+      @keyframes gold-ring-pulse {
+        0%,
+        100% {
+          box-shadow:
+            0 0 0 0 rgba(212, 168, 75, 0.4),
+            0 0 10px 1px rgba(212, 168, 75, 0.15);
         }
-        .gold-ring-pulse { animation: gold-ring-pulse 2s ease-in-out infinite; }
+        50% {
+          box-shadow:
+            0 0 0 6px rgba(212, 168, 75, 0),
+            0 0 18px 3px rgba(212, 168, 75, 0.25);
+        }
+      }
+      .gold-ring-pulse {
+        animation: gold-ring-pulse 2s ease-in-out infinite;
+      }
 
-        /* Radar Chart polygon transitions */
-        .radar-polygon { transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-        .radar-dot { transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+      /* Radar Chart polygon transitions */
+      .radar-polygon {
+        transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .radar-dot {
+        transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-        /* Metric bar segments */
-        .metric-bar-segment {
-            height: 6px;
-            border-radius: 2px;
-            transition: width 0.6s ease;
-        }
+      /* Metric bar segments */
+      .metric-bar-segment {
+        height: 6px;
+        border-radius: 2px;
+        transition: width 0.6s ease;
+      }
 
-        /* 3D Flip Card */
-        .flip-card-inner {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-style: preserve-3d;
-        }
-        .flip-card-inner.flipped {
-            transform: rotateY(180deg);
-        }
-        .flip-card-front, .flip-card-back {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-            overflow: hidden;
-        }
-        .flip-card-back {
-            transform: rotateY(180deg);
-        }
+      /* 3D Flip Card */
+      .flip-card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-style: preserve-3d;
+      }
+      .flip-card-inner.flipped {
+        transform: rotateY(180deg);
+      }
+      .flip-card-front,
+      .flip-card-back {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        overflow: hidden;
+      }
+      .flip-card-back {
+        transform: rotateY(180deg);
+      }
 
-        /* Config inputs */
-        .config-input::-webkit-outer-spin-button,
-        .config-input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        .config-input[type=number] {
-            -moz-appearance: textfield;
-        }
+      /* Config inputs */
+      .config-input::-webkit-outer-spin-button,
+      .config-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .config-input[type='number'] {
+        -moz-appearance: textfield;
+      }
 
-        /* Collapsible Target Config section body */
-        .config-section-body {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+      /* Collapsible Target Config section body */
+      .config-section-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-        /* Toast positioning */
-        @keyframes toastIn {
-            from { opacity: 0; transform: translateY(20px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+      /* Toast positioning */
+      @keyframes toastIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px) scale(0.95);
         }
-        .toast-enter { animation: toastIn 0.3s ease forwards; }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      .toast-enter {
+        animation: toastIn 0.3s ease forwards;
+      }
     </style>
-</head>
-<body class="font-jakarta min-h-screen">
-
+  </head>
+  <body class="font-jakarta min-h-screen">
     <!-- ═══════════════════════════════════════════ HEADER ═══════════════════════════════════════════ -->
     <header class="sticky top-0 z-50 glass-card border-b border-darkBorder dark:border-darkBorder border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-            <!-- Left: Logo -->
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-gold/20" style="background: linear-gradient(135deg, #D4A84B, #B8902F);">
-                    <span class="text-white font-extrabold text-lg">W</span>
-                </div>
-                <span class="text-lg font-bold bg-gradient-to-r from-gold to-goldLight bg-clip-text text-transparent hidden sm:block">Wingslashes</span>
-            </div>
-
-            <!-- Right: Bubble stack + Clock + Theme switch + DD user avatar -->
-            <div class="flex items-center gap-4">
-                <!-- Bubble stack (rendered dynamically) -->
-                <div class="flex items-center -space-x-2.5 cursor-pointer" id="bubbleStack" onclick="openModal('TN')">
-                    <!-- Javascript renders bubbles -->
-                </div>
-                
-
-
-                <!-- Live Clock -->
-                <div class="hidden sm:flex items-center gap-1.5 text-sm font-medium dark:text-gray-400 text-gray-500">
-                    <i class="fas fa-clock text-gold/60 text-xs"></i>
-                    <span id="liveClock">--:--:--</span>
-                </div>
-
-                <!-- Theme Toggle Button -->
-                <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-gold/10 transition-colors border dark:border-white/5 border-gray-200" title="Toggle theme">
-                    <i class="fas fa-sun text-gold text-sm dark:hidden"></i>
-                    <i class="fas fa-moon text-gold text-sm hidden dark:inline"></i>
-                </button>
-
-                <!-- DD avatar -->
-                <div onclick="openModal('DD')" class="w-9 h-9 rounded-full border-2 border-gold flex items-center justify-center font-bold text-sm cursor-pointer avatar-breathe shadow-lg shadow-gold/25" style="background: linear-gradient(135deg, #D4A84B, #B8902F);">
-                    DD
-                </div>
-            </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+        <!-- Left: Logo -->
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-gold/20"
+            style="background: linear-gradient(135deg, #d4a84b, #b8902f)"
+          >
+            <span class="text-white font-extrabold text-lg">W</span>
+          </div>
+          <span
+            class="text-lg font-bold bg-gradient-to-r from-gold to-goldLight bg-clip-text text-transparent hidden sm:block"
+            >Wingslashes</span
+          >
         </div>
+
+        <!-- Right: Bubble stack + Clock + Theme switch + DD user avatar -->
+        <div class="flex items-center gap-4">
+          <!-- Bubble stack (rendered dynamically) -->
+          <div class="flex items-center -space-x-2.5 cursor-pointer" id="bubbleStack" onclick="openModal('TN')">
+            <!-- Javascript renders bubbles -->
+          </div>
+
+          <!-- Live Clock -->
+          <div class="hidden sm:flex items-center gap-1.5 text-sm font-medium dark:text-gray-400 text-gray-500">
+            <i class="fas fa-clock text-gold/60 text-xs"></i>
+            <span id="liveClock">--:--:--</span>
+          </div>
+
+          <!-- Theme Toggle Button -->
+          <button
+            onclick="toggleTheme()"
+            class="w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-gold/10 transition-colors border dark:border-white/5 border-gray-200"
+            title="Toggle theme"
+          >
+            <i class="fas fa-sun text-gold text-sm dark:hidden"></i>
+            <i class="fas fa-moon text-gold text-sm hidden dark:inline"></i>
+          </button>
+
+          <!-- DD avatar -->
+          <div
+            onclick="openModal('DD')"
+            class="w-9 h-9 rounded-full border-2 border-gold flex items-center justify-center font-bold text-sm cursor-pointer avatar-breathe shadow-lg shadow-gold/25"
+            style="background: linear-gradient(135deg, #d4a84b, #b8902f)"
+          >
+            DD
+          </div>
+        </div>
+      </div>
     </header>
 
     <!-- ═══════════════════════════════════════════ MAIN CONTENT ═══════════════════════════════════════════ -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <!-- Dashboard Welcome Section -->
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold tracking-tight mb-2">Bảng hoạt động Telesales</h2>
-            <p class="text-sm dark:text-gray-400 text-gray-500">Chọn thành viên online bên dưới hoặc trên thanh công cụ để xem chi tiết thẻ 3D hiệu năng (mặt trước V3C1 và mặt sau V3E).</p>
-        </div>
+      <!-- Dashboard Welcome Section -->
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold tracking-tight mb-2">Bảng hoạt động Telesales</h2>
+        <p class="text-sm dark:text-gray-400 text-gray-500">
+          Chọn thành viên online bên dưới hoặc trên thanh công cụ để xem chi tiết thẻ 3D hiệu năng (mặt trước V3C1 và
+          mặt sau V3E).
+        </p>
+      </div>
 
-        <!-- Team Grid (V3F Welcome UI) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="teamMemberGrid">
-            <!-- Rendered Dynamically -->
-        </div>
+      <!-- Team Grid (V3F Welcome UI) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="teamMemberGrid">
+        <!-- Rendered Dynamically -->
+      </div>
     </main>
 
     <!-- ═══════════════════════════════════════════ MODAL OVERLAY ═══════════════════════════════════════════ -->
-    <div id="modalBackdrop" class="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4" onclick="handleBackdropClick(event)">
-        
-        <!-- Outer Modal Shell (Handles width and 3D Perspective) -->
-        <div id="modalContent" class="w-full max-w-[780px] h-[92vh] min-h-[820px] max-h-[920px] relative modal-enter" style="perspective: 1500px;" onclick="event.stopPropagation()">
-            
-            <!-- Inner Flippable Card Container -->
-            <div id="modalCardInner" class="flip-card-inner">
-                
-                <!-- ────────────────────────────────────────── FRONT SIDE (V3C1 BASE) ────────────────────────────────────────── -->
-                <div id="modalFrontSide" class="flip-card-front rounded-2xl glass-card flex flex-col">
-                    <!-- Modal Header -->
-                    <div class="flex items-center justify-between p-5 border-b dark:border-white/5 border-gray-200 flex-shrink-0">
-                        <div class="flex items-center gap-3">
-                            <div id="modalAvatarFront" class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-black/20"></div>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <span id="modalNameFront" class="font-bold text-base md:text-lg"></span>
-                                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-gold/15 text-gold font-medium border border-gold/20">Telesales</span>
-                                    <span class="relative flex h-2 w-2">
-                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                    </span>
-                                </div>
-                                <div class="text-[10px] dark:text-gray-500 text-gray-400 mt-0.5 flex items-center gap-1">
-                                    <i class="fas fa-clock text-[9px]"></i>
-                                    <span id="modalClockFront">--:--:--</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Header Buttons -->
-                        <div class="flex items-center gap-2">
-                            <button onclick="toggleFlip()" class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-gold/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all group" title="Lật xoay 3D (Xem biểu đồ Radar)">
-                                <i class="fas fa-arrows-rotate text-sm text-gold group-hover:rotate-180 transition-transform duration-500"></i>
-                            </button>
-                            <button onclick="toggleConfigFront()" class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-gold/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all" title="Cấu hình Target">
-                                <i class="fas fa-gear text-sm text-gold"></i>
-                            </button>
-                            <button onclick="closeModal()" class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-red-500/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all text-gray-400 hover:text-red-400">
-                                <i class="fas fa-times text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Modal Body Wrapper (Contains scrollable area + config panel) -->
-                    <div class="relative flex flex-1 overflow-hidden">
-                        <!-- Scrollable Main Body -->
-                        <div class="flex-1 overflow-y-auto p-5 space-y-5" id="frontBody">
-                            
-                            <!-- Timeline (V3C4 Horizontal Line + 6 Dots) -->
-                            <div id="frontTimeline" class="w-full"></div>
-
-                            <!-- Donut + Metric Pills -->
-                            <div class="flex flex-col items-center py-2">
-                                <!-- SVG Donut -->
-                                <div class="relative w-[190px] h-[190px]">
-                                    <svg id="donutSvg" width="190" height="190" viewBox="0 0 200 200">
-                                        <!-- Background circle -->
-                                        <circle cx="100" cy="100" r="85" fill="none" stroke-width="15" class="dark:stroke-white/[0.05] stroke-gray-200"></circle>
-                                        <!-- Progress circle -->
-                                        <circle id="donutProgress" cx="100" cy="100" r="85" fill="none" stroke-width="15" stroke-linecap="round"
-                                            transform="rotate(-90 100 100)"
-                                            style="transition: stroke-dashoffset 0.8s ease, stroke 0.3s ease;"></circle>
-                                    </svg>
-                                    <!-- Center text -->
-                                    <div class="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span id="donutValue" class="text-3xl font-extrabold">--</span>
-                                        <span id="donutLabel" class="text-[10px] dark:text-gray-500 text-gray-400 mt-0.5"></span>
-                                        <span id="donutPercent" class="text-sm font-bold mt-0.5">--%</span>
-                                    </div>
-                                </div>
-
-
-                            </div>
-
-                            <!-- Mini Summary Cards -->
-                            <div class="grid grid-cols-5 gap-2" id="miniCardsFront">
-                                <!-- Dynamic -->
-                            </div>
-
-                            <!-- Podium Leaderboard -->
-                            <div class="pt-2">
-                                <div class="flex items-center gap-2 mb-4 border-b dark:border-white/5 border-gray-200 pb-2">
-                                    <i class="fas fa-trophy text-gold text-sm animate-bounce"></i>
-                                    <span class="text-sm font-bold">Bảng Xếp Hạng Đội Nhóm</span>
-                                    <span id="podiumMetricLabelFront" class="text-[11px] dark:text-gray-500 text-gray-400"></span>
-                                </div>
-                                <div id="podiumContainerFront" class="w-full flex flex-col items-center">
-                                    <!-- Dynamic -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Target Config Panel (Slides in from right) -->
-                        <div id="configPanelFront" class="absolute top-0 right-0 h-full w-[280px] glass-card border-l dark:border-white/10 border-gray-300 flex flex-col z-30 translate-x-full transition-transform duration-300">
-                            <!-- Config Header -->
-                            <div class="flex items-center justify-between px-4 py-3.5 border-b dark:border-white/5 border-gray-200 flex-shrink-0">
-                                <div>
-                                    <h3 class="text-sm font-bold text-white dark:text-white">Cấu hình Target</h3>
-                                    <p class="text-[10px] text-gold font-medium mt-0.5">6 chu kỳ thời gian</p>
-                                </div>
-                                <button onclick="toggleConfigFront()" class="w-7 h-7 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-red-500/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all">
-                                    <i class="fas fa-times text-gray-400 text-xs"></i>
-                                </button>
-                            </div>
-                            <!-- Config Body (Collapsible Sections) -->
-                            <div class="flex-1 overflow-y-auto p-3 config-body">
-                                <!-- Rendered dynamically -->
-                            </div>
-                            <!-- Config Footer -->
-                            <div class="p-3 border-t dark:border-white/5 border-gray-200 flex-shrink-0 bg-black/20">
-                                <button onclick="saveAllTargets()" class="w-full py-2 rounded-xl bg-gradient-to-r from-gold to-goldDark text-black text-sm font-bold hover:shadow-lg hover:shadow-gold/20 transition-all active:scale-95">
-                                    <i class="fas fa-save mr-1.5"></i>Lưu cấu hình
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+    <div
+      id="modalBackdrop"
+      class="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4"
+      onclick="handleBackdropClick(event)"
+    >
+      <!-- Outer Modal Shell (Handles width and 3D Perspective) -->
+      <div
+        id="modalContent"
+        class="w-full max-w-[780px] h-[92vh] min-h-[820px] max-h-[920px] relative modal-enter"
+        style="perspective: 1500px"
+        onclick="event.stopPropagation()"
+      >
+        <!-- Inner Flippable Card Container -->
+        <div id="modalCardInner" class="flip-card-inner">
+          <!-- ────────────────────────────────────────── FRONT SIDE (V3C1 BASE) ────────────────────────────────────────── -->
+          <div id="modalFrontSide" class="flip-card-front rounded-2xl glass-card flex flex-col">
+            <!-- Modal Header -->
+            <div
+              class="flex items-center justify-between p-5 border-b dark:border-white/5 border-gray-200 flex-shrink-0"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  id="modalAvatarFront"
+                  class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-black/20"
+                ></div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span id="modalNameFront" class="font-bold text-base md:text-lg"></span>
+                    <span
+                      class="text-[10px] px-2 py-0.5 rounded-full bg-gold/15 text-gold font-medium border border-gold/20"
+                      >Telesales</span
+                    >
+                    <span class="relative flex h-2 w-2">
+                      <span
+                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
+                      ></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                  </div>
+                  <div class="text-[10px] dark:text-gray-500 text-gray-400 mt-0.5 flex items-center gap-1">
+                    <i class="fas fa-clock text-[9px]"></i>
+                    <span id="modalClockFront">--:--:--</span>
+                  </div>
                 </div>
+              </div>
 
-                <!-- ────────────────────────────────────────── BACK SIDE (V3E) ────────────────────────────────────────── -->
-                <div id="modalBackSide" class="flip-card-back rounded-2xl glass-card flex flex-col">
-                    <!-- Modal Header -->
-                    <div class="flex items-center justify-between p-5 border-b dark:border-white/5 border-gray-200 flex-shrink-0">
-                        <div class="flex items-center gap-3">
-                            <div id="modalAvatarBack" class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-black/20"></div>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <span id="modalNameBack" class="font-bold text-base md:text-lg"></span>
-                                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-gold/15 text-gold font-medium border border-gold/20">Telesales</span>
-                                    <span class="relative flex h-2 w-2">
-                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                    </span>
-                                </div>
-                                <div class="text-[10px] dark:text-gray-500 text-gray-400 mt-0.5 flex items-center gap-1">
-                                    <i class="fas fa-clock text-[9px]"></i>
-                                    <span id="modalClockBack">--:--:--</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Header Buttons -->
-                        <div class="flex items-center gap-2">
-                            <button onclick="toggleFlip()" class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-gold/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all group" title="Lật xoay 3D (Xem biểu đồ Donut)">
-                                <i class="fas fa-arrows-rotate text-sm text-gold group-hover:rotate-180 transition-transform duration-500"></i>
-                            </button>
-                            <button onclick="toggleConfigBack()" class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-gold/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all" title="Cấu hình Target">
-                                <i class="fas fa-gear text-sm text-gold"></i>
-                            </button>
-                            <button onclick="closeModal()" class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-red-500/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all text-gray-400 hover:text-red-400">
-                                <i class="fas fa-times text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Modal Body Wrapper (Contains scrollable area + config panel) -->
-                    <div class="relative flex flex-1 overflow-hidden">
-                        <!-- Scrollable Main Body -->
-                        <div class="flex-1 overflow-y-auto p-5 space-y-5" id="backBody">
-                            
-                            <!-- Timeline (V3C4 Horizontal Line + 6 Dots) -->
-                            <div id="backTimeline" class="w-full"></div>
-
-                            <!-- Radar Chart -->
-                            <div class="flex flex-col items-center">
-                                <svg id="radarChartMain" viewBox="0 0 580 400" class="w-[240px] h-[165px] select-none"></svg>
-                            </div>
-
-                            <!-- Mini Summary Cards (Design copied from Front face) -->
-                            <div class="grid grid-cols-5 gap-2" id="legendContainerBack">
-                                <!-- Dynamic -->
-                            </div>
-
-                            <!-- Divider -->
-                            <div class="w-full h-px dark:bg-white/5 bg-gray-200"></div>
-
-                            <!-- Podium Leaderboard (Radar version) -->
-                            <div class="pt-2">
-                                <div class="flex items-center gap-2 mb-4 border-b dark:border-white/5 border-gray-200 pb-2">
-                                    <i class="fas fa-trophy text-gold text-sm animate-bounce"></i>
-                                    <span class="text-sm font-bold">Bảng Xếp Hạng & Radar Thống Kê</span>
-                                    <span id="podiumMetricLabelBack" class="text-[11px] dark:text-gray-500 text-gray-400"></span>
-                                </div>
-                                <div id="podiumContainerBack" class="w-full flex flex-col items-center">
-                                    <!-- Dynamic -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Target Config Panel Back (Slides in from right) -->
-                        <div id="configPanelBack" class="absolute top-0 right-0 h-full w-[280px] glass-card border-l dark:border-white/10 border-gray-300 flex flex-col z-30 translate-x-full transition-transform duration-300">
-                            <!-- Config Header -->
-                            <div class="flex items-center justify-between px-4 py-3.5 border-b dark:border-white/5 border-gray-200 flex-shrink-0">
-                                <div>
-                                    <h3 class="text-sm font-bold text-white dark:text-white">Cấu hình Target</h3>
-                                    <p class="text-[10px] text-gold font-medium mt-0.5">6 chu kỳ thời gian</p>
-                                </div>
-                                <button onclick="toggleConfigBack()" class="w-7 h-7 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-red-500/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all">
-                                    <i class="fas fa-times text-gray-400 text-xs"></i>
-                                </button>
-                            </div>
-                            <!-- Config Body (Collapsible Sections) -->
-                            <div class="flex-1 overflow-y-auto p-3 config-body">
-                                <!-- Rendered dynamically -->
-                            </div>
-                            <!-- Config Footer -->
-                            <div class="p-3 border-t dark:border-white/5 border-gray-200 flex-shrink-0 bg-black/20">
-                                <button onclick="saveAllTargets()" class="w-full py-2 rounded-xl bg-gradient-to-r from-gold to-goldDark text-black text-sm font-bold hover:shadow-lg hover:shadow-gold/20 transition-all active:scale-95">
-                                    <i class="fas fa-save mr-1.5"></i>Lưu cấu hình
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+              <!-- Header Buttons -->
+              <div class="flex items-center gap-2">
+                <button
+                  onclick="toggleFlip()"
+                  class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-gold/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all group"
+                  title="Lật xoay 3D (Xem biểu đồ Radar)"
+                >
+                  <i
+                    class="fas fa-arrows-rotate text-sm text-gold group-hover:rotate-180 transition-transform duration-500"
+                  ></i>
+                </button>
+                <button
+                  onclick="toggleConfigFront()"
+                  class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-gold/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all"
+                  title="Cấu hình Target"
+                >
+                  <i class="fas fa-gear text-sm text-gold"></i>
+                </button>
+                <button
+                  onclick="closeModal()"
+                  class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-red-500/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all text-gray-400 hover:text-red-400"
+                >
+                  <i class="fas fa-times text-sm"></i>
+                </button>
+              </div>
             </div>
+
+            <!-- Modal Body Wrapper (Contains scrollable area + config panel) -->
+            <div class="relative flex flex-1 overflow-hidden">
+              <!-- Scrollable Main Body -->
+              <div class="flex-1 overflow-y-auto p-5 space-y-5" id="frontBody">
+                <!-- Timeline (V3C4 Horizontal Line + 6 Dots) -->
+                <div id="frontTimeline" class="w-full"></div>
+
+                <!-- Donut + Metric Pills -->
+                <div class="flex flex-col items-center py-2">
+                  <!-- SVG Donut -->
+                  <div class="relative w-[190px] h-[190px]">
+                    <svg id="donutSvg" width="190" height="190" viewBox="0 0 200 200">
+                      <!-- Background circle -->
+                      <circle
+                        cx="100"
+                        cy="100"
+                        r="85"
+                        fill="none"
+                        stroke-width="15"
+                        class="dark:stroke-white/[0.05] stroke-gray-200"
+                      ></circle>
+                      <!-- Progress circle -->
+                      <circle
+                        id="donutProgress"
+                        cx="100"
+                        cy="100"
+                        r="85"
+                        fill="none"
+                        stroke-width="15"
+                        stroke-linecap="round"
+                        transform="rotate(-90 100 100)"
+                        style="
+                          transition:
+                            stroke-dashoffset 0.8s ease,
+                            stroke 0.3s ease;
+                        "
+                      ></circle>
+                    </svg>
+                    <!-- Center text -->
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                      <span id="donutValue" class="text-3xl font-extrabold">--</span>
+                      <span id="donutLabel" class="text-[10px] dark:text-gray-500 text-gray-400 mt-0.5"></span>
+                      <span id="donutPercent" class="text-sm font-bold mt-0.5">--%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Mini Summary Cards -->
+                <div class="grid grid-cols-5 gap-2" id="miniCardsFront">
+                  <!-- Dynamic -->
+                </div>
+
+                <!-- Podium Leaderboard -->
+                <div class="pt-2">
+                  <div class="flex items-center gap-2 mb-4 border-b dark:border-white/5 border-gray-200 pb-2">
+                    <i class="fas fa-trophy text-gold text-sm animate-bounce"></i>
+                    <span class="text-sm font-bold">Bảng Xếp Hạng Đội Nhóm</span>
+                    <span id="podiumMetricLabelFront" class="text-[11px] dark:text-gray-500 text-gray-400"></span>
+                  </div>
+                  <div id="podiumContainerFront" class="w-full flex flex-col items-center">
+                    <!-- Dynamic -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Target Config Panel (Slides in from right) -->
+              <div
+                id="configPanelFront"
+                class="absolute top-0 right-0 h-full w-[280px] glass-card border-l dark:border-white/10 border-gray-300 flex flex-col z-30 translate-x-full transition-transform duration-300"
+              >
+                <!-- Config Header -->
+                <div
+                  class="flex items-center justify-between px-4 py-3.5 border-b dark:border-white/5 border-gray-200 flex-shrink-0"
+                >
+                  <div>
+                    <h3 class="text-sm font-bold text-white dark:text-white">Cấu hình Target</h3>
+                    <p class="text-[10px] text-gold font-medium mt-0.5">6 chu kỳ thời gian</p>
+                  </div>
+                  <button
+                    onclick="toggleConfigFront()"
+                    class="w-7 h-7 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-red-500/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all"
+                  >
+                    <i class="fas fa-times text-gray-400 text-xs"></i>
+                  </button>
+                </div>
+                <!-- Config Body (Collapsible Sections) -->
+                <div class="flex-1 overflow-y-auto p-3 config-body">
+                  <!-- Rendered dynamically -->
+                </div>
+                <!-- Config Footer -->
+                <div class="p-3 border-t dark:border-white/5 border-gray-200 flex-shrink-0 bg-black/20">
+                  <button
+                    onclick="saveAllTargets()"
+                    class="w-full py-2 rounded-xl bg-gradient-to-r from-gold to-goldDark text-black text-sm font-bold hover:shadow-lg hover:shadow-gold/20 transition-all active:scale-95"
+                  >
+                    <i class="fas fa-save mr-1.5"></i>Lưu cấu hình
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ────────────────────────────────────────── BACK SIDE (V3E) ────────────────────────────────────────── -->
+          <div id="modalBackSide" class="flip-card-back rounded-2xl glass-card flex flex-col">
+            <!-- Modal Header -->
+            <div
+              class="flex items-center justify-between p-5 border-b dark:border-white/5 border-gray-200 flex-shrink-0"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  id="modalAvatarBack"
+                  class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-black/20"
+                ></div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span id="modalNameBack" class="font-bold text-base md:text-lg"></span>
+                    <span
+                      class="text-[10px] px-2 py-0.5 rounded-full bg-gold/15 text-gold font-medium border border-gold/20"
+                      >Telesales</span
+                    >
+                    <span class="relative flex h-2 w-2">
+                      <span
+                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
+                      ></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                  </div>
+                  <div class="text-[10px] dark:text-gray-500 text-gray-400 mt-0.5 flex items-center gap-1">
+                    <i class="fas fa-clock text-[9px]"></i>
+                    <span id="modalClockBack">--:--:--</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Header Buttons -->
+              <div class="flex items-center gap-2">
+                <button
+                  onclick="toggleFlip()"
+                  class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-gold/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all group"
+                  title="Lật xoay 3D (Xem biểu đồ Donut)"
+                >
+                  <i
+                    class="fas fa-arrows-rotate text-sm text-gold group-hover:rotate-180 transition-transform duration-500"
+                  ></i>
+                </button>
+                <button
+                  onclick="toggleConfigBack()"
+                  class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-gold/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all"
+                  title="Cấu hình Target"
+                >
+                  <i class="fas fa-gear text-sm text-gold"></i>
+                </button>
+                <button
+                  onclick="closeModal()"
+                  class="w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-red-500/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all text-gray-400 hover:text-red-400"
+                >
+                  <i class="fas fa-times text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Modal Body Wrapper (Contains scrollable area + config panel) -->
+            <div class="relative flex flex-1 overflow-hidden">
+              <!-- Scrollable Main Body -->
+              <div class="flex-1 overflow-y-auto p-5 space-y-5" id="backBody">
+                <!-- Timeline (V3C4 Horizontal Line + 6 Dots) -->
+                <div id="backTimeline" class="w-full"></div>
+
+                <!-- Radar Chart -->
+                <div class="flex flex-col items-center">
+                  <svg id="radarChartMain" viewBox="0 0 580 400" class="w-[240px] h-[165px] select-none"></svg>
+                </div>
+
+                <!-- Mini Summary Cards (Design copied from Front face) -->
+                <div class="grid grid-cols-5 gap-2" id="legendContainerBack">
+                  <!-- Dynamic -->
+                </div>
+
+                <!-- Divider -->
+                <div class="w-full h-px dark:bg-white/5 bg-gray-200"></div>
+
+                <!-- Podium Leaderboard (Radar version) -->
+                <div class="pt-2">
+                  <div class="flex items-center gap-2 mb-4 border-b dark:border-white/5 border-gray-200 pb-2">
+                    <i class="fas fa-trophy text-gold text-sm animate-bounce"></i>
+                    <span class="text-sm font-bold">Bảng Xếp Hạng & Radar Thống Kê</span>
+                    <span id="podiumMetricLabelBack" class="text-[11px] dark:text-gray-500 text-gray-400"></span>
+                  </div>
+                  <div id="podiumContainerBack" class="w-full flex flex-col items-center">
+                    <!-- Dynamic -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Target Config Panel Back (Slides in from right) -->
+              <div
+                id="configPanelBack"
+                class="absolute top-0 right-0 h-full w-[280px] glass-card border-l dark:border-white/10 border-gray-300 flex flex-col z-30 translate-x-full transition-transform duration-300"
+              >
+                <!-- Config Header -->
+                <div
+                  class="flex items-center justify-between px-4 py-3.5 border-b dark:border-white/5 border-gray-200 flex-shrink-0"
+                >
+                  <div>
+                    <h3 class="text-sm font-bold text-white dark:text-white">Cấu hình Target</h3>
+                    <p class="text-[10px] text-gold font-medium mt-0.5">6 chu kỳ thời gian</p>
+                  </div>
+                  <button
+                    onclick="toggleConfigBack()"
+                    class="w-7 h-7 rounded-lg dark:bg-white/5 bg-gray-100 hover:bg-red-500/15 border dark:border-white/10 border-gray-300 flex items-center justify-center transition-all"
+                  >
+                    <i class="fas fa-times text-gray-400 text-xs"></i>
+                  </button>
+                </div>
+                <!-- Config Body (Collapsible Sections) -->
+                <div class="flex-1 overflow-y-auto p-3 config-body">
+                  <!-- Rendered dynamically -->
+                </div>
+                <!-- Config Footer -->
+                <div class="p-3 border-t dark:border-white/5 border-gray-200 flex-shrink-0 bg-black/20">
+                  <button
+                    onclick="saveAllTargets()"
+                    class="w-full py-2 rounded-xl bg-gradient-to-r from-gold to-goldDark text-black text-sm font-bold hover:shadow-lg hover:shadow-gold/20 transition-all active:scale-95"
+                  >
+                    <i class="fas fa-save mr-1.5"></i>Lưu cấu hình
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════════ TOAST NOTIFICATION ═══════════════════════════════════════════ -->
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] hidden">
-        <div class="px-4 py-2.5 rounded-xl glass-card border border-gold/30 shadow-2xl flex items-center gap-2 bg-black/80">
-            <i class="fas fa-check-circle text-green-400 text-sm"></i>
-            <span class="text-sm font-semibold text-white" id="toastMessage"></span>
-        </div>
+      <div
+        class="px-4 py-2.5 rounded-xl glass-card border border-gold/30 shadow-2xl flex items-center gap-2 bg-black/80"
+      >
+        <i class="fas fa-check-circle text-green-400 text-sm"></i>
+        <span class="text-sm font-semibold text-white" id="toastMessage"></span>
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════════ JAVASCRIPT CODE ═══════════════════════════════════════════ -->
     <script>
-    // ===================== DATA & CONFIG =====================
-    const members = [
-        { id: 'TN', name: 'Thanh Ngân', color: '#EC4899', gradient: 'linear-gradient(135deg, #EC4899, #DB2777)', teamRole: 'Telesales Leader' },
-        { id: 'HM', name: 'Hoài My', color: '#A855F7', gradient: 'linear-gradient(135deg, #A855F7, #9333EA)', teamRole: 'Senior Consultant' },
-        { id: 'VT', name: 'Vũ Thảo', color: '#06B6D4', gradient: 'linear-gradient(135deg, #06B6D4, #0891B2)', teamRole: 'Senior Consultant' },
-        { id: 'KL', name: 'Kim Loan', color: '#10B981', gradient: 'linear-gradient(135deg, #10B981, #059669)', teamRole: 'Consultant Specialist' },
-        { id: 'TH', name: 'Thu Hà', color: '#F97316', gradient: 'linear-gradient(135deg, #F97316, #EA580C)', teamRole: 'Telesales Assistant' },
-        { id: 'DD', name: 'Đăng Đô', color: '#D4A84B', gradient: 'linear-gradient(135deg, #D4A84B, #B8902F)', teamRole: 'Telesales Manager' },
-    ];
+      // ===================== DATA & CONFIG =====================
+      const members = [
+        {
+          id: 'TN',
+          name: 'Thanh Ngân',
+          color: '#EC4899',
+          gradient: 'linear-gradient(135deg, #EC4899, #DB2777)',
+          teamRole: 'Telesales Leader',
+        },
+        {
+          id: 'HM',
+          name: 'Hoài My',
+          color: '#A855F7',
+          gradient: 'linear-gradient(135deg, #A855F7, #9333EA)',
+          teamRole: 'Senior Consultant',
+        },
+        {
+          id: 'VT',
+          name: 'Vũ Thảo',
+          color: '#06B6D4',
+          gradient: 'linear-gradient(135deg, #06B6D4, #0891B2)',
+          teamRole: 'Senior Consultant',
+        },
+        {
+          id: 'KL',
+          name: 'Kim Loan',
+          color: '#10B981',
+          gradient: 'linear-gradient(135deg, #10B981, #059669)',
+          teamRole: 'Consultant Specialist',
+        },
+        {
+          id: 'TH',
+          name: 'Thu Hà',
+          color: '#F97316',
+          gradient: 'linear-gradient(135deg, #F97316, #EA580C)',
+          teamRole: 'Telesales Assistant',
+        },
+        {
+          id: 'DD',
+          name: 'Đăng Đô',
+          color: '#D4A84B',
+          gradient: 'linear-gradient(135deg, #D4A84B, #B8902F)',
+          teamRole: 'Telesales Manager',
+        },
+      ];
 
-    const metricConfigs = [
+      const metricConfigs = [
         { key: 'calls', label: 'Calls', icon: 'fa-phone', color: '#3B82F6' },
         { key: 'pickups', label: 'Pickups', icon: 'fa-phone-volume', color: '#8B5CF6' },
         { key: 'happy', label: 'Happy Call', icon: 'fa-face-smile', color: '#F59E0B' },
         { key: 'booked', label: 'Booked', icon: 'fa-calendar-check', color: '#F97316' },
         { key: 'done', label: 'Done Deal', icon: 'fa-circle-check', color: '#10B981' },
-    ];
+      ];
 
-    const periods = [
+      const periods = [
         { id: 'last_month', label: 'Tháng trước' },
         { id: 'last_week', label: 'Tuần trước' },
         { id: 'yesterday', label: 'Hôm qua' },
         { id: 'today', label: 'Hôm nay' },
         { id: 'this_week', label: 'Tuần này' },
-        { id: 'this_month', label: 'Tháng này' }
-    ];
+        { id: 'this_month', label: 'Tháng này' },
+      ];
 
-    // Editable KPI targets per period
-    const targets = {
+      // Editable KPI targets per period
+      const targets = {
         today: { calls: 80, pickups: 50, happy: 20, booked: 15, done: 10 },
         this_week: { calls: 400, pickups: 250, happy: 100, booked: 75, done: 50 },
         this_month: { calls: 1600, pickups: 1000, happy: 400, booked: 300, done: 200 },
         yesterday: { calls: 80, pickups: 50, happy: 20, booked: 15, done: 10 },
         last_week: { calls: 400, pickups: 250, happy: 100, booked: 75, done: 50 },
         last_month: { calls: 1600, pickups: 1000, happy: 400, booked: 300, done: 200 },
-    };
+      };
 
-    // Base performance numbers for "today"
-    const baseDataToday = {
+      // Base performance numbers for "today"
+      const baseDataToday = {
         TN: { calls: 62, pickups: 41, happy: 17, booked: 12, done: 8 },
         DD: { calls: 55, pickups: 36, happy: 14, booked: 10, done: 7 },
         HM: { calls: 48, pickups: 30, happy: 12, booked: 8, done: 5 },
         VT: { calls: 43, pickups: 27, happy: 10, booked: 7, done: 4 },
         KL: { calls: 38, pickups: 22, happy: 8, booked: 5, done: 3 },
         TH: { calls: 33, pickups: 18, happy: 6, booked: 4, done: 2 },
-    };
+      };
 
-    // Base performance numbers for "yesterday"
-    const baseDataYesterday = {
+      // Base performance numbers for "yesterday"
+      const baseDataYesterday = {
         TN: { calls: 40, pickups: 25, happy: 10, booked: 6, done: 4 },
         DD: { calls: 35, pickups: 22, happy: 8, booked: 5, done: 3 },
         HM: { calls: 30, pickups: 18, happy: 7, booked: 4, done: 2 },
         VT: { calls: 27, pickups: 15, happy: 6, booked: 3, done: 2 },
         KL: { calls: 23, pickups: 12, happy: 5, booked: 3, done: 1 },
         TH: { calls: 20, pickups: 10, happy: 4, booked: 2, done: 1 },
-    };
+      };
 
-    const multipliers = {
+      const multipliers = {
         today: 1,
         this_week: 5,
         this_month: 20,
         yesterday: 0.8,
         last_week: 4,
-        last_month: 18
-    };
+        last_month: 18,
+      };
 
-    function getMemberData(memberId, period) {
+      function getMemberData(memberId, period) {
         const base = baseDataToday[memberId];
         const m = multipliers[period];
         return {
-            calls: Math.round(base.calls * m),
-            pickups: Math.round(base.pickups * m),
-            happy: Math.round(base.happy * m),
-            booked: Math.round(base.booked * m),
-            done: Math.round(base.done * m),
+          calls: Math.round(base.calls * m),
+          pickups: Math.round(base.pickups * m),
+          happy: Math.round(base.happy * m),
+          booked: Math.round(base.booked * m),
+          done: Math.round(base.done * m),
         };
-    }
+      }
 
-    // ===================== APP STATE =====================
-    let currentMemberId = 'TN';
-    let currentPeriodId = 'today';
-    let currentMetricKey = 'calls';
-    let isFlipped = false;
-    
-    let isConfigOpenFront = false;
-    let isConfigOpenBack = false;
+      // ===================== APP STATE =====================
+      let currentMemberId = 'TN';
+      let currentPeriodId = 'today';
+      let currentMetricKey = 'calls';
+      let isFlipped = false;
 
-    let expandedSections = {
+      let isConfigOpenFront = false;
+      let isConfigOpenBack = false;
+
+      let expandedSections = {
         today: true,
         this_week: false,
         this_month: false,
         yesterday: false,
         last_week: false,
-        last_month: false
-    };
+        last_month: false,
+      };
 
-    // Radar math constants
-    const CENTER_X = 290;
-    const CENTER_Y = 200;
-    const MAX_RADIUS = 120;
-    const ANGLES = [-90, -18, 54, 126, 198].map(a => a * Math.PI / 180);
+      // Radar math constants
+      const CENTER_X = 290;
+      const CENTER_Y = 200;
+      const MAX_RADIUS = 120;
+      const ANGLES = [-90, -18, 54, 126, 198].map((a) => (a * Math.PI) / 180);
 
-    function polarToXY(cx, cy, radius, angleRad) {
+      function polarToXY(cx, cy, radius, angleRad) {
         return {
-            x: cx + radius * Math.cos(angleRad),
-            y: cy + radius * Math.sin(angleRad)
+          x: cx + radius * Math.cos(angleRad),
+          y: cy + radius * Math.sin(angleRad),
         };
-    }
+      }
 
-    function getPentagonPoints(cx, cy, radius) {
-        return ANGLES.map(a => polarToXY(cx, cy, radius, a));
-    }
+      function getPentagonPoints(cx, cy, radius) {
+        return ANGLES.map((a) => polarToXY(cx, cy, radius, a));
+      }
 
-    function pointsToString(points) {
-        return points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-    }
+      function pointsToString(points) {
+        return points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      }
 
-    // ===================== DOM EVENT HANDLERS =====================
-    window.addEventListener('DOMContentLoaded', () => {
+      // ===================== DOM EVENT HANDLERS =====================
+      window.addEventListener('DOMContentLoaded', () => {
         // Load initial theme
         const savedTheme = localStorage.getItem('theme') || 'dark';
         const html = document.documentElement;
         if (savedTheme === 'dark') {
-            html.className = 'dark dark-theme';
+          html.className = 'dark dark-theme';
         } else {
-            html.className = 'light-theme';
+          html.className = 'light-theme';
         }
-        
+
         renderHeaderBubbles();
         renderTeamMemberGrid();
         updateClock();
         setInterval(updateClock, 1000);
-    });
+      });
 
-    // Theme Switch
-    function toggleTheme() {
+      // Theme Switch
+      function toggleTheme() {
         const html = document.documentElement;
         if (html.classList.contains('dark')) {
-            html.className = 'light-theme';
-            localStorage.setItem('theme', 'light');
+          html.className = 'light-theme';
+          localStorage.setItem('theme', 'light');
         } else {
-            html.className = 'dark dark-theme';
-            localStorage.setItem('theme', 'dark');
+          html.className = 'dark dark-theme';
+          localStorage.setItem('theme', 'dark');
         }
-        
+
         // Re-render radar charts to update axes stroke colors
         if (document.getElementById('modalBackdrop').classList.contains('flex')) {
-            renderRadarChart();
-            renderPodiumBack();
+          renderRadarChart();
+          renderPodiumBack();
         }
-    }
+      }
 
-    // Live Clock Update
-    function updateClock() {
+      // Live Clock Update
+      function updateClock() {
         const now = new Date();
         const h = String(now.getHours()).padStart(2, '0');
         const m = String(now.getMinutes()).padStart(2, '0');
         const s = String(now.getSeconds()).padStart(2, '0');
         const str = `${h}:${m}:${s}`;
-        
+
         const liveClock = document.getElementById('liveClock');
         if (liveClock) liveClock.textContent = str;
-        
+
         const mClockFront = document.getElementById('modalClockFront');
         if (mClockFront) mClockFront.textContent = str;
-        
+
         const mClockBack = document.getElementById('modalClockBack');
         if (mClockBack) mClockBack.textContent = str;
-    }
+      }
 
-    // Open/Close Modal
-    function openModal(memberId) {
+      // Open/Close Modal
+      function openModal(memberId) {
         currentMemberId = memberId || 'TN';
-        
+
         // Close both configs
         isConfigOpenFront = false;
         isConfigOpenBack = false;
@@ -697,124 +960,124 @@
         document.getElementById('configPanelFront').classList.remove('translate-x-0');
         document.getElementById('configPanelBack').classList.add('translate-x-full');
         document.getElementById('configPanelBack').classList.remove('translate-x-0');
-        
+
         // Reset flip position to front
         isFlipped = false;
         document.getElementById('modalCardInner').classList.remove('flipped');
-        
+
         // Show modal backdrop
         const backdrop = document.getElementById('modalBackdrop');
         backdrop.classList.remove('hidden');
         backdrop.classList.add('flex', 'backdrop-enter');
-        
+
         // Expand the current period section in config panel
-        periods.forEach(p => {
-            expandedSections[p.id] = (p.id === currentPeriodId);
+        periods.forEach((p) => {
+          expandedSections[p.id] = p.id === currentPeriodId;
         });
 
         renderConfigPanel('configPanelFront');
         renderConfigPanel('configPanelBack');
-        
-        renderAll();
-    }
 
-    function closeModal() {
+        renderAll();
+      }
+
+      function closeModal() {
         const backdrop = document.getElementById('modalBackdrop');
         backdrop.classList.remove('backdrop-enter');
         backdrop.classList.add('hidden');
         backdrop.classList.remove('flex');
-    }
+      }
 
-    function handleBackdropClick(e) {
+      function handleBackdropClick(e) {
         if (e.target === document.getElementById('modalBackdrop')) {
-            closeModal();
+          closeModal();
         }
-    }
+      }
 
-    // Card Flip
-    function toggleFlip() {
+      // Card Flip
+      function toggleFlip() {
         isFlipped = !isFlipped;
         const inner = document.getElementById('modalCardInner');
         if (isFlipped) {
-            inner.classList.add('flipped');
+          inner.classList.add('flipped');
         } else {
-            inner.classList.remove('flipped');
+          inner.classList.remove('flipped');
         }
-    }
+      }
 
-    // Active state setters (Synced on both front/back)
-    function selectPeriod(periodId) {
+      // Active state setters (Synced on both front/back)
+      function selectPeriod(periodId) {
         currentPeriodId = periodId;
-        
+
         // Re-expand active section in target configs
-        periods.forEach(p => {
-            expandedSections[p.id] = (p.id === currentPeriodId);
+        periods.forEach((p) => {
+          expandedSections[p.id] = p.id === currentPeriodId;
         });
         renderConfigPanel('configPanelFront');
         renderConfigPanel('configPanelBack');
-        
-        renderAll();
-    }
 
-    function selectMetric(metricKey) {
+        renderAll();
+      }
+
+      function selectMetric(metricKey) {
         currentMetricKey = metricKey;
         renderAll();
-    }
+      }
 
-    // Target Config slides
-    function toggleConfigFront() {
+      // Target Config slides
+      function toggleConfigFront() {
         isConfigOpenFront = !isConfigOpenFront;
         const panel = document.getElementById('configPanelFront');
         if (isConfigOpenFront) {
-            panel.classList.remove('translate-x-full');
-            panel.classList.add('translate-x-0');
-            renderConfigPanel('configPanelFront');
+          panel.classList.remove('translate-x-full');
+          panel.classList.add('translate-x-0');
+          renderConfigPanel('configPanelFront');
         } else {
-            panel.classList.remove('translate-x-0');
-            panel.classList.add('translate-x-full');
+          panel.classList.remove('translate-x-0');
+          panel.classList.add('translate-x-full');
         }
-    }
+      }
 
-    function toggleConfigBack() {
+      function toggleConfigBack() {
         isConfigOpenBack = !isConfigOpenBack;
         const panel = document.getElementById('configPanelBack');
         if (isConfigOpenBack) {
-            panel.classList.remove('translate-x-full');
-            panel.classList.add('translate-x-0');
-            renderConfigPanel('configPanelBack');
+          panel.classList.remove('translate-x-full');
+          panel.classList.add('translate-x-0');
+          renderConfigPanel('configPanelBack');
         } else {
-            panel.classList.remove('translate-x-0');
-            panel.classList.add('translate-x-full');
+          panel.classList.remove('translate-x-0');
+          panel.classList.add('translate-x-full');
         }
-    }
+      }
 
-    function toggleConfigSection(period) {
+      function toggleConfigSection(period) {
         expandedSections[period] = !expandedSections[period];
         renderConfigPanel('configPanelFront');
         renderConfigPanel('configPanelBack');
-    }
+      }
 
-    function updateTargetValue(input) {
+      function updateTargetValue(input) {
         const period = input.dataset.period;
         const metric = input.dataset.metric;
         const val = parseInt(input.value);
         if (!isNaN(val) && val > 0) {
-            targets[period][metric] = val;
+          targets[period][metric] = val;
         }
-    }
+      }
 
-    function saveAllTargets() {
+      function saveAllTargets() {
         // Collect target changes from whichever panel is open
         const openPanelId = isFlipped ? 'configPanelBack' : 'configPanelFront';
         const panelEl = document.getElementById(openPanelId);
-        
-        panelEl.querySelectorAll('input[type="number"]').forEach(input => {
-            const period = input.dataset.period;
-            const metric = input.dataset.metric;
-            const val = parseInt(input.value);
-            if (!isNaN(val) && val > 0) {
-                targets[period][metric] = val;
-            }
+
+        panelEl.querySelectorAll('input[type="number"]').forEach((input) => {
+          const period = input.dataset.period;
+          const metric = input.dataset.metric;
+          const val = parseInt(input.value);
+          if (!isNaN(val) && val > 0) {
+            targets[period][metric] = val;
+          }
         });
 
         // Close both panels
@@ -824,58 +1087,62 @@
         document.getElementById('configPanelFront').classList.remove('translate-x-0');
         document.getElementById('configPanelBack').classList.add('translate-x-full');
         document.getElementById('configPanelBack').classList.remove('translate-x-0');
-        
+
         // Synchronize and re-render target configs
         renderConfigPanel('configPanelFront');
         renderConfigPanel('configPanelBack');
-        
+
         renderAll();
         showToast('Lưu targets thành công!');
-    }
+      }
 
-    // ===================== UI RENDERING FUNCTIONS =====================
-    
-    // 1. Header Member Bubbles
-    function renderHeaderBubbles() {
+      // ===================== UI RENDERING FUNCTIONS =====================
+
+      // 1. Header Member Bubbles
+      function renderHeaderBubbles() {
         const container = document.getElementById('bubbleStack');
         if (!container) return;
-        
+
         container.innerHTML = '';
-        members.filter(m => m.id !== 'DD').forEach((m, idx) => {
+        members
+          .filter((m) => m.id !== 'DD')
+          .forEach((m, idx) => {
             const el = document.createElement('div');
-            el.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 relative hover:scale-115 hover:z-30 transition-transform';
+            el.className =
+              'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 relative hover:scale-115 hover:z-30 transition-transform';
             el.style.background = m.gradient;
             el.style.zIndex = 20 - idx;
             el.style.borderColor = isDark ? '#0A0A0A' : '#ffffff';
             el.textContent = m.id;
             el.title = m.name;
             el.onclick = (e) => {
-                e.stopPropagation();
-                openModal(m.id);
+              e.stopPropagation();
+              openModal(m.id);
             };
-            
+
             const dot = document.createElement('span');
             dot.className = 'absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border pulse-dot';
             dot.style.borderColor = isDark ? '#0A0A0A' : '#ffffff';
             el.appendChild(dot);
-            
-            container.appendChild(el);
-        });
-    }
 
-    // 2. Team Grid on Main Page
-    function renderTeamMemberGrid() {
+            container.appendChild(el);
+          });
+      }
+
+      // 2. Team Grid on Main Page
+      function renderTeamMemberGrid() {
         const container = document.getElementById('teamMemberGrid');
         if (!container) return;
-        
+
         container.innerHTML = '';
-        members.forEach(m => {
-            const data = getMemberData(m.id, 'today');
-            const card = document.createElement('div');
-            card.className = 'glass-card rounded-2xl p-5 hover:shadow-xl hover:shadow-gold/5 hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between';
-            card.onclick = () => openModal(m.id);
-            
-            card.innerHTML = `
+        members.forEach((m) => {
+          const data = getMemberData(m.id, 'today');
+          const card = document.createElement('div');
+          card.className =
+            'glass-card rounded-2xl p-5 hover:shadow-xl hover:shadow-gold/5 hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between';
+          card.onclick = () => openModal(m.id);
+
+          card.innerHTML = `
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
                         <div class="w-11 h-11 rounded-full flex items-center justify-center font-bold text-white shadow-md" style="background:${m.gradient}">
@@ -911,45 +1178,45 @@
                     </div>
                 </div>
             `;
-            container.appendChild(card);
+          container.appendChild(card);
         });
-    }
+      }
 
-    // 3. Main render updates (runs whenever states or target sync values change)
-    function renderAll() {
-        const member = members.find(m => m.id === currentMemberId);
+      // 3. Main render updates (runs whenever states or target sync values change)
+      function renderAll() {
+        const member = members.find((m) => m.id === currentMemberId);
         if (!member) return;
-        
+
         // Front header sync
         document.getElementById('modalAvatarFront').style.background = member.gradient;
         document.getElementById('modalAvatarFront').textContent = member.id;
         document.getElementById('modalNameFront').textContent = member.name;
-        
+
         // Back header sync
         document.getElementById('modalAvatarBack').style.background = member.gradient;
         document.getElementById('modalAvatarBack').textContent = member.id;
         document.getElementById('modalNameBack').textContent = member.name;
-        
+
         // Timeline sync
         renderTimeline('frontTimeline');
         renderTimeline('backTimeline');
-        
+
         // Front Side elements
         renderDonut();
         renderMiniCards();
         renderPodiumFront();
-        
+
         // Back Side elements
         renderRadarChart();
         renderLegend();
         renderPodiumBack();
-    }
+      }
 
-    // 4. Timeline renderer (V3C4 style)
-    function renderTimeline(containerId) {
+      // 4. Timeline renderer (V3C4 style)
+      function renderTimeline(containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
-        
+
         container.innerHTML = `
             <div class="flex items-center justify-between mb-1.5 px-2">
                 <span class="text-[9px] text-gray-500 font-bold uppercase tracking-wider">← Trước</span>
@@ -963,7 +1230,8 @@
                 
                 <!-- Timeline dot columns -->
                 <div class="relative flex items-center justify-between w-full px-[4%]">
-                    ${periods.map(p => {
+                    ${periods
+                      .map((p) => {
                         const isActive = p.id === currentPeriodId;
                         return `
                             <div class="flex flex-col items-center select-none" style="width:16%; cursor:pointer;" onclick="selectPeriod('${p.id}')">
@@ -973,74 +1241,73 @@
                                 <span class="text-[9px] mt-1.5 font-semibold text-center leading-tight transition-colors ${isActive ? 'text-gold font-bold' : 'text-gray-500'}" style="min-height:22px;">${p.label}</span>
                             </div>
                         `;
-                    }).join('')}
+                      })
+                      .join('')}
                 </div>
             </div>
         `;
-    }
+      }
 
-    // 5. Front Donut Progress (V3C1 style)
-    function renderDonut() {
+      // 5. Front Donut Progress (V3C1 style)
+      function renderDonut() {
         const data = getMemberData(currentMemberId, currentPeriodId);
-        const mc = metricConfigs.find(m => m.key === currentMetricKey);
+        const mc = metricConfigs.find((m) => m.key === currentMetricKey);
         const val = data[currentMetricKey];
         const target = targets[currentPeriodId][currentMetricKey];
         const pct = Math.min((val / target) * 100, 100);
-        
+
         const r = 85;
         const circumference = 2 * Math.PI * r;
         const offset = circumference - (pct / 100) * circumference;
-        
+
         const circle = document.getElementById('donutProgress');
         if (!circle) return;
-        
+
         circle.setAttribute('r', r);
         circle.setAttribute('stroke', mc.color);
         circle.style.strokeDasharray = circumference;
         circle.style.strokeDashoffset = offset;
         circle.style.setProperty('--circumference', circumference);
-        
+
         // Redraw animation trigger
         circle.classList.remove('donut-animate');
         void circle.offsetWidth;
         circle.classList.add('donut-animate');
-        
+
         document.getElementById('donutValue').textContent = val;
         document.getElementById('donutValue').style.color = mc.color;
         document.getElementById('donutLabel').textContent = `/ ${target} ${mc.label}`;
         document.getElementById('donutPercent').textContent = `${Math.round((val / target) * 100)}%`;
         document.getElementById('donutPercent').style.color = mc.color;
-    }
+      }
 
-
-
-    // 7. Front Mini Cards
-    function renderMiniCards() {
+      // 7. Front Mini Cards
+      function renderMiniCards() {
         const container = document.getElementById('miniCardsFront');
         if (!container) return;
-        
+
         container.innerHTML = '';
         const data = getMemberData(currentMemberId, currentPeriodId);
-        
-        metricConfigs.forEach(mc => {
-            const val = data[mc.key];
-            const target = targets[currentPeriodId][mc.key];
-            const pct = Math.min(Math.round((val / target) * 100), 100);
-            const isActive = currentMetricKey === mc.key;
-            
-            const card = document.createElement('div');
-            card.className = `rounded-xl p-2.5 text-center cursor-pointer transition-all duration-250 border ${
-                isActive
-                    ? 'dark:bg-white/[0.06] bg-white ring-1'
-                    : 'dark:bg-white/[0.02] bg-gray-50/50 hover:bg-white/[0.05] dark:hover:bg-white/[0.05] hover:bg-white border-transparent'
-            }`;
-            
-            if (isActive) {
-                card.style.borderColor = mc.color;
-                card.style.boxShadow = `0 0 8px ${mc.color}25`;
-            }
-            
-            card.innerHTML = `
+
+        metricConfigs.forEach((mc) => {
+          const val = data[mc.key];
+          const target = targets[currentPeriodId][mc.key];
+          const pct = Math.min(Math.round((val / target) * 100), 100);
+          const isActive = currentMetricKey === mc.key;
+
+          const card = document.createElement('div');
+          card.className = `rounded-xl p-2.5 text-center cursor-pointer transition-all duration-250 border ${
+            isActive
+              ? 'dark:bg-white/[0.06] bg-white ring-1'
+              : 'dark:bg-white/[0.02] bg-gray-50/50 hover:bg-white/[0.05] dark:hover:bg-white/[0.05] hover:bg-white border-transparent'
+          }`;
+
+          if (isActive) {
+            card.style.borderColor = mc.color;
+            card.style.boxShadow = `0 0 8px ${mc.color}25`;
+          }
+
+          card.innerHTML = `
                 <div class="flex items-center justify-center gap-1 text-[9px] font-bold tracking-tight mb-1 select-none" style="color: ${mc.color}">
                     <i class="fas ${mc.icon} text-[9px] shrink-0"></i>
                     <span class="truncate">${mc.label}</span>
@@ -1052,61 +1319,59 @@
                 </div>
                 <div class="text-[8px] font-bold mt-1" style="color:${mc.color}">${pct}%</div>
             `;
-            
-            card.onclick = () => selectMetric(mc.key);
-            container.appendChild(card);
-        });
-    }
 
-    // 8. Front Podium Leaderboard (V3C1 style)
-    function renderPodiumFront() {
+          card.onclick = () => selectMetric(mc.key);
+          container.appendChild(card);
+        });
+      }
+
+      // 8. Front Podium Leaderboard (V3C1 style)
+      function renderPodiumFront() {
         const container = document.getElementById('podiumContainerFront');
         if (!container) return;
         container.innerHTML = '';
-        
-        const mc = metricConfigs.find(m => m.key === currentMetricKey);
+
+        const mc = metricConfigs.find((m) => m.key === currentMetricKey);
         document.getElementById('podiumMetricLabelFront').textContent = `— ${mc.label}`;
-        
-        const rankings = members.map(m => ({
+
+        const rankings = members
+          .map((m) => ({
             ...m,
-            value: getMemberData(m.id, currentPeriodId)[currentMetricKey]
-        })).sort((a, b) => b.value - a.value);
-        
+            value: getMemberData(m.id, currentPeriodId)[currentMetricKey],
+          }))
+          .sort((a, b) => b.value - a.value);
+
         const top3 = rankings.slice(0, 3);
         const podiumOrder = [top3[1], top3[0], top3[2]]; // order left, center, right
         const maxHeights = [80, 110, 60];
         const rankLabels = ['🥈', '🥇', '🥉'];
         const barBgs = [
-            'linear-gradient(to top, rgba(156,163,175,0.12), rgba(156,163,175,0.03))',
-            'linear-gradient(to top, rgba(212,168,75,0.18), rgba(212,168,75,0.03))',
-            'linear-gradient(to top, rgba(251,146,60,0.12), rgba(251,146,60,0.03))',
+          'linear-gradient(to top, rgba(156,163,175,0.12), rgba(156,163,175,0.03))',
+          'linear-gradient(to top, rgba(212,168,75,0.18), rgba(212,168,75,0.03))',
+          'linear-gradient(to top, rgba(251,146,60,0.12), rgba(251,146,60,0.03))',
         ];
-        const borderColors = [
-            'rgba(156,163,175,0.25)',
-            'rgba(212,168,75,0.35)',
-            'rgba(251,146,60,0.25)'
-        ];
-        
+        const borderColors = ['rgba(156,163,175,0.25)', 'rgba(212,168,75,0.35)', 'rgba(251,146,60,0.25)'];
+
         const rowDiv = document.createElement('div');
         rowDiv.className = 'flex justify-center items-end gap-3 sm:gap-4 w-full pt-9';
         rowDiv.style.minHeight = '210px';
-        
+
         podiumOrder.forEach((member, idx) => {
-            if (!member) return;
-            const target = targets[currentPeriodId][currentMetricKey];
-            const pct = Math.round((member.value / target) * 100);
-            const isSelected = member.id === currentMemberId;
-            const rank = idx === 0 ? 2 : (idx === 1 ? 1 : 3);
-            
-            const col = document.createElement('div');
-            col.className = `flex flex-col items-center relative cursor-pointer hover:scale-105 transition-all duration-300 ${isSelected ? 'scale-105 z-10' : 'opacity-85 hover:opacity-100'}`;
-            col.style.width = '90px';
-            col.onclick = () => {
-                currentMemberId = member.id;
-                renderDashboard();
-            };
-            
-            col.innerHTML = `
+          if (!member) return;
+          const target = targets[currentPeriodId][currentMetricKey];
+          const pct = Math.round((member.value / target) * 100);
+          const isSelected = member.id === currentMemberId;
+          const rank = idx === 0 ? 2 : idx === 1 ? 1 : 3;
+
+          const col = document.createElement('div');
+          col.className = `flex flex-col items-center relative cursor-pointer hover:scale-105 transition-all duration-300 ${isSelected ? 'scale-105 z-10' : 'opacity-85 hover:opacity-100'}`;
+          col.style.width = '90px';
+          col.onclick = () => {
+            currentMemberId = member.id;
+            renderDashboard();
+          };
+
+          col.innerHTML = `
                 <div class="flex flex-col items-center mb-2.5 text-center w-full relative z-10">
                     <div class="text-sm mb-0.5">${rankLabels[idx]}</div>
                     <div class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white mb-1.5 border-2 ${isSelected ? 'border-gold shadow-lg shadow-gold/20 scale-110' : 'dark:border-white/10 border-gray-300'}" style="background:${member.gradient}">
@@ -1120,50 +1385,50 @@
                     <span class="text-sm font-black opacity-20">${rank}</span>
                 </div>
             `;
-            rowDiv.appendChild(col);
+          rowDiv.appendChild(col);
         });
         container.appendChild(rowDiv);
-        
+
         if (rankings.length > 3) {
-            const remaining = rankings.slice(3);
-            const listWrap = document.createElement('div');
-            listWrap.className = 'w-full mt-4 border-t dark:border-white/5 border-gray-200 pt-3 space-y-2';
-            
-            remaining.forEach((m, i) => {
-                const target = targets[currentPeriodId][currentMetricKey];
-                const pct = Math.round((m.value / target) * 100);
-                const isSelected = m.id === currentMemberId;
-                
-                const row = document.createElement('div');
-                row.className = `flex items-center gap-3 py-1.5 px-2.5 rounded-xl border ${isSelected ? 'dark:bg-gold/10 bg-gold/5 border-gold/25' : 'dark:bg-white/[0.01] bg-gray-50/50 border-transparent'} transition-all`;
-                row.innerHTML = `
+          const remaining = rankings.slice(3);
+          const listWrap = document.createElement('div');
+          listWrap.className = 'w-full mt-4 border-t dark:border-white/5 border-gray-200 pt-3 space-y-2';
+
+          remaining.forEach((m, i) => {
+            const target = targets[currentPeriodId][currentMetricKey];
+            const pct = Math.round((m.value / target) * 100);
+            const isSelected = m.id === currentMemberId;
+
+            const row = document.createElement('div');
+            row.className = `flex items-center gap-3 py-1.5 px-2.5 rounded-xl border ${isSelected ? 'dark:bg-gold/10 bg-gold/5 border-gold/25' : 'dark:bg-white/[0.01] bg-gray-50/50 border-transparent'} transition-all`;
+            row.innerHTML = `
                     <span class="text-[9px] font-bold dark:text-gray-500 text-gray-400 w-5 text-center">#${i + 4}</span>
                     <div class="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style="background:${m.gradient}">${m.id}</div>
                     <span class="text-xs font-semibold flex-1 dark:text-gray-300 text-gray-700">${m.name}</span>
                     <span class="text-xs font-extrabold" style="color:${mc.color}">${m.value}</span>
                     <span class="text-[9px] dark:text-gray-500 text-gray-400 w-10 text-right">${pct}%</span>
                 `;
-                listWrap.appendChild(row);
-            });
-            container.appendChild(listWrap);
+            listWrap.appendChild(row);
+          });
+          container.appendChild(listWrap);
         }
-    }
+      }
 
-    // 9. Back Radar Chart (V3E style)
-    function renderRadarChart() {
+      // 9. Back Radar Chart (V3E style)
+      function renderRadarChart() {
         const svg = document.getElementById('radarChartMain');
         if (!svg) return;
-        
-        const member = members.find(m => m.id === currentMemberId);
+
+        const member = members.find((m) => m.id === currentMemberId);
         const memberDataObj = getMemberData(currentMemberId, currentPeriodId);
-        const activeAxisIdx = metricConfigs.findIndex(mc => mc.key === currentMetricKey);
-        
+        const activeAxisIdx = metricConfigs.findIndex((mc) => mc.key === currentMetricKey);
+
         const isDark = document.documentElement.classList.contains('dark');
         const gridColor = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)';
         const gridOuterColor = isDark ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.35)';
-        
+
         let html = '';
-        
+
         // Define SVG filters
         html += `
           <defs>
@@ -1173,97 +1438,102 @@
             </filter>
           </defs>
         `;
-        
+
         // Concetrick pentagon level rings
-        [0.25, 0.5, 0.75, 1.0].forEach(level => {
-            const pts = getPentagonPoints(CENTER_X, CENTER_Y, MAX_RADIUS * level);
-            const isOuter = level === 1.0;
-            html += `<polygon points="${pointsToString(pts)}" fill="none" stroke="${isOuter ? gridOuterColor : gridColor}" stroke-width="${isOuter ? 1.5 : 0.75}" stroke-dasharray="${isOuter ? 'none' : '3,3'}"/>`;
+        [0.25, 0.5, 0.75, 1.0].forEach((level) => {
+          const pts = getPentagonPoints(CENTER_X, CENTER_Y, MAX_RADIUS * level);
+          const isOuter = level === 1.0;
+          html += `<polygon points="${pointsToString(pts)}" fill="none" stroke="${isOuter ? gridOuterColor : gridColor}" stroke-width="${isOuter ? 1.5 : 0.75}" stroke-dasharray="${isOuter ? 'none' : '3,3'}"/>`;
         });
-        
+
         // Axis Lines
         ANGLES.forEach((a, i) => {
-            const end = polarToXY(CENTER_X, CENTER_Y, MAX_RADIUS, a);
-            const isActive = activeAxisIdx === i;
-            html += `<line x1="${CENTER_X}" y1="${CENTER_Y}" x2="${end.x.toFixed(1)}" y2="${end.y.toFixed(1)}" stroke="${isActive ? metricConfigs[i].color : gridColor}" stroke-width="${isActive ? 1.5 : 0.5}" />`;
+          const end = polarToXY(CENTER_X, CENTER_Y, MAX_RADIUS, a);
+          const isActive = activeAxisIdx === i;
+          html += `<line x1="${CENTER_X}" y1="${CENTER_Y}" x2="${end.x.toFixed(1)}" y2="${end.y.toFixed(1)}" stroke="${isActive ? metricConfigs[i].color : gridColor}" stroke-width="${isActive ? 1.5 : 0.5}" />`;
         });
-        
+
         // Axis Labels (Font size reduced by 30% to 25px to fit fully)
         ANGLES.forEach((a, i) => {
-            const labelDist = MAX_RADIUS + 24;
-            const pos = polarToXY(CENTER_X, CENTER_Y, labelDist, a);
-            
-            // Fine-tune alignments for the 25px font-size
-            let anchor = 'middle';
-            let dy = '0px';
-            
-            if (i === 0) { // Top (Calls)
-                anchor = 'middle';
-                dy = '-10px';
-            } else if (i === 1) { // Right-Top (Pickups)
-                anchor = 'start';
-                dy = '5px';
-            } else if (i === 2) { // Right-Bottom (Happy Call)
-                anchor = 'start';
-                dy = '12px';
-            } else if (i === 3) { // Left-Bottom (Booked)
-                anchor = 'end';
-                dy = '12px';
-            } else if (i === 4) { // Left-Top (Done Deal)
-                anchor = 'end';
-                dy = '5px';
-            }
+          const labelDist = MAX_RADIUS + 24;
+          const pos = polarToXY(CENTER_X, CENTER_Y, labelDist, a);
 
-            const isActive = activeAxisIdx === i;
-            html += `<text x="${pos.x.toFixed(1)}" y="${pos.y.toFixed(1)}" text-anchor="${anchor}" dy="${dy}" style="fill: ${metricConfigs[i].color}; font-size: 25px; font-weight: ${isActive ? '950' : '650'}; font-family: 'Plus Jakarta Sans';">${metricConfigs[i].label}</text>`;
+          // Fine-tune alignments for the 25px font-size
+          let anchor = 'middle';
+          let dy = '0px';
+
+          if (i === 0) {
+            // Top (Calls)
+            anchor = 'middle';
+            dy = '-10px';
+          } else if (i === 1) {
+            // Right-Top (Pickups)
+            anchor = 'start';
+            dy = '5px';
+          } else if (i === 2) {
+            // Right-Bottom (Happy Call)
+            anchor = 'start';
+            dy = '12px';
+          } else if (i === 3) {
+            // Left-Bottom (Booked)
+            anchor = 'end';
+            dy = '12px';
+          } else if (i === 4) {
+            // Left-Top (Done Deal)
+            anchor = 'end';
+            dy = '5px';
+          }
+
+          const isActive = activeAxisIdx === i;
+          html += `<text x="${pos.x.toFixed(1)}" y="${pos.y.toFixed(1)}" text-anchor="${anchor}" dy="${dy}" style="fill: ${metricConfigs[i].color}; font-size: 25px; font-weight: ${isActive ? '950' : '650'}; font-family: 'Plus Jakarta Sans';">${metricConfigs[i].label}</text>`;
         });
-        
+
         // Performance Polygon
         const dataPoints = metricConfigs.map((mc, i) => {
-            const val = memberDataObj[mc.key];
-            const target = targets[currentPeriodId][mc.key];
-            const ratio = Math.min(val / target, 1);
-            return polarToXY(CENTER_X, CENTER_Y, MAX_RADIUS * ratio, ANGLES[i]);
+          const val = memberDataObj[mc.key];
+          const target = targets[currentPeriodId][mc.key];
+          const ratio = Math.min(val / target, 1);
+          return polarToXY(CENTER_X, CENTER_Y, MAX_RADIUS * ratio, ANGLES[i]);
         });
-        
+
         html += `<polygon class="radar-polygon" points="${pointsToString(dataPoints)}" fill="rgba(212,168,75,0.15)" stroke="#D4A84B" stroke-width="2.5" stroke-linejoin="round"/>`;
-        
+
         // Performance Dots
         dataPoints.forEach((pt, i) => {
-            const isActive = activeAxisIdx === i;
-            html += `<circle class="radar-dot" cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="${isActive ? 5.5 : 3.5}" fill="${metricConfigs[i].color}" stroke="${isActive ? '#fff' : 'none'}" stroke-width="${isActive ? 1.5 : 0}" ${isActive ? 'filter="url(#radarGlow)"' : ''}/>`;
+          const isActive = activeAxisIdx === i;
+          html += `<circle class="radar-dot" cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="${isActive ? 5.5 : 3.5}" fill="${metricConfigs[i].color}" stroke="${isActive ? '#fff' : 'none'}" stroke-width="${isActive ? 1.5 : 0}" ${isActive ? 'filter="url(#radarGlow)"' : ''}/>`;
         });
-        
-        svg.innerHTML = html;
-    }
 
-    // 10. Back Legend (Redesigned to match Front Face's Mini Cards style)
-    function renderLegend() {
+        svg.innerHTML = html;
+      }
+
+      // 10. Back Legend (Redesigned to match Front Face's Mini Cards style)
+      function renderLegend() {
         const container = document.getElementById('legendContainerBack');
         if (!container) return;
-        
+
         container.innerHTML = '';
         const data = getMemberData(currentMemberId, currentPeriodId);
-        
-        metricConfigs.forEach(mc => {
-            const val = data[mc.key];
-            const target = targets[currentPeriodId][mc.key];
-            const pct = Math.min(Math.round((val / target) * 100), 100);
-            const isActive = currentMetricKey === mc.key;
-            
-            const card = document.createElement('div');
-            card.className = `rounded-xl p-2.5 text-center cursor-pointer transition-all duration-250 border ${
-                isActive
-                    ? 'dark:bg-white/[0.06] bg-white ring-1'
-                    : 'dark:bg-white/[0.02] bg-gray-50/50 hover:bg-white/[0.05] dark:hover:bg-white/[0.05] hover:bg-gray-200 border-transparent'
-            }`;
-            
-            if (isActive) {
-                card.style.borderColor = mc.color;
-                card.style.boxShadow = `0 0 8px ${mc.color}25`;
-            }
-            
-            card.innerHTML = `
+
+        metricConfigs.forEach((mc) => {
+          const val = data[mc.key];
+          const target = targets[currentPeriodId][mc.key];
+          const pct = Math.min(Math.round((val / target) * 100), 100);
+          const isActive = currentMetricKey === mc.key;
+
+          const card = document.createElement('div');
+          card.className = `rounded-xl p-2.5 text-center cursor-pointer transition-all duration-250 border ${
+            isActive
+              ? 'dark:bg-white/[0.06] bg-white ring-1'
+              : 'dark:bg-white/[0.02] bg-gray-50/50 hover:bg-white/[0.05] dark:hover:bg-white/[0.05] hover:bg-gray-200 border-transparent'
+          }`;
+
+          if (isActive) {
+            card.style.borderColor = mc.color;
+            card.style.boxShadow = `0 0 8px ${mc.color}25`;
+          }
+
+          card.innerHTML = `
                 <div class="flex items-center justify-center gap-1 text-[9px] font-bold tracking-tight mb-1 select-none" style="color: ${mc.color}">
                     <i class="fas ${mc.icon} text-[9px] shrink-0"></i>
                     <span class="truncate">${mc.label}</span>
@@ -1275,76 +1545,74 @@
                 </div>
                 <div class="text-[8px] font-bold mt-1" style="color:${mc.color}">${pct}%</div>
             `;
-            
-            card.onclick = () => selectMetric(mc.key);
-            container.appendChild(card);
-        });
-    }
 
-    // 11. Back Podium (Leaderboard with mini radars + sparkles + glow rings)
-    function renderPodiumBack() {
+          card.onclick = () => selectMetric(mc.key);
+          container.appendChild(card);
+        });
+      }
+
+      // 11. Back Podium (Leaderboard with mini radars + sparkles + glow rings)
+      function renderPodiumBack() {
         const container = document.getElementById('podiumContainerBack');
         if (!container) return;
         container.innerHTML = '';
-        
-        const mc = metricConfigs.find(m => m.key === currentMetricKey);
+
+        const mc = metricConfigs.find((m) => m.key === currentMetricKey);
         document.getElementById('podiumMetricLabelBack').textContent = `— ${mc.label}`;
-        
-        const rankings = members.map(m => ({
+
+        const rankings = members
+          .map((m) => ({
             ...m,
-            value: getMemberData(m.id, currentPeriodId)[currentMetricKey]
-        })).sort((a, b) => b.value - a.value);
-        
+            value: getMemberData(m.id, currentPeriodId)[currentMetricKey],
+          }))
+          .sort((a, b) => b.value - a.value);
+
         const top3 = rankings.slice(0, 3);
         const podiumOrder = [top3[1], top3[0], top3[2]]; // order 2nd, 1st, 3rd
         const maxHeights = [80, 110, 60];
         const rankLabels = ['🥈', '🥇', '🥉'];
         const barBgs = [
-            'linear-gradient(to top, rgba(156,163,175,0.12), rgba(156,163,175,0.03))',
-            'linear-gradient(to top, rgba(212,168,75,0.18), rgba(212,168,75,0.03))',
-            'linear-gradient(to top, rgba(251,146,60,0.12), rgba(251,146,60,0.03))',
+          'linear-gradient(to top, rgba(156,163,175,0.12), rgba(156,163,175,0.03))',
+          'linear-gradient(to top, rgba(212,168,75,0.18), rgba(212,168,75,0.03))',
+          'linear-gradient(to top, rgba(251,146,60,0.12), rgba(251,146,60,0.03))',
         ];
-        const borderColors = [
-            'rgba(156,163,175,0.25)',
-            'rgba(212,168,75,0.35)',
-            'rgba(251,146,60,0.25)'
-        ];
-        
+        const borderColors = ['rgba(156,163,175,0.25)', 'rgba(212,168,75,0.35)', 'rgba(251,146,60,0.25)'];
+
         const rowDiv = document.createElement('div');
         rowDiv.className = 'flex justify-center items-end gap-3 sm:gap-4 w-full pt-9';
         rowDiv.style.minHeight = '210px';
-        
+
         podiumOrder.forEach((member, idx) => {
-            if (!member) return;
-            const target = targets[currentPeriodId][currentMetricKey];
-            const pct = Math.round((member.value / target) * 100);
-            const isSelected = member.id === currentMemberId;
-            const rank = idx === 0 ? 2 : (idx === 1 ? 1 : 3);
-            
-            const col = document.createElement('div');
-            col.className = `flex flex-col items-center relative cursor-pointer hover:scale-105 transition-all duration-300 ${isSelected ? 'scale-105 z-10' : 'opacity-85 hover:opacity-100'} ${rank === 1 ? 'sparkle-container' : ''}`;
-            col.style.width = '90px';
-            col.onclick = () => {
-                currentMemberId = member.id;
-                renderDashboard();
-            };
-            
-            let sparklesHtml = '';
-            if (rank === 1) {
-                sparklesHtml = `
+          if (!member) return;
+          const target = targets[currentPeriodId][currentMetricKey];
+          const pct = Math.round((member.value / target) * 100);
+          const isSelected = member.id === currentMemberId;
+          const rank = idx === 0 ? 2 : idx === 1 ? 1 : 3;
+
+          const col = document.createElement('div');
+          col.className = `flex flex-col items-center relative cursor-pointer hover:scale-105 transition-all duration-300 ${isSelected ? 'scale-105 z-10' : 'opacity-85 hover:opacity-100'} ${rank === 1 ? 'sparkle-container' : ''}`;
+          col.style.width = '90px';
+          col.onclick = () => {
+            currentMemberId = member.id;
+            renderDashboard();
+          };
+
+          let sparklesHtml = '';
+          if (rank === 1) {
+            sparklesHtml = `
                     <span class="sparkle"></span>
                     <span class="sparkle"></span>
                     <span class="sparkle"></span>
                     <span class="sparkle"></span>
                     <span class="sparkle"></span>
                 `;
-            }
-            
-            col.innerHTML = `
+          }
+
+          col.innerHTML = `
                 ${sparklesHtml}
                 <div class="flex flex-col items-center mb-2 text-center w-full relative z-10">
                     <div class="text-base mb-0.5">${rank === 1 ? '👑' : rankLabels[idx]}</div>
-                    <div class="w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold text-white mb-1.5 border-2 ${rank === 1 ? 'border-gold gold-ring-pulse scale-110' : (isSelected ? 'border-gold' : 'dark:border-white/10 border-gray-300')}" style="background:${member.gradient}">
+                    <div class="w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold text-white mb-1.5 border-2 ${rank === 1 ? 'border-gold gold-ring-pulse scale-110' : isSelected ? 'border-gold' : 'dark:border-white/10 border-gray-300'}" style="background:${member.gradient}">
                         ${member.id}
                     </div>
                     <div class="text-[10px] font-bold dark:text-gray-300 text-gray-700 truncate w-full px-1">${member.name}</div>
@@ -1359,37 +1627,39 @@
                     <span class="text-sm font-black opacity-20">${rank}</span>
                 </div>
             `;
-            rowDiv.appendChild(col);
+          rowDiv.appendChild(col);
         });
         container.appendChild(rowDiv);
-        
+
         // Ranks 4, 5, 6 below back podium (V3E segment bars)
         if (rankings.length > 3) {
-            const remaining = rankings.slice(3);
-            const listWrap = document.createElement('div');
-            listWrap.className = 'w-full mt-4 border-t dark:border-white/5 border-gray-200 pt-3 space-y-2';
-            
-            remaining.forEach((m, i) => {
-                const target = targets[currentPeriodId][currentMetricKey];
-                const pct = Math.round((m.value / target) * 100);
-                const isSelected = m.id === currentMemberId;
-                
-                // Segment bars calculation
-                const memberDataObj = getMemberData(m.id, currentPeriodId);
-                const segmentsHtml = metricConfigs.map(mcItem => {
-                    const itemVal = memberDataObj[mcItem.key];
-                    const itemTgt = targets[currentPeriodId][mcItem.key];
-                    const itemPct = Math.min(Math.round((itemVal / itemTgt) * 100), 100);
-                    return `
+          const remaining = rankings.slice(3);
+          const listWrap = document.createElement('div');
+          listWrap.className = 'w-full mt-4 border-t dark:border-white/5 border-gray-200 pt-3 space-y-2';
+
+          remaining.forEach((m, i) => {
+            const target = targets[currentPeriodId][currentMetricKey];
+            const pct = Math.round((m.value / target) * 100);
+            const isSelected = m.id === currentMemberId;
+
+            // Segment bars calculation
+            const memberDataObj = getMemberData(m.id, currentPeriodId);
+            const segmentsHtml = metricConfigs
+              .map((mcItem) => {
+                const itemVal = memberDataObj[mcItem.key];
+                const itemTgt = targets[currentPeriodId][mcItem.key];
+                const itemPct = Math.min(Math.round((itemVal / itemTgt) * 100), 100);
+                return `
                         <div class="flex-1 h-1 bg-gray-200 dark:bg-white/10 rounded overflow-hidden" title="${mcItem.label}: ${itemVal}/${itemTgt} (${itemPct}%)">
                             <div class="h-full rounded" style="width: ${itemPct}%; background: ${mcItem.color};"></div>
                         </div>
                     `;
-                }).join('');
-                
-                const row = document.createElement('div');
-                row.className = `flex items-center gap-3 py-2 px-2.5 rounded-xl border ${isSelected ? 'dark:bg-gold/10 bg-gold/5 border-gold/25' : 'dark:bg-white/[0.01] bg-gray-50/50 border-transparent'} transition-all`;
-                row.innerHTML = `
+              })
+              .join('');
+
+            const row = document.createElement('div');
+            row.className = `flex items-center gap-3 py-2 px-2.5 rounded-xl border ${isSelected ? 'dark:bg-gold/10 bg-gold/5 border-gold/25' : 'dark:bg-white/[0.01] bg-gray-50/50 border-transparent'} transition-all`;
+            row.innerHTML = `
                     <span class="text-[9px] font-bold dark:text-gray-500 text-gray-400 w-5 text-center">#${i + 4}</span>
                     <div class="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style="background:${m.gradient}">${m.id}</div>
                     <div class="flex-1 min-w-0">
@@ -1403,71 +1673,82 @@
                         <div class="text-[9px] dark:text-gray-500 text-gray-400">${pct}%</div>
                     </div>
                 `;
-                listWrap.appendChild(row);
-            });
-            container.appendChild(listWrap);
+            listWrap.appendChild(row);
+          });
+          container.appendChild(listWrap);
         }
-        
-        // Render the mini radars dynamically
-        top3.forEach(m => {
-            renderMiniRadar(`miniRadar-${m.id}`, m.id);
-        });
-    }
 
-    // 12. Render Mini Radar SVG (V3E)
-    function renderMiniRadar(svgId, memberId) {
+        // Render the mini radars dynamically
+        top3.forEach((m) => {
+          renderMiniRadar(`miniRadar-${m.id}`, m.id);
+        });
+      }
+
+      // 12. Render Mini Radar SVG (V3E)
+      function renderMiniRadar(svgId, memberId) {
         const svg = document.getElementById(svgId);
         if (!svg) return;
-        
+
         const memberDataObj = getMemberData(memberId, currentPeriodId);
-        const cx = 30, cy = 30, maxR = 20;
-        
+        const cx = 30,
+          cy = 30,
+          maxR = 20;
+
         let html = '';
-        
+
         // Concentric outlines
-        const pts100 = ANGLES.map(a => polarToXY(cx, cy, maxR, a));
+        const pts100 = ANGLES.map((a) => polarToXY(cx, cy, maxR, a));
         html += `<polygon points="${pointsToString(pts100)}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>`;
-        const pts50 = ANGLES.map(a => polarToXY(cx, cy, maxR * 0.5, a));
+        const pts50 = ANGLES.map((a) => polarToXY(cx, cy, maxR * 0.5, a));
         html += `<polygon points="${pointsToString(pts50)}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.3" stroke-dasharray="1.5,1.5"/>`;
-        
+
         // Performance polygon path
         const dataPts = metricConfigs.map((mc, i) => {
-            const val = memberDataObj[mc.key];
-            const target = targets[currentPeriodId][mc.key];
-            const ratio = Math.min(val / target, 1);
-            return polarToXY(cx, cy, maxR * ratio, ANGLES[i]);
+          const val = memberDataObj[mc.key];
+          const target = targets[currentPeriodId][mc.key];
+          const ratio = Math.min(val / target, 1);
+          return polarToXY(cx, cy, maxR * ratio, ANGLES[i]);
         });
-        
+
         html += `<polygon points="${pointsToString(dataPts)}" fill="rgba(212,168,75,0.18)" stroke="#D4A84B" stroke-width="1.2" stroke-linejoin="round"/>`;
         dataPts.forEach((pt, i) => {
-            html += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="1.5" fill="${metricConfigs[i].color}"/>`;
+          html += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="1.5" fill="${metricConfigs[i].color}"/>`;
         });
-        
-        svg.innerHTML = html;
-    }
 
-    // 13. Collapsible Target Config Renderer (V3C2 style)
-    function renderConfigPanel(panelId) {
+        svg.innerHTML = html;
+      }
+
+      // 13. Collapsible Target Config Renderer (V3C2 style)
+      function renderConfigPanel(panelId) {
         const el = document.getElementById(panelId);
         if (!el) return;
-        
+
         const bodyEl = el.querySelector('.config-body');
         if (!bodyEl) return;
-        
+
         const iconColors = {
-            today: 'text-emerald-400', this_week: 'text-blue-400', this_month: 'text-purple-400',
-            yesterday: 'text-orange-400', last_week: 'text-cyan-400', last_month: 'text-pink-400'
+          today: 'text-emerald-400',
+          this_week: 'text-blue-400',
+          this_month: 'text-purple-400',
+          yesterday: 'text-orange-400',
+          last_week: 'text-cyan-400',
+          last_month: 'text-pink-400',
         };
         const icons = {
-            today: 'fa-calendar-day', this_week: 'fa-calendar-week', this_month: 'fa-calendar-alt',
-            yesterday: 'fa-calendar-minus', last_week: 'fa-calendar-check', last_month: 'fa-calendar'
+          today: 'fa-calendar-day',
+          this_week: 'fa-calendar-week',
+          this_month: 'fa-calendar-alt',
+          yesterday: 'fa-calendar-minus',
+          last_week: 'fa-calendar-check',
+          last_month: 'fa-calendar',
         };
-        
-        bodyEl.innerHTML = periods.map(p => {
+
+        bodyEl.innerHTML = periods
+          .map((p) => {
             const isCurrent = p.id === currentPeriodId;
             const t = targets[p.id];
             const isExpanded = expandedSections[p.id];
-            
+
             return `
                 <div class="rounded-xl bg-white/[0.02] border dark:border-white/5 border-gray-200 overflow-hidden mb-2">
                     <!-- Section Header -->
@@ -1482,7 +1763,9 @@
                     <!-- Collapsible Section Body -->
                     <div class="config-section-body" id="configSection-${p.id}" style="max-height: ${isExpanded ? '300px' : '0px'};">
                         <div class="px-3 pb-3 space-y-2 pt-1">
-                            ${metricConfigs.map(m => `
+                            ${metricConfigs
+                              .map(
+                                (m) => `
                                 <div class="flex items-center gap-2 justify-between">
                                     <div class="flex items-center gap-2">
                                         <div class="w-6 h-6 rounded-md bg-white/5 flex items-center justify-center flex-shrink-0">
@@ -1499,32 +1782,35 @@
                                         onchange="updateTargetValue(this)"
                                     >
                                 </div>
-                            `).join('')}
+                            `
+                              )
+                              .join('')}
                         </div>
                     </div>
                 </div>
             `;
-        }).join('');
-    }
+          })
+          .join('');
+      }
 
-    // ===================== TOAST & UTILITIES =====================
-    function showToast(message) {
+      // ===================== TOAST & UTILITIES =====================
+      function showToast(message) {
         const toast = document.getElementById('toast');
         const msg = document.getElementById('toastMessage');
         msg.textContent = message;
         toast.classList.remove('hidden');
         toast.classList.add('toast-enter');
-        
+
         setTimeout(() => {
-            toast.classList.remove('toast-enter');
-            toast.classList.add('hidden');
+          toast.classList.remove('toast-enter');
+          toast.classList.add('hidden');
         }, 2200);
-    }
-    
-    // ESC closes modal
-    document.addEventListener('keydown', (e) => {
+      }
+
+      // ESC closes modal
+      document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeModal();
-    });
+      });
     </script>
-</body>
+  </body>
 </html>

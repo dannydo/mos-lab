@@ -2,38 +2,38 @@
 
 import '../../suppress-warnings';
 import React, { useEffect, useState, useCallback } from 'react';
-import { 
-  Typography, 
-  Card, 
-  theme, 
-  DatePicker, 
-  Select, 
+import {
+  Typography,
+  Card,
+  theme,
+  DatePicker,
+  Select,
   Radio,
-  Space, 
-  Row, 
-  Col, 
-  Table, 
-  Progress, 
-  Badge, 
-  Spin, 
-  message, 
+  Space,
+  Row,
+  Col,
+  Table,
+  Progress,
+  Badge,
+  Spin,
+  message,
   Divider,
   Button,
   Tag,
-  Tooltip
+  Tooltip,
 } from 'antd';
-import { 
-  PhoneOutlined, 
-  CalendarOutlined, 
-  CheckCircleOutlined, 
-  PieChartOutlined, 
-  TrophyOutlined, 
-  TeamOutlined, 
+import {
+  PhoneOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  PieChartOutlined,
+  TrophyOutlined,
+  TeamOutlined,
   UserOutlined,
   DollarOutlined,
   SettingOutlined,
   LeftOutlined,
-  RightOutlined
+  RightOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -124,7 +124,7 @@ export default function KPIPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  
+
   // Filters state
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [referenceDate, setReferenceDate] = useState<dayjs.Dayjs>(dayjs());
@@ -163,7 +163,7 @@ export default function KPIPage() {
   const handleShowAppointments = (staffId: number, displayName: string) => {
     setSelectedBookerId(staffId);
     setSelectedBookerName(displayName);
-    const matchedRecord = leaderboard.find(item => item.staffId === staffId);
+    const matchedRecord = leaderboard.find((item) => item.staffId === staffId);
     setSelectedStaffRecord(matchedRecord || null);
     setAppointmentsDrawerOpen(true);
   };
@@ -197,7 +197,7 @@ export default function KPIPage() {
   // Fetch KPI data
   const fetchKpiData = useCallback(async () => {
     if (!dateRange[0] || !dateRange[1]) return;
-    
+
     setLoading(true);
     const startDate = dateRange[0].format('YYYY-MM-DD');
     const endDate = dateRange[1].format('YYYY-MM-DD');
@@ -212,11 +212,13 @@ export default function KPIPage() {
       const userObj = stored ? JSON.parse(stored) : null;
       const isAdmin = userObj && userObj.role === 'admin';
 
-      const [summaryRes, trendsRes, leaderboardRes] = await Promise.all([
+      const [summaryRes, trendsRes, leaderboardRes] = (await Promise.all([
         api.get('/kpi/summary', { params }),
         api.get('/kpi/trends', { params }),
-        isAdmin ? api.get('/kpi/leaderboard', { params: { startDate, endDate, role: selectedRole } }) : Promise.resolve(null)
-      ]) as [any, any, any];
+        isAdmin
+          ? api.get('/kpi/leaderboard', { params: { startDate, endDate, role: selectedRole } })
+          : Promise.resolve(null),
+      ])) as [any, any, any];
 
       setSummary(summaryRes.data);
       setBreakdown(trendsRes.data.breakdown);
@@ -236,16 +238,14 @@ export default function KPIPage() {
     fetchKpiData();
   }, [fetchKpiData]);
 
-
-
   // Quick Date presets and navigation
   const getPeriodLabel = () => {
     if (!dateRange[0] || !dateRange[1]) return 'Chọn thời gian';
-    
+
     const [start, end] = dateRange;
     let expectedStart = referenceDate;
     let expectedEnd = referenceDate;
-    
+
     if (viewMode === 'month') {
       expectedStart = referenceDate.startOf('month');
       expectedEnd = referenceDate.endOf('month');
@@ -258,7 +258,7 @@ export default function KPIPage() {
     }
 
     const isMatched = start.isSame(expectedStart, 'day') && end.isSame(expectedEnd, 'day');
-    
+
     if (!isMatched) {
       return `${start.format('DD/MM')} - ${end.format('DD/MM')}`;
     }
@@ -271,7 +271,7 @@ export default function KPIPage() {
       const endStr = referenceDate.endOf('isoWeek').format('DD/MM');
       return `Tuần ${referenceDate.isoWeek()} (${startStr} - ${endStr})`;
     }
-    
+
     // Day mode
     const today = dayjs().startOf('day');
     const yesterday = dayjs().subtract(1, 'day').startOf('day');
@@ -286,7 +286,7 @@ export default function KPIPage() {
   };
 
   const handleNavigate = (direction: number) => {
-    setReferenceDate(prev => prev.add(direction, viewMode as any));
+    setReferenceDate((prev) => prev.add(direction, viewMode as any));
   };
 
   const isAdmin = currentUser?.role === 'admin';
@@ -298,195 +298,259 @@ export default function KPIPage() {
   };
 
   // Custom Leaderboard columns
-  const leaderboardColumns = selectedRole === 'oc' ? [
-    {
-      title: 'Client Consultant',
-      key: 'name',
-      render: (record: LeaderboardEntry) => (
-        <Space>
-          <UserOutlined style={{ color: '#722ED1' }} />
-          <span style={{ fontWeight: '600', color: token.colorText }}>{record.displayName}</span>
-          <Text type="secondary" style={{ fontSize: '12px' }}>({record.username})</Text>
-        </Space>
-      )
-    },
-    {
-      title: 'Số lần check-in',
-      dataIndex: 'totalCheckin',
-      key: 'totalCheckin',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalCheckin - b.totalCheckin,
-      render: (val: number) => <span style={{ fontWeight: '600', color: token.colorText }}>{val}</span>
-    },
-    {
-      title: 'Tổng số phút trễ',
-      key: 'checkinLateMin',
-      render: (record: LeaderboardEntry) => {
-        const mins = record.salary?.checkinLateMin || 0;
-        return <span style={{ color: mins < 0 ? '#FF4D4F' : token.colorText }}>{mins < 0 ? `${Math.abs(mins)} phút` : 'Đúng giờ'}</span>;
-      }
-    },
-    {
-      title: 'Lương cứng',
-      key: 'baseSalary',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.baseSalary || 0) - (b.salary?.baseSalary || 0),
-      render: (record: LeaderboardEntry) => <span>{(record.salary?.baseSalary || 0).toLocaleString('vi-VN')} đ</span>
-    },
-    {
-      title: 'Thưởng doanh số',
-      key: 'salesReward',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.salesReward || 0) - (b.salary?.salesReward || 0),
-      render: (record: LeaderboardEntry) => <span>{(record.salary?.salesReward || 0).toLocaleString('vi-VN')} đ</span>
-    },
-    {
-      title: 'Thưởng phục vụ',
-      key: 'servicingReward',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.servicingReward || 0) - (b.salary?.servicingReward || 0),
-      render: (record: LeaderboardEntry) => <span>{(record.salary?.servicingReward || 0).toLocaleString('vi-VN')} đ</span>
-    },
-    {
-      title: 'Thưởng tăng trưởng',
-      key: 'growthReward',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.growthReward || 0) - (b.salary?.growthReward || 0),
-      render: (record: LeaderboardEntry) => <span>{(record.salary?.growthReward || 0).toLocaleString('vi-VN')} đ</span>
-    },
-    {
-      title: 'Thưởng phục vụ CH',
-      key: 'storeServicingReward',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.storeServicingReward || 0) - (b.salary?.storeServicingReward || 0),
-      render: (record: LeaderboardEntry) => <span>{(record.salary?.storeServicingReward || 0).toLocaleString('vi-VN')} đ</span>
-    },
-    {
-      title: 'Thu nhập Client Consultant',
-      key: 'totalEarnings',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalEarnings - b.totalEarnings,
-      render: (record: LeaderboardEntry) => (
-        <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
-          {(record.totalEarnings || 0).toLocaleString('vi-VN')} đ
-        </span>
-      )
-    }
-  ] : [
-    {
-      title: 'Online Consultant (Booker)',
-      key: 'name',
-      render: (record: LeaderboardEntry) => (
-        <Space>
-          <UserOutlined style={{ color: token.colorPrimary }} />
-          <span 
-            style={{ 
-              fontWeight: '600', 
-              color: token.colorPrimary, 
-              cursor: 'pointer',
-              textDecoration: 'underline'
-            }}
-            onClick={() => handleShowAppointments(record.staffId, record.displayName)}
-          >
-            {record.displayName}
-          </span>
-          <Text type="secondary" style={{ fontSize: '12px' }}>({record.username})</Text>
-        </Space>
-      )
-    },
-    {
-      title: 'Kế hoạch',
-      dataIndex: 'totalPlanned',
-      key: 'totalPlanned',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalPlanned - b.totalPlanned,
-    },
-    {
-      title: 'Đã gọi',
-      key: 'totalCalled',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalCalled - b.totalCalled,
-      render: (record: LeaderboardEntry) => (
-        <span>{record.totalCalled} <Text type="secondary" style={{ fontSize: '12px' }}>({getPercent(record.totalCalled, record.totalPlanned)}%)</Text></span>
-      )
-    },
-    {
-      title: 'Đặt lịch (Booked)',
-      key: 'bookingRate',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalBooked - b.totalBooked,
-      render: (record: LeaderboardEntry) => (
-        <span>
-          <b style={{ color: token.colorPrimary }}>{record.totalBooked}</b>
-          <Progress percent={record.bookingRate} size="small" strokeColor={token.colorPrimary} style={{ width: '80px', marginLeft: '8px' }} />
-        </span>
-      )
-    },
-    {
-      title: 'Đến tiệm (Checkin)',
-      key: 'checkinRate',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalCheckin - b.totalCheckin,
-      render: (record: LeaderboardEntry) => (
-        <span>
-          <b style={{ color: '#722ED1' }}>{record.totalCheckin}</b>
-          <Progress percent={record.checkinRate} size="small" strokeColor="#722ED1" style={{ width: '80px', marginLeft: '8px' }} />
-        </span>
-      )
-    },
-    {
-      title: 'Lương cứng',
-      key: 'baseSalary',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.baseSalary || 0) - (b.salary?.baseSalary || 0),
-      render: (record: LeaderboardEntry) => <span>{(record.salary?.baseSalary || 0).toLocaleString('vi-VN')} đ</span>
-    },
-    {
-      title: 'Thưởng check-in',
-      key: 'clientBonus',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.clientBonus || 0) - (b.salary?.clientBonus || 0),
-      render: (record: LeaderboardEntry) => <span>{(record.salary?.clientBonus || 0).toLocaleString('vi-VN')} đ</span>
-    },
-    {
-      title: 'Thưởng mốc DONE',
-      key: 'doneBonus',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.doneBonus || 0) - (b.salary?.doneBonus || 0),
-      render: (record: LeaderboardEntry) => <span>{(record.salary?.doneBonus || 0).toLocaleString('vi-VN')} đ</span>
-    },
-    {
-      title: 'Thưởng/Phạt lỡ',
-      key: 'missedBonus',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.missedBonus || 0) - (b.salary?.missedBonus || 0),
-      render: (record: LeaderboardEntry) => {
-        const val = record.salary?.missedBonus || 0;
-        return <span style={{ color: val < 0 ? '#FF4D4F' : token.colorText }}>{(val >= 0 ? '+' : '')}{val.toLocaleString('vi-VN')} đ</span>;
-      }
-    },
-    {
-      title: 'Thưởng tips (7%)',
-      key: 'tipBonus',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.tipBonus || 0) - (b.salary?.tipBonus || 0),
-      render: (record: LeaderboardEntry) => <span>{(record.salary?.tipBonus || 0).toLocaleString('vi-VN')} đ</span>
-    },
-    {
-      title: 'Thưởng doanh thu',
-      key: 'revBonus',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.revBonus || 0) - (b.salary?.revBonus || 0),
-      render: (record: LeaderboardEntry) => <span>{(record.salary?.revBonus || 0).toLocaleString('vi-VN')} đ</span>
-    },
-    {
-      title: 'Thu nhập Online Consultant',
-      key: 'totalEarnings',
-      sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalEarnings - b.totalEarnings,
-      render: (record: LeaderboardEntry) => (
-        <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
-          {(record.totalEarnings || 0).toLocaleString('vi-VN')} đ
-        </span>
-      )
-    }
-  ];
+  const leaderboardColumns =
+    selectedRole === 'oc'
+      ? [
+          {
+            title: 'Client Consultant',
+            key: 'name',
+            render: (record: LeaderboardEntry) => (
+              <Space>
+                <UserOutlined style={{ color: '#722ED1' }} />
+                <span style={{ fontWeight: '600', color: token.colorText }}>{record.displayName}</span>
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  ({record.username})
+                </Text>
+              </Space>
+            ),
+          },
+          {
+            title: 'Số lần check-in',
+            dataIndex: 'totalCheckin',
+            key: 'totalCheckin',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalCheckin - b.totalCheckin,
+            render: (val: number) => <span style={{ fontWeight: '600', color: token.colorText }}>{val}</span>,
+          },
+          {
+            title: 'Tổng số phút trễ',
+            key: 'checkinLateMin',
+            render: (record: LeaderboardEntry) => {
+              const mins = record.salary?.checkinLateMin || 0;
+              return (
+                <span style={{ color: mins < 0 ? '#FF4D4F' : token.colorText }}>
+                  {mins < 0 ? `${Math.abs(mins)} phút` : 'Đúng giờ'}
+                </span>
+              );
+            },
+          },
+          {
+            title: 'Lương cứng',
+            key: 'baseSalary',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
+              (a.salary?.baseSalary || 0) - (b.salary?.baseSalary || 0),
+            render: (record: LeaderboardEntry) => (
+              <span>{(record.salary?.baseSalary || 0).toLocaleString('vi-VN')} đ</span>
+            ),
+          },
+          {
+            title: 'Thưởng doanh số',
+            key: 'salesReward',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
+              (a.salary?.salesReward || 0) - (b.salary?.salesReward || 0),
+            render: (record: LeaderboardEntry) => (
+              <span>{(record.salary?.salesReward || 0).toLocaleString('vi-VN')} đ</span>
+            ),
+          },
+          {
+            title: 'Thưởng phục vụ',
+            key: 'servicingReward',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
+              (a.salary?.servicingReward || 0) - (b.salary?.servicingReward || 0),
+            render: (record: LeaderboardEntry) => (
+              <span>{(record.salary?.servicingReward || 0).toLocaleString('vi-VN')} đ</span>
+            ),
+          },
+          {
+            title: 'Thưởng tăng trưởng',
+            key: 'growthReward',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
+              (a.salary?.growthReward || 0) - (b.salary?.growthReward || 0),
+            render: (record: LeaderboardEntry) => (
+              <span>{(record.salary?.growthReward || 0).toLocaleString('vi-VN')} đ</span>
+            ),
+          },
+          {
+            title: 'Thưởng phục vụ CH',
+            key: 'storeServicingReward',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
+              (a.salary?.storeServicingReward || 0) - (b.salary?.storeServicingReward || 0),
+            render: (record: LeaderboardEntry) => (
+              <span>{(record.salary?.storeServicingReward || 0).toLocaleString('vi-VN')} đ</span>
+            ),
+          },
+          {
+            title: 'Thu nhập Client Consultant',
+            key: 'totalEarnings',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalEarnings - b.totalEarnings,
+            render: (record: LeaderboardEntry) => (
+              <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
+                {(record.totalEarnings || 0).toLocaleString('vi-VN')} đ
+              </span>
+            ),
+          },
+        ]
+      : [
+          {
+            title: 'Online Consultant (Booker)',
+            key: 'name',
+            render: (record: LeaderboardEntry) => (
+              <Space>
+                <UserOutlined style={{ color: token.colorPrimary }} />
+                <span
+                  style={{
+                    fontWeight: '600',
+                    color: token.colorPrimary,
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                  }}
+                  onClick={() => handleShowAppointments(record.staffId, record.displayName)}
+                >
+                  {record.displayName}
+                </span>
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  ({record.username})
+                </Text>
+              </Space>
+            ),
+          },
+          {
+            title: 'Kế hoạch',
+            dataIndex: 'totalPlanned',
+            key: 'totalPlanned',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalPlanned - b.totalPlanned,
+          },
+          {
+            title: 'Đã gọi',
+            key: 'totalCalled',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalCalled - b.totalCalled,
+            render: (record: LeaderboardEntry) => (
+              <span>
+                {record.totalCalled}{' '}
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  ({getPercent(record.totalCalled, record.totalPlanned)}%)
+                </Text>
+              </span>
+            ),
+          },
+          {
+            title: 'Đặt lịch (Booked)',
+            key: 'bookingRate',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalBooked - b.totalBooked,
+            render: (record: LeaderboardEntry) => (
+              <span>
+                <b style={{ color: token.colorPrimary }}>{record.totalBooked}</b>
+                <Progress
+                  percent={record.bookingRate}
+                  size="small"
+                  strokeColor={token.colorPrimary}
+                  style={{ width: '80px', marginLeft: '8px' }}
+                />
+              </span>
+            ),
+          },
+          {
+            title: 'Đến tiệm (Checkin)',
+            key: 'checkinRate',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalCheckin - b.totalCheckin,
+            render: (record: LeaderboardEntry) => (
+              <span>
+                <b style={{ color: '#722ED1' }}>{record.totalCheckin}</b>
+                <Progress
+                  percent={record.checkinRate}
+                  size="small"
+                  strokeColor="#722ED1"
+                  style={{ width: '80px', marginLeft: '8px' }}
+                />
+              </span>
+            ),
+          },
+          {
+            title: 'Lương cứng',
+            key: 'baseSalary',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
+              (a.salary?.baseSalary || 0) - (b.salary?.baseSalary || 0),
+            render: (record: LeaderboardEntry) => (
+              <span>{(record.salary?.baseSalary || 0).toLocaleString('vi-VN')} đ</span>
+            ),
+          },
+          {
+            title: 'Thưởng check-in',
+            key: 'clientBonus',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
+              (a.salary?.clientBonus || 0) - (b.salary?.clientBonus || 0),
+            render: (record: LeaderboardEntry) => (
+              <span>{(record.salary?.clientBonus || 0).toLocaleString('vi-VN')} đ</span>
+            ),
+          },
+          {
+            title: 'Thưởng mốc DONE',
+            key: 'doneBonus',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
+              (a.salary?.doneBonus || 0) - (b.salary?.doneBonus || 0),
+            render: (record: LeaderboardEntry) => (
+              <span>{(record.salary?.doneBonus || 0).toLocaleString('vi-VN')} đ</span>
+            ),
+          },
+          {
+            title: 'Thưởng/Phạt lỡ',
+            key: 'missedBonus',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
+              (a.salary?.missedBonus || 0) - (b.salary?.missedBonus || 0),
+            render: (record: LeaderboardEntry) => {
+              const val = record.salary?.missedBonus || 0;
+              return (
+                <span style={{ color: val < 0 ? '#FF4D4F' : token.colorText }}>
+                  {val >= 0 ? '+' : ''}
+                  {val.toLocaleString('vi-VN')} đ
+                </span>
+              );
+            },
+          },
+          {
+            title: 'Thưởng tips (7%)',
+            key: 'tipBonus',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.tipBonus || 0) - (b.salary?.tipBonus || 0),
+            render: (record: LeaderboardEntry) => (
+              <span>{(record.salary?.tipBonus || 0).toLocaleString('vi-VN')} đ</span>
+            ),
+          },
+          {
+            title: 'Thưởng doanh thu',
+            key: 'revBonus',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.revBonus || 0) - (b.salary?.revBonus || 0),
+            render: (record: LeaderboardEntry) => (
+              <span>{(record.salary?.revBonus || 0).toLocaleString('vi-VN')} đ</span>
+            ),
+          },
+          {
+            title: 'Thu nhập Online Consultant',
+            key: 'totalEarnings',
+            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalEarnings - b.totalEarnings,
+            render: (record: LeaderboardEntry) => (
+              <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
+                {(record.totalEarnings || 0).toLocaleString('vi-VN')} đ
+              </span>
+            ),
+          },
+        ];
 
   return (
     <div>
       {/* HEADER SECTION */}
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <div>
-          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>KPI & Báo Cáo Hiệu Suất</Title>
-          <Text style={{ color: token.colorTextDescription }}>Giám sát tỷ lệ chuyển đổi cuộc gọi thành lịch hẹn và doanh thu thưởng commission</Text>
+          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
+            KPI & Báo Cáo Hiệu Suất
+          </Title>
+          <Text style={{ color: token.colorTextDescription }}>
+            Giám sát tỷ lệ chuyển đổi cuộc gọi thành lịch hẹn và doanh thu thưởng commission
+          </Text>
         </div>
-        
+
         <div className="flex items-center gap-3 flex-wrap">
           <Space wrap>
-            <Radio.Group 
-              value={viewMode} 
+            <Radio.Group
+              value={viewMode}
               onChange={(e) => {
                 setViewMode(e.target.value);
                 setReferenceDate(dayjs());
@@ -501,49 +565,43 @@ export default function KPIPage() {
 
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <Space.Compact>
-                <Button 
-                  icon={<LeftOutlined />} 
-                  onClick={() => handleNavigate(-1)} 
-                />
-                <Button 
+                <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
+                <Button
                   onClick={() => setPickerOpen(true)}
-                  style={{ 
-                    fontWeight: '600', 
-                    minWidth: '210px', 
-                    textAlign: 'center', 
+                  style={{
+                    fontWeight: '600',
+                    minWidth: '210px',
+                    textAlign: 'center',
                     color: token.colorText,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px'
+                    gap: '8px',
                   }}
                 >
                   {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
                 </Button>
-                <Button 
-                  icon={<RightOutlined />} 
-                  onClick={() => handleNavigate(1)} 
-                />
+                <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
               </Space.Compact>
 
               {/* Invisible RangePicker that gets triggered programmatically */}
-              <RangePicker 
-                value={dateRange} 
+              <RangePicker
+                value={dateRange}
                 onChange={(dates) => {
                   if (dates) setDateRange([dates[0]!, dates[1]!]);
                 }}
                 format="DD/MM/YYYY"
                 open={pickerOpen}
                 onOpenChange={(open) => setPickerOpen(open)}
-                style={{ 
-                  position: 'absolute', 
-                  left: 0, 
-                  right: 0, 
-                  bottom: 0, 
-                  height: '100%', 
-                  opacity: 0, 
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: '100%',
+                  opacity: 0,
                   pointerEvents: 'none',
-                  zIndex: -1 
+                  zIndex: -1,
                 }}
               />
             </div>
@@ -551,8 +609,8 @@ export default function KPIPage() {
 
           {isAdmin && (
             <>
-              <Radio.Group 
-                value={selectedRole} 
+              <Radio.Group
+                value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
                 optionType="button"
                 buttonStyle="solid"
@@ -566,15 +624,18 @@ export default function KPIPage() {
                 onChange={setSelectedStaffId}
                 style={{ width: 170 }}
                 options={[
-                  { value: 'ALL', label: selectedRole === 'oc' ? 'Tất cả Client Consultant' : 'Tất cả Online Consultant' },
-                  ...leaderboard.map(s => ({ value: s.staffId.toString(), label: s.displayName }))
+                  {
+                    value: 'ALL',
+                    label: selectedRole === 'oc' ? 'Tất cả Client Consultant' : 'Tất cả Online Consultant',
+                  },
+                  ...leaderboard.map((s) => ({ value: s.staffId.toString(), label: s.displayName })),
                 ]}
                 placeholder="Chọn nhân viên"
               />
               {selectedRole === 'telesales' && (
-                <Button 
-                  type="primary" 
-                  icon={<SettingOutlined />} 
+                <Button
+                  type="primary"
+                  icon={<SettingOutlined />}
                   onClick={() => setConfigDrawerOpen(true)}
                   style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
                 >
@@ -598,23 +659,40 @@ export default function KPIPage() {
           {/* STATS OVERVIEW CARDS */}
           <Row gutter={[16, 16]} className="mb-6">
             <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-              <Card variant="outlined" style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}>
-                <Text type="secondary" style={{ fontSize: '12px' }}>TỔNG KẾ HOẠCH</Text>
+              <Card
+                variant="outlined"
+                style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+              >
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  TỔNG KẾ HOẠCH
+                </Text>
                 <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: token.colorText }}>
                   {summary?.totalPlanned}
                 </div>
                 <Progress percent={100} showInfo={false} strokeColor={token.colorTextDescription} size="small" />
-                <Text type="secondary" style={{ fontSize: '11px' }}>Kế hoạch đã lên</Text>
+                <Text type="secondary" style={{ fontSize: '11px' }}>
+                  Kế hoạch đã lên
+                </Text>
               </Card>
             </Col>
 
             <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-              <Card variant="outlined" style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}>
-                <Text type="secondary" style={{ fontSize: '12px' }}>ĐÃ THỰC HIỆN</Text>
+              <Card
+                variant="outlined"
+                style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+              >
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  ĐÃ THỰC HIỆN
+                </Text>
                 <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: '#1890FF' }}>
                   {summary?.totalCalled}
                 </div>
-                <Progress percent={getPercent(summary?.totalCalled || 0, summary?.totalPlanned || 0)} showInfo={false} strokeColor="#1890FF" size="small" />
+                <Progress
+                  percent={getPercent(summary?.totalCalled || 0, summary?.totalPlanned || 0)}
+                  showInfo={false}
+                  strokeColor="#1890FF"
+                  size="small"
+                />
                 <Text type="secondary" style={{ fontSize: '11px' }}>
                   Đạt: {getPercent(summary?.totalCalled || 0, summary?.totalPlanned || 0)}% kế hoạch
                 </Text>
@@ -622,12 +700,22 @@ export default function KPIPage() {
             </Col>
 
             <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-              <Card variant="outlined" style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}>
-                <Text type="secondary" style={{ fontSize: '12px' }}>BẮT MÁY</Text>
+              <Card
+                variant="outlined"
+                style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+              >
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  BẮT MÁY
+                </Text>
                 <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: '#52C41A' }}>
                   {getPercent(summary?.totalAnswered || 0, summary?.totalCalled || 0)}%
                 </div>
-                <Progress percent={getPercent(summary?.totalAnswered || 0, summary?.totalCalled || 0)} showInfo={false} strokeColor="#52C41A" size="small" />
+                <Progress
+                  percent={getPercent(summary?.totalAnswered || 0, summary?.totalCalled || 0)}
+                  showInfo={false}
+                  strokeColor="#52C41A"
+                  size="small"
+                />
                 <Text type="secondary" style={{ fontSize: '11px' }}>
                   {summary?.totalAnswered} cuộc bắt máy
                 </Text>
@@ -635,12 +723,22 @@ export default function KPIPage() {
             </Col>
 
             <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-              <Card variant="outlined" style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}>
-                <Text type="secondary" style={{ fontSize: '12px' }}>ĐẶT LỊCH (BOOKED)</Text>
+              <Card
+                variant="outlined"
+                style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+              >
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  ĐẶT LỊCH (BOOKED)
+                </Text>
                 <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: token.colorPrimary }}>
                   {getPercent(summary?.totalBooked || 0, summary?.totalAnswered || 0)}%
                 </div>
-                <Progress percent={getPercent(summary?.totalBooked || 0, summary?.totalAnswered || 0)} showInfo={false} strokeColor={token.colorPrimary} size="small" />
+                <Progress
+                  percent={getPercent(summary?.totalBooked || 0, summary?.totalAnswered || 0)}
+                  showInfo={false}
+                  strokeColor={token.colorPrimary}
+                  size="small"
+                />
                 <Text type="secondary" style={{ fontSize: '11px' }}>
                   {summary?.totalBooked} lịch hẹn thành công
                 </Text>
@@ -648,12 +746,22 @@ export default function KPIPage() {
             </Col>
 
             <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-              <Card variant="outlined" style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}>
-                <Text type="secondary" style={{ fontSize: '12px' }}>ĐẾN TIỆM (CHECKIN)</Text>
+              <Card
+                variant="outlined"
+                style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+              >
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  ĐẾN TIỆM (CHECKIN)
+                </Text>
                 <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: '#722ED1' }}>
                   {getPercent(summary?.totalCheckin || 0, summary?.totalBooked || 0)}%
                 </div>
-                <Progress percent={getPercent(summary?.totalCheckin || 0, summary?.totalBooked || 0)} showInfo={false} strokeColor="#722ED1" size="small" />
+                <Progress
+                  percent={getPercent(summary?.totalCheckin || 0, summary?.totalBooked || 0)}
+                  showInfo={false}
+                  strokeColor="#722ED1"
+                  size="small"
+                />
                 <Text type="secondary" style={{ fontSize: '11px' }}>
                   {summary?.totalCheckin} khách ghé tiệm
                 </Text>
@@ -664,14 +772,18 @@ export default function KPIPage() {
               <Card variant="outlined" style={{ background: token.colorBgContainer, borderColor: '#D4A84B' }}>
                 <Space>
                   <DollarOutlined style={{ color: '#D4A84B', fontSize: '15px' }} />
-                  <Text type="secondary" style={{ fontSize: '12px' }}>THU NHẬP LIVE</Text>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                    THU NHẬP LIVE
+                  </Text>
                 </Space>
                 <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: '#D4A84B' }}>
                   {(summary?.totalEarnings || 0).toLocaleString('vi-VN')} đ
                 </div>
                 <Progress percent={100} showInfo={false} strokeColor="#D4A84B" size="small" />
                 <Text type="secondary" style={{ fontSize: '11px' }}>
-                  {selectedRole === 'oc' ? 'Tổng lương & thưởng Client Consultant (CC)' : 'Tổng lương & thưởng Online Consultant (OC)'}
+                  {selectedRole === 'oc'
+                    ? 'Tổng lương & thưởng Client Consultant (CC)'
+                    : 'Tổng lương & thưởng Online Consultant (OC)'}
                 </Text>
               </Card>
             </Col>
@@ -679,10 +791,13 @@ export default function KPIPage() {
 
           {/* SALARY BREAKDOWN CARD (LIVE PAYSTUB) */}
           {summary?.salary && (
-            <Card 
+            <Card
               title={
                 <span style={{ color: token.colorText }}>
-                  <DollarOutlined style={{ color: '#D4A84B' }} /> {summary.salary.role === 'oc' ? 'Chi Tiết Lương & Thưởng Client Consultant (Live Paystub)' : 'Chi Tiết Lương & Hoa Hồng Online Consultant (Live Paystub)'}
+                  <DollarOutlined style={{ color: '#D4A84B' }} />{' '}
+                  {summary.salary.role === 'oc'
+                    ? 'Chi Tiết Lương & Thưởng Client Consultant (Live Paystub)'
+                    : 'Chi Tiết Lương & Hoa Hồng Online Consultant (Live Paystub)'}
                 </span>
               }
               variant="outlined"
@@ -692,8 +807,13 @@ export default function KPIPage() {
               {summary.salary.role === 'oc' ? (
                 <Row gutter={[16, 16]}>
                   <Col xs={24} md={8}>
-                    <div style={{ padding: '12px', borderRight: `1px solid ${token.colorBorderSecondary}` }} className="md:border-r">
-                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>LƯƠNG CƠ BẢN & CHIẾN DỊCH</Text>
+                    <div
+                      style={{ padding: '12px', borderRight: `1px solid ${token.colorBorderSecondary}` }}
+                      className="md:border-r"
+                    >
+                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
+                        LƯƠNG CƠ BẢN & CHIẾN DỊCH
+                      </Text>
                       <div className="flex justify-between items-center mt-3">
                         <Text style={{ color: token.colorText }}>Lương cứng (Wage):</Text>
                         <Text style={{ fontWeight: '600', color: token.colorText }}>
@@ -710,8 +830,13 @@ export default function KPIPage() {
                   </Col>
 
                   <Col xs={24} md={8}>
-                    <div style={{ padding: '12px', borderRight: `1px solid ${token.colorBorderSecondary}` }} className="md:border-r">
-                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>THƯỞNG DOANH SỐ & PHỤC VỤ</Text>
+                    <div
+                      style={{ padding: '12px', borderRight: `1px solid ${token.colorBorderSecondary}` }}
+                      className="md:border-r"
+                    >
+                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
+                        THƯỞNG DOANH SỐ & PHỤC VỤ
+                      </Text>
                       <div className="flex justify-between items-center mt-3">
                         <Text style={{ color: token.colorText }}>Thưởng doanh số (Sales KPI):</Text>
                         <Text style={{ fontWeight: '600', color: '#52C41A' }}>
@@ -729,7 +854,9 @@ export default function KPIPage() {
 
                   <Col xs={24} md={8}>
                     <div style={{ padding: '12px' }}>
-                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>THƯỞNG TĂNG TRƯỞNG & CỬA HÀNG</Text>
+                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
+                        THƯỞNG TĂNG TRƯỞNG & CỬA HÀNG
+                      </Text>
                       <div className="flex justify-between items-center mt-3">
                         <Text style={{ color: token.colorText }}>Thưởng tăng trưởng (Growth):</Text>
                         <Text style={{ fontWeight: '600', color: '#52C41A' }}>
@@ -748,8 +875,16 @@ export default function KPIPage() {
               ) : (
                 <Row gutter={[16, 16]}>
                   <Col xs={24} md={8}>
-                    <div style={{ padding: '12px', borderRight: isAdmin ? 'none' : `1px solid ${token.colorBorderSecondary}` }} className="md:border-r">
-                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>LƯƠNG CỨNG & HOA HỒNG GỌI</Text>
+                    <div
+                      style={{
+                        padding: '12px',
+                        borderRight: isAdmin ? 'none' : `1px solid ${token.colorBorderSecondary}`,
+                      }}
+                      className="md:border-r"
+                    >
+                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
+                        LƯƠNG CỨNG & HOA HỒNG GỌI
+                      </Text>
                       <div className="flex justify-between items-center mt-3">
                         <Text style={{ color: token.colorText }}>Lương cứng cơ bản (Based):</Text>
                         <Text style={{ fontWeight: '600', color: token.colorText }}>
@@ -766,21 +901,36 @@ export default function KPIPage() {
                   </Col>
 
                   <Col xs={24} md={8}>
-                    <div style={{ padding: '12px', borderRight: isAdmin ? 'none' : `1px solid ${token.colorBorderSecondary}` }} className="md:border-r">
-                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>THƯỞNG HIỆU SUẤT ĐẠT MỐC</Text>
+                    <div
+                      style={{
+                        padding: '12px',
+                        borderRight: isAdmin ? 'none' : `1px solid ${token.colorBorderSecondary}`,
+                      }}
+                      className="md:border-r"
+                    >
+                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
+                        THƯỞNG HIỆU SUẤT ĐẠT MỐC
+                      </Text>
                       <div className="flex justify-between items-center mt-3">
-                        <Text style={{ color: token.colorText }}>Thưởng mốc check-in ({summary.salary.doneCount || 0} khách):</Text>
+                        <Text style={{ color: token.colorText }}>
+                          Thưởng mốc check-in ({summary.salary.doneCount || 0} khách):
+                        </Text>
                         <Text style={{ fontWeight: '600', color: '#52C41A' }}>
                           +{(summary.salary.doneBonus || 0).toLocaleString('vi-VN')} đ
                         </Text>
                       </div>
                       <div className="flex justify-between items-center mt-2">
-                        <Text style={{ color: token.colorText }}>Thưởng tỷ lệ lỡ ({Math.round((summary.salary.missedRate || 0) * 100)}%):</Text>
-                        <Text style={{ 
-                          fontWeight: '600', 
-                          color: (summary.salary.missedBonus || 0) >= 0 ? '#52C41A' : '#FF4D4F' 
-                        }}>
-                          {(summary.salary.missedBonus || 0) >= 0 ? '+' : ''}{(summary.salary.missedBonus || 0).toLocaleString('vi-VN')} đ
+                        <Text style={{ color: token.colorText }}>
+                          Thưởng tỷ lệ lỡ ({Math.round((summary.salary.missedRate || 0) * 100)}%):
+                        </Text>
+                        <Text
+                          style={{
+                            fontWeight: '600',
+                            color: (summary.salary.missedBonus || 0) >= 0 ? '#52C41A' : '#FF4D4F',
+                          }}
+                        >
+                          {(summary.salary.missedBonus || 0) >= 0 ? '+' : ''}
+                          {(summary.salary.missedBonus || 0).toLocaleString('vi-VN')} đ
                         </Text>
                       </div>
                     </div>
@@ -788,15 +938,21 @@ export default function KPIPage() {
 
                   <Col xs={24} md={8}>
                     <div style={{ padding: '12px' }}>
-                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>HOA HỒNG TIPS & DOANH THU</Text>
+                      <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
+                        HOA HỒNG TIPS & DOANH THU
+                      </Text>
                       <div className="flex justify-between items-center mt-3">
-                        <Text style={{ color: token.colorText }}>Thưởng Tips (7% trên {(summary.salary.totalTips || 0).toLocaleString('vi-VN')} đ):</Text>
+                        <Text style={{ color: token.colorText }}>
+                          Thưởng Tips (7% trên {(summary.salary.totalTips || 0).toLocaleString('vi-VN')} đ):
+                        </Text>
                         <Text style={{ fontWeight: '600', color: token.colorText }}>
                           {(summary.salary.tipBonus || 0).toLocaleString('vi-VN')} đ
                         </Text>
                       </div>
                       <div className="flex justify-between items-center mt-2">
-                        <Text style={{ color: token.colorText }}>Thưởng doanh thu net (trên {(summary.salary.totalNetRev || 0).toLocaleString('vi-VN')} đ):</Text>
+                        <Text style={{ color: token.colorText }}>
+                          Thưởng doanh thu net (trên {(summary.salary.totalNetRev || 0).toLocaleString('vi-VN')} đ):
+                        </Text>
                         <Text style={{ fontWeight: '600', color: token.colorText }}>
                           {(summary.salary.revBonus || 0).toLocaleString('vi-VN')} đ
                         </Text>
@@ -805,11 +961,13 @@ export default function KPIPage() {
                   </Col>
                 </Row>
               )}
-              
+
               <Divider style={{ margin: '16px 0' }} />
-              
+
               <div className="flex justify-between items-center px-3 flex-wrap gap-2">
-                <Text style={{ fontSize: '15px', fontWeight: 'bold', color: token.colorText }}>TỔNG THU NHẬP TẠM TÍNH (LIVE SALARY):</Text>
+                <Text style={{ fontSize: '15px', fontWeight: 'bold', color: token.colorText }}>
+                  TỔNG THU NHẬP TẠM TÍNH (LIVE SALARY):
+                </Text>
                 <Text style={{ fontSize: '22px', fontWeight: 'bold', color: '#D4A84B' }}>
                   {summary.salary.totalSalary.toLocaleString('vi-VN')} đ
                 </Text>
@@ -826,13 +984,19 @@ export default function KPIPage() {
 
             {/* CALL OUTCOMES BREAKDOWN */}
             <Col xs={24} lg={8}>
-              <Card 
-                title={<span style={{ color: token.colorText }}><PieChartOutlined /> Phân bổ kết quả cuộc gọi</span>}
+              <Card
+                title={
+                  <span style={{ color: token.colorText }}>
+                    <PieChartOutlined /> Phân bổ kết quả cuộc gọi
+                  </span>
+                }
                 variant="outlined"
                 style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary, height: '400px' }}
               >
                 {!breakdown || Object.values(breakdown).reduce((a, b) => a + b, 0) === 0 ? (
-                  <div className="flex justify-center items-center h-64 text-secondary">Chưa có cuộc gọi được thực hiện</div>
+                  <div className="flex justify-center items-center h-64 text-secondary">
+                    Chưa có cuộc gọi được thực hiện
+                  </div>
                 ) : (
                   <div className="flex flex-col gap-4 mt-2">
                     {(() => {
@@ -843,39 +1007,47 @@ export default function KPIPage() {
                         { key: 'NO_ANSWER', label: 'Không Nhấc Máy', value: breakdown.NO_ANSWER, color: '#FF4D4F' },
                         { key: 'BUSY', label: 'Máy Bận', value: breakdown.BUSY, color: '#13C2C2' },
                         { key: 'WRONG_NUMBER', label: 'Sai Số', value: breakdown.WRONG_NUMBER, color: '#F5222D' },
-                        { key: 'OTHERS', label: 'Khác', value: breakdown.OTHERS, color: '#8C8C8C' }
+                        { key: 'OTHERS', label: 'Khác', value: breakdown.OTHERS, color: '#8C8C8C' },
                       ];
 
                       return (
                         <>
                           <div className="w-full flex h-5 rounded-full overflow-hidden mb-4">
-                            {items.filter(i => i.value > 0).map(item => (
-                              <Tooltip key={item.key} title={`${item.label}: ${item.value} (${getPercent(item.value, totalLogs)}%)`}>
-                                <div 
-                                  style={{ 
-                                    width: `${(item.value / totalLogs) * 100}%`, 
-                                    background: item.color 
-                                  }} 
-                                  className="h-full cursor-pointer hover:opacity-80 transition-opacity"
-                                />
-                              </Tooltip>
-                            ))}
+                            {items
+                              .filter((i) => i.value > 0)
+                              .map((item) => (
+                                <Tooltip
+                                  key={item.key}
+                                  title={`${item.label}: ${item.value} (${getPercent(item.value, totalLogs)}%)`}
+                                >
+                                  <div
+                                    style={{
+                                      width: `${(item.value / totalLogs) * 100}%`,
+                                      background: item.color,
+                                    }}
+                                    className="h-full cursor-pointer hover:opacity-80 transition-opacity"
+                                  />
+                                </Tooltip>
+                              ))}
                           </div>
-                          
+
                           <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                            {items.map(item => (
+                            {items.map((item) => (
                               <div key={item.key} className="flex justify-between items-center">
                                 <Space>
                                   <Badge color={item.color} />
                                   <span style={{ fontSize: '13px', color: token.colorText }}>{item.label}</span>
                                 </Space>
                                 <span style={{ fontSize: '13px', fontWeight: '600', color: token.colorText }}>
-                                  {item.value} cuộc <Text type="secondary" style={{ fontSize: '11px' }}>({getPercent(item.value, totalLogs)}%)</Text>
+                                  {item.value} cuộc{' '}
+                                  <Text type="secondary" style={{ fontSize: '11px' }}>
+                                    ({getPercent(item.value, totalLogs)}%)
+                                  </Text>
                                 </span>
                               </div>
                             ))}
                           </div>
-                          
+
                           <Divider style={{ margin: '10px 0' }} />
                           <div className="text-center" style={{ fontSize: '12px', color: token.colorTextDescription }}>
                             Tổng số cuộc gọi đã kết nối: <strong>{totalLogs}</strong>
@@ -891,19 +1063,20 @@ export default function KPIPage() {
 
           {/* ADMIN LEADERBOARD SECTION */}
           {isAdmin && (
-            <Card 
+            <Card
               title={
                 <span style={{ color: token.colorText }}>
-                  <TrophyOutlined style={{ color: selectedRole === 'oc' ? '#722ED1' : '#D4A84B' }} /> Bảng Xếp Hạng Doanh Thu Thưởng ({selectedRole === 'oc' ? 'Online Consultant Leaderboard' : 'Booker Leaderboard'})
+                  <TrophyOutlined style={{ color: selectedRole === 'oc' ? '#722ED1' : '#D4A84B' }} /> Bảng Xếp Hạng
+                  Doanh Thu Thưởng ({selectedRole === 'oc' ? 'Online Consultant Leaderboard' : 'Booker Leaderboard'})
                 </span>
               }
               variant="outlined"
               style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
             >
-              <Table 
-                dataSource={leaderboard} 
-                columns={leaderboardColumns} 
-                rowKey="staffId" 
+              <Table
+                dataSource={leaderboard}
+                columns={leaderboardColumns}
+                rowKey="staffId"
                 pagination={false}
                 bordered
                 scroll={{ x: 'max-content' }}
@@ -914,7 +1087,7 @@ export default function KPIPage() {
                   let totalCalled = 0;
                   let totalBooked = 0;
                   let totalCheckin = 0;
-                  
+
                   let totalBaseSalary = 0;
                   let totalClientBonus = 0;
                   let totalDoneBonus = 0;
@@ -952,7 +1125,11 @@ export default function KPIPage() {
 
                   return (
                     <Table.Summary fixed="bottom">
-                      <Table.Summary.Row style={{ background: selectedRole === 'oc' ? 'rgba(114, 46, 209, 0.05)' : 'rgba(212, 168, 75, 0.05)' }}>
+                      <Table.Summary.Row
+                        style={{
+                          background: selectedRole === 'oc' ? 'rgba(114, 46, 209, 0.05)' : 'rgba(212, 168, 75, 0.05)',
+                        }}
+                      >
                         <Table.Summary.Cell index={0} colSpan={1}>
                           <span style={{ fontWeight: 'bold', color: token.colorText }}>Tổng cộng</span>
                         </Table.Summary.Cell>
@@ -965,19 +1142,29 @@ export default function KPIPage() {
                               <span style={{ fontWeight: 'bold', color: token.colorText }}>-</span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={3}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalBaseSalary.toLocaleString('vi-VN')} đ</span>
+                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+                                {totalBaseSalary.toLocaleString('vi-VN')} đ
+                              </span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={4}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalSalesReward.toLocaleString('vi-VN')} đ</span>
+                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+                                {totalSalesReward.toLocaleString('vi-VN')} đ
+                              </span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={5}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalServicingReward.toLocaleString('vi-VN')} đ</span>
+                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+                                {totalServicingReward.toLocaleString('vi-VN')} đ
+                              </span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={6}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalGrowthReward.toLocaleString('vi-VN')} đ</span>
+                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+                                {totalGrowthReward.toLocaleString('vi-VN')} đ
+                              </span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={7}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalStoreServicingReward.toLocaleString('vi-VN')} đ</span>
+                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+                                {totalStoreServicingReward.toLocaleString('vi-VN')} đ
+                              </span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={8}>
                               <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
@@ -1000,24 +1187,40 @@ export default function KPIPage() {
                               <span style={{ fontWeight: 'bold', color: '#722ED1' }}>{totalCheckin}</span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={5}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalBaseSalary.toLocaleString('vi-VN')} đ</span>
+                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+                                {totalBaseSalary.toLocaleString('vi-VN')} đ
+                              </span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={6}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalClientBonus.toLocaleString('vi-VN')} đ</span>
+                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+                                {totalClientBonus.toLocaleString('vi-VN')} đ
+                              </span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={7}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalDoneBonus.toLocaleString('vi-VN')} đ</span>
+                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+                                {totalDoneBonus.toLocaleString('vi-VN')} đ
+                              </span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={8}>
-                              <span style={{ fontWeight: 'bold', color: totalMissedBonus < 0 ? '#FF4D4F' : token.colorText }}>
-                                {(totalMissedBonus >= 0 ? '+' : '')}{totalMissedBonus.toLocaleString('vi-VN')} đ
+                              <span
+                                style={{
+                                  fontWeight: 'bold',
+                                  color: totalMissedBonus < 0 ? '#FF4D4F' : token.colorText,
+                                }}
+                              >
+                                {totalMissedBonus >= 0 ? '+' : ''}
+                                {totalMissedBonus.toLocaleString('vi-VN')} đ
                               </span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={9}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalTipBonus.toLocaleString('vi-VN')} đ</span>
+                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+                                {totalTipBonus.toLocaleString('vi-VN')} đ
+                              </span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={10}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalRevBonus.toLocaleString('vi-VN')} đ</span>
+                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+                                {totalRevBonus.toLocaleString('vi-VN')} đ
+                              </span>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell index={11}>
                               <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>

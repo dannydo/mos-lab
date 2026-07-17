@@ -3,15 +3,15 @@ import { PrismaClient as LegacyPrismaClient } from '../apps/api/src/generated/le
 const legacy = new LegacyPrismaClient({
   datasources: {
     db: {
-      url: "mysql://root:chickisslove@127.0.0.1:3306/management"
-    }
-  }
+      url: 'mysql://root:chickisslove@127.0.0.1:3306/management',
+    },
+  },
 });
 
 async function main() {
   try {
     await legacy.$connect();
-    
+
     // Find transactions for user 25047 from 2025 onwards
     const txns = await legacy.$queryRaw<any[]>`
       SELECT usbt.*, o.booking_date_start, o.order_state, o.date_created as order_created
@@ -23,9 +23,10 @@ async function main() {
 
     console.log(`Found ${txns.length} new transactions for Thuận (25047):`);
     for (const t of txns) {
-      console.log(`Tx ID: ${t.id} | Balance ID: ${t.user_service_balance_id} | Date Created: ${t.date_created} | Normal Count: ${t.normal_count} | Retain: ${t.retain_count} | TotalNormalLeft: ${t.total_normal_count_left} | TotalRetainLeft: ${t.total_retain_count_left} | OrderState: ${t.order_state} | Order ID: ${t.order_id}`);
+      console.log(
+        `Tx ID: ${t.id} | Balance ID: ${t.user_service_balance_id} | Date Created: ${t.date_created} | Normal Count: ${t.normal_count} | Retain: ${t.retain_count} | TotalNormalLeft: ${t.total_normal_count_left} | TotalRetainLeft: ${t.total_retain_count_left} | OrderState: ${t.order_state} | Order ID: ${t.order_id}`
+      );
     }
-
   } catch (err) {
     console.error(err);
   } finally {

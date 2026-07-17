@@ -2,39 +2,39 @@
 
 import '../../suppress-warnings';
 import React, { useEffect, useState, useCallback } from 'react';
-import { 
-  Table, 
-  Button, 
-  Card, 
-  Typography, 
-  Space, 
-  Checkbox, 
-  Tooltip, 
-  Badge, 
-  Tag, 
-  Modal, 
+import {
+  Table,
+  Button,
+  Card,
+  Typography,
+  Space,
+  Checkbox,
+  Tooltip,
+  Badge,
+  Tag,
+  Modal,
   Descriptions,
-  message, 
-  Row, 
-  Col, 
+  message,
+  Row,
+  Col,
   Tabs,
   List,
   Divider,
   Drawer,
-  theme
+  theme,
 } from 'antd';
-import { 
-  LeftOutlined, 
-  RightOutlined, 
-  PhoneOutlined, 
-  PlusOutlined, 
-  CheckCircleOutlined, 
-  CloseCircleOutlined, 
+import {
+  LeftOutlined,
+  RightOutlined,
+  PhoneOutlined,
+  PlusOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
   ClockCircleOutlined,
   CalendarOutlined,
   BulbOutlined,
   TeamOutlined,
-  ShoppingCartOutlined
+  ShoppingCartOutlined,
 } from '@ant-design/icons';
 import api from '../../../lib/api';
 import CallLogModal from '../../../components/CallLogModal';
@@ -49,7 +49,7 @@ export default function PlansPage() {
   const { token } = theme.useToken();
   const [loading, setLoading] = useState(false);
   const [weeklyProgress, setWeeklyProgress] = useState<CustomerWeeklyProgress[]>([]);
-  
+
   // Date controls
   const [currentWeekMonday, setCurrentWeekMonday] = useState<Date>(() => {
     const d = new Date();
@@ -68,7 +68,7 @@ export default function PlansPage() {
     combo25d: [],
     singleLost: [],
     campaignComboT7: [],
-    campaignPromo2: []
+    campaignPromo2: [],
   });
   const [suggestsLoading, setSuggestsLoading] = useState(false);
 
@@ -100,7 +100,7 @@ export default function PlansPage() {
     try {
       const weekStartStr = currentWeekMonday.toISOString().split('T')[0];
       const response = await api.get('/plans/weekly', {
-        params: { weekStart: weekStartStr }
+        params: { weekStart: weekStartStr },
       });
       setWeeklyProgress(response.data);
     } catch (error: any) {
@@ -156,7 +156,7 @@ export default function PlansPage() {
     try {
       await api.post('/plans', {
         legacyUserId: customerId,
-        date: targetDate.toISOString().split('T')[0]
+        date: targetDate.toISOString().split('T')[0],
       });
       message.success('Đã thêm khách hàng vào kế hoạch gọi!');
       fetchWeeklyPlans();
@@ -171,7 +171,7 @@ export default function PlansPage() {
   const handleConfirmToggle = async (planId: number, checked: boolean) => {
     try {
       await api.put(`/plans/${planId}/confirm`, {
-        isConfirmed: checked
+        isConfirmed: checked,
       });
       message.success(checked ? 'Đã chốt đặt lịch hẹn thành công!' : 'Đã hủy trạng thái đặt lịch.');
       fetchWeeklyPlans();
@@ -186,7 +186,7 @@ export default function PlansPage() {
     setSelectedPlanInfo({
       legacyUserId: record.customer.id,
       customerName: record.customer.name,
-      planId: record.planId
+      planId: record.planId,
     });
     setModalVisible(true);
   };
@@ -199,9 +199,11 @@ export default function PlansPage() {
   // Check if date is today
   const isToday = (date: Date) => {
     const today = new Date();
-    return date.getDate() === today.getDate() &&
+    return (
+      date.getDate() === today.getDate() &&
       date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear();
+      date.getFullYear() === today.getFullYear()
+    );
   };
 
   // Get week range string
@@ -214,7 +216,9 @@ export default function PlansPage() {
 
   const getRowClassName = (record: Customer) => {
     // 1. check callback date ("có hẹn gọi lại -> màu hy vọng")
-    const hasCallback = record.callbackDate ? new Date(record.callbackDate) >= new Date(new Date().setHours(0,0,0,0)) : false;
+    const hasCallback = record.callbackDate
+      ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
+      : false;
     if (hasCallback) {
       return themeMode === 'dark' ? 'row-hope-dark' : 'row-hope-light';
     }
@@ -233,7 +237,13 @@ export default function PlansPage() {
     const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
     if (isBookingInPast) {
       const state = record.lastBookingState;
-      const isMissed = state && state !== 'Completed' && state !== 'ServiceCompleted' && state !== 'CheckIn' && state !== 'CheckOut' && state !== 'ServiceStart';
+      const isMissed =
+        state &&
+        state !== 'Completed' &&
+        state !== 'ServiceCompleted' &&
+        state !== 'CheckIn' &&
+        state !== 'CheckOut' &&
+        state !== 'ServiceStart';
       if (isMissed) {
         return themeMode === 'dark' ? 'row-missed-dark' : 'row-missed-light';
       }
@@ -250,7 +260,7 @@ export default function PlansPage() {
       key: 'id',
       width: 70,
       fixed: 'left' as const,
-      render: (id: number) => <span style={{ color: token.colorTextDescription }}>{id}</span>
+      render: (id: number) => <span style={{ color: token.colorTextDescription }}>{id}</span>,
     },
     {
       title: 'Khách Hàng',
@@ -263,7 +273,7 @@ export default function PlansPage() {
           <div style={{ fontWeight: '600', color: token.colorText }}>{text}</div>
           <div style={{ fontSize: '11px', color: token.colorTextDescription }}>{record.customer.phone}</div>
         </div>
-      )
+      ),
     },
     {
       title: 'Nhóm',
@@ -271,10 +281,24 @@ export default function PlansPage() {
       key: 'bucket',
       width: 100,
       render: (bucket: BucketType) => {
-        if (bucket === 'COMBO_LIVE') return <Tag color="green" style={{ fontSize: '10px' }}>LIVE</Tag>;
-        if (bucket === 'COMBO_DEAD') return <Tag color="red" style={{ fontSize: '10px' }}>DEAD</Tag>;
-        return <Tag color="warning" style={{ fontSize: '10px' }}>SINGLE</Tag>;
-      }
+        if (bucket === 'COMBO_LIVE')
+          return (
+            <Tag color="green" style={{ fontSize: '10px' }}>
+              LIVE
+            </Tag>
+          );
+        if (bucket === 'COMBO_DEAD')
+          return (
+            <Tag color="red" style={{ fontSize: '10px' }}>
+              DEAD
+            </Tag>
+          );
+        return (
+          <Tag color="warning" style={{ fontSize: '10px' }}>
+            SINGLE
+          </Tag>
+        );
+      },
     },
     {
       title: 'Chưa tới tiệm (Ngày)',
@@ -284,7 +308,9 @@ export default function PlansPage() {
       render: (days: number | null, record: CustomerWeeklyProgress) => {
         const cust = record.customer;
         // 1. check callback date ("có hẹn gọi lại")
-        const hasCallback = cust.callbackDate ? new Date(cust.callbackDate) >= new Date(new Date().setHours(0,0,0,0)) : false;
+        const hasCallback = cust.callbackDate
+          ? new Date(cust.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
+          : false;
         if (hasCallback) {
           const callbackFormatted = dayjs(cust.callbackDate).format('DD/MM/YYYY');
           return (
@@ -313,7 +339,13 @@ export default function PlansPage() {
         const isBookingInPast = cust.lastBookingDate ? new Date(cust.lastBookingDate) < new Date() : false;
         if (isBookingInPast) {
           const state = cust.lastBookingState;
-          const isMissed = state && state !== 'Completed' && state !== 'ServiceCompleted' && state !== 'CheckIn' && state !== 'CheckOut' && state !== 'ServiceStart';
+          const isMissed =
+            state &&
+            state !== 'Completed' &&
+            state !== 'ServiceCompleted' &&
+            state !== 'CheckIn' &&
+            state !== 'CheckOut' &&
+            state !== 'ServiceStart';
           if (isMissed) {
             let missedDays = days;
             if (cust.lastBookingDate) {
@@ -334,7 +366,7 @@ export default function PlansPage() {
 
         // 4. normal daysSinceLastVisit ("số dương -> chưa ghé x days, bình thường")
         return days !== null ? `${days} ngày` : <Text style={{ color: '#888' }}>Chưa từng đến</Text>;
-      }
+      },
     },
     // Monday to Sunday dynamic columns
     ...weekDays.map((date, idx) => {
@@ -354,7 +386,7 @@ export default function PlansPage() {
         className: isTodayColumn ? 'bg-today-column' : '',
         render: (_: any, record: CustomerWeeklyProgress) => {
           const activity = record.dailyActivities[idx];
-          
+
           if (!activity) return null;
 
           return (
@@ -370,29 +402,40 @@ export default function PlansPage() {
 
               {/* Call Log representation */}
               {activity.hasCall ? (
-                <Tooltip 
+                <Tooltip
                   title={
                     <div>
-                      <div><b>Kết quả:</b> {activity.callResult === 'ANSWERED' ? 'Có bắt máy' : 'Gọi nhỡ'}</div>
-                      {activity.callOutcome && <div><b>Chi tiết:</b> {activity.callOutcome}</div>}
-                      {activity.note && <div><b>Ghi chú:</b> {activity.note}</div>}
+                      <div>
+                        <b>Kết quả:</b> {activity.callResult === 'ANSWERED' ? 'Có bắt máy' : 'Gọi nhỡ'}
+                      </div>
+                      {activity.callOutcome && (
+                        <div>
+                          <b>Chi tiết:</b> {activity.callOutcome}
+                        </div>
+                      )}
+                      {activity.note && (
+                        <div>
+                          <b>Ghi chú:</b> {activity.note}
+                        </div>
+                      )}
                     </div>
                   }
                 >
-                  <Button 
-                    type="text" 
-                    shape="circle" 
-                    icon={<PhoneOutlined />} 
-                    style={{ 
+                  <Button
+                    type="text"
+                    shape="circle"
+                    icon={<PhoneOutlined />}
+                    style={{
                       color: activity.callResult === 'ANSWERED' ? '#52C41A' : '#FF4D4F',
-                      background: token.colorFillTertiary
-                    }} 
+                      background: token.colorFillTertiary,
+                    }}
                     onClick={() => openCallLog(record, date)}
                   />
                 </Tooltip>
               ) : (
                 // Quick Call Button for planned or today
-                isTodayColumn && !record.isConfirmed && (
+                isTodayColumn &&
+                !record.isConfirmed && (
                   <Button
                     type="dashed"
                     shape="circle"
@@ -405,7 +448,7 @@ export default function PlansPage() {
               )}
             </Space>
           );
-        }
+        },
       };
     }),
     {
@@ -417,16 +460,22 @@ export default function PlansPage() {
       render: (_: any, record: CustomerWeeklyProgress) => {
         if (!record.planId) return null;
         return (
-          <Tooltip title={record.isConfirmed ? `Đã chốt hẹn lúc ${new Date(record.confirmTime || '').toLocaleTimeString()}` : 'Chốt lịch hẹn'}>
-            <Checkbox 
-              checked={record.isConfirmed} 
+          <Tooltip
+            title={
+              record.isConfirmed
+                ? `Đã chốt hẹn lúc ${new Date(record.confirmTime || '').toLocaleTimeString()}`
+                : 'Chốt lịch hẹn'
+            }
+          >
+            <Checkbox
+              checked={record.isConfirmed}
               onChange={(e) => handleConfirmToggle(record.planId!, e.target.checked)}
               className="custom-gold-checkbox"
             />
           </Tooltip>
         );
-      }
-    }
+      },
+    },
   ];
 
   // Render suggestion lists
@@ -434,7 +483,9 @@ export default function PlansPage() {
     return (
       <div className="mb-6">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <Text strong style={{ color: token.colorPrimary }}>{touchpointName}</Text>
+          <Text strong style={{ color: token.colorPrimary }}>
+            {touchpointName}
+          </Text>
           <Text style={{ fontSize: '11px', color: token.colorTextDescription }}>{dataList.length} khách</Text>
         </div>
         <div className="mb-2" style={{ fontSize: '11px', color: token.colorTextDescription, fontStyle: 'italic' }}>
@@ -443,35 +494,38 @@ export default function PlansPage() {
         <List
           size="small"
           dataSource={dataList}
-          style={{ 
-            background: token.colorBgLayout, 
-            border: `1px solid ${token.colorBorderSecondary}`, 
-            borderRadius: '6px' 
+          style={{
+            background: token.colorBgLayout,
+            border: `1px solid ${token.colorBorderSecondary}`,
+            borderRadius: '6px',
           }}
           renderItem={(cust: any) => (
             <List.Item
               actions={[
-                <Button 
-                  key="add" 
-                  type="text" 
-                  size="small" 
-                  icon={<PlusOutlined />} 
+                <Button
+                  key="add"
+                  type="text"
+                  size="small"
+                  icon={<PlusOutlined />}
                   onClick={() => addToPlan(cust.id)}
                   style={{ color: token.colorPrimary }}
-                />
+                />,
               ]}
             >
               <List.Item.Meta
                 title={<span style={{ color: token.colorText, fontWeight: '500', fontSize: '13px' }}>{cust.name}</span>}
                 description={
                   <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                    SĐT: {cust.phone} | Trễ: {cust.daysSinceLastVisit !== null ? `${cust.daysSinceLastVisit} ngày` : 'Chưa ghé'}
+                    SĐT: {cust.phone} | Trễ:{' '}
+                    {cust.daysSinceLastVisit !== null ? `${cust.daysSinceLastVisit} ngày` : 'Chưa ghé'}
                   </div>
                 }
               />
             </List.Item>
           )}
-          locale={{ emptyText: <span style={{ color: token.colorTextDescription, fontSize: '12px' }}>Không có gợi ý</span> }}
+          locale={{
+            emptyText: <span style={{ color: token.colorTextDescription, fontSize: '12px' }}>Không có gợi ý</span>,
+          }}
         />
       </div>
     );
@@ -481,30 +535,47 @@ export default function PlansPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>Bảng Tiến Độ Cuộc Gọi Tuần</Title>
-          <Text style={{ color: token.colorTextDescription }}>Theo dõi timeline checkin và lịch sử gọi điện trong tuần của Telesales</Text>
+          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
+            Bảng Tiến Độ Cuộc Gọi Tuần
+          </Title>
+          <Text style={{ color: token.colorTextDescription }}>
+            Theo dõi timeline checkin và lịch sử gọi điện trong tuần của Telesales
+          </Text>
         </div>
-        
+
         <Space>
-          <Button 
-            type="primary" 
-            icon={<BulbOutlined />} 
+          <Button
+            type="primary"
+            icon={<BulbOutlined />}
             onClick={() => {
               setDrawerVisible(true);
               fetchSuggestions();
             }}
-            style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000', fontWeight: '500' }}
+            style={{
+              background: token.colorPrimary,
+              borderColor: token.colorPrimary,
+              color: '#000',
+              fontWeight: '500',
+            }}
           >
             Gợi ý cuộc gọi & Chiến dịch
           </Button>
         </Space>
       </div>
 
-      <Card style={{ background: token.colorBgContainer, border: `1px solid ${token.colorBorderSecondary}`, marginBottom: '24px' }}>
+      <Card
+        style={{
+          background: token.colorBgContainer,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          marginBottom: '24px',
+        }}
+      >
         <div className="flex justify-between items-center flex-wrap gap-4">
           <Space>
             <Button icon={<LeftOutlined />} onClick={handlePrevWeek} />
-            <Text strong style={{ color: token.colorText, fontSize: '16px' }}>{getWeekRangeString()}</Text>
+            <Text strong style={{ color: token.colorText, fontSize: '16px' }}>
+              {getWeekRangeString()}
+            </Text>
             <Button icon={<RightOutlined />} onClick={handleNextWeek} />
             <Button onClick={handleCurrentWeek}>Tuần Này</Button>
           </Space>
@@ -514,10 +585,12 @@ export default function PlansPage() {
               <Badge status="success" /> <Text style={{ color: token.colorTextDescription }}>Checkin (CK)</Text>
             </Space>
             <Space>
-              <PhoneOutlined style={{ color: '#52C41A' }} /> <Text style={{ color: token.colorTextDescription }}>Có bắt máy</Text>
+              <PhoneOutlined style={{ color: '#52C41A' }} />{' '}
+              <Text style={{ color: token.colorTextDescription }}>Có bắt máy</Text>
             </Space>
             <Space>
-              <PhoneOutlined style={{ color: '#FF4D4F' }} /> <Text style={{ color: token.colorTextDescription }}>Gọi nhỡ</Text>
+              <PhoneOutlined style={{ color: '#FF4D4F' }} />{' '}
+              <Text style={{ color: token.colorTextDescription }}>Gọi nhỡ</Text>
             </Space>
           </Space>
         </div>
@@ -534,25 +607,31 @@ export default function PlansPage() {
         style={{
           background: token.colorBgContainer,
           border: `1px solid ${token.colorBorderSecondary}`,
-          borderRadius: '8px'
+          borderRadius: '8px',
         }}
         className="antd-custom-table weekly-grid-table"
       />
 
       {/* SUGGESTIONS DRAWER */}
       <Drawer
-        title={<span style={{ color: token.colorPrimary, fontSize: '16px', fontWeight: 'bold' }}>Gợi Ý Khách Hàng Cần Gọi</span>}
+        title={
+          <span style={{ color: token.colorPrimary, fontSize: '16px', fontWeight: 'bold' }}>
+            Gợi Ý Khách Hàng Cần Gọi
+          </span>
+        }
         placement="right"
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
         width={400}
-        styles={{ 
-          body: { background: token.colorBgContainer, padding: '20px' }, 
-          header: { background: token.colorBgLayout, borderBottom: `1px solid ${token.colorBorderSecondary}` } 
+        styles={{
+          body: { background: token.colorBgContainer, padding: '20px' },
+          header: { background: token.colorBgLayout, borderBottom: `1px solid ${token.colorBorderSecondary}` },
         }}
       >
         {suggestsLoading ? (
-          <div className="text-center py-8" style={{ color: token.colorTextDescription }}>Đang quét danh sách gợi ý...</div>
+          <div className="text-center py-8" style={{ color: token.colorTextDescription }}>
+            Đang quét danh sách gợi ý...
+          </div>
         ) : (
           <div>
             <Tabs
@@ -565,27 +644,27 @@ export default function PlansPage() {
                   children: (
                     <div>
                       {renderSuggestList(
-                        suggests.happyCall, 
-                        '📞 Happy Call 24h', 
+                        suggests.happyCall,
+                        '📞 Happy Call 24h',
                         'Khách vừa ghé tiệm ngày hôm qua. Gọi hỏi thăm mức độ hài lòng.'
                       )}
                       {renderSuggestList(
-                        suggests.single21d, 
-                        '⏳ Single 21d (Cận Dặm Lẻ)', 
+                        suggests.single21d,
+                        '⏳ Single 21d (Cận Dặm Lẻ)',
                         'Khách lẻ ghé tiệm 19-21 ngày trước. Nhắc hẹn để được tính giá dặm (tiết kiệm 57-64%).'
                       )}
                       {renderSuggestList(
-                        suggests.combo25d, 
-                        '💎 Combo 25d (Cận Dặm Gói)', 
+                        suggests.combo25d,
+                        '💎 Combo 25d (Cận Dặm Gói)',
                         'Khách combo ghé tiệm 23-25 ngày trước. Nhắc hẹn để được trừ dặm combo (hạn chót 25 ngày).'
                       )}
                       {renderSuggestList(
-                        suggests.singleLost, 
-                        '❌ Single 22d+ (Trễ Hạn Dặm)', 
+                        suggests.singleLost,
+                        '❌ Single 22d+ (Trễ Hạn Dặm)',
                         'Khách lẻ trễ hẹn dặm > 21 ngày. Cần gọi thuyết phục quay lại nối mới.'
                       )}
                     </div>
-                  )
+                  ),
                 },
                 {
                   key: '2',
@@ -593,17 +672,17 @@ export default function PlansPage() {
                   children: (
                     <div>
                       {renderSuggestList(
-                        suggests.campaignComboT7, 
-                        '🎯 Chiến dịch Combo T7', 
+                        suggests.campaignComboT7,
+                        '🎯 Chiến dịch Combo T7',
                         'Tải từ Google Sheet [V2]COMBO T7. Các khách hàng ưu tiên chăm sóc.'
                       )}
                       {renderSuggestList(
-                        suggests.campaignPromo2, 
-                        '🔥 Chiến dịch Promo NLC', 
+                        suggests.campaignPromo2,
+                        '🔥 Chiến dịch Promo NLC',
                         'Tải từ Google Sheet NLC.PROMO 2. Khách hàng theo dõi khuyến mãi.'
                       )}
                     </div>
-                  )
+                  ),
                 },
                 {
                   key: '3',
@@ -611,13 +690,13 @@ export default function PlansPage() {
                   children: (
                     <div>
                       {renderSuggestList(
-                        suggests.myCustomers || [], 
-                        '👤 Khách hàng phụ trách', 
+                        suggests.myCustomers || [],
+                        '👤 Khách hàng phụ trách',
                         'Danh sách khách hàng được phân bổ cho riêng bạn chưa lập lịch gọi tuần này.'
                       )}
                     </div>
-                  )
-                }
+                  ),
+                },
               ]}
             />
           </div>
@@ -646,11 +725,11 @@ export default function PlansPage() {
 
         /* Gold checkbox styling */
         .custom-gold-checkbox .ant-checkbox-checked .ant-checkbox-inner {
-          background-color: #D4A84B !important;
-          border-color: #D4A84B !important;
+          background-color: #d4a84b !important;
+          border-color: #d4a84b !important;
         }
         .custom-gold-checkbox .ant-checkbox-checked::after {
-          border-color: #D4A84B !important;
+          border-color: #d4a84b !important;
         }
         .dark-theme .custom-gold-checkbox .ant-checkbox-inner {
           background-color: #1f1f1f;
@@ -661,7 +740,7 @@ export default function PlansPage() {
           border-color: #d9d9d9;
         }
         .custom-gold-checkbox .ant-checkbox-wrapper:hover .ant-checkbox-inner {
-          border-color: #D4A84B !important;
+          border-color: #d4a84b !important;
         }
 
         /* Custom tabs inside drawer */
@@ -676,7 +755,7 @@ export default function PlansPage() {
           color: #555 !important;
         }
         .ant-drawer .ant-tabs-card .ant-tabs-tab-active {
-          background: #D4A84B !important;
+          background: #d4a84b !important;
           color: #000 !important;
         }
 

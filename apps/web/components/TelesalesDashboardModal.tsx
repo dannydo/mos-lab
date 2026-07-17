@@ -15,7 +15,7 @@ import {
   SaveOutlined,
   DownOutlined,
   UpOutlined,
-  LoadingOutlined
+  LoadingOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../context/ThemeContext';
 import dayjs from 'dayjs';
@@ -31,20 +31,129 @@ interface TelesalesDashboardModalProps {
 }
 
 const members = [
-  { id: 'TN', name: 'Thanh Ngân', color: '#EC4899', gradient: 'linear-gradient(135deg, #EC4899, #DB2777)', teamRole: 'Telesales Leader', textColor: 'text-pink-400', borderColor: 'border-pink-400', hoverGlow: 'shadow-pink-500/20' },
-  { id: 'HM', name: 'Hoài My', color: '#A855F7', gradient: 'linear-gradient(135deg, #A855F7, #9333EA)', teamRole: 'Senior Consultant', textColor: 'text-purple-400', borderColor: 'border-purple-400', hoverGlow: 'shadow-purple-500/20' },
-  { id: 'VT', name: 'Vũ Thảo', color: '#06B6D4', gradient: 'linear-gradient(135deg, #06B6D4, #0891B2)', teamRole: 'Senior Consultant', textColor: 'text-cyan-400', borderColor: 'border-cyan-400', hoverGlow: 'shadow-cyan-500/20' },
-  { id: 'KL', name: 'Kim Loan', color: '#10B981', gradient: 'linear-gradient(135deg, #10B981, #059669)', teamRole: 'Consultant Specialist', textColor: 'text-emerald-400', borderColor: 'border-emerald-400', hoverGlow: 'shadow-emerald-500/20' },
-  { id: 'TH', name: 'Thu Hà', color: '#F97316', gradient: 'linear-gradient(135deg, #F97316, #EA580C)', teamRole: 'Telesales Assistant', textColor: 'text-orange-400', borderColor: 'border-orange-400', hoverGlow: 'shadow-orange-500/20' },
-  { id: 'DD', name: 'Đăng Đô', color: '#D4A84B', gradient: 'linear-gradient(135deg, #D4A84B, #B8902F)', teamRole: 'Telesales Manager', textColor: 'text-gold', borderColor: 'border-gold', hoverGlow: 'shadow-gold/20' },
+  {
+    id: 'TN',
+    name: 'Thanh Ngân',
+    color: '#EC4899',
+    gradient: 'linear-gradient(135deg, #EC4899, #DB2777)',
+    teamRole: 'Telesales Leader',
+    textColor: 'text-pink-400',
+    borderColor: 'border-pink-400',
+    hoverGlow: 'shadow-pink-500/20',
+  },
+  {
+    id: 'HM',
+    name: 'Hoài My',
+    color: '#A855F7',
+    gradient: 'linear-gradient(135deg, #A855F7, #9333EA)',
+    teamRole: 'Senior Consultant',
+    textColor: 'text-purple-400',
+    borderColor: 'border-purple-400',
+    hoverGlow: 'shadow-purple-500/20',
+  },
+  {
+    id: 'VT',
+    name: 'Vũ Thảo',
+    color: '#06B6D4',
+    gradient: 'linear-gradient(135deg, #06B6D4, #0891B2)',
+    teamRole: 'Senior Consultant',
+    textColor: 'text-cyan-400',
+    borderColor: 'border-cyan-400',
+    hoverGlow: 'shadow-cyan-500/20',
+  },
+  {
+    id: 'KL',
+    name: 'Kim Loan',
+    color: '#10B981',
+    gradient: 'linear-gradient(135deg, #10B981, #059669)',
+    teamRole: 'Consultant Specialist',
+    textColor: 'text-emerald-400',
+    borderColor: 'border-emerald-400',
+    hoverGlow: 'shadow-emerald-500/20',
+  },
+  {
+    id: 'TH',
+    name: 'Thu Hà',
+    color: '#F97316',
+    gradient: 'linear-gradient(135deg, #F97316, #EA580C)',
+    teamRole: 'Telesales Assistant',
+    textColor: 'text-orange-400',
+    borderColor: 'border-orange-400',
+    hoverGlow: 'shadow-orange-500/20',
+  },
+  {
+    id: 'DD',
+    name: 'Đăng Đô',
+    color: '#D4A84B',
+    gradient: 'linear-gradient(135deg, #D4A84B, #B8902F)',
+    teamRole: 'Telesales Manager',
+    textColor: 'text-gold',
+    borderColor: 'border-gold',
+    hoverGlow: 'shadow-gold/20',
+  },
 ];
 
 const metricConfigs = [
-  { key: 'calls', label: 'Calls', icon: '📞', color: '#3B82F6', gradId: 'callsGrad', antIcon: PhoneOutlined, bgGradient: 'from-blue-600 to-cyan-400', shadowGlow: 'shadow-blue-500/20', lightBg: 'bg-blue-50/70 text-blue-600 border-blue-100', darkBg: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-  { key: 'pickups', label: 'Pickups', icon: '📱', color: '#8B5CF6', gradId: 'pickupsGrad', antIcon: CustomerServiceOutlined, bgGradient: 'from-purple-600 to-fuchsia-400', shadowGlow: 'shadow-purple-500/20', lightBg: 'bg-purple-50/70 text-purple-600 border-purple-100', darkBg: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
-  { key: 'happy', label: 'Happy Call', icon: '😊', color: '#F59E0B', gradId: 'happyGrad', antIcon: SmileOutlined, bgGradient: 'from-amber-500 to-orange-400', shadowGlow: 'shadow-amber-500/20', lightBg: 'bg-amber-50/70 text-amber-600 border-amber-100', darkBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-  { key: 'booked', label: 'Booked', icon: '📅', color: '#F97316', gradId: 'bookedGrad', antIcon: CalendarOutlined, bgGradient: 'from-orange-500 to-amber-500', shadowGlow: 'shadow-orange-500/20', lightBg: 'bg-orange-50/70 text-orange-600 border-orange-100', darkBg: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
-  { key: 'done', label: 'Done Deal', icon: '✅', color: '#10B981', gradId: 'doneGrad', antIcon: CheckCircleOutlined, bgGradient: 'from-emerald-600 to-teal-400', shadowGlow: 'shadow-emerald-500/20', lightBg: 'bg-emerald-50/70 text-emerald-600 border-emerald-100', darkBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+  {
+    key: 'calls',
+    label: 'Calls',
+    icon: '📞',
+    color: '#3B82F6',
+    gradId: 'callsGrad',
+    antIcon: PhoneOutlined,
+    bgGradient: 'from-blue-600 to-cyan-400',
+    shadowGlow: 'shadow-blue-500/20',
+    lightBg: 'bg-blue-50/70 text-blue-600 border-blue-100',
+    darkBg: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  },
+  {
+    key: 'pickups',
+    label: 'Pickups',
+    icon: '📱',
+    color: '#8B5CF6',
+    gradId: 'pickupsGrad',
+    antIcon: CustomerServiceOutlined,
+    bgGradient: 'from-purple-600 to-fuchsia-400',
+    shadowGlow: 'shadow-purple-500/20',
+    lightBg: 'bg-purple-50/70 text-purple-600 border-purple-100',
+    darkBg: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  },
+  {
+    key: 'happy',
+    label: 'Happy Call',
+    icon: '😊',
+    color: '#F59E0B',
+    gradId: 'happyGrad',
+    antIcon: SmileOutlined,
+    bgGradient: 'from-amber-500 to-orange-400',
+    shadowGlow: 'shadow-amber-500/20',
+    lightBg: 'bg-amber-50/70 text-amber-600 border-amber-100',
+    darkBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  },
+  {
+    key: 'booked',
+    label: 'Booked',
+    icon: '📅',
+    color: '#F97316',
+    gradId: 'bookedGrad',
+    antIcon: CalendarOutlined,
+    bgGradient: 'from-orange-500 to-amber-500',
+    shadowGlow: 'shadow-orange-500/20',
+    lightBg: 'bg-orange-50/70 text-orange-600 border-orange-100',
+    darkBg: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  },
+  {
+    key: 'done',
+    label: 'Done Deal',
+    icon: '✅',
+    color: '#10B981',
+    gradId: 'doneGrad',
+    antIcon: CheckCircleOutlined,
+    bgGradient: 'from-emerald-600 to-teal-400',
+    shadowGlow: 'shadow-emerald-500/20',
+    lightBg: 'bg-emerald-50/70 text-emerald-600 border-emerald-100',
+    darkBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  },
 ];
 
 const periods = [
@@ -53,16 +162,16 @@ const periods = [
   { id: 'yesterday', label: 'Hôm qua' },
   { id: 'today', label: 'Hôm nay' },
   { id: 'this_week', label: 'Tuần này' },
-  { id: 'this_month', label: 'Tháng này' }
+  { id: 'this_month', label: 'Tháng này' },
 ];
 
 const radialCoords = [
-  { x: 0, y: -78 },   // Index 0: Top (originally -60)
-  { x: 68, y: -39 },  // Index 1: Top-Right (originally 52, -30)
-  { x: 68, y: 39 },   // Index 2: Bottom-Right (originally 52, 30)
-  { x: 0, y: 78 },    // Index 3: Bottom (originally 60)
-  { x: -68, y: 39 },  // Index 4: Bottom-Left (originally -52, 30)
-  { x: -68, y: -39 }  // Index 5: Top-Left (originally -52, -30)
+  { x: 0, y: -78 }, // Index 0: Top (originally -60)
+  { x: 68, y: -39 }, // Index 1: Top-Right (originally 52, -30)
+  { x: 68, y: 39 }, // Index 2: Bottom-Right (originally 52, 30)
+  { x: 0, y: 78 }, // Index 3: Bottom (originally 60)
+  { x: -68, y: 39 }, // Index 4: Bottom-Left (originally -52, 30)
+  { x: -68, y: -39 }, // Index 5: Top-Left (originally -52, -30)
 ];
 
 const periodPositions: Record<string, string> = {
@@ -71,7 +180,7 @@ const periodPositions: Record<string, string> = {
   yesterday: '35%',
   today: '65%',
   this_week: '80%',
-  this_month: '95%'
+  this_month: '95%',
 };
 
 const baseDataToday: Record<string, Record<string, number>> = {
@@ -89,7 +198,7 @@ const multipliers: Record<string, number> = {
   this_month: 20,
   yesterday: 0.8,
   last_week: 4,
-  last_month: 18
+  last_month: 18,
 };
 
 function getMemberData(memberId: string, period: string): Record<string, number> {
@@ -110,10 +219,14 @@ const LEVEL_PRESETS = [
   { emoji: '🐥', name: 'Chick', done: 225, booked: 281, happy: 1125, pickups: 1406, calls: 4688 },
   { emoji: '🐔', name: 'Chicken', done: 325, booked: 406, happy: 1625, pickups: 2031, calls: 6771 },
   { emoji: '🍗', name: 'Drumstick', done: 450, booked: 563, happy: 2250, pickups: 2813, calls: 9375 },
-  { emoji: '👼', name: 'Angel', done: 600, booked: 750, happy: 3000, pickups: 3750, calls: 12500 }
+  { emoji: '👼', name: 'Angel', done: 600, booked: 750, happy: 3000, pickups: 3750, calls: 12500 },
 ];
 
-export default function TelesalesDashboardModal({ visible, onClose, initialMemberId = 'TN' }: TelesalesDashboardModalProps) {
+export default function TelesalesDashboardModal({
+  visible,
+  onClose,
+  initialMemberId = 'TN',
+}: TelesalesDashboardModalProps) {
   const { themeMode } = useTheme();
   const modalContainerRef = useRef<HTMLDivElement | null>(null);
   const [modalSize, setModalSize] = useState<{ width: string; height: string } | null>(null);
@@ -133,11 +246,12 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
 
   const getMemberLevelIdx = (memberId: string | number): number => {
     const idStr = String(memberId);
-    
+
     // Find member to retrieve both their initials and database ID
-    const member = dbMembers.find((m: any) => String(m.id) === idStr || String(m.initials) === idStr)
-      || members.find((m: any) => String(m.id) === idStr || String(m.initials) === idStr);
-    
+    const member =
+      dbMembers.find((m: any) => String(m.id) === idStr || String(m.initials) === idStr) ||
+      members.find((m: any) => String(m.id) === idStr || String(m.initials) === idStr);
+
     if (!member) {
       if (staffLevels[idStr] !== undefined) {
         return Number(staffLevels[idStr]);
@@ -160,14 +274,14 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const getMemberTarget = (memberId: string, periodId: string): Record<string, number> => {
     const levelIdx = getMemberLevelIdx(memberId);
     const preset = LEVEL_PRESETS[levelIdx] || LEVEL_PRESETS[2];
-    
+
     let divisor = 1;
     if (periodId === 'today' || periodId === 'yesterday') {
       divisor = 25;
     } else if (periodId === 'this_week' || periodId === 'last_week') {
       divisor = 4;
     }
-    
+
     return {
       calls: Math.round(preset.calls / divisor),
       pickups: Math.round(preset.pickups / divisor),
@@ -192,7 +306,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
     this_month: false,
     yesterday: false,
     last_week: false,
-    last_month: false
+    last_month: false,
   });
 
   const [dbMembers, setDbMembers] = useState<any[]>([]);
@@ -256,7 +370,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
           const hStr = `${height}px`;
           localStorage.setItem('telesales_modal_width', wStr);
           localStorage.setItem('telesales_modal_height', hStr);
-          setModalSize(prev => {
+          setModalSize((prev) => {
             if (prev && prev.width === wStr && prev.height === hStr) {
               return prev;
             }
@@ -283,9 +397,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   // Synchronize target expansion when period changes
   useEffect(() => {
     if (visible) {
-      setExpandedSections(prev => {
+      setExpandedSections((prev) => {
         const next = { ...prev };
-        periods.forEach(p => {
+        periods.forEach((p) => {
           next[p.id] = p.id === currentPeriodId;
         });
         return next;
@@ -304,30 +418,86 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
           { id: 'today', start: now.startOf('day'), end: now.endOf('day') },
           { id: 'yesterday', start: now.subtract(1, 'day').startOf('day'), end: now.subtract(1, 'day').endOf('day') },
           { id: 'this_week', start: now.startOf('isoWeek'), end: now.endOf('day') },
-          { id: 'last_week', start: now.subtract(1, 'week').startOf('isoWeek'), end: now.subtract(1, 'week').endOf('isoWeek') },
+          {
+            id: 'last_week',
+            start: now.subtract(1, 'week').startOf('isoWeek'),
+            end: now.subtract(1, 'week').endOf('isoWeek'),
+          },
           { id: 'this_month', start: now.startOf('month'), end: now.endOf('day') },
-          { id: 'last_month', start: now.subtract(1, 'month').startOf('month'), end: now.subtract(1, 'month').endOf('month') }
+          {
+            id: 'last_month',
+            start: now.subtract(1, 'month').startOf('month'),
+            end: now.subtract(1, 'month').endOf('month'),
+          },
         ];
 
         const saved = localStorage.getItem('telesales_dashboard_visible_staff');
         const savedIds = saved ? JSON.parse(saved) : [];
 
         const stylesPreset = [
-          { color: '#EC4899', gradient: 'linear-gradient(135deg, #EC4899, #DB2777)', textColor: 'text-pink-400', borderColor: 'border-pink-400', hoverGlow: 'shadow-pink-500/20' },
-          { color: '#A855F7', gradient: 'linear-gradient(135deg, #A855F7, #9333EA)', textColor: 'text-purple-400', borderColor: 'border-purple-400', hoverGlow: 'shadow-purple-500/20' },
-          { color: '#06B6D4', gradient: 'linear-gradient(135deg, #06B6D4, #0891B2)', textColor: 'text-cyan-400', borderColor: 'border-cyan-400', hoverGlow: 'shadow-cyan-500/20' },
-          { color: '#10B981', gradient: 'linear-gradient(135deg, #10B981, #059669)', textColor: 'text-emerald-400', borderColor: 'border-emerald-400', hoverGlow: 'shadow-emerald-500/20' },
-          { color: '#F97316', gradient: 'linear-gradient(135deg, #F97316, #EA580C)', textColor: 'text-orange-400', borderColor: 'border-orange-400', hoverGlow: 'shadow-orange-500/20' },
-          { color: '#D4A84B', gradient: 'linear-gradient(135deg, #D4A84B, #B8902F)', textColor: 'text-gold', borderColor: 'border-gold', hoverGlow: 'shadow-gold/20' },
-          { color: '#3B82F6', gradient: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', textColor: 'text-blue-400', borderColor: 'border-blue-400', hoverGlow: 'shadow-blue-500/20' },
-          { color: '#EF4444', gradient: 'linear-gradient(135deg, #EF4444, #B91C1C)', textColor: 'text-red-400', borderColor: 'border-red-400', hoverGlow: 'shadow-red-500/20' }
+          {
+            color: '#EC4899',
+            gradient: 'linear-gradient(135deg, #EC4899, #DB2777)',
+            textColor: 'text-pink-400',
+            borderColor: 'border-pink-400',
+            hoverGlow: 'shadow-pink-500/20',
+          },
+          {
+            color: '#A855F7',
+            gradient: 'linear-gradient(135deg, #A855F7, #9333EA)',
+            textColor: 'text-purple-400',
+            borderColor: 'border-purple-400',
+            hoverGlow: 'shadow-purple-500/20',
+          },
+          {
+            color: '#06B6D4',
+            gradient: 'linear-gradient(135deg, #06B6D4, #0891B2)',
+            textColor: 'text-cyan-400',
+            borderColor: 'border-cyan-400',
+            hoverGlow: 'shadow-cyan-500/20',
+          },
+          {
+            color: '#10B981',
+            gradient: 'linear-gradient(135deg, #10B981, #059669)',
+            textColor: 'text-emerald-400',
+            borderColor: 'border-emerald-400',
+            hoverGlow: 'shadow-emerald-500/20',
+          },
+          {
+            color: '#F97316',
+            gradient: 'linear-gradient(135deg, #F97316, #EA580C)',
+            textColor: 'text-orange-400',
+            borderColor: 'border-orange-400',
+            hoverGlow: 'shadow-orange-500/20',
+          },
+          {
+            color: '#D4A84B',
+            gradient: 'linear-gradient(135deg, #D4A84B, #B8902F)',
+            textColor: 'text-gold',
+            borderColor: 'border-gold',
+            hoverGlow: 'shadow-gold/20',
+          },
+          {
+            color: '#3B82F6',
+            gradient: 'linear-gradient(135deg, #3B82F6, #1D4ED8)',
+            textColor: 'text-blue-400',
+            borderColor: 'border-blue-400',
+            hoverGlow: 'shadow-blue-500/20',
+          },
+          {
+            color: '#EF4444',
+            gradient: 'linear-gradient(135deg, #EF4444, #B91C1C)',
+            textColor: 'text-red-400',
+            borderColor: 'border-red-400',
+            hoverGlow: 'shadow-red-500/20',
+          },
         ];
 
         const fetchResults = await Promise.all(
           periodsList.map(async (p) => {
             const params: any = {
               startDate: p.start.format('YYYY-MM-DD'),
-              endDate: p.end.format('YYYY-MM-DD')
+              endDate: p.end.format('YYYY-MM-DD'),
             };
 
             if (savedIds.length > 0) {
@@ -338,10 +508,15 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
 
             const res = await api.get('/kpi/leaderboard', { params });
             const list = res.data || [];
-            
+
             const mappedMembers = list.map((item: any, idx: number) => {
               const initials = item.displayName
-                ? item.displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                ? item.displayName
+                    .split(' ')
+                    .map((n: string) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase()
                 : item.username?.slice(0, 2).toUpperCase() || '??';
 
               const style = stylesPreset[idx % stylesPreset.length];
@@ -357,8 +532,8 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   pickups: item.totalAnswered || 0,
                   happy: item.totalHappy || 0,
                   booked: item.totalBooked || 0,
-                  done: item.totalCheckin || 0
-                }
+                  done: item.totalCheckin || 0,
+                },
               };
             });
 
@@ -367,7 +542,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
         );
 
         const newMap: Record<string, any[]> = {};
-        fetchResults.forEach(r => {
+        fetchResults.forEach((r) => {
           newMap[r.periodId] = r.data;
         });
 
@@ -380,7 +555,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
         if (activeList.length > 0) {
           const found = activeList.find((m: any) => m.id === currentMemberId || m.initials === currentMemberId);
           if (!found) {
-            const initialFound = activeList.find((m: any) => m.id === initialMemberId || m.initials === initialMemberId);
+            const initialFound = activeList.find(
+              (m: any) => m.id === initialMemberId || m.initials === initialMemberId
+            );
             setCurrentMemberId(initialFound ? initialFound.id : activeList[0].id);
           } else {
             setCurrentMemberId(found.id);
@@ -412,9 +589,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   }, [currentPeriodId, periodDataMap]);
 
   const toggleStaffSelection = (id: number) => {
-    setSelectedStaffIds(prev => 
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
+    setSelectedStaffIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
   const saveVisibleStaff = async () => {
@@ -425,7 +600,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
       }
       setIsConfigOpen(false);
       message.success('Đã cập nhật danh sách nhân sự và mục tiêu cấp độ!');
-      setRefreshCounter(prev => prev + 1);
+      setRefreshCounter((prev) => prev + 1);
     } catch (err) {
       console.error('Failed to save staff levels:', err);
       message.error('Lỗi khi lưu cấp độ mục tiêu.');
@@ -445,7 +620,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
           const list = res.data || [];
           const filtered = list.filter((s: any) => s.role !== 'technician');
           setSystemStaff(filtered);
-          
+
           if (!saved) {
             const telesalesIds = filtered.filter((s: any) => s.role === 'telesales').map((s: any) => s.id);
             setSelectedStaffIds(telesalesIds);
@@ -460,15 +635,20 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
 
   if (!visible) return null;
 
-  const currentMembersList = dbMembers.length > 0 ? dbMembers : members.map(m => ({
-    ...m,
-    initials: m.id,
-    perf: getMemberData(m.id, currentPeriodId)
-  }));
+  const currentMembersList =
+    dbMembers.length > 0
+      ? dbMembers
+      : members.map((m) => ({
+          ...m,
+          initials: m.id,
+          perf: getMemberData(m.id, currentPeriodId),
+        }));
 
-  const activeMember = currentMembersList.find((m: any) => m.id === currentMemberId || m.initials === currentMemberId) || currentMembersList[0];
+  const activeMember =
+    currentMembersList.find((m: any) => m.id === currentMemberId || m.initials === currentMemberId) ||
+    currentMembersList[0];
   const activePerformance = activeMember.perf || getMemberData(activeMember.id, currentPeriodId);
-  const activeMetricConfig = metricConfigs.find(m => m.key === currentMetricKey) || metricConfigs[0];
+  const activeMetricConfig = metricConfigs.find((m) => m.key === currentMetricKey) || metricConfigs[0];
   const activeValue = activePerformance[currentMetricKey];
   const activeMemberTargets = getMemberTarget(activeMember.id, currentPeriodId);
   const activeTarget = activeMemberTargets[currentMetricKey];
@@ -488,7 +668,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
     }
     const updatedLevels = {
       ...staffLevels,
-      [String(activeMember.id)]: newLevelIdx
+      [String(activeMember.id)]: newLevelIdx,
     };
     if (activeMember.initials) {
       updatedLevels[String(activeMember.initials)] = newLevelIdx;
@@ -496,8 +676,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
     setStaffLevels(updatedLevels);
     try {
       await api.post('/kpi/staff-levels', updatedLevels);
-      message.success(`Đã cập nhật mục tiêu của ${activeMember.name} thành ${LEVEL_PRESETS[newLevelIdx].emoji} ${LEVEL_PRESETS[newLevelIdx].name}`);
-      setRefreshCounter(prev => prev + 1);
+      message.success(
+        `Đã cập nhật mục tiêu của ${activeMember.name} thành ${LEVEL_PRESETS[newLevelIdx].emoji} ${LEVEL_PRESETS[newLevelIdx].name}`
+      );
+      setRefreshCounter((prev) => prev + 1);
     } catch (err) {
       console.error('Failed to update member level directly:', err);
       message.error('Lỗi khi lưu cấp độ mục tiêu.');
@@ -525,42 +707,51 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const strokeDashoffset = circumference - (activePercent / 100) * circumference;
 
   // Impersonating Member Grid sorted by current metric
-  const rankings = currentMembersList.map((m: any) => ({
-    ...m,
-    value: m.perf ? m.perf[currentMetricKey] : getMemberData(m.id, currentPeriodId)[currentMetricKey]
-  })).sort((a, b) => b.value - a.value);
+  const rankings = currentMembersList
+    .map((m: any) => ({
+      ...m,
+      value: m.perf ? m.perf[currentMetricKey] : getMemberData(m.id, currentPeriodId)[currentMetricKey],
+    }))
+    .sort((a, b) => b.value - a.value);
 
   const top3 = rankings.slice(0, 3);
   const remaining = rankings.slice(3);
   const podiumOrder = [top3[1], top3[0], top3[2]]; // order 2nd, 1st, 3rd
 
   // Back side rankings (sorted by Done deal)
-  const backRankings = currentMembersList.map((m: any) => ({
-    ...m,
-    value: m.perf ? m.perf['done'] : getMemberData(m.id, currentPeriodId)['done'],
-    perf: m.perf || getMemberData(m.id, currentPeriodId)
-  })).sort((a, b) => b.value - a.value);
+  const backRankings = currentMembersList
+    .map((m: any) => ({
+      ...m,
+      value: m.perf ? m.perf['done'] : getMemberData(m.id, currentPeriodId)['done'],
+      perf: m.perf || getMemberData(m.id, currentPeriodId),
+    }))
+    .sort((a, b) => b.value - a.value);
   const top3Back = backRankings.slice(0, 3);
   const remainingBack = backRankings.slice(3);
   const podiumOrderBack = [top3Back[1], top3Back[0], top3Back[2]];
 
   const renderConfigPanel = () => {
     return (
-      <div 
+      <div
         className={`absolute top-0 right-0 h-full w-[280px] border-l flex flex-col z-30 transition-transform duration-300 ${
-          themeMode === 'dark' 
-            ? 'bg-[#141414] border-white/10' 
-            : 'bg-white border-slate-200'
+          themeMode === 'dark' ? 'bg-[#141414] border-white/10' : 'bg-white border-slate-200'
         } ${isConfigOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        <div className={`flex items-center justify-between px-4 py-3 border-b ${themeMode === 'dark' ? 'border-white/5' : 'border-gray-200'}`}>
+        <div
+          className={`flex items-center justify-between px-4 py-3 border-b ${themeMode === 'dark' ? 'border-white/5' : 'border-gray-200'}`}
+        >
           <div>
             <h3 className={`text-sm font-bold ${themeMode === 'dark' ? 'text-white' : 'text-gray-900'}`}>Cấu hình</h3>
             <p className="text-[9px] text-gold font-medium mt-0.5">Bảng xếp hạng & Mục tiêu</p>
           </div>
-          <Button type="text" icon={<CloseOutlined className="text-xs" />} onClick={() => setIsConfigOpen(false)} className="flex items-center justify-center w-6 h-6 p-0 rounded-lg hover:bg-neutral-500/10" />
+          <Button
+            type="text"
+            icon={<CloseOutlined className="text-xs" />}
+            onClick={() => setIsConfigOpen(false)}
+            className="flex items-center justify-center w-6 h-6 p-0 rounded-lg hover:bg-neutral-500/10"
+          />
         </div>
-        
+
         <div className="px-3 pt-3 flex-shrink-0">
           <Segmented
             block
@@ -568,7 +759,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             onChange={(val) => setConfigTab(val as 'target' | 'staff')}
             options={[
               { label: 'Mục tiêu', value: 'target' },
-              { label: 'Nhân sự', value: 'staff' }
+              { label: 'Nhân sự', value: 'staff' },
             ]}
             style={{
               backgroundColor: themeMode === 'dark' ? '#1f1f1f' : '#f0f0f0',
@@ -580,47 +771,64 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
         {configTab === 'target' ? (
           <>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {periods.map(p => {
+              {periods.map((p) => {
                 const isCurrent = p.id === currentPeriodId;
                 const isExpanded = expandedSections[p.id];
                 const t = targets[p.id];
                 return (
-                  <div 
-                    key={p.id} 
+                  <div
+                    key={p.id}
                     className={`rounded-xl border overflow-hidden ${
-                      themeMode === 'dark' 
-                        ? 'bg-white/[0.02] border-white/5' 
-                        : 'bg-slate-50 border-gray-200'
+                      themeMode === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50 border-gray-200'
                     }`}
                   >
-                    <button 
+                    <button
                       onClick={() => toggleConfigSection(p.id)}
                       className={`w-full flex items-center justify-between px-3 py-2 transition-all ${
                         themeMode === 'dark' ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-100'
                       }`}
                     >
                       <div className="flex items-center gap-1.5">
-                        <span className={`text-xs font-bold ${themeMode === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.label}</span>
-                        {isCurrent && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-gold/20 text-gold font-bold">Hiện tại</span>}
+                        <span
+                          className={`text-xs font-bold ${themeMode === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                        >
+                          {p.label}
+                        </span>
+                        {isCurrent && (
+                          <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-gold/20 text-gold font-bold">
+                            Hiện tại
+                          </span>
+                        )}
                       </div>
-                      {isExpanded ? <UpOutlined className="text-[8px] text-gray-400" /> : <DownOutlined className="text-[8px] text-gray-400" />}
+                      {isExpanded ? (
+                        <UpOutlined className="text-[8px] text-gray-400" />
+                      ) : (
+                        <DownOutlined className="text-[8px] text-gray-400" />
+                      )}
                     </button>
-                    
-                    <div className="transition-all duration-300 overflow-hidden" style={{ maxHeight: isExpanded ? '230px' : '0px' }}>
+
+                    <div
+                      className="transition-all duration-300 overflow-hidden"
+                      style={{ maxHeight: isExpanded ? '230px' : '0px' }}
+                    >
                       <div className="px-3 pb-3 pt-1 space-y-2">
-                        {metricConfigs.map(m => (
+                        {metricConfigs.map((m) => (
                           <div key={m.key} className="flex items-center justify-between">
-                            <span className={`text-[10px] font-semibold ${themeMode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{m.icon} {m.label}</span>
-                            <input 
+                            <span
+                              className={`text-[10px] font-semibold ${themeMode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                            >
+                              {m.icon} {m.label}
+                            </span>
+                            <input
                               type="number"
                               className={`w-16 h-6 rounded-md border text-center text-xs font-bold focus:border-gold/50 outline-none ${
-                                themeMode === 'dark' 
-                                  ? 'bg-black/30 border-white/10 text-white' 
+                                themeMode === 'dark'
+                                  ? 'bg-black/30 border-white/10 text-white'
                                   : 'bg-white border-gray-300 text-gray-900'
                               }`}
                               value={t[m.key]}
                               min="1"
-                              onChange={e => handleTargetChange(p.id, m.key, e.target.value)}
+                              onChange={(e) => handleTargetChange(p.id, m.key, e.target.value)}
                             />
                           </div>
                         ))}
@@ -630,10 +838,12 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 );
               })}
             </div>
-            <div className={`p-3 border-t ${themeMode === 'dark' ? 'border-white/5 bg-black/20' : 'border-gray-200 bg-gray-50'}`}>
-              <Button 
-                type="primary" 
-                icon={<SaveOutlined />} 
+            <div
+              className={`p-3 border-t ${themeMode === 'dark' ? 'border-white/5 bg-black/20' : 'border-gray-200 bg-gray-50'}`}
+            >
+              <Button
+                type="primary"
+                icon={<SaveOutlined />}
                 onClick={saveTargets}
                 className="w-full bg-gradient-to-r from-gold to-goldDark hover:from-goldLight border-none text-black font-bold h-9 rounded-xl shadow-md shadow-gold/10 flex items-center justify-center gap-1.5"
               >
@@ -651,39 +861,51 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 {systemStaff.map((staff: any) => {
                   const isChecked = selectedStaffIds.includes(staff.id);
                   return (
-                    <div 
-                      key={staff.id} 
+                    <div
+                      key={staff.id}
                       onClick={() => toggleStaffSelection(staff.id)}
                       className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
-                        isChecked 
-                          ? (themeMode === 'dark' 
-                              ? 'border-gold/30 bg-gold/5 shadow-[0_4px_12px_rgba(212,168,75,0.08)]' 
-                              : 'border-gold/25 bg-gold/[0.03] shadow-[0_4px_10px_rgba(212,168,75,0.05)]')
-                          : (themeMode === 'dark' 
-                              ? 'border-white/[0.04] bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.03]' 
-                              : 'border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-slate-50')
+                        isChecked
+                          ? themeMode === 'dark'
+                            ? 'border-gold/30 bg-gold/5 shadow-[0_4px_12px_rgba(212,168,75,0.08)]'
+                            : 'border-gold/25 bg-gold/[0.03] shadow-[0_4px_10px_rgba(212,168,75,0.05)]'
+                          : themeMode === 'dark'
+                            ? 'border-white/[0.04] bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.03]'
+                            : 'border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-slate-50'
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <Checkbox 
+                        <Checkbox
                           checked={isChecked}
                           onClick={(e) => e.stopPropagation()}
                           onChange={() => toggleStaffSelection(staff.id)}
                           className="shrink-0 scale-105"
                         />
                         <div className="flex flex-col min-w-0 flex-1 select-none">
-                          <span className={`text-xs font-bold truncate transition-colors ${
-                            isChecked 
-                              ? (themeMode === 'dark' ? 'text-gold' : 'text-amber-800')
-                              : (themeMode === 'dark' ? 'text-gray-200' : 'text-gray-800')
-                          }`}>
+                          <span
+                            className={`text-xs font-bold truncate transition-colors ${
+                              isChecked
+                                ? themeMode === 'dark'
+                                  ? 'text-gold'
+                                  : 'text-amber-800'
+                                : themeMode === 'dark'
+                                  ? 'text-gray-200'
+                                  : 'text-gray-800'
+                            }`}
+                          >
                             {staff.displayName || staff.username}
                           </span>
-                          <span className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${
-                            isChecked
-                              ? (themeMode === 'dark' ? 'text-gold/60' : 'text-amber-700/60')
-                              : (themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400')
-                          }`}>
+                          <span
+                            className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${
+                              isChecked
+                                ? themeMode === 'dark'
+                                  ? 'text-gold/60'
+                                  : 'text-amber-700/60'
+                                : themeMode === 'dark'
+                                  ? 'text-gray-500'
+                                  : 'text-slate-400'
+                            }`}
+                          >
                             {staff.role === 'telesales' ? 'Telesales Executive' : staff.role}
                           </span>
                         </div>
@@ -694,13 +916,18 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           <Select
                             value={getMemberLevelIdx(staff.id)}
                             onChange={(val) => {
-                              setStaffLevels(prev => {
+                              setStaffLevels((prev) => {
                                 const next = {
                                   ...prev,
-                                  [String(staff.id)]: val
+                                  [String(staff.id)]: val,
                                 };
                                 const initials = staff.displayName
-                                  ? staff.displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                                  ? staff.displayName
+                                      .split(' ')
+                                      .map((n: string) => n[0])
+                                      .join('')
+                                      .slice(0, 2)
+                                      .toUpperCase()
                                   : staff.username?.slice(0, 2).toUpperCase();
                                 if (initials) {
                                   next[String(initials)] = val;
@@ -718,16 +945,18 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                                   <span className="text-sm">{p.emoji}</span>
                                   <span>{p.name}</span>
                                 </span>
-                              )
+                              ),
                             }))}
                           />
                         </div>
                       ) : (
-                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${
-                          themeMode === 'dark'
-                            ? 'bg-white/[0.03] border-white/5 text-gray-300'
-                            : 'bg-slate-100 border-slate-200/60 text-slate-600'
-                        }`}>
+                        <div
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${
+                            themeMode === 'dark'
+                              ? 'bg-white/[0.03] border-white/5 text-gray-300'
+                              : 'bg-slate-100 border-slate-200/60 text-slate-600'
+                          }`}
+                        >
                           <span className="text-xs">{LEVEL_PRESETS[getMemberLevelIdx(staff.id)]?.emoji || '🐥'}</span>
                           <span>{LEVEL_PRESETS[getMemberLevelIdx(staff.id)]?.name || 'Chick'}</span>
                         </div>
@@ -737,10 +966,12 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                 })}
               </div>
             </div>
-            <div className={`p-3 border-t ${themeMode === 'dark' ? 'border-white/5 bg-black/20' : 'border-gray-200 bg-gray-50'}`}>
-              <Button 
-                type="primary" 
-                icon={<SaveOutlined />} 
+            <div
+              className={`p-3 border-t ${themeMode === 'dark' ? 'border-white/5 bg-black/20' : 'border-gray-200 bg-gray-50'}`}
+            >
+              <Button
+                type="primary"
+                icon={<SaveOutlined />}
                 onClick={saveVisibleStaff}
                 className="w-full bg-gradient-to-r from-gold to-goldDark hover:from-goldLight border-none text-black font-bold h-9 rounded-xl shadow-md shadow-gold/10 flex items-center justify-center gap-1.5"
               >
@@ -757,15 +988,15 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   const RADAR_CENTER_X = 290;
   const RADAR_CENTER_Y = 200;
   const RADAR_MAX_R = 120;
-  const RADAR_ANGLES = [-90, -18, 54, 126, 198].map(a => a * Math.PI / 180);
+  const RADAR_ANGLES = [-90, -18, 54, 126, 198].map((a) => (a * Math.PI) / 180);
   const polarToXY = (cx: number, cy: number, radius: number, angleRad: number) => ({
     x: cx + radius * Math.cos(angleRad),
-    y: cy + radius * Math.sin(angleRad)
+    y: cy + radius * Math.sin(angleRad),
   });
   const getPentagonPoints = (cx: number, cy: number, radius: number) =>
-    RADAR_ANGLES.map(a => polarToXY(cx, cy, radius, a));
+    RADAR_ANGLES.map((a) => polarToXY(cx, cy, radius, a));
   const pointsToString = (points: { x: number; y: number }[]) =>
-    points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 
   const dataPoints = metricConfigs.map((mc, i) => {
     const val = activePerformance[mc.key];
@@ -775,21 +1006,21 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   });
 
   const toggleConfigSection = (periodId: string) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
-      [periodId]: !prev[periodId]
+      [periodId]: !prev[periodId],
     }));
   };
 
   const handleTargetChange = (periodId: string, metricKey: string, valStr: string) => {
     const val = parseInt(valStr);
     if (!isNaN(val) && val >= 0) {
-      setTargets(prev => ({
+      setTargets((prev) => ({
         ...prev,
         [periodId]: {
           ...prev[periodId],
-          [metricKey]: val
-        }
+          [metricKey]: val,
+        },
       }));
     }
   };
@@ -800,17 +1031,17 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-[1010] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300" 
+    <div
+      className="fixed inset-0 z-[1010] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300"
       onClick={onClose}
     >
       {/* Outer Modal Container: Resizable & size-persistent layout */}
-      <div 
+      <div
         ref={modalContainerRef}
         className={`relative transition-transform duration-500 ${
           modalSize ? 'w-auto h-auto' : 'w-full max-w-[780px] h-[92vh] min-h-[820px] max-h-[920px]'
-        }`} 
-        style={{ 
+        }`}
+        style={{
           perspective: '1500px',
           resize: 'both',
           overflow: 'hidden',
@@ -821,34 +1052,49 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
           width: modalSize ? modalSize.width : undefined,
           height: modalSize ? modalSize.height : undefined,
         }}
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className={`relative w-full h-full transition-transform duration-700 ease-in-out ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`} style={{ transformStyle: 'preserve-3d' }}>
-          
+        <div
+          className={`relative w-full h-full transition-transform duration-700 ease-in-out ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}
+          style={{ transformStyle: 'preserve-3d' }}
+        >
           {/* ============================== FRONT FACE (DONUT VIEW) ============================== */}
-          <div 
+          <div
             className={`absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-2xl border shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden transition-all duration-300 ${
-              themeMode === 'dark' 
-                ? 'bg-[#121212] border-neutral-800/80 text-white' 
+              themeMode === 'dark'
+                ? 'bg-[#121212] border-neutral-800/80 text-white'
                 : 'bg-white border-slate-100 text-slate-800'
             }`}
           >
             {/* Header */}
-            <div className={`flex items-center justify-between p-4 border-b transition-colors ${themeMode === 'dark' ? 'border-white/5 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/40'}`}>
+            <div
+              className={`flex items-center justify-between p-4 border-b transition-colors ${themeMode === 'dark' ? 'border-white/5 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/40'}`}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-black/10" style={{ background: activeMember.gradient }}>
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-black/10"
+                  style={{ background: activeMember.gradient }}
+                >
                   {activeMember.initials}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className={`font-bold text-base md:text-lg tracking-tight ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{activeMember.name}</span>
-                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-gold/15 text-gold font-extrabold border border-gold/25 shadow-sm">Telesales</span>
+                    <span
+                      className={`font-bold text-base md:text-lg tracking-tight ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}
+                    >
+                      {activeMember.name}
+                    </span>
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-gold/15 text-gold font-extrabold border border-gold/25 shadow-sm">
+                      Telesales
+                    </span>
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                     </span>
                   </div>
-                  <div className={`text-[10px] font-medium flex items-center gap-1 mt-0.5 ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}>
+                  <div
+                    className={`text-[10px] font-medium flex items-center gap-1 mt-0.5 ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}
+                  >
                     <span>Đang hoạt động</span>
                   </div>
                 </div>
@@ -856,7 +1102,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
-                <Button 
+                <Button
                   type="text"
                   icon={<SyncOutlined className="text-gold" />}
                   onClick={() => setIsFlipped(true)}
@@ -864,7 +1110,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   title="Xoay lật sang biểu đồ Radar"
                 />
                 {isAdmin && (
-                  <Button 
+                  <Button
                     type="text"
                     icon={<SettingOutlined className="text-gold" />}
                     onClick={() => setIsConfigOpen(true)}
@@ -872,9 +1118,15 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     title="Cấu hình Target & Nhân sự"
                   />
                 )}
-                <Button 
+                <Button
                   type="text"
-                  icon={<CloseOutlined className={themeMode === 'dark' ? 'text-gray-400 hover:text-red-500' : 'text-slate-500 hover:text-red-500'} />}
+                  icon={
+                    <CloseOutlined
+                      className={
+                        themeMode === 'dark' ? 'text-gray-400 hover:text-red-500' : 'text-slate-500 hover:text-red-500'
+                      }
+                    />
+                  }
                   onClick={onClose}
                   className="hover:bg-red-500/10 flex items-center justify-center w-8 h-8 rounded-lg"
                 />
@@ -882,7 +1134,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             </div>
 
             {/* Main Area */}
-            <div className={`flex-1 p-5 flex flex-col justify-between relative ${isRadialOpen ? 'overflow-visible' : 'overflow-hidden'}`}>
+            <div
+              className={`flex-1 p-5 flex flex-col justify-between relative ${isRadialOpen ? 'overflow-visible' : 'overflow-hidden'}`}
+            >
               {loading && (
                 <div className="absolute inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center rounded-b-2xl">
                   <Spin indicator={<LoadingOutlined style={{ fontSize: 28, color: '#D4A84B' }} spin />} />
@@ -892,26 +1146,31 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
               <div className="mt-5 w-full py-4 relative">
                 <div className="relative flex items-center justify-center py-6 h-20">
                   {/* Timeline Track Line (z-index 0) */}
-                  <div className={`absolute top-1/2 left-[4%] right-[4%] h-[2px] z-0 ${themeMode === 'dark' ? 'bg-slate-800/80' : 'bg-slate-200/80'}`} style={{ transform: 'translateY(-50%)' }}></div>
-                  
+                  <div
+                    className={`absolute top-1/2 left-[4%] right-[4%] h-[2px] z-0 ${themeMode === 'dark' ? 'bg-slate-800/80' : 'bg-slate-200/80'}`}
+                    style={{ transform: 'translateY(-50%)' }}
+                  ></div>
+
                   {/* Crosshair (The Golden Orb Radial Selector - Scaled 30% larger: w-16 h-16) */}
-                  <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${isRadialOpen ? 'z-[9999]' : 'z-30'}`}>
+                  <div
+                    className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${isRadialOpen ? 'z-[9999]' : 'z-30'}`}
+                  >
                     <div className={`w-[2px] h-[10px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
-                    
+
                     {isAdmin ? (
                       <div className="relative flex items-center justify-center">
                         {/* Radial Options Panel */}
                         {isRadialOpen && (
                           <>
                             {/* Backdrop overlay to capture clicks and close */}
-                            <div 
-                              className="fixed inset-0 z-[9998] cursor-default" 
+                            <div
+                              className="fixed inset-0 z-[9998] cursor-default"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setIsRadialOpen(false);
                               }}
                             />
-                            
+
                             {/* Option buttons (Scaled: w-12 h-12, emoji: text-xl, with outer translation wrapper to enable smooth hover zoom and glow) */}
                             <div className="absolute z-[9999] pointer-events-none">
                               {LEVEL_PRESETS.map((preset, idx) => {
@@ -936,9 +1195,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                                             : 'bg-white shadow-[0_2px_6px_rgba(212,163,75,0.12)] hover:shadow-[0_4px_12px_rgba(212,163,75,0.25)] text-slate-600 hover:text-slate-900'
                                       }`}
                                       style={{
-                                        borderColor: isCurrent
-                                          ? '#D4A84B'
-                                          : 'rgba(212, 163, 75, 0.2)'
+                                        borderColor: isCurrent ? '#D4A84B' : 'rgba(212, 163, 75, 0.2)',
                                       }}
                                       title={preset.name}
                                       onClick={(e) => {
@@ -957,7 +1214,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                         )}
 
                         {/* Center Orb Trigger (Scaled: w-16 h-16, emoji: text-[32px]) */}
-                        <div 
+                        <div
                           className={`w-16 h-16 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 z-50 ${
                             isRadialOpen
                               ? 'scale-110 shadow-[0_0_20px_rgba(212,163,75,0.5)] bg-gold/10'
@@ -968,7 +1225,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           style={{
                             borderColor: isRadialOpen
                               ? '#D4A84B'
-                              : (themeMode === 'dark' ? 'rgba(212, 163, 75, 0.3)' : 'rgba(212, 163, 75, 0.25)')
+                              : themeMode === 'dark'
+                                ? 'rgba(212, 163, 75, 0.3)'
+                                : 'rgba(212, 163, 75, 0.25)',
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -980,14 +1239,14 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                         </div>
                       </div>
                     ) : (
-                      <div 
+                      <div
                         className={`w-16 h-16 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
                           themeMode === 'dark'
                             ? 'bg-neutral-900 shadow-[0_0_8px_rgba(212,163,75,0.1)]'
                             : 'bg-white shadow-[0_2px_6px_rgba(212,163,75,0.08)]'
                         }`}
                         style={{
-                          borderColor: themeMode === 'dark' ? 'rgba(212, 163, 75, 0.2)' : 'rgba(212, 163, 75, 0.2)'
+                          borderColor: themeMode === 'dark' ? 'rgba(212, 163, 75, 0.2)' : 'rgba(212, 163, 75, 0.2)',
                         }}
                       >
                         <span className="text-[32px] leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
@@ -999,7 +1258,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
 
                   {/* Redesigned Pill Nodes (#9 Aurora Glow Border Capsule) */}
                   <div className="absolute inset-0 w-full h-full pointer-events-none">
-                    {periods.map(p => {
+                    {periods.map((p) => {
                       const isActive = p.id === currentPeriodId;
                       const leftPos = periodPositions[p.id];
                       let periodTgt = monthlyTarget;
@@ -1013,7 +1272,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       let displayValue = periodTgt;
                       if (isPast) {
                         const pList = periodDataMap[p.id] || [];
-                        const memInPeriod = pList.find((m: any) => m.id === activeMember.id || m.initials === activeMember.id);
+                        const memInPeriod = pList.find(
+                          (m: any) => m.id === activeMember.id || m.initials === activeMember.id
+                        );
                         if (memInPeriod && memInPeriod.perf) {
                           displayValue = memInPeriod.perf[currentMetricKey] || 0;
                         } else {
@@ -1022,23 +1283,23 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       }
 
                       return (
-                        <div 
-                          key={p.id} 
-                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center cursor-pointer select-none" 
+                        <div
+                          key={p.id}
+                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center cursor-pointer select-none"
                           style={{ left: leftPos }}
                           onClick={() => setCurrentPeriodId(p.id)}
                         >
                           {/* Glow Wrapper */}
-                          <div 
+                          <div
                             className={`p-[1.2px] rounded-full transition-all duration-300 flex items-center justify-center ${
-                              isActive 
-                                ? `bg-gradient-to-r ${activeMetricConfig.bgGradient} scale-105 z-20` 
+                              isActive
+                                ? `bg-gradient-to-r ${activeMetricConfig.bgGradient} scale-105 z-20`
                                 : `${themeMode === 'dark' ? 'bg-neutral-800' : 'bg-slate-200'} z-10 hover:scale-105`
                             }`}
                             style={isActive ? { boxShadow: `0 0 12px ${activeMetricConfig.color}59` } : undefined}
                           >
                             {/* Inner Capsule (opaque solid background to block line behind it) */}
-                            <div 
+                            <div
                               className={`rounded-full px-2.5 py-1.5 flex flex-col items-center min-w-[84px] ${
                                 themeMode === 'dark'
                                   ? isActive
@@ -1050,10 +1311,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               }`}
                             >
                               {/* Top Number (Target or Actual) - Large & Clear */}
-                              <span 
+                              <span
                                 className={`font-outfit leading-tight ${
-                                  isActive 
-                                    ? 'text-base font-black' 
+                                  isActive
+                                    ? 'text-base font-black'
                                     : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`
                                 }`}
                                 style={isActive ? { color: activeMetricConfig.color } : undefined}
@@ -1061,10 +1322,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                                 {displayValue}
                               </span>
                               {/* Bottom Label (Period Name) - Smaller */}
-                              <span 
+                              <span
                                 className={`text-[9px] mt-0.5 leading-none whitespace-nowrap ${
-                                  isActive 
-                                    ? `font-bold ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}` 
+                                  isActive
+                                    ? `font-bold ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}`
                                     : `font-medium ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`
                                 }`}
                               >
@@ -1105,9 +1366,21 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                         <stop offset="100%" stopColor="#34D399" />
                       </linearGradient>
                     </defs>
-                    <circle cx="100" cy="100" r={r} fill="none" strokeWidth="14" className={themeMode === 'dark' ? 'stroke-white/5' : 'stroke-slate-100'}></circle>
-                    <circle 
-                      cx="100" cy="100" r={r} fill="none" strokeWidth="14" strokeLinecap="round"
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r={r}
+                      fill="none"
+                      strokeWidth="14"
+                      className={themeMode === 'dark' ? 'stroke-white/5' : 'stroke-slate-100'}
+                    ></circle>
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r={r}
+                      fill="none"
+                      strokeWidth="14"
+                      strokeLinecap="round"
                       stroke={`url(#${activeMetricConfig.gradId})`}
                       strokeDasharray={circumference}
                       strokeDashoffset={strokeDashoffset}
@@ -1116,17 +1389,24 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     ></circle>
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-black tracking-tight" style={{ color: activeMetricConfig.color }}>{activeValue}</span>
-                    <span className={`text-[10px] font-bold mt-0.5 ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}>/ {activeTarget} {activeMetricConfig.label}</span>
-                    <span className="text-sm font-extrabold mt-0.5" style={{ color: activeMetricConfig.color }}>{activePercent}%</span>
+                    <span className="text-3xl font-black tracking-tight" style={{ color: activeMetricConfig.color }}>
+                      {activeValue}
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold mt-0.5 ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}
+                    >
+                      / {activeTarget} {activeMetricConfig.label}
+                    </span>
+                    <span className="text-sm font-extrabold mt-0.5" style={{ color: activeMetricConfig.color }}>
+                      {activePercent}%
+                    </span>
                   </div>
                 </div>
-
               </div>
 
               {/* Mini Summary Cards (Vibrant gradients, shadows and tint backdrops) */}
               <div className="grid grid-cols-5 gap-2 mt-1.5 flex-shrink-0">
-                {metricConfigs.map(mc => {
+                {metricConfigs.map((mc) => {
                   const val = activePerformance[mc.key];
                   const target = activeMemberTargets[mc.key];
                   const actualPct = target > 0 ? Math.round((val / target) * 100) : 0;
@@ -1134,49 +1414,89 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   const isActive = currentMetricKey === mc.key;
                   const Icon = mc.antIcon;
                   return (
-                    <div 
+                    <div
                       key={mc.key}
                       onClick={() => setCurrentMetricKey(mc.key)}
                       className={`rounded-2xl p-2.5 flex items-center gap-2.5 cursor-pointer transition-all duration-300 border ${
-                        isActive 
-                          ? (themeMode === 'dark' 
-                              ? 'border-transparent' 
-                              : 'border-transparent')
-                          : (themeMode === 'dark' 
-                              ? 'border-white/5 hover:border-white/10' 
-                              : 'border-slate-100 hover:border-slate-200/80')
+                        isActive
+                          ? themeMode === 'dark'
+                            ? 'border-transparent'
+                            : 'border-transparent'
+                          : themeMode === 'dark'
+                            ? 'border-white/5 hover:border-white/10'
+                            : 'border-slate-100 hover:border-slate-200/80'
                       }`}
                       style={{
-                        background: isActive 
-                          ? (themeMode === 'dark' ? `linear-gradient(135deg, ${mc.color}15, rgba(255,255,255,0.01))` : `linear-gradient(135deg, ${mc.color}08, #ffffff)`)
-                          : (themeMode === 'dark' ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)'),
+                        background: isActive
+                          ? themeMode === 'dark'
+                            ? `linear-gradient(135deg, ${mc.color}15, rgba(255,255,255,0.01))`
+                            : `linear-gradient(135deg, ${mc.color}08, #ffffff)`
+                          : themeMode === 'dark'
+                            ? 'rgba(255,255,255,0.01)'
+                            : 'rgba(0,0,0,0.01)',
                         boxShadow: isActive ? `0 10px 25px -5px ${mc.color}25, 0 8px 10px -6px ${mc.color}25` : 'none',
-                        borderLeft: isActive ? `3.5px solid ${mc.color}` : undefined
+                        borderLeft: isActive ? `3.5px solid ${mc.color}` : undefined,
                       }}
                     >
                       {/* Left Side: Glowing Radial Ring with Icon */}
-                      <div 
+                      <div
                         className="relative w-11 h-11 flex items-center justify-center shrink-0 rounded-full transition-all duration-300"
                         style={{
                           boxShadow: `0 0 15px ${mc.color}35`,
                         }}
                       >
                         <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                          <circle cx="18" cy="18" r="16" fill="none" stroke={themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} strokeWidth="2.5"></circle>
-                          <circle cx="18" cy="18" r="16" fill="none" stroke={mc.color} strokeWidth="3" strokeDasharray="100" strokeDashoffset={100 - barPct} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.8s ease' }}></circle>
+                          <circle
+                            cx="18"
+                            cy="18"
+                            r="16"
+                            fill="none"
+                            stroke={themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                            strokeWidth="2.5"
+                          ></circle>
+                          <circle
+                            cx="18"
+                            cy="18"
+                            r="16"
+                            fill="none"
+                            stroke={mc.color}
+                            strokeWidth="3"
+                            strokeDasharray="100"
+                            strokeDashoffset={100 - barPct}
+                            strokeLinecap="round"
+                            style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+                          ></circle>
                         </svg>
                         <Icon className="text-sm relative z-10" style={{ color: mc.color, fontSize: '22px' }} />
                       </div>
 
                       {/* Right Side: Info with Diagonal Slash */}
                       <div className="flex-1 min-w-0 text-left">
-                        <span className="text-[10px] font-black uppercase tracking-wider block font-outfit" style={{ color: mc.color }}>{mc.label}</span>
+                        <span
+                          className="text-[10px] font-black uppercase tracking-wider block font-outfit"
+                          style={{ color: mc.color }}
+                        >
+                          {mc.label}
+                        </span>
                         <div className="flex items-center gap-1.5 leading-none mt-0 select-none">
-                          <span className={`text-2xl font-outfit font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{val}</span>
-                          <span className="w-[1.5px] h-5 transform rotate-12 shrink-0" style={{ backgroundColor: `${mc.color}45` }}></span>
-                          <span className={`text-xs font-extrabold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{target}</span>
+                          <span
+                            className={`text-2xl font-outfit font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}
+                          >
+                            {val}
+                          </span>
+                          <span
+                            className="w-[1.5px] h-5 transform rotate-12 shrink-0"
+                            style={{ backgroundColor: `${mc.color}45` }}
+                          ></span>
+                          <span
+                            className={`text-xs font-extrabold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}
+                          >
+                            {target}
+                          </span>
                         </div>
-                        <span className="text-[9px] font-black uppercase block mt-0.5" style={{ color: mc.color }}>ĐẠT: {actualPct}%</span>
+                        <span className="text-[9px] font-black uppercase block mt-0.5" style={{ color: mc.color }}>
+                          ĐẠT: {actualPct}%
+                        </span>
                       </div>
                     </div>
                   );
@@ -1184,13 +1504,23 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
               </div>
 
               {/* Leaderboard (Podium Fixed Height with glass blocks & gradients) */}
-              <div className={`pt-2 border-t mt-2 flex-shrink-0 ${themeMode === 'dark' ? 'border-white/5' : 'border-slate-150'}`}>
+              <div
+                className={`pt-2 border-t mt-2 flex-shrink-0 ${themeMode === 'dark' ? 'border-white/5' : 'border-slate-150'}`}
+              >
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <TrophyOutlined className="text-gold text-xs animate-bounce" />
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}>Bảng Xếp Hạng Đội Nhóm</span>
-                  <span className={`text-[9px] font-semibold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>— {activeMetricConfig.label}</span>
+                  <span
+                    className={`text-[10px] font-black uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}
+                  >
+                    Bảng Xếp Hạng Đội Nhóm
+                  </span>
+                  <span
+                    className={`text-[9px] font-semibold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}
+                  >
+                    — {activeMetricConfig.label}
+                  </span>
                 </div>
-                
+
                 {/* Podium Grid */}
                 <div className="w-full flex items-end justify-center gap-4 pt-9" style={{ minHeight: '190px' }}>
                   {podiumOrder.map((member, idx) => {
@@ -1200,49 +1530,69 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     const target = memberTargets[currentMetricKey];
                     const pct = target > 0 ? Math.round((val / target) * 100) : 0;
                     const isSelected = member.id === currentMemberId;
-                    const rank = idx === 0 ? 2 : (idx === 1 ? 1 : 3);
-                    const barHeight = idx === 0 ? 70 : (idx === 1 ? 95 : 50);
-                    const rankEmoji = idx === 0 ? '🥈' : (idx === 1 ? '🥇' : '🥉');
+                    const rank = idx === 0 ? 2 : idx === 1 ? 1 : 3;
+                    const barHeight = idx === 0 ? 70 : idx === 1 ? 95 : 50;
+                    const rankEmoji = idx === 0 ? '🥈' : idx === 1 ? '🥇' : '🥉';
                     const color = activeMetricConfig.color;
 
                     return (
-                      <div 
-                        key={member.id} 
+                      <div
+                        key={member.id}
                         onClick={() => setCurrentMemberId(member.id)}
-                        className={`flex flex-col items-center relative cursor-pointer transition-all duration-300 hover:scale-105 ${isSelected ? 'scale-105 z-10' : 'opacity-85 hover:opacity-100'}`} 
+                        className={`flex flex-col items-center relative cursor-pointer transition-all duration-300 hover:scale-105 ${isSelected ? 'scale-105 z-10' : 'opacity-85 hover:opacity-100'}`}
                         style={{ width: '90px' }}
                       >
                         <div className="flex flex-col items-center mb-1.5 text-center w-full relative z-10">
                           <span className="text-xs mb-0.5">{rank === 1 ? '👑' : rankEmoji}</span>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white mb-1 border-2 ${
-                            isSelected ? 'border-gold shadow-lg shadow-gold/30 scale-105' : (themeMode === 'dark' ? 'border-slate-800' : 'border-white')
-                          }`} style={{ background: member.gradient }}>
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white mb-1 border-2 ${
+                              isSelected
+                                ? 'border-gold shadow-lg shadow-gold/30 scale-105'
+                                : themeMode === 'dark'
+                                  ? 'border-slate-800'
+                                  : 'border-white'
+                            }`}
+                            style={{ background: member.gradient }}
+                          >
                             {member.initials}
                           </div>
-                          <div className={`text-[10px] font-black truncate w-full px-1 ${themeMode === 'dark' ? 'text-gray-300' : 'text-slate-700'}`}>{member.name}</div>
-                          <div className="text-sm font-black" style={{ color }}>{val}</div>
-                          <div className={`text-[9px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{pct}%</div>
+                          <div
+                            className={`text-[10px] font-black truncate w-full px-1 ${themeMode === 'dark' ? 'text-gray-300' : 'text-slate-700'}`}
+                          >
+                            {member.name}
+                          </div>
+                          <div className="text-sm font-black" style={{ color }}>
+                            {val}
+                          </div>
+                          <div
+                            className={`text-[9px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}
+                          >
+                            {pct}%
+                          </div>
                         </div>
-                        <div 
-                          className="w-full rounded-t-xl flex items-end justify-center pb-1.5 transition-all duration-500 shadow-inner" 
-                          style={{ 
-                            height: `${barHeight}px`, 
-                            background: themeMode === 'dark' 
-                              ? `linear-gradient(to top, ${color}15, ${color}45)` 
-                              : `linear-gradient(to top, ${color}08, ${color}25)`, 
+                        <div
+                          className="w-full rounded-t-xl flex items-end justify-center pb-1.5 transition-all duration-500 shadow-inner"
+                          style={{
+                            height: `${barHeight}px`,
+                            background:
+                              themeMode === 'dark'
+                                ? `linear-gradient(to top, ${color}15, ${color}45)`
+                                : `linear-gradient(to top, ${color}08, ${color}25)`,
                             borderTop: `1px solid ${color}${themeMode === 'dark' ? '30' : '40'}`,
                             borderLeft: `1px solid ${color}${themeMode === 'dark' ? '30' : '40'}`,
                             borderRight: `1px solid ${color}${themeMode === 'dark' ? '30' : '40'}`,
-                            boxShadow: isSelected ? `0 -4px 15px ${color}18` : 'none'
+                            boxShadow: isSelected ? `0 -4px 15px ${color}18` : 'none',
                           }}
                         >
-                          <span className="text-xs font-black opacity-20" style={{ color }}>{rank}</span>
+                          <span className="text-xs font-black opacity-20" style={{ color }}>
+                            {rank}
+                          </span>
                         </div>
                       </div>
                     );
                   })}
                 </div>
- 
+
                 {/* Ranks 4-7 horizontal cards list */}
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   {remaining.map((m, i) => {
@@ -1251,20 +1601,42 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     const pct = target > 0 ? Math.round((m.value / target) * 100) : 0;
                     const isSelected = m.id === currentMemberId;
                     return (
-                      <div 
+                      <div
                         key={m.id}
                         onClick={() => setCurrentMemberId(m.id)}
                         className={`flex items-center gap-2.5 p-2 rounded-xl border text-left cursor-pointer transition-all ${
-                          isSelected 
-                            ? 'bg-gold/15 border-gold/40 shadow-sm' 
-                            : (themeMode === 'dark' ? 'bg-white/[0.02] border-transparent hover:bg-white/5' : 'bg-slate-50 border-transparent hover:bg-slate-100')
+                          isSelected
+                            ? 'bg-gold/15 border-gold/40 shadow-sm'
+                            : themeMode === 'dark'
+                              ? 'bg-white/[0.02] border-transparent hover:bg-white/5'
+                              : 'bg-slate-50 border-transparent hover:bg-slate-100'
                         }`}
                       >
-                        <span className={`text-[11px] font-bold w-4 text-center ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>#{i + 4}</span>
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm" style={{ background: m.gradient }}>{m.initials}</div>
+                        <span
+                          className={`text-[11px] font-bold w-4 text-center ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}
+                        >
+                          #{i + 4}
+                        </span>
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm"
+                          style={{ background: m.gradient }}
+                        >
+                          {m.initials}
+                        </div>
                         <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
-                          <span className={`text-xs font-bold truncate ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`}>{m.name}</span>
-                          <span className="text-xs font-black shrink-0" style={{ color: activeMetricConfig.color }}>{m.value} <span className={`text-[10px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>({pct}%)</span></span>
+                          <span
+                            className={`text-xs font-bold truncate ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`}
+                          >
+                            {m.name}
+                          </span>
+                          <span className="text-xs font-black shrink-0" style={{ color: activeMetricConfig.color }}>
+                            {m.value}{' '}
+                            <span
+                              className={`text-[10px] font-bold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}
+                            >
+                              ({pct}%)
+                            </span>
+                          </span>
                         </div>
                       </div>
                     );
@@ -1278,29 +1650,42 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
           </div>
 
           {/* ============================== BACK FACE (RADAR VIEW - V3E) ============================== */}
-          <div 
+          <div
             className={`absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-2xl border shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden transition-colors duration-300 ${
-              themeMode === 'dark' 
-                ? 'bg-[#121212] border-neutral-800/80 text-white' 
+              themeMode === 'dark'
+                ? 'bg-[#121212] border-neutral-800/80 text-white'
                 : 'bg-white border-slate-100 text-slate-800'
             }`}
           >
             {/* Header */}
-            <div className={`flex items-center justify-between p-4 border-b transition-colors ${themeMode === 'dark' ? 'border-white/5 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/40'}`}>
+            <div
+              className={`flex items-center justify-between p-4 border-b transition-colors ${themeMode === 'dark' ? 'border-white/5 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/40'}`}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-black/10" style={{ background: activeMember.gradient }}>
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-black/10"
+                  style={{ background: activeMember.gradient }}
+                >
                   {activeMember.initials}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className={`font-bold text-base md:text-lg tracking-tight ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{activeMember.name}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold/15 text-gold font-bold border border-gold/20">Telesales</span>
+                    <span
+                      className={`font-bold text-base md:text-lg tracking-tight ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}
+                    >
+                      {activeMember.name}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold/15 text-gold font-bold border border-gold/20">
+                      Telesales
+                    </span>
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                     </span>
                   </div>
-                  <div className={`text-[10px] flex items-center gap-1 mt-0.5 ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}>
+                  <div
+                    className={`text-[10px] flex items-center gap-1 mt-0.5 ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}
+                  >
                     <span>Đang hoạt động</span>
                   </div>
                 </div>
@@ -1308,7 +1693,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
-                <Button 
+                <Button
                   type="text"
                   icon={<SyncOutlined className="text-gold" />}
                   onClick={() => setIsFlipped(false)}
@@ -1316,7 +1701,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   title="Xoay lật sang biểu đồ Donut"
                 />
                 {isAdmin && (
-                  <Button 
+                  <Button
                     type="text"
                     icon={<SettingOutlined className="text-gold" />}
                     onClick={() => setIsConfigOpen(true)}
@@ -1324,9 +1709,15 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     title="Cấu hình Target & Nhân sự"
                   />
                 )}
-                <Button 
+                <Button
                   type="text"
-                  icon={<CloseOutlined className={themeMode === 'dark' ? 'text-gray-400 hover:text-red-500' : 'text-slate-500 hover:text-red-500'} />}
+                  icon={
+                    <CloseOutlined
+                      className={
+                        themeMode === 'dark' ? 'text-gray-400 hover:text-red-500' : 'text-slate-500 hover:text-red-500'
+                      }
+                    />
+                  }
                   onClick={onClose}
                   className="hover:bg-red-500/10 flex items-center justify-center w-8 h-8 rounded-lg"
                 />
@@ -1334,31 +1725,38 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             </div>
 
             {/* Main Area */}
-            <div className={`flex-1 p-5 flex flex-col justify-between relative ${isRadialOpen ? 'overflow-visible' : 'overflow-hidden'}`}>
+            <div
+              className={`flex-1 p-5 flex flex-col justify-between relative ${isRadialOpen ? 'overflow-visible' : 'overflow-hidden'}`}
+            >
               {/* Timeline (Aurora Glow Border Capsule) */}
               <div className="mt-5 w-full py-4 relative">
                 <div className="relative flex items-center justify-center py-6 h-20">
                   {/* Timeline Track Line (z-index 0) */}
-                  <div className={`absolute top-1/2 left-[4%] right-[4%] h-[2px] z-0 ${themeMode === 'dark' ? 'bg-slate-800/80' : 'bg-slate-200/80'}`} style={{ transform: 'translateY(-50%)' }}></div>
-                  
+                  <div
+                    className={`absolute top-1/2 left-[4%] right-[4%] h-[2px] z-0 ${themeMode === 'dark' ? 'bg-slate-800/80' : 'bg-slate-200/80'}`}
+                    style={{ transform: 'translateY(-50%)' }}
+                  ></div>
+
                   {/* Crosshair (The Golden Orb Radial Selector - Scaled 30% larger: w-16 h-16) */}
-                  <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${isRadialOpen ? 'z-[9999]' : 'z-30'}`}>
+                  <div
+                    className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${isRadialOpen ? 'z-[9999]' : 'z-30'}`}
+                  >
                     <div className={`w-[2px] h-[10px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
-                    
+
                     {isAdmin ? (
                       <div className="relative flex items-center justify-center">
                         {/* Radial Options Panel */}
                         {isRadialOpen && (
                           <>
                             {/* Backdrop overlay to capture clicks and close */}
-                            <div 
-                              className="fixed inset-0 z-[9998] cursor-default" 
+                            <div
+                              className="fixed inset-0 z-[9998] cursor-default"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setIsRadialOpen(false);
                               }}
                             />
-                            
+
                             {/* Option buttons (Scaled: w-12 h-12, emoji: text-xl, with outer translation wrapper to enable smooth hover zoom and glow) */}
                             <div className="absolute z-[9999] pointer-events-none">
                               {LEVEL_PRESETS.map((preset, idx) => {
@@ -1383,9 +1781,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                                             : 'bg-white shadow-[0_2px_6px_rgba(212,163,75,0.12)] hover:shadow-[0_4px_12px_rgba(212,163,75,0.25)] text-slate-600 hover:text-slate-900'
                                       }`}
                                       style={{
-                                        borderColor: isCurrent
-                                          ? '#D4A84B'
-                                          : 'rgba(212, 163, 75, 0.2)'
+                                        borderColor: isCurrent ? '#D4A84B' : 'rgba(212, 163, 75, 0.2)',
                                       }}
                                       title={preset.name}
                                       onClick={(e) => {
@@ -1404,7 +1800,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                         )}
 
                         {/* Center Orb Trigger (Scaled: w-16 h-16, emoji: text-[32px]) */}
-                        <div 
+                        <div
                           className={`w-16 h-16 rounded-full border flex items-center justify-center cursor-pointer select-none transition-all duration-300 z-50 ${
                             isRadialOpen
                               ? 'scale-110 shadow-[0_0_20px_rgba(212,163,75,0.5)] bg-gold/10'
@@ -1415,7 +1811,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                           style={{
                             borderColor: isRadialOpen
                               ? '#D4A84B'
-                              : (themeMode === 'dark' ? 'rgba(212, 163, 75, 0.3)' : 'rgba(212, 163, 75, 0.25)')
+                              : themeMode === 'dark'
+                                ? 'rgba(212, 163, 75, 0.3)'
+                                : 'rgba(212, 163, 75, 0.25)',
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1427,14 +1825,14 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                         </div>
                       </div>
                     ) : (
-                      <div 
+                      <div
                         className={`w-16 h-16 rounded-full border flex items-center justify-center select-none transition-all duration-300 ${
                           themeMode === 'dark'
                             ? 'bg-neutral-900 shadow-[0_0_8px_rgba(212,163,75,0.1)]'
                             : 'bg-white shadow-[0_2px_6px_rgba(212,163,75,0.08)]'
                         }`}
                         style={{
-                          borderColor: themeMode === 'dark' ? 'rgba(212, 163, 75, 0.2)' : 'rgba(212, 163, 75, 0.2)'
+                          borderColor: themeMode === 'dark' ? 'rgba(212, 163, 75, 0.2)' : 'rgba(212, 163, 75, 0.2)',
                         }}
                       >
                         <span className="text-[32px] leading-none relative -top-[0.5px]">{activePreset.emoji}</span>
@@ -1446,7 +1844,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
 
                   {/* Redesigned Pill Nodes (#9 Aurora Glow Border Capsule) */}
                   <div className="absolute inset-0 w-full h-full pointer-events-none">
-                    {periods.map(p => {
+                    {periods.map((p) => {
                       const isActive = p.id === currentPeriodId;
                       const leftPos = periodPositions[p.id];
                       let periodTgt = monthlyTarget;
@@ -1460,7 +1858,9 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       let displayValue = periodTgt;
                       if (isPast) {
                         const pList = periodDataMap[p.id] || [];
-                        const memInPeriod = pList.find((m: any) => m.id === activeMember.id || m.initials === activeMember.id);
+                        const memInPeriod = pList.find(
+                          (m: any) => m.id === activeMember.id || m.initials === activeMember.id
+                        );
                         if (memInPeriod && memInPeriod.perf) {
                           displayValue = memInPeriod.perf[currentMetricKey] || 0;
                         } else {
@@ -1469,23 +1869,23 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       }
 
                       return (
-                        <div 
-                          key={p.id} 
-                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center cursor-pointer select-none" 
+                        <div
+                          key={p.id}
+                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center cursor-pointer select-none"
                           style={{ left: leftPos }}
                           onClick={() => setCurrentPeriodId(p.id)}
                         >
                           {/* Glow Wrapper */}
-                          <div 
+                          <div
                             className={`p-[1.2px] rounded-full transition-all duration-300 flex items-center justify-center ${
-                              isActive 
-                                ? `bg-gradient-to-r ${activeMetricConfig.bgGradient} scale-105 z-20` 
+                              isActive
+                                ? `bg-gradient-to-r ${activeMetricConfig.bgGradient} scale-105 z-20`
                                 : `${themeMode === 'dark' ? 'bg-neutral-800' : 'bg-slate-200'} z-10 hover:scale-105`
                             }`}
                             style={isActive ? { boxShadow: `0 0 12px ${activeMetricConfig.color}59` } : undefined}
                           >
                             {/* Inner Capsule (opaque solid background to block line behind it) */}
-                            <div 
+                            <div
                               className={`rounded-full px-2.5 py-1.5 flex flex-col items-center min-w-[84px] ${
                                 themeMode === 'dark'
                                   ? isActive
@@ -1497,10 +1897,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                               }`}
                             >
                               {/* Top Number (Target or Actual) - Large & Clear */}
-                              <span 
+                              <span
                                 className={`font-outfit leading-tight ${
-                                  isActive 
-                                    ? 'text-base font-black' 
+                                  isActive
+                                    ? 'text-base font-black'
                                     : `text-sm font-bold ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`
                                 }`}
                                 style={isActive ? { color: activeMetricConfig.color } : undefined}
@@ -1508,10 +1908,10 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                                 {displayValue}
                               </span>
                               {/* Bottom Label (Period Name) - Smaller */}
-                              <span 
+                              <span
                                 className={`text-[9px] mt-0.5 leading-none whitespace-nowrap ${
-                                  isActive 
-                                    ? `font-bold ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}` 
+                                  isActive
+                                    ? `font-bold ${themeMode === 'dark' ? 'text-white' : 'text-slate-900'}`
                                     : `font-medium ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`
                                 }`}
                               >
@@ -1530,22 +1930,26 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
               <div className="flex flex-col items-center my-1.5 flex-shrink-0">
                 <svg viewBox="0 0 580 400" className="w-[240px] h-[165px] select-none">
                   {/* Concentric rings */}
-                  {[0.25, 0.5, 0.75, 1.0].map(level => {
+                  {[0.25, 0.5, 0.75, 1.0].map((level) => {
                     const pts = getPentagonPoints(RADAR_CENTER_X, RADAR_CENTER_Y, RADAR_MAX_R * level);
                     const ptsStr = pointsToString(pts);
                     const isOuter = level === 1.0;
                     return (
-                      <polygon 
-                        key={level} 
-                        points={ptsStr} 
-                        fill="none" 
+                      <polygon
+                        key={level}
+                        points={ptsStr}
+                        fill="none"
                         stroke={
                           isOuter
-                            ? (themeMode === 'dark' ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.35)')
-                            : (themeMode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)')
-                        } 
-                        strokeWidth={isOuter ? '1.5' : '0.75'} 
-                        strokeDasharray={isOuter ? 'none' : '3,3'} 
+                            ? themeMode === 'dark'
+                              ? 'rgba(255,255,255,0.32)'
+                              : 'rgba(0,0,0,0.35)'
+                            : themeMode === 'dark'
+                              ? 'rgba(255,255,255,0.12)'
+                              : 'rgba(0,0,0,0.14)'
+                        }
+                        strokeWidth={isOuter ? '1.5' : '0.75'}
+                        strokeDasharray={isOuter ? 'none' : '3,3'}
                       />
                     );
                   })}
@@ -1554,11 +1958,20 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     const end = polarToXY(RADAR_CENTER_X, RADAR_CENTER_Y, RADAR_MAX_R, a);
                     const isActive = currentMetricKey === metricConfigs[i].key;
                     return (
-                      <line 
-                        key={i} 
-                        x1={RADAR_CENTER_X} y1={RADAR_CENTER_Y} x2={end.x} y2={end.y} 
-                        stroke={isActive ? metricConfigs[i].color : (themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)')} 
-                        strokeWidth={isActive ? 1.5 : 0.5} 
+                      <line
+                        key={i}
+                        x1={RADAR_CENTER_X}
+                        y1={RADAR_CENTER_Y}
+                        x2={end.x}
+                        y2={end.y}
+                        stroke={
+                          isActive
+                            ? metricConfigs[i].color
+                            : themeMode === 'dark'
+                              ? 'rgba(255,255,255,0.06)'
+                              : 'rgba(0,0,0,0.08)'
+                        }
+                        strokeWidth={isActive ? 1.5 : 0.5}
                       />
                     );
                   })}
@@ -1566,40 +1979,46 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   {RADAR_ANGLES.map((a, i) => {
                     const labelDist = RADAR_MAX_R + 24;
                     const pos = polarToXY(RADAR_CENTER_X, RADAR_CENTER_Y, labelDist, a);
-                    
+
                     // Fine-tune alignments for the 25px font-size
                     let anchor: 'start' | 'middle' | 'end' = 'middle';
                     let dy = '0px';
-                    
-                    if (i === 0) { // Top (Calls)
+
+                    if (i === 0) {
+                      // Top (Calls)
                       anchor = 'middle';
                       dy = '-10px';
-                    } else if (i === 1) { // Right-Top (Pickups)
+                    } else if (i === 1) {
+                      // Right-Top (Pickups)
                       anchor = 'start';
                       dy = '5px';
-                    } else if (i === 2) { // Right-Bottom (Happy Call)
+                    } else if (i === 2) {
+                      // Right-Bottom (Happy Call)
                       anchor = 'start';
                       dy = '12px';
-                    } else if (i === 3) { // Left-Bottom (Booked)
+                    } else if (i === 3) {
+                      // Left-Bottom (Booked)
                       anchor = 'end';
                       dy = '12px';
-                    } else if (i === 4) { // Left-Top (Done Deal)
+                    } else if (i === 4) {
+                      // Left-Top (Done Deal)
                       anchor = 'end';
                       dy = '5px';
                     }
 
                     const isActive = currentMetricKey === metricConfigs[i].key;
                     return (
-                      <text 
-                        key={i} 
-                        x={pos.x} y={pos.y} 
+                      <text
+                        key={i}
+                        x={pos.x}
+                        y={pos.y}
                         textAnchor={anchor}
                         dy={dy}
-                        style={{ 
-                          fill: metricConfigs[i].color, 
-                          fontSize: '25px', 
-                          fontWeight: isActive ? '950' : '650', 
-                          fontFamily: 'Plus Jakarta Sans' 
+                        style={{
+                          fill: metricConfigs[i].color,
+                          fontSize: '25px',
+                          fontWeight: isActive ? '950' : '650',
+                          fontFamily: 'Plus Jakarta Sans',
                         }}
                       >
                         {metricConfigs[i].label}
@@ -1607,24 +2026,25 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     );
                   })}
                   {/* Values path */}
-                  <polygon 
-                    points={pointsToString(dataPoints)} 
-                    fill={themeMode === 'dark' ? 'rgba(212,168,75,0.18)' : 'rgba(212,168,75,0.12)'} 
-                    stroke="#D4A84B" 
-                    strokeWidth="2" 
-                    strokeLinejoin="round" 
+                  <polygon
+                    points={pointsToString(dataPoints)}
+                    fill={themeMode === 'dark' ? 'rgba(212,168,75,0.18)' : 'rgba(212,168,75,0.12)'}
+                    stroke="#D4A84B"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
                   />
                   {/* Data points */}
                   {dataPoints.map((pt, i) => {
                     const isActive = currentMetricKey === metricConfigs[i].key;
                     return (
-                      <circle 
-                        key={i} 
-                        cx={pt.x} cy={pt.y} 
-                        r={isActive ? 5 : 3} 
-                        fill={metricConfigs[i].color} 
-                        stroke={isActive ? '#fff' : 'none'} 
-                        strokeWidth={isActive ? 1.5 : 0} 
+                      <circle
+                        key={i}
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={isActive ? 5 : 3}
+                        fill={metricConfigs[i].color}
+                        stroke={isActive ? '#fff' : 'none'}
+                        strokeWidth={isActive ? 1.5 : 0}
                       />
                     );
                   })}
@@ -1633,7 +2053,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
 
               {/* Legend Row copied from Front face (Mini Summary Cards) */}
               <div className="grid grid-cols-5 gap-2 mt-1 flex-shrink-0">
-                {metricConfigs.map(mc => {
+                {metricConfigs.map((mc) => {
                   const val = activePerformance[mc.key];
                   const target = activeMemberTargets[mc.key];
                   const actualPct = target > 0 ? Math.round((val / target) * 100) : 0;
@@ -1641,49 +2061,89 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                   const isActive = currentMetricKey === mc.key;
                   const Icon = mc.antIcon;
                   return (
-                    <div 
+                    <div
                       key={mc.key}
                       onClick={() => setCurrentMetricKey(mc.key)}
                       className={`rounded-2xl p-2.5 flex items-center gap-2.5 cursor-pointer transition-all duration-300 border ${
-                        isActive 
-                          ? (themeMode === 'dark' 
-                              ? 'border-transparent' 
-                              : 'border-transparent')
-                          : (themeMode === 'dark' 
-                              ? 'border-white/5 hover:border-white/10' 
-                              : 'border-slate-100 hover:border-slate-200/80')
+                        isActive
+                          ? themeMode === 'dark'
+                            ? 'border-transparent'
+                            : 'border-transparent'
+                          : themeMode === 'dark'
+                            ? 'border-white/5 hover:border-white/10'
+                            : 'border-slate-100 hover:border-slate-200/80'
                       }`}
                       style={{
-                        background: isActive 
-                          ? (themeMode === 'dark' ? `linear-gradient(135deg, ${mc.color}15, rgba(255,255,255,0.01))` : `linear-gradient(135deg, ${mc.color}08, #ffffff)`)
-                          : (themeMode === 'dark' ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)'),
+                        background: isActive
+                          ? themeMode === 'dark'
+                            ? `linear-gradient(135deg, ${mc.color}15, rgba(255,255,255,0.01))`
+                            : `linear-gradient(135deg, ${mc.color}08, #ffffff)`
+                          : themeMode === 'dark'
+                            ? 'rgba(255,255,255,0.01)'
+                            : 'rgba(0,0,0,0.01)',
                         boxShadow: isActive ? `0 10px 25px -5px ${mc.color}25, 0 8px 10px -6px ${mc.color}25` : 'none',
-                        borderLeft: isActive ? `3.5px solid ${mc.color}` : undefined
+                        borderLeft: isActive ? `3.5px solid ${mc.color}` : undefined,
                       }}
                     >
                       {/* Left Side: Glowing Radial Ring with Icon */}
-                      <div 
+                      <div
                         className="relative w-11 h-11 flex items-center justify-center shrink-0 rounded-full transition-all duration-300"
                         style={{
                           boxShadow: `0 0 15px ${mc.color}35`,
                         }}
                       >
                         <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                          <circle cx="18" cy="18" r="16" fill="none" stroke={themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} strokeWidth="2.5"></circle>
-                          <circle cx="18" cy="18" r="16" fill="none" stroke={mc.color} strokeWidth="3" strokeDasharray="100" strokeDashoffset={100 - barPct} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.8s ease' }}></circle>
+                          <circle
+                            cx="18"
+                            cy="18"
+                            r="16"
+                            fill="none"
+                            stroke={themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                            strokeWidth="2.5"
+                          ></circle>
+                          <circle
+                            cx="18"
+                            cy="18"
+                            r="16"
+                            fill="none"
+                            stroke={mc.color}
+                            strokeWidth="3"
+                            strokeDasharray="100"
+                            strokeDashoffset={100 - barPct}
+                            strokeLinecap="round"
+                            style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+                          ></circle>
                         </svg>
                         <Icon className="text-sm relative z-10" style={{ color: mc.color, fontSize: '22px' }} />
                       </div>
 
                       {/* Right Side: Info with Diagonal Slash */}
                       <div className="flex-1 min-w-0 text-left">
-                        <span className="text-[10px] font-black uppercase tracking-wider block font-outfit" style={{ color: mc.color }}>{mc.label}</span>
+                        <span
+                          className="text-[10px] font-black uppercase tracking-wider block font-outfit"
+                          style={{ color: mc.color }}
+                        >
+                          {mc.label}
+                        </span>
                         <div className="flex items-center gap-1.5 leading-none mt-0 select-none">
-                          <span className={`text-2xl font-outfit font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{val}</span>
-                          <span className="w-[1.5px] h-5 transform rotate-12 shrink-0" style={{ backgroundColor: `${mc.color}45` }}></span>
-                          <span className={`text-xs font-extrabold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{target}</span>
+                          <span
+                            className={`text-2xl font-outfit font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}
+                          >
+                            {val}
+                          </span>
+                          <span
+                            className="w-[1.5px] h-5 transform rotate-12 shrink-0"
+                            style={{ backgroundColor: `${mc.color}45` }}
+                          ></span>
+                          <span
+                            className={`text-xs font-extrabold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}
+                          >
+                            {target}
+                          </span>
                         </div>
-                        <span className="text-[9px] font-black uppercase block mt-0.5" style={{ color: mc.color }}>ĐẠT: {actualPct}%</span>
+                        <span className="text-[9px] font-black uppercase block mt-0.5" style={{ color: mc.color }}>
+                          ĐẠT: {actualPct}%
+                        </span>
                       </div>
                     </div>
                   );
@@ -1691,72 +2151,101 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
               </div>
 
               {/* Leaderboard (Podium Fixed Height) */}
-              <div className={`pt-2 border-t mt-2 flex-shrink-0 ${themeMode === 'dark' ? 'border-white/5' : 'border-gray-200'}`}>
+              <div
+                className={`pt-2 border-t mt-2 flex-shrink-0 ${themeMode === 'dark' ? 'border-white/5' : 'border-gray-200'}`}
+              >
                 <div className="flex items-center gap-1.5 mb-2">
                   <TrophyOutlined className="text-gold text-xs animate-bounce" />
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}>Bảng Xếp Hạng Đội Nhóm (Đóng deal)</span>
+                  <span
+                    className={`text-[10px] font-black uppercase tracking-wider ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}
+                  >
+                    Bảng Xếp Hạng Đội Nhóm (Đóng deal)
+                  </span>
                 </div>
-                
+
                 {/* Podium Grid */}
                 <div className="w-full flex items-end justify-center gap-4 pt-9" style={{ minHeight: '190px' }}>
                   {podiumOrderBack.map((member, idx) => {
                     if (!member) return null;
                     const val = member.value;
                     const isSelected = member.id === currentMemberId;
-                    const rank = idx === 0 ? 2 : (idx === 1 ? 1 : 3);
-                    const barHeight = idx === 0 ? 70 : (idx === 1 ? 95 : 50);
-                    const rankEmoji = idx === 0 ? '🥈' : (idx === 1 ? '🥇' : '🥉');
+                    const rank = idx === 0 ? 2 : idx === 1 ? 1 : 3;
+                    const barHeight = idx === 0 ? 70 : idx === 1 ? 95 : 50;
+                    const rankEmoji = idx === 0 ? '🥈' : idx === 1 ? '🥇' : '🥉';
 
                     return (
-                      <div 
-                        key={member.id} 
+                      <div
+                        key={member.id}
                         onClick={() => setCurrentMemberId(member.id)}
-                        className={`flex flex-col items-center relative cursor-pointer transition-all duration-300 hover:scale-105 ${isSelected ? 'scale-105 z-10' : 'opacity-85 hover:opacity-100'}`} 
+                        className={`flex flex-col items-center relative cursor-pointer transition-all duration-300 hover:scale-105 ${isSelected ? 'scale-105 z-10' : 'opacity-85 hover:opacity-100'}`}
                         style={{ width: '90px' }}
                       >
                         <div className="flex flex-col items-center mb-1 text-center w-full relative z-10">
                           <span className="text-xs mb-0.5">{rank === 1 ? '👑' : rankEmoji}</span>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white mb-1 border-2 ${
-                            isSelected ? 'border-gold shadow-lg shadow-gold/20 scale-105' : (themeMode === 'dark' ? 'border-white/10' : 'border-gray-300')
-                          }`} style={{ background: member.gradient }}>
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white mb-1 border-2 ${
+                              isSelected
+                                ? 'border-gold shadow-lg shadow-gold/20 scale-105'
+                                : themeMode === 'dark'
+                                  ? 'border-white/10'
+                                  : 'border-gray-300'
+                            }`}
+                            style={{ background: member.gradient }}
+                          >
                             {member.initials}
                           </div>
-                          <div className={`text-[10px] font-black truncate w-full px-1 ${themeMode === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{member.name}</div>
-                          
+                          <div
+                            className={`text-[10px] font-black truncate w-full px-1 ${themeMode === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                          >
+                            {member.name}
+                          </div>
+
                           {/* Mini Radar chart SVG inside podium back side columns */}
-                          <svg id={`miniRadar-Back-New-${member.id}`} viewBox="0 0 60 60" className="w-[32px] h-[32px] my-0.5 opacity-80" ref={el => {
-                            if (!el) return;
-                            const cx = 30, cy = 30, maxR = 20;
-                            const colors = ['#3b82f6', '#8B5CF6', '#F59E0B', '#F97316', '#10B981'];
-                            const metrics = ['calls', 'pickups', 'happy', 'booked', 'done'];
-                            const pts100 = RADAR_ANGLES.map(a => polarToXY(cx, cy, maxR, a));
-                            const pts50 = RADAR_ANGLES.map(a => polarToXY(cx, cy, maxR * 0.5, a));
-                            const perf = member.perf;
-                            const memberTargets = getMemberTarget(member.id, currentPeriodId);
-                            const dataPts = metrics.map((m, i) => {
-                              const t = memberTargets[m];
-                              const ratio = t > 0 ? Math.min(perf[m] / t, 1) : 0;
-                              return polarToXY(cx, cy, maxR * ratio, RADAR_ANGLES[i]);
-                            });
-                            el.innerHTML = `
+                          <svg
+                            id={`miniRadar-Back-New-${member.id}`}
+                            viewBox="0 0 60 60"
+                            className="w-[32px] h-[32px] my-0.5 opacity-80"
+                            ref={(el) => {
+                              if (!el) return;
+                              const cx = 30,
+                                cy = 30,
+                                maxR = 20;
+                              const colors = ['#3b82f6', '#8B5CF6', '#F59E0B', '#F97316', '#10B981'];
+                              const metrics = ['calls', 'pickups', 'happy', 'booked', 'done'];
+                              const pts100 = RADAR_ANGLES.map((a) => polarToXY(cx, cy, maxR, a));
+                              const pts50 = RADAR_ANGLES.map((a) => polarToXY(cx, cy, maxR * 0.5, a));
+                              const perf = member.perf;
+                              const memberTargets = getMemberTarget(member.id, currentPeriodId);
+                              const dataPts = metrics.map((m, i) => {
+                                const t = memberTargets[m];
+                                const ratio = t > 0 ? Math.min(perf[m] / t, 1) : 0;
+                                return polarToXY(cx, cy, maxR * ratio, RADAR_ANGLES[i]);
+                              });
+                              el.innerHTML = `
                               <polygon points="${pointsToString(pts100)}" fill="none" stroke="${themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}" stroke-width="0.5"/>
                               <polygon points="${pointsToString(pts50)}" fill="none" stroke="${themeMode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)'}" stroke-width="0.3" stroke-dasharray="1.5,1.5"/>
                               <polygon points="${pointsToString(dataPts)}" fill="rgba(212,168,75,0.15)" stroke="#D4A84B" stroke-width="1.2" stroke-linejoin="round"/>
                               ${dataPts.map((p, i) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="1.5" fill="${colors[i]}"/>`).join('')}
                             `;
-                          }}></svg>
+                            }}
+                          ></svg>
 
-                          <div className={`text-sm font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{val}</div>
+                          <div
+                            className={`text-sm font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}
+                          >
+                            {val}
+                          </div>
                         </div>
-                        <div 
+                        <div
                           className="w-full rounded-t-lg transition-all duration-500 flex items-end justify-center pb-1"
-                          style={{ 
-                            height: `${barHeight}px`, 
-                            background: themeMode === 'dark' 
-                              ? 'linear-gradient(to top, rgba(255,255,255,0.03), rgba(255,255,255,0.08))' 
-                              : 'linear-gradient(to top, rgba(0,0,0,0.02), rgba(0,0,0,0.05))', 
+                          style={{
+                            height: `${barHeight}px`,
+                            background:
+                              themeMode === 'dark'
+                                ? 'linear-gradient(to top, rgba(255,255,255,0.03), rgba(255,255,255,0.08))'
+                                : 'linear-gradient(to top, rgba(0,0,0,0.02), rgba(0,0,0,0.05))',
                             border: `1px solid ${themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
-                            borderBottom: 'none'
+                            borderBottom: 'none',
                           }}
                         >
                           <span className="text-xs font-black opacity-20 text-white">{rank}</span>
@@ -1773,7 +2262,7 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                     const target = memberTargets['done'];
                     const pct = target > 0 ? Math.round((m.value / target) * 100) : 0;
                     const isSelected = m.id === currentMemberId;
-                    
+
                     // Segment bars calculations
                     const colors = ['#3b82f6', '#8B5CF6', '#F59E0B', '#F97316', '#10B981'];
                     const metrics = ['calls', 'pickups', 'happy', 'booked', 'done'];
@@ -1782,29 +2271,48 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
                       const itemTgt = memberTargets[metricKey];
                       const itemPct = itemTgt > 0 ? Math.min(Math.round((itemVal / itemTgt) * 100), 100) : 0;
                       return (
-                        <div key={metricKey} className={`flex-1 h-1 rounded overflow-hidden ${themeMode === 'dark' ? 'bg-white/10' : 'bg-gray-200'}`}>
-                          <div className="h-full rounded" style={{ width: `${itemPct}%`, backgroundColor: colors[mtIdx] }}></div>
+                        <div
+                          key={metricKey}
+                          className={`flex-1 h-1 rounded overflow-hidden ${themeMode === 'dark' ? 'bg-white/10' : 'bg-gray-200'}`}
+                        >
+                          <div
+                            className="h-full rounded"
+                            style={{ width: `${itemPct}%`, backgroundColor: colors[mtIdx] }}
+                          ></div>
                         </div>
                       );
                     });
 
                     return (
-                      <div 
+                      <div
                         key={m.id}
                         onClick={() => setCurrentMemberId(m.id)}
                         className={`flex items-center gap-2.5 p-2 rounded-xl border text-left cursor-pointer transition-all ${
-                          isSelected 
-                            ? 'bg-gold/15 border-gold/35 shadow-sm' 
-                            : (themeMode === 'dark' ? 'bg-white/[0.02] border-transparent hover:bg-white/5' : 'bg-slate-50 border-transparent hover:bg-slate-100')
+                          isSelected
+                            ? 'bg-gold/15 border-gold/35 shadow-sm'
+                            : themeMode === 'dark'
+                              ? 'bg-white/[0.02] border-transparent hover:bg-white/5'
+                              : 'bg-slate-50 border-transparent hover:bg-slate-100'
                         }`}
                       >
-                        <span className={`text-[11px] font-bold w-4 text-center ${themeMode === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>#{i + 4}</span>
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm" style={{ background: m.gradient }}>{m.initials}</div>
+                        <span
+                          className={`text-[11px] font-bold w-4 text-center ${themeMode === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}
+                        >
+                          #{i + 4}
+                        </span>
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm"
+                          style={{ background: m.gradient }}
+                        >
+                          {m.initials}
+                        </div>
                         <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
-                          <span className={`text-xs font-bold truncate ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`}>{m.name}</span>
-                          <div className="flex gap-0.5 shrink-0 w-20">
-                            {segmentsHtml}
-                          </div>
+                          <span
+                            className={`text-xs font-bold truncate ${themeMode === 'dark' ? 'text-gray-200' : 'text-slate-700'}`}
+                          >
+                            {m.name}
+                          </span>
+                          <div className="flex gap-0.5 shrink-0 w-20">{segmentsHtml}</div>
                         </div>
                       </div>
                     );
@@ -1816,7 +2324,6 @@ export default function TelesalesDashboardModal({ visible, onClose, initialMembe
             {/* Target Config Panel Slide-in (Back Side) */}
             {renderConfigPanel()}
           </div>
-
         </div>
         {/* Drag resize handle visual indicator */}
         <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 pointer-events-none z-[1050] flex items-end justify-end opacity-40">

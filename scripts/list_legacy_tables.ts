@@ -9,7 +9,7 @@ async function run() {
     FROM information_schema.tables
     WHERE table_schema = 'management'
   `);
-  
+
   for (const t of tables) {
     const name = t.TABLE_NAME || t.table_name;
     const countRes = await legacy.$queryRawUnsafe<any[]>(`

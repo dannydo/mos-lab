@@ -1,597 +1,699 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Telesales Target Popover Mockups - 100 Thiết kế Giao diện</title>
-  <style>
-    :root {
-      --bg-dark: #09090b;
-      --card-dark: #18181b;
-      --border-dark: #27272a;
-      --text-main: #fafafa;
-      --text-muted: #a1a1aa;
-      
-      /* Color tokens */
-      --green-success: #10b981;
-      --blue-primary: #3b82f6;
-      --amber-warning: #f59e0b;
-      --rose-danger: #f43f5e;
-      --purple-accent: #8b5cf6;
-      --gold-royal: #fbbf24;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Telesales Target Popover Mockups - 100 Thiết kế Giao diện</title>
+    <style>
+      :root {
+        --bg-dark: #09090b;
+        --card-dark: #18181b;
+        --border-dark: #27272a;
+        --text-main: #fafafa;
+        --text-muted: #a1a1aa;
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
+        /* Color tokens */
+        --green-success: #10b981;
+        --blue-primary: #3b82f6;
+        --amber-warning: #f59e0b;
+        --rose-danger: #f43f5e;
+        --purple-accent: #8b5cf6;
+        --gold-royal: #fbbf24;
+      }
 
-    body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+      }
 
-    /* Layout Columns */
-    .sidebar-left {
-      width: 280px;
-      background-color: #0c0c0e;
-      border-right: 1px solid var(--border-dark);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
+      body {
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
 
-    .sidebar-header {
-      padding: 20px;
-      background: linear-gradient(135deg, var(--purple-accent), var(--blue-primary));
-      color: white;
-    }
+      /* Layout Columns */
+      .sidebar-left {
+        width: 280px;
+        background-color: #0c0c0e;
+        border-right: 1px solid var(--border-dark);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
 
-    .sidebar-header h1 {
-      font-size: 15px;
-      font-weight: 700;
-    }
+      .sidebar-header {
+        padding: 20px;
+        background: linear-gradient(135deg, var(--purple-accent), var(--blue-primary));
+        color: white;
+      }
 
-    .sidebar-header p {
-      font-size: 9px;
-      opacity: 0.8;
-      text-transform: uppercase;
-      margin-top: 4px;
-      font-weight: bold;
-    }
+      .sidebar-header h1 {
+        font-size: 15px;
+        font-weight: 700;
+      }
 
-    .nav-list {
-      list-style: none;
-      padding: 10px;
-      overflow-y: auto;
-      flex: 1;
-    }
+      .sidebar-header p {
+        font-size: 9px;
+        opacity: 0.8;
+        text-transform: uppercase;
+        margin-top: 4px;
+        font-weight: bold;
+      }
 
-    .nav-section-title {
-      font-size: 10px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-weight: bold;
-      padding: 10px 12px 6px;
-    }
+      .nav-list {
+        list-style: none;
+        padding: 10px;
+        overflow-y: auto;
+        flex: 1;
+      }
 
-    .nav-item {
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      cursor: pointer;
-      margin-bottom: 4px;
-      transition: all 0.2s;
-      border: 1px solid transparent;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+      .nav-section-title {
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: bold;
+        padding: 10px 12px 6px;
+      }
 
-    .nav-item:hover {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
+      .nav-item {
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        margin-bottom: 4px;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
 
-    .nav-item.active {
-      background-color: var(--blue-primary);
-      color: white;
-      font-weight: 600;
-    }
+      .nav-item:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
 
-    /* Main Area */
-    .main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      background-color: #09090b;
-    }
+      .nav-item.active {
+        background-color: var(--blue-primary);
+        color: white;
+        font-weight: 600;
+      }
 
-    .top-toolbar {
-      padding: 16px 24px;
-      background-color: #0c0c0e;
-      border-bottom: 1px solid var(--border-dark);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+      /* Main Area */
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background-color: #09090b;
+      }
 
-    .toolbar-info h2 {
-      font-size: 16px;
-      font-weight: 700;
-    }
+      .top-toolbar {
+        padding: 16px 24px;
+        background-color: #0c0c0e;
+        border-bottom: 1px solid var(--border-dark);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
 
-    .toolbar-info p {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
+      .toolbar-info h2 {
+        font-size: 16px;
+        font-weight: 700;
+      }
 
-    .combo-badge {
-      background-color: rgba(59, 130, 246, 0.15);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      color: var(--blue-primary);
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 700;
-    }
+      .toolbar-info p {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
 
-    /* Tab bar for layout variations */
-    .tab-bar {
-      display: flex;
-      background-color: #0e0e11;
-      border-bottom: 1px solid var(--border-dark);
-      padding: 0 16px;
-      overflow-x: auto;
-      white-space: nowrap;
-    }
+      .combo-badge {
+        background-color: rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        color: var(--blue-primary);
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+      }
 
-    .tab-item {
-      padding: 12px 16px;
-      font-size: 12px;
-      color: var(--text-muted);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-    }
+      /* Tab bar for layout variations */
+      .tab-bar {
+        display: flex;
+        background-color: #0e0e11;
+        border-bottom: 1px solid var(--border-dark);
+        padding: 0 16px;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
 
-    .tab-item:hover {
-      color: var(--text-main);
-    }
+      .tab-item {
+        padding: 12px 16px;
+        font-size: 12px;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+      }
 
-    .tab-item.active {
-      color: var(--blue-primary);
-      border-bottom-color: var(--blue-primary);
-      font-weight: 600;
-    }
+      .tab-item:hover {
+        color: var(--text-main);
+      }
 
-    /* Viewport Area */
-    .viewport {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-      background: radial-gradient(circle at center, #1c1917 0%, #09090b 100%);
-      position: relative;
-      overflow: auto;
-    }
+      .tab-item.active {
+        color: var(--blue-primary);
+        border-bottom-color: var(--blue-primary);
+        font-weight: 600;
+      }
 
-    .simulated-header-bar {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 480px;
-      height: 48px;
-      background-color: #121214;
-      border: 1px solid var(--border-dark);
-      border-radius: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      z-index: 99;
-    }
+      /* Viewport Area */
+      .viewport {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        background: radial-gradient(circle at center, #1c1917 0%, #09090b 100%);
+        position: relative;
+        overflow: auto;
+      }
 
-    .h-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-    }
+      .simulated-header-bar {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 480px;
+        height: 48px;
+        background-color: #121214;
+        border: 1px solid var(--border-dark);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 99;
+      }
 
-    .telesales-avatar-trigger {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background-color: var(--purple-accent);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-      cursor: pointer;
-      border: 2px solid var(--green-success);
-      position: relative;
-    }
+      .h-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
 
-    .telesales-avatar-trigger::after {
-      content: '';
-      position: absolute;
-      bottom: -1px;
-      right: -1px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: var(--green-success);
-      border: 1px solid #121214;
-    }
+      .telesales-avatar-trigger {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: var(--purple-accent);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        border: 2px solid var(--green-success);
+        position: relative;
+      }
 
-    /* POPUP DASHBOARD container rendering */
-    .dashboard-popup-container {
-      margin-top: 60px;
-      z-index: 100;
-      display: block; /* Managed by javascript */
-      transition: all 0.3s ease;
-    }
+      .telesales-avatar-trigger::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        right: -1px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--green-success);
+        border: 1px solid #121214;
+      }
 
-    /* THEME 1: Google Sheets Minimalist Light */
-    .theme-light-workspace {
-      background-color: #f8fafd;
-      color: #1f2328;
-      border: 1px solid #d0d7de;
-      border-radius: 16px;
-      width: 420px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-      padding: 20px;
-    }
+      /* POPUP DASHBOARD container rendering */
+      .dashboard-popup-container {
+        margin-top: 60px;
+        z-index: 100;
+        display: block; /* Managed by javascript */
+        transition: all 0.3s ease;
+      }
 
-    /* THEME 2: Glassmorphic Cyberpunk */
-    .theme-glass-cyber {
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(139, 92, 246, 0.4);
-      color: #f1f5f9;
-      border-radius: 20px;
-      width: 420px;
-      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
-      padding: 20px;
-    }
+      /* THEME 1: Google Sheets Minimalist Light */
+      .theme-light-workspace {
+        background-color: #f8fafd;
+        color: #1f2328;
+        border: 1px solid #d0d7de;
+        border-radius: 16px;
+        width: 420px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        padding: 20px;
+      }
 
-    /* THEME 3: Gold Royal Club */
-    .theme-gold-royal {
-      background-color: #0c0a09;
-      border: 2px solid #fbbf24;
-      color: #fff;
-      border-radius: 12px;
-      width: 420px;
-      box-shadow: 0 10px 40px rgba(251, 191, 36, 0.2);
-      padding: 20px;
-    }
+      /* THEME 2: Glassmorphic Cyberpunk */
+      .theme-glass-cyber {
+        background: rgba(15, 23, 42, 0.75);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(139, 92, 246, 0.4);
+        color: #f1f5f9;
+        border-radius: 20px;
+        width: 420px;
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+        padding: 20px;
+      }
 
-    /* THEME 4: Retro Gamified */
-    .theme-retro-game {
-      background-color: #0b132b;
-      border: 4px solid #48cae4;
-      color: #00f5d4;
-      font-family: 'Courier New', Courier, monospace;
-      border-radius: 0;
-      width: 420px;
-      box-shadow: 8px 8px 0px #48cae4;
-      padding: 20px;
-    }
+      /* THEME 3: Gold Royal Club */
+      .theme-gold-royal {
+        background-color: #0c0a09;
+        border: 2px solid #fbbf24;
+        color: #fff;
+        border-radius: 12px;
+        width: 420px;
+        box-shadow: 0 10px 40px rgba(251, 191, 36, 0.2);
+        padding: 20px;
+      }
 
-    /* THEME 5: Circular Dashboard Neo */
-    .theme-circular-neo {
-      background-color: #151d30;
-      border: 1px solid #2d3748;
-      color: #e2e8f0;
-      border-radius: 24px;
-      width: 420px;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-      padding: 20px;
-    }
+      /* THEME 4: Retro Gamified */
+      .theme-retro-game {
+        background-color: #0b132b;
+        border: 4px solid #48cae4;
+        color: #00f5d4;
+        font-family: 'Courier New', Courier, monospace;
+        border-radius: 0;
+        width: 420px;
+        box-shadow: 8px 8px 0px #48cae4;
+        padding: 20px;
+      }
 
-    /* THEME 6: Comic Pop Art */
-    .theme-comic-pop {
-      background-color: #ffe4e6;
-      border: 3px solid #000;
-      color: #000;
-      border-radius: 12px;
-      width: 420px;
-      box-shadow: 6px 6px 0px #000;
-      padding: 20px;
-    }
+      /* THEME 5: Circular Dashboard Neo */
+      .theme-circular-neo {
+        background-color: #151d30;
+        border: 1px solid #2d3748;
+        color: #e2e8f0;
+        border-radius: 24px;
+        width: 420px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        padding: 20px;
+      }
 
-    /* THEME 7: Clean Neumorphism */
-    .theme-neumorphic {
-      background-color: #e0e0e0;
-      color: #333;
-      border-radius: 24px;
-      border: 1px solid #d1d1d1;
-      width: 420px;
-      box-shadow: 8px 8px 16px #bebebe, -8px -8px 16px #ffffff;
-      padding: 20px;
-    }
+      /* THEME 6: Comic Pop Art */
+      .theme-comic-pop {
+        background-color: #ffe4e6;
+        border: 3px solid #000;
+        color: #000;
+        border-radius: 12px;
+        width: 420px;
+        box-shadow: 6px 6px 0px #000;
+        padding: 20px;
+      }
 
-    /* THEME 8: Linear Compact */
-    .theme-linear-compact {
-      background-color: #1c1c1e;
-      border: 1px solid #2c2c2e;
-      color: #fff;
-      border-radius: 6px;
-      width: 420px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      padding: 16px;
-    }
+      /* THEME 7: Clean Neumorphism */
+      .theme-neumorphic {
+        background-color: #e0e0e0;
+        color: #333;
+        border-radius: 24px;
+        border: 1px solid #d1d1d1;
+        width: 420px;
+        box-shadow:
+          8px 8px 16px #bebebe,
+          -8px -8px 16px #ffffff;
+        padding: 20px;
+      }
 
-    /* THEME 9: Material 3 Pastel */
-    .theme-material-pastel {
-      background-color: #fff8f0;
-      color: #4a3e3d;
-      border-radius: 28px;
-      border: 1px solid #ffd8be;
-      width: 420px;
-      box-shadow: 0 8px 24px rgba(255, 216, 190, 0.3);
-      padding: 20px;
-    }
+      /* THEME 8: Linear Compact */
+      .theme-linear-compact {
+        background-color: #1c1c1e;
+        border: 1px solid #2c2c2e;
+        color: #fff;
+        border-radius: 6px;
+        width: 420px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        padding: 16px;
+      }
 
-    /* THEME 10: Aesthetic Gradient Mesh */
-    .theme-gradient-mesh {
-      background: linear-gradient(135deg, rgba(20, 10, 45, 0.9), rgba(5, 5, 10, 0.95));
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: white;
-      border-radius: 20px;
-      width: 420px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-      padding: 20px;
-    }
+      /* THEME 9: Material 3 Pastel */
+      .theme-material-pastel {
+        background-color: #fff8f0;
+        color: #4a3e3d;
+        border-radius: 28px;
+        border: 1px solid #ffd8be;
+        width: 420px;
+        box-shadow: 0 8px 24px rgba(255, 216, 190, 0.3);
+        padding: 20px;
+      }
 
-    /* UI utilities */
-    .kpi-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      font-size: 13px;
-    }
+      /* THEME 10: Aesthetic Gradient Mesh */
+      .theme-gradient-mesh {
+        background: linear-gradient(135deg, rgba(20, 10, 45, 0.9), rgba(5, 5, 10, 0.95));
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        border-radius: 20px;
+        width: 420px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        padding: 20px;
+      }
 
-    .kpi-progress-bar {
-      height: 6px;
-      background-color: rgba(255, 255, 255, 0.1);
-      border-radius: 3px;
-      overflow: hidden;
-      margin-top: 4px;
-      margin-bottom: 12px;
-    }
+      /* UI utilities */
+      .kpi-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
 
-    .light-theme-progress {
-      background-color: rgba(0, 0, 0, 0.08) !important;
-    }
+      .kpi-progress-bar {
+        height: 6px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 4px;
+        margin-bottom: 12px;
+      }
 
-    .kpi-fill {
-      height: 100%;
-      border-radius: 3px;
-      transition: width 0.3s ease;
-    }
+      .light-theme-progress {
+        background-color: rgba(0, 0, 0, 0.08) !important;
+      }
 
-    /* Description Bottom Footer */
-    .design-details-footer {
-      padding: 20px;
-      background-color: #0c0c0e;
-      border-top: 1px solid var(--border-dark);
-      font-size: 13px;
-      line-height: 1.5;
-    }
+      .kpi-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+      }
 
-    .design-details-footer h4 {
-      color: var(--blue-primary);
-      margin-bottom: 4px;
-      font-weight: 700;
-    }
-  </style>
-</head>
-<body>
+      /* Description Bottom Footer */
+      .design-details-footer {
+        padding: 20px;
+        background-color: #0c0c0e;
+        border-top: 1px solid var(--border-dark);
+        font-size: 13px;
+        line-height: 1.5;
+      }
 
-  <!-- Themes Sidebar -->
-  <div class="sidebar-left">
-    <div class="sidebar-header">
-      <h1>TELESALES MONITOR</h1>
-      <p>100 Combo Designs Catalog</p>
-    </div>
-    <ul class="nav-list" id="themeList">
-      <div class="nav-section-title">Chọn Theme Giao diện (10)</div>
-      <!-- Generated dynamically -->
-    </ul>
-  </div>
-
-  <!-- Main Showcase Container -->
-  <div class="main-content">
-    
-    <div class="top-toolbar">
-      <div class="toolbar-info">
-        <h2 id="conceptHeaderName">Combo #1: Classic Light Workspace x Thống Kê Cơ Bản</h2>
-        <p>Bao gồm 10 loại giao diện nhân 10 kiểu bố trí thành tích Telesales.</p>
+      .design-details-footer h4 {
+        color: var(--blue-primary);
+        margin-bottom: 4px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Themes Sidebar -->
+    <div class="sidebar-left">
+      <div class="sidebar-header">
+        <h1>TELESALES MONITOR</h1>
+        <p>100 Combo Designs Catalog</p>
       </div>
-      <div class="combo-badge" id="currentComboLabel">Mã số thiết kế: 1/100</div>
+      <ul class="nav-list" id="themeList">
+        <div class="nav-section-title">Chọn Theme Giao diện (10)</div>
+        <!-- Generated dynamically -->
+      </ul>
     </div>
 
-    <!-- Layout Configurations Tabs (10) -->
-    <div class="tab-bar" id="layoutTabBar">
-      <!-- Generated dynamically -->
-    </div>
+    <!-- Main Showcase Container -->
+    <div class="main-content">
+      <div class="top-toolbar">
+        <div class="toolbar-info">
+          <h2 id="conceptHeaderName">Combo #1: Classic Light Workspace x Thống Kê Cơ Bản</h2>
+          <p>Bao gồm 10 loại giao diện nhân 10 kiểu bố trí thành tích Telesales.</p>
+        </div>
+        <div class="combo-badge" id="currentComboLabel">Mã số thiết kế: 1/100</div>
+      </div>
 
-    <!-- Main Viewport containing the popup trigger -->
-    <div class="viewport">
-      
-      <!-- Simulated Header row with click trigger -->
-      <div class="simulated-header-bar">
-        <span class="h-title">Nhân viên trực tổng đài</span>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Tâm Nguyễn (Telesales)</span>
-          <div class="telesales-avatar-trigger" onclick="toggleDashboardPopup()">
-            TN
+      <!-- Layout Configurations Tabs (10) -->
+      <div class="tab-bar" id="layoutTabBar">
+        <!-- Generated dynamically -->
+      </div>
+
+      <!-- Main Viewport containing the popup trigger -->
+      <div class="viewport">
+        <!-- Simulated Header row with click trigger -->
+        <div class="simulated-header-bar">
+          <span class="h-title">Nhân viên trực tổng đài</span>
+          <div style="display: flex; align-items: center; gap: 8px">
+            <span style="font-size: 11px; font-weight: 600; color: var(--text-muted)">Tâm Nguyễn (Telesales)</span>
+            <div class="telesales-avatar-trigger" onclick="toggleDashboardPopup()">TN</div>
           </div>
+        </div>
+
+        <!-- Popup Render Container -->
+        <div class="dashboard-popup-container" id="dashboardPopup">
+          <!-- Rendered by JavaScript -->
         </div>
       </div>
 
-      <!-- Popup Render Container -->
-      <div class="dashboard-popup-container" id="dashboardPopup">
-        <!-- Rendered by JavaScript -->
+      <!-- Design explanation footer -->
+      <div class="design-details-footer">
+        <h4 id="footerTitle">Chi tiết concept thiết kế</h4>
+        <p id="footerDesc">Mô tả cấu trúc và định hướng người dùng.</p>
       </div>
-
     </div>
 
-    <!-- Design explanation footer -->
-    <div class="design-details-footer">
-      <h4 id="footerTitle">Chi tiết concept thiết kế</h4>
-      <p id="footerDesc">Mô tả cấu trúc và định hướng người dùng.</p>
-    </div>
+    <script>
+      // Data definition for Telesales KPIs
+      const telesalesData = {
+        name: 'Tâm Nguyễn',
+        role: 'Senior Telesales',
+        email: 'tam.nguyen@wingslashes.com',
+        daily: { planned: 50, called: 42, answered: 32, booked: 8, renewed: 4 },
+        weekly: { planned: 250, called: 215, answered: 172, booked: 38, renewed: 18 },
+        monthly: { planned: 1000, called: 890, answered: 712, booked: 165, renewed: 72 },
+        conversion: 24.3, // % conversion rate
+        streak: 5, // 5 days hitting targets
+        rank: 2, // Rank #2 in team
+        activeGoal: 'Đạt 200 Booking tháng 7 để mở khóa Bonus 1.500.000đ',
+      };
 
-  </div>
+      // 10 Visual Themes definitions
+      const themes = [
+        {
+          id: 1,
+          name: '1. Google Sheets Light',
+          cssClass: 'theme-light-workspace',
+          desc: 'Nền xám xanh sáng dịu (#f8fafd), văn bản đen tương phản tốt, thiết kế thuần công sở quen thuộc của G-Suite.',
+        },
+        {
+          id: 2,
+          name: '2. Glassmorphic Cyberpunk',
+          cssClass: 'theme-glass-cyber',
+          desc: 'Hiệu ứng kính mờ sẫm màu với ánh hào quang tím neon lãng mạn. Phù hợp các bạn trẻ thích giao diện gaming.',
+        },
+        {
+          id: 3,
+          name: '3. Gold Royal Club',
+          cssClass: 'theme-gold-royal',
+          desc: 'Tông đen tuyền trầm ấm kết hợp đường viền chỉ vàng hoàng gia óng ánh. Tôn vinh danh hiệu chiến thần doanh số.',
+        },
+        {
+          id: 4,
+          name: '4. Retro Arcade Game',
+          cssClass: 'theme-retro-game',
+          desc: 'Phong cách giả lập máy game thùng 8-bit. Font chữ nét đứt Courier và màu xanh ngọc bích cực kỳ cá tính.',
+        },
+        {
+          id: 5,
+          name: '5. Circular Progress Neo',
+          cssClass: 'theme-circular-neo',
+          desc: 'Tận dụng các đường viền bo tròn lớn, các ô dữ liệu phân bố dạng đồng xu, tạo chiều sâu 3D.',
+        },
+        {
+          id: 6,
+          name: '6. Comic Pop Art',
+          cssClass: 'theme-comic-pop',
+          desc: 'Viền đen dày đậm, màu hồng đào tinh nghịch. Đem lại sự vui tươi xua tan mệt mỏi của các cuộc điện thoại liên tục.',
+        },
+        {
+          id: 7,
+          name: '7. Clean Neumorphism',
+          cssClass: 'theme-neumorphic',
+          desc: 'Đổ bóng lõm và dập nổi cực kỳ mượt mà. Đơn giản, tinh khôi, tạo cảm giác xúc giác bấm chạm chân thực.',
+        },
+        {
+          id: 8,
+          name: '8. Linear Compact',
+          cssClass: 'theme-linear-compact',
+          desc: 'Bố cục dẹt, gọn gàng nhất có thể. Góc cạnh sắc sảo, không chiếm dụng không gian làm việc của nhân viên.',
+        },
+        {
+          id: 9,
+          name: '9. Material 3 Pastel',
+          cssClass: 'theme-material-pastel',
+          desc: 'Sử dụng tông màu kem nhạt ấm áp kết hợp thẻ pastel hồng cam, tuân thủ chặt chẽ ngôn ngữ thiết kế của Android.',
+        },
+        {
+          id: 10,
+          name: '10. Aesthetic Gradient Mesh',
+          cssClass: 'theme-gradient-mesh',
+          desc: 'Nền dải màu chuyển tiếp nhuyễn mượt từ tím than sang xanh sẫm, tạo cảm giác vô cực đầy chiều sâu.',
+        },
+      ];
 
-  <script>
-    // Data definition for Telesales KPIs
-    const telesalesData = {
-      name: "Tâm Nguyễn",
-      role: "Senior Telesales",
-      email: "tam.nguyen@wingslashes.com",
-      daily: { planned: 50, called: 42, answered: 32, booked: 8, renewed: 4 },
-      weekly: { planned: 250, called: 215, answered: 172, booked: 38, renewed: 18 },
-      monthly: { planned: 1000, called: 890, answered: 712, booked: 165, renewed: 72 },
-      conversion: 24.3, // % conversion rate
-      streak: 5, // 5 days hitting targets
-      rank: 2, // Rank #2 in team
-      activeGoal: "Đạt 200 Booking tháng 7 để mở khóa Bonus 1.500.000đ"
-    };
+      // 10 Layout / Data Configurations
+      const layouts = [
+        {
+          id: 1,
+          title: '1. Thống kê cơ bản',
+          desc: 'Hiển thị dạng cột truyền thống: Kế hoạch vs Đã gọi, tỷ lệ bắt máy và số lượng Booker chốt được.',
+        },
+        {
+          id: 2,
+          title: '2. Streak ngày & chuỗi',
+          desc: 'Tập trung tôn vinh chuỗi ngày hoàn thành mục tiêu liên tiếp (Ví dụ: Đã đạt mục tiêu 5 ngày liên tục).',
+        },
+        {
+          id: 3,
+          title: '3. Phễu chuyển đổi (Funnel)',
+          desc: 'Trực quan hóa lượng cuộc gọi hao hụt từ Lên kế hoạch -> Đã gọi -> Bắt máy -> Chốt Booking thành công.',
+        },
+        {
+          id: 4,
+          title: '4. Bảng xếp hạng Team',
+          desc: 'Định vị vị trí của bạn ấy trong nhóm: Top #2 và khoảng cách so với vị trí số #1 của phòng ban.',
+        },
+        {
+          id: 5,
+          title: '5. Tủ huy chương tích lũy',
+          desc: "Nơi trưng bày các danh hiệu đạt được như: 'Chiến thần telesales', 'Bàn tay vàng chốt đơn'.",
+        },
+        {
+          id: 6,
+          title: '6. Bảng nhiệm vụ hàng ngày',
+          desc: 'Liệt kê các to-do list việc cần làm trong ngày và điểm thưởng tương ứng khi hoàn thành.',
+        },
+        {
+          id: 7,
+          title: '7. Biểu đồ cột thời gian',
+          desc: 'So sánh cột mốc hiệu suất giữa 3 chu kỳ: Ngày hôm nay, Tuần này và Toàn bộ tháng.',
+        },
+        {
+          id: 8,
+          title: '8. Ước tính hoa hồng nhận',
+          desc: 'Tính toán tự động số tiền hoa hồng thực tế nhân viên bỏ túi được dựa trên số đơn đã Book.',
+        },
+        {
+          id: 9,
+          title: '9. Lời phê & Ghi chú Sếp',
+          desc: 'Hiển thị phản hồi nhanh từ quản lý nhóm trực tiếp và các cảnh báo vi phạm cuộc gọi.',
+        },
+        {
+          id: 10,
+          title: '10. Trạng thái Trực tuyến ca',
+          desc: 'Lịch sử cuộc gọi theo múi giờ trực ban cụ thể trong ca trực.',
+        },
+      ];
 
-    // 10 Visual Themes definitions
-    const themes = [
-      { id: 1, name: "1. Google Sheets Light", cssClass: "theme-light-workspace", desc: "Nền xám xanh sáng dịu (#f8fafd), văn bản đen tương phản tốt, thiết kế thuần công sở quen thuộc của G-Suite." },
-      { id: 2, name: "2. Glassmorphic Cyberpunk", cssClass: "theme-glass-cyber", desc: "Hiệu ứng kính mờ sẫm màu với ánh hào quang tím neon lãng mạn. Phù hợp các bạn trẻ thích giao diện gaming." },
-      { id: 3, name: "3. Gold Royal Club", cssClass: "theme-gold-royal", desc: "Tông đen tuyền trầm ấm kết hợp đường viền chỉ vàng hoàng gia óng ánh. Tôn vinh danh hiệu chiến thần doanh số." },
-      { id: 4, name: "4. Retro Arcade Game", cssClass: "theme-retro-game", desc: "Phong cách giả lập máy game thùng 8-bit. Font chữ nét đứt Courier và màu xanh ngọc bích cực kỳ cá tính." },
-      { id: 5, name: "5. Circular Progress Neo", cssClass: "theme-circular-neo", desc: "Tận dụng các đường viền bo tròn lớn, các ô dữ liệu phân bố dạng đồng xu, tạo chiều sâu 3D." },
-      { id: 6, name: "6. Comic Pop Art", cssClass: "theme-comic-pop", desc: "Viền đen dày đậm, màu hồng đào tinh nghịch. Đem lại sự vui tươi xua tan mệt mỏi của các cuộc điện thoại liên tục." },
-      { id: 7, name: "7. Clean Neumorphism", cssClass: "theme-neumorphic", desc: "Đổ bóng lõm và dập nổi cực kỳ mượt mà. Đơn giản, tinh khôi, tạo cảm giác xúc giác bấm chạm chân thực." },
-      { id: 8, name: "8. Linear Compact", cssClass: "theme-linear-compact", desc: "Bố cục dẹt, gọn gàng nhất có thể. Góc cạnh sắc sảo, không chiếm dụng không gian làm việc của nhân viên." },
-      { id: 9, name: "9. Material 3 Pastel", cssClass: "theme-material-pastel", desc: "Sử dụng tông màu kem nhạt ấm áp kết hợp thẻ pastel hồng cam, tuân thủ chặt chẽ ngôn ngữ thiết kế của Android." },
-      { id: 10, name: "10. Aesthetic Gradient Mesh", cssClass: "theme-gradient-mesh", desc: "Nền dải màu chuyển tiếp nhuyễn mượt từ tím than sang xanh sẫm, tạo cảm giác vô cực đầy chiều sâu." }
-    ];
+      let currentThemeIdx = 0;
+      let currentLayoutIdx = 0;
+      let isPopupOpen = true;
 
-    // 10 Layout / Data Configurations
-    const layouts = [
-      { id: 1, title: "1. Thống kê cơ bản", desc: "Hiển thị dạng cột truyền thống: Kế hoạch vs Đã gọi, tỷ lệ bắt máy và số lượng Booker chốt được." },
-      { id: 2, title: "2. Streak ngày & chuỗi", desc: "Tập trung tôn vinh chuỗi ngày hoàn thành mục tiêu liên tiếp (Ví dụ: Đã đạt mục tiêu 5 ngày liên tục)." },
-      { id: 3, title: "3. Phễu chuyển đổi (Funnel)", desc: "Trực quan hóa lượng cuộc gọi hao hụt từ Lên kế hoạch -> Đã gọi -> Bắt máy -> Chốt Booking thành công." },
-      { id: 4, title: "4. Bảng xếp hạng Team", desc: "Định vị vị trí của bạn ấy trong nhóm: Top #2 và khoảng cách so với vị trí số #1 của phòng ban." },
-      { id: 5, title: "5. Tủ huy chương tích lũy", desc: "Nơi trưng bày các danh hiệu đạt được như: 'Chiến thần telesales', 'Bàn tay vàng chốt đơn'." },
-      { id: 6, title: "6. Bảng nhiệm vụ hàng ngày", desc: "Liệt kê các to-do list việc cần làm trong ngày và điểm thưởng tương ứng khi hoàn thành." },
-      { id: 7, title: "7. Biểu đồ cột thời gian", desc: "So sánh cột mốc hiệu suất giữa 3 chu kỳ: Ngày hôm nay, Tuần này và Toàn bộ tháng." },
-      { id: 8, title: "8. Ước tính hoa hồng nhận", desc: "Tính toán tự động số tiền hoa hồng thực tế nhân viên bỏ túi được dựa trên số đơn đã Book." },
-      { id: 9, title: "9. Lời phê & Ghi chú Sếp", desc: "Hiển thị phản hồi nhanh từ quản lý nhóm trực tiếp và các cảnh báo vi phạm cuộc gọi." },
-      { id: 10, title: "10. Trạng thái Trực tuyến ca", desc: "Lịch sử cuộc gọi theo múi giờ trực ban cụ thể trong ca trực." }
-    ];
-
-    let currentThemeIdx = 0;
-    let currentLayoutIdx = 0;
-    let isPopupOpen = true;
-
-    // Render Themes list
-    const themeList = document.getElementById('themeList');
-    themes.forEach((theme, index) => {
-      const li = document.createElement('li');
-      li.className = `nav-item ${index === 0 ? 'active' : ''}`;
-      li.innerHTML = `
+      // Render Themes list
+      const themeList = document.getElementById('themeList');
+      themes.forEach((theme, index) => {
+        const li = document.createElement('li');
+        li.className = `nav-item ${index === 0 ? 'active' : ''}`;
+        li.innerHTML = `
         <span class="nav-index">${theme.id}</span>
         <span class="nav-title">${theme.name.split('. ')[1]}</span>
       `;
-      li.onclick = () => {
-        currentThemeIdx = index;
-        updateCatalog();
-      };
-      themeList.appendChild(li);
-    });
-
-    // Render Layouts tabs
-    const layoutTabBar = document.getElementById('layoutTabBar');
-    layouts.forEach((layout, index) => {
-      const div = document.createElement('div');
-      div.className = `tab-item ${index === 0 ? 'active' : ''}`;
-      div.innerText = layout.title.split('. ')[1];
-      div.onclick = () => {
-        currentLayoutIdx = index;
-        updateCatalog();
-      };
-      layoutTabBar.appendChild(div);
-    });
-
-    // Main render router
-    function updateCatalog() {
-      // Toggle sidebar active
-      const sidebarItems = document.querySelectorAll('.nav-item');
-      sidebarItems.forEach((item, idx) => {
-        if (idx === currentThemeIdx) item.classList.add('active');
-        else item.classList.remove('active');
+        li.onclick = () => {
+          currentThemeIdx = index;
+          updateCatalog();
+        };
+        themeList.appendChild(li);
       });
 
-      // Toggle tab active
-      const tabItems = document.querySelectorAll('.tab-item');
-      tabItems.forEach((item, idx) => {
-        if (idx === currentLayoutIdx) item.classList.add('active');
-        else item.classList.remove('active');
+      // Render Layouts tabs
+      const layoutTabBar = document.getElementById('layoutTabBar');
+      layouts.forEach((layout, index) => {
+        const div = document.createElement('div');
+        div.className = `tab-item ${index === 0 ? 'active' : ''}`;
+        div.innerText = layout.title.split('. ')[1];
+        div.onclick = () => {
+          currentLayoutIdx = index;
+          updateCatalog();
+        };
+        layoutTabBar.appendChild(div);
       });
 
-      const selectedTheme = themes[currentThemeIdx];
-      const selectedLayout = layouts[currentLayoutIdx];
-      const comboNum = (currentThemeIdx * 10) + currentLayoutIdx + 1;
+      // Main render router
+      function updateCatalog() {
+        // Toggle sidebar active
+        const sidebarItems = document.querySelectorAll('.nav-item');
+        sidebarItems.forEach((item, idx) => {
+          if (idx === currentThemeIdx) item.classList.add('active');
+          else item.classList.remove('active');
+        });
 
-      // Update headers
-      document.getElementById('conceptHeaderName').innerText = `Combo #${comboNum}: ${selectedTheme.name.split('. ')[1]} × ${selectedLayout.title.split('. ')[1]}`;
-      document.getElementById('currentComboLabel').innerText = `Mã số thiết kế: ${comboNum}/100`;
-      
-      // Footer info
-      document.getElementById('footerTitle').innerText = `Thông tin thiết kế: ${selectedTheme.name} + ${selectedLayout.title}`;
-      document.getElementById('footerDesc').innerText = `${selectedTheme.desc} ${selectedLayout.desc}`;
+        // Toggle tab active
+        const tabItems = document.querySelectorAll('.tab-item');
+        tabItems.forEach((item, idx) => {
+          if (idx === currentLayoutIdx) item.classList.add('active');
+          else item.classList.remove('active');
+        });
 
-      // Render details layout inside simulated popup container
-      renderPopupContent(selectedTheme.cssClass, selectedLayout.id);
-    }
+        const selectedTheme = themes[currentThemeIdx];
+        const selectedLayout = layouts[currentLayoutIdx];
+        const comboNum = currentThemeIdx * 10 + currentLayoutIdx + 1;
 
-    // Toggle popup visibility
-    function toggleDashboardPopup() {
-      const popup = document.getElementById('dashboardPopup');
-      if (isPopupOpen) {
-        popup.style.display = 'none';
-        isPopupOpen = false;
-      } else {
-        popup.style.display = 'block';
-        isPopupOpen = true;
-        updateCatalog();
+        // Update headers
+        document.getElementById('conceptHeaderName').innerText =
+          `Combo #${comboNum}: ${selectedTheme.name.split('. ')[1]} × ${selectedLayout.title.split('. ')[1]}`;
+        document.getElementById('currentComboLabel').innerText = `Mã số thiết kế: ${comboNum}/100`;
+
+        // Footer info
+        document.getElementById('footerTitle').innerText =
+          `Thông tin thiết kế: ${selectedTheme.name} + ${selectedLayout.title}`;
+        document.getElementById('footerDesc').innerText = `${selectedTheme.desc} ${selectedLayout.desc}`;
+
+        // Render details layout inside simulated popup container
+        renderPopupContent(selectedTheme.cssClass, selectedLayout.id);
       }
-    }
 
-    // Render the specific HTML based on Theme & Layout Configuration
-    function renderPopupContent(themeClass, layoutId) {
-      const popup = document.getElementById('dashboardPopup');
-      if (!isPopupOpen) return;
+      // Toggle popup visibility
+      function toggleDashboardPopup() {
+        const popup = document.getElementById('dashboardPopup');
+        if (isPopupOpen) {
+          popup.style.display = 'none';
+          isPopupOpen = false;
+        } else {
+          popup.style.display = 'block';
+          isPopupOpen = true;
+          updateCatalog();
+        }
+      }
 
-      let layoutHtml = '';
-      const isLight = themeClass === 'theme-light-workspace' || themeClass === 'theme-neumorphic' || themeClass === 'theme-material-pastel';
-      const progressBgClass = isLight ? 'light-theme-progress' : '';
-      const subTextColor = isLight ? '#57606a' : 'var(--text-muted)';
-      const accentColor = themeClass === 'theme-retro-game' ? '#00f5d4' : (themeClass === 'theme-gold-royal' ? 'var(--wings-gold)' : 'var(--blue-primary)');
+      // Render the specific HTML based on Theme & Layout Configuration
+      function renderPopupContent(themeClass, layoutId) {
+        const popup = document.getElementById('dashboardPopup');
+        if (!isPopupOpen) return;
 
-      // Generate Layout parts
-      switch(layoutId) {
-        case 1: // Basic Stats
-          layoutHtml = `
+        let layoutHtml = '';
+        const isLight =
+          themeClass === 'theme-light-workspace' ||
+          themeClass === 'theme-neumorphic' ||
+          themeClass === 'theme-material-pastel';
+        const progressBgClass = isLight ? 'light-theme-progress' : '';
+        const subTextColor = isLight ? '#57606a' : 'var(--text-muted)';
+        const accentColor =
+          themeClass === 'theme-retro-game'
+            ? '#00f5d4'
+            : themeClass === 'theme-gold-royal'
+              ? 'var(--wings-gold)'
+              : 'var(--blue-primary)';
+
+        // Generate Layout parts
+        switch (layoutId) {
+          case 1: // Basic Stats
+            layoutHtml = `
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">📊 KPI NGÀY HÔM NAY</div>
             <div class="kpi-row"><span>Kế hoạch gọi:</span> <strong>${telesalesData.daily.planned} cuộc</strong></div>
             <div class="kpi-row"><span>Đã thực hiện:</span> <strong>${telesalesData.daily.called} cuộc</strong></div>
@@ -601,9 +703,9 @@
             <div class="kpi-row"><span>Chốt lịch (Booked):</span> <strong style="color: var(--green-success);">${telesalesData.daily.booked} đơn</strong></div>
             <div class="kpi-progress-bar ${progressBgClass}"><div class="kpi-fill" style="width: 25%; background-color: var(--green-success);"></div></div>
           `;
-          break;
-        case 2: // Streak days
-          layoutHtml = `
+            break;
+          case 2: // Streak days
+            layoutHtml = `
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">🔥 CHUỖI PHẤN ĐẤU</div>
             <div style="text-align: center; padding: 12px 0;">
               <span style="font-size: 32px;">🔥 ${telesalesData.streak} Ngày Liên Tục</span>
@@ -613,9 +715,9 @@
               🏆 Thành tích tiếp theo: <strong>Đạt 7 ngày liên tiếp</strong> để nhân hệ số lương 1.2x.
             </div>
           `;
-          break;
-        case 3: // Funnel
-          layoutHtml = `
+            break;
+          case 3: // Funnel
+            layoutHtml = `
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">⏳ PHỄU CHUYỂN ĐỔI CUỘC GỌI</div>
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <div style="background: rgba(255,255,255,0.03); padding: 6px; border-radius: 4px; display: flex; justify-content: space-between;">
@@ -629,9 +731,9 @@
               </div>
             </div>
           `;
-          break;
-        case 4: // Leaderboard
-          layoutHtml = `
+            break;
+          case 4: // Leaderboard
+            layoutHtml = `
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">🏆 BẢNG XẾP HẠNG PHÒNG Telesales</div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
               <div style="display:flex; justify-content:space-between; font-size:12px; padding: 4px; background: rgba(251, 191, 36, 0.1); border-radius:4px;">
@@ -646,9 +748,9 @@
             </div>
             <div style="font-size:10px; text-align:center; margin-top:8px; color: ${subTextColor};">Chỉ còn kém Top 1 khoảng cách 20 đơn!</div>
           `;
-          break;
-        case 5: // Medals
-          layoutHtml = `
+            break;
+          case 5: // Medals
+            layoutHtml = `
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">🏅 DANH HIỆU ĐÃ ĐẠT</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; text-align: center; font-size: 11px;">
@@ -661,9 +763,9 @@
               </div>
             </div>
           `;
-          break;
-        case 6: // Quests Board
-          layoutHtml = `
+            break;
+          case 6: // Quests Board
+            layoutHtml = `
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">📋 NHIỆM VỤ HÔM NAY</div>
             <div style="font-size: 12px; display: flex; flex-direction: column; gap: 8px;">
               <div>☑️ 1. Gọi tối thiểu 40 cuộc điện thoại (Thưởng +20k)</div>
@@ -671,9 +773,9 @@
               <div style="opacity: 0.5;">☐ 3. Gia hạn 10 tài khoản cũ (Thưởng +100k)</div>
             </div>
           `;
-          break;
-        case 7: // Period Comparison
-          layoutHtml = `
+            break;
+          case 7: // Period Comparison
+            layoutHtml = `
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">📈 HIỆU SUẤT THEO CHU KỲ</div>
             <div class="kpi-row"><span>Hôm nay (Booked):</span> <strong>${telesalesData.daily.booked} / 10 đơn</strong></div>
             <div class="kpi-progress-bar ${progressBgClass}"><div class="kpi-fill" style="width: 80%; background-color: var(--green-success);"></div></div>
@@ -682,9 +784,9 @@
             <div class="kpi-row"><span>Tháng này (Booked):</span> <strong>${telesalesData.monthly.booked} / 200 đơn</strong></div>
             <div class="kpi-progress-bar ${progressBgClass}"><div class="kpi-fill" style="width: 82%; background-color: var(--purple-accent);"></div></div>
           `;
-          break;
-        case 8: // Salary Estimator
-          layoutHtml = `
+            break;
+          case 8: // Salary Estimator
+            layoutHtml = `
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">💵 HỆ THỐNG TÍNH HOA HỒNG TẠM TÍNH</div>
             <div class="kpi-row"><span>Hoa hồng Booking:</span> <strong>3,300,000đ</strong></div>
             <div class="kpi-row"><span>Hoa hồng Gia Hạn:</span> <strong>1,440,000đ</strong></div>
@@ -694,18 +796,18 @@
             </div>
             <div style="font-size: 9px; color: ${subTextColor}; margin-top: 6px;">*Áp dụng trực tiếp theo quy định xuất lương độc lập Wings Lashes.</div>
           `;
-          break;
-        case 9: // Manager feedback
-          layoutHtml = `
+            break;
+          case 9: // Manager feedback
+            layoutHtml = `
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">💬 LỜI KHUYÊN & PHÊ DUYỆT CỦA SẾP</div>
             <div style="background-color: rgba(59,130,246,0.1); border-left: 3px solid var(--blue-primary); padding: 8px; border-radius: 4px; font-size: 11px; line-height: 1.4; text-align: left;">
               "Danny Do (Quản trị): Hãy duy trì tỷ lệ bắt máy trên 75% như hiện tại để sớm đạt mốc thưởng xuất sắc."
             </div>
             <div style="font-size: 10px; color: ${subTextColor}; margin-top: 8px;">Đăng bởi Admin lúc: 10:15 Sáng nay</div>
           `;
-          break;
-        case 10: // Active breakdown
-          layoutHtml = `
+            break;
+          case 10: // Active breakdown
+            layoutHtml = `
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">⏰ LỊCH TRÌNH HOẠT ĐỘNG CA</div>
             <div style="font-size: 11px; display:flex; flex-direction:column; gap: 6px;">
               <div>🕒 08:30 - Bắt đầu ca trực tổng đài</div>
@@ -714,11 +816,11 @@
               <div>⚡ 11:15 - Đang tiếp tục danh sách gọi Booker mới</div>
             </div>
           `;
-          break;
-      }
+            break;
+        }
 
-      // Wrap inside specific themed container
-      popup.innerHTML = `
+        // Wrap inside specific themed container
+        popup.innerHTML = `
         <div class="${themeClass}" style="position: relative;">
           <!-- Close button -->
           <div style="position: absolute; top: 12px; right: 12px; cursor: pointer; font-size: 14px;" onclick="toggleDashboardPopup()">✕</div>
@@ -752,10 +854,10 @@
           </div>
         </div>
       `;
-    }
+      }
 
-    // Initialize Catalog page
-    updateCatalog();
-  </script>
-</body>
+      // Initialize Catalog page
+      updateCatalog();
+    </script>
+  </body>
 </html>

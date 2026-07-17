@@ -3,15 +3,15 @@ import { PrismaClient as LegacyPrismaClient } from '../apps/api/src/generated/le
 const legacy = new LegacyPrismaClient({
   datasources: {
     db: {
-      url: "mysql://root:chickisslove@127.0.0.1:3306/management"
-    }
-  }
+      url: 'mysql://root:chickisslove@127.0.0.1:3306/management',
+    },
+  },
 });
 
 async function main() {
   try {
     await legacy.$connect();
-    
+
     // PHP date range for 2026-07-12
     const dateFromTs = '2026-07-12 00:00:00';
     const dateToTs = '2026-07-13 00:00:00';
@@ -91,15 +91,14 @@ async function main() {
 
     const rows = await legacy.$queryRawUnsafe<any[]>(sql, dateFromTs, dateToTs);
     console.log(`Query returned ${rows.length} rows`);
-    
-    const liveRows = rows.filter(r => r.combo_state === 'Live');
+
+    const liveRows = rows.filter((r) => r.combo_state === 'Live');
     console.log(`Live combo rows: ${liveRows.length}`);
     console.log(`Not Live combo rows: ${rows.length - liveRows.length}`);
-    
-    // Print live rows
-    console.log("Live Rows:");
-    liveRows.forEach(r => console.log(`  Order: ${r.order_id} | Client: ${r.client_id} | Name: ${r.client_name}`));
 
+    // Print live rows
+    console.log('Live Rows:');
+    liveRows.forEach((r) => console.log(`  Order: ${r.order_id} | Client: ${r.client_id} | Name: ${r.client_name}`));
   } catch (err) {
     console.error(err);
   } finally {

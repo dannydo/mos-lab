@@ -18,7 +18,7 @@ import {
   Col,
   List,
   Badge,
-  Spin
+  Spin,
 } from 'antd';
 import {
   UserOutlined,
@@ -31,7 +31,7 @@ import {
   ClockCircleOutlined,
   SmileOutlined,
   InboxOutlined,
-  HeartFilled
+  HeartFilled,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
@@ -49,12 +49,10 @@ interface BookingWizardDrawerProps {
 const STORES = [
   { id: 16, name: 'Estella Place' },
   { id: 6, name: 'De Tham' },
-  { id: 2, name: 'Phan Xích Long' }
+  { id: 2, name: 'Phan Xích Long' },
 ];
 
-const FALLBACK_SERVICES = [
-  { id: 0, name: 'Any Lashes / Any Services', price: 0, duration: 90 }
-];
+const FALLBACK_SERVICES = [{ id: 0, name: 'Any Lashes / Any Services', price: 0, duration: 90 }];
 
 const CHANNELS = [
   { key: 'FB', label: 'FB (Facebook)' },
@@ -63,7 +61,7 @@ const CHANNELS = [
   { key: 'HOTLINE', label: 'HOTLINE' },
   { key: 'WA', label: 'WA (WhatsApp)' },
   { key: 'VL', label: 'VL (Viber)' },
-  { key: 'GB', label: 'GB (Google Business)' }
+  { key: 'GB', label: 'GB (Google Business)' },
 ];
 
 const getOffDaysText = (offDays?: string[]) => {
@@ -75,17 +73,18 @@ const getOffDaysText = (offDays?: string[]) => {
     '4': 'T5',
     '5': 'T6',
     '6': 'T7',
-    '7': 'CN'
+    '7': 'CN',
   };
-  return 'Off: ' + offDays.map(d => weekdayMap[d]).filter(Boolean).join(', ');
+  return (
+    'Off: ' +
+    offDays
+      .map((d) => weekdayMap[d])
+      .filter(Boolean)
+      .join(', ')
+  );
 };
 
-const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
-  open,
-  onClose,
-  onSuccess,
-  initialCustomer
-}) => {
+const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose, onSuccess, initialCustomer }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
 
@@ -98,12 +97,12 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   const [customerList, setCustomerList] = useState<any[]>([]);
   const [searchingCustomers, setSearchingCustomers] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  
+
   // Promotion & Referral states
   const [promotions, setPromotions] = useState<any[]>([]);
   const [selectedPromotion, setSelectedPromotion] = useState<any>(null);
   const [referralPhone, setReferralPhone] = useState('');
-  
+
   // Custom lead fields for new customer
   const [isNewLead, setIsNewLead] = useState(false);
   const [leadName, setLeadName] = useState('');
@@ -132,22 +131,30 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   const [suggestedBranch, setSuggestedBranch] = useState<any>(null);
 
   const hasActiveLowerLashCombo = (balances: any[]) => {
-    return balances.some(cb => {
+    return balances.some((cb) => {
       const isCountActive = (cb.normalCount || 0) + (cb.retainCount || 0) > 0;
       const isExpired = cb.dateExpired ? new Date(cb.dateExpired) < new Date() : false;
       const name = (cb.serviceName || '').toLowerCase();
-      const isLower = name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
+      const isLower =
+        name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
       return isCountActive && !isExpired && isLower;
     });
   };
 
   const hasActiveUpperLashCombo = (balances: any[]) => {
-    return balances.some(cb => {
+    return balances.some((cb) => {
       const isCountActive = (cb.normalCount || 0) + (cb.retainCount || 0) > 0;
       const isExpired = cb.dateExpired ? new Date(cb.dateExpired) < new Date() : false;
       const name = (cb.serviceName || '').toLowerCase();
-      const isUpper = name.includes('trên') || name.includes('volume') || name.includes('classic') || name.includes('lashes') || name.includes('katun') || name.includes('mi ');
-      const isLower = name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
+      const isUpper =
+        name.includes('trên') ||
+        name.includes('volume') ||
+        name.includes('classic') ||
+        name.includes('lashes') ||
+        name.includes('katun') ||
+        name.includes('mi ');
+      const isLower =
+        name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
       return isCountActive && !isExpired && isUpper && !isLower;
     });
   };
@@ -164,8 +171,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 
   useEffect(() => {
     if (selectedCustomer?.id) {
-      api.get(`/customers/${selectedCustomer.id}/detailed`)
-        .then(res => {
+      api
+        .get(`/customers/${selectedCustomer.id}/detailed`)
+        .then((res) => {
           const bookings = res.data.bookings || [];
           const balances = res.data.comboBalances || [];
           setComboBalances(balances);
@@ -173,7 +181,12 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
           const techCounts: { [key: string]: number } = {};
           bookings.forEach((b: any) => {
             const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-            if (isCompleted && b.technicianName && b.technicianName !== 'Unknown' && b.technicianName !== 'Kỹ thuật viên') {
+            if (
+              isCompleted &&
+              b.technicianName &&
+              b.technicianName !== 'Unknown' &&
+              b.technicianName !== 'Kỹ thuật viên'
+            ) {
               const name = b.technicianName.trim();
               if (!name.includes('(Đã nghỉ)')) {
                 techCounts[name] = (techCounts[name] || 0) + 1;
@@ -183,7 +196,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
           const sorted = Object.entries(techCounts)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
-          setFavoriteTechs(sorted.slice(0, 2).map(t => t.name));
+          setFavoriteTechs(sorted.slice(0, 2).map((t) => t.name));
 
           // Count services in completed bookings
           const srvCounts: { [key: string]: number } = {};
@@ -198,7 +211,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
           const sortedSrvs = Object.entries(srvCounts)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
-          setSuggestedServices(sortedSrvs.slice(0, 1).map(s => s.name));
+          setSuggestedServices(sortedSrvs.slice(0, 1).map((s) => s.name));
 
           // Find last completed booking services
           let lastSrvs: string[] = [];
@@ -225,7 +238,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             .sort((a, b) => b.count - a.count);
           if (sortedBranches.length > 0) {
             const topStoreId = sortedBranches[0].id;
-            const matchedStore = STORES.find(s => s.id === topStoreId);
+            const matchedStore = STORES.find((s) => s.id === topStoreId);
             if (matchedStore) {
               setSuggestedBranch(matchedStore);
               if (!selectedCN) {
@@ -234,7 +247,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             }
           }
         })
-        .catch(err => console.error('Failed to fetch favorite technicians:', err));
+        .catch((err) => console.error('Failed to fetch favorite technicians:', err));
     } else {
       setFavoriteTechs([]);
       setComboBalances([]);
@@ -316,7 +329,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     setLoadingStaff(true);
     try {
       const res = await api.get('/customers/staff', {
-        params: { date: dateStr }
+        params: { date: dateStr },
       });
       // Filter out specialists/KTVs
       setStaffList(res.data || []);
@@ -336,7 +349,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     setSearchingCustomers(true);
     try {
       const res = await api.get('/customers', {
-        params: { search: val, limit: 10 }
+        params: { search: val, limit: 10 },
       });
       setCustomerList(res.data.data || []);
     } catch (err) {
@@ -354,7 +367,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     console.log('[BookingWizard] Fetching slots for:', {
       date: bookingDate.format('YYYY-MM-DD'),
       storeName: selectedCN.name,
-      technicianId: selectedCV?.id
+      technicianId: selectedCV?.id,
     });
     setLoadingSlots(true);
     try {
@@ -362,8 +375,8 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
         params: {
           date: bookingDate.format('YYYY-MM-DD'),
           storeName: selectedCN.name,
-          technicianId: selectedCV?.id || undefined
-        }
+          technicianId: selectedCV?.id || undefined,
+        },
       });
       console.log('[BookingWizard] Fetch slots success, data:', res.data);
       setSlotMatrix(res.data || {});
@@ -393,7 +406,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     setSelectedCV(cv);
     // Auto map branch/store if KTV belongs to a store
     if (cv && cv.notes) {
-      const matchedStore = STORES.find(s => s.name === cv.notes) || STORES[0];
+      const matchedStore = STORES.find((s) => s.name === cv.notes) || STORES[0];
       setSelectedCN(matchedStore);
     }
     // Auto adjust booking date if current date is specialist's off day
@@ -403,7 +416,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       if (cv.offDays.includes(dbDayStr)) {
         const adjustedDate = getNextAvailableDate(bookingDate, cv);
         setBookingDate(adjustedDate);
-        message.info(`Đã tự động chuyển ngày sang ngày làm việc tiếp theo của chuyên viên: ${adjustedDate.format('DD/MM/YYYY')}`);
+        message.info(
+          `Đã tự động chuyển ngày sang ngày làm việc tiếp theo của chuyên viên: ${adjustedDate.format('DD/MM/YYYY')}`
+        );
       }
     }
     setCurrentStep(1);
@@ -423,17 +438,19 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     return {
       original,
       discount,
-      final: Math.max(0, original - discount)
+      final: Math.max(0, original - discount),
     };
   };
 
   const priceInfo = getCalculatedPrice();
 
   const getGroupedKTVs = () => {
-    const ktvs = staffList.filter(s => s.role === 'technician' || s.role === 'specialist' || s.notes?.includes('KTV'));
+    const ktvs = staffList.filter(
+      (s) => s.role === 'technician' || s.role === 'specialist' || s.notes?.includes('KTV')
+    );
     const groups: { [storeName: string]: any[] } = {};
 
-    ktvs.forEach(staff => {
+    ktvs.forEach((staff) => {
       const store = staff.notes || 'Khác';
       if (!groups[store]) {
         groups[store] = [];
@@ -445,18 +462,22 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   };
 
   const getFavoriteKTVs = () => {
-    const ktvs = staffList.filter(s => s.role === 'technician' || s.role === 'specialist' || s.notes?.includes('KTV'));
-    return ktvs.filter(staff => favoriteTechs.includes(staff.displayName?.trim()));
+    const ktvs = staffList.filter(
+      (s) => s.role === 'technician' || s.role === 'specialist' || s.notes?.includes('KTV')
+    );
+    return ktvs.filter((staff) => favoriteTechs.includes(staff.displayName?.trim()));
   };
 
   const handleStepChange = (step: number) => {
     // If navigating to step 2 (Confirm step), we must validate first
     if (step === 2) {
-      if (!selectedService || 
-          (!isNewLead && !selectedCustomer) || 
-          (isNewLead && (!leadName || !leadPhone)) ||
-          !selectedSlot ||
-          !selectedCN) {
+      if (
+        !selectedService ||
+        (!isNewLead && !selectedCustomer) ||
+        (isNewLead && (!leadName || !leadPhone)) ||
+        !selectedSlot ||
+        !selectedCN
+      ) {
         message.error('Vui lòng chọn đầy đủ Dịch vụ, Khách hàng, Chi nhánh và Khung giờ trống.');
         return;
       }
@@ -547,7 +568,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
         bookingChannel,
         bookingNote: checkAndAppendLowerLashNote(bookingNote, comboBalances),
         promotionId: selectedPromotion?.id || null,
-        referralPhone: referralPhone ? referralPhone.trim() : null
+        referralPhone: referralPhone ? referralPhone.trim() : null,
       };
 
       await api.post('/customers/booking', payload);
@@ -566,16 +587,18 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     const afternoon: string[] = [];
     const night: string[] = [];
 
-    Object.keys(slotMatrix).sort().forEach(time => {
-      const hour = parseInt(time.split(':')[0], 10);
-      if (hour < 12) {
-        morning.push(time);
-      } else if (hour < 18) {
-        afternoon.push(time);
-      } else {
-        night.push(time);
-      }
-    });
+    Object.keys(slotMatrix)
+      .sort()
+      .forEach((time) => {
+        const hour = parseInt(time.split(':')[0], 10);
+        if (hour < 12) {
+          morning.push(time);
+        } else if (hour < 18) {
+          afternoon.push(time);
+        } else {
+          night.push(time);
+        }
+      });
 
     return { morning, afternoon, night };
   };
@@ -597,12 +620,12 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       styles={{
         body: {
           background: themeMode === 'dark' ? '#141414' : '#f9fafb',
-          padding: '24px'
+          padding: '24px',
         },
         header: {
           background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-          borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`
-        }
+          borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
+        },
       }}
     >
       <Steps
@@ -610,11 +633,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
         onChange={handleStepChange}
         size="small"
         style={{ marginBottom: '24px' }}
-        items={[
-          { title: 'Chuyên viên' },
-          { title: 'Dịch vụ & KH & Khung Giờ' },
-          { title: 'Xác Nhận' }
-        ]}
+        items={[{ title: 'Chuyên viên' }, { title: 'Dịch vụ & KH & Khung Giờ' }, { title: 'Xác Nhận' }]}
       />
 
       {/* STEP 0: SELECT TECHNICIAN (CV) */}
@@ -624,14 +643,13 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             Bước 1: Khách hàng muốn đặt Chuyên viên nào?
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            
             {/* Free/Auto Specialist */}
             <Card
               hoverable
               styles={{ body: { padding: '16px' } }}
               style={{
                 borderColor: selectedCV === null ? '#D4A84B' : 'transparent',
-                backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff'
+                backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
               }}
               onClick={() => selectCVOption(null)}
             >
@@ -651,15 +669,17 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             {/* Favorite Stylist Suggestion Section */}
             {favoriteTechs.length > 0 && getFavoriteKTVs().length > 0 && (
               <div style={{ marginTop: '8px' }}>
-                <div style={{ 
-                  fontWeight: 'bold', 
-                  fontSize: '13px', 
-                  color: '#db2777', 
-                  marginBottom: '8px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px' 
-                }}>
+                <div
+                  style={{
+                    fontWeight: 'bold',
+                    fontSize: '13px',
+                    color: '#db2777',
+                    marginBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
                   <HeartFilled style={{ color: '#db2777' }} /> GỢI Ý CHUYÊN VIÊN ƯA THÍCH CỦA KHÁCH
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -672,22 +692,32 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                         size="small"
                         styles={{ body: { padding: '12px 16px' } }}
                         style={{
-                          borderColor: isSelected ? '#db2777' : (themeMode === 'dark' ? '#4f1a30' : '#fbcfe8'),
-                          backgroundColor: isSelected 
-                            ? (themeMode === 'dark' ? 'rgba(219, 39, 119, 0.15)' : 'rgba(219, 39, 119, 0.05)') 
-                            : (themeMode === 'dark' ? '#1e293b' : '#ffffff'),
+                          borderColor: isSelected ? '#db2777' : themeMode === 'dark' ? '#4f1a30' : '#fbcfe8',
+                          backgroundColor: isSelected
+                            ? themeMode === 'dark'
+                              ? 'rgba(219, 39, 119, 0.15)'
+                              : 'rgba(219, 39, 119, 0.05)'
+                            : themeMode === 'dark'
+                              ? '#1e293b'
+                              : '#ffffff',
                           boxShadow: isSelected ? '0 0 0 1px #db2777' : 'none',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
                         }}
                         onClick={() => selectCVOption(staff)}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <Avatar src={staff.avatar || staff.avatarUrl || undefined} icon={<UserOutlined />} style={{ backgroundColor: '#db2777' }} />
+                            <Avatar
+                              src={staff.avatar || staff.avatarUrl || undefined}
+                              icon={<UserOutlined />}
+                              style={{ backgroundColor: '#db2777' }}
+                            />
                             <div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ fontWeight: 'bold', color: token.colorText }}>{staff.displayName}</div>
-                                <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>Ưa thích nhất</Tag>
+                                <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>
+                                  Ưa thích nhất
+                                </Tag>
                               </div>
                               <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
                                 Chi nhánh: {staff.notes || 'Khác'}
@@ -712,35 +742,44 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             </div>
 
             {loadingStaff ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <div
+                style={{
+                  textAlign: 'center',
+                  padding: '40px 0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
                 <Spin />
                 <div style={{ color: '#888', fontSize: '13px' }}>Đang tải danh sách chuyên viên...</div>
               </div>
             ) : (
               Object.entries(getGroupedKTVs()).map(([storeName, members]) => (
                 <div key={storeName} style={{ marginBottom: '24px' }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px', 
-                    marginBottom: '12px', 
-                    paddingBottom: '6px',
-                    borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`
-                  }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '12px',
+                      paddingBottom: '6px',
+                      borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                    }}
+                  >
                     <HomeOutlined style={{ color: '#D4A84B' }} />
-                    <span style={{ fontWeight: 'bold', fontSize: '13.5px', color: token.colorText }}>
-                      {storeName}
-                    </span>
-                    <Badge 
-                      count={members.length} 
-                      style={{ 
-                        backgroundColor: themeMode === 'dark' ? '#334155' : '#f1f5f9', 
+                    <span style={{ fontWeight: 'bold', fontSize: '13.5px', color: token.colorText }}>{storeName}</span>
+                    <Badge
+                      count={members.length}
+                      style={{
+                        backgroundColor: themeMode === 'dark' ? '#334155' : '#f1f5f9',
                         color: themeMode === 'dark' ? '#cbd5e1' : '#64748b',
-                        boxShadow: 'none'
-                      }} 
+                        boxShadow: 'none',
+                      }}
                     />
                   </div>
-                  
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {members.map((staff: any) => (
                       <Card
@@ -749,21 +788,28 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                         size="small"
                         styles={{ body: { padding: '12px 16px' } }}
                         style={{
-                          borderColor: selectedCV?.id === staff.id ? '#D4A84B' : (themeMode === 'dark' ? '#334155' : '#e2e8f0'),
+                          borderColor:
+                            selectedCV?.id === staff.id ? '#D4A84B' : themeMode === 'dark' ? '#334155' : '#e2e8f0',
                           backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
                           boxShadow: selectedCV?.id === staff.id ? '0 0 0 1px #D4A84B' : 'none',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
                         }}
                         onClick={() => selectCVOption(staff)}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <Avatar src={staff.avatar || staff.avatarUrl || undefined} icon={<UserOutlined />} style={{ backgroundColor: '#D4A84B' }} />
+                            <Avatar
+                              src={staff.avatar || staff.avatarUrl || undefined}
+                              icon={<UserOutlined />}
+                              style={{ backgroundColor: '#D4A84B' }}
+                            />
                             <div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ fontWeight: 'bold', color: token.colorText }}>{staff.displayName}</div>
                                 {favoriteTechs.includes(staff.displayName?.trim()) && (
-                                  <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>Ưa thích</Tag>
+                                  <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>
+                                    Ưa thích
+                                  </Tag>
                                 )}
                               </div>
                               <div style={{ fontSize: '12px', color: '#888' }}>
@@ -790,14 +836,13 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       {/* STEP 1: SERVICE & CUSTOMER & SLOT SELECT */}
       {currentStep === 1 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
           {/* Branch Check */}
           <div>
             <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
               <HomeOutlined /> CHI NHÁNH ĐẶT LỊCH (CN)
             </h4>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {STORES.map(s => {
+              {STORES.map((s) => {
                 const isSelected = selectedCN?.id === s.id;
                 return (
                   <div
@@ -810,28 +855,26 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                       fontSize: '13px',
                       fontWeight: '600',
                       transition: 'all 0.2s',
-                      background: isSelected 
-                        ? '#D4A84B' 
-                        : (themeMode === 'dark' ? '#1e293b' : '#f3f4f6'),
-                      border: `1px solid ${isSelected ? '#D4A84B' : (themeMode === 'dark' ? '#334155' : '#e5e7eb')}`,
-                      color: isSelected ? '#fff' : (themeMode === 'dark' ? '#cbd5e1' : '#4b5563'),
+                      background: isSelected ? '#D4A84B' : themeMode === 'dark' ? '#1e293b' : '#f3f4f6',
+                      border: `1px solid ${isSelected ? '#D4A84B' : themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
+                      color: isSelected ? '#fff' : themeMode === 'dark' ? '#cbd5e1' : '#4b5563',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '4px'
+                      gap: '4px',
                     }}
                   >
                     <span>{s.name}</span>
                     {suggestedBranch?.id === s.id && (
-                      <Tag 
-                        color={isSelected ? "magenta" : "orange"} 
-                        style={{ 
-                          marginLeft: '6px', 
-                          marginRight: 0, 
-                          fontSize: '10px', 
+                      <Tag
+                        color={isSelected ? 'magenta' : 'orange'}
+                        style={{
+                          marginLeft: '6px',
+                          marginRight: 0,
+                          fontSize: '10px',
                           padding: '0 6px',
                           border: 'none',
                           borderRadius: '4px',
-                          fontWeight: 'bold'
+                          fontWeight: 'bold',
                         }}
                       >
                         💖 Hay đi
@@ -855,8 +898,8 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                 <span style={{ fontSize: '13px', color: '#888' }}>
                   <UserOutlined /> THÔNG TIN KHÁCH HÀNG
                 </span>
-                <Radio.Group 
-                  size="small" 
+                <Radio.Group
+                  size="small"
                   value={isNewLead ? 'new' : 'existing'}
                   onChange={(e) => {
                     setIsNewLead(e.target.value === 'new');
@@ -881,24 +924,26 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                   loading={searchingCustomers}
                   style={{ width: '100%' }}
                   onChange={(val) => {
-                    const cust = customerList.find(c => c.id === val);
+                    const cust = customerList.find((c) => c.id === val);
                     setSelectedCustomer(cust);
                   }}
                   notFoundContent={searchQuery ? 'Không tìm thấy khách hàng nào' : null}
-                  options={customerList.map(c => ({
+                  options={customerList.map((c) => ({
                     value: c.id,
-                    label: `${c.name} - ${c.phone} (Mã: ${c.id})`
+                    label: `${c.name} - ${c.phone} (Mã: ${c.id})`,
                   }))}
                 />
-                
+
                 {selectedCustomer && (
-                  <div style={{
-                    marginTop: '12px',
-                    padding: '10px',
-                    background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fdf9f0',
-                    border: '1px solid #ffe58f',
-                    borderRadius: '6px'
-                  }}>
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      padding: '10px',
+                      background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fdf9f0',
+                      border: '1px solid #ffe58f',
+                      borderRadius: '6px',
+                    }}
+                  >
                     <div style={{ fontWeight: 'bold', color: token.colorText }}>{selectedCustomer.name}</div>
                     <div style={{ fontSize: '12px', color: '#888' }}>
                       SĐT: {selectedCustomer.phone} | Phân loại: <Tag color="warning">{selectedCustomer.bucket}</Tag>
@@ -929,45 +974,48 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
               <InboxOutlined /> CHỌN DỊCH VỤ (SERVICE)
             </h4>
-             <Select
+            <Select
               showSearch
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
+              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
               style={{ width: '100%' }}
               placeholder="Chọn hoặc tìm dịch vụ..."
               value={selectedService?.id}
               onChange={(val) => {
-                const srv = services.find(s => s.id === val);
+                const srv = services.find((s) => s.id === val);
                 setSelectedService(srv);
               }}
-              options={services.map(s => ({
+              options={services.map((s) => ({
                 value: s.id,
-                label: s.id === 0 
-                  ? `${s.name} (${s.duration} phút)`
-                  : `${s.name} - ${s.price.toLocaleString('vi-VN')}đ (${s.duration} phút)`
+                label:
+                  s.id === 0
+                    ? `${s.name} (${s.duration} phút)`
+                    : `${s.name} - ${s.price.toLocaleString('vi-VN')}đ (${s.duration} phút)`,
               }))}
             />
 
             {/* Favorite Service Suggestion */}
-            {suggestedServices.filter(sName => services.some(active => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)).length > 0 && (
+            {suggestedServices.filter((sName) =>
+              services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
+            ).length > 0 && (
               <div style={{ marginTop: '6px', fontSize: '12px' }}>
                 <span style={{ color: '#fa8c16', fontWeight: 'bold' }}>⭐ Dòng mi khách hay đi nhất: </span>
                 {suggestedServices
-                  .filter(sName => services.some(active => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0))
-                  .map(sName => {
+                  .filter((sName) =>
+                    services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
+                  )
+                  .map((sName) => {
                     return (
-                      <span 
+                      <span
                         key={sName}
-                        style={{ 
-                          color: themeMode === 'dark' ? '#ffa940' : '#d87a16', 
-                          textDecoration: 'underline', 
+                        style={{
+                          color: themeMode === 'dark' ? '#ffa940' : '#d87a16',
+                          textDecoration: 'underline',
                           cursor: 'pointer',
                           fontWeight: 'bold',
-                          marginLeft: '4px'
+                          marginLeft: '4px',
                         }}
                         onClick={() => {
-                          const matchedSrv = services.find(s => s.name.toLowerCase() === sName.toLowerCase());
+                          const matchedSrv = services.find((s) => s.name.toLowerCase() === sName.toLowerCase());
                           if (matchedSrv) {
                             setSelectedService(matchedSrv);
                             message.success(`Đã chọn dòng mi hay dùng: ${matchedSrv.name}`);
@@ -984,24 +1032,28 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             )}
 
             {/* Last Service Used Suggestion */}
-            {lastUsedServices.filter(sName => services.some(active => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)).length > 0 && (
+            {lastUsedServices.filter((sName) =>
+              services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
+            ).length > 0 && (
               <div style={{ marginTop: '4px', fontSize: '12px' }}>
                 <span style={{ color: '#096dd9', fontWeight: 'bold' }}>🕒 Dịch vụ khách dùng cuối cùng: </span>
                 {lastUsedServices
-                  .filter(sName => services.some(active => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0))
-                  .map(sName => {
+                  .filter((sName) =>
+                    services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
+                  )
+                  .map((sName) => {
                     return (
-                      <span 
+                      <span
                         key={sName}
-                        style={{ 
-                          color: themeMode === 'dark' ? '#177ddc' : '#096dd9', 
-                          textDecoration: 'underline', 
+                        style={{
+                          color: themeMode === 'dark' ? '#177ddc' : '#096dd9',
+                          textDecoration: 'underline',
                           cursor: 'pointer',
                           fontWeight: 'bold',
-                          marginLeft: '4px'
+                          marginLeft: '4px',
                         }}
                         onClick={() => {
-                          const matchedSrv = services.find(s => s.name.toLowerCase() === sName.toLowerCase());
+                          const matchedSrv = services.find((s) => s.name.toLowerCase() === sName.toLowerCase());
                           if (matchedSrv) {
                             setSelectedService(matchedSrv);
                             message.success(`Đã chọn dịch vụ cuối cùng: ${matchedSrv.name}`);
@@ -1028,7 +1080,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                     .filter((cb: any) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0)
                     .map((cb: any) => {
                       return (
-                        <div 
+                        <div
                           key={cb.id}
                           style={{
                             padding: '8px 12px',
@@ -1040,11 +1092,14 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                             color: token.colorText,
                             display: 'flex',
                             justifyContent: 'space-between',
-                            alignItems: 'center'
+                            alignItems: 'center',
                           }}
                           onClick={() => {
                             const cleanName = cb.serviceName.split('(')[0].trim().toLowerCase();
-                            const matchedSrv = services.find(s => s.name.toLowerCase().includes(cleanName) || cleanName.includes(s.name.toLowerCase()));
+                            const matchedSrv = services.find(
+                              (s) =>
+                                s.name.toLowerCase().includes(cleanName) || cleanName.includes(s.name.toLowerCase())
+                            );
                             if (matchedSrv) {
                               setSelectedService(matchedSrv);
                               message.success(`Đã chọn dòng mi từ Combo: ${matchedSrv.name}`);
@@ -1059,7 +1114,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                               Còn lại: {cb.normalCount || 0} mới | {cb.retainCount || 0} dặm
                             </div>
                           </div>
-                          <Tag color="magenta" style={{ margin: 0, fontSize: '10px' }}>Chọn</Tag>
+                          <Tag color="magenta" style={{ margin: 0, fontSize: '10px' }}>
+                            Chọn
+                          </Tag>
                         </div>
                       );
                     })}
@@ -1071,27 +1128,26 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
           {/* Promotion & Referral Section */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
-                🎟️ CHỌN KHUYẾN MÃI (PROMOTION)
-              </h4>
+              <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>🎟️ CHỌN KHUYẾN MÃI (PROMOTION)</h4>
               <Select
                 showSearch
                 allowClear
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                 style={{ width: '100%' }}
                 placeholder="Chọn chương trình khuyến mãi (nếu có)..."
                 value={selectedPromotion?.id}
                 onChange={(val) => {
-                  const promo = promotions.find(p => p.id === val);
+                  const promo = promotions.find((p) => p.id === val);
                   setSelectedPromotion(promo || null);
                 }}
-                options={promotions.map(p => ({
+                options={promotions.map((p) => ({
                   value: p.id,
-                  label: p.discountPercentage > 0 
-                    ? `${p.name} (Giảm ${p.discountPercentage}%)`
-                    : (p.discountAmount > 0 ? `${p.name} (Giảm ${p.discountAmount.toLocaleString('vi-VN')}đ)` : p.name)
+                  label:
+                    p.discountPercentage > 0
+                      ? `${p.name} (Giảm ${p.discountPercentage}%)`
+                      : p.discountAmount > 0
+                        ? `${p.name} (Giảm ${p.discountAmount.toLocaleString('vi-VN')}đ)`
+                        : p.name,
                 }))}
               />
             </div>
@@ -1110,16 +1166,18 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 
           {/* Price Calculation details */}
           {selectedService && selectedService.id !== 0 && (
-            <div style={{
-              padding: '10px 14px',
-              borderRadius: '8px',
-              background: themeMode === 'dark' ? '#1e293b' : '#f8fafc',
-              border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-              fontSize: '13px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px'
-            }}>
+            <div
+              style={{
+                padding: '10px 14px',
+                borderRadius: '8px',
+                background: themeMode === 'dark' ? '#1e293b' : '#f8fafc',
+                border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                fontSize: '13px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#888' }}>Giá gốc dịch vụ:</span>
                 <span>{priceInfo.original.toLocaleString('vi-VN')}đ</span>
@@ -1130,7 +1188,17 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                   <span>-{priceInfo.discount.toLocaleString('vi-VN')}đ</span>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`, paddingTop: '4px', marginTop: '2px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                  paddingTop: '4px',
+                  marginTop: '2px',
+                }}
+              >
                 <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>Giá thanh toán tạm tính:</span>
                 <span style={{ color: '#52c41a' }}>{priceInfo.final.toLocaleString('vi-VN')}đ</span>
               </div>
@@ -1142,7 +1210,16 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 
           {/* SLOT AVAILABILITY MATRIX */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '16px',
+                flexWrap: 'wrap',
+                gap: '10px',
+              }}
+            >
               <div>
                 <span style={{ fontSize: '12px', color: '#888' }}>Ngày đặt:</span>
                 <DatePicker
@@ -1178,171 +1255,203 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             </h3>
 
             <Spin spinning={loadingSlots}>
-              <div style={{
-                background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                borderRadius: '8px',
-                padding: '20px',
-                maxHeight: 'calc(100vh - 420px)',
-                overflowY: 'auto'
-              }}>
+              <div
+                style={{
+                  background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+                  border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
+                  borderRadius: '8px',
+                  padding: '20px',
+                  maxHeight: 'calc(100vh - 420px)',
+                  overflowY: 'auto',
+                }}
+              >
                 {/* Slot Matrix Legend */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', fontSize: '11px', color: '#888', marginBottom: '16px' }}>
-                  <span><span style={{ color: '#d4a84b' }}>🟡</span> 1-2 chỗ trống</span>
-                  <span><span style={{ color: '#ef4444' }}>🔴</span> 0 chỗ trống (Hết)</span>
-                  <span><span style={{ padding: '2px 4px', background: '#ef4444', color: '#fff', borderRadius: '3px', fontSize: '9px', fontWeight: 'bold' }}>-1</span> Overbook</span>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: '12px',
+                    fontSize: '11px',
+                    color: '#888',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <span>
+                    <span style={{ color: '#d4a84b' }}>🟡</span> 1-2 chỗ trống
+                  </span>
+                  <span>
+                    <span style={{ color: '#ef4444' }}>🔴</span> 0 chỗ trống (Hết)
+                  </span>
+                  <span>
+                    <span
+                      style={{
+                        padding: '2px 4px',
+                        background: '#ef4444',
+                        color: '#fff',
+                        borderRadius: '3px',
+                        fontSize: '9px',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      -1
+                    </span>{' '}
+                    Overbook
+                  </span>
                 </div>
 
-              {/* Render Category slots */}
-              {[
-                { title: 'Morning (Sáng)', list: morning },
-                { title: 'Afternoon (Chiều)', list: afternoon },
-                { title: 'Night (Tối)', list: night }
-              ].map(cat => (
-                <div key={cat.title} style={{ marginBottom: '20px' }}>
-                  <div style={{ fontWeight: 'bold', color: '#888', fontSize: '12px', marginBottom: '10px', textTransform: 'uppercase' }}>
-                    {cat.title}
-                  </div>
-                  <Row gutter={[12, 12]}>
-                    {cat.list.map(time => {
-                      const slotInfo = slotMatrix[time] || { available: 0, roster: 0 };
-                      const availableVal = slotInfo.available;
-                      const isActive = selectedSlot === time;
-
-                      // Available Badge Styles based on rules
-                      let badgeStyle: React.CSSProperties = {
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minWidth: '22px',
-                        height: '22px',
-                        fontSize: '11px',
+                {/* Render Category slots */}
+                {[
+                  { title: 'Morning (Sáng)', list: morning },
+                  { title: 'Afternoon (Chiều)', list: afternoon },
+                  { title: 'Night (Tối)', list: night },
+                ].map((cat) => (
+                  <div key={cat.title} style={{ marginBottom: '20px' }}>
+                    <div
+                      style={{
                         fontWeight: 'bold',
-                        borderRadius: '50%',
-                        padding: '0 4px',
-                        transition: 'all 0.2s'
-                      };
-
-                      if (availableVal > 2) {
-                        badgeStyle = {
-                          ...badgeStyle,
-                          background: themeMode === 'dark' ? '#0f172a' : '#f3f4f6',
-                          color: themeMode === 'dark' ? '#94a3b8' : '#6b7280',
-                          border: `1px solid ${themeMode === 'dark' ? '#334155' : '#d9d9d9'}`
-                        };
-                      } else if (availableVal === 1 || availableVal === 2) {
-                        badgeStyle = {
-                          ...badgeStyle,
-                          background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#fffbe6',
-                          color: themeMode === 'dark' ? '#d4a84b' : '#d46b08',
-                          border: `1px solid ${themeMode === 'dark' ? '#d4a84b' : '#ffe58f'}`,
-                          borderRadius: '11px',
-                          minWidth: '26px'
-                        };
-                      } else if (availableVal === 0) {
-                        badgeStyle = {
-                          ...badgeStyle,
-                          background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : '#fff1f0',
-                          color: '#ef4444',
-                          border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : '#ffccc7'}`,
-                          borderRadius: '11px',
-                          minWidth: '26px'
-                        };
-                      } else {
-                        badgeStyle = {
-                          ...badgeStyle,
-                          background: '#ef4444',
-                          color: '#ffffff',
-                          border: '1px solid #ef4444',
-                          borderRadius: '11px',
-                          minWidth: '26px'
-                        };
-                      }
-                      // Determine slot frame styles matching the badge colors
-                      let frameStyle: React.CSSProperties = {
-                        flex: 1,
-                        textAlign: 'center',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontWeight: '600',
+                        color: '#888',
                         fontSize: '12px',
-                        padding: '5px 8px',
-                        transition: 'all 0.2s'
-                      };
+                        marginBottom: '10px',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {cat.title}
+                    </div>
+                    <Row gutter={[12, 12]}>
+                      {cat.list.map((time) => {
+                        const slotInfo = slotMatrix[time] || { available: 0, roster: 0 };
+                        const availableVal = slotInfo.available;
+                        const isActive = selectedSlot === time;
 
-                      if (isActive) {
-                        frameStyle = {
-                          ...frameStyle,
-                          background: '#D4A84B',
-                          border: '1px solid #D4A84B',
-                          color: '#fff'
+                        // Available Badge Styles based on rules
+                        let badgeStyle: React.CSSProperties = {
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: '22px',
+                          height: '22px',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          borderRadius: '50%',
+                          padding: '0 4px',
+                          transition: 'all 0.2s',
                         };
-                      } else {
+
                         if (availableVal > 2) {
-                          frameStyle = {
-                            ...frameStyle,
-                            background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+                          badgeStyle = {
+                            ...badgeStyle,
+                            background: themeMode === 'dark' ? '#0f172a' : '#f3f4f6',
+                            color: themeMode === 'dark' ? '#94a3b8' : '#6b7280',
                             border: `1px solid ${themeMode === 'dark' ? '#334155' : '#d9d9d9'}`,
-                            color: themeMode === 'dark' ? '#cbd5e1' : '#1f2937'
                           };
                         } else if (availableVal === 1 || availableVal === 2) {
-                          frameStyle = {
-                            ...frameStyle,
-                            background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.08)' : '#fffbe6',
+                          badgeStyle = {
+                            ...badgeStyle,
+                            background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#fffbe6',
+                            color: themeMode === 'dark' ? '#d4a84b' : '#d46b08',
                             border: `1px solid ${themeMode === 'dark' ? '#d4a84b' : '#ffe58f'}`,
-                            color: themeMode === 'dark' ? '#d4a84b' : '#d46b08'
+                            borderRadius: '11px',
+                            minWidth: '26px',
                           };
                         } else if (availableVal === 0) {
-                          frameStyle = {
-                            ...frameStyle,
-                            background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.05)' : '#fff1f0',
+                          badgeStyle = {
+                            ...badgeStyle,
+                            background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : '#fff1f0',
+                            color: '#ef4444',
                             border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : '#ffccc7'}`,
-                            color: '#ef4444'
+                            borderRadius: '11px',
+                            minWidth: '26px',
                           };
                         } else {
-                          frameStyle = {
-                            ...frameStyle,
-                            background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.1)' : '#fff1f0',
+                          badgeStyle = {
+                            ...badgeStyle,
+                            background: '#ef4444',
+                            color: '#ffffff',
                             border: '1px solid #ef4444',
-                            color: '#ef4444'
+                            borderRadius: '11px',
+                            minWidth: '26px',
                           };
                         }
-                      }
-                      
-                      return (
-                        <Col span={6} key={time}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <div 
-                              style={frameStyle}
-                              onClick={() => setSelectedSlot(time)}
-                            >
-                              {time}
-                            </div>
+                        // Determine slot frame styles matching the badge colors
+                        let frameStyle: React.CSSProperties = {
+                          flex: 1,
+                          textAlign: 'center',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '12px',
+                          padding: '5px 8px',
+                          transition: 'all 0.2s',
+                        };
 
-                            <div style={badgeStyle}>
-                              {availableVal}
+                        if (isActive) {
+                          frameStyle = {
+                            ...frameStyle,
+                            background: '#D4A84B',
+                            border: '1px solid #D4A84B',
+                            color: '#fff',
+                          };
+                        } else {
+                          if (availableVal > 2) {
+                            frameStyle = {
+                              ...frameStyle,
+                              background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+                              border: `1px solid ${themeMode === 'dark' ? '#334155' : '#d9d9d9'}`,
+                              color: themeMode === 'dark' ? '#cbd5e1' : '#1f2937',
+                            };
+                          } else if (availableVal === 1 || availableVal === 2) {
+                            frameStyle = {
+                              ...frameStyle,
+                              background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.08)' : '#fffbe6',
+                              border: `1px solid ${themeMode === 'dark' ? '#d4a84b' : '#ffe58f'}`,
+                              color: themeMode === 'dark' ? '#d4a84b' : '#d46b08',
+                            };
+                          } else if (availableVal === 0) {
+                            frameStyle = {
+                              ...frameStyle,
+                              background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.05)' : '#fff1f0',
+                              border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : '#ffccc7'}`,
+                              color: '#ef4444',
+                            };
+                          } else {
+                            frameStyle = {
+                              ...frameStyle,
+                              background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.1)' : '#fff1f0',
+                              border: '1px solid #ef4444',
+                              color: '#ef4444',
+                            };
+                          }
+                        }
+
+                        return (
+                          <Col span={6} key={time}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <div style={frameStyle} onClick={() => setSelectedSlot(time)}>
+                                {time}
+                              </div>
+
+                              <div style={badgeStyle}>{availableVal}</div>
                             </div>
-                          </div>
-                        </Col>
-                      );
-                    })}
-                  </Row>
-                </div>
-              ))}
+                          </Col>
+                        );
+                      })}
+                    </Row>
+                  </div>
+                ))}
               </div>
             </Spin>
           </div>
 
-          <Button 
-            type="primary" 
-            onClick={() => handleStepChange(2)} 
+          <Button
+            type="primary"
+            onClick={() => handleStepChange(2)}
             disabled={
-              !selectedService || 
-              (!isNewLead && !selectedCustomer) || 
+              !selectedService ||
+              (!isNewLead && !selectedCustomer) ||
               (isNewLead && (!leadName || !leadPhone)) ||
               !selectedSlot ||
               !selectedCN
-            } 
+            }
             style={{ marginTop: '20px', width: '100%' }}
           >
             Tiếp tục: Nhập Kênh & Xác nhận đặt lịch
@@ -1353,7 +1462,6 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       {/* STEP 2: CONFIRM & BOOK */}
       {currentStep === 2 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
           {/* Summary Card */}
           <Card
             title={<span style={{ color: '#D4A84B', fontWeight: 'bold' }}>TỔNG HỢP LỊCH ĐẶT HẸN</span>}
@@ -1366,42 +1474,42 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                 {isNewLead ? `(${leadPhone})` : `(${selectedCustomer?.phone})`}
               </div>
               <div>
-                <span style={{ color: '#888' }}>Chi nhánh:</span>{' '}
-                <strong>{selectedCN?.name}</strong>
+                <span style={{ color: '#888' }}>Chi nhánh:</span> <strong>{selectedCN?.name}</strong>
               </div>
               <div>
                 <span style={{ color: '#888' }}>Chuyên viên:</span>{' '}
                 <strong>{selectedCV ? selectedCV.displayName : 'Chuyên viên tự do'}</strong>
               </div>
               <div>
-                <span style={{ color: '#888' }}>Dịch vụ:</span>{' '}
-                <strong>{selectedService?.name}</strong>{' '}
+                <span style={{ color: '#888' }}>Dịch vụ:</span> <strong>{selectedService?.name}</strong>{' '}
                 {selectedService?.id !== 0 && (
                   <span style={{ color: '#888' }}>({selectedService?.price.toLocaleString('vi-VN')}đ)</span>
                 )}
               </div>
               {selectedPromotion && (
                 <div>
-                  <span style={{ color: '#888' }}>Khuyến mãi:</span>{' '}
-                  <strong>{selectedPromotion.name}</strong>
-                  {priceInfo.discount > 0 && <span style={{ color: '#fa8c16' }}> (-{priceInfo.discount.toLocaleString('vi-VN')}đ)</span>}
+                  <span style={{ color: '#888' }}>Khuyến mãi:</span> <strong>{selectedPromotion.name}</strong>
+                  {priceInfo.discount > 0 && (
+                    <span style={{ color: '#fa8c16' }}> (-{priceInfo.discount.toLocaleString('vi-VN')}đ)</span>
+                  )}
                 </div>
               )}
               {referralPhone && (
                 <div>
-                  <span style={{ color: '#888' }}>Người giới thiệu:</span>{' '}
-                  <strong>{referralPhone}</strong>
+                  <span style={{ color: '#888' }}>Người giới thiệu:</span> <strong>{referralPhone}</strong>
                 </div>
               )}
               {selectedService && selectedService.id !== 0 && (
                 <div>
                   <span style={{ color: '#888' }}>Giá thanh toán:</span>{' '}
-                  <strong style={{ color: '#52c41a', fontSize: '14.5px' }}>{priceInfo.final.toLocaleString('vi-VN')}đ</strong>
+                  <strong style={{ color: '#52c41a', fontSize: '14.5px' }}>
+                    {priceInfo.final.toLocaleString('vi-VN')}đ
+                  </strong>
                 </div>
               )}
               <div>
-                <span style={{ color: '#888' }}>Giờ hẹn:</span>{' '}
-                <strong>{selectedSlot}</strong> ngày <strong>{bookingDate.format('DD/MM/YYYY')}</strong>
+                <span style={{ color: '#888' }}>Giờ hẹn:</span> <strong>{selectedSlot}</strong> ngày{' '}
+                <strong>{bookingDate.format('DD/MM/YYYY')}</strong>
               </div>
             </div>
           </Card>
@@ -1411,13 +1519,13 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
               KÊNH TIẾP NHẬN ĐẶT LỊCH (BOOKING CHANNEL)
             </h4>
-            <Radio.Group 
-              value={bookingChannel} 
-              onChange={(e) => setBookingChannel(e.target.value)}
-              buttonStyle="solid"
-            >
-              {CHANNELS.map(ch => (
-                <Radio.Button key={ch.key} value={ch.key} style={{ marginBottom: '8px', marginRight: '8px', borderRadius: '4px' }}>
+            <Radio.Group value={bookingChannel} onChange={(e) => setBookingChannel(e.target.value)} buttonStyle="solid">
+              {CHANNELS.map((ch) => (
+                <Radio.Button
+                  key={ch.key}
+                  value={ch.key}
+                  style={{ marginBottom: '8px', marginRight: '8px', borderRadius: '4px' }}
+                >
                   {ch.key}
                 </Radio.Button>
               ))}
@@ -1426,9 +1534,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 
           {/* Booking note */}
           <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
-              GHI CHÚ ĐẶT LỊCH (BOOKING NOTE)
-            </h4>
+            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>GHI CHÚ ĐẶT LỊCH (BOOKING NOTE)</h4>
             <TextArea
               rows={4}
               placeholder="Nhập các ghi chú đặc biệt từ khách hàng hoặc thay đổi đặt lịch..."
@@ -1441,13 +1547,16 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             <Button style={{ flex: 1 }} onClick={() => setCurrentStep(1)}>
               Quay lại
             </Button>
-            <Button type="primary" style={{ flex: 2, backgroundColor: '#52c41a', borderColor: '#52c41a' }} onClick={handleCreateBooking}>
+            <Button
+              type="primary"
+              style={{ flex: 2, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              onClick={handleCreateBooking}
+            >
               Xác nhận Đặt Lịch
             </Button>
           </div>
         </div>
       )}
-
     </Drawer>
   );
 };

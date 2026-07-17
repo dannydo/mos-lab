@@ -3,15 +3,15 @@ import { PrismaClient as LegacyPrismaClient } from '../apps/api/src/generated/le
 const legacy = new LegacyPrismaClient({
   datasources: {
     db: {
-      url: "mysql://root:chickisslove@127.0.0.1:3306/management"
-    }
-  }
+      url: 'mysql://root:chickisslove@127.0.0.1:3306/management',
+    },
+  },
 });
 
 async function main() {
   try {
     await legacy.$connect();
-    
+
     // PHP date range for 2026-07-12
     const start = '2026-07-12 00:00:00';
     const end = '2026-07-13 00:00:00';
@@ -37,24 +37,27 @@ async function main() {
     console.log(`Found ${orders.length} orders created on 2026-07-12`);
 
     // Fetch user IDs
-    const userIds = Array.from(new Set(orders.map(o => Number(o.userId))));
+    const userIds = Array.from(new Set(orders.map((o) => Number(o.userId))));
     if (userIds.length === 0) {
-      console.log("No users found");
+      console.log('No users found');
       return;
     }
 
     // Fetch user balances and transactions
     const userBalances = await legacy.user_service_balance.findMany({
-      where: { user_id: { in: userIds } }
+      where: { user_id: { in: userIds } },
     });
 
-    const balanceIds = userBalances.map(b => b.id);
-    const userBalanceTransactions = balanceIds.length > 0 ? await legacy.$queryRaw<any[]>`
+    const balanceIds = userBalances.map((b) => b.id);
+    const userBalanceTransactions =
+      balanceIds.length > 0
+        ? await legacy.$queryRaw<any[]>`
       SELECT usbt.*, o.booking_date_start as o_booking_date_start
       FROM user_service_balance_transaction usbt
       LEFT JOIN \`order\` o ON o.id = usbt.order_id
       WHERE usbt.user_service_balance_id IN (${Prisma.join(balanceIds)})
-    ` : [];
+    `
+        : [];
 
     const txnsByBalanceId = new Map<number, any[]>();
     for (const t of userBalanceTransactions) {
@@ -70,15 +73,15 @@ async function main() {
     // JS checkHasLiveCombo function
     const checkHasLiveComboJS = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
       const bTime = bookingDateStart || orderCreatedDate;
-      const userBals = userBalances.filter(b => Number(b.user_id) === userId);
-      
+      const userBals = userBalances.filter((b) => Number(b.user_id) === userId);
+
       for (const usb of userBals) {
         if (new Date(usb.date_created) >= new Date(bTime)) {
           continue;
         }
 
-        const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-          new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+        const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
+          (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
         );
 
         txnsBefore.sort((a, b) => {
@@ -91,18 +94,23 @@ async function main() {
         const lastTxnBefore = txnsBefore[0];
 
         const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-        const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
+        const isNotExpired =
+          !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
 
         let countLeft = 0;
-        if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
+        if (
+          lastTxnBefore &&
+          lastTxnBefore.total_normal_count_left !== null &&
+          lastTxnBefore.total_retain_count_left !== null
+        ) {
           countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
         } else {
-          const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-            new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
+          const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
+            (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
           );
-          
+
           let usedAfter = 0;
-          txnsAfterOrAt.forEach(t => {
+          txnsAfterOrAt.forEach((t) => {
             if (t.used_staff_id !== null) {
               usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
             }
@@ -199,32 +207,54 @@ async function main() {
         dateCreated: o.dateCreated,
         liveSQL,
         liveJS: resJS.live,
-        reasonJS: resJS.reason
+        reasonJS: resJS.reason,
       });
     }
 
     console.log(`\nJS Count: ${countJS}`);
     console.log(`SQL Count: ${countSQL}`);
 
-    console.log("\nDiscrepancies (SQL is true, JS is false):");
+    console.log('\nDiscrepancies (SQL is true, JS is false):');
     let discCount = 0;
     for (const r of results) {
       if (r.liveSQL && !r.liveJS) {
         discCount++;
-        console.log(`Order ID: ${r.id} | User ID: ${r.userId} | Name: ${r.clientName} | BookingStart: ${r.bookingDateStart?.toISOString()} | Created: ${r.dateCreated?.toISOString()}`);
+        console.log(
+          `Order ID: ${r.id} | User ID: ${r.userId} | Name: ${r.clientName} | BookingStart: ${r.bookingDateStart?.toISOString()} | Created: ${r.dateCreated?.toISOString()}`
+        );
         console.log(`  JS Reason: ${r.reasonJS}`);
-        
+
         // Let's print the raw user balances and transactions for this user
-        const bals = userBalances.filter(b => Number(b.user_id) === Number(r.userId));
-        console.log(`  User Balances:`, bals.map(b => ({ id: b.id, normal: b.normal_count, retain: b.retain_count, exp: b.date_expired, created: b.date_created })));
+        const bals = userBalances.filter((b) => Number(b.user_id) === Number(r.userId));
+        console.log(
+          `  User Balances:`,
+          bals.map((b) => ({
+            id: b.id,
+            normal: b.normal_count,
+            retain: b.retain_count,
+            exp: b.date_expired,
+            created: b.date_created,
+          }))
+        );
         for (const b of bals) {
           const txns = txnsByBalanceId.get(b.id) || [];
-          console.log(`    Txns for Balance ${b.id}:`, txns.map(t => ({ id: t.id, order_id: t.order_id, normal: t.normal_count, retain: t.retain_count, left_normal: t.total_normal_count_left, left_retain: t.total_retain_count_left, created: t.date_created, start: t.o_booking_date_start })));
+          console.log(
+            `    Txns for Balance ${b.id}:`,
+            txns.map((t) => ({
+              id: t.id,
+              order_id: t.order_id,
+              normal: t.normal_count,
+              retain: t.retain_count,
+              left_normal: t.total_normal_count_left,
+              left_retain: t.total_retain_count_left,
+              created: t.date_created,
+              start: t.o_booking_date_start,
+            }))
+          );
         }
       }
     }
     console.log(`Total discrepancies: ${discCount}`);
-
   } catch (err) {
     console.error(err);
   } finally {

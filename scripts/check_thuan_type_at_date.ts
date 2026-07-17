@@ -3,9 +3,9 @@ import { PrismaClient as LegacyPrismaClient } from '../apps/api/src/generated/le
 const legacy = new LegacyPrismaClient({
   datasources: {
     db: {
-      url: "mysql://root:chickisslove@127.0.0.1:3306/management"
-    }
-  }
+      url: 'mysql://root:chickisslove@127.0.0.1:3306/management',
+    },
+  },
 });
 
 async function runForDate(dateStr: string) {
@@ -29,42 +29,44 @@ async function runForDate(dateStr: string) {
 
   console.log(`\n--- Date: ${dateStr} ---`);
   console.log(`Transactions found: ${txns.length}`);
-  
+
   const balanceLefts: Record<string, number> = {};
   const balanceExpiries: Record<string, Record<number, string | null>> = {};
-  
+
   for (const t of txns) {
     const sg = t.service_group || 'Lashes';
     if (!balanceLefts[sg]) balanceLefts[sg] = 0;
     balanceLefts[sg]++;
-    
+
     if (!balanceExpiries[sg]) balanceExpiries[sg] = {};
-    balanceExpiries[sg][Number(t.user_service_balance_id)] = t.date_expired ? new Date(t.date_expired).toISOString().slice(0, 10) : null;
+    balanceExpiries[sg][Number(t.user_service_balance_id)] = t.date_expired
+      ? new Date(t.date_expired).toISOString().slice(0, 10)
+      : null;
   }
 
-  let type = "";
+  let type = '';
   for (const sg of Object.keys(balanceLefts)) {
     const count = balanceLefts[sg];
     if (count === 1) {
-      type = "combo_last";
+      type = 'combo_last';
     }
   }
-  
+
   if (!type) {
     for (const sg of Object.keys(balanceExpiries)) {
       const expiries = balanceExpiries[sg];
       for (const bid of Object.keys(expiries)) {
         const expiry = expiries[Number(bid)];
         if (expiry && expiry < date) {
-          type = "combo_expired";
+          type = 'combo_expired';
         }
       }
     }
   }
 
   console.log(`Calculated type: ${type}`);
-  console.log("balanceLefts:", balanceLefts);
-  console.log("balanceExpiries:", balanceExpiries);
+  console.log('balanceLefts:', balanceLefts);
+  console.log('balanceExpiries:', balanceExpiries);
 }
 
 async function main() {

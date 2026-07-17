@@ -22,9 +22,9 @@ async function main() {
   const log = await crm.crmOmicallLog.findFirst({
     where: {
       status: 'ANSWER',
-      recordingUrl: { not: null }
+      recordingUrl: { not: null },
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
   });
 
   if (!log) {
@@ -40,8 +40,8 @@ async function main() {
         duration: 45,
         billSec: 40,
         recordingUrl: 'https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.wav',
-        analysisStatus: 'PENDING'
-      }
+        analysisStatus: 'PENDING',
+      },
     });
     console.log('Mock log created:', mockLog);
     await runAnalysis(crm, mockLog);
@@ -49,7 +49,7 @@ async function main() {
     console.log('Found log details:', {
       id: log.id,
       callUuid: log.callUuid,
-      recordingUrl: log.recordingUrl
+      recordingUrl: log.recordingUrl,
     });
     await runAnalysis(crm, log);
   }
@@ -61,41 +61,47 @@ async function runAnalysis(crm: any, log: any) {
   console.log('🤖 Triggering Gemini API analysis via analyzeLogRecord...');
   const fastifyMock = {
     prisma: {
-      crm
+      crm,
     },
-    log: console
+    log: console,
   } as any;
 
   const start = Date.now();
   try {
     await analyzeLogRecord(fastifyMock, log);
     console.log(`\n✅ Analysis completed successfully (took ${Date.now() - start}ms)`);
-    
+
     // Fetch and display updated log details
     const updated = await crm.crmOmicallLog.findUnique({
-      where: { id: log.id }
+      where: { id: log.id },
     });
     console.log('Updated database record fields:');
-    console.log(JSON.stringify({
-      id: updated.id,
-      analysisStatus: updated.analysisStatus,
-      laughCount: updated.laughCount,
-      laughCountAgent: updated.laughCountAgent,
-      laughCountCustomer: updated.laughCountCustomer,
-      laughTimestamps: updated.laughTimestamps ? JSON.parse(updated.laughTimestamps) : [],
-      customerSatisfactionScore: updated.customerSatisfactionScore,
-      customerSentiment: updated.customerSentiment,
-      satisfactionAnalysis: updated.satisfactionAnalysis,
-      happyCallStatus: updated.happyCallStatus,
-      happyCallReason: updated.happyCallReason,
-      transcript: updated.transcript ? updated.transcript.substring(0, 150) + '...' : null
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          id: updated.id,
+          analysisStatus: updated.analysisStatus,
+          laughCount: updated.laughCount,
+          laughCountAgent: updated.laughCountAgent,
+          laughCountCustomer: updated.laughCountCustomer,
+          laughTimestamps: updated.laughTimestamps ? JSON.parse(updated.laughTimestamps) : [],
+          customerSatisfactionScore: updated.customerSatisfactionScore,
+          customerSentiment: updated.customerSentiment,
+          satisfactionAnalysis: updated.satisfactionAnalysis,
+          happyCallStatus: updated.happyCallStatus,
+          happyCallReason: updated.happyCallReason,
+          transcript: updated.transcript ? updated.transcript.substring(0, 150) + '...' : null,
+        },
+        null,
+        2
+      )
+    );
   } catch (err: any) {
     console.error('❌ Analysis failed:', err.message || err);
   }
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error('Fatal error:', err);
   process.exit(1);
 });

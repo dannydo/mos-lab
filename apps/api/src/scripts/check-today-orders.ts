@@ -13,22 +13,22 @@ async function run() {
 
     const comingOrders = await prisma.order.findMany({
       where: {
-        OR: [
-          { booking_date_only: bookingDateOnlyDate },
-          { booking_date_start: { gte: startOfDay, lte: endOfDay } }
-        ],
-        order_state: { not: 'Cancelled' }
-      }
+        OR: [{ booking_date_only: bookingDateOnlyDate }, { booking_date_start: { gte: startOfDay, lte: endOfDay } }],
+        order_state: { not: 'Cancelled' },
+      },
     });
 
     console.log(`Total orders found: ${comingOrders.length}`);
 
     const stateCounts: Record<string, number> = {};
-    const storeCounts: Record<number, { count: number, completedCount: number, completedRevenue: number, totalRevenue: number }> = {};
+    const storeCounts: Record<
+      number,
+      { count: number; completedCount: number; completedRevenue: number; totalRevenue: number }
+    > = {};
 
-    comingOrders.forEach(o => {
+    comingOrders.forEach((o) => {
       stateCounts[o.order_state] = (stateCounts[o.order_state] || 0) + 1;
-      
+
       const sid = o.client_store_id || 0;
       if (!storeCounts[sid]) {
         storeCounts[sid] = { count: 0, completedCount: 0, completedRevenue: 0, totalRevenue: 0 };
@@ -44,7 +44,7 @@ async function run() {
 
     console.log('\nOrder states counts:', stateCounts);
     console.log('\nStore break down:');
-    Object.keys(storeCounts).forEach(sid => {
+    Object.keys(storeCounts).forEach((sid) => {
       console.log(`Store ID ${sid}:`);
       console.log(`  Total Orders: ${storeCounts[Number(sid)].count}`);
       console.log(`  Total Revenue (all states): ${storeCounts[Number(sid)].totalRevenue}`);
@@ -53,10 +53,11 @@ async function run() {
     });
 
     console.log('\nDetail of all orders today:');
-    comingOrders.forEach(o => {
-      console.log(`Order ID: ${o.id}, store_id: ${o.client_store_id}, state: ${o.order_state}, price: ${o.total_price}, booking_date_start: ${o.booking_date_start}`);
+    comingOrders.forEach((o) => {
+      console.log(
+        `Order ID: ${o.id}, store_id: ${o.client_store_id}, state: ${o.order_state}, price: ${o.total_price}, booking_date_start: ${o.booking_date_start}`
+      );
     });
-
   } catch (err) {
     console.error('Error:', err);
   } finally {

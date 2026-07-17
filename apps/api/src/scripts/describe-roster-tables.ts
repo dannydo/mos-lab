@@ -6,7 +6,7 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 async function run() {
   const legacy = new LegacyPrismaClient({
-    datasources: { db: { url: process.env.LEGACY_DATABASE_URL } }
+    datasources: { db: { url: process.env.LEGACY_DATABASE_URL } },
   });
 
   const tables = ['wingsctrl_roster', 'staff_working_shift', 'staff_working_shift_schedule'];

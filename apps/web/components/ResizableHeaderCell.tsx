@@ -15,7 +15,11 @@ export const ResizableHeaderCell: React.FC<ResizableHeaderCellProps> = ({
   ...restProps
 }) => {
   if (!width || !onResize) {
-    return <th style={style} {...restProps}>{children}</th>;
+    return (
+      <th style={style} {...restProps}>
+        {children}
+      </th>
+    );
   }
 
   const handleMouseDown = (e: React.MouseEvent<HTMLSpanElement>) => {

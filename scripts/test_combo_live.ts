@@ -3,15 +3,15 @@ import { PrismaClient as LegacyPrismaClient } from '../apps/api/src/generated/le
 const legacy = new LegacyPrismaClient({
   datasources: {
     db: {
-      url: "mysql://root:chickisslove@127.0.0.1:3306/management"
-    }
-  }
+      url: 'mysql://root:chickisslove@127.0.0.1:3306/management',
+    },
+  },
 });
 
 async function main() {
   try {
     await legacy.$connect();
-    
+
     // 1. Get stats for COMBO_LIVE
     const statsResult = await legacy.$queryRaw<any[]>`
       SELECT COUNT(DISTINCT u.id) as total
@@ -21,8 +21,8 @@ async function main() {
       LEFT JOIN user_service_balance usb ON u.id = usb.user_id
       WHERE (usb.normal_count + usb.retain_count) > 0 AND (usb.date_expired IS NULL OR usb.date_expired > NOW())
     `;
-    
-    console.log("Count from stats query:", statsResult[0]?.total);
+
+    console.log('Count from stats query:', statsResult[0]?.total);
 
     // 2. Fetch rows with limit 50 offset 1100 (page 23)
     const rows = await legacy.$queryRaw<any[]>`
@@ -43,9 +43,9 @@ async function main() {
       LIMIT 50 OFFSET 1100
     `;
 
-    console.log("Fetched rows count on page 23:", rows.length);
+    console.log('Fetched rows count on page 23:', rows.length);
     if (rows.length > 0) {
-      console.log("First row:", rows[0]);
+      console.log('First row:', rows[0]);
     }
   } catch (err) {
     console.error(err);

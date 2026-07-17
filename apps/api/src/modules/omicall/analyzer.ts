@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const MAX_RETRIES = 3;
 const AI_TIMEOUT_MS = 180_000; // 3 minutes
-let isProcessing = false;      // Simple poller mutex
+let isProcessing = false; // Simple poller mutex
 
 async function fetchRecordingUrl(callUuid: string): Promise<string | null> {
   const apiKey = process.env.OMICALL_API_KEY;
@@ -13,16 +13,23 @@ async function fetchRecordingUrl(callUuid: string): Promise<string | null> {
   }
 
   try {
-    const response = await axios.get(`https://public-v1.omicall.com/api/call/transaction/detail?call_uuid=${callUuid}`, {
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      timeout: 10_000,
-    });
+    const response = await axios.get(
+      `https://public-v1.omicall.com/api/call/transaction/detail?call_uuid=${callUuid}`,
+      {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        timeout: 10_000,
+      }
+    );
 
     const data = response.data;
-    const recordingUrl = data?.payload?.recording_file_url || data?.payload?.recording_url || data?.recording_file_url || data?.recording_url;
+    const recordingUrl =
+      data?.payload?.recording_file_url ||
+      data?.payload?.recording_url ||
+      data?.recording_file_url ||
+      data?.recording_url;
     return recordingUrl || null;
   } catch (error) {
     console.error(`Error fetching OmiCall recording URL for ${callUuid}:`, error);
@@ -99,50 +106,50 @@ Hãy trả về kết quả chính xác theo cấu trúc JSON định nghĩa s�
           {
             inlineData: {
               mimeType,
-              data: base64Audio
-            }
-          }
-        ]
-      }
+              data: base64Audio,
+            },
+          },
+        ],
+      },
     ],
     generationConfig: {
-      responseMimeType: "application/json",
+      responseMimeType: 'application/json',
       responseSchema: {
-        type: "OBJECT",
+        type: 'OBJECT',
         properties: {
-          laugh_count: { type: "INTEGER" },
-          laugh_count_agent: { type: "INTEGER" },
-          laugh_count_customer: { type: "INTEGER" },
+          laugh_count: { type: 'INTEGER' },
+          laugh_count_agent: { type: 'INTEGER' },
+          laugh_count_customer: { type: 'INTEGER' },
           laugh_timestamps: {
-            type: "ARRAY",
+            type: 'ARRAY',
             items: {
-              type: "OBJECT",
+              type: 'OBJECT',
               properties: {
-                start: { type: "NUMBER" },
-                end: { type: "NUMBER" },
-                speaker: { type: "STRING", enum: ["agent", "customer"] },
-                confidence: { type: "NUMBER" }
+                start: { type: 'NUMBER' },
+                end: { type: 'NUMBER' },
+                speaker: { type: 'STRING', enum: ['agent', 'customer'] },
+                confidence: { type: 'NUMBER' },
               },
-              required: ["start", "end", "speaker", "confidence"]
-            }
+              required: ['start', 'end', 'speaker', 'confidence'],
+            },
           },
-          customer_satisfaction_score: { type: "INTEGER" },
-          customer_sentiment: { type: "STRING", enum: ["HAPPY", "SATISFIED", "NEUTRAL", "FRUSTRATED", "ANGRY"] },
-          satisfaction_analysis: { type: "STRING" },
-          transcript: { type: "STRING" }
+          customer_satisfaction_score: { type: 'INTEGER' },
+          customer_sentiment: { type: 'STRING', enum: ['HAPPY', 'SATISFIED', 'NEUTRAL', 'FRUSTRATED', 'ANGRY'] },
+          satisfaction_analysis: { type: 'STRING' },
+          transcript: { type: 'STRING' },
         },
         required: [
-          "laugh_count",
-          "laugh_count_agent",
-          "laugh_count_customer",
-          "laugh_timestamps",
-          "customer_satisfaction_score",
-          "customer_sentiment",
-          "satisfaction_analysis",
-          "transcript"
-        ]
-      }
-    }
+          'laugh_count',
+          'laugh_count_agent',
+          'laugh_count_customer',
+          'laugh_timestamps',
+          'customer_satisfaction_score',
+          'customer_sentiment',
+          'satisfaction_analysis',
+          'transcript',
+        ],
+      },
+    },
   };
 
   const geminiResponse = await axios.post(geminiUrl, payload, {
@@ -200,16 +207,16 @@ export function triggerImmediateAnalysis(fastify: FastifyInstance, logId: number
   // Fire-and-forget background task
   (async () => {
     fastify.log.info(`[ImmediateAnalysis] Starting background analysis for log ID: ${logId}`);
-    
+
     // Mark PROCESSING
     await fastify.prisma.crm.crmOmicallLog.update({
       where: { id: logId },
-      data: { analysisStatus: 'PROCESSING' }
+      data: { analysisStatus: 'PROCESSING' },
     });
 
     try {
       const log = await fastify.prisma.crm.crmOmicallLog.findUnique({
-        where: { id: logId }
+        where: { id: logId },
       });
       if (!log) {
         throw new Error(`Log record not found for ID: ${logId}`);
@@ -218,10 +225,10 @@ export function triggerImmediateAnalysis(fastify: FastifyInstance, logId: number
       fastify.log.info(`[ImmediateAnalysis] Completed successfully for log ID: ${logId}`);
     } catch (err: any) {
       fastify.log.error(err, `[ImmediateAnalysis] Failed for log ID: ${logId}`);
-      
+
       // Update retry states
       const log = await fastify.prisma.crm.crmOmicallLog.findUnique({
-        where: { id: logId }
+        where: { id: logId },
       });
       const nextRetryCount = (log?.analysisRetryCount || 0) + 1;
       const finalStatus = nextRetryCount >= MAX_RETRIES ? 'FAILED' : 'PENDING';
@@ -232,7 +239,7 @@ export function triggerImmediateAnalysis(fastify: FastifyInstance, logId: number
           analysisStatus: finalStatus,
           analysisRetryCount: nextRetryCount,
           analysisError: err?.message || String(err),
-        }
+        },
       });
     }
   })();
@@ -261,10 +268,10 @@ async function processNextBatch(fastify: FastifyInstance) {
         if (url) {
           await fastify.prisma.crm.crmOmicallLog.update({
             where: { id: w.id },
-            data: { 
-              recordingUrl: url, 
+            data: {
+              recordingUrl: url,
               analysisStatus: 'PENDING',
-              analysisRetryCount: 0
+              analysisRetryCount: 0,
             },
           });
           // Immediately trigger analysis after finding the URL
@@ -275,10 +282,12 @@ async function processNextBatch(fastify: FastifyInstance) {
             where: { id: w.id },
             data: {
               analysisRetryCount: nextCount,
-              ...(nextCount >= MAX_RETRIES ? {
-                analysisStatus: 'FAILED',
-                analysisError: 'Max retries reached while fetching recording URL from OmiCall'
-              } : {})
+              ...(nextCount >= MAX_RETRIES
+                ? {
+                    analysisStatus: 'FAILED',
+                    analysisError: 'Max retries reached while fetching recording URL from OmiCall',
+                  }
+                : {}),
             },
           });
         }
@@ -289,10 +298,12 @@ async function processNextBatch(fastify: FastifyInstance) {
           where: { id: w.id },
           data: {
             analysisRetryCount: nextCount,
-            ...(nextCount >= MAX_RETRIES ? {
-              analysisStatus: 'FAILED',
-              analysisError: `Error fetching recording URL: ${String(err)}`
-            } : {})
+            ...(nextCount >= MAX_RETRIES
+              ? {
+                  analysisStatus: 'FAILED',
+                  analysisError: `Error fetching recording URL: ${String(err)}`,
+                }
+              : {}),
           },
         });
       }
@@ -324,7 +335,7 @@ async function processNextBatch(fastify: FastifyInstance) {
 export function startRecordingAnalyzer(fastify: FastifyInstance) {
   // Polling every 60 seconds
   const timerId = setInterval(() => processNextBatch(fastify), 60_000);
-  
+
   fastify.addHook('onClose', async () => {
     clearInterval(timerId);
     fastify.log.info('Recording analyzer stopped');

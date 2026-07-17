@@ -4,17 +4,17 @@ import { PrismaClient as CrmPrismaClient } from '../apps/api/src/generated/crm-c
 const legacy = new LegacyPrismaClient({
   datasources: {
     db: {
-      url: "mysql://root:chickisslove@127.0.0.1:3306/management"
-    }
-  }
+      url: 'mysql://root:chickisslove@127.0.0.1:3306/management',
+    },
+  },
 });
 
 const crm = new CrmPrismaClient({
   datasources: {
     db: {
-      url: "mysql://root:chickisslove@127.0.0.1:3306/crm"
-    }
-  }
+      url: 'mysql://root:chickisslove@127.0.0.1:3306/crm',
+    },
+  },
 });
 
 async function main() {
@@ -23,11 +23,11 @@ async function main() {
     try {
       await crm.$connect();
     } catch (e) {
-      console.log("Could not connect to crm db, continuing");
+      console.log('Could not connect to crm db, continuing');
     }
 
     const targetDateStr = '2026-07-12';
-    
+
     // booking_date_only needs timezone-naive date at UTC midnight
     const bookingDateOnlyDate = new Date(targetDateStr + 'T00:00:00.000Z');
 
@@ -38,14 +38,17 @@ async function main() {
 
     const toActualDate = (dbDate: Date | null | undefined) => {
       if (!dbDate) return new Date(0);
-      return new Date(Date.UTC(
-        dbDate.getUTCFullYear(),
-        dbDate.getUTCMonth(),
-        dbDate.getUTCDate(),
-        dbDate.getUTCHours(),
-        dbDate.getUTCMinutes(),
-        dbDate.getUTCSeconds()
-      ) - 7 * 3600 * 1000);
+      return new Date(
+        Date.UTC(
+          dbDate.getUTCFullYear(),
+          dbDate.getUTCMonth(),
+          dbDate.getUTCDate(),
+          dbDate.getUTCHours(),
+          dbDate.getUTCMinutes(),
+          dbDate.getUTCSeconds()
+        ) -
+          7 * 3600 * 1000
+      );
     };
 
     const formatDbTime = (dbDate: Date | null | undefined) => {
@@ -59,17 +62,14 @@ async function main() {
     try {
       const crmTelesales = await crm.crmStaff.findMany({
         where: {
-          OR: [
-            { role: 'telesales' },
-            { displayName: { in: ['Tâm Nguyễn'] } }
-          ],
-          isActive: true
+          OR: [{ role: 'telesales' }, { displayName: { in: ['Tâm Nguyễn'] } }],
+          isActive: true,
         },
-        select: { displayName: true }
+        select: { displayName: true },
       });
-      telesalesNames = new Set(crmTelesales.map(s => s.displayName.trim().toLowerCase()));
+      telesalesNames = new Set(crmTelesales.map((s) => s.displayName.trim().toLowerCase()));
     } catch (e) {
-      console.log("CRM database not available, using empty telesalesNames");
+      console.log('CRM database not available, using empty telesalesNames');
     }
 
     // 1. Query bookings created today
@@ -77,54 +77,62 @@ async function main() {
       where: {
         date_created: {
           gte: startOfDay,
-          lte: endOfDay
+          lte: endOfDay,
         },
-        order_state: { not: 'Cancelled' }
+        order_state: { not: 'Cancelled' },
       },
-      orderBy: { date_created: 'desc' }
+      orderBy: { date_created: 'desc' },
     });
 
     // 2. Query coming today
     const comingOrders = await legacy.order.findMany({
       where: {
-        OR: [
-          { booking_date_only: bookingDateOnlyDate },
-          { booking_date_start: { gte: startOfDay, lte: endOfDay } }
-        ],
-        order_state: { not: 'Cancelled' }
+        OR: [{ booking_date_only: bookingDateOnlyDate }, { booking_date_start: { gte: startOfDay, lte: endOfDay } }],
+        order_state: { not: 'Cancelled' },
       },
-      orderBy: { booking_date_start: 'asc' }
+      orderBy: { booking_date_start: 'asc' },
     });
 
-    const userIds = Array.from(new Set([
-      ...bookingsOrders.map(o => o.user_id),
-      ...comingOrders.map(o => o.user_id)
-    ]));
-    
-    const userProfiles = userIds.length > 0 ? await legacy.$queryRawUnsafe<any[]>(`
+    const userIds = Array.from(
+      new Set([...bookingsOrders.map((o) => o.user_id), ...comingOrders.map((o) => o.user_id)])
+    );
+
+    const userProfiles =
+      userIds.length > 0
+        ? await legacy.$queryRawUnsafe<any[]>(`
       SELECT up.user_id as userId, up.full_name as fullName, up.avatar, u.email, u.gender, u.date_of_birth as dob
       FROM \`user_profile\` up
       LEFT JOIN \`user\` u ON up.user_id = u.id
       WHERE up.user_id IN (${userIds.join(',')})
-    `) : [];
+    `)
+        : [];
 
-    const userContacts = userIds.length > 0 ? await legacy.$queryRawUnsafe<any[]>(`
+    const userContacts =
+      userIds.length > 0
+        ? await legacy.$queryRawUnsafe<any[]>(`
       SELECT user_id as userId, phone_number as phoneNumber
       FROM \`user_contact\`
       WHERE user_id IN (${userIds.join(',')}) AND is_disabled = 0
-    `) : [];
+    `)
+        : [];
 
-    const userBalances = userIds.length > 0 ? await legacy.user_service_balance.findMany({
-      where: { user_id: { in: userIds } }
-    }) : [];
+    const userBalances =
+      userIds.length > 0
+        ? await legacy.user_service_balance.findMany({
+            where: { user_id: { in: userIds } },
+          })
+        : [];
 
-    const balanceIds = userBalances.map(b => b.id);
-    const userBalanceTransactions = balanceIds.length > 0 ? await legacy.$queryRawUnsafe<any[]>(`
+    const balanceIds = userBalances.map((b) => b.id);
+    const userBalanceTransactions =
+      balanceIds.length > 0
+        ? await legacy.$queryRawUnsafe<any[]>(`
       SELECT usbt.*, o.booking_date_start as o_booking_date_start
       FROM user_service_balance_transaction usbt
       LEFT JOIN \`order\` o ON o.id = usbt.order_id
       WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-    `) : [];
+    `)
+        : [];
 
     // Index transactions by balance ID
     const txnsByBalanceId = new Map<number, any[]>();
@@ -138,29 +146,29 @@ async function main() {
       list.push(t);
     }
 
-    const allOrderIds = Array.from(new Set([
-      ...bookingsOrders.map(o => o.id),
-      ...comingOrders.map(o => o.id)
-    ]));
+    const allOrderIds = Array.from(new Set([...bookingsOrders.map((o) => o.id), ...comingOrders.map((o) => o.id)]));
 
-    const allOrderServices = allOrderIds.length > 0 ? await legacy.order_service.findMany({
-      where: { order_id: { in: allOrderIds } }
-    }) : [];
+    const allOrderServices =
+      allOrderIds.length > 0
+        ? await legacy.order_service.findMany({
+            where: { order_id: { in: allOrderIds } },
+          })
+        : [];
 
-    const profileMap = new Map(userProfiles.map(p => [Number(p.userId), p]));
-    const contactMap = new Map(userContacts.map(c => [Number(c.userId), c.phoneNumber]));
+    const profileMap = new Map(userProfiles.map((p) => [Number(p.userId), p]));
+    const contactMap = new Map(userContacts.map((c) => [Number(c.userId), c.phoneNumber]));
 
     const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
       const bTime = bookingDateStart || orderCreatedDate;
-      const userBals = userBalances.filter(b => b.user_id === userId);
-      
+      const userBals = userBalances.filter((b) => b.user_id === userId);
+
       for (const usb of userBals) {
         if (new Date(usb.date_created) >= new Date(bTime)) {
           continue;
         }
 
-        const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-          new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+        const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
+          (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
         );
 
         txnsBefore.sort((a, b) => {
@@ -173,18 +181,23 @@ async function main() {
         const lastTxnBefore = txnsBefore[0];
 
         const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-        const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
+        const isNotExpired =
+          !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toISOString().slice(0, 10));
 
         let countLeft = 0;
-        if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
+        if (
+          lastTxnBefore &&
+          lastTxnBefore.total_normal_count_left !== null &&
+          lastTxnBefore.total_retain_count_left !== null
+        ) {
           countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
         } else {
-          const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(t => 
-            new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
+          const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
+            (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
           );
-          
+
           let usedAfter = 0;
-          txnsAfterOrAt.forEach(t => {
+          txnsAfterOrAt.forEach((t) => {
             if (t.used_staff_id !== null) {
               usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
             }
@@ -210,22 +223,22 @@ async function main() {
       JOIN \`user_profile\` up ON sp.user_id = up.user_id
       WHERE up.provider = 'Staff' AND up.is_disabled = 0
     `);
-    const staffMap = new Map(staffProfiles.map(s => [Number(s.userId), s.fullName]));
+    const staffMap = new Map(staffProfiles.map((s) => [Number(s.userId), s.fullName]));
 
     bookingsOrders.forEach((o, index) => {
       const uProfile = profileMap.get(o.user_id);
       const phone = contactMap.get(o.user_id) || '';
       const name = uProfile?.fullName || 'Khách hàng';
       const hasLiveCombo = checkHasLiveCombo(o.user_id, o.booking_date_start, o.date_created);
-      const userBal = userBalances.filter(b => b.user_id === o.user_id);
-      const group = hasLiveCombo ? 'combo_live' : (userBal.length > 0 ? 'combo_dead' : 'single');
+      const userBal = userBalances.filter((b) => b.user_id === o.user_id);
+      const group = hasLiveCombo ? 'combo_live' : userBal.length > 0 ? 'combo_dead' : 'single';
       const booker = staffMap.get(Number(o.created_staff_id)) || o.booking_channels || 'System';
 
       const record = {
         key: String(o.id),
         customer: name,
         group,
-        booker
+        booker,
       };
 
       const isOc = telesalesNames.has(booker.trim().toLowerCase());
@@ -238,13 +251,15 @@ async function main() {
       }
     });
 
-    console.log("bookingsCombo count:", bookingsCombo.length);
-    console.log("bookingsOc count:", bookingsOc.length);
-    console.log("bookingsOther count:", bookingsOther.length);
-    console.log("Total Bookings count:", bookingsCombo.length + bookingsOc.length + bookingsOther.length);
+    console.log('bookingsCombo count:', bookingsCombo.length);
+    console.log('bookingsOc count:', bookingsOc.length);
+    console.log('bookingsOther count:', bookingsOther.length);
+    console.log('Total Bookings count:', bookingsCombo.length + bookingsOc.length + bookingsOther.length);
 
-    console.log("bookingsCombo items:", bookingsCombo.map(c => c.customer));
-
+    console.log(
+      'bookingsCombo items:',
+      bookingsCombo.map((c) => c.customer)
+    );
   } catch (err) {
     console.error(err);
   } finally {

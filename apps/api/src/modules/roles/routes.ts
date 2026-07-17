@@ -6,14 +6,14 @@ export async function rolesRoutes(fastify: FastifyInstance) {
   fastify.get('/roles', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
       const roles = await fastify.prisma.crm.crmRole.findMany({
-        orderBy: { createdAt: 'asc' }
+        orderBy: { createdAt: 'asc' },
       });
       return roles;
     } catch (error: any) {
       fastify.log.error('Fetch roles error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Không thể lấy danh sách vai trò'
+        message: 'Không thể lấy danh sách vai trò',
       });
     }
   });
@@ -25,7 +25,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     if (!key || !name) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Mã vai trò (key) và Tên vai trò (name) là bắt buộc'
+        message: 'Mã vai trò (key) và Tên vai trò (name) là bắt buộc',
       });
     }
 
@@ -34,19 +34,19 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     if (!keyRegex.test(key)) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Mã vai trò chỉ được chứa chữ thường không dấu, số, gạch ngang và gạch dưới'
+        message: 'Mã vai trò chỉ được chứa chữ thường không dấu, số, gạch ngang và gạch dưới',
       });
     }
 
     try {
       const existingRole = await fastify.prisma.crm.crmRole.findUnique({
-        where: { key }
+        where: { key },
       });
 
       if (existingRole) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: `Mã vai trò "${key}" đã tồn tại`
+          message: `Mã vai trò "${key}" đã tồn tại`,
         });
       }
 
@@ -59,19 +59,19 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           viewTeamKPI: !!viewTeamKPI,
           manageStaff: !!manageStaff,
           isSystem: false,
-          description
-        }
+          description,
+        },
       });
 
       return {
         message: 'Tạo vai trò thành công',
-        role
+        role,
       };
     } catch (error: any) {
       fastify.log.error('Create role error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Không thể tạo vai trò mới'
+        message: 'Không thể tạo vai trò mới',
       });
     }
   });
@@ -83,7 +83,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
 
     try {
       const existingRole = await fastify.prisma.crm.crmRole.findUnique({
-        where: { key }
+        where: { key },
       });
 
       if (!existingRole) {
@@ -111,18 +111,18 @@ export async function rolesRoutes(fastify: FastifyInstance) {
 
       const updated = await fastify.prisma.crm.crmRole.update({
         where: { key },
-        data: updateData
+        data: updateData,
       });
 
       return {
         message: 'Cập nhật vai trò thành công',
-        role: updated
+        role: updated,
       };
     } catch (error: any) {
       fastify.log.error('Update role error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Không thể cập nhật thông tin vai trò'
+        message: 'Không thể cập nhật thông tin vai trò',
       });
     }
   });
@@ -133,7 +133,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
 
     try {
       const role = await fastify.prisma.crm.crmRole.findUnique({
-        where: { key }
+        where: { key },
       });
 
       if (!role) {
@@ -144,34 +144,34 @@ export async function rolesRoutes(fastify: FastifyInstance) {
       if (role.isSystem) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: 'Không thể xóa vai trò mặc định của hệ thống'
+          message: 'Không thể xóa vai trò mặc định của hệ thống',
         });
       }
 
       // Check if any active/inactive staff member is assigned to this role
       const staffCount = await fastify.prisma.crm.crmStaff.count({
-        where: { role: key }
+        where: { role: key },
       });
 
       if (staffCount > 0) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: `Không thể xóa vai trò "${role.name}" vì hiện đang có ${staffCount} nhân viên được gán vai trò này. Vui lòng đổi vai trò của họ trước khi xóa.`
+          message: `Không thể xóa vai trò "${role.name}" vì hiện đang có ${staffCount} nhân viên được gán vai trò này. Vui lòng đổi vai trò của họ trước khi xóa.`,
         });
       }
 
       await fastify.prisma.crm.crmRole.delete({
-        where: { key }
+        where: { key },
       });
 
       return {
-        message: `Xóa vai trò "${role.name}" thành công`
+        message: `Xóa vai trò "${role.name}" thành công`,
       };
     } catch (error: any) {
       fastify.log.error('Delete role error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi hệ thống khi xóa vai trò'
+        message: 'Lỗi hệ thống khi xóa vai trò',
       });
     }
   });

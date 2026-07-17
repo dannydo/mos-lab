@@ -25,10 +25,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       }
 
       if (search) {
-        whereClause.OR = [
-          { displayName: { contains: search } },
-          { username: { contains: search } }
-        ];
+        whereClause.OR = [{ displayName: { contains: search } }, { username: { contains: search } }];
       }
 
       const selectFields: any = {
@@ -38,7 +35,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         role: true,
         isActive: true,
         avatarUrl: true,
-        lastActiveAt: true
+        lastActiveAt: true,
       };
 
       if (currentUser.role === 'admin') {
@@ -59,7 +56,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       const staff = await fastify.prisma.crm.crmStaff.findMany({
         where: whereClause,
         orderBy: { createdAt: 'desc' },
-        select: selectFields
+        select: selectFields,
       });
 
       return staff;
@@ -67,7 +64,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       fastify.log.error('Fetch staff error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Không thể lấy danh sách nhân viên'
+        message: 'Không thể lấy danh sách nhân viên',
       });
     }
   });
@@ -86,7 +83,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
     if (currentUser.role !== 'admin' && currentUser.id !== targetId) {
       return reply.status(403).send({
         error: 'Forbidden',
-        message: 'Bạn không có quyền xem thông tin nhân viên này'
+        message: 'Bạn không có quyền xem thông tin nhân viên này',
       });
     }
 
@@ -112,8 +109,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
           notes: true,
           legacyStaffId: true,
           lastLoginAt: true,
-          lastActiveAt: true
-        }
+          lastActiveAt: true,
+        },
       });
 
       if (!staff) {
@@ -125,7 +122,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       fastify.log.error('Fetch staff details error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi hệ thống khi lấy thông tin nhân viên'
+        message: 'Lỗi hệ thống khi lấy thông tin nhân viên',
       });
     }
   });
@@ -148,26 +145,26 @@ export async function staffRoutes(fastify: FastifyInstance) {
       emergencyPhone,
       avatarUrl,
       notes,
-      legacyStaffId
+      legacyStaffId,
     } = request.body as any;
 
     if (!username || !displayName) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Tên đăng nhập (username) và Tên hiển thị (displayName) là bắt buộc'
+        message: 'Tên đăng nhập (username) và Tên hiển thị (displayName) là bắt buộc',
       });
     }
 
     try {
       // Validate unique username
       const existingStaff = await fastify.prisma.crm.crmStaff.findUnique({
-        where: { username }
+        where: { username },
       });
 
       if (existingStaff) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: `Tên đăng nhập "${username}" đã tồn tại trên hệ thống`
+          message: `Tên đăng nhập "${username}" đã tồn tại trên hệ thống`,
         });
       }
 
@@ -193,8 +190,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
           emergencyPhone,
           avatarUrl,
           notes,
-          legacyStaffId: legacyStaffId ? parseInt(legacyStaffId, 10) : null
-        }
+          legacyStaffId: legacyStaffId ? parseInt(legacyStaffId, 10) : null,
+        },
       });
 
       return {
@@ -204,14 +201,14 @@ export async function staffRoutes(fastify: FastifyInstance) {
           username: staff.username,
           displayName: staff.displayName,
           role: staff.role,
-          isActive: staff.isActive
-        }
+          isActive: staff.isActive,
+        },
       };
     } catch (error: any) {
       fastify.log.error('Create staff error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Không thể tạo nhân viên mới'
+        message: 'Không thể tạo nhân viên mới',
       });
     }
   });
@@ -230,7 +227,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
     if (currentUser.role !== 'admin' && currentUser.id !== targetId) {
       return reply.status(403).send({
         error: 'Forbidden',
-        message: 'Bạn không có quyền sửa thông tin nhân viên này'
+        message: 'Bạn không có quyền sửa thông tin nhân viên này',
       });
     }
 
@@ -250,13 +247,13 @@ export async function staffRoutes(fastify: FastifyInstance) {
       emergencyPhone,
       avatarUrl,
       notes,
-      legacyStaffId
+      legacyStaffId,
     } = request.body as any;
 
     try {
       // Find the existing staff first
       const existingStaff = await fastify.prisma.crm.crmStaff.findUnique({
-        where: { id: targetId }
+        where: { id: targetId },
       });
 
       if (!existingStaff) {
@@ -295,12 +292,12 @@ export async function staffRoutes(fastify: FastifyInstance) {
         if (username !== undefined && username !== existingStaff.username) {
           // Check for duplicate username
           const duplicate = await fastify.prisma.crm.crmStaff.findUnique({
-            where: { username }
+            where: { username },
           });
           if (duplicate) {
             return reply.status(400).send({
               error: 'Bad Request',
-              message: 'Tên đăng nhập (Email / Prefix) đã được sử dụng bởi nhân sự khác'
+              message: 'Tên đăng nhập (Email / Prefix) đã được sử dụng bởi nhân sự khác',
             });
           }
           updateData.username = username;
@@ -309,7 +306,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
 
       const updated = await fastify.prisma.crm.crmStaff.update({
         where: { id: targetId },
-        data: updateData
+        data: updateData,
       });
 
       return {
@@ -319,14 +316,14 @@ export async function staffRoutes(fastify: FastifyInstance) {
           username: updated.username,
           displayName: updated.displayName,
           role: updated.role,
-          isActive: updated.isActive
-        }
+          isActive: updated.isActive,
+        },
       };
     } catch (error: any) {
       fastify.log.error('Update staff error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi hệ thống khi cập nhật thông tin nhân viên'
+        message: 'Lỗi hệ thống khi cập nhật thông tin nhân viên',
       });
     }
   });
@@ -342,7 +339,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
 
     try {
       const staff = await fastify.prisma.crm.crmStaff.findUnique({
-        where: { id: targetId }
+        where: { id: targetId },
       });
 
       if (!staff) {
@@ -353,46 +350,46 @@ export async function staffRoutes(fastify: FastifyInstance) {
       if (request.user.id === targetId) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: 'Bạn không thể tự xóa tài khoản của chính mình'
+          message: 'Bạn không thể tự xóa tài khoản của chính mình',
         });
       }
 
       // Check dependencies to prevent orphaned keys in records
       // Check Call Logs
       const callLogCount = await fastify.prisma.crm.crmCallLog.count({
-        where: { staffId: targetId }
+        where: { staffId: targetId },
       });
 
       // Check Daily Plans
       const dailyPlanCount = await fastify.prisma.crm.crmDailyPlan.count({
-        where: { staffId: targetId }
+        where: { staffId: targetId },
       });
 
       // Check KPI records
       const kpiCount = await fastify.prisma.crm.crmStaffKpi.count({
-        where: { staffId: targetId }
+        where: { staffId: targetId },
       });
 
       if (callLogCount > 0 || dailyPlanCount > 0 || kpiCount > 0) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: `Không thể xóa nhân viên "${staff.displayName}" vì đã có lịch sử cuộc gọi (${callLogCount}), kế hoạch gọi (${dailyPlanCount}) hoặc KPI liên kết. Vui lòng chuyển trạng thái thành Vô hiệu hóa (Deactivate) để khóa tài khoản.`
+          message: `Không thể xóa nhân viên "${staff.displayName}" vì đã có lịch sử cuộc gọi (${callLogCount}), kế hoạch gọi (${dailyPlanCount}) hoặc KPI liên kết. Vui lòng chuyển trạng thái thành Vô hiệu hóa (Deactivate) để khóa tài khoản.`,
         });
       }
 
       // Delete if no transaction data matches
       await fastify.prisma.crm.crmStaff.delete({
-        where: { id: targetId }
+        where: { id: targetId },
       });
 
       return {
-        message: `Xóa nhân viên "${staff.displayName}" thành công`
+        message: `Xóa nhân viên "${staff.displayName}" thành công`,
       };
     } catch (error: any) {
       fastify.log.error('Delete staff error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi hệ thống khi xóa nhân viên'
+        message: 'Lỗi hệ thống khi xóa nhân viên',
       });
     }
   });
@@ -415,13 +412,13 @@ export async function staffRoutes(fastify: FastifyInstance) {
         id: Number(row.id),
         name: row.name ? row.name.trim() : 'Unknown',
         email: row.email || null,
-        phone: row.phone || null
+        phone: row.phone || null,
       }));
     } catch (error: any) {
       fastify.log.error('Fetch legacy staff error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: 'Lỗi hệ thống khi lấy danh sách tài khoản Wings Lashes'
+        message: 'Lỗi hệ thống khi lấy danh sách tài khoản Wings Lashes',
       });
     }
   });

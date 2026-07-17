@@ -8,16 +8,19 @@ const api = axios.create({
 });
 
 // Auto attach token if available in localStorage (client-side only)
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('mos_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(
+  (config) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('mos_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
+);
 
 export default api;

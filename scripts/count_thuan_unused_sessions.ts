@@ -3,15 +3,15 @@ import { PrismaClient as LegacyPrismaClient } from '../apps/api/src/generated/le
 const legacy = new LegacyPrismaClient({
   datasources: {
     db: {
-      url: "mysql://root:chickisslove@127.0.0.1:3306/management"
-    }
-  }
+      url: 'mysql://root:chickisslove@127.0.0.1:3306/management',
+    },
+  },
 });
 
 async function main() {
   try {
     await legacy.$connect();
-    
+
     // PHP variables
     const clientBusinessId = 1;
     const userId = 25047;
@@ -37,13 +37,17 @@ async function main() {
     for (const t of txns) {
       const isUnused = t.date_used === null;
       const isUsedOnDate = t.date_used && new Date(t.date_used).toISOString().slice(0, 10) === date;
-      
+
       if (isUnused) {
         unused++;
-        console.log(`  Unused Row: ID ${t.id} | Balance ID ${t.user_service_balance_id} | Created: ${t.date_created} | Normal: ${t.normal_count} | Retain: ${t.retain_count} | Expired: ${t.date_expired}`);
+        console.log(
+          `  Unused Row: ID ${t.id} | Balance ID ${t.user_service_balance_id} | Created: ${t.date_created} | Normal: ${t.normal_count} | Retain: ${t.retain_count} | Expired: ${t.date_expired}`
+        );
       } else if (isUsedOnDate) {
         usedOnDate++;
-        console.log(`  Used On Date Row: ID ${t.id} | Balance ID ${t.user_service_balance_id} | Created: ${t.date_created} | Used: ${t.date_used}`);
+        console.log(
+          `  Used On Date Row: ID ${t.id} | Balance ID ${t.user_service_balance_id} | Created: ${t.date_created} | Used: ${t.date_used}`
+        );
       } else {
         usedOther++;
       }
@@ -54,7 +58,6 @@ async function main() {
     console.log(`  Used on booking date: ${usedOnDate}`);
     console.log(`  Used on other dates: ${usedOther}`);
     console.log(`  Calculated count (unused + usedOnDate): ${unused + usedOnDate}`);
-
   } catch (err) {
     console.error(err);
   } finally {

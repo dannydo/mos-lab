@@ -12,7 +12,7 @@ async function run() {
     WHERE up.provider = 'Staff' AND up.is_disabled = 0
   `);
   console.log('Staff Profiles in Legacy DB:');
-  staffProfiles.forEach(s => {
+  staffProfiles.forEach((s) => {
     console.log(`User ID: ${s.userId}, Name: ${s.fullName}`);
   });
 

@@ -1,772 +1,958 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi" class="dark">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Online Users V3C2 — Dropdown + Slide-in Config</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-  darkMode: 'class',
-  theme: {
-    extend: {
-      colors: {
-        gold: '#D4A84B',
-        goldLight: '#E8C97A',
-        goldDark: '#B8912F',
-        darkBg: '#0A0A0A',
-        darkCard: '#141414',
-        darkBorder: '#262626',
-        darkHover: '#1A1A1A',
-      },
-      fontFamily: {
-        sans: ['Plus Jakarta Sans', 'sans-serif'],
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Users V3C2 — Dropdown + Slide-in Config</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              gold: '#D4A84B',
+              goldLight: '#E8C97A',
+              goldDark: '#B8912F',
+              darkBg: '#0A0A0A',
+              darkCard: '#141414',
+              darkBorder: '#262626',
+              darkHover: '#1A1A1A',
+            },
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', 'sans-serif'],
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
-    }
-  }
-}
-</script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
 
-  /* Glass card */
-  .glass-card {
-    background: rgba(20, 20, 20, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
-  .glass-card-light {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-  }
+      /* Glass card */
+      .glass-card {
+        background: rgba(20, 20, 20, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .glass-card-light {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+      }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(212, 168, 75, 0.3); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(212, 168, 75, 0.5); }
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(212, 168, 75, 0.3);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(212, 168, 75, 0.5);
+      }
 
-  /* Modal animations */
-  .modal-overlay {
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-  }
-  .modal-overlay.active {
-    opacity: 1;
-    pointer-events: all;
-  }
-  .modal-content {
-    transform: scale(0.9);
-    opacity: 0;
-    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
-  }
-  .modal-overlay.active .modal-content {
-    transform: scale(1);
-    opacity: 1;
-  }
+      /* Modal animations */
+      .modal-overlay {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+      .modal-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .modal-content {
+        transform: scale(0.9);
+        opacity: 0;
+        transition:
+          transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+          opacity 0.3s ease;
+      }
+      .modal-overlay.active .modal-content {
+        transform: scale(1);
+        opacity: 1;
+      }
 
-  /* Bubble stack */
-  .bubble-stack { display: flex; align-items: center; }
-  .bubble-avatar {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    border: 2px solid #0A0A0A;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: #fff;
-    margin-left: -8px;
-    transition: transform 0.2s ease, margin 0.2s ease;
-    cursor: pointer;
-    position: relative;
-    z-index: 1;
-  }
-  .bubble-avatar:first-child { margin-left: 0; }
-  .bubble-avatar:hover { transform: translateY(-4px) scale(1.15); z-index: 10; }
+      /* Bubble stack */
+      .bubble-stack {
+        display: flex;
+        align-items: center;
+      }
+      .bubble-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid #0a0a0a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        margin-left: -8px;
+        transition:
+          transform 0.2s ease,
+          margin 0.2s ease;
+        cursor: pointer;
+        position: relative;
+        z-index: 1;
+      }
+      .bubble-avatar:first-child {
+        margin-left: 0;
+      }
+      .bubble-avatar:hover {
+        transform: translateY(-4px) scale(1.15);
+        z-index: 10;
+      }
 
-  /* Donut */
-  .donut-ring { transition: stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+      /* Donut */
+      .donut-ring {
+        transition: stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-  /* Metric pill */
-  .metric-pill {
-    transition: all 0.2s ease;
-  }
-  .metric-pill:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-  }
+      /* Metric pill */
+      .metric-pill {
+        transition: all 0.2s ease;
+      }
+      .metric-pill:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      }
 
-  /* Mini card */
-  .mini-card {
-    transition: all 0.25s ease;
-  }
-  .mini-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-  }
+      /* Mini card */
+      .mini-card {
+        transition: all 0.25s ease;
+      }
+      .mini-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+      }
 
-  /* Podium */
-  .podium-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 100px));
-    justify-content: center;
-    gap: 8px;
-    align-items: end;
-  }
-  .podium-col {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .podium-avatar-section {
-    height: 80px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    padding-bottom: 6px;
-  }
-  .podium-bar {
-    width: 100%;
-    border-radius: 10px 10px 0 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 4px;
-    position: relative;
-  }
+      /* Podium */
+      .podium-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 100px));
+        justify-content: center;
+        gap: 8px;
+        align-items: end;
+      }
+      .podium-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .podium-avatar-section {
+        height: 80px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        padding-bottom: 6px;
+      }
+      .podium-bar {
+        width: 100%;
+        border-radius: 10px 10px 0 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 4px;
+        position: relative;
+      }
 
-  /* Dropdown */
-  .dropdown-menu {
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
-  }
-  .dropdown-menu.open {
-    max-height: 400px;
-    opacity: 1;
-  }
+      /* Dropdown */
+      .dropdown-menu {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition:
+          max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.25s ease;
+      }
+      .dropdown-menu.open {
+        max-height: 400px;
+        opacity: 1;
+      }
 
-  /* Config panel slide-in */
-  .config-panel {
-    transform: translateX(100%);
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .config-panel.open {
-    transform: translateX(0);
-  }
+      /* Config panel slide-in */
+      .config-panel {
+        transform: translateX(100%);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .config-panel.open {
+        transform: translateX(0);
+      }
 
-  /* Collapsible section */
-  .config-section-body {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-  }
-  .config-section-body.expanded {
-    max-height: 500px;
-  }
+      /* Collapsible section */
+      .config-section-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+      .config-section-body.expanded {
+        max-height: 500px;
+      }
 
-  /* Toast */
-  .toast {
-    transform: translateX(120%);
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .toast.show {
-    transform: translateX(0);
-  }
+      /* Toast */
+      .toast {
+        transform: translateX(120%);
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .toast.show {
+        transform: translateX(0);
+      }
 
-  /* Pulse dot */
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.5); }
-  }
-  .pulse-dot {
-    animation: pulse-dot 2s ease-in-out infinite;
-  }
+      /* Pulse dot */
+      @keyframes pulse-dot {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(1.5);
+        }
+      }
+      .pulse-dot {
+        animation: pulse-dot 2s ease-in-out infinite;
+      }
 
-  /* Number input styling */
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  input[type="number"] {
-    -moz-appearance: textfield;
-  }
+      /* Number input styling */
+      input[type='number']::-webkit-inner-spin-button,
+      input[type='number']::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type='number'] {
+        -moz-appearance: textfield;
+      }
 
-  /* Toggle switch */
-  .toggle-track {
-    width: 44px; height: 24px;
-    border-radius: 12px;
-    background: #333;
-    position: relative;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  .toggle-track.active { background: #D4A84B; }
-  .toggle-knob {
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    background: #fff;
-    position: absolute;
-    top: 3px; left: 3px;
-    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-  }
-  .toggle-track.active .toggle-knob {
-    transform: translateX(20px);
-  }
+      /* Toggle switch */
+      .toggle-track {
+        width: 44px;
+        height: 24px;
+        border-radius: 12px;
+        background: #333;
+        position: relative;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+      .toggle-track.active {
+        background: #d4a84b;
+      }
+      .toggle-knob {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      }
+      .toggle-track.active .toggle-knob {
+        transform: translateX(20px);
+      }
 
-  /* Count badge bounce */
-  @keyframes badge-bounce {
-    0% { transform: scale(0.8); }
-    50% { transform: scale(1.15); }
-    100% { transform: scale(1); }
-  }
-  .count-badge { animation: badge-bounce 0.5s ease; }
-</style>
-</head>
-<body class="bg-darkBg dark:bg-darkBg min-h-screen text-white dark:text-white">
-
-<!-- ===== HEADER BAR ===== -->
-<header class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-darkBorder">
-  <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-    <!-- Left: Logo -->
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-goldDark flex items-center justify-center">
-        <span class="text-xs font-bold text-black">WL</span>
-      </div>
-      <span class="text-sm font-semibold text-white/80 hidden sm:inline">Wingslashes</span>
-    </div>
-
-    <!-- Center: Online indicator -->
-    <div class="flex items-center gap-3 cursor-pointer group" onclick="openModal()">
-      <!-- Bubble stack -->
-      <div class="bubble-stack" id="headerBubbles"></div>
-
-      <!-- Count badge -->
-      <div class="count-badge bg-gold/20 border border-gold/40 rounded-full px-2.5 py-0.5 flex items-center gap-1.5">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
-        <span class="text-sm font-bold text-gold" id="headerCount">6</span>
-        <span class="text-xs text-white/40">online</span>
-      </div>
-
-      <!-- Clock -->
-      <div class="hidden sm:flex items-center gap-1.5 text-xs text-white/40">
-        <i class="fas fa-clock"></i>
-        <span id="headerClock">--:--</span>
-      </div>
-    </div>
-
-    <!-- Right: Toggle -->
-    <div class="flex items-center gap-3">
-      <div class="toggle-track active" id="themeToggle" onclick="toggleTheme()">
-        <div class="toggle-knob"></div>
-      </div>
-      <span class="text-xs text-white/40 hidden sm:inline">DD</span>
-      <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-[10px] font-bold">DD</div>
-    </div>
-  </div>
-</header>
-
-<!-- ===== MODAL OVERLAY ===== -->
-<div class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center p-4" id="modalOverlay" onclick="handleOverlayClick(event)">
-  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-
-  <!-- Modal Content -->
-  <div class="modal-content relative w-full max-w-[780px] max-h-[92vh] rounded-2xl glass-card border border-darkBorder shadow-2xl overflow-hidden flex flex-col" id="modalContent">
-
-    <!-- Modal Header -->
-    <div class="flex items-center justify-between px-5 py-3.5 border-b border-darkBorder flex-shrink-0">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-gold/15 flex items-center justify-center">
-          <i class="fas fa-users text-gold text-sm"></i>
+      /* Count badge bounce */
+      @keyframes badge-bounce {
+        0% {
+          transform: scale(0.8);
+        }
+        50% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      .count-badge {
+        animation: badge-bounce 0.5s ease;
+      }
+    </style>
+  </head>
+  <body class="bg-darkBg dark:bg-darkBg min-h-screen text-white dark:text-white">
+    <!-- ===== HEADER BAR ===== -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-darkBorder">
+      <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+        <!-- Left: Logo -->
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-goldDark flex items-center justify-center">
+            <span class="text-xs font-bold text-black">WL</span>
+          </div>
+          <span class="text-sm font-semibold text-white/80 hidden sm:inline">Wingslashes</span>
         </div>
-        <div>
-          <h2 class="text-sm font-bold text-white">Thành viên Online</h2>
-          <p class="text-[10px] text-white/40 mt-0.5">Thống kê hoạt động đội nhóm</p>
+
+        <!-- Center: Online indicator -->
+        <div class="flex items-center gap-3 cursor-pointer group" onclick="openModal()">
+          <!-- Bubble stack -->
+          <div class="bubble-stack" id="headerBubbles"></div>
+
+          <!-- Count badge -->
+          <div
+            class="count-badge bg-gold/20 border border-gold/40 rounded-full px-2.5 py-0.5 flex items-center gap-1.5"
+          >
+            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+            <span class="text-sm font-bold text-gold" id="headerCount">6</span>
+            <span class="text-xs text-white/40">online</span>
+          </div>
+
+          <!-- Clock -->
+          <div class="hidden sm:flex items-center gap-1.5 text-xs text-white/40">
+            <i class="fas fa-clock"></i>
+            <span id="headerClock">--:--</span>
+          </div>
+        </div>
+
+        <!-- Right: Toggle -->
+        <div class="flex items-center gap-3">
+          <div class="toggle-track active" id="themeToggle" onclick="toggleTheme()">
+            <div class="toggle-knob"></div>
+          </div>
+          <span class="text-xs text-white/40 hidden sm:inline">DD</span>
+          <div
+            class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-[10px] font-bold"
+          >
+            DD
+          </div>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <!-- Config button -->
-        <button onclick="toggleConfigPanel()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-gold/15 border border-darkBorder hover:border-gold/30 flex items-center justify-center transition-all group" title="Cấu hình Target">
-          <span class="text-sm group-hover:scale-110 transition-transform">⚙️</span>
-        </button>
-        <!-- Close button -->
-        <button onclick="closeModal()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-red-500/15 border border-darkBorder hover:border-red-500/30 flex items-center justify-center transition-all">
-          <i class="fas fa-times text-white/40 hover:text-red-400 text-sm"></i>
-        </button>
-      </div>
-    </div>
+    </header>
 
-    <!-- Modal Body Wrapper (contains main + config panel) -->
-    <div class="relative flex flex-1 overflow-hidden">
+    <!-- ===== MODAL OVERLAY ===== -->
+    <div
+      class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center p-4"
+      id="modalOverlay"
+      onclick="handleOverlayClick(event)"
+    >
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
-      <!-- Main Modal Body -->
-      <div class="flex-1 overflow-y-auto p-5 space-y-5 transition-all duration-300" id="modalBody">
-
-        <!-- Time Period Dropdown -->
-        <div class="flex items-center justify-between">
-          <div class="relative" id="dropdownContainer">
-            <!-- Dropdown Button -->
-            <button onclick="toggleDropdown()" class="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/5 border border-darkBorder hover:border-gold/30 transition-all group" id="dropdownBtn">
-              <i class="fas fa-calendar-day text-gold text-xs"></i>
-              <span class="text-sm font-semibold text-white" id="dropdownLabel">Hôm nay</span>
-              <i class="fas fa-chevron-down text-white/30 text-[10px] transition-transform duration-300" id="dropdownArrow"></i>
+      <!-- Modal Content -->
+      <div
+        class="modal-content relative w-full max-w-[780px] max-h-[92vh] rounded-2xl glass-card border border-darkBorder shadow-2xl overflow-hidden flex flex-col"
+        id="modalContent"
+      >
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between px-5 py-3.5 border-b border-darkBorder flex-shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gold/15 flex items-center justify-center">
+              <i class="fas fa-users text-gold text-sm"></i>
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-white">Thành viên Online</h2>
+              <p class="text-[10px] text-white/40 mt-0.5">Thống kê hoạt động đội nhóm</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <!-- Config button -->
+            <button
+              onclick="toggleConfigPanel()"
+              class="w-8 h-8 rounded-lg bg-white/5 hover:bg-gold/15 border border-darkBorder hover:border-gold/30 flex items-center justify-center transition-all group"
+              title="Cấu hình Target"
+            >
+              <span class="text-sm group-hover:scale-110 transition-transform">⚙️</span>
             </button>
+            <!-- Close button -->
+            <button
+              onclick="closeModal()"
+              class="w-8 h-8 rounded-lg bg-white/5 hover:bg-red-500/15 border border-darkBorder hover:border-red-500/30 flex items-center justify-center transition-all"
+            >
+              <i class="fas fa-times text-white/40 hover:text-red-400 text-sm"></i>
+            </button>
+          </div>
+        </div>
 
-            <!-- Dropdown Menu -->
-            <div class="dropdown-menu absolute top-full left-0 mt-2 w-56 rounded-xl glass-card border border-darkBorder shadow-2xl z-50" id="dropdownMenu">
-              <div class="p-2">
-                <!-- Group 1: Hiện tại -->
-                <div class="px-3 py-1.5">
-                  <span class="text-[10px] font-semibold text-white/30 uppercase tracking-wider">Hiện tại</span>
+        <!-- Modal Body Wrapper (contains main + config panel) -->
+        <div class="relative flex flex-1 overflow-hidden">
+          <!-- Main Modal Body -->
+          <div class="flex-1 overflow-y-auto p-5 space-y-5 transition-all duration-300" id="modalBody">
+            <!-- Time Period Dropdown -->
+            <div class="flex items-center justify-between">
+              <div class="relative" id="dropdownContainer">
+                <!-- Dropdown Button -->
+                <button
+                  onclick="toggleDropdown()"
+                  class="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/5 border border-darkBorder hover:border-gold/30 transition-all group"
+                  id="dropdownBtn"
+                >
+                  <i class="fas fa-calendar-day text-gold text-xs"></i>
+                  <span class="text-sm font-semibold text-white" id="dropdownLabel">Hôm nay</span>
+                  <i
+                    class="fas fa-chevron-down text-white/30 text-[10px] transition-transform duration-300"
+                    id="dropdownArrow"
+                  ></i>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div
+                  class="dropdown-menu absolute top-full left-0 mt-2 w-56 rounded-xl glass-card border border-darkBorder shadow-2xl z-50"
+                  id="dropdownMenu"
+                >
+                  <div class="p-2">
+                    <!-- Group 1: Hiện tại -->
+                    <div class="px-3 py-1.5">
+                      <span class="text-[10px] font-semibold text-white/30 uppercase tracking-wider">Hiện tại</span>
+                    </div>
+                    <button
+                      class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all"
+                      data-period="today"
+                      onclick="selectPeriod('today')"
+                    >
+                      <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
+                      <i class="fas fa-calendar-day text-emerald-400 text-xs w-4 text-center"></i>
+                      <span class="text-sm text-white/80">Hôm nay</span>
+                    </button>
+                    <button
+                      class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all"
+                      data-period="this_week"
+                      onclick="selectPeriod('this_week')"
+                    >
+                      <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
+                      <i class="fas fa-calendar-week text-blue-400 text-xs w-4 text-center"></i>
+                      <span class="text-sm text-white/80">Tuần này</span>
+                    </button>
+                    <button
+                      class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all"
+                      data-period="this_month"
+                      onclick="selectPeriod('this_month')"
+                    >
+                      <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
+                      <i class="fas fa-calendar-alt text-purple-400 text-xs w-4 text-center"></i>
+                      <span class="text-sm text-white/80">Tháng này</span>
+                    </button>
+
+                    <div class="mx-3 my-1.5 border-t border-darkBorder"></div>
+
+                    <!-- Group 2: Trước đó -->
+                    <div class="px-3 py-1.5">
+                      <span class="text-[10px] font-semibold text-white/30 uppercase tracking-wider">Trước đó</span>
+                    </div>
+                    <button
+                      class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all"
+                      data-period="yesterday"
+                      onclick="selectPeriod('yesterday')"
+                    >
+                      <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
+                      <i class="fas fa-calendar-minus text-orange-400 text-xs w-4 text-center"></i>
+                      <span class="text-sm text-white/80">Hôm qua</span>
+                    </button>
+                    <button
+                      class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all"
+                      data-period="last_week"
+                      onclick="selectPeriod('last_week')"
+                    >
+                      <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
+                      <i class="fas fa-calendar-check text-cyan-400 text-xs w-4 text-center"></i>
+                      <span class="text-sm text-white/80">Tuần trước</span>
+                    </button>
+                    <button
+                      class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all"
+                      data-period="last_month"
+                      onclick="selectPeriod('last_month')"
+                    >
+                      <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
+                      <i class="fas fa-calendar text-pink-400 text-xs w-4 text-center"></i>
+                      <span class="text-sm text-white/80">Tháng trước</span>
+                    </button>
+                  </div>
                 </div>
-                <button class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all" data-period="today" onclick="selectPeriod('today')">
-                  <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
-                  <i class="fas fa-calendar-day text-emerald-400 text-xs w-4 text-center"></i>
-                  <span class="text-sm text-white/80">Hôm nay</span>
-                </button>
-                <button class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all" data-period="this_week" onclick="selectPeriod('this_week')">
-                  <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
-                  <i class="fas fa-calendar-week text-blue-400 text-xs w-4 text-center"></i>
-                  <span class="text-sm text-white/80">Tuần này</span>
-                </button>
-                <button class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all" data-period="this_month" onclick="selectPeriod('this_month')">
-                  <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
-                  <i class="fas fa-calendar-alt text-purple-400 text-xs w-4 text-center"></i>
-                  <span class="text-sm text-white/80">Tháng này</span>
-                </button>
+              </div>
 
-                <div class="mx-3 my-1.5 border-t border-darkBorder"></div>
+              <!-- Sort toggle -->
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] text-white/30">Sắp xếp:</span>
+                <button
+                  onclick="cycleSortMetric()"
+                  class="px-2.5 py-1 rounded-lg bg-white/5 border border-darkBorder text-xs text-white/60 hover:text-gold hover:border-gold/30 transition-all"
+                  id="sortLabel"
+                >
+                  <i class="fas fa-sort-amount-down mr-1"></i>Doanh số
+                </button>
+              </div>
+            </div>
 
-                <!-- Group 2: Trước đó -->
-                <div class="px-3 py-1.5">
-                  <span class="text-[10px] font-semibold text-white/30 uppercase tracking-wider">Trước đó</span>
+            <!-- Donut + Metric Pills Row -->
+            <div class="flex gap-5 items-start">
+              <!-- Large Donut -->
+              <div class="flex-shrink-0 relative">
+                <svg width="150" height="150" viewBox="0 0 150 150" id="donutSvg">
+                  <circle cx="75" cy="75" r="58" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="14" />
+                  <!-- Dynamic rings rendered by JS -->
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span class="text-2xl font-bold text-gold" id="donutTotal">0</span>
+                  <span class="text-[9px] text-white/30 mt-0.5">TỔNG KPI</span>
                 </div>
-                <button class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all" data-period="yesterday" onclick="selectPeriod('yesterday')">
-                  <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
-                  <i class="fas fa-calendar-minus text-orange-400 text-xs w-4 text-center"></i>
-                  <span class="text-sm text-white/80">Hôm qua</span>
-                </button>
-                <button class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all" data-period="last_week" onclick="selectPeriod('last_week')">
-                  <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
-                  <i class="fas fa-calendar-check text-cyan-400 text-xs w-4 text-center"></i>
-                  <span class="text-sm text-white/80">Tuần trước</span>
-                </button>
-                <button class="dropdown-item w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-all" data-period="last_month" onclick="selectPeriod('last_month')">
-                  <span class="period-dot w-2 h-2 rounded-full bg-gold opacity-0 transition-opacity"></span>
-                  <i class="fas fa-calendar text-pink-400 text-xs w-4 text-center"></i>
-                  <span class="text-sm text-white/80">Tháng trước</span>
-                </button>
+              </div>
+
+              <!-- Metric Pills Grid -->
+              <div class="flex-1 grid grid-cols-3 gap-2" id="metricPills">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+
+            <!-- Mini Cards Grid -->
+            <div class="grid grid-cols-3 gap-2.5" id="miniCards">
+              <!-- Rendered by JS -->
+            </div>
+
+            <!-- Podium Section -->
+            <div class="pt-2">
+              <div class="flex items-center gap-2 mb-3">
+                <i class="fas fa-trophy text-gold text-xs"></i>
+                <span class="text-xs font-semibold text-white/60">Bảng xếp hạng</span>
+              </div>
+              <div class="podium-grid" id="podiumGrid">
+                <!-- Rendered by JS -->
               </div>
             </div>
           </div>
 
-          <!-- Sort toggle -->
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] text-white/30">Sắp xếp:</span>
-            <button onclick="cycleSortMetric()" class="px-2.5 py-1 rounded-lg bg-white/5 border border-darkBorder text-xs text-white/60 hover:text-gold hover:border-gold/30 transition-all" id="sortLabel">
-              <i class="fas fa-sort-amount-down mr-1"></i>Doanh số
-            </button>
-          </div>
-        </div>
+          <!-- ===== CONFIG PANEL (slide-in from right) ===== -->
+          <div
+            class="config-panel absolute top-0 right-0 h-full w-[280px] glass-card border-l border-darkBorder flex flex-col z-20"
+            id="configPanel"
+          >
+            <!-- Config Header -->
+            <div class="flex items-center justify-between px-4 py-3 border-b border-darkBorder flex-shrink-0">
+              <div>
+                <h3 class="text-sm font-bold text-white">Cấu hình Target</h3>
+                <p class="text-[10px] text-white/30 mt-0.5" id="configPeriodLabel">Hôm nay</p>
+              </div>
+              <button
+                onclick="toggleConfigPanel()"
+                class="w-7 h-7 rounded-lg bg-white/5 hover:bg-red-500/15 border border-darkBorder flex items-center justify-center transition-all"
+              >
+                <i class="fas fa-times text-white/40 text-xs"></i>
+              </button>
+            </div>
 
-        <!-- Donut + Metric Pills Row -->
-        <div class="flex gap-5 items-start">
-          <!-- Large Donut -->
-          <div class="flex-shrink-0 relative">
-            <svg width="150" height="150" viewBox="0 0 150 150" id="donutSvg">
-              <circle cx="75" cy="75" r="58" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="14"/>
-              <!-- Dynamic rings rendered by JS -->
-            </svg>
-            <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <span class="text-2xl font-bold text-gold" id="donutTotal">0</span>
-              <span class="text-[9px] text-white/30 mt-0.5">TỔNG KPI</span>
+            <!-- Config Body -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-2" id="configBody">
+              <!-- Rendered by JS -->
+            </div>
+
+            <!-- Config Footer -->
+            <div class="p-3 border-t border-darkBorder flex-shrink-0">
+              <button
+                onclick="saveAllTargets()"
+                class="w-full py-2.5 rounded-xl bg-gradient-to-r from-gold to-goldDark text-black text-sm font-bold hover:shadow-lg hover:shadow-gold/20 transition-all active:scale-95"
+              >
+                <i class="fas fa-save mr-1.5"></i>Lưu tất cả
+              </button>
             </div>
           </div>
-
-          <!-- Metric Pills Grid -->
-          <div class="flex-1 grid grid-cols-3 gap-2" id="metricPills">
-            <!-- Rendered by JS -->
-          </div>
-        </div>
-
-        <!-- Mini Cards Grid -->
-        <div class="grid grid-cols-3 gap-2.5" id="miniCards">
-          <!-- Rendered by JS -->
-        </div>
-
-        <!-- Podium Section -->
-        <div class="pt-2">
-          <div class="flex items-center gap-2 mb-3">
-            <i class="fas fa-trophy text-gold text-xs"></i>
-            <span class="text-xs font-semibold text-white/60">Bảng xếp hạng</span>
-          </div>
-          <div class="podium-grid" id="podiumGrid">
-            <!-- Rendered by JS -->
-          </div>
-        </div>
-      </div>
-
-      <!-- ===== CONFIG PANEL (slide-in from right) ===== -->
-      <div class="config-panel absolute top-0 right-0 h-full w-[280px] glass-card border-l border-darkBorder flex flex-col z-20" id="configPanel">
-        <!-- Config Header -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-darkBorder flex-shrink-0">
-          <div>
-            <h3 class="text-sm font-bold text-white">Cấu hình Target</h3>
-            <p class="text-[10px] text-white/30 mt-0.5" id="configPeriodLabel">Hôm nay</p>
-          </div>
-          <button onclick="toggleConfigPanel()" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-red-500/15 border border-darkBorder flex items-center justify-center transition-all">
-            <i class="fas fa-times text-white/40 text-xs"></i>
-          </button>
-        </div>
-
-        <!-- Config Body -->
-        <div class="flex-1 overflow-y-auto p-3 space-y-2" id="configBody">
-          <!-- Rendered by JS -->
-        </div>
-
-        <!-- Config Footer -->
-        <div class="p-3 border-t border-darkBorder flex-shrink-0">
-          <button onclick="saveAllTargets()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-gold to-goldDark text-black text-sm font-bold hover:shadow-lg hover:shadow-gold/20 transition-all active:scale-95">
-            <i class="fas fa-save mr-1.5"></i>Lưu tất cả
-          </button>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- ===== TOAST ===== -->
-<div class="toast fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-4 py-3 rounded-xl glass-card border border-gold/30 shadow-2xl" id="toast">
-  <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-    <i class="fas fa-check text-emerald-400 text-sm"></i>
-  </div>
-  <div>
-    <p class="text-sm font-semibold text-white">Đã lưu!</p>
-    <p class="text-[10px] text-white/40">Cấu hình target đã được cập nhật</p>
-  </div>
-</div>
+    <!-- ===== TOAST ===== -->
+    <div
+      class="toast fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-4 py-3 rounded-xl glass-card border border-gold/30 shadow-2xl"
+      id="toast"
+    >
+      <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+        <i class="fas fa-check text-emerald-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-white">Đã lưu!</p>
+        <p class="text-[10px] text-white/40">Cấu hình target đã được cập nhật</p>
+      </div>
+    </div>
 
-<script>
-// ===== DATA =====
-const members = [
-  { id: 'TN', name: 'Thu Ngân', color: 'from-pink-400 to-pink-600', colorHex: '#f472b6', border: '#0A0A0A' },
-  { id: 'DD', name: 'Danny Đỗ', color: 'from-blue-400 to-blue-600', colorHex: '#60a5fa', border: '#0A0A0A' },
-  { id: 'HM', name: 'Hà My', color: 'from-purple-400 to-purple-600', colorHex: '#c084fc', border: '#0A0A0A' },
-  { id: 'VT', name: 'Vân Trang', color: 'from-cyan-400 to-cyan-600', colorHex: '#22d3ee', border: '#0A0A0A' },
-  { id: 'KL', name: 'Kim Loan', color: 'from-emerald-400 to-emerald-600', colorHex: '#34d399', border: '#0A0A0A' },
-  { id: 'TH', name: 'Trúc Hà', color: 'from-orange-400 to-orange-600', colorHex: '#fb923c', border: '#0A0A0A' },
-];
+    <script>
+      // ===== DATA =====
+      const members = [
+        { id: 'TN', name: 'Thu Ngân', color: 'from-pink-400 to-pink-600', colorHex: '#f472b6', border: '#0A0A0A' },
+        { id: 'DD', name: 'Danny Đỗ', color: 'from-blue-400 to-blue-600', colorHex: '#60a5fa', border: '#0A0A0A' },
+        { id: 'HM', name: 'Hà My', color: 'from-purple-400 to-purple-600', colorHex: '#c084fc', border: '#0A0A0A' },
+        { id: 'VT', name: 'Vân Trang', color: 'from-cyan-400 to-cyan-600', colorHex: '#22d3ee', border: '#0A0A0A' },
+        {
+          id: 'KL',
+          name: 'Kim Loan',
+          color: 'from-emerald-400 to-emerald-600',
+          colorHex: '#34d399',
+          border: '#0A0A0A',
+        },
+        { id: 'TH', name: 'Trúc Hà', color: 'from-orange-400 to-orange-600', colorHex: '#fb923c', border: '#0A0A0A' },
+      ];
 
-const metrics = [
-  { key: 'revenue', label: 'Doanh số', icon: 'fa-dollar-sign', color: 'text-emerald-400', bgColor: 'bg-emerald-400/10', unit: 'tr', format: 'currency' },
-  { key: 'customers', label: 'Khách', icon: 'fa-user-group', color: 'text-blue-400', bgColor: 'bg-blue-400/10', unit: '', format: 'number' },
-  { key: 'services', label: 'Dịch vụ', icon: 'fa-scissors', color: 'text-purple-400', bgColor: 'bg-purple-400/10', unit: '', format: 'number' },
-  { key: 'rating', label: 'Đánh giá', icon: 'fa-star', color: 'text-yellow-400', bgColor: 'bg-yellow-400/10', unit: '★', format: 'rating' },
-  { key: 'retention', label: 'Quay lại', icon: 'fa-rotate', color: 'text-pink-400', bgColor: 'bg-pink-400/10', unit: '%', format: 'percent' },
-];
+      const metrics = [
+        {
+          key: 'revenue',
+          label: 'Doanh số',
+          icon: 'fa-dollar-sign',
+          color: 'text-emerald-400',
+          bgColor: 'bg-emerald-400/10',
+          unit: 'tr',
+          format: 'currency',
+        },
+        {
+          key: 'customers',
+          label: 'Khách',
+          icon: 'fa-user-group',
+          color: 'text-blue-400',
+          bgColor: 'bg-blue-400/10',
+          unit: '',
+          format: 'number',
+        },
+        {
+          key: 'services',
+          label: 'Dịch vụ',
+          icon: 'fa-scissors',
+          color: 'text-purple-400',
+          bgColor: 'bg-purple-400/10',
+          unit: '',
+          format: 'number',
+        },
+        {
+          key: 'rating',
+          label: 'Đánh giá',
+          icon: 'fa-star',
+          color: 'text-yellow-400',
+          bgColor: 'bg-yellow-400/10',
+          unit: '★',
+          format: 'rating',
+        },
+        {
+          key: 'retention',
+          label: 'Quay lại',
+          icon: 'fa-rotate',
+          color: 'text-pink-400',
+          bgColor: 'bg-pink-400/10',
+          unit: '%',
+          format: 'percent',
+        },
+      ];
 
-const periodLabels = {
-  today: 'Hôm nay', this_week: 'Tuần này', this_month: 'Tháng này',
-  yesterday: 'Hôm qua', last_week: 'Tuần trước', last_month: 'Tháng trước'
-};
+      const periodLabels = {
+        today: 'Hôm nay',
+        this_week: 'Tuần này',
+        this_month: 'Tháng này',
+        yesterday: 'Hôm qua',
+        last_week: 'Tuần trước',
+        last_month: 'Tháng trước',
+      };
 
-const periodIcons = {
-  today: 'fa-calendar-day', this_week: 'fa-calendar-week', this_month: 'fa-calendar-alt',
-  yesterday: 'fa-calendar-minus', last_week: 'fa-calendar-check', last_month: 'fa-calendar'
-};
+      const periodIcons = {
+        today: 'fa-calendar-day',
+        this_week: 'fa-calendar-week',
+        this_month: 'fa-calendar-alt',
+        yesterday: 'fa-calendar-minus',
+        last_week: 'fa-calendar-check',
+        last_month: 'fa-calendar',
+      };
 
-const periodIconColors = {
-  today: 'text-emerald-400', this_week: 'text-blue-400', this_month: 'text-purple-400',
-  yesterday: 'text-orange-400', last_week: 'text-cyan-400', last_month: 'text-pink-400'
-};
+      const periodIconColors = {
+        today: 'text-emerald-400',
+        this_week: 'text-blue-400',
+        this_month: 'text-purple-400',
+        yesterday: 'text-orange-400',
+        last_week: 'text-cyan-400',
+        last_month: 'text-pink-400',
+      };
 
-// Member data per period
-const memberData = {
-  today: {
-    TN: { revenue: 8.5, customers: 12, services: 18, rating: 4.9, retention: 78 },
-    DD: { revenue: 6.2, customers: 9, services: 14, rating: 4.7, retention: 72 },
-    HM: { revenue: 7.8, customers: 11, services: 16, rating: 4.8, retention: 75 },
-    VT: { revenue: 5.4, customers: 8, services: 11, rating: 4.6, retention: 68 },
-    KL: { revenue: 9.1, customers: 13, services: 20, rating: 4.9, retention: 82 },
-    TH: { revenue: 4.8, customers: 7, services: 10, rating: 4.5, retention: 65 },
-  },
-  this_week: {
-    TN: { revenue: 42.5, customers: 58, services: 85, rating: 4.8, retention: 76 },
-    DD: { revenue: 35.0, customers: 48, services: 72, rating: 4.7, retention: 71 },
-    HM: { revenue: 39.2, customers: 54, services: 78, rating: 4.8, retention: 74 },
-    VT: { revenue: 28.6, customers: 40, services: 58, rating: 4.6, retention: 67 },
-    KL: { revenue: 45.8, customers: 62, services: 92, rating: 4.9, retention: 80 },
-    TH: { revenue: 24.0, customers: 35, services: 50, rating: 4.5, retention: 63 },
-  },
-  this_month: {
-    TN: { revenue: 168.0, customers: 220, services: 340, rating: 4.8, retention: 77 },
-    DD: { revenue: 142.0, customers: 190, services: 295, rating: 4.7, retention: 72 },
-    HM: { revenue: 155.0, customers: 210, services: 320, rating: 4.8, retention: 75 },
-    VT: { revenue: 115.0, customers: 160, services: 240, rating: 4.6, retention: 68 },
-    KL: { revenue: 182.0, customers: 245, services: 375, rating: 4.9, retention: 81 },
-    TH: { revenue: 98.0, customers: 140, services: 210, rating: 4.5, retention: 64 },
-  },
-  yesterday: {
-    TN: { revenue: 7.2, customers: 10, services: 15, rating: 4.8, retention: 74 },
-    DD: { revenue: 5.5, customers: 8, services: 12, rating: 4.6, retention: 69 },
-    HM: { revenue: 6.8, customers: 9, services: 14, rating: 4.7, retention: 72 },
-    VT: { revenue: 4.8, customers: 7, services: 9, rating: 4.5, retention: 65 },
-    KL: { revenue: 8.0, customers: 11, services: 17, rating: 4.8, retention: 79 },
-    TH: { revenue: 4.2, customers: 6, services: 8, rating: 4.4, retention: 62 },
-  },
-  last_week: {
-    TN: { revenue: 38.0, customers: 52, services: 78, rating: 4.7, retention: 73 },
-    DD: { revenue: 31.0, customers: 43, services: 65, rating: 4.6, retention: 68 },
-    HM: { revenue: 35.5, customers: 49, services: 72, rating: 4.7, retention: 71 },
-    VT: { revenue: 25.0, customers: 36, services: 52, rating: 4.5, retention: 64 },
-    KL: { revenue: 41.0, customers: 56, services: 84, rating: 4.8, retention: 77 },
-    TH: { revenue: 21.0, customers: 31, services: 45, rating: 4.4, retention: 60 },
-  },
-  last_month: {
-    TN: { revenue: 148.0, customers: 200, services: 310, rating: 4.7, retention: 74 },
-    DD: { revenue: 125.0, customers: 172, services: 268, rating: 4.6, retention: 69 },
-    HM: { revenue: 138.0, customers: 190, services: 292, rating: 4.7, retention: 72 },
-    VT: { revenue: 100.0, customers: 142, services: 218, rating: 4.5, retention: 65 },
-    KL: { revenue: 160.0, customers: 220, services: 342, rating: 4.8, retention: 78 },
-    TH: { revenue: 86.0, customers: 125, services: 190, rating: 4.4, retention: 61 },
-  }
-};
+      // Member data per period
+      const memberData = {
+        today: {
+          TN: { revenue: 8.5, customers: 12, services: 18, rating: 4.9, retention: 78 },
+          DD: { revenue: 6.2, customers: 9, services: 14, rating: 4.7, retention: 72 },
+          HM: { revenue: 7.8, customers: 11, services: 16, rating: 4.8, retention: 75 },
+          VT: { revenue: 5.4, customers: 8, services: 11, rating: 4.6, retention: 68 },
+          KL: { revenue: 9.1, customers: 13, services: 20, rating: 4.9, retention: 82 },
+          TH: { revenue: 4.8, customers: 7, services: 10, rating: 4.5, retention: 65 },
+        },
+        this_week: {
+          TN: { revenue: 42.5, customers: 58, services: 85, rating: 4.8, retention: 76 },
+          DD: { revenue: 35.0, customers: 48, services: 72, rating: 4.7, retention: 71 },
+          HM: { revenue: 39.2, customers: 54, services: 78, rating: 4.8, retention: 74 },
+          VT: { revenue: 28.6, customers: 40, services: 58, rating: 4.6, retention: 67 },
+          KL: { revenue: 45.8, customers: 62, services: 92, rating: 4.9, retention: 80 },
+          TH: { revenue: 24.0, customers: 35, services: 50, rating: 4.5, retention: 63 },
+        },
+        this_month: {
+          TN: { revenue: 168.0, customers: 220, services: 340, rating: 4.8, retention: 77 },
+          DD: { revenue: 142.0, customers: 190, services: 295, rating: 4.7, retention: 72 },
+          HM: { revenue: 155.0, customers: 210, services: 320, rating: 4.8, retention: 75 },
+          VT: { revenue: 115.0, customers: 160, services: 240, rating: 4.6, retention: 68 },
+          KL: { revenue: 182.0, customers: 245, services: 375, rating: 4.9, retention: 81 },
+          TH: { revenue: 98.0, customers: 140, services: 210, rating: 4.5, retention: 64 },
+        },
+        yesterday: {
+          TN: { revenue: 7.2, customers: 10, services: 15, rating: 4.8, retention: 74 },
+          DD: { revenue: 5.5, customers: 8, services: 12, rating: 4.6, retention: 69 },
+          HM: { revenue: 6.8, customers: 9, services: 14, rating: 4.7, retention: 72 },
+          VT: { revenue: 4.8, customers: 7, services: 9, rating: 4.5, retention: 65 },
+          KL: { revenue: 8.0, customers: 11, services: 17, rating: 4.8, retention: 79 },
+          TH: { revenue: 4.2, customers: 6, services: 8, rating: 4.4, retention: 62 },
+        },
+        last_week: {
+          TN: { revenue: 38.0, customers: 52, services: 78, rating: 4.7, retention: 73 },
+          DD: { revenue: 31.0, customers: 43, services: 65, rating: 4.6, retention: 68 },
+          HM: { revenue: 35.5, customers: 49, services: 72, rating: 4.7, retention: 71 },
+          VT: { revenue: 25.0, customers: 36, services: 52, rating: 4.5, retention: 64 },
+          KL: { revenue: 41.0, customers: 56, services: 84, rating: 4.8, retention: 77 },
+          TH: { revenue: 21.0, customers: 31, services: 45, rating: 4.4, retention: 60 },
+        },
+        last_month: {
+          TN: { revenue: 148.0, customers: 200, services: 310, rating: 4.7, retention: 74 },
+          DD: { revenue: 125.0, customers: 172, services: 268, rating: 4.6, retention: 69 },
+          HM: { revenue: 138.0, customers: 190, services: 292, rating: 4.7, retention: 72 },
+          VT: { revenue: 100.0, customers: 142, services: 218, rating: 4.5, retention: 65 },
+          KL: { revenue: 160.0, customers: 220, services: 342, rating: 4.8, retention: 78 },
+          TH: { revenue: 86.0, customers: 125, services: 190, rating: 4.4, retention: 61 },
+        },
+      };
 
-// Targets per period
-let targets = {
-  today: { revenue: 10, customers: 15, services: 20, rating: 5.0, retention: 80 },
-  this_week: { revenue: 50, customers: 70, services: 100, rating: 5.0, retention: 80 },
-  this_month: { revenue: 200, customers: 280, services: 400, rating: 5.0, retention: 80 },
-  yesterday: { revenue: 10, customers: 15, services: 20, rating: 5.0, retention: 80 },
-  last_week: { revenue: 50, customers: 70, services: 100, rating: 5.0, retention: 80 },
-  last_month: { revenue: 200, customers: 280, services: 400, rating: 5.0, retention: 80 },
-};
+      // Targets per period
+      let targets = {
+        today: { revenue: 10, customers: 15, services: 20, rating: 5.0, retention: 80 },
+        this_week: { revenue: 50, customers: 70, services: 100, rating: 5.0, retention: 80 },
+        this_month: { revenue: 200, customers: 280, services: 400, rating: 5.0, retention: 80 },
+        yesterday: { revenue: 10, customers: 15, services: 20, rating: 5.0, retention: 80 },
+        last_week: { revenue: 50, customers: 70, services: 100, rating: 5.0, retention: 80 },
+        last_month: { revenue: 200, customers: 280, services: 400, rating: 5.0, retention: 80 },
+      };
 
-// ===== STATE =====
-let currentPeriod = 'today';
-let sortMetric = 'revenue';
-let dropdownOpen = false;
-let configPanelOpen = false;
-const sortMetrics = ['revenue', 'customers', 'services', 'rating', 'retention'];
-let sortIndex = 0;
+      // ===== STATE =====
+      let currentPeriod = 'today';
+      let sortMetric = 'revenue';
+      let dropdownOpen = false;
+      let configPanelOpen = false;
+      const sortMetrics = ['revenue', 'customers', 'services', 'rating', 'retention'];
+      let sortIndex = 0;
 
-// ===== INIT =====
-document.addEventListener('DOMContentLoaded', () => {
-  renderHeaderBubbles();
-  updateClock();
-  setInterval(updateClock, 1000);
-  updateDropdownDots();
-  renderAll();
-  // Close dropdown on outside click
-  document.addEventListener('click', (e) => {
-    const container = document.getElementById('dropdownContainer');
-    if (dropdownOpen && !container.contains(e.target)) {
-      closeDropdown();
-    }
-  });
-});
+      // ===== INIT =====
+      document.addEventListener('DOMContentLoaded', () => {
+        renderHeaderBubbles();
+        updateClock();
+        setInterval(updateClock, 1000);
+        updateDropdownDots();
+        renderAll();
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+          const container = document.getElementById('dropdownContainer');
+          if (dropdownOpen && !container.contains(e.target)) {
+            closeDropdown();
+          }
+        });
+      });
 
-// ===== HEADER =====
-function renderHeaderBubbles() {
-  const el = document.getElementById('headerBubbles');
-  // Show first 5 then +N
-  const show = members.slice(0, 5);
-  el.innerHTML = show.map(m =>
-    `<div class="bubble-avatar bg-gradient-to-br ${m.color}">${m.id}</div>`
-  ).join('');
-  if (members.length > 5) {
-    el.innerHTML += `<div class="bubble-avatar bg-darkCard border-darkBorder text-white/50 text-[10px]">+${members.length - 5}</div>`;
-  }
-}
+      // ===== HEADER =====
+      function renderHeaderBubbles() {
+        const el = document.getElementById('headerBubbles');
+        // Show first 5 then +N
+        const show = members.slice(0, 5);
+        el.innerHTML = show
+          .map((m) => `<div class="bubble-avatar bg-gradient-to-br ${m.color}">${m.id}</div>`)
+          .join('');
+        if (members.length > 5) {
+          el.innerHTML += `<div class="bubble-avatar bg-darkCard border-darkBorder text-white/50 text-[10px]">+${members.length - 5}</div>`;
+        }
+      }
 
-function updateClock() {
-  const now = new Date();
-  document.getElementById('headerClock').textContent =
-    now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-}
+      function updateClock() {
+        const now = new Date();
+        document.getElementById('headerClock').textContent = now.toLocaleTimeString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      }
 
-// ===== MODAL =====
-function openModal() {
-  document.getElementById('modalOverlay').classList.add('active');
-}
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('active');
-  closeDropdown();
-  if (configPanelOpen) toggleConfigPanel();
-}
-function handleOverlayClick(e) {
-  if (e.target === document.getElementById('modalOverlay') ||
-      e.target.classList.contains('backdrop-blur-sm')) {
-    closeModal();
-  }
-}
+      // ===== MODAL =====
+      function openModal() {
+        document.getElementById('modalOverlay').classList.add('active');
+      }
+      function closeModal() {
+        document.getElementById('modalOverlay').classList.remove('active');
+        closeDropdown();
+        if (configPanelOpen) toggleConfigPanel();
+      }
+      function handleOverlayClick(e) {
+        if (e.target === document.getElementById('modalOverlay') || e.target.classList.contains('backdrop-blur-sm')) {
+          closeModal();
+        }
+      }
 
-// ===== DROPDOWN =====
-function toggleDropdown() {
-  dropdownOpen = !dropdownOpen;
-  const menu = document.getElementById('dropdownMenu');
-  const arrow = document.getElementById('dropdownArrow');
-  if (dropdownOpen) {
-    menu.classList.add('open');
-    arrow.style.transform = 'rotate(180deg)';
-  } else {
-    closeDropdown();
-  }
-}
-function closeDropdown() {
-  dropdownOpen = false;
-  document.getElementById('dropdownMenu').classList.remove('open');
-  document.getElementById('dropdownArrow').style.transform = 'rotate(0deg)';
-}
-function selectPeriod(period) {
-  currentPeriod = period;
-  document.getElementById('dropdownLabel').textContent = periodLabels[period];
-  updateDropdownDots();
-  closeDropdown();
-  renderAll();
-  // Update config panel period label
-  document.getElementById('configPeriodLabel').textContent = periodLabels[period];
-  if (configPanelOpen) renderConfigPanel();
-}
-function updateDropdownDots() {
-  document.querySelectorAll('.dropdown-item').forEach(item => {
-    const dot = item.querySelector('.period-dot');
-    if (item.dataset.period === currentPeriod) {
-      dot.style.opacity = '1';
-      item.classList.add('bg-white/5');
-    } else {
-      dot.style.opacity = '0';
-      item.classList.remove('bg-white/5');
-    }
-  });
-}
+      // ===== DROPDOWN =====
+      function toggleDropdown() {
+        dropdownOpen = !dropdownOpen;
+        const menu = document.getElementById('dropdownMenu');
+        const arrow = document.getElementById('dropdownArrow');
+        if (dropdownOpen) {
+          menu.classList.add('open');
+          arrow.style.transform = 'rotate(180deg)';
+        } else {
+          closeDropdown();
+        }
+      }
+      function closeDropdown() {
+        dropdownOpen = false;
+        document.getElementById('dropdownMenu').classList.remove('open');
+        document.getElementById('dropdownArrow').style.transform = 'rotate(0deg)';
+      }
+      function selectPeriod(period) {
+        currentPeriod = period;
+        document.getElementById('dropdownLabel').textContent = periodLabels[period];
+        updateDropdownDots();
+        closeDropdown();
+        renderAll();
+        // Update config panel period label
+        document.getElementById('configPeriodLabel').textContent = periodLabels[period];
+        if (configPanelOpen) renderConfigPanel();
+      }
+      function updateDropdownDots() {
+        document.querySelectorAll('.dropdown-item').forEach((item) => {
+          const dot = item.querySelector('.period-dot');
+          if (item.dataset.period === currentPeriod) {
+            dot.style.opacity = '1';
+            item.classList.add('bg-white/5');
+          } else {
+            dot.style.opacity = '0';
+            item.classList.remove('bg-white/5');
+          }
+        });
+      }
 
-// ===== SORT =====
-function cycleSortMetric() {
-  sortIndex = (sortIndex + 1) % sortMetrics.length;
-  sortMetric = sortMetrics[sortIndex];
-  const m = metrics.find(x => x.key === sortMetric);
-  document.getElementById('sortLabel').innerHTML = `<i class="fas fa-sort-amount-down mr-1"></i>${m.label}`;
-  renderAll();
-}
+      // ===== SORT =====
+      function cycleSortMetric() {
+        sortIndex = (sortIndex + 1) % sortMetrics.length;
+        sortMetric = sortMetrics[sortIndex];
+        const m = metrics.find((x) => x.key === sortMetric);
+        document.getElementById('sortLabel').innerHTML = `<i class="fas fa-sort-amount-down mr-1"></i>${m.label}`;
+        renderAll();
+      }
 
-// ===== THEME =====
-function toggleTheme() {
-  const html = document.documentElement;
-  const track = document.getElementById('themeToggle');
-  html.classList.toggle('dark');
-  track.classList.toggle('active');
-}
+      // ===== THEME =====
+      function toggleTheme() {
+        const html = document.documentElement;
+        const track = document.getElementById('themeToggle');
+        html.classList.toggle('dark');
+        track.classList.toggle('active');
+      }
 
-// ===== RENDER ALL =====
-function renderAll() {
-  const data = memberData[currentPeriod];
-  const target = targets[currentPeriod];
-  renderDonut(data, target);
-  renderMetricPills(data, target);
-  renderMiniCards(data);
-  renderPodium(data);
-}
+      // ===== RENDER ALL =====
+      function renderAll() {
+        const data = memberData[currentPeriod];
+        const target = targets[currentPeriod];
+        renderDonut(data, target);
+        renderMetricPills(data, target);
+        renderMiniCards(data);
+        renderPodium(data);
+      }
 
-// ===== DONUT =====
-function renderDonut(data, target) {
-  const svg = document.getElementById('donutSvg');
-  // Remove old rings
-  svg.querySelectorAll('.donut-ring').forEach(el => el.remove());
+      // ===== DONUT =====
+      function renderDonut(data, target) {
+        const svg = document.getElementById('donutSvg');
+        // Remove old rings
+        svg.querySelectorAll('.donut-ring').forEach((el) => el.remove());
 
-  // Compute total per metric as % of target, average across metrics
-  let totalScore = 0;
-  metrics.forEach(m => {
-    let sum = 0;
-    members.forEach(mem => sum += data[mem.id][m.key]);
-    const avg = sum / members.length;
-    let pct;
-    if (m.format === 'rating') pct = (avg / target[m.key]) * 100;
-    else if (m.format === 'percent') pct = (avg / target[m.key]) * 100;
-    else pct = (sum / (target[m.key] * members.length)) * 100;
-    totalScore += Math.min(pct, 100);
-  });
-  const overallPct = totalScore / metrics.length;
-  document.getElementById('donutTotal').textContent = Math.round(overallPct) + '%';
+        // Compute total per metric as % of target, average across metrics
+        let totalScore = 0;
+        metrics.forEach((m) => {
+          let sum = 0;
+          members.forEach((mem) => (sum += data[mem.id][m.key]));
+          const avg = sum / members.length;
+          let pct;
+          if (m.format === 'rating') pct = (avg / target[m.key]) * 100;
+          else if (m.format === 'percent') pct = (avg / target[m.key]) * 100;
+          else pct = (sum / (target[m.key] * members.length)) * 100;
+          totalScore += Math.min(pct, 100);
+        });
+        const overallPct = totalScore / metrics.length;
+        document.getElementById('donutTotal').textContent = Math.round(overallPct) + '%';
 
-  // Render per-metric arcs
-  const r = 58, circumference = 2 * Math.PI * r;
-  const gapDeg = 4;
-  const totalGap = gapDeg * metrics.length;
-  const availableDeg = 360 - totalGap;
-  const perMetricDeg = availableDeg / metrics.length;
+        // Render per-metric arcs
+        const r = 58,
+          circumference = 2 * Math.PI * r;
+        const gapDeg = 4;
+        const totalGap = gapDeg * metrics.length;
+        const availableDeg = 360 - totalGap;
+        const perMetricDeg = availableDeg / metrics.length;
 
-  let offsetDeg = -90;
-  const metricColors = ['#34d399', '#60a5fa', '#c084fc', '#facc15', '#f472b6'];
+        let offsetDeg = -90;
+        const metricColors = ['#34d399', '#60a5fa', '#c084fc', '#facc15', '#f472b6'];
 
-  metrics.forEach((m, i) => {
-    let sum = 0;
-    members.forEach(mem => sum += data[mem.id][m.key]);
-    const avg = sum / members.length;
-    let pct;
-    if (m.format === 'rating') pct = (avg / target[m.key]) * 100;
-    else if (m.format === 'percent') pct = (avg / target[m.key]) * 100;
-    else pct = (sum / (target[m.key] * members.length)) * 100;
-    pct = Math.min(pct, 100);
+        metrics.forEach((m, i) => {
+          let sum = 0;
+          members.forEach((mem) => (sum += data[mem.id][m.key]));
+          const avg = sum / members.length;
+          let pct;
+          if (m.format === 'rating') pct = (avg / target[m.key]) * 100;
+          else if (m.format === 'percent') pct = (avg / target[m.key]) * 100;
+          else pct = (sum / (target[m.key] * members.length)) * 100;
+          pct = Math.min(pct, 100);
 
-    const arcLen = (perMetricDeg / 360) * circumference;
-    const filledLen = arcLen * (pct / 100);
-    const dashArray = `${filledLen} ${circumference - filledLen}`;
-    const dashOffset = -(offsetDeg / 360) * circumference;
+          const arcLen = (perMetricDeg / 360) * circumference;
+          const filledLen = arcLen * (pct / 100);
+          const dashArray = `${filledLen} ${circumference - filledLen}`;
+          const dashOffset = -(offsetDeg / 360) * circumference;
 
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('class', 'donut-ring');
-    circle.setAttribute('cx', '75');
-    circle.setAttribute('cy', '75');
-    circle.setAttribute('r', String(r));
-    circle.setAttribute('fill', 'none');
-    circle.setAttribute('stroke', metricColors[i]);
-    circle.setAttribute('stroke-width', '14');
-    circle.setAttribute('stroke-linecap', 'round');
-    circle.setAttribute('stroke-dasharray', dashArray);
-    circle.setAttribute('stroke-dashoffset', String(dashOffset));
-    circle.setAttribute('opacity', '0.85');
-    circle.style.transition = 'stroke-dasharray 0.8s cubic-bezier(0.4,0,0.2,1)';
-    svg.appendChild(circle);
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('class', 'donut-ring');
+          circle.setAttribute('cx', '75');
+          circle.setAttribute('cy', '75');
+          circle.setAttribute('r', String(r));
+          circle.setAttribute('fill', 'none');
+          circle.setAttribute('stroke', metricColors[i]);
+          circle.setAttribute('stroke-width', '14');
+          circle.setAttribute('stroke-linecap', 'round');
+          circle.setAttribute('stroke-dasharray', dashArray);
+          circle.setAttribute('stroke-dashoffset', String(dashOffset));
+          circle.setAttribute('opacity', '0.85');
+          circle.style.transition = 'stroke-dasharray 0.8s cubic-bezier(0.4,0,0.2,1)';
+          svg.appendChild(circle);
 
-    offsetDeg += perMetricDeg + gapDeg;
-  });
-}
+          offsetDeg += perMetricDeg + gapDeg;
+        });
+      }
 
-// ===== METRIC PILLS =====
-function renderMetricPills(data, target) {
-  const el = document.getElementById('metricPills');
-  el.innerHTML = metrics.map(m => {
-    let sum = 0;
-    members.forEach(mem => sum += data[mem.id][m.key]);
-    let display, pct;
-    if (m.format === 'rating') {
-      const avg = (sum / members.length).toFixed(1);
-      display = avg + '★';
-      pct = Math.round((avg / target[m.key]) * 100);
-    } else if (m.format === 'percent') {
-      const avg = Math.round(sum / members.length);
-      display = avg + '%';
-      pct = Math.round((avg / target[m.key]) * 100);
-    } else if (m.format === 'currency') {
-      display = sum.toFixed(1) + 'tr';
-      pct = Math.round((sum / (target[m.key] * members.length)) * 100);
-    } else {
-      display = sum;
-      pct = Math.round((sum / (target[m.key] * members.length)) * 100);
-    }
-    pct = Math.min(pct, 100);
-    const pctColor = pct >= 80 ? 'text-emerald-400' : pct >= 50 ? 'text-yellow-400' : 'text-red-400';
-    return `
+      // ===== METRIC PILLS =====
+      function renderMetricPills(data, target) {
+        const el = document.getElementById('metricPills');
+        el.innerHTML = metrics
+          .map((m) => {
+            let sum = 0;
+            members.forEach((mem) => (sum += data[mem.id][m.key]));
+            let display, pct;
+            if (m.format === 'rating') {
+              const avg = (sum / members.length).toFixed(1);
+              display = avg + '★';
+              pct = Math.round((avg / target[m.key]) * 100);
+            } else if (m.format === 'percent') {
+              const avg = Math.round(sum / members.length);
+              display = avg + '%';
+              pct = Math.round((avg / target[m.key]) * 100);
+            } else if (m.format === 'currency') {
+              display = sum.toFixed(1) + 'tr';
+              pct = Math.round((sum / (target[m.key] * members.length)) * 100);
+            } else {
+              display = sum;
+              pct = Math.round((sum / (target[m.key] * members.length)) * 100);
+            }
+            pct = Math.min(pct, 100);
+            const pctColor = pct >= 80 ? 'text-emerald-400' : pct >= 50 ? 'text-yellow-400' : 'text-red-400';
+            return `
       <div class="metric-pill rounded-xl bg-white/[0.03] border border-darkBorder p-2.5 text-center">
         <div class="flex items-center justify-center gap-1 mb-1">
           <i class="fas ${m.icon} ${m.color} text-[10px]"></i>
@@ -776,22 +962,25 @@ function renderMetricPills(data, target) {
         <div class="text-[10px] ${pctColor} font-semibold mt-0.5">${pct}%</div>
       </div>
     `;
-  }).join('');
-}
+          })
+          .join('');
+      }
 
-// ===== MINI CARDS =====
-function renderMiniCards(data) {
-  const el = document.getElementById('miniCards');
-  const sorted = [...members].sort((a, b) => data[b.id][sortMetric] - data[a.id][sortMetric]);
+      // ===== MINI CARDS =====
+      function renderMiniCards(data) {
+        const el = document.getElementById('miniCards');
+        const sorted = [...members].sort((a, b) => data[b.id][sortMetric] - data[a.id][sortMetric]);
 
-  el.innerHTML = sorted.map((m, i) => {
-    const d = data[m.id];
-    const rank = i + 1;
-    const rankBadge = rank <= 3
-      ? `<span class="text-[9px] font-bold ${rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-300' : 'text-orange-400'}">#${rank}</span>`
-      : `<span class="text-[9px] text-white/20">#${rank}</span>`;
+        el.innerHTML = sorted
+          .map((m, i) => {
+            const d = data[m.id];
+            const rank = i + 1;
+            const rankBadge =
+              rank <= 3
+                ? `<span class="text-[9px] font-bold ${rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-300' : 'text-orange-400'}">#${rank}</span>`
+                : `<span class="text-[9px] text-white/20">#${rank}</span>`;
 
-    return `
+            return `
       <div class="mini-card rounded-xl bg-white/[0.03] border border-darkBorder p-3 cursor-pointer">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
@@ -819,38 +1008,40 @@ function renderMiniCards(data) {
         </div>
       </div>
     `;
-  }).join('');
-}
+          })
+          .join('');
+      }
 
-// ===== PODIUM =====
-function renderPodium(data) {
-  const el = document.getElementById('podiumGrid');
-  const sorted = [...members].sort((a, b) => data[b.id][sortMetric] - data[a.id][sortMetric]);
-  const top3 = sorted.slice(0, 3);
+      // ===== PODIUM =====
+      function renderPodium(data) {
+        const el = document.getElementById('podiumGrid');
+        const sorted = [...members].sort((a, b) => data[b.id][sortMetric] - data[a.id][sortMetric]);
+        const top3 = sorted.slice(0, 3);
 
-  // Reorder for display: 2nd, 1st, 3rd
-  const display = [top3[1], top3[0], top3[2]];
-  const heights = [100, 130, 75];
-  const barColors = [
-    'from-gray-400/20 to-gray-500/10 border-gray-400/20',
-    'from-gold/25 to-gold/10 border-gold/30',
-    'from-orange-400/20 to-orange-500/10 border-orange-400/20',
-  ];
-  const crownIcons = ['', '<i class="fas fa-crown text-gold text-sm mb-1"></i>', ''];
-  const rankLabels = ['#2', '#1', '#3'];
-  const rankColors = ['text-gray-300', 'text-gold', 'text-orange-400'];
+        // Reorder for display: 2nd, 1st, 3rd
+        const display = [top3[1], top3[0], top3[2]];
+        const heights = [100, 130, 75];
+        const barColors = [
+          'from-gray-400/20 to-gray-500/10 border-gray-400/20',
+          'from-gold/25 to-gold/10 border-gold/30',
+          'from-orange-400/20 to-orange-500/10 border-orange-400/20',
+        ];
+        const crownIcons = ['', '<i class="fas fa-crown text-gold text-sm mb-1"></i>', ''];
+        const rankLabels = ['#2', '#1', '#3'];
+        const rankColors = ['text-gray-300', 'text-gold', 'text-orange-400'];
 
-  el.innerHTML = display.map((m, i) => {
-    const d = data[m.id];
-    const val = d[sortMetric];
-    let displayVal;
-    const sm = metrics.find(x => x.key === sortMetric);
-    if (sm.format === 'currency') displayVal = val + 'tr';
-    else if (sm.format === 'rating') displayVal = val + '★';
-    else if (sm.format === 'percent') displayVal = val + '%';
-    else displayVal = val;
+        el.innerHTML = display
+          .map((m, i) => {
+            const d = data[m.id];
+            const val = d[sortMetric];
+            let displayVal;
+            const sm = metrics.find((x) => x.key === sortMetric);
+            if (sm.format === 'currency') displayVal = val + 'tr';
+            else if (sm.format === 'rating') displayVal = val + '★';
+            else if (sm.format === 'percent') displayVal = val + '%';
+            else displayVal = val;
 
-    return `
+            return `
       <div class="podium-col">
         <div class="podium-avatar-section">
           ${crownIcons[i]}
@@ -865,30 +1056,32 @@ function renderPodium(data) {
         </div>
       </div>
     `;
-  }).join('');
-}
+          })
+          .join('');
+      }
 
-// ===== CONFIG PANEL =====
-function toggleConfigPanel() {
-  configPanelOpen = !configPanelOpen;
-  const panel = document.getElementById('configPanel');
-  const body = document.getElementById('modalBody');
-  if (configPanelOpen) {
-    panel.classList.add('open');
-    renderConfigPanel();
-  } else {
-    panel.classList.remove('open');
-  }
-}
+      // ===== CONFIG PANEL =====
+      function toggleConfigPanel() {
+        configPanelOpen = !configPanelOpen;
+        const panel = document.getElementById('configPanel');
+        const body = document.getElementById('modalBody');
+        if (configPanelOpen) {
+          panel.classList.add('open');
+          renderConfigPanel();
+        } else {
+          panel.classList.remove('open');
+        }
+      }
 
-function renderConfigPanel() {
-  const el = document.getElementById('configBody');
-  const periods = ['today', 'this_week', 'this_month', 'yesterday', 'last_week', 'last_month'];
+      function renderConfigPanel() {
+        const el = document.getElementById('configBody');
+        const periods = ['today', 'this_week', 'this_month', 'yesterday', 'last_week', 'last_month'];
 
-  el.innerHTML = periods.map(period => {
-    const isCurrentPeriod = period === currentPeriod;
-    const t = targets[period];
-    return `
+        el.innerHTML = periods
+          .map((period) => {
+            const isCurrentPeriod = period === currentPeriod;
+            const t = targets[period];
+            return `
       <div class="rounded-xl bg-white/[0.03] border border-darkBorder overflow-hidden">
         <!-- Section Header -->
         <button onclick="toggleConfigSection('${period}')" class="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/[0.03] transition-all">
@@ -902,7 +1095,9 @@ function renderConfigPanel() {
         <!-- Section Body -->
         <div class="config-section-body ${isCurrentPeriod ? 'expanded' : ''}" id="configSection-${period}">
           <div class="px-3 pb-3 space-y-2">
-            ${metrics.map(m => `
+            ${metrics
+              .map(
+                (m) => `
               <div class="flex items-center gap-2">
                 <div class="w-6 h-6 rounded-md ${m.bgColor} flex items-center justify-center flex-shrink-0">
                   <i class="fas ${m.icon} ${m.color} text-[9px]"></i>
@@ -918,48 +1113,51 @@ function renderConfigPanel() {
                   onchange="updateTargetValue(this)"
                 >
               </div>
-            `).join('')}
+            `
+              )
+              .join('')}
           </div>
         </div>
       </div>
     `;
-  }).join('');
-}
+          })
+          .join('');
+      }
 
-function toggleConfigSection(period) {
-  const section = document.getElementById(`configSection-${period}`);
-  const arrow = document.querySelector(`.config-arrow-${period}`);
-  section.classList.toggle('expanded');
-  arrow.classList.toggle('rotate-180');
-}
+      function toggleConfigSection(period) {
+        const section = document.getElementById(`configSection-${period}`);
+        const arrow = document.querySelector(`.config-arrow-${period}`);
+        section.classList.toggle('expanded');
+        arrow.classList.toggle('rotate-180');
+      }
 
-function updateTargetValue(input) {
-  const period = input.dataset.period;
-  const metric = input.dataset.metric;
-  targets[period][metric] = parseFloat(input.value) || 0;
-}
+      function updateTargetValue(input) {
+        const period = input.dataset.period;
+        const metric = input.dataset.metric;
+        targets[period][metric] = parseFloat(input.value) || 0;
+      }
 
-function saveAllTargets() {
-  // Collect all values from inputs
-  document.querySelectorAll('#configBody input[type="number"]').forEach(input => {
-    const period = input.dataset.period;
-    const metric = input.dataset.metric;
-    targets[period][metric] = parseFloat(input.value) || 0;
-  });
-  // Re-render
-  renderAll();
-  // Show toast
-  showToast();
-}
+      function saveAllTargets() {
+        // Collect all values from inputs
+        document.querySelectorAll('#configBody input[type="number"]').forEach((input) => {
+          const period = input.dataset.period;
+          const metric = input.dataset.metric;
+          targets[period][metric] = parseFloat(input.value) || 0;
+        });
+        // Re-render
+        renderAll();
+        // Show toast
+        showToast();
+      }
 
-function showToast() {
-  const toast = document.getElementById('toast');
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
-}
+      function showToast() {
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+      }
 
-// ===== INITIAL OPEN =====
-setTimeout(() => openModal(), 300);
-</script>
-</body>
+      // ===== INITIAL OPEN =====
+      setTimeout(() => openModal(), 300);
+    </script>
+  </body>
 </html>

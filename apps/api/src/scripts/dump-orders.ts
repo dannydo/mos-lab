@@ -25,12 +25,13 @@ async function run() {
     console.log(`Total orders found with raw SQL: ${orders.length}`);
 
     const stateCounts: Record<string, number> = {};
-    orders.forEach(o => {
+    orders.forEach((o) => {
       stateCounts[o.order_state] = (stateCounts[o.order_state] || 0) + 1;
-      console.log(`Order ID: ${o.id}, state: ${o.order_state}, price: ${o.total_price}, store_id: ${o.client_store_id}, startStr: ${o.startStr}, dateOnlyStr: ${o.dateOnlyStr}`);
+      console.log(
+        `Order ID: ${o.id}, state: ${o.order_state}, price: ${o.total_price}, store_id: ${o.client_store_id}, startStr: ${o.startStr}, dateOnlyStr: ${o.dateOnlyStr}`
+      );
     });
     console.log('\nState counts:', stateCounts);
-
   } catch (err) {
     console.error('Error:', err);
   } finally {

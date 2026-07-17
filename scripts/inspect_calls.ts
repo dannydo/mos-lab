@@ -4,12 +4,12 @@ const legacy = new LegacyPrismaClient();
 
 async function run() {
   console.log('Checking user_call table...');
-  
+
   const minMaxRes = await legacy.$queryRawUnsafe<any[]>(`
     SELECT MIN(date_created) as minDate, MAX(date_created) as maxDate, COUNT(*) as count
     FROM \`user_call\`
   `);
-  
+
   console.log('user_call min/max/count:', minMaxRes[0]);
 
   // Let's also check user_profile and staff_profile counts
