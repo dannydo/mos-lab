@@ -19,25 +19,10 @@ import {
 } from 'antd';
 import { SearchOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import api from '../../../../lib/api';
+import { LeaderboardEntry } from '@mos-lab/shared';
+import { apiClient } from '../../../../lib/api-client';
 
 const { Text } = Typography;
-
-interface LeaderboardEntry {
-  staffId: number;
-  displayName: string;
-  username: string;
-  totalPlanned: number;
-  totalCalled: number;
-  totalAnswered: number;
-  totalBooked: number;
-  totalCheckin: number;
-  answerRate: number;
-  bookingRate: number;
-  checkinRate: number;
-  totalEarnings: number;
-  salary: any;
-}
 
 interface AppointmentsAuditDrawerProps {
   open: boolean;
@@ -61,7 +46,7 @@ export default function AppointmentsAuditDrawer({
   const { token } = theme.useToken();
 
   // Appointments data state
-  const [bookerAppointments, setBookerAppointments] = useState<any[]>([]);
+  const [bookerAppointments, setBookerAppointments] = useState<SafeAny[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Search and filter states
@@ -82,15 +67,17 @@ export default function AppointmentsAuditDrawer({
       try {
         const startDate = dateRange[0].format('YYYY-MM-DD');
         const endDate = dateRange[1].format('YYYY-MM-DD');
-        const res = await api.get('/kpi/booker-appointments', {
-          params: { staffId: selectedBookerId, startDate, endDate },
+        const data = await apiClient.kpi.getBookerAppointments({
+          staffId: selectedBookerId,
+          startDate,
+          endDate,
         });
-        setBookerAppointments(res.data);
+        setBookerAppointments(data as SafeAny[]);
         setDrillSearchText('');
         setDrillStatusFilter('ALL');
         setDrillServiceFilter('ALL');
         setVisibleCount(25);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Fetch booker appointments error:', err);
         message.error('Không thể tải danh sách khách hàng đặt lịch.');
       } finally {
@@ -145,7 +132,7 @@ export default function AppointmentsAuditDrawer({
     let totalBookingBonus = 0;
     let checkinCount = 0;
 
-    filteredAppointments.forEach((appt: any) => {
+    filteredAppointments.forEach((appt: SafeAny) => {
       totalNetRevenue += appt.netRevenue || 0;
       totalTips += appt.tipAmount || 0;
       totalBookingBonus += appt.bookingBonus || 0;
@@ -680,7 +667,7 @@ export default function AppointmentsAuditDrawer({
               {
                 title: 'Khách hàng',
                 key: 'client',
-                render: (record: any) => (
+                render: (record: SafeAny) => (
                   <div>
                     <div style={{ fontWeight: '600', color: token.colorText }}>{record.clientName || 'N/A'}</div>
                     <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
@@ -699,7 +686,7 @@ export default function AppointmentsAuditDrawer({
                 title: 'Ngày hẹn',
                 dataIndex: 'appointmentDate',
                 key: 'appointmentDate',
-                sorter: (a: any, b: any) =>
+                sorter: (a: SafeAny, b: SafeAny) =>
                   new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime(),
                 defaultSortOrder: 'descend',
                 render: (val: string) => dayjs(val).format('DD/MM/YYYY HH:mm'),
@@ -707,7 +694,7 @@ export default function AppointmentsAuditDrawer({
               {
                 title: 'Dịch vụ chính',
                 key: 'service',
-                render: (record: any) => (
+                render: (record: SafeAny) => (
                   <div>
                     <div style={{ fontSize: '13px', color: token.colorText }}>{record.serviceName}</div>
                     {record.servicePrice > 0 && (
@@ -722,7 +709,7 @@ export default function AppointmentsAuditDrawer({
                 title: 'Doanh thu Net',
                 dataIndex: 'netRevenue',
                 key: 'netRevenue',
-                sorter: (a: any, b: any) => a.netRevenue - b.netRevenue,
+                sorter: (a: SafeAny, b: SafeAny) => a.netRevenue - b.netRevenue,
                 render: (val: number) =>
                   val > 0 ? (
                     <span style={{ fontWeight: '600', color: token.colorText }}>{val.toLocaleString('vi-VN')} đ</span>
@@ -734,7 +721,7 @@ export default function AppointmentsAuditDrawer({
                 title: 'Tiền tips',
                 dataIndex: 'tipAmount',
                 key: 'tipAmount',
-                sorter: (a: any, b: any) => a.tipAmount - b.tipAmount,
+                sorter: (a: SafeAny, b: SafeAny) => a.tipAmount - b.tipAmount,
                 render: (val: number) =>
                   val > 0 ? (
                     <span style={{ color: token.colorText }}>{val.toLocaleString('vi-VN')} đ</span>
@@ -746,7 +733,7 @@ export default function AppointmentsAuditDrawer({
                 title: 'Hoa hồng OC',
                 dataIndex: 'bookingBonus',
                 key: 'bookingBonus',
-                sorter: (a: any, b: any) => a.bookingBonus - b.bookingBonus,
+                sorter: (a: SafeAny, b: SafeAny) => a.bookingBonus - b.bookingBonus,
                 render: (val: number) =>
                   val > 0 ? (
                     <span style={{ fontWeight: '600', color: '#52C41A' }}>+{val.toLocaleString('vi-VN')} đ</span>
@@ -758,7 +745,7 @@ export default function AppointmentsAuditDrawer({
                 title: 'Trạng thái',
                 dataIndex: 'status',
                 key: 'status',
-                render: (val: string, record: any) => (
+                render: (val: string, record: SafeAny) => (
                   <Badge status={record.isCompleted ? 'success' : 'default'} text={val} />
                 ),
               },

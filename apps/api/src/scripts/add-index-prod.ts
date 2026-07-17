@@ -11,7 +11,7 @@ async function run() {
 
   try {
     console.log('Checking index existence on production/staging database...');
-    const indexes = await legacy.$queryRawUnsafe<any[]>(`SHOW INDEX FROM \`user_profile\``);
+    const indexes = await legacy.$queryRawUnsafe<SafeAny[]>(`SHOW INDEX FROM \`user_profile\``);
     const exists = indexes.some((i) => i.Key_name === 'idx_user_profile_full_name');
     if (exists) {
       console.log('Index idx_user_profile_full_name already exists.');

@@ -1,7 +1,7 @@
 'use client';
 
 import '../../suppress-warnings';
-import React, { useEffect, useState, useCallback } from 'react';
+import React from 'react';
 import {
   Table,
   Button,
@@ -9,7 +9,6 @@ import {
   Modal,
   Form,
   Select,
-  DatePicker,
   Switch,
   Tag,
   Card,
@@ -18,7 +17,6 @@ import {
   Drawer,
   Space,
   Typography,
-  message,
   theme,
   Row,
   Col,
@@ -28,6 +26,7 @@ import {
   Popconfirm,
   Checkbox,
   Tabs,
+  message,
 } from 'antd';
 import {
   UserOutlined,
@@ -49,24 +48,14 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
-import api from '../../../lib/api';
-import { Staff } from '@mos-lab/shared';
+import { Staff, Role } from '@mos-lab/shared';
+import { useStaffData } from './hooks/useStaffData';
+import { getStaffColumns, getRoleColumns } from './components/StaffColumns';
+import StaffTabsContent from './components/StaffTabsContent';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
-
-interface Role {
-  key: string;
-  name: string;
-  color: string;
-  viewKPI: boolean;
-  viewTeamKPI: boolean;
-  manageStaff: boolean;
-  isSystem: boolean;
-  description?: string;
-  createdAt: string;
-}
 
 const PRESET_COLORS = [
   { value: 'red', label: 'Red (Admin)' },
@@ -85,617 +74,74 @@ const PRESET_COLORS = [
 export default function StaffPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
-
-  const [activeTab, setActiveTab] = useState<string>('staff');
-  const [staffList, setStaffList] = useState<Staff[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [rolesLoading, setRolesLoading] = useState(false);
-  const [legacyStaffList, setLegacyStaffList] = useState<
-    { id: number; name: string; phone?: string | null; email?: string | null }[]
-  >([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('mos_staff_pageSize');
-    if (saved) {
-      setPageSize(Number(saved));
-    }
-  }, []);
-
-  const fetchLegacyStaff = useCallback(async () => {
-    try {
-      const res = await api.get('/staff/legacy');
-      setLegacyStaffList(res.data);
-    } catch (err) {
-      console.error('Fetch legacy staff error:', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchLegacyStaff();
-  }, [fetchLegacyStaff]);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('mos_user');
-    if (stored) {
-      setCurrentUser(JSON.parse(stored));
-    }
-  }, []);
-
-  // Staff Search & Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterRole, setFilterRole] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-
-  // Staff Add/Edit Modal state
-  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
-  const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [staffForm] = Form.useForm();
-  const [staffSubmitting, setStaffSubmitting] = useState(false);
-
-  // Staff Detail Drawer state
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
-
-  // Role Add/Edit Modal state
-  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [roleForm] = Form.useForm();
-  const [roleSubmitting, setRoleSubmitting] = useState(false);
 
-  // Fetch roles list
-  const fetchRoles = useCallback(async () => {
-    setRolesLoading(true);
-    try {
-      const res = await api.get('/roles');
-      setRoles(res.data);
-    } catch (err: any) {
-      console.error('Fetch roles error:', err);
-      message.error('Không thể tải danh sách vai trò');
-    } finally {
-      setRolesLoading(false);
-    }
-  }, []);
-
-  // Fetch staff list
-  const fetchStaff = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: any = {};
-      if (searchQuery) params.search = searchQuery;
-      if (filterRole !== 'all') params.role = filterRole;
-      if (filterStatus !== 'all') params.isActive = filterStatus;
-
-      const res = await api.get('/staff', { params });
-      setStaffList(res.data);
-    } catch (err: any) {
-      console.error('Fetch staff error:', err);
-      message.error(err.response?.data?.message || 'Không thể tải danh sách nhân viên');
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, filterRole, filterStatus]);
-
-  useEffect(() => {
-    fetchRoles();
-  }, [fetchRoles]);
-
-  useEffect(() => {
-    if (activeTab === 'staff') {
-      fetchStaff();
-    }
-  }, [activeTab, fetchStaff]);
-
-  // Open Staff Modal for Create or Edit
-  const openStaffModal = (staff: Staff | null = null) => {
-    setEditingStaff(staff);
-    if (staff) {
-      staffForm.setFieldsValue({
-        username: staff.username,
-        displayName: staff.displayName,
-        role: staff.role,
-        isActive: staff.isActive,
-        email: staff.email,
-        phone: staff.phone,
-        joinedAt: staff.joinedAt ? dayjs(staff.joinedAt) : null,
-        birthDate: staff.birthDate ? dayjs(staff.birthDate) : null,
-        gender: staff.gender,
-        address: staff.address,
-        emergencyContact: staff.emergencyContact,
-        emergencyPhone: staff.emergencyPhone,
-        notes: staff.notes,
-        password: '',
-        legacyStaffId: staff.legacyStaffId || null,
-      });
-    } else {
-      staffForm.resetFields();
-      staffForm.setFieldsValue({
-        role: roles[0]?.key || 'telesales',
-        isActive: true,
-        gender: 'Other',
-        legacyStaffId: null,
-      });
-    }
-    setIsStaffModalOpen(true);
-  };
-
-  // Submit Staff Modal
-  const handleStaffSubmit = async (values: any) => {
-    setStaffSubmitting(true);
-    try {
-      const payload = {
-        ...values,
-        joinedAt: values.joinedAt ? values.joinedAt.format('YYYY-MM-DD') : null,
-        birthDate: values.birthDate ? values.birthDate.format('YYYY-MM-DD') : null,
-      };
-
-      if (editingStaff && !payload.password) {
-        delete payload.password;
-      }
-
-      if (editingStaff) {
-        await api.put(`/staff/${editingStaff.id}`, payload);
-        message.success(`Cập nhật nhân viên ${payload.displayName} thành công`);
-      } else {
-        await api.post('/staff', payload);
-        message.success(`Tạo nhân viên ${payload.displayName} thành công`);
-      }
-
-      setIsStaffModalOpen(false);
-      fetchStaff();
-    } catch (err: any) {
-      console.error('Submit staff error:', err);
-      message.error(err.response?.data?.message || 'Có lỗi xảy ra, vui lòng kiểm tra lại thông tin');
-    } finally {
-      setStaffSubmitting(false);
-    }
-  };
-
-  // Toggle Active/Inactive Switch
-  const handleToggleActive = async (staff: Staff, checked: boolean) => {
-    try {
-      await api.put(`/staff/${staff.id}`, { isActive: checked });
-      message.success(`Đã ${checked ? 'kích hoạt' : 'vô hiệu hóa'} tài khoản ${staff.displayName}`);
-      fetchStaff();
-    } catch (err: any) {
-      console.error('Toggle status error:', err);
-      message.error(err.response?.data?.message || 'Không thể cập nhật trạng thái');
-    }
-  };
-
-  // Delete staff member
-  const handleDeleteStaff = async (id: number) => {
-    try {
-      const res = await api.delete(`/staff/${id}`);
-      message.success(res.data.message || 'Xóa nhân viên thành công');
-      fetchStaff();
-    } catch (err: any) {
-      console.error('Delete staff error:', err);
-      message.error(err.response?.data?.message || 'Không thể xóa nhân viên');
-    }
-  };
-
-  // Impersonate user (Login as)
-  const handleImpersonate = async (userId: number, displayName: string) => {
-    try {
-      const currentToken = localStorage.getItem('mos_token');
-      const currentUserStr = localStorage.getItem('mos_user');
-
-      const res = await api.post('/auth/impersonate', { userId });
-      const { token, user } = res.data;
-
-      if (currentToken && currentUserStr) {
-        localStorage.setItem('mos_original_token', currentToken);
-        localStorage.setItem('mos_original_user', currentUserStr);
-      }
-
-      localStorage.setItem('mos_token', token);
-      localStorage.setItem('mos_user', JSON.stringify(user));
-
-      message.success(`Đang đăng nhập giả lập dưới quyền ${displayName}`);
-      window.location.href = '/dashboard/customers';
-    } catch (err: any) {
-      console.error('Impersonate error:', err);
-      const errMsg = err.response?.data?.message || 'Đăng nhập giả lập thất bại';
-      message.error(errMsg);
-    }
-  };
-
-  // Open Staff Details Drawer
-  const openStaffDetails = (staff: Staff) => {
-    setSelectedStaff(staff);
-    setIsDrawerOpen(true);
-  };
-
-  // Open Role Modal for Create or Edit
-  const openRoleModal = (role: Role | null = null) => {
-    setEditingRole(role);
-    if (role) {
-      roleForm.setFieldsValue({
-        key: role.key,
-        name: role.name,
-        color: role.color,
-        viewKPI: role.viewKPI,
-        viewTeamKPI: role.viewTeamKPI,
-        manageStaff: role.manageStaff,
-        description: role.description,
-      });
-    } else {
-      roleForm.resetFields();
-      roleForm.setFieldsValue({
-        color: 'default',
-        viewKPI: false,
-        viewTeamKPI: false,
-        manageStaff: false,
-      });
-    }
-    setIsRoleModalOpen(true);
-  };
-
-  // Submit Role Modal
-  const handleRoleSubmit = async (values: any) => {
-    setRoleSubmitting(true);
-    try {
-      if (editingRole) {
-        await api.put(`/roles/${editingRole.key}`, values);
-        message.success(`Cập nhật vai trò "${values.name}" thành công`);
-      } else {
-        await api.post('/roles', values);
-        message.success(`Tạo vai trò "${values.name}" thành công`);
-      }
-      setIsRoleModalOpen(false);
-      fetchRoles();
-      fetchStaff(); // refresh staff to reflect any role tag name updates
-    } catch (err: any) {
-      console.error('Submit role error:', err);
-      message.error(err.response?.data?.message || 'Không thể lưu vai trò. Vui lòng kiểm tra lại.');
-    } finally {
-      setRoleSubmitting(false);
-    }
-  };
-
-  // Delete Role
-  const handleDeleteRole = async (key: string) => {
-    try {
-      const res = await api.delete(`/roles/${key}`);
-      message.success(res.data.message || 'Xóa vai trò thành công');
-      fetchRoles();
-    } catch (err: any) {
-      console.error('Delete role error:', err);
-      message.error(err.response?.data?.message || 'Không thể xóa vai trò này');
-    }
-  };
+  const {
+    activeTab,
+    setActiveTab,
+    staffList,
+    currentUser,
+    roles,
+    loading,
+    rolesLoading,
+    legacyStaffList,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    searchQuery,
+    setSearchQuery,
+    filterRole,
+    setFilterRole,
+    filterStatus,
+    setFilterStatus,
+    isStaffModalOpen,
+    setIsStaffModalOpen,
+    editingStaff,
+    staffSubmitting,
+    isDrawerOpen,
+    setIsDrawerOpen,
+    selectedStaff,
+    isRoleModalOpen,
+    setIsRoleModalOpen,
+    editingRole,
+    roleSubmitting,
+    // Methods
+    openStaffModal,
+    handleStaffSubmit,
+    handleToggleActive,
+    handleDeleteStaff,
+    handleImpersonate,
+    openStaffDetails,
+    openRoleModal,
+    handleRoleSubmit,
+    handleDeleteRole,
+  } = useStaffData({
+    staffForm,
+    roleForm,
+    onSuccess: (msg) => message.success(msg),
+    onError: (msg) => message.error(msg),
+  });
 
   // Table columns for Staff Directory
-  const staffColumns = [
-    {
-      title: 'Nhân viên',
-      key: 'name',
-      render: (_: any, record: Staff) => {
-        const initials = record.displayName
-          ? record.displayName
-              .split(' ')
-              .map((n) => n[0])
-              .join('')
-              .slice(0, 2)
-              .toUpperCase()
-          : '??';
-        const isOnline = !!(record.lastActiveAt && dayjs().diff(dayjs(record.lastActiveAt), 'minute') < 5);
-        return (
-          <Space>
-            <Badge dot={isOnline} status="success" offset={[-2, 28]}>
-              <Avatar
-                src={record.avatarUrl || undefined}
-                icon={!record.avatarUrl ? <UserOutlined /> : undefined}
-                style={{
-                  backgroundColor: token.colorPrimary,
-                  color: '#000',
-                  fontWeight: '600',
-                }}
-              >
-                {initials}
-              </Avatar>
-            </Badge>
-            <div>
-              <Text style={{ fontWeight: 600, display: 'block', color: token.colorText }}>{record.displayName}</Text>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                {record.username}
-              </Text>
-            </div>
-          </Space>
-        );
-      },
-    },
-    {
-      title: 'Vai trò',
-      dataIndex: 'role',
-      key: 'role',
-      render: (roleKey: string) => {
-        const matched = roles.find((r) => r.key === roleKey);
-        return (
-          <Tag color={matched?.color || 'default'} style={{ fontWeight: '500', borderRadius: '4px' }}>
-            {matched?.name || roleKey}
-          </Tag>
-        );
-      },
-    },
-    {
-      title: 'Liên hệ',
-      key: 'contact',
-      render: (_: any, record: Staff) => (
-        <div style={{ fontSize: '13px' }}>
-          {record.phone ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <PhoneOutlined style={{ color: '#888' }} />
-              <Text>{record.phone}</Text>
-            </div>
-          ) : null}
-          {record.email ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-              <MailOutlined style={{ color: '#888' }} />
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                {record.email}
-              </Text>
-            </div>
-          ) : record.phone ? null : (
-            <Text type="secondary" italic style={{ fontSize: '12px' }}>
-              Chưa cập nhật
-            </Text>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: 'Ngày vào làm',
-      dataIndex: 'joinedAt',
-      key: 'joinedAt',
-      render: (date: string) =>
-        date ? (
-          dayjs(date).format('DD/MM/YYYY')
-        ) : (
-          <Text type="secondary" italic style={{ fontSize: '12px' }}>
-            Chưa thiết lập
-          </Text>
-        ),
-    },
-    {
-      title: 'Đăng nhập cuối',
-      key: 'lastLogin',
-      render: (_: any, record: Staff) => {
-        if (!record.lastLoginAt) {
-          return (
-            <Text type="secondary" italic style={{ fontSize: '12px' }}>
-              Chưa đăng nhập
-            </Text>
-          );
-        }
-
-        const lastLogin = dayjs(record.lastLoginAt);
-        const now = dayjs();
-
-        let lastLoginStr = '';
-        if (lastLogin.isSame(now, 'day')) {
-          lastLoginStr = `Hôm nay ${lastLogin.format('HH:mm')}`;
-        } else if (lastLogin.isSame(now.subtract(1, 'day'), 'day')) {
-          lastLoginStr = `Hôm qua ${lastLogin.format('HH:mm')}`;
-        } else {
-          lastLoginStr = lastLogin.format('DD/MM/YYYY HH:mm');
-        }
-
-        return <Text style={{ fontSize: '13px', fontWeight: '500', color: token.colorText }}>{lastLoginStr}</Text>;
-      },
-    },
-    {
-      title: 'Lần cuối online',
-      key: 'lastActive',
-      render: (_: any, record: Staff) => {
-        if (!record.lastActiveAt) {
-          return (
-            <Text type="secondary" italic style={{ fontSize: '12px' }}>
-              Chưa hoạt động
-            </Text>
-          );
-        }
-
-        const lastActive = dayjs(record.lastActiveAt);
-        const now = dayjs();
-        const diffMin = now.diff(lastActive, 'minute');
-        const isOnline = diffMin < 5;
-
-        if (isOnline) {
-          return (
-            <Tag color="success" style={{ fontSize: '12px', fontWeight: '500', borderRadius: '4px' }}>
-              Đang online
-            </Tag>
-          );
-        }
-
-        let activeStatusText = '';
-        if (diffMin < 60) {
-          activeStatusText = `${diffMin} phút trước`;
-        } else {
-          const diffHr = now.diff(lastActive, 'hour');
-          if (diffHr < 24) {
-            activeStatusText = `${diffHr} giờ trước`;
-          } else {
-            const diffDay = now.diff(lastActive, 'day');
-            activeStatusText = `${diffDay} ngày trước`;
-          }
-        }
-
-        return <Text style={{ fontSize: '13px', color: token.colorTextDescription }}>{activeStatusText}</Text>;
-      },
-    },
-    {
-      title: 'Trạng thái',
-      key: 'status',
-      width: 150,
-      render: (_: any, record: Staff) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
-          <Switch checked={record.isActive} onChange={(checked) => handleToggleActive(record, checked)} size="small" />
-          <Badge status={record.isActive ? 'success' : 'default'} text={record.isActive ? 'Active' : 'Locked'} />
-        </div>
-      ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      width: 180,
-      render: (_: any, record: Staff) => {
-        const isAdmin = currentUser?.role === 'admin';
-        const isTargetAdmin = record.role === 'admin';
-        const canImpersonate = isAdmin && !isTargetAdmin && record.isActive;
-
-        return (
-          <Space size="middle">
-            {canImpersonate && (
-              <Tooltip title={`Đăng nhập dưới quyền ${record.displayName}`}>
-                <Button
-                  type="text"
-                  icon={<KeyOutlined style={{ color: '#52c41a' }} />}
-                  onClick={() => handleImpersonate(record.id, record.displayName)}
-                />
-              </Tooltip>
-            )}
-            <Tooltip title="Xem thông tin chi tiết">
-              <Button
-                type="text"
-                icon={<EyeOutlined style={{ color: '#D4A84B' }} />}
-                onClick={() => openStaffDetails(record)}
-              />
-            </Tooltip>
-            <Tooltip title="Chỉnh sửa">
-              <Button
-                type="text"
-                icon={<EditOutlined style={{ color: '#1890ff' }} />}
-                onClick={() => openStaffModal(record)}
-              />
-            </Tooltip>
-            <Tooltip title="Xóa nhân viên">
-              <Popconfirm
-                title="Xóa nhân viên"
-                description={`Bạn có chắc chắn muốn xóa nhân viên "${record.displayName}"?`}
-                onConfirm={() => handleDeleteStaff(record.id)}
-                okText="Xóa"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-              >
-                <Button type="text" icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />} />
-              </Popconfirm>
-            </Tooltip>
-          </Space>
-        );
-      },
-    },
-  ];
+  const staffColumns = getStaffColumns({
+    roles,
+    token,
+    handleToggleActive,
+    handleImpersonate,
+    openStaffDetails,
+    openStaffModal,
+    handleDeleteStaff,
+    currentUser,
+  });
 
   // Table columns for Roles Management
-  const roleColumns = [
-    {
-      title: 'Vai trò',
-      key: 'role',
-      render: (_: any, record: Role) => (
-        <Space>
-          <Tag color={record.color} style={{ fontWeight: '600', padding: '4px 8px', borderRadius: '4px' }}>
-            {record.name}
-          </Tag>
-          {record.isSystem && (
-            <Tooltip title="Vai trò mặc định của hệ thống, không thể xóa">
-              <Badge status="processing" text="Hệ thống" style={{ fontSize: '11px', color: '#888' }} />
-            </Tooltip>
-          )}
-        </Space>
-      ),
-    },
-    {
-      title: 'Mã (Key)',
-      dataIndex: 'key',
-      key: 'key',
-      render: (key: string) => (
-        <code
-          style={{
-            fontSize: '12px',
-            background: themeMode === 'dark' ? '#222' : '#f5f5f5',
-            padding: '2px 6px',
-            borderRadius: '4px',
-          }}
-        >
-          {key}
-        </code>
-      ),
-    },
-    {
-      title: 'Quyền hạn (Permissions)',
-      key: 'permissions',
-      render: (_: any, record: Role) => (
-        <Space wrap size={[4, 8]}>
-          {record.viewKPI && (
-            <Tag color="blue" bordered={false}>
-              Xem KPI cá nhân
-            </Tag>
-          )}
-          {record.viewTeamKPI && (
-            <Tag color="purple" bordered={false}>
-              Xem KPI nhóm
-            </Tag>
-          )}
-          {record.manageStaff && (
-            <Tag color="red" bordered={false}>
-              Quản lý nhân sự
-            </Tag>
-          )}
-          {!record.viewKPI && !record.viewTeamKPI && !record.manageStaff && (
-            <Text type="secondary" italic style={{ fontSize: '12px' }}>
-              Không có quyền đặc biệt
-            </Text>
-          )}
-        </Space>
-      ),
-    },
-    {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      render: (desc: string) =>
-        desc || (
-          <Text type="secondary" italic style={{ fontSize: '12px' }}>
-            Không có mô tả
-          </Text>
-        ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      width: 120,
-      render: (_: any, record: Role) => (
-        <Space size="middle">
-          <Tooltip title="Chỉnh sửa vai trò & quyền">
-            <Button
-              type="text"
-              icon={<EditOutlined style={{ color: '#1890ff' }} />}
-              onClick={() => openRoleModal(record)}
-            />
-          </Tooltip>
-          <Tooltip title={record.isSystem ? 'Không thể xóa vai trò mặc định của hệ thống' : 'Xóa vai trò'}>
-            <Popconfirm
-              title="Xóa vai trò"
-              description={`Bạn có chắc chắn muốn xóa vai trò "${record.name}"?`}
-              onConfirm={() => handleDeleteRole(record.key)}
-              disabled={record.isSystem}
-              okText="Xóa"
-              cancelText="Hủy"
-              okButtonProps={{ danger: true }}
-            >
-              <Button type="text" danger disabled={record.isSystem} icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
+  const roleColumns = getRoleColumns({
+    themeMode,
+    openRoleModal,
+    handleDeleteRole,
+  });
 
   return (
     <div style={{ padding: '4px' }}>
@@ -899,7 +345,6 @@ export default function StaffPage() {
             token={token}
             editingStaff={editingStaff}
             submitting={staffSubmitting}
-            form={staffForm}
             roles={roles}
             onCancel={() => setIsStaffModalOpen(false)}
             legacyStaffList={legacyStaffList}
@@ -1264,293 +709,6 @@ export default function StaffPage() {
           </div>
         )}
       </Drawer>
-    </div>
-  );
-}
-
-// Subcomponent for organization tabs inside Add/Edit Modal
-function StaffTabsContent({
-  themeMode,
-  token,
-  editingStaff,
-  submitting,
-  form,
-  roles,
-  onCancel,
-  legacyStaffList,
-}: {
-  themeMode: string;
-  token: any;
-  editingStaff: Staff | null;
-  submitting: boolean;
-  form: any;
-  roles: Role[];
-  onCancel: () => void;
-  legacyStaffList: { id: number; name: string; phone?: string | null; email?: string | null }[];
-}) {
-  const [activeTab, setActiveTab] = useState('account');
-
-  return (
-    <div>
-      {/* Custom simple visual tab headers */}
-      <div
-        style={{
-          display: 'flex',
-          borderBottom: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`,
-          marginBottom: '20px',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setActiveTab('account')}
-          style={{
-            padding: '10px 16px',
-            border: 'none',
-            background: 'none',
-            borderBottom: activeTab === 'account' ? '2px solid #D4A84B' : 'none',
-            color: activeTab === 'account' ? '#D4A84B' : token.colorTextDescription,
-            fontWeight: activeTab === 'account' ? 'bold' : 'normal',
-            cursor: 'pointer',
-          }}
-        >
-          Thông tin tài khoản
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('profile')}
-          style={{
-            padding: '10px 16px',
-            border: 'none',
-            background: 'none',
-            borderBottom: activeTab === 'profile' ? '2px solid #D4A84B' : 'none',
-            color: activeTab === 'profile' ? '#D4A84B' : token.colorTextDescription,
-            fontWeight: activeTab === 'profile' ? 'bold' : 'normal',
-            cursor: 'pointer',
-          }}
-        >
-          Hồ sơ nhân sự (HR)
-        </button>
-      </div>
-
-      {activeTab === 'account' ? (
-        <div>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="username"
-                label={
-                  <Space>
-                    <Text style={{ color: token.colorText }}>Tên đăng nhập (Email / Prefix)</Text>
-                    <Tooltip title="Nhập email Google của nhân viên (ví dụ: nguyenvan@gmail.com) hoặc phần tên trước dấu @ (ví dụ: nguyenvan) để liên kết Google Auth">
-                      <InfoCircleOutlined style={{ color: '#888' }} />
-                    </Tooltip>
-                  </Space>
-                }
-                rules={[
-                  { required: true, message: 'Vui lòng nhập tên đăng nhập!' },
-                  { min: 3, message: 'Tên đăng nhập tối thiểu phải có 3 ký tự!' },
-                ]}
-              >
-                <Input
-                  placeholder="nguyenvan@gmail.com hoặc nguyenvan"
-                  prefix={<UserOutlined style={{ color: '#888' }} />}
-                  autoComplete="new-username"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="displayName"
-                label={<Text style={{ color: token.colorText }}>Tên hiển thị</Text>}
-                rules={[{ required: true, message: 'Vui lòng nhập tên hiển thị!' }]}
-              >
-                <Input placeholder="Nguyễn Văn A" autoComplete="off" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="role"
-                label={<Text style={{ color: token.colorText }}>Vai trò hệ thống</Text>}
-                rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
-              >
-                <Select placeholder="Chọn vai trò">
-                  {roles.map((r) => (
-                    <Option key={r.key} value={r.key}>
-                      {r.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="password"
-                label={
-                  <Space>
-                    <Text style={{ color: token.colorText }}>Mật khẩu đăng nhập</Text>
-                    <Tooltip
-                      title={
-                        editingStaff
-                          ? 'Để trống nếu không muốn thay đổi mật khẩu đăng nhập trực tiếp'
-                          : 'Mật khẩu cho đăng nhập thủ công bằng tài khoản. Không bắt buộc nếu chỉ dùng Google Auth.'
-                      }
-                    >
-                      <InfoCircleOutlined style={{ color: '#888' }} />
-                    </Tooltip>
-                  </Space>
-                }
-              >
-                <Input.Password
-                  placeholder={editingStaff ? 'Nhập mật khẩu mới để reset' : 'Nhập mật khẩu tài khoản'}
-                  prefix={<LockOutlined style={{ color: '#888' }} />}
-                  autoComplete="new-password"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item
-                name="isActive"
-                label={<Text style={{ color: token.colorText }}>Trạng thái tài khoản</Text>}
-                valuePropName="checked"
-                extra="Nhân viên được phép đăng nhập vào hệ thống CRM khi trạng thái hoạt động."
-              >
-                <Switch checkedChildren="Hoạt động" unCheckedChildren="Tạm khóa" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item
-                name="legacyStaffId"
-                label={
-                  <Space>
-                    <Text style={{ color: token.colorText }}>Liên kết Tài khoản Wings Lashes (Legacy)</Text>
-                    <Tooltip title="Chọn tài khoản Wings Lashes để liên kết danh nghĩa Booker/KTV khi đặt lịch và thống kê doanh thu.">
-                      <InfoCircleOutlined style={{ color: '#888' }} />
-                    </Tooltip>
-                  </Space>
-                }
-              >
-                <Select
-                  placeholder="Chọn tài khoản Wings Lashes liên kết"
-                  allowClear
-                  showSearch
-                  optionFilterProp="children"
-                >
-                  {legacyStaffList.map((item) => (
-                    <Option key={item.id} value={item.id}>
-                      {item.name} {item.phone ? ` - ${item.phone}` : ''} {item.email ? ` - ${item.email}` : ''} (ID:{' '}
-                      {item.id})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-        </div>
-      ) : (
-        <div>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="email"
-                label={<Text style={{ color: token.colorText }}>Email liên hệ</Text>}
-                rules={[{ type: 'email', message: 'Định dạng email không hợp lệ!' }]}
-              >
-                <Input placeholder="email@domain.com" prefix={<MailOutlined style={{ color: '#888' }} />} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="phone" label={<Text style={{ color: token.colorText }}>Số điện thoại</Text>}>
-                <Input placeholder="0901234567" prefix={<PhoneOutlined style={{ color: '#888' }} />} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item name="joinedAt" label={<Text style={{ color: token.colorText }}>Ngày vào làm</Text>}>
-                <DatePicker style={{ width: '100%' }} placeholder="Chọn ngày" format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="birthDate" label={<Text style={{ color: token.colorText }}>Ngày sinh</Text>}>
-                <DatePicker style={{ width: '100%' }} placeholder="Chọn ngày" format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="gender" label={<Text style={{ color: token.colorText }}>Giới tính</Text>}>
-                <Select placeholder="Chọn giới tính">
-                  <Option value="Male">Nam</Option>
-                  <Option value="Female">Nữ</Option>
-                  <Option value="Other">Khác</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item name="address" label={<Text style={{ color: token.colorText }}>Địa chỉ thường trú</Text>}>
-                <Input placeholder="Số nhà, Tên đường, Quận/Huyện, Tỉnh/TP" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="emergencyContact"
-                label={<Text style={{ color: token.colorText }}>Người liên hệ khẩn cấp</Text>}
-              >
-                <Input placeholder="Tên người thân / mối quan hệ" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="emergencyPhone"
-                label={<Text style={{ color: token.colorText }}>SĐT liên hệ khẩn cấp</Text>}
-              >
-                <Input placeholder="Số điện thoại liên hệ" prefix={<PhoneOutlined style={{ color: '#888' }} />} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item name="notes" label={<Text style={{ color: token.colorText }}>Ghi chú nhân sự</Text>}>
-                <TextArea rows={3} placeholder="Ghi chú về năng lực, đãi ngộ, thông tin hợp đồng,..." />
-              </Form.Item>
-            </Col>
-          </Row>
-        </div>
-      )}
-
-      <Divider style={{ margin: '24px 0 16px 0' }} />
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-        <Button onClick={onCancel}>Hủy bỏ</Button>
-        <Button
-          type="primary"
-          htmlType="submit"
-          loading={submitting}
-          style={{
-            background: '#D4A84B',
-            borderColor: '#D4A84B',
-            color: '#000',
-            fontWeight: '600',
-          }}
-        >
-          {editingStaff ? 'Lưu thay đổi' : 'Tạo mới nhân viên'}
-        </Button>
-      </div>
     </div>
   );
 }

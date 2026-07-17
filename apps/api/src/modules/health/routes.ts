@@ -10,7 +10,7 @@ export async function healthRoutes(fastify: FastifyInstance) {
       >('SELECT COUNT(*) as count FROM user');
 
       const countValue = legacyResult[0];
-      const count = countValue ? ('count' in countValue ? countValue.count : (countValue as any)['COUNT(*)']) : 0n;
+      const count = countValue ? ('count' in countValue ? countValue.count : (countValue as SafeAny)['COUNT(*)']) : 0n;
 
       // Test CRM DB connection
       await fastify.prisma.crm.$queryRaw`SELECT 1`;
@@ -24,12 +24,12 @@ export async function healthRoutes(fastify: FastifyInstance) {
         },
         legacy_users: Number(count),
       };
-    } catch (error: any) {
-      fastify.log.error('Health check failed:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Health check failed:');
       reply.status(500).send({
         status: 'error',
         timestamp: new Date().toISOString(),
-        error: error.message || 'Database connection error',
+        error: (error as SafeAny).message || 'Database connection error',
       });
     }
   });

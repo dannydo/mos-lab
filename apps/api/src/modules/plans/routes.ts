@@ -37,7 +37,7 @@ export async function planRoutes(fastify: FastifyInstance) {
       }
 
       // 2. Fetch customer bucket from legacy DB
-      const customerRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const customerRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT 
           CASE
@@ -99,11 +99,35 @@ export async function planRoutes(fastify: FastifyInstance) {
       }
 
       return plan;
-    } catch (error: any) {
-      fastify.log.error('Create plan error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Create plan error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to add customer to plan',
+      });
+    }
+  });
+
+  // GET /api/plans/today
+  // Fetch all daily plans of this staff for today
+  fastify.get('/plans/today', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { id: number };
+    const dateStr = new Date().toLocaleDateString('en-CA');
+    const today = new Date(dateStr + 'T00:00:00.000Z');
+
+    try {
+      const plans = await fastify.prisma.crm.crmDailyPlan.findMany({
+        where: {
+          staffId: user.id,
+          plannedDate: today,
+        },
+      });
+      return plans;
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Fetch today plans error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to fetch today plans',
       });
     }
   });
@@ -188,7 +212,7 @@ export async function planRoutes(fastify: FastifyInstance) {
         WHERE u.id IN (${placeholder})
       `;
 
-      const customersData = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(customersQuery, ...legacyUserIds);
+      const customersData = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(customersQuery, ...legacyUserIds);
 
       // 3. Fetch call logs created in this week for these users
       const callLogs = await fastify.prisma.crm.crmCallLog.findMany({
@@ -216,7 +240,7 @@ export async function planRoutes(fastify: FastifyInstance) {
           AND date_created >= ?
           AND date_created <= ?
       `;
-      const ordersData = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const ordersData = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         ordersQuery,
         ...legacyUserIds,
         `${startStr} 00:00:00`,
@@ -324,8 +348,8 @@ export async function planRoutes(fastify: FastifyInstance) {
       });
 
       return result;
-    } catch (error: any) {
-      fastify.log.error('Weekly timeline error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Weekly timeline error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve weekly timeline',
@@ -354,8 +378,8 @@ export async function planRoutes(fastify: FastifyInstance) {
       }
 
       // Helper function to build lists
-      const queryList = async (sql: string, params: any[] = []) => {
-        const data = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(sql, ...params);
+      const queryList = async (sql: string, params: SafeAny[] = []) => {
+        const data = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, ...params);
         return data.map((row) => ({
           id: row.id,
           name: row.name,
@@ -466,8 +490,8 @@ export async function planRoutes(fastify: FastifyInstance) {
       ]);
 
       // Fetch active campaigns
-      let campaignComboT7: any[] = [];
-      let campaignPromo2: any[] = [];
+      let campaignComboT7: SafeAny[] = [];
+      let campaignPromo2: SafeAny[] = [];
 
       if (comboT7Ids.length > 0) {
         const sliceIds = comboT7Ids.slice(0, 50); // Fetch smaller list
@@ -563,7 +587,7 @@ export async function planRoutes(fastify: FastifyInstance) {
       });
       const mySuggestedUserIds = myAssignments.map((a) => a.legacyUserId);
 
-      let myCustomers: any[] = [];
+      let myCustomers: SafeAny[] = [];
       if (mySuggestedUserIds.length > 0) {
         const placeholder = mySuggestedUserIds.map(() => '?').join(',');
         const myCustomersSql = `
@@ -599,8 +623,8 @@ export async function planRoutes(fastify: FastifyInstance) {
         campaignPromo2,
         myCustomers,
       };
-    } catch (error: any) {
-      fastify.log.error('Get suggests error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get suggests error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve suggestions',
@@ -677,8 +701,8 @@ export async function planRoutes(fastify: FastifyInstance) {
       }
 
       return updatedPlan;
-    } catch (error: any) {
-      fastify.log.error('Confirm plan error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Confirm plan error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to update plan confirmation',

@@ -1,0 +1,307 @@
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { apiClient } from '../../../../lib/api-client';
+import { Staff } from '@mos-lab/shared';
+
+export const useCustomerFilters = (
+  currentUser: Staff | null,
+  optionsRef: React.MutableRefObject<SafeAny>,
+  onFiltersReset?: () => void
+) => {
+  const searchParams = useSearchParams();
+  const scopeParam = searchParams?.get('assignedStaffId');
+
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('mos_customers_active_tab');
+      return stored || 'ALL';
+    }
+    return 'ALL';
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showTrash, setShowTrash] = useState(false);
+  const [sortField, setSortField] = useState('id_desc');
+
+  // Dynamic filters state
+  const [daysSinceLastVisitMin, setDaysSinceLastVisitMin] = useState<number | undefined>(undefined);
+  const [daysSinceLastVisitMax, setDaysSinceLastVisitMax] = useState<number | undefined>(undefined);
+  const [totalSpentMin, setTotalSpentMin] = useState<number | undefined>(undefined);
+  const [totalSpentMax, setTotalSpentMax] = useState<number | undefined>(undefined);
+  const [totalVisitsMin, setTotalVisitsMin] = useState<number | undefined>(undefined);
+  const [totalVisitsMax, setTotalVisitsMax] = useState<number | undefined>(undefined);
+
+  const [promoUsed, setPromoUsed] = useState<'yes' | 'no' | 'all'>('all');
+  const [promoCountMin, setPromoCountMin] = useState<number | undefined>(undefined);
+  const [promoCountMax, setPromoCountMax] = useState<number | undefined>(undefined);
+  const [referralUsed, setReferralUsed] = useState<'yes' | 'no' | 'all'>('all');
+  const [referralCountMin, setReferralCountMin] = useState<number | undefined>(undefined);
+  const [referralCountMax, setReferralCountMax] = useState<number | undefined>(undefined);
+
+  const [assignedStaffId, setAssignedStaffId] = useState<string>('all');
+
+  // Initialize assignedStaffId based on currentUser & scopeParam
+  useEffect(() => {
+    if (currentUser) {
+      if (scopeParam) {
+        setAssignedStaffId(scopeParam);
+      } else if (currentUser.role === 'telesales') {
+        setAssignedStaffId('me');
+      }
+    }
+  }, [currentUser, scopeParam]);
+
+  useEffect(() => {
+    if (scopeParam) {
+      setAssignedStaffId(scopeParam);
+    }
+  }, [scopeParam]);
+
+  // Saved Filters preset state
+  const [savedFilters, setSavedFilters] = useState<SafeAny[]>([]);
+  const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
+  const [filterDrawerVisible, setFilterDrawerVisible] = useState(false);
+  const [saveFilterModalVisible, setSaveFilterModalVisible] = useState(false);
+  const [newFilterName, setNewFilterName] = useState('');
+
+  const fetchSavedFilters = useCallback(async () => {
+    try {
+      const data = await apiClient.savedFilters.list();
+      setSavedFilters(data);
+    } catch (error) {
+      console.error('Fetch saved filters error:', error);
+    }
+  }, []);
+
+  const handleSearch = useCallback((val: string) => {
+    setSearchQuery(val);
+  }, []);
+
+  const applyFilter = useCallback(
+    (filter: SafeAny) => {
+      setActiveFilterId(filter.id);
+      const criteria = filter.criteria || {};
+
+      if (criteria.bucket) {
+        setActiveTab(criteria.bucket);
+      } else {
+        setActiveTab('ALL');
+      }
+
+      setDaysSinceLastVisitMin(criteria.daysSinceLastVisitMin);
+      setDaysSinceLastVisitMax(criteria.daysSinceLastVisitMax);
+      setTotalSpentMin(criteria.totalSpentMin);
+      setTotalSpentMax(criteria.totalSpentMax);
+      setTotalVisitsMin(criteria.totalVisitsMin);
+      setTotalVisitsMax(criteria.totalVisitsMax);
+      setPromoUsed(criteria.promoUsed || 'all');
+      setPromoCountMin(criteria.promoCountMin);
+      setPromoCountMax(criteria.promoCountMax);
+      setReferralUsed(criteria.referralUsed || 'all');
+      setReferralCountMin(criteria.referralCountMin);
+      setReferralCountMax(criteria.referralCountMax);
+      setAssignedStaffId(criteria.assignedStaffId || (currentUser?.role === 'telesales' ? 'me' : 'all'));
+
+      optionsRef.current?.onSuccess?.(`Đã áp dụng bộ lọc "${filter.name}"`);
+    },
+    [currentUser]
+  );
+
+  const clearFilters = useCallback(() => {
+    setActiveFilterId(null);
+    setActiveTab('ALL');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mos_customers_active_tab', 'ALL');
+    }
+    setDaysSinceLastVisitMin(undefined);
+    setDaysSinceLastVisitMax(undefined);
+    setTotalSpentMin(undefined);
+    setTotalSpentMax(undefined);
+    setTotalVisitsMin(undefined);
+    setTotalVisitsMax(undefined);
+    setPromoUsed('all');
+    setPromoCountMin(undefined);
+    setPromoCountMax(undefined);
+    setReferralUsed('all');
+    setReferralCountMin(undefined);
+    setReferralCountMax(undefined);
+    setAssignedStaffId(currentUser?.role === 'telesales' ? 'me' : 'all');
+
+    if (onFiltersReset) {
+      onFiltersReset();
+    }
+    optionsRef.current?.onInfo?.('Đã xóa tất cả bộ lọc');
+  }, [currentUser, onFiltersReset]);
+
+  const handleSaveFilter = useCallback(async () => {
+    if (!newFilterName.trim()) {
+      optionsRef.current?.onError?.('Vui lòng nhập tên bộ lọc');
+      return;
+    }
+
+    const criteria = {
+      bucket: activeTab,
+      daysSinceLastVisitMin,
+      daysSinceLastVisitMax,
+      totalSpentMin,
+      totalSpentMax,
+      totalVisitsMin,
+      totalVisitsMax,
+      promoUsed,
+      promoCountMin,
+      promoCountMax,
+      referralUsed,
+      referralCountMin,
+      referralCountMax,
+      assignedStaffId,
+    };
+
+    try {
+      const data: SafeAny = await apiClient.savedFilters.create({
+        name: newFilterName.trim(),
+        criteria,
+      });
+      optionsRef.current?.onSuccess?.('Đã lưu bộ lọc thành công');
+      setSaveFilterModalVisible(false);
+      setNewFilterName('');
+      fetchSavedFilters();
+      setActiveFilterId(data.id);
+    } catch (error) {
+      console.error('Save filter error:', error);
+      optionsRef.current?.onError?.('Không thể lưu bộ lọc');
+    }
+  }, [
+    newFilterName,
+    activeTab,
+    daysSinceLastVisitMin,
+    daysSinceLastVisitMax,
+    totalSpentMin,
+    totalSpentMax,
+    totalVisitsMin,
+    totalVisitsMax,
+    promoUsed,
+    promoCountMin,
+    promoCountMax,
+    referralUsed,
+    referralCountMin,
+    referralCountMax,
+    assignedStaffId,
+    fetchSavedFilters,
+  ]);
+
+  const handleDeleteFilter = useCallback(
+    async (id: string, name: string) => {
+      try {
+        await apiClient.savedFilters.delete(Number(id));
+        optionsRef.current?.onSuccess?.(`Đã xóa bộ lọc "${name}"`);
+        fetchSavedFilters();
+        if (activeFilterId === id) {
+          clearFilters();
+        }
+      } catch (error) {
+        console.error('Delete filter error:', error);
+        optionsRef.current?.onError?.('Không thể xóa bộ lọc');
+      }
+    },
+    [activeFilterId, clearFilters, fetchSavedFilters]
+  );
+
+  // Compute structured filters object for easy mapping to API params
+  const filterParams = useMemo(
+    () => ({
+      activeTab,
+      searchQuery,
+      showTrash,
+      sortField,
+      daysSinceLastVisitMin,
+      daysSinceLastVisitMax,
+      totalSpentMin,
+      totalSpentMax,
+      totalVisitsMin,
+      totalVisitsMax,
+      promoUsed,
+      promoCountMin,
+      promoCountMax,
+      referralUsed,
+      referralCountMin,
+      referralCountMax,
+      assignedStaffId,
+    }),
+    [
+      activeTab,
+      searchQuery,
+      showTrash,
+      sortField,
+      daysSinceLastVisitMin,
+      daysSinceLastVisitMax,
+      totalSpentMin,
+      totalSpentMax,
+      totalVisitsMin,
+      totalVisitsMax,
+      promoUsed,
+      promoCountMin,
+      promoCountMax,
+      referralUsed,
+      referralCountMin,
+      referralCountMax,
+      assignedStaffId,
+    ]
+  );
+
+  return {
+    filterParams,
+    activeTab,
+    setActiveTab,
+    searchQuery,
+    setSearchQuery,
+    showTrash,
+    setShowTrash,
+    sortField,
+    setSortField,
+    daysSinceLastVisitMin,
+    setDaysSinceLastVisitMin,
+    daysSinceLastVisitMax,
+    setDaysSinceLastVisitMax,
+    totalSpentMin,
+    setTotalSpentMin,
+    totalSpentMax,
+    setTotalSpentMax,
+    totalVisitsMin,
+    setTotalVisitsMin,
+    totalVisitsMax,
+    setTotalVisitsMax,
+    promoUsed,
+    setPromoUsed,
+    promoCountMin,
+    setPromoCountMin,
+    promoCountMax,
+    setPromoCountMax,
+    referralUsed,
+    setReferralUsed,
+    referralCountMin,
+    setReferralCountMin,
+    referralCountMax,
+    setReferralCountMax,
+    assignedStaffId,
+    setAssignedStaffId,
+
+    // UI Drawer state
+    filterDrawerVisible,
+    setFilterDrawerVisible,
+    saveFilterModalVisible,
+    setSaveFilterModalVisible,
+    newFilterName,
+    setNewFilterName,
+    savedFilters,
+    activeFilterId,
+    setActiveFilterId,
+
+    // API Actions
+    fetchSavedFilters,
+    handleSearch,
+    applyFilter,
+    clearFilters,
+    handleSaveFilter,
+    handleDeleteFilter,
+  };
+};
+export default useCustomerFilters;

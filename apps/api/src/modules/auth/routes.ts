@@ -42,7 +42,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         id: staff.id,
         username: staff.username,
         displayName: staff.displayName,
-        role: staff.role as any,
+        role: staff.role as SafeAny,
       };
 
       // Sign JWT
@@ -61,7 +61,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           id: updatedStaff.id,
           username: updatedStaff.username,
           displayName: updatedStaff.displayName,
-          role: updatedStaff.role as any,
+          role: updatedStaff.role as SafeAny,
           isActive: updatedStaff.isActive,
           createdAt: updatedStaff.createdAt.toISOString(),
           lastLoginAt: updatedStaff.lastLoginAt ? updatedStaff.lastLoginAt.toISOString() : null,
@@ -70,8 +70,8 @@ export async function authRoutes(fastify: FastifyInstance) {
       };
 
       return response;
-    } catch (error: any) {
-      fastify.log.error('Login error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Login error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Something went wrong',
@@ -81,7 +81,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   // POST /api/auth/google
   fastify.post('/auth/google', async (request, reply) => {
-    const { credential, isMock, email: mockEmail, name: mockName } = request.body as any;
+    const { credential, isMock, email: mockEmail, name: mockName } = request.body as SafeAny;
 
     if (!credential && !isMock) {
       return reply.status(400).send({
@@ -100,7 +100,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         name = mockName || 'Danh Do (Mock Google)';
         picture = 'https://lh3.googleusercontent.com/a/default-user=s96-c';
       } else {
-        let tokenInfo: any;
+        let tokenInfo: SafeAny;
         try {
           const tokenRes = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
           tokenInfo = tokenRes.data;
@@ -186,7 +186,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         id: staff.id,
         username: staff.username,
         displayName: staff.displayName,
-        role: staff.role as any,
+        role: staff.role as SafeAny,
       };
 
       // Sign JWT
@@ -205,7 +205,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           id: updatedStaff.id,
           username: updatedStaff.username,
           displayName: updatedStaff.displayName,
-          role: updatedStaff.role as any,
+          role: updatedStaff.role as SafeAny,
           isActive: updatedStaff.isActive,
           avatarUrl: updatedStaff.avatarUrl,
           createdAt: updatedStaff.createdAt.toISOString(),
@@ -215,8 +215,8 @@ export async function authRoutes(fastify: FastifyInstance) {
       };
 
       return response;
-    } catch (error: any) {
-      fastify.log.error('Google login error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Google login error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Something went wrong',
@@ -245,7 +245,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           id: staff.id,
           username: staff.username,
           displayName: staff.displayName,
-          role: staff.role as any,
+          role: staff.role as SafeAny,
           isActive: staff.isActive,
           avatarUrl: staff.avatarUrl,
           createdAt: staff.createdAt.toISOString(),
@@ -253,8 +253,8 @@ export async function authRoutes(fastify: FastifyInstance) {
           lastActiveAt: staff.lastActiveAt ? staff.lastActiveAt.toISOString() : null,
         },
       };
-    } catch (error: any) {
-      fastify.log.error('Get profile error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get profile error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve profile',
@@ -312,7 +312,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         id: targetStaff.id,
         username: targetStaff.username,
         displayName: targetStaff.displayName,
-        role: targetStaff.role as any,
+        role: targetStaff.role as SafeAny,
       };
 
       const token = fastify.jwt.sign(payload, { expiresIn: '7d' });
@@ -323,14 +323,14 @@ export async function authRoutes(fastify: FastifyInstance) {
           id: targetStaff.id,
           username: targetStaff.username,
           displayName: targetStaff.displayName,
-          role: targetStaff.role as any,
+          role: targetStaff.role as SafeAny,
           isActive: targetStaff.isActive,
           avatarUrl: targetStaff.avatarUrl,
           createdAt: targetStaff.createdAt.toISOString(),
         },
       };
-    } catch (error: any) {
-      fastify.log.error('Impersonation error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Impersonation error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Đăng nhập giả lập thất bại',

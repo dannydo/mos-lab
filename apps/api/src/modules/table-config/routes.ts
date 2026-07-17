@@ -44,7 +44,7 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
         userConfig: userRecord ? JSON.parse(userRecord.value) : null,
         defaultConfig: defaultRecord ? JSON.parse(defaultRecord.value) : null,
       };
-    } catch (error: any) {
+    } catch (error: SafeAny) {
       fastify.log.error(`Fetch table-config error for table ${tableId}:`, error);
       return reply.status(500).send({
         error: 'Internal Server Error',
@@ -56,7 +56,7 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
   // POST /api/table-config/:tableId - Save table configuration (user-specific or default template)
   fastify.post('/table-config/:tableId', { preHandler: [requireAuth] }, async (request, reply) => {
     const { tableId } = request.params as { tableId: string };
-    const { columns, saveAsDefault } = request.body as { columns: any[]; saveAsDefault?: boolean };
+    const { columns, saveAsDefault } = request.body as { columns: SafeAny[]; saveAsDefault?: boolean };
     const user = request.user as JwtUserPayload;
 
     if (!tableId || !Array.isArray(columns)) {
@@ -115,7 +115,7 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
           ? 'Đã lưu cấu hình làm mặc định hệ thống và áp dụng cho bạn'
           : 'Lưu cấu hình cá nhân thành công',
       };
-    } catch (error: any) {
+    } catch (error: SafeAny) {
       fastify.log.error(`Save table-config error for table ${tableId}:`, error);
       return reply.status(500).send({
         error: 'Internal Server Error',
@@ -148,7 +148,7 @@ export async function tableConfigRoutes(fastify: FastifyInstance) {
         success: true,
         message: 'Đã reset về cấu hình mặc định thành công',
       };
-    } catch (error: any) {
+    } catch (error: SafeAny) {
       fastify.log.error(`Reset table-config error for table ${tableId}:`, error);
       return reply.status(500).send({
         error: 'Internal Server Error',

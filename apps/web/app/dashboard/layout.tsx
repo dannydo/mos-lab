@@ -19,17 +19,19 @@ import {
   ShareAltOutlined,
   AudioOutlined,
 } from '@ant-design/icons';
+import dynamic from 'next/dynamic';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
-import TelesalesDashboardModal from '../../components/TelesalesDashboardModal';
+
+const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
 import dayjs from 'dayjs';
-import api from '../../lib/api';
+import { apiClient } from '../../lib/api-client';
 import { OmiCallProvider } from '../../context/OmiCallContext';
 import OmiCallWidget from '../../components/OmiCallWidget';
 
 const { Header, Sider, Content } = Layout;
 
-function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token: any; userRole?: string }) {
+function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token: SafeAny; userRole?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -71,10 +73,10 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     return 'customers-all';
   };
 
-  const menuItems: any[] = [];
+  const menuItems: SafeAny[] = [];
 
   // Group customer pages into a SubMenu
-  const customerChildren: any[] = [];
+  const customerChildren: SafeAny[] = [];
 
   if (userRole === 'admin') {
     customerChildren.push({
@@ -183,15 +185,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false);
   const [isDashboardVisible, setIsDashboardVisible] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('TN');
-  const [onlineMembers, setOnlineMembers] = useState<any[]>([]);
+  const [onlineMembers, setOnlineMembers] = useState<SafeAny[]>([]);
 
   const fetchOnlineStaff = useCallback(async () => {
     try {
-      const res = await api.get('/staff');
-      const list = res.data || [];
+      const list = await apiClient.staff.list();
       const now = dayjs();
 
-      const filtered = list.filter((m: any) => {
+      const filtered = list.filter((m: SafeAny) => {
         const isUserActive = m.isActive === true || m.isActive === 1 || m.isActive === '1';
         const isOnline = !!(m.lastActiveAt && now.diff(dayjs(m.lastActiveAt), 'minute') < 5);
 
@@ -205,7 +206,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return isUserActive && isOnline && m.id !== currentUserId;
       });
 
-      const mapped = filtered.map((m: any) => {
+      const mapped = filtered.map((m: SafeAny) => {
         const initials = m.displayName
           ? m.displayName
               .split(' ')
@@ -256,7 +257,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setCollapsed(nextVal);
     localStorage.setItem('mos_sidebar_collapsed', String(nextVal));
   };
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<SafeAny>(null);
   const [loading, setLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState(false);
   const router = useRouter();

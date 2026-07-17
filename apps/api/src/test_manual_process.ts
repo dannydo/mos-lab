@@ -57,14 +57,14 @@ async function main() {
   await crm.$disconnect();
 }
 
-async function runAnalysis(crm: any, log: any) {
+async function runAnalysis(crm: SafeAny, log: SafeAny) {
   console.log('🤖 Triggering Gemini API analysis via analyzeLogRecord...');
   const fastifyMock = {
     prisma: {
       crm,
     },
     log: console,
-  } as any;
+  } as SafeAny;
 
   const start = Date.now();
   try {
@@ -96,8 +96,8 @@ async function runAnalysis(crm: any, log: any) {
         2
       )
     );
-  } catch (err: any) {
-    console.error('❌ Analysis failed:', err.message || err);
+  } catch (err: SafeAny) {
+    console.error('❌ Analysis failed:', (err as SafeAny).message || err);
   }
 }
 

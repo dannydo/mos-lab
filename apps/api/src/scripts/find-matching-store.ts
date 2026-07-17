@@ -22,7 +22,7 @@ async function run() {
         console.log(`\n=================== Appt: ${apptStore} (Roster: ${rosterStore}) ON ${date} ===================`);
 
         // 1. Fetch Roster
-        const roster = await legacy.$queryRawUnsafe<any[]>(
+        const roster = await legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT staff_name, shift_start, shift_end, is_off 
            FROM wingsctrl_roster 
            WHERE roster_date = ? AND store = ? AND is_active = 1`,
@@ -31,7 +31,7 @@ async function run() {
         );
 
         // 2. Fetch Appointments
-        const appointments = await legacy.$queryRawUnsafe<any[]>(
+        const appointments = await legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT client_name, time_start, duration, status, specialist_name 
            FROM wingsctrl_appointments 
            WHERE store = ? AND DATE(time_start) = ? AND status != 'cancelled'`,

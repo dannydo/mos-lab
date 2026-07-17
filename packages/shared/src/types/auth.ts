@@ -1,3 +1,6 @@
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export type SafeAny = any;
+
 export type UserRole = 'telesales' | 'manager' | 'admin' | 'oc' | 'cc' | 'ls';
 
 export interface Staff {
@@ -36,4 +39,16 @@ export interface LoginResponse {
 export interface AuthState {
   token: string | null;
   user: Staff | null;
+}
+
+export interface Role {
+  key: string;
+  name: string;
+  color: string;
+  viewKPI: boolean;
+  viewTeamKPI: boolean;
+  manageStaff: boolean;
+  isSystem: boolean;
+  description?: string;
+  createdAt: string;
 }

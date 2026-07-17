@@ -41,7 +41,7 @@ async function fetchRecordingUrl(callUuid: string): Promise<string | null> {
  * Downloads audio recording, calls Gemini API to extract laughter details, CSAT,
  * and transcription, then calculates the Happy Call status.
  */
-export async function analyzeLogRecord(fastify: FastifyInstance, log: any) {
+export async function analyzeLogRecord(fastify: FastifyInstance, log: SafeAny) {
   if (!log.recordingUrl) {
     throw new Error('Recording URL is missing');
   }
@@ -223,7 +223,7 @@ export function triggerImmediateAnalysis(fastify: FastifyInstance, logId: number
       }
       await analyzeLogRecord(fastify, log);
       fastify.log.info(`[ImmediateAnalysis] Completed successfully for log ID: ${logId}`);
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(err, `[ImmediateAnalysis] Failed for log ID: ${logId}`);
 
       // Update retry states

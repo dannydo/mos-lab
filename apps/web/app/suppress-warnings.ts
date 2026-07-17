@@ -1,5 +1,5 @@
 const originalWarn = console.warn;
-console.warn = (...args: any[]) => {
+console.warn = (...args: SafeAny[]) => {
   if (
     args[0] &&
     typeof args[0] === 'string' &&
@@ -20,7 +20,7 @@ console.warn = (...args: any[]) => {
 };
 
 const originalError = console.error;
-console.error = (...args: any[]) => {
+console.error = (...args: SafeAny[]) => {
   if (
     args[0] &&
     typeof args[0] === 'string' &&

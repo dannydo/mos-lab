@@ -90,8 +90,8 @@ export async function callRoutes(fastify: FastifyInstance) {
       }
 
       return callLog;
-    } catch (error: any) {
-      fastify.log.error('Create call log error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Create call log error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to record call log',
@@ -134,8 +134,8 @@ export async function callRoutes(fastify: FastifyInstance) {
       }));
 
       return formattedLogs;
-    } catch (error: any) {
-      fastify.log.error('Get call logs error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get call logs error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve call logs',

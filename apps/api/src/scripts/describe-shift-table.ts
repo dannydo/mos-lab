@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 async function run() {
   try {
-    const cols = await prisma.$queryRawUnsafe<any[]>('DESCRIBE staff_working_shift');
+    const cols = await prisma.$queryRawUnsafe<SafeAny[]>('DESCRIBE staff_working_shift');
     console.log(
       'Columns of staff_working_shift:',
       cols.map((c) => ({ Field: c.Field, Type: c.Type }))

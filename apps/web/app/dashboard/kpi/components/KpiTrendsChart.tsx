@@ -4,12 +4,7 @@ import React, { useState } from 'react';
 import { Card, Space, theme } from 'antd';
 import { LineChartOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-
-interface TrendDay {
-  date: string;
-  planned: number;
-  called: number;
-}
+import { TrendDay } from '@mos-lab/shared';
 
 interface KpiTrendsChartProps {
   trends: TrendDay[];

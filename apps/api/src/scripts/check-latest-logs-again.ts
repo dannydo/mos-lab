@@ -6,7 +6,7 @@ const logPath =
 if (fs.existsSync(logPath)) {
   const content = fs.readFileSync(logPath, 'utf8');
   const lines = content.split('\n');
-  const reqMap: { [id: string]: any } = {};
+  const reqMap: { [id: string]: SafeAny } = {};
 
   const startLine = Math.max(0, lines.length - 100);
   console.log(`Printing log lines from ${startLine} to ${lines.length}`);

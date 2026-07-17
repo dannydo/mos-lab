@@ -1,0 +1,360 @@
+'use client';
+
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import { apiClient } from '../../../../lib/api-client';
+
+dayjs.extend(isoWeek);
+
+import { Appointment, Staff } from '@mos-lab/shared';
+
+const defaultColumnConfig = {
+  customerName: { visible: true, width: 220, label: 'Khách hàng' },
+  customerPhone: { visible: true, width: 140, label: 'Số Điện Thoại' },
+  appointmentTime: { visible: true, width: 150, label: 'Thời Gian Hẹn' },
+  serviceName: { visible: true, width: 200, label: 'Dịch vụ chính' },
+  totalPrice: { visible: true, width: 130, label: 'Giá trị ước tính' },
+  netRevenue: { visible: true, width: 130, label: 'Doanh thu Net' },
+  tipAmount: { visible: true, width: 120, label: 'Tiền tips' },
+  bookingBonus: { visible: true, width: 130, label: 'Hoa hồng OC' },
+  bookingChannel: { visible: true, width: 120, label: 'Kênh đặt lịch' },
+  bookingNote: { visible: true, width: 220, label: 'Ghi chú đặt lịch' },
+  orderState: { visible: true, width: 120, label: 'Trạng thái' },
+};
+
+export interface UseAppointmentsDataOptions {
+  onSuccess?: (msg: string) => void;
+  onError?: (msg: string) => void;
+}
+
+export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
+  const optionsRef = useRef(options);
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
+
+  const [currentUser, setCurrentUser] = useState<Staff | null>(null);
+  const [columnConfig, setColumnConfig] =
+    useState<Record<string, { visible: boolean; width: number; label: string }>>(defaultColumnConfig);
+
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
+  const [referenceDate, setReferenceDate] = useState<dayjs.Dayjs>(dayjs());
+  const [customRange, setCustomRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+
+  const dateRange = useMemo<[dayjs.Dayjs, dayjs.Dayjs]>(() => {
+    if (customRange) {
+      return customRange;
+    }
+    let start = referenceDate;
+    let end = referenceDate;
+
+    if (viewMode === 'month') {
+      start = referenceDate.startOf('month');
+      end = referenceDate.endOf('month');
+    } else if (viewMode === 'week') {
+      start = referenceDate.startOf('isoWeek');
+      end = referenceDate.endOf('isoWeek');
+    } else if (viewMode === 'day') {
+      start = referenceDate.startOf('day');
+      end = referenceDate.endOf('day');
+    }
+    return [start, end];
+  }, [viewMode, referenceDate, customRange]);
+
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('all');
+  const [staffList, setStaffList] = useState<SafeAny[]>([]);
+
+  // Appointments data state
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
+  const [total, setTotal] = useState<number>(0);
+  const [summary, setSummary] = useState<SafeAny>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Detailed Modal states
+  const [selectedCustomer, setSelectedCustomer] = useState<SafeAny>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [detailModalLoading, setDetailModalLoading] = useState(false);
+  const [customerHistory, setCustomerHistory] = useState<SafeAny[]>([]);
+  const [bookingWizardVisible, setBookingWizardVisible] = useState(false);
+  const [bookingInitialCustomer, setBookingInitialCustomer] = useState<SafeAny>(null);
+  const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
+  const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<SafeAny>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedColumns = localStorage.getItem('appointment_columns_config_v2');
+      if (savedColumns) {
+        try {
+          const parsed = JSON.parse(savedColumns);
+          const merged = { ...defaultColumnConfig };
+          Object.keys(parsed).forEach((key) => {
+            if (merged[key as keyof typeof defaultColumnConfig]) {
+              merged[key as keyof typeof defaultColumnConfig] = {
+                ...merged[key as keyof typeof defaultColumnConfig],
+                visible: parsed[key].visible,
+                width: parsed[key].width || merged[key as keyof typeof defaultColumnConfig].width,
+              };
+            }
+          });
+          setColumnConfig(merged);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      const savedViewMode = localStorage.getItem('mos_appointments_viewMode');
+      if (savedViewMode) {
+        setViewMode(savedViewMode as 'month' | 'week' | 'day');
+      }
+      const savedActiveTab = localStorage.getItem('mos_appointments_activeTab');
+      if (savedActiveTab) {
+        setActiveTab(savedActiveTab as 'pending' | 'completed');
+      }
+      const savedStaffId = localStorage.getItem('mos_appointments_selectedStaffId');
+      if (savedStaffId) {
+        setSelectedStaffId(savedStaffId);
+      }
+      const savedPageSize = localStorage.getItem('mos_appointments_pageSize');
+      if (savedPageSize) {
+        setPageSize(parseInt(savedPageSize, 10));
+      }
+      const storedUser = localStorage.getItem('mos_user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        setCurrentUser(parsed);
+        if (parsed.role === 'admin') {
+          apiClient.customers
+            .getStaff()
+            .then((data) => setStaffList(data))
+            .catch((err) => console.error('Failed to load staff list:', err));
+        }
+      }
+    }
+  }, []);
+
+  const saveColumnConfig = (newConfig: typeof columnConfig) => {
+    setColumnConfig(newConfig);
+    localStorage.setItem('appointment_columns_config_v2', JSON.stringify(newConfig));
+  };
+
+  // Reset currentPage to 1 and clear data when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setAppointments([]);
+    setTotal(0);
+  }, [viewMode, referenceDate, dateRange, activeTab, selectedStaffId]);
+
+  // Fetch appointments data
+  const fetchAppointments = useCallback(async () => {
+    if (!dateRange[0] || !dateRange[1]) return;
+
+    setLoading(true);
+    try {
+      const params: SafeAny = {
+        dateFrom: dateRange[0].startOf('day').toISOString(),
+        dateTo: dateRange[1].endOf('day').toISOString(),
+        type: activeTab,
+        page: currentPage,
+        limit: pageSize,
+      };
+
+      if (currentUser?.role === 'admin' && selectedStaffId !== 'all') {
+        params.staffId = selectedStaffId;
+      }
+
+      const data = await apiClient.customers.getAppointments(params);
+
+      if (currentPage === 1) {
+        setAppointments(data.data);
+      } else {
+        setAppointments((prev) => {
+          const existingIds = new Set(prev.map((item) => item.id));
+          const newItems = data.data.filter((item: SafeAny) => !existingIds.has(item.id));
+          return [...prev, ...newItems];
+        });
+      }
+
+      setTotal(data.total);
+      setSummary(data.summary || null);
+    } catch (err) {
+      console.error('Fetch appointments error:', err);
+      optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể tải lịch hẹn');
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange, activeTab, selectedStaffId, currentUser, currentPage, pageSize]);
+
+  const handleCancelBooking = async (orderId: number) => {
+    try {
+      await apiClient.customers.deleteBooking(orderId);
+      optionsRef.current?.onSuccess?.('Hủy lịch hẹn thành công!');
+      setAppointments([]);
+      setCurrentPage(1);
+      fetchAppointments();
+    } catch (err) {
+      console.error('[Cancel] Failed to cancel booking:', err);
+      optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi hủy lịch hẹn.');
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchAppointments();
+    }
+  }, [fetchAppointments, currentUser]);
+
+  // Intersection Observer for Infinite Scroll (Lazy Loading)
+  useEffect(() => {
+    if (loading || appointments.length >= total || total === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setCurrentPage((prev) => prev + 1);
+        }
+      },
+      {
+        rootMargin: '150px',
+      }
+    );
+
+    const currentSentinel = sentinelRef.current;
+    if (currentSentinel) {
+      observer.observe(currentSentinel);
+    }
+
+    return () => {
+      if (currentSentinel) {
+        observer.unobserve(currentSentinel);
+      }
+    };
+  }, [loading, appointments.length, total]);
+
+  const handleNavigate = (direction: number) => {
+    setCustomRange(null);
+    setReferenceDate((prev) => prev.add(direction, viewMode as 'month' | 'week' | 'day'));
+  };
+
+  const getPeriodLabel = () => {
+    if (!dateRange[0] || !dateRange[1]) return 'Chọn thời gian';
+
+    const [start, end] = dateRange;
+    let expectedStart = referenceDate;
+    let expectedEnd = referenceDate;
+
+    if (viewMode === 'month') {
+      expectedStart = referenceDate.startOf('month');
+      expectedEnd = referenceDate.endOf('month');
+    } else if (viewMode === 'week') {
+      expectedStart = referenceDate.startOf('isoWeek');
+      expectedEnd = referenceDate.endOf('isoWeek');
+    } else if (viewMode === 'day') {
+      expectedStart = referenceDate.startOf('day');
+      expectedEnd = referenceDate.endOf('day');
+    }
+
+    const isMatched = start.isSame(expectedStart, 'day') && end.isSame(expectedEnd, 'day');
+
+    if (!isMatched) {
+      return `${start.format('DD/MM')} - ${end.format('DD/MM')}`;
+    }
+
+    if (viewMode === 'month') {
+      return `Tháng ${referenceDate.format('MM/YYYY')}`;
+    }
+    if (viewMode === 'week') {
+      const startStr = referenceDate.startOf('isoWeek').format('DD/MM');
+      const endStr = referenceDate.endOf('isoWeek').format('DD/MM');
+      return `Tuần ${referenceDate.isoWeek()} (${startStr} - ${endStr})`;
+    }
+
+    const today = dayjs().startOf('day');
+    const yesterday = dayjs().subtract(1, 'day').startOf('day');
+    const ref = referenceDate.startOf('day');
+
+    if (ref.isSame(today)) {
+      return `Hôm nay (${ref.format('DD/MM')})`;
+    }
+    if (ref.isSame(yesterday)) {
+      return `Hôm qua (${ref.format('DD/MM')})`;
+    }
+    return ref.format('DD/MM/YYYY');
+  };
+
+  const openDetailModal = async (customerId: number) => {
+    setDetailModalVisible(true);
+    setDetailModalLoading(true);
+    setCustomerHistory([]);
+    setSelectedCustomer(null);
+
+    try {
+      const customer = await apiClient.customers.getDetails(customerId);
+      setSelectedCustomer(customer);
+
+      const history = await apiClient.customers.getHistory(customerId);
+      setCustomerHistory(history);
+    } catch (err) {
+      console.error('Fetch detailed customer error:', err);
+      optionsRef.current?.onError?.(
+        (err as SafeAny).response?.data?.message || 'Không thể tải thông tin chi tiết khách hàng'
+      );
+      setDetailModalVisible(false);
+    } finally {
+      setDetailModalLoading(false);
+    }
+  };
+
+  return {
+    currentUser,
+    columnConfig,
+    saveColumnConfig,
+    viewMode,
+    setViewMode,
+    referenceDate,
+    setReferenceDate,
+    customRange,
+    setCustomRange,
+    dateRange,
+    pickerOpen,
+    setPickerOpen,
+    activeTab,
+    setActiveTab,
+    selectedStaffId,
+    setSelectedStaffId,
+    staffList,
+    appointments,
+    loading,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    total,
+    summary,
+    sentinelRef,
+    selectedCustomer,
+    detailModalVisible,
+    setDetailModalVisible,
+    detailModalLoading,
+    customerHistory,
+    bookingWizardVisible,
+    setBookingWizardVisible,
+    bookingInitialCustomer,
+    setBookingInitialCustomer,
+    rescheduleModalVisible,
+    setRescheduleModalVisible,
+    selectedBookingForReschedule,
+    setSelectedBookingForReschedule,
+    fetchAppointments,
+    handleCancelBooking,
+    handleNavigate,
+    getPeriodLabel,
+    openDetailModal,
+  };
+}

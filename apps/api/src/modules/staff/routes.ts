@@ -2,6 +2,25 @@ import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
 import { requireAuth, requireRole } from '../../middlewares/auth.js';
 
+interface CreateStaffInput {
+  username?: string;
+  password?: string;
+  displayName?: string;
+  role?: string;
+  isActive?: boolean;
+  email?: string | null;
+  phone?: string | null;
+  joinedAt?: string | null;
+  birthDate?: string | null;
+  gender?: string | null;
+  address?: string | null;
+  emergencyContact?: string | null;
+  emergencyPhone?: string | null;
+  avatarUrl?: string | null;
+  notes?: string | null;
+  legacyStaffId?: string | number | null;
+}
+
 export async function staffRoutes(fastify: FastifyInstance) {
   // GET /api/staff - Get all staff members (Admin gets full fields, others get basic public fields)
   fastify.get('/staff', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -14,7 +33,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
     const currentUser = request.user as { role: string };
 
     try {
-      const whereClause: any = {};
+      const whereClause: Record<string, unknown> = {};
 
       if (role) {
         whereClause.role = role;
@@ -28,7 +47,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         whereClause.OR = [{ displayName: { contains: search } }, { username: { contains: search } }];
       }
 
-      const selectFields: any = {
+      const selectFields: Record<string, boolean> = {
         id: true,
         username: true,
         displayName: true,
@@ -60,8 +79,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
       });
 
       return staff;
-    } catch (error: any) {
-      fastify.log.error('Fetch staff error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Fetch staff error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Không thể lấy danh sách nhân viên',
@@ -118,8 +137,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
       }
 
       return staff;
-    } catch (error: any) {
-      fastify.log.error('Fetch staff details error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Fetch staff details error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi hệ thống khi lấy thông tin nhân viên',
@@ -146,7 +165,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       avatarUrl,
       notes,
       legacyStaffId,
-    } = request.body as any;
+    } = request.body as CreateStaffInput;
 
     if (!username || !displayName) {
       return reply.status(400).send({
@@ -190,7 +209,11 @@ export async function staffRoutes(fastify: FastifyInstance) {
           emergencyPhone,
           avatarUrl,
           notes,
-          legacyStaffId: legacyStaffId ? parseInt(legacyStaffId, 10) : null,
+          legacyStaffId: legacyStaffId
+            ? typeof legacyStaffId === 'number'
+              ? legacyStaffId
+              : parseInt(legacyStaffId, 10)
+            : null,
         },
       });
 
@@ -204,8 +227,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
           isActive: staff.isActive,
         },
       };
-    } catch (error: any) {
-      fastify.log.error('Create staff error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Create staff error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Không thể tạo nhân viên mới',
@@ -248,7 +271,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       avatarUrl,
       notes,
       legacyStaffId,
-    } = request.body as any;
+    } = request.body as CreateStaffInput;
 
     try {
       // Find the existing staff first
@@ -261,7 +284,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       }
 
       // Construct update payload
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
 
       // General properties that both Admin & Self can change
       if (displayName !== undefined) updateData.displayName = displayName;
@@ -275,7 +298,11 @@ export async function staffRoutes(fastify: FastifyInstance) {
       if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
       if (notes !== undefined) updateData.notes = notes;
       if (legacyStaffId !== undefined) {
-        updateData.legacyStaffId = legacyStaffId ? parseInt(legacyStaffId, 10) : null;
+        updateData.legacyStaffId = legacyStaffId
+          ? typeof legacyStaffId === 'number'
+            ? legacyStaffId
+            : parseInt(legacyStaffId, 10)
+          : null;
       }
 
       // Handle password update if supplied
@@ -319,8 +346,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
           isActive: updated.isActive,
         },
       };
-    } catch (error: any) {
-      fastify.log.error('Update staff error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Update staff error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi hệ thống khi cập nhật thông tin nhân viên',
@@ -385,8 +412,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
       return {
         message: `Xóa nhân viên "${staff.displayName}" thành công`,
       };
-    } catch (error: any) {
-      fastify.log.error('Delete staff error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Delete staff error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi hệ thống khi xóa nhân viên',
@@ -397,7 +424,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
   // GET /api/staff/legacy - Get list of legacy staff (Wings Lashes accounts)
   fastify.get('/staff/legacy', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      const legacyStaff = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const legacyStaff = await fastify.prisma.legacy.$queryRawUnsafe<
+        { id: number | bigint; name: string | null; email: string | null; phone: string | null }[]
+      >(
         `SELECT 
           up.user_id as id, 
           up.full_name as name, 
@@ -408,14 +437,14 @@ export async function staffRoutes(fastify: FastifyInstance) {
          WHERE up.provider = 'Staff' AND up.is_disabled = 0 AND up.user_group_id > 1
          ORDER BY up.full_name ASC`
       );
-      return legacyStaff.map((row: any) => ({
+      return legacyStaff.map((row) => ({
         id: Number(row.id),
         name: row.name ? row.name.trim() : 'Unknown',
         email: row.email || null,
         phone: row.phone || null,
       }));
-    } catch (error: any) {
-      fastify.log.error('Fetch legacy staff error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Fetch legacy staff error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi hệ thống khi lấy danh sách tài khoản Wings Lashes',

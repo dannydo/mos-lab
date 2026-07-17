@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Drawer, Form, InputNumber, Row, Col, Space, Button, Typography, Divider, message, theme } from 'antd';
-import api from '../../../../lib/api';
+import { apiClient } from '../../../../lib/api-client';
 
 const { Title } = Typography;
 
@@ -25,8 +25,7 @@ export default function SalaryConfigDrawer({ open, onClose, onSaveSuccess }: Sal
     const fetchConfig = async () => {
       setLoading(true);
       try {
-        const res = await api.get('/kpi/salary-config');
-        const c = res.data;
+        const c = await apiClient.kpi.getSalaryConfig();
 
         // Map tiers back to flat fields for AntD Form
         const fullSet0 = c.clientBonusFullSet.discount0;
@@ -38,39 +37,39 @@ export default function SalaryConfigDrawer({ open, onClose, onSaveSuccess }: Sal
         const refill50 = c.clientBonusRefill.discount50;
         const refillMore = c.clientBonusRefill.discountMore;
 
-        const done100 = c.doneBonusTiers.find((t: any) => t.minCount === 100)?.bonus ?? 0;
-        const done150 = c.doneBonusTiers.find((t: any) => t.minCount === 150)?.bonus ?? 0;
-        const done200 = c.doneBonusTiers.find((t: any) => t.minCount === 200)?.bonus ?? 0;
-        const done250 = c.doneBonusTiers.find((t: any) => t.minCount === 250)?.bonus ?? 0;
-        const done300 = c.doneBonusTiers.find((t: any) => t.minCount === 300)?.bonus ?? 0;
-        const done350 = c.doneBonusTiers.find((t: any) => t.minCount === 350)?.bonus ?? 0;
-        const done400 = c.doneBonusTiers.find((t: any) => t.minCount === 400)?.bonus ?? 0;
-        const done450 = c.doneBonusTiers.find((t: any) => t.minCount === 450)?.bonus ?? 0;
-        const done500 = c.doneBonusTiers.find((t: any) => t.minCount === 500)?.bonus ?? 0;
+        const done100 = c.doneBonusTiers.find((t: SafeAny) => t.minCount === 100)?.bonus ?? 0;
+        const done150 = c.doneBonusTiers.find((t: SafeAny) => t.minCount === 150)?.bonus ?? 0;
+        const done200 = c.doneBonusTiers.find((t: SafeAny) => t.minCount === 200)?.bonus ?? 0;
+        const done250 = c.doneBonusTiers.find((t: SafeAny) => t.minCount === 250)?.bonus ?? 0;
+        const done300 = c.doneBonusTiers.find((t: SafeAny) => t.minCount === 300)?.bonus ?? 0;
+        const done350 = c.doneBonusTiers.find((t: SafeAny) => t.minCount === 350)?.bonus ?? 0;
+        const done400 = c.doneBonusTiers.find((t: SafeAny) => t.minCount === 400)?.bonus ?? 0;
+        const done450 = c.doneBonusTiers.find((t: SafeAny) => t.minCount === 450)?.bonus ?? 0;
+        const done500 = c.doneBonusTiers.find((t: SafeAny) => t.minCount === 500)?.bonus ?? 0;
 
-        const missed10 = c.missedBonusTiers.find((t: any) => t.maxRate === 10)?.bonus ?? 0;
-        const missed15 = c.missedBonusTiers.find((t: any) => t.maxRate === 15)?.bonus ?? 0;
-        const missed20 = c.missedBonusTiers.find((t: any) => t.maxRate === 20)?.bonus ?? 0;
-        const missed25 = c.missedBonusTiers.find((t: any) => t.maxRate === 25)?.bonus ?? 0;
-        const missed100 = c.missedBonusTiers.find((t: any) => t.maxRate === 100)?.bonus ?? 0;
+        const missed10 = c.missedBonusTiers.find((t: SafeAny) => t.maxRate === 10)?.bonus ?? 0;
+        const missed15 = c.missedBonusTiers.find((t: SafeAny) => t.maxRate === 15)?.bonus ?? 0;
+        const missed20 = c.missedBonusTiers.find((t: SafeAny) => t.maxRate === 20)?.bonus ?? 0;
+        const missed25 = c.missedBonusTiers.find((t: SafeAny) => t.maxRate === 25)?.bonus ?? 0;
+        const missed100 = c.missedBonusTiers.find((t: SafeAny) => t.maxRate === 100)?.bonus ?? 0;
 
         const rev50 = parseFloat(
-          ((c.revBonusTiers.find((t: any) => t.minRev === 50000000)?.rate || 0) * 100).toFixed(4)
+          ((c.revBonusTiers.find((t: SafeAny) => t.minRev === 50000000)?.rate || 0) * 100).toFixed(4)
         );
         const rev100 = parseFloat(
-          ((c.revBonusTiers.find((t: any) => t.minRev === 100000000)?.rate || 0) * 100).toFixed(4)
+          ((c.revBonusTiers.find((t: SafeAny) => t.minRev === 100000000)?.rate || 0) * 100).toFixed(4)
         );
         const rev150 = parseFloat(
-          ((c.revBonusTiers.find((t: any) => t.minRev === 150000000)?.rate || 0) * 100).toFixed(4)
+          ((c.revBonusTiers.find((t: SafeAny) => t.minRev === 150000000)?.rate || 0) * 100).toFixed(4)
         );
         const rev200 = parseFloat(
-          ((c.revBonusTiers.find((t: any) => t.minRev === 200000000)?.rate || 0) * 100).toFixed(4)
+          ((c.revBonusTiers.find((t: SafeAny) => t.minRev === 200000000)?.rate || 0) * 100).toFixed(4)
         );
         const rev250 = parseFloat(
-          ((c.revBonusTiers.find((t: any) => t.minRev === 250000000)?.rate || 0) * 100).toFixed(4)
+          ((c.revBonusTiers.find((t: SafeAny) => t.minRev === 250000000)?.rate || 0) * 100).toFixed(4)
         );
         const rev300 = parseFloat(
-          ((c.revBonusTiers.find((t: any) => t.minRev === 300000000)?.rate || 0) * 100).toFixed(4)
+          ((c.revBonusTiers.find((t: SafeAny) => t.minRev === 300000000)?.rate || 0) * 100).toFixed(4)
         );
 
         form.setFieldsValue({
@@ -104,7 +103,7 @@ export default function SalaryConfigDrawer({ open, onClose, onSaveSuccess }: Sal
           rev250,
           rev300,
         });
-      } catch (err: any) {
+      } catch (err) {
         console.error('Load config error:', err);
         message.error('Không thể tải thông tin cấu hình lương.');
       } finally {
@@ -115,7 +114,7 @@ export default function SalaryConfigDrawer({ open, onClose, onSaveSuccess }: Sal
     fetchConfig();
   }, [open, form]);
 
-  const handleSaveConfig = async (values: any) => {
+  const handleSaveConfig = async (values: SafeAny) => {
     setSaving(true);
     const payload = {
       baseSalary: values.baseSalary,
@@ -160,11 +159,11 @@ export default function SalaryConfigDrawer({ open, onClose, onSaveSuccess }: Sal
     };
 
     try {
-      await api.post('/kpi/salary-config', payload);
+      await apiClient.kpi.updateSalaryConfig(payload);
       message.success('Đã lưu cấu hình công thức lương mới!');
       onSaveSuccess();
-    } catch (err: any) {
-      message.error(err.response?.data?.message || 'Lỗi lưu cấu hình công thức.');
+    } catch (err) {
+      message.error((err as SafeAny).response?.data?.message || 'Lỗi lưu cấu hình công thức.');
     } finally {
       setSaving(false);
     }

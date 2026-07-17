@@ -12,7 +12,7 @@ const eslintConfig = defineConfig([
       'react-hooks/purity': 'warn',
       'react-hooks/refs': 'warn',
       'prefer-const': 'warn',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': 'warn',
     },
   },

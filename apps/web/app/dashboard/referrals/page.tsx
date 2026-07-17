@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Input, Card, Space, Button, Tag, Typography, theme, Spin, Tooltip, Tabs } from 'antd';
 import { SearchOutlined, ShareAltOutlined, EyeOutlined } from '@ant-design/icons';
+import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
-import api from '../../../lib/api';
-import CustomerDetailDrawer from '../../../components/CustomerDetailDrawer';
+import { apiClient } from '../../../lib/api-client';
+
+const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 
 const { Title, Text } = Typography;
 
@@ -14,7 +16,7 @@ export default function ReferralsPage() {
   const { token } = theme.useToken();
 
   const [loading, setLoading] = useState(false);
-  const [referrers, setReferrers] = useState<any[]>([]);
+  const [referrers, setReferrers] = useState<SafeAny[]>([]);
   const [searchText, setSearchText] = useState('');
 
   const [timeFilter, setTimeFilter] = useState<'this_month' | 'last_month' | 'this_year' | 'last_year' | 'all_time'>(
@@ -30,12 +32,12 @@ export default function ReferralsPage() {
     }
     const savedFilter = localStorage.getItem('mos_referrals_timeFilter');
     if (savedFilter) {
-      setTimeFilter(savedFilter as any);
+      setTimeFilter(savedFilter as SafeAny);
     }
   }, []);
 
   const handleTimeFilterChange = (key: string) => {
-    setTimeFilter(key as any);
+    setTimeFilter(key as SafeAny);
     setCurrentPage(1);
     localStorage.setItem('mos_referrals_timeFilter', key);
   };
@@ -57,8 +59,8 @@ export default function ReferralsPage() {
   const fetchReferrals = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/customers/referrals');
-      setReferrers(res.data || []);
+      const data = await apiClient.customers.getReferrals();
+      setReferrers(data || []);
     } catch (err) {
       console.error('[ReferralsPage] Failed to fetch referrals:', err);
     } finally {
@@ -66,10 +68,10 @@ export default function ReferralsPage() {
     }
   };
 
-  const showCustomerDetails = (id: number) => {
+  const showCustomerDetails = React.useCallback((id: number) => {
     setSelectedCustomerId(id);
     setDrawerOpen(true);
-  };
+  }, []);
 
   const isInRange = (dateStr: string | null, filter: string) => {
     if (filter === 'all_time') return true;
@@ -135,95 +137,107 @@ export default function ReferralsPage() {
     return counts;
   }, [referrers]);
 
-  const processedReferrers = referrers
-    .map((r) => {
-      const filteredUsers = (r.referredUsers || []).filter((ru: any) => isInRange(ru.dateCreated, timeFilter));
-      const totalReferred = filteredUsers.length;
-      const totalRewardDiamonds = filteredUsers.reduce((sum: number, ru: any) => sum + (ru.rewardDiamonds || 0), 0);
+  const processedReferrers = React.useMemo(() => {
+    return referrers
+      .map((r) => {
+        const filteredUsers = (r.referredUsers || []).filter((ru: SafeAny) => isInRange(ru.dateCreated, timeFilter));
+        const totalReferred = filteredUsers.length;
+        const totalRewardDiamonds = filteredUsers.reduce(
+          (sum: number, ru: SafeAny) => sum + (ru.rewardDiamonds || 0),
+          0
+        );
 
-      return {
-        ...r,
-        totalReferred,
-        totalRewardDiamonds,
-        referredUsers: filteredUsers,
-      };
-    })
-    .filter((r) => r.totalReferred > 0);
+        return {
+          ...r,
+          totalReferred,
+          totalRewardDiamonds,
+          referredUsers: filteredUsers,
+        };
+      })
+      .filter((r) => r.totalReferred > 0);
+  }, [referrers, timeFilter]);
 
   // Filter local referrers based on name or phone
-  const filteredReferrers = processedReferrers.filter((r) => {
-    const term = searchText.toLowerCase().trim();
-    if (!term) return true;
-    return (r.referrerName || '').toLowerCase().includes(term) || (r.referrerPhone || '').toLowerCase().includes(term);
-  });
+  const filteredReferrers = React.useMemo(() => {
+    return processedReferrers.filter((r) => {
+      const term = searchText.toLowerCase().trim();
+      if (!term) return true;
+      return (
+        (r.referrerName || '').toLowerCase().includes(term) || (r.referrerPhone || '').toLowerCase().includes(term)
+      );
+    });
+  }, [processedReferrers, searchText]);
 
-  const columns = [
-    {
-      title: 'Khách hàng giới thiệu',
-      key: 'referrer',
-      render: (record: any) => (
-        <Space direction="vertical" size={2}>
-          <span
+  const columns = React.useMemo(
+    () => [
+      {
+        title: 'Khách hàng giới thiệu',
+        key: 'referrer',
+        render: (record: SafeAny) => (
+          <Space direction="vertical" size={2}>
+            <span
+              onClick={() => showCustomerDetails(record.referrerId)}
+              style={{
+                fontWeight: 'bold',
+                color: token.colorPrimary,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >
+              {record.referrerName}
+            </span>
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              SĐT: {record.referrerPhone}
+            </Text>
+          </Space>
+        ),
+      },
+      {
+        title: 'Số người đã giới thiệu',
+        dataIndex: 'totalReferred',
+        key: 'totalReferred',
+        sorter: (a: SafeAny, b: SafeAny) => a.totalReferred - b.totalReferred,
+        render: (val: number) => (
+          <Tag color="blue" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
+            {val} người bạn
+          </Tag>
+        ),
+      },
+      {
+        title: 'Tổng Kim Cương tích luỹ',
+        dataIndex: 'totalRewardDiamonds',
+        key: 'totalRewardDiamonds',
+        sorter: (a: SafeAny, b: SafeAny) => a.totalRewardDiamonds - b.totalRewardDiamonds,
+        render: (val: number) => (
+          <Tag color="warning" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
+            💎 {val} KC
+          </Tag>
+        ),
+      },
+      {
+        title: 'Hành động',
+        key: 'actions',
+        render: (record: SafeAny) => (
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
             onClick={() => showCustomerDetails(record.referrerId)}
-            style={{
-              fontWeight: 'bold',
-              color: token.colorPrimary,
-              cursor: 'pointer',
-              textDecoration: 'underline',
-            }}
+            style={{ padding: 0 }}
           >
-            {record.referrerName}
-          </span>
-          <Text type="secondary" style={{ fontSize: '12px' }}>
-            SĐT: {record.referrerPhone}
-          </Text>
-        </Space>
-      ),
-    },
-    {
-      title: 'Số người đã giới thiệu',
-      dataIndex: 'totalReferred',
-      key: 'totalReferred',
-      sorter: (a: any, b: any) => a.totalReferred - b.totalReferred,
-      render: (val: number) => (
-        <Tag color="blue" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
-          {val} người bạn
-        </Tag>
-      ),
-    },
-    {
-      title: 'Tổng Kim Cương tích luỹ',
-      dataIndex: 'totalRewardDiamonds',
-      key: 'totalRewardDiamonds',
-      sorter: (a: any, b: any) => a.totalRewardDiamonds - b.totalRewardDiamonds,
-      render: (val: number) => (
-        <Tag color="warning" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
-          💎 {val} KC
-        </Tag>
-      ),
-    },
-    {
-      title: 'Hành động',
-      key: 'actions',
-      render: (record: any) => (
-        <Button
-          type="link"
-          icon={<EyeOutlined />}
-          onClick={() => showCustomerDetails(record.referrerId)}
-          style={{ padding: 0 }}
-        >
-          Xem chi tiết khách hàng
-        </Button>
-      ),
-    },
-  ];
+            Xem chi tiết khách hàng
+          </Button>
+        ),
+      },
+    ],
+    [token, showCustomerDetails]
+  );
 
-  const expandedRowRender = (record: any) => {
+  const expandedRowRender = (record: SafeAny) => {
     const subColumns = [
       {
         title: 'Bạn bè được giới thiệu',
         key: 'name',
-        render: (subRec: any) => (
+        render: (subRec: SafeAny) => (
           <span
             onClick={() => showCustomerDetails(subRec.id)}
             style={{

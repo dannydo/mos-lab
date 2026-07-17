@@ -1,6 +1,16 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth, requireRole } from '../../middlewares/auth.js';
 
+interface RoleInput {
+  key?: string;
+  name?: string;
+  color?: string;
+  viewKPI?: boolean;
+  viewTeamKPI?: boolean;
+  manageStaff?: boolean;
+  description?: string;
+}
+
 export async function rolesRoutes(fastify: FastifyInstance) {
   // GET /api/roles - Fetch all roles (Authenticated)
   fastify.get('/roles', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -9,8 +19,8 @@ export async function rolesRoutes(fastify: FastifyInstance) {
         orderBy: { createdAt: 'asc' },
       });
       return roles;
-    } catch (error: any) {
-      fastify.log.error('Fetch roles error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Fetch roles error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Không thể lấy danh sách vai trò',
@@ -20,7 +30,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
 
   // POST /api/roles - Create a new custom role (Admin only)
   fastify.post('/roles', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
-    const { key, name, color, viewKPI, viewTeamKPI, manageStaff, description } = request.body as any;
+    const { key, name, color, viewKPI, viewTeamKPI, manageStaff, description } = request.body as RoleInput;
 
     if (!key || !name) {
       return reply.status(400).send({
@@ -67,8 +77,8 @@ export async function rolesRoutes(fastify: FastifyInstance) {
         message: 'Tạo vai trò thành công',
         role,
       };
-    } catch (error: any) {
-      fastify.log.error('Create role error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Create role error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Không thể tạo vai trò mới',
@@ -79,7 +89,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
   // PUT /api/roles/:key - Update a role (Admin only)
   fastify.put('/roles/:key', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
     const { key } = request.params as { key: string };
-    const { name, color, viewKPI, viewTeamKPI, manageStaff, description } = request.body as any;
+    const { name, color, viewKPI, viewTeamKPI, manageStaff, description } = request.body as RoleInput;
 
     try {
       const existingRole = await fastify.prisma.crm.crmRole.findUnique({
@@ -91,7 +101,14 @@ export async function rolesRoutes(fastify: FastifyInstance) {
       }
 
       // Update data
-      const updateData: any = {};
+      const updateData: {
+        name?: string;
+        color?: string;
+        description?: string;
+        viewKPI?: boolean;
+        viewTeamKPI?: boolean;
+        manageStaff?: boolean;
+      } = {};
       if (name !== undefined) updateData.name = name;
       if (color !== undefined) updateData.color = color;
       if (description !== undefined) updateData.description = description;
@@ -118,8 +135,8 @@ export async function rolesRoutes(fastify: FastifyInstance) {
         message: 'Cập nhật vai trò thành công',
         role: updated,
       };
-    } catch (error: any) {
-      fastify.log.error('Update role error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Update role error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Không thể cập nhật thông tin vai trò',
@@ -167,8 +184,8 @@ export async function rolesRoutes(fastify: FastifyInstance) {
       return {
         message: `Xóa vai trò "${role.name}" thành công`,
       };
-    } catch (error: any) {
-      fastify.log.error('Delete role error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Delete role error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi hệ thống khi xóa vai trò',

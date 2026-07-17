@@ -13,7 +13,7 @@ async function run() {
   try {
     for (const table of tables) {
       console.log(`\n--- Schema for ${table} ---`);
-      const schema = await legacy.$queryRawUnsafe<any[]>(`DESCRIBE \`${table}\``);
+      const schema = await legacy.$queryRawUnsafe<SafeAny[]>(`DESCRIBE \`${table}\``);
       console.log(JSON.stringify(schema, null, 2));
     }
   } catch (err) {

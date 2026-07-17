@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import type { TableColumnType } from 'antd';
 import { ColumnConfig } from '@mos-lab/shared';
 import { apiClient } from '../lib/api-client';
 import { message } from 'antd';
@@ -14,26 +15,28 @@ import {
 
 export { AVAILABLE_ICONS, getDefaultIcon, renderIconHelper, getDynamicLucideIcon, getCustomIconComponent };
 
-export function useTableConfig(tableId: string, staticColumns: any[]) {
+export function useTableConfig<T = Record<string, unknown>>(tableId: string, staticColumns: TableColumnType<T>[]) {
   const [loading, setLoading] = useState(true);
   const [configVisible, setConfigVisible] = useState(false);
   const [rawConfig, setRawConfig] = useState<ColumnConfig[]>([]);
-  const [mergedColumns, setMergedColumns] = useState<any[]>([]);
+  const [mergedColumns, setMergedColumns] = useState<TableColumnType<T>[]>([]);
 
   // Keep reference to staticColumns to avoid re-renders and circular dependencies
   const staticColsRef = useRef(staticColumns);
-  staticColsRef.current = staticColumns;
+  useEffect(() => {
+    staticColsRef.current = staticColumns;
+  }, [staticColumns]);
 
   // 1. Initial Column Metadata Constructor
-  const createDefaultConfigFromStatic = useCallback((staticCols: any[]): ColumnConfig[] => {
+  const createDefaultConfigFromStatic = useCallback((staticCols: TableColumnType<T>[]): ColumnConfig[] => {
     return staticCols.map((col) => {
-      const key = (col.key || col.dataIndex) as string;
-      const titleText = typeof col.title === 'string' ? col.title : col.key || col.dataIndex || 'Cột';
+      const key = String(col.key || col.dataIndex || '');
+      const titleText = typeof col.title === 'string' ? col.title : String(col.key || col.dataIndex || 'Cột');
       return {
         key,
         title: titleText,
         originalTitle: titleText,
-        width: col.width,
+        width: typeof col.width === 'number' ? col.width : undefined,
         visible: true,
         icon: '', // empty means fallback to getDefaultIcon
       };
@@ -44,47 +47,15 @@ export function useTableConfig(tableId: string, staticColumns: any[]) {
   const loadConfig = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await apiClient.tableConfig.get(tableId);
-      const activeConfig = response.userConfig || response.defaultConfig;
-
-      let finalConfig: ColumnConfig[];
-      if (activeConfig && activeConfig.length > 0) {
-        // Merge code-defined columns with database configuration (handles newly added columns in code)
-        const activeConfigMap = new Map(activeConfig.map((c) => [c.key, c]));
-        const defaultConfig = createDefaultConfigFromStatic(staticColsRef.current);
-
-        // Map existing columns or append new ones
-        const mergedList = defaultConfig.map((defCol) => {
-          const savedCol = activeConfigMap.get(defCol.key);
-          if (savedCol) {
-            return {
-              ...defCol,
-              title: savedCol.title || defCol.title,
-              width: savedCol.width !== undefined ? savedCol.width : defCol.width,
-              visible: savedCol.visible !== false,
-              icon: savedCol.icon !== undefined ? savedCol.icon : '',
-            };
-          }
-          return defCol; // Column only in code
-        });
-
-        // Preserving the sorting order from saved configuration
-        const savedOrder = activeConfig.map((c) => c.key);
-        mergedList.sort((a, b) => {
-          const aIndex = savedOrder.indexOf(a.key);
-          const bIndex = savedOrder.indexOf(b.key);
-          if (aIndex === -1 && bIndex === -1) return 0;
-          if (aIndex === -1) return 1;
-          if (bIndex === -1) return -1;
-          return aIndex - bIndex;
-        });
-
-        finalConfig = mergedList;
+      const res = await apiClient.tableConfig.get(tableId);
+      if (res.userConfig && res.userConfig.length > 0) {
+        setRawConfig(res.userConfig);
+      } else if (res.defaultConfig && res.defaultConfig.length > 0) {
+        setRawConfig(res.defaultConfig);
       } else {
-        finalConfig = createDefaultConfigFromStatic(staticColsRef.current);
+        // Fallback to static columns
+        setRawConfig(createDefaultConfigFromStatic(staticColsRef.current));
       }
-
-      setRawConfig(finalConfig);
     } catch (error) {
       console.error('Failed to load table config:', error);
       // Fallback to static columns
@@ -106,9 +77,10 @@ export function useTableConfig(tableId: string, staticColumns: any[]) {
         message.success(res.message);
         setRawConfig(newColumns);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to save table config:', error);
-      const errMsg = error.response?.data?.message || 'Không thể lưu cấu hình bảng';
+      const err = error as { response?: { data?: { message?: string } } };
+      const errMsg = (err as SafeAny).response?.data?.message || 'Không thể lưu cấu hình bảng';
       message.error(errMsg);
       throw error;
     }
@@ -174,13 +146,13 @@ export function useTableConfig(tableId: string, staticColumns: any[]) {
               'span',
               { style: { display: 'inline-flex', alignItems: 'center' } },
               colIcon !== 'none' ? renderIconHelper(colIcon) : null,
-              React.createElement('span', null, config.title || staticCol.title)
+              React.createElement('span', null, config.title || (staticCol.title as React.ReactNode))
             ),
             width: config.width !== undefined ? config.width : staticCol.width,
             visible: config.visible,
             orderIndex: config.index,
-            onHeaderCell: (column: any) => ({
-              width: column.width,
+            onHeaderCell: (column: TableColumnType<T>) => ({
+              width: column.width as number,
               onResize: (newWidth: number) => handleColumnResize(key, newWidth),
             }),
           };
@@ -194,20 +166,20 @@ export function useTableConfig(tableId: string, staticColumns: any[]) {
             'span',
             { style: { display: 'inline-flex', alignItems: 'center' } },
             defaultColIcon !== 'none' ? renderIconHelper(defaultColIcon) : null,
-            React.createElement('span', null, staticCol.title)
+            React.createElement('span', null, staticCol.title as React.ReactNode)
           ),
           visible: true,
           orderIndex: 9999,
-          onHeaderCell: (column: any) => ({
-            width: column.width,
+          onHeaderCell: (column: TableColumnType<T>) => ({
+            width: column.width as number,
             onResize: (newWidth: number) => handleColumnResize(key, newWidth),
           }),
         };
       })
       .filter((col) => col.visible !== false)
-      .sort((a, b) => a.orderIndex - b.orderIndex);
+      .sort((a, b) => (a.orderIndex ?? 9999) - (b.orderIndex ?? 9999));
 
-    setMergedColumns(merged);
+    setMergedColumns(merged as TableColumnType<T>[]);
   }, [rawConfig, handleColumnResize]);
 
   return {

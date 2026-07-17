@@ -20,7 +20,7 @@ import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 dotenv.config();
 
 // BigInt JSON serialization patch
-(BigInt.prototype as any).toJSON = function () {
+(BigInt.prototype as unknown as SafeAny).toJSON = function () {
   return Number(this);
 };
 

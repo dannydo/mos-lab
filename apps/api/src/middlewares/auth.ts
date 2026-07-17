@@ -45,8 +45,8 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
           });
       }
     }
-  } catch (err: any) {
-    request.log.error('JWT verification failed:', err.message, err.stack);
+  } catch (err: SafeAny) {
+    request.log.error('JWT verification failed:', (err as SafeAny).message, err.stack);
     reply.status(401).send({ error: 'Unauthorized', message: 'Token is missing or invalid' });
   }
 }

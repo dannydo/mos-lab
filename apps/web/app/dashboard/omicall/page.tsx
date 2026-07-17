@@ -32,9 +32,13 @@ import {
   PlayCircleOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
+import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
-import { QAPlayerDrawer } from '../../../components/QAPlayerDrawer';
+
+const QAPlayerDrawer = dynamic(() => import('../../../components/QAPlayerDrawer').then((m) => m.QAPlayerDrawer), {
+  ssr: false,
+});
 import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
@@ -45,14 +49,14 @@ export default function OmicallLogsPage() {
   const { token } = theme.useToken();
 
   // Auth Context
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<SafeAny>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Tab State
   const [activeTab, setActiveTab] = useState('logs');
 
   // Logs Table States
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<SafeAny[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -64,14 +68,14 @@ export default function OmicallLogsPage() {
   const [happyFilter, setHappyFilter] = useState<string>('ALL');
   const [aiFilter, setAiFilter] = useState<string>('ALL');
   const [staffFilter, setStaffFilter] = useState<string>('ALL');
-  const [staffList, setStaffList] = useState<any[]>([]);
+  const [staffList, setStaffList] = useState<SafeAny[]>([]);
 
   // Config Tab States
-  const [configs, setConfigs] = useState<any[]>([]);
+  const [configs, setConfigs] = useState<SafeAny[]>([]);
   const [loadingConfigs, setLoadingConfigs] = useState(false);
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [configForm] = Form.useForm();
-  const [selectedStaffForConfig, setSelectedStaffForConfig] = useState<any>(null);
+  const [selectedStaffForConfig, setSelectedStaffForConfig] = useState<SafeAny>(null);
   const [submittingConfig, setSubmittingConfig] = useState(false);
 
   // QA Drawer States
@@ -103,7 +107,7 @@ export default function OmicallLogsPage() {
   const fetchLogs = useCallback(async () => {
     setLoadingLogs(true);
     try {
-      const params: any = {
+      const params: SafeAny = {
         page: currentPage,
         limit: pageSize,
         direction: 'outbound',
@@ -132,8 +136,8 @@ export default function OmicallLogsPage() {
       }
 
       const data = await apiClient.omicall.listLogs(params);
-      setLogs(data.logs || []);
-      setTotalLogs(data.pagination?.total || data.total || 0);
+      setLogs((data as SafeAny).logs || []);
+      setTotalLogs((data as SafeAny).pagination?.total || (data as SafeAny).total || 0);
     } catch (err) {
       console.error('[OmicallLogsPage] Failed to fetch call logs:', err);
       message.error('Không thể tải lịch sử cuộc gọi OmiCall');
@@ -195,7 +199,7 @@ export default function OmicallLogsPage() {
   };
 
   // Extension Config Actions
-  const handleOpenConfigModal = (staff: any) => {
+  const handleOpenConfigModal = (staff: SafeAny) => {
     setSelectedStaffForConfig(staff);
     configForm.setFieldsValue({
       extension: staff.extension || '',
@@ -210,7 +214,7 @@ export default function OmicallLogsPage() {
       const values = await configForm.validateFields();
       setSubmittingConfig(true);
 
-      const payload: any = {
+      const payload: SafeAny = {
         staffId: selectedStaffForConfig.staffId,
         extension: values.extension.trim(),
         phoneNumber: values.phoneNumber ? values.phoneNumber.trim() : null,
@@ -225,9 +229,9 @@ export default function OmicallLogsPage() {
       message.success(`Đã cập nhật máy lẻ cho ${selectedStaffForConfig.displayName}`);
       setConfigModalOpen(false);
       fetchConfigs();
-    } catch (err: any) {
+    } catch (err) {
       console.error('[OmicallLogsPage] Failed to save extension config:', err);
-      message.error(err.response?.data?.message || 'Lưu cấu hình máy lẻ thất bại');
+      message.error((err as SafeAny).response?.data?.message || 'Lưu cấu hình máy lẻ thất bại');
     } finally {
       setSubmittingConfig(false);
     }
@@ -238,9 +242,9 @@ export default function OmicallLogsPage() {
       await apiClient.omicall.deleteConfig(staffId);
       message.success(`Đã xóa cấu hình máy lẻ của ${displayName}`);
       fetchConfigs();
-    } catch (err: any) {
+    } catch (err) {
       console.error('[OmicallLogsPage] Failed to delete extension config:', err);
-      message.error(err.response?.data?.message || 'Xóa cấu hình máy lẻ thất bại');
+      message.error((err as SafeAny).response?.data?.message || 'Xóa cấu hình máy lẻ thất bại');
     }
   };
 
@@ -342,7 +346,7 @@ export default function OmicallLogsPage() {
       title: 'Nhân viên',
       dataIndex: ['staff', 'displayName'],
       key: 'staffName',
-      render: (val: string, record: any) => <strong>{val || `Staff ID: ${record.staffId}`}</strong>,
+      render: (val: string, record: SafeAny) => <strong>{val || `Staff ID: ${record.staffId}`}</strong>,
     },
     {
       title: 'Khách hàng',
@@ -392,7 +396,7 @@ export default function OmicallLogsPage() {
       title: 'Hành động',
       key: 'actions',
       align: 'center' as const,
-      render: (_: any, record: any) => (
+      render: (_: SafeAny, record: SafeAny) => (
         <Button
           type="primary"
           icon={<EyeOutlined />}
@@ -416,7 +420,7 @@ export default function OmicallLogsPage() {
       title: 'Nhân viên (CRM Staff)',
       dataIndex: 'displayName',
       key: 'displayName',
-      render: (val: string, record: any) => (
+      render: (val: string, record: SafeAny) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{val}</div>
           <Text type="secondary" style={{ fontSize: '12px' }}>
@@ -461,7 +465,7 @@ export default function OmicallLogsPage() {
       title: 'Mật khẩu SIP WebRTC',
       dataIndex: 'hasSipPassword',
       key: 'hasSipPassword',
-      render: (val: boolean, record: any) =>
+      render: (val: boolean, record: SafeAny) =>
         record.extension ? (
           val ? (
             <Tag color="blue">● Đã cấu hình</Tag>
@@ -476,7 +480,7 @@ export default function OmicallLogsPage() {
       title: 'Thao tác',
       key: 'actions',
       width: 220,
-      render: (_: any, record: any) => (
+      render: (_: SafeAny, record: SafeAny) => (
         <Space size="middle">
           <Button icon={<EditOutlined />} size="small" onClick={() => handleOpenConfigModal(record)}>
             Cấu hình

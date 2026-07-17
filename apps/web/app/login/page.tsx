@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Typography, message, Divider } from 'antd';
 import { UserOutlined, LockOutlined, GoogleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import api from '../../lib/api';
+import { apiClient } from '../../lib/api-client';
 
 const { Title, Text } = Typography;
 
@@ -33,15 +33,15 @@ export default function LoginPage() {
     document.body.appendChild(script);
 
     script.onload = () => {
-      if ((window as any).google) {
+      if ((window as SafeAny).google) {
         try {
-          (window as any).google.accounts.id.initialize({
+          (window as SafeAny).google.accounts.id.initialize({
             client_id:
               process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
               '648958464510-tedkbs4n8dmrgfjhqegcien7r0u7ed9g.apps.googleusercontent.com',
             callback: handleGoogleLogin,
           });
-          (window as any).google.accounts.id.renderButton(document.getElementById('google-signin-btn'), {
+          (window as SafeAny).google.accounts.id.renderButton(document.getElementById('google-signin-btn'), {
             theme: 'dark',
             size: 'large',
             type: 'standard',
@@ -60,23 +60,23 @@ export default function LoginPage() {
     };
   }, []);
 
-  const handleGoogleLogin = async (googleResponse: any) => {
+  const handleGoogleLogin = async (googleResponse: SafeAny) => {
     setLoading(true);
     try {
-      const response = await api.post('/auth/google', {
+      const data = await apiClient.auth.google({
         credential: googleResponse.credential,
       });
 
-      const { token, user } = response.data;
+      const { token, user } = data;
 
       localStorage.setItem('mos_token', token);
       localStorage.setItem('mos_user', JSON.stringify(user));
 
       message.success(`Đăng nhập Google thành công! Chào mừng ${user.displayName}`);
       router.push('/dashboard/customers');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Google login error:', error);
-      const errMsg = error.response?.data?.message || 'Đăng nhập Google thất bại.';
+      const errMsg = (error as SafeAny).response?.data?.message || 'Đăng nhập Google thất bại.';
       message.error(errMsg);
     } finally {
       setLoading(false);
@@ -86,46 +86,47 @@ export default function LoginPage() {
   const handleMockGoogleLogin = async (emailToMock = 'danhdo@gmail.com', nameToMock = 'Danh Do') => {
     setLoading(true);
     try {
-      const response = await api.post('/auth/google', {
+      const data = await apiClient.auth.google({
         isMock: true,
         email: emailToMock,
         name: nameToMock,
       });
 
-      const { token, user } = response.data;
+      const { token, user } = data;
 
       localStorage.setItem('mos_token', token);
       localStorage.setItem('mos_user', JSON.stringify(user));
 
       message.success(`Đăng nhập Google (Mock) thành công! Chào mừng ${user.displayName}`);
       router.push('/dashboard/customers');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Mock login error:', error);
-      const errMsg = error.response?.data?.message || 'Đăng nhập Mock Google thất bại.';
+      const errMsg = (error as SafeAny).response?.data?.message || 'Đăng nhập Mock Google thất bại.';
       message.error(errMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: SafeAny) => {
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', {
+      const data = await apiClient.auth.login({
         username: values.username,
         password: values.password,
       });
 
-      const { token, user } = response.data;
+      const { token, user } = data;
 
       localStorage.setItem('mos_token', token);
       localStorage.setItem('mos_user', JSON.stringify(user));
 
       message.success(`Đăng nhập thành công! Chào mừng ${user.displayName}`);
       router.push('/dashboard/customers');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Login error:', error);
-      const errMsg = error.response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản.';
+      const errMsg =
+        (error as SafeAny).response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản.';
       message.error(errMsg);
     } finally {
       setLoading(false);

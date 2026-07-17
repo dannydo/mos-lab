@@ -36,8 +36,10 @@ import {
   TeamOutlined,
   ShoppingCartOutlined,
 } from '@ant-design/icons';
-import api from '../../../lib/api';
-import CallLogModal from '../../../components/CallLogModal';
+import dynamic from 'next/dynamic';
+import { apiClient } from '../../../lib/api-client';
+
+const CallLogModal = dynamic(() => import('../../../components/CallLogModal'), { ssr: false });
 import { Customer, CustomerWeeklyProgress, BucketType } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
@@ -62,7 +64,7 @@ export default function PlansPage() {
 
   // Suggestion Drawer
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [suggests, setSuggests] = useState<any>({
+  const [suggests, setSuggests] = useState<SafeAny>({
     happyCall: [],
     single21d: [],
     combo25d: [],
@@ -81,29 +83,29 @@ export default function PlansPage() {
   } | null>(null);
 
   // Helper: Format Vietnamese Date
-  const formatShortDate = (date: Date) => {
+  const formatShortDate = React.useCallback((date: Date) => {
     const day = date.getDate().toString().padStart(2, '0');
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     return `${day}/${month}`;
-  };
+  }, []);
 
   // Build week days dates
-  const weekDays = Array.from({ length: 7 }).map((_, idx) => {
-    const d = new Date(currentWeekMonday);
-    d.setDate(currentWeekMonday.getDate() + idx);
-    return d;
-  });
+  const weekDays = React.useMemo(() => {
+    return Array.from({ length: 7 }).map((_, idx) => {
+      const d = new Date(currentWeekMonday);
+      d.setDate(currentWeekMonday.getDate() + idx);
+      return d;
+    });
+  }, [currentWeekMonday]);
 
   // Fetch Weekly Timeline Progress
   const fetchWeeklyPlans = useCallback(async () => {
     setLoading(true);
     try {
       const weekStartStr = currentWeekMonday.toISOString().split('T')[0];
-      const response = await api.get('/plans/weekly', {
-        params: { weekStart: weekStartStr },
-      });
-      setWeeklyProgress(response.data);
-    } catch (error: any) {
+      const data = await apiClient.plans.getWeekly({ weekStart: weekStartStr });
+      setWeeklyProgress(data);
+    } catch (error) {
       console.error('Fetch weekly plans error:', error);
       message.error('Không thể tải kế hoạch tuần.');
     } finally {
@@ -115,8 +117,8 @@ export default function PlansPage() {
   const fetchSuggestions = useCallback(async () => {
     setSuggestsLoading(true);
     try {
-      const response = await api.get('/plans/suggest');
-      setSuggests(response.data);
+      const data = await apiClient.plans.getSuggestions();
+      setSuggests(data);
     } catch (error) {
       console.error('Fetch suggestions error:', error);
     } finally {
@@ -154,42 +156,45 @@ export default function PlansPage() {
   const addToPlan = async (customerId: number, planDate?: Date) => {
     const targetDate = planDate || new Date();
     try {
-      await api.post('/plans', {
+      await apiClient.plans.create({
         legacyUserId: customerId,
         date: targetDate.toISOString().split('T')[0],
       });
       message.success('Đã thêm khách hàng vào kế hoạch gọi!');
       fetchWeeklyPlans();
       fetchSuggestions(); // Refresh suggestions
-    } catch (error: any) {
+    } catch (error) {
       console.error('Add to plan error:', error);
-      message.error(error.response?.data?.message || 'Không thể thêm khách hàng.');
+      message.error((error as SafeAny).response?.data?.message || 'Không thể thêm khách hàng.');
     }
   };
 
   // Confirm booking booking checkbox
-  const handleConfirmToggle = async (planId: number, checked: boolean) => {
-    try {
-      await api.put(`/plans/${planId}/confirm`, {
-        isConfirmed: checked,
-      });
-      message.success(checked ? 'Đã chốt đặt lịch hẹn thành công!' : 'Đã hủy trạng thái đặt lịch.');
-      fetchWeeklyPlans();
-    } catch (error) {
-      console.error('Toggle confirm error:', error);
-      message.error('Không thể cập nhật trạng thái chốt.');
-    }
-  };
+  const handleConfirmToggle = React.useCallback(
+    async (planId: number, checked: boolean) => {
+      try {
+        await apiClient.plans.confirm(planId, {
+          isConfirmed: checked,
+        });
+        message.success(checked ? 'Đã chốt đặt lịch hẹn thành công!' : 'Đã hủy trạng thái đặt lịch.');
+        fetchWeeklyPlans();
+      } catch (error) {
+        console.error('Toggle confirm error:', error);
+        message.error('Không thể cập nhật trạng thái chốt.');
+      }
+    },
+    [fetchWeeklyPlans]
+  );
 
   // Open call log modal
-  const openCallLog = (record: CustomerWeeklyProgress, dayDate: Date) => {
+  const openCallLog = React.useCallback((record: CustomerWeeklyProgress, dayDate: Date) => {
     setSelectedPlanInfo({
       legacyUserId: record.customer.id,
       customerName: record.customer.name,
       planId: record.planId,
     });
     setModalVisible(true);
-  };
+  }, []);
 
   const handleCallSuccess = () => {
     setModalVisible(false);
@@ -197,14 +202,14 @@ export default function PlansPage() {
   };
 
   // Check if date is today
-  const isToday = (date: Date) => {
+  const isToday = React.useCallback((date: Date) => {
     const today = new Date();
     return (
       date.getDate() === today.getDate() &&
       date.getMonth() === today.getMonth() &&
       date.getFullYear() === today.getFullYear()
     );
-  };
+  }, []);
 
   // Get week range string
   const getWeekRangeString = () => {
@@ -214,272 +219,278 @@ export default function PlansPage() {
     return `${mon.toLocaleDateString('vi-VN')} - ${sun.toLocaleDateString('vi-VN')}`;
   };
 
-  const getRowClassName = (record: Customer) => {
-    // 1. check callback date ("có hẹn gọi lại -> màu hy vọng")
-    const hasCallback = record.callbackDate
-      ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
-      : false;
-    if (hasCallback) {
-      return themeMode === 'dark' ? 'row-hope-dark' : 'row-hope-light';
-    }
-
-    // 2. check if they have a future booking ("đã booked -> sẽ đến, chuyển sang màu xanh")
-    const isBookingInFuture = record.lastBookingDate ? new Date(record.lastBookingDate) > new Date() : false;
-    if (isBookingInFuture) {
-      const state = record.lastBookingState;
-      const isBooked = state === 'New' || state === 'Confirmed';
-      if (isBooked) {
-        return themeMode === 'dark' ? 'row-booked-future-dark' : 'row-booked-future-light';
+  const getRowClassName = React.useCallback(
+    (record: Customer) => {
+      // 1. check callback date ("có hẹn gọi lại -> màu hy vọng")
+      const hasCallback = record.callbackDate
+        ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
+        : false;
+      if (hasCallback) {
+        return themeMode === 'dark' ? 'row-hope-dark' : 'row-hope-light';
       }
-    }
 
-    // 3. check positive daysSinceLastVisit but missed booking ("đã booked mà chưa tới (missed), chuyển sang màu đỏ lợt")
-    const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
-    if (isBookingInPast) {
-      const state = record.lastBookingState;
-      const isMissed =
-        state &&
-        state !== 'Completed' &&
-        state !== 'ServiceCompleted' &&
-        state !== 'CheckIn' &&
-        state !== 'CheckOut' &&
-        state !== 'ServiceStart';
-      if (isMissed) {
-        return themeMode === 'dark' ? 'row-missed-dark' : 'row-missed-light';
+      // 2. check if they have a future booking ("đã booked -> sẽ đến, chuyển sang màu xanh")
+      const isBookingInFuture = record.lastBookingDate ? new Date(record.lastBookingDate) > new Date() : false;
+      if (isBookingInFuture) {
+        const state = record.lastBookingState;
+        const isBooked = state === 'New' || state === 'Confirmed';
+        if (isBooked) {
+          return themeMode === 'dark' ? 'row-booked-future-dark' : 'row-booked-future-light';
+        }
       }
-    }
 
-    return '';
-  };
+      // 3. check positive daysSinceLastVisit but missed booking ("đã booked mà chưa tới (missed), chuyển sang màu đỏ lợt")
+      const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
+      if (isBookingInPast) {
+        const state = record.lastBookingState;
+        const isMissed =
+          state &&
+          state !== 'Completed' &&
+          state !== 'ServiceCompleted' &&
+          state !== 'CheckIn' &&
+          state !== 'CheckOut' &&
+          state !== 'ServiceStart';
+        if (isMissed) {
+          return themeMode === 'dark' ? 'row-missed-dark' : 'row-missed-light';
+        }
+      }
+
+      return '';
+    },
+    [themeMode]
+  );
 
   // Columns definition
-  const columns = [
-    {
-      title: 'Mã KH',
-      dataIndex: ['customer', 'id'],
-      key: 'id',
-      width: 70,
-      fixed: 'left' as const,
-      render: (id: number) => <span style={{ color: token.colorTextDescription }}>{id}</span>,
-    },
-    {
-      title: 'Khách Hàng',
-      dataIndex: ['customer', 'name'],
-      key: 'name',
-      width: 140,
-      fixed: 'left' as const,
-      render: (text: string, record: CustomerWeeklyProgress) => (
-        <div>
-          <div style={{ fontWeight: '600', color: token.colorText }}>{text}</div>
-          <div style={{ fontSize: '11px', color: token.colorTextDescription }}>{record.customer.phone}</div>
-        </div>
-      ),
-    },
-    {
-      title: 'Nhóm',
-      dataIndex: ['customer', 'bucket'],
-      key: 'bucket',
-      width: 100,
-      render: (bucket: BucketType) => {
-        if (bucket === 'COMBO_LIVE')
-          return (
-            <Tag color="green" style={{ fontSize: '10px' }}>
-              LIVE
-            </Tag>
-          );
-        if (bucket === 'COMBO_DEAD')
-          return (
-            <Tag color="red" style={{ fontSize: '10px' }}>
-              DEAD
-            </Tag>
-          );
-        return (
-          <Tag color="warning" style={{ fontSize: '10px' }}>
-            SINGLE
-          </Tag>
-        );
+  const columns = React.useMemo(
+    () => [
+      {
+        title: 'Mã KH',
+        dataIndex: ['customer', 'id'],
+        key: 'id',
+        width: 70,
+        fixed: 'left' as const,
+        render: (id: number) => <span style={{ color: token.colorTextDescription }}>{id}</span>,
       },
-    },
-    {
-      title: 'Chưa tới tiệm (Ngày)',
-      dataIndex: ['customer', 'daysSinceLastVisit'],
-      key: 'daysSince',
-      width: 180,
-      render: (days: number | null, record: CustomerWeeklyProgress) => {
-        const cust = record.customer;
-        // 1. check callback date ("có hẹn gọi lại")
-        const hasCallback = cust.callbackDate
-          ? new Date(cust.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
-          : false;
-        if (hasCallback) {
-          const callbackFormatted = dayjs(cust.callbackDate).format('DD/MM/YYYY');
-          return (
-            <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#d4b106', fontWeight: 'bold' }}>
-              🕒 Hẹn gọi lại: {callbackFormatted}
-            </span>
-          );
-        }
-
-        // 2. check future booking ("đã booked -> sẽ đến")
-        const isBookingInFuture = cust.lastBookingDate ? new Date(cust.lastBookingDate) > new Date() : false;
-        if (isBookingInFuture) {
-          const state = cust.lastBookingState;
-          const isBooked = state === 'New' || state === 'Confirmed';
-          if (isBooked) {
-            const bookingFormatted = dayjs(cust.lastBookingDate).format('DD/MM/YYYY');
-            return (
-              <span style={{ color: themeMode === 'dark' ? '#73d13d' : '#389e0d', fontWeight: 'bold' }}>
-                📅 Booked: {bookingFormatted}
-              </span>
-            );
-          }
-        }
-
-        // 3. check missed booking ("đã booked mà chưa tới (missed)")
-        const isBookingInPast = cust.lastBookingDate ? new Date(cust.lastBookingDate) < new Date() : false;
-        if (isBookingInPast) {
-          const state = cust.lastBookingState;
-          const isMissed =
-            state &&
-            state !== 'Completed' &&
-            state !== 'ServiceCompleted' &&
-            state !== 'CheckIn' &&
-            state !== 'CheckOut' &&
-            state !== 'ServiceStart';
-          if (isMissed) {
-            let missedDays = days;
-            if (cust.lastBookingDate) {
-              const bookingDate = new Date(cust.lastBookingDate);
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              bookingDate.setHours(0, 0, 0, 0);
-              const diffMs = today.getTime() - bookingDate.getTime();
-              missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-            }
-            return (
-              <span style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold' }}>
-                ⚠️ Missed: {missedDays} ngày
-              </span>
-            );
-          }
-        }
-
-        // 4. normal daysSinceLastVisit ("số dương -> chưa ghé x days, bình thường")
-        return days !== null ? `${days} ngày` : <Text style={{ color: '#888' }}>Chưa từng đến</Text>;
-      },
-    },
-    // Monday to Sunday dynamic columns
-    ...weekDays.map((date, idx) => {
-      const weekdayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-      const headerText = `${weekdayNames[idx]} (${formatShortDate(date)})`;
-      const isTodayColumn = isToday(date);
-
-      return {
-        title: (
-          <span style={{ color: isTodayColumn ? '#D4A84B' : 'inherit' }}>
-            {headerText} {isTodayColumn && <Badge status="processing" />}
-          </span>
+      {
+        title: 'Khách Hàng',
+        dataIndex: ['customer', 'name'],
+        key: 'name',
+        width: 140,
+        fixed: 'left' as const,
+        render: (text: string, record: CustomerWeeklyProgress) => (
+          <div>
+            <div style={{ fontWeight: '600', color: token.colorText }}>{text}</div>
+            <div style={{ fontSize: '11px', color: token.colorTextDescription }}>{record.customer.phone}</div>
+          </div>
         ),
-        key: `day_${idx}`,
+      },
+      {
+        title: 'Nhóm',
+        dataIndex: ['customer', 'bucket'],
+        key: 'bucket',
         width: 100,
-        align: 'center' as const,
-        className: isTodayColumn ? 'bg-today-column' : '',
-        render: (_: any, record: CustomerWeeklyProgress) => {
-          const activity = record.dailyActivities[idx];
-
-          if (!activity) return null;
-
+        render: (bucket: BucketType) => {
+          if (bucket === 'COMBO_LIVE')
+            return (
+              <Tag color="green" style={{ fontSize: '10px' }}>
+                LIVE
+              </Tag>
+            );
+          if (bucket === 'COMBO_DEAD')
+            return (
+              <Tag color="red" style={{ fontSize: '10px' }}>
+                DEAD
+              </Tag>
+            );
           return (
-            <Space direction="vertical" size={2}>
-              {/* Checkin Badge */}
-              {activity.hasCheckin && (
-                <Tooltip title={`Đã đến tiệm (Đơn #${activity.orderId})`}>
-                  <Tag color="success" style={{ fontWeight: 'bold', margin: 0, padding: '0 8px' }}>
-                    CK
-                  </Tag>
-                </Tooltip>
-              )}
-
-              {/* Call Log representation */}
-              {activity.hasCall ? (
-                <Tooltip
-                  title={
-                    <div>
-                      <div>
-                        <b>Kết quả:</b> {activity.callResult === 'ANSWERED' ? 'Có bắt máy' : 'Gọi nhỡ'}
-                      </div>
-                      {activity.callOutcome && (
-                        <div>
-                          <b>Chi tiết:</b> {activity.callOutcome}
-                        </div>
-                      )}
-                      {activity.note && (
-                        <div>
-                          <b>Ghi chú:</b> {activity.note}
-                        </div>
-                      )}
-                    </div>
-                  }
-                >
-                  <Button
-                    type="text"
-                    shape="circle"
-                    icon={<PhoneOutlined />}
-                    style={{
-                      color: activity.callResult === 'ANSWERED' ? '#52C41A' : '#FF4D4F',
-                      background: token.colorFillTertiary,
-                    }}
-                    onClick={() => openCallLog(record, date)}
-                  />
-                </Tooltip>
-              ) : (
-                // Quick Call Button for planned or today
-                isTodayColumn &&
-                !record.isConfirmed && (
-                  <Button
-                    type="dashed"
-                    shape="circle"
-                    size="small"
-                    icon={<PlusOutlined />}
-                    onClick={() => openCallLog(record, date)}
-                    style={{ borderColor: '#444', color: '#888' }}
-                  />
-                )
-              )}
-            </Space>
+            <Tag color="warning" style={{ fontSize: '10px' }}>
+              SINGLE
+            </Tag>
           );
         },
-      };
-    }),
-    {
-      title: 'Confirm',
-      key: 'confirm',
-      width: 80,
-      align: 'center' as const,
-      fixed: 'right' as const,
-      render: (_: any, record: CustomerWeeklyProgress) => {
-        if (!record.planId) return null;
-        return (
-          <Tooltip
-            title={
-              record.isConfirmed
-                ? `Đã chốt hẹn lúc ${new Date(record.confirmTime || '').toLocaleTimeString()}`
-                : 'Chốt lịch hẹn'
-            }
-          >
-            <Checkbox
-              checked={record.isConfirmed}
-              onChange={(e) => handleConfirmToggle(record.planId!, e.target.checked)}
-              className="custom-gold-checkbox"
-            />
-          </Tooltip>
-        );
       },
-    },
-  ];
+      {
+        title: 'Chưa tới tiệm (Ngày)',
+        dataIndex: ['customer', 'daysSinceLastVisit'],
+        key: 'daysSince',
+        width: 180,
+        render: (days: number | null, record: CustomerWeeklyProgress) => {
+          const cust = record.customer;
+          // 1. check callback date ("có hẹn gọi lại")
+          const hasCallback = cust.callbackDate
+            ? new Date(cust.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
+            : false;
+          if (hasCallback) {
+            const callbackFormatted = dayjs(cust.callbackDate).format('DD/MM/YYYY');
+            return (
+              <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#d4b106', fontWeight: 'bold' }}>
+                🕒 Hẹn gọi lại: {callbackFormatted}
+              </span>
+            );
+          }
+
+          // 2. check future booking ("đã booked -> sẽ đến")
+          const isBookingInFuture = cust.lastBookingDate ? new Date(cust.lastBookingDate) > new Date() : false;
+          if (isBookingInFuture) {
+            const state = cust.lastBookingState;
+            const isBooked = state === 'New' || state === 'Confirmed';
+            if (isBooked) {
+              const bookingFormatted = dayjs(cust.lastBookingDate).format('DD/MM/YYYY');
+              return (
+                <span style={{ color: themeMode === 'dark' ? '#73d13d' : '#389e0d', fontWeight: 'bold' }}>
+                  📅 Booked: {bookingFormatted}
+                </span>
+              );
+            }
+          }
+
+          // 3. check missed booking ("đã booked mà chưa tới (missed)")
+          const isBookingInPast = cust.lastBookingDate ? new Date(cust.lastBookingDate) < new Date() : false;
+          if (isBookingInPast) {
+            const state = cust.lastBookingState;
+            const isMissed =
+              state &&
+              state !== 'Completed' &&
+              state !== 'ServiceCompleted' &&
+              state !== 'CheckIn' &&
+              state !== 'CheckOut' &&
+              state !== 'ServiceStart';
+            if (isMissed) {
+              let missedDays = days;
+              if (cust.lastBookingDate) {
+                const bookingDate = new Date(cust.lastBookingDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                bookingDate.setHours(0, 0, 0, 0);
+                const diffMs = today.getTime() - bookingDate.getTime();
+                missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+              }
+              return (
+                <span style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold' }}>
+                  ⚠️ Missed: {missedDays} ngày
+                </span>
+              );
+            }
+          }
+
+          // 4. normal daysSinceLastVisit ("số dương -> chưa ghé x days, bình thường")
+          return days !== null ? `${days} ngày` : <Text style={{ color: '#888' }}>Chưa từng đến</Text>;
+        },
+      },
+      // Monday to Sunday dynamic columns
+      ...weekDays.map((date, idx) => {
+        const weekdayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+        const headerText = `${weekdayNames[idx]} (${formatShortDate(date)})`;
+        const isTodayColumn = isToday(date);
+
+        return {
+          title: (
+            <span style={{ color: isTodayColumn ? '#D4A84B' : 'inherit' }}>
+              {headerText} {isTodayColumn && <Badge status="processing" />}
+            </span>
+          ),
+          key: `day_${idx}`,
+          width: 100,
+          align: 'center' as const,
+          className: isTodayColumn ? 'bg-today-column' : '',
+          render: (_: SafeAny, record: CustomerWeeklyProgress) => {
+            const activity = record.dailyActivities[idx];
+
+            if (!activity) return null;
+
+            return (
+              <Space direction="vertical" size={2}>
+                {/* Checkin Badge */}
+                {activity.hasCheckin && (
+                  <Tooltip title={`Đã đến tiệm (Đơn #${activity.orderId})`}>
+                    <Tag color="success" style={{ fontWeight: 'bold', margin: 0, padding: '0 8px' }}>
+                      CK
+                    </Tag>
+                  </Tooltip>
+                )}
+
+                {/* Call Log representation */}
+                {activity.hasCall ? (
+                  <Tooltip
+                    title={
+                      <div>
+                        <div>
+                          <b>Kết quả:</b> {activity.callResult === 'ANSWERED' ? 'Có bắt máy' : 'Gọi nhỡ'}
+                        </div>
+                        {activity.callOutcome && (
+                          <div>
+                            <b>Chi tiết:</b> {activity.callOutcome}
+                          </div>
+                        )}
+                        {activity.note && (
+                          <div>
+                            <b>Ghi chú:</b> {activity.note}
+                          </div>
+                        )}
+                      </div>
+                    }
+                  >
+                    <Button
+                      type="text"
+                      shape="circle"
+                      icon={<PhoneOutlined />}
+                      style={{
+                        color: activity.callResult === 'ANSWERED' ? '#52C41A' : '#FF4D4F',
+                        background: token.colorFillTertiary,
+                      }}
+                      onClick={() => openCallLog(record, date)}
+                    />
+                  </Tooltip>
+                ) : (
+                  // Quick Call Button for planned or today
+                  isTodayColumn &&
+                  !record.isConfirmed && (
+                    <Button
+                      type="dashed"
+                      shape="circle"
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={() => openCallLog(record, date)}
+                      style={{ borderColor: '#444', color: '#888' }}
+                    />
+                  )
+                )}
+              </Space>
+            );
+          },
+        };
+      }),
+      {
+        title: 'Confirm',
+        key: 'confirm',
+        width: 80,
+        align: 'center' as const,
+        fixed: 'right' as const,
+        render: (_: SafeAny, record: CustomerWeeklyProgress) => {
+          if (!record.planId) return null;
+          return (
+            <Tooltip
+              title={
+                record.isConfirmed
+                  ? `Đã chốt hẹn lúc ${new Date(record.confirmTime || '').toLocaleTimeString()}`
+                  : 'Chốt lịch hẹn'
+              }
+            >
+              <Checkbox
+                checked={record.isConfirmed}
+                onChange={(e) => handleConfirmToggle(record.planId!, e.target.checked)}
+                className="custom-gold-checkbox"
+              />
+            </Tooltip>
+          );
+        },
+      },
+    ],
+    [token, themeMode, weekDays, formatShortDate, isToday, openCallLog, handleConfirmToggle]
+  );
 
   // Render suggestion lists
-  const renderSuggestList = (dataList: any[], touchpointName: string, tipMsg: string) => {
+  const renderSuggestList = (dataList: SafeAny[], touchpointName: string, tipMsg: string) => {
     return (
       <div className="mb-6">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -499,7 +510,7 @@ export default function PlansPage() {
             border: `1px solid ${token.colorBorderSecondary}`,
             borderRadius: '6px',
           }}
-          renderItem={(cust: any) => (
+          renderItem={(cust: SafeAny) => (
             <List.Item
               actions={[
                 <Button

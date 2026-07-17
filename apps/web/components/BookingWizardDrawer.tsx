@@ -1,41 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Drawer,
-  Steps,
-  Button,
-  Select,
-  DatePicker,
-  Radio,
-  Input,
-  theme,
-  message,
-  Card,
-  Avatar,
-  Tag,
-  Row,
-  Col,
-  List,
-  Badge,
-  Spin,
-} from 'antd';
-import {
-  UserOutlined,
-  HomeOutlined,
-  CalendarOutlined,
-  CheckCircleOutlined,
-  EyeOutlined,
-  PhoneOutlined,
-  SearchOutlined,
-  ClockCircleOutlined,
-  SmileOutlined,
-  InboxOutlined,
-  HeartFilled,
-} from '@ant-design/icons';
+import { Drawer, Steps, Button, Select, DatePicker, Radio, Input, theme, message, Card, Tag } from 'antd';
+import { PhoneOutlined, UserOutlined, HomeOutlined, CalendarOutlined, InboxOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
-import api from '../lib/api';
+import { apiClient } from '../lib/api-client';
+
+// Shared modules
+import { STORES, FALLBACK_SERVICES, CHANNELS } from './booking/constants';
+import { checkAndAppendLowerLashNote, getCalculatedPrice } from './booking/comboUtils';
+import { useBookingStaff } from './booking/useBookingStaff';
+import { useSlotMatrix } from './booking/useSlotMatrix';
+import { useCustomerInsights } from './booking/useCustomerInsights';
+import { TechnicianSelector } from './booking/TechnicianSelector';
+import { SlotMatrixGrid } from './booking/SlotMatrixGrid';
 
 const { TextArea } = Input;
 
@@ -43,46 +22,8 @@ interface BookingWizardDrawerProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialCustomer?: any;
+  initialCustomer?: SafeAny;
 }
-
-const STORES = [
-  { id: 16, name: 'Estella Place' },
-  { id: 6, name: 'De Tham' },
-  { id: 2, name: 'Phan Xích Long' },
-];
-
-const FALLBACK_SERVICES = [{ id: 0, name: 'Any Lashes / Any Services', price: 0, duration: 90 }];
-
-const CHANNELS = [
-  { key: 'FB', label: 'FB (Facebook)' },
-  { key: 'ZALO', label: 'ZALO' },
-  { key: 'SMS', label: 'SMS' },
-  { key: 'HOTLINE', label: 'HOTLINE' },
-  { key: 'WA', label: 'WA (WhatsApp)' },
-  { key: 'VL', label: 'VL (Viber)' },
-  { key: 'GB', label: 'GB (Google Business)' },
-];
-
-const getOffDaysText = (offDays?: string[]) => {
-  if (!offDays || offDays.length === 0) return '';
-  const weekdayMap: { [key: string]: string } = {
-    '1': 'T2',
-    '2': 'T3',
-    '3': 'T4',
-    '4': 'T5',
-    '5': 'T6',
-    '6': 'T7',
-    '7': 'CN',
-  };
-  return (
-    'Off: ' +
-    offDays
-      .map((d) => weekdayMap[d])
-      .filter(Boolean)
-      .join(', ')
-  );
-};
 
 const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose, onSuccess, initialCustomer }) => {
   const { themeMode } = useTheme();
@@ -91,16 +32,16 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
   const [currentStep, setCurrentStep] = useState(0);
 
   // Form State
-  const [selectedCV, setSelectedCV] = useState<any>(null); // Specific CV or null for "No CV"
-  const [selectedCN, setSelectedCN] = useState<any>(null); // Branch/Store
+  const [selectedCV, setSelectedCV] = useState<SafeAny>(null); // Specific CV or null for "No CV"
+  const [selectedCN, setSelectedCN] = useState<SafeAny>(null); // Branch/Store
   const [searchQuery, setSearchQuery] = useState('');
-  const [customerList, setCustomerList] = useState<any[]>([]);
+  const [customerList, setCustomerList] = useState<SafeAny[]>([]);
   const [searchingCustomers, setSearchingCustomers] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<SafeAny>(null);
 
   // Promotion & Referral states
-  const [promotions, setPromotions] = useState<any[]>([]);
-  const [selectedPromotion, setSelectedPromotion] = useState<any>(null);
+  const [promotions, setPromotions] = useState<SafeAny[]>([]);
+  const [selectedPromotion, setSelectedPromotion] = useState<SafeAny>(null);
   const [referralPhone, setReferralPhone] = useState('');
 
   // Custom lead fields for new customer
@@ -108,154 +49,33 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
   const [leadName, setLeadName] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
 
-  const [selectedService, setSelectedService] = useState<any>(null);
-  const [services, setServices] = useState<any[]>(FALLBACK_SERVICES);
-  const [bookingDate, setBookingDate] = useState<dayjs.Dayjs>(dayjs().add(1, 'day'));
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<SafeAny>(null);
+  const [services, setServices] = useState<SafeAny[]>(FALLBACK_SERVICES);
   const [bookingChannel, setBookingChannel] = useState('FB');
   const [bookingNote, setBookingNote] = useState('');
 
-  // Active Staff List from Backend
-  const [staffList, setStaffList] = useState<any[]>([]);
-  const [loadingStaff, setLoadingStaff] = useState(false);
+  // Custom Hooks
+  const { favoriteTechs, comboBalances, suggestedServices, lastUsedServices, suggestedBranch } = useCustomerInsights(
+    selectedCustomer,
+    selectedCN,
+    setSelectedCN
+  );
 
-  // Availability matrix state (based on database calculations)
-  const [slotMatrix, setSlotMatrix] = useState<{ [time: string]: { available: number; roster: number } }>({});
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const { staffList, loadingStaff, fetchStaff, getGroupedKTVs, getFavoriteKTVs } = useBookingStaff(null, favoriteTechs);
 
-  // Favorite technicians state
-  const [favoriteTechs, setFavoriteTechs] = useState<string[]>([]);
-  const [comboBalances, setComboBalances] = useState<any[]>([]);
-  const [suggestedServices, setSuggestedServices] = useState<string[]>([]);
-  const [lastUsedServices, setLastUsedServices] = useState<string[]>([]);
-  const [suggestedBranch, setSuggestedBranch] = useState<any>(null);
+  const {
+    bookingDate,
+    setBookingDate,
+    selectedSlot,
+    setSelectedSlot,
+    slotMatrix,
+    loadingSlots,
+    fetchSlots,
+    getNextAvailableDate,
+    getCategorizedSlots,
+  } = useSlotMatrix(selectedCN, selectedCV);
 
-  const hasActiveLowerLashCombo = (balances: any[]) => {
-    return balances.some((cb) => {
-      const isCountActive = (cb.normalCount || 0) + (cb.retainCount || 0) > 0;
-      const isExpired = cb.dateExpired ? new Date(cb.dateExpired) < new Date() : false;
-      const name = (cb.serviceName || '').toLowerCase();
-      const isLower =
-        name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
-      return isCountActive && !isExpired && isLower;
-    });
-  };
-
-  const hasActiveUpperLashCombo = (balances: any[]) => {
-    return balances.some((cb) => {
-      const isCountActive = (cb.normalCount || 0) + (cb.retainCount || 0) > 0;
-      const isExpired = cb.dateExpired ? new Date(cb.dateExpired) < new Date() : false;
-      const name = (cb.serviceName || '').toLowerCase();
-      const isUpper =
-        name.includes('trên') ||
-        name.includes('volume') ||
-        name.includes('classic') ||
-        name.includes('lashes') ||
-        name.includes('katun') ||
-        name.includes('mi ');
-      const isLower =
-        name.includes('mi dưới') || name.includes('dưới') || name.includes('lower') || name.includes('under');
-      return isCountActive && !isExpired && isUpper && !isLower;
-    });
-  };
-
-  const checkAndAppendLowerLashNote = (note: string, balances: any[]) => {
-    if (hasActiveLowerLashCombo(balances) && hasActiveUpperLashCombo(balances)) {
-      const suffix = '(Có gói mi dưới)';
-      if (!note.includes('mi dưới') && !note.includes('mi duoi')) {
-        return note ? `${note.trim()} ${suffix}` : suffix;
-      }
-    }
-    return note;
-  };
-
-  useEffect(() => {
-    if (selectedCustomer?.id) {
-      api
-        .get(`/customers/${selectedCustomer.id}/detailed`)
-        .then((res) => {
-          const bookings = res.data.bookings || [];
-          const balances = res.data.comboBalances || [];
-          setComboBalances(balances);
-
-          const techCounts: { [key: string]: number } = {};
-          bookings.forEach((b: any) => {
-            const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-            if (
-              isCompleted &&
-              b.technicianName &&
-              b.technicianName !== 'Unknown' &&
-              b.technicianName !== 'Kỹ thuật viên'
-            ) {
-              const name = b.technicianName.trim();
-              if (!name.includes('(Đã nghỉ)')) {
-                techCounts[name] = (techCounts[name] || 0) + 1;
-              }
-            }
-          });
-          const sorted = Object.entries(techCounts)
-            .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count);
-          setFavoriteTechs(sorted.slice(0, 2).map((t) => t.name));
-
-          // Count services in completed bookings
-          const srvCounts: { [key: string]: number } = {};
-          bookings.forEach((b: any) => {
-            const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-            if (isCompleted && b.services) {
-              b.services.forEach((sName: string) => {
-                srvCounts[sName] = (srvCounts[sName] || 0) + 1;
-              });
-            }
-          });
-          const sortedSrvs = Object.entries(srvCounts)
-            .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count);
-          setSuggestedServices(sortedSrvs.slice(0, 1).map((s) => s.name));
-
-          // Find last completed booking services
-          let lastSrvs: string[] = [];
-          for (const b of bookings) {
-            const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-            if (isCompleted && b.services && b.services.length > 0) {
-              lastSrvs = b.services;
-              break;
-            }
-          }
-          setLastUsedServices(lastSrvs);
-
-          // Count branches in bookings
-          const branchCounts: { [key: number]: number } = {};
-          bookings.forEach((b: any) => {
-            const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-            if (isCompleted && b.storeId) {
-              const sId = Number(b.storeId);
-              branchCounts[sId] = (branchCounts[sId] || 0) + 1;
-            }
-          });
-          const sortedBranches = Object.entries(branchCounts)
-            .map(([id, count]) => ({ id: Number(id), count }))
-            .sort((a, b) => b.count - a.count);
-          if (sortedBranches.length > 0) {
-            const topStoreId = sortedBranches[0].id;
-            const matchedStore = STORES.find((s) => s.id === topStoreId);
-            if (matchedStore) {
-              setSuggestedBranch(matchedStore);
-              if (!selectedCN) {
-                setSelectedCN(matchedStore);
-              }
-            }
-          }
-        })
-        .catch((err) => console.error('Failed to fetch favorite technicians:', err));
-    } else {
-      setFavoriteTechs([]);
-      setComboBalances([]);
-      setSuggestedServices([]);
-      setLastUsedServices([]);
-      setSuggestedBranch(null);
-    }
-  }, [selectedCustomer]);
+  const { morning, afternoon, night } = getCategorizedSlots();
 
   useEffect(() => {
     if (open) {
@@ -266,15 +86,6 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     }
   }, [open]);
 
-  const fetchPromotions = async () => {
-    try {
-      const res = await api.get('/customers/promotions');
-      setPromotions(res.data || []);
-    } catch (err) {
-      console.error('[BookingWizard] Failed to fetch promotions:', err);
-    }
-  };
-
   // Re-fetch staff directory dynamically when selected booking date changes
   useEffect(() => {
     if (open && bookingDate) {
@@ -282,10 +93,10 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     }
   }, [bookingDate, open]);
 
-  // Fetch slot matrix from real API when entering Step 1 (merged step) or when dependencies change
+  // Fetch slot matrix when dependencies change
   useEffect(() => {
     if (open && selectedCN && currentStep === 1) {
-      fetchSlotsFromAPI();
+      fetchSlots();
     }
   }, [selectedCN, bookingDate, selectedCV, open, currentStep]);
 
@@ -312,31 +123,25 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     setReferralPhone('');
   };
 
+  const fetchPromotions = async () => {
+    try {
+      const data = await apiClient.customers.getPromotions();
+      setPromotions(data || []);
+    } catch (err) {
+      console.error('[BookingWizard] Failed to fetch promotions:', err);
+    }
+  };
+
   const fetchServices = async () => {
     try {
-      const res = await api.get('/customers/services');
-      setServices(res.data || FALLBACK_SERVICES);
-      if (res.data && res.data.length > 0) {
-        setSelectedService(res.data[0]);
+      const data = await apiClient.customers.getServices();
+      setServices(data || FALLBACK_SERVICES);
+      if (data && data.length > 0) {
+        setSelectedService(data[0]);
       }
     } catch (err) {
       console.error('[BookingWizard] Failed to fetch services:', err);
       setServices(FALLBACK_SERVICES);
-    }
-  };
-
-  const fetchStaff = async (dateStr?: string) => {
-    setLoadingStaff(true);
-    try {
-      const res = await api.get('/customers/staff', {
-        params: { date: dateStr },
-      });
-      // Filter out specialists/KTVs
-      setStaffList(res.data || []);
-    } catch (err) {
-      console.error('Failed to fetch staff:', err);
-    } finally {
-      setLoadingStaff(false);
     }
   };
 
@@ -348,10 +153,8 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     }
     setSearchingCustomers(true);
     try {
-      const res = await api.get('/customers', {
-        params: { search: val, limit: 10 },
-      });
-      setCustomerList(res.data.data || []);
+      const data = await apiClient.customers.list({ search: val, limit: 10 });
+      setCustomerList(data.data || []);
     } catch (err) {
       console.error('Search customers failed:', err);
     } finally {
@@ -359,50 +162,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     }
   };
 
-  const fetchSlotsFromAPI = async () => {
-    if (!selectedCN) {
-      console.log('[BookingWizard] Cannot fetch slots: selectedCN is null');
-      return;
-    }
-    console.log('[BookingWizard] Fetching slots for:', {
-      date: bookingDate.format('YYYY-MM-DD'),
-      storeName: selectedCN.name,
-      technicianId: selectedCV?.id,
-    });
-    setLoadingSlots(true);
-    try {
-      const res = await api.get('/customers/booking-slots', {
-        params: {
-          date: bookingDate.format('YYYY-MM-DD'),
-          storeName: selectedCN.name,
-          technicianId: selectedCV?.id || undefined,
-        },
-      });
-      console.log('[BookingWizard] Fetch slots success, data:', res.data);
-      setSlotMatrix(res.data || {});
-    } catch (err) {
-      console.error('[BookingWizard] Failed to fetch slots:', err);
-      message.error('Không thể tải ma trận trống lịch từ hệ thống');
-    } finally {
-      setLoadingSlots(false);
-    }
-  };
-
-  const getNextAvailableDate = (baseDate: dayjs.Dayjs, cv: any) => {
-    if (!cv || !cv.offDays || cv.offDays.length === 0) return baseDate;
-    let target = baseDate;
-    for (let i = 0; i < 14; i++) {
-      const dayOfWeek = target.day();
-      const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
-      if (!cv.offDays.includes(dbDayStr)) {
-        return target;
-      }
-      target = target.add(1, 'day');
-    }
-    return baseDate;
-  };
-
-  const selectCVOption = (cv: any) => {
+  const selectCVOption = (cv: SafeAny) => {
     setSelectedCV(cv);
     // Auto map branch/store if KTV belongs to a store
     if (cv && cv.notes) {
@@ -424,52 +184,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     setCurrentStep(1);
   };
 
-  const getCalculatedPrice = () => {
-    if (!selectedService) return { original: 0, discount: 0, final: 0 };
-    const original = selectedService.price || 0;
-    let discount = 0;
-    if (selectedPromotion) {
-      if (selectedPromotion.discountPercentage > 0) {
-        discount = Math.round((original * selectedPromotion.discountPercentage) / 100);
-      } else if (selectedPromotion.discountAmount > 0) {
-        discount = selectedPromotion.discountAmount;
-      }
-    }
-    return {
-      original,
-      discount,
-      final: Math.max(0, original - discount),
-    };
-  };
-
-  const priceInfo = getCalculatedPrice();
-
-  const getGroupedKTVs = () => {
-    const ktvs = staffList.filter(
-      (s) => s.role === 'technician' || s.role === 'specialist' || s.notes?.includes('KTV')
-    );
-    const groups: { [storeName: string]: any[] } = {};
-
-    ktvs.forEach((staff) => {
-      const store = staff.notes || 'Khác';
-      if (!groups[store]) {
-        groups[store] = [];
-      }
-      groups[store].push(staff);
-    });
-
-    return groups;
-  };
-
-  const getFavoriteKTVs = () => {
-    const ktvs = staffList.filter(
-      (s) => s.role === 'technician' || s.role === 'specialist' || s.notes?.includes('KTV')
-    );
-    return ktvs.filter((staff) => favoriteTechs.includes(staff.displayName?.trim()));
-  };
-
   const handleStepChange = (step: number) => {
-    // If navigating to step 2 (Confirm step), we must validate first
     if (step === 2) {
       if (
         !selectedService ||
@@ -486,21 +201,18 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
         const cleanName = leadName.trim();
         const cleanPhone = leadPhone.trim();
 
-        // Check if name looks like phone (digits, spaces, plus, hyphens, parentheses only)
         const isNamePhone = /^\+?[0-9\s\-()]{8,}$/.test(cleanName);
         if (isNamePhone) {
           message.error('Tên khách hàng không được là số điện thoại. Vui lòng kiểm tra lại!');
           return;
         }
 
-        // Check if phone number contains letters
         const isPhoneInvalid = /[a-zA-Z\u00C0-\u1EF9]/.test(cleanPhone);
         if (isPhoneInvalid) {
           message.error('Số điện thoại không hợp lệ (không được chứa chữ cái). Vui lòng kiểm tra lại!');
           return;
         }
 
-        // Check length of phone number
         const digitCount = cleanPhone.replace(/[^0-9]/g, '').length;
         if (digitCount < 8 || digitCount > 15) {
           message.error('Số điện thoại phải từ 8 đến 15 chữ số.');
@@ -571,39 +283,17 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
         referralPhone: referralPhone ? referralPhone.trim() : null,
       };
 
-      await api.post('/customers/booking', payload);
+      await apiClient.customers.createBooking(payload);
       message.success(`Đặt lịch thành công cho khách hàng ${isNewLead ? leadName : selectedCustomer.name}!`);
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('[BookingWizard] Failed to create booking:', err);
-      message.error(err.response?.data?.message || 'Có lỗi xảy ra khi tạo lịch đặt hẹn.');
+      message.error((err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi tạo lịch đặt hẹn.');
     }
   };
 
-  // Helper to split slots into morning, afternoon, night
-  const getCategorizedSlots = () => {
-    const morning: string[] = [];
-    const afternoon: string[] = [];
-    const night: string[] = [];
-
-    Object.keys(slotMatrix)
-      .sort()
-      .forEach((time) => {
-        const hour = parseInt(time.split(':')[0], 10);
-        if (hour < 12) {
-          morning.push(time);
-        } else if (hour < 18) {
-          afternoon.push(time);
-        } else {
-          night.push(time);
-        }
-      });
-
-    return { morning, afternoon, night };
-  };
-
-  const { morning, afternoon, night } = getCategorizedSlots();
+  const priceInfo = getCalculatedPrice(selectedService, selectedPromotion);
 
   return (
     <Drawer
@@ -622,15 +312,17 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
           background: themeMode === 'dark' ? '#141414' : '#f9fafb',
           padding: '24px',
         },
-        header: {
-          background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-          borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-        },
       }}
     >
       <Steps
         current={currentStep}
-        onChange={handleStepChange}
+        onChange={(step) => {
+          if (step < currentStep) {
+            setCurrentStep(step);
+          } else {
+            handleStepChange(step);
+          }
+        }}
         size="small"
         style={{ marginBottom: '24px' }}
         items={[{ title: 'Chuyên viên' }, { title: 'Dịch vụ & KH & Khung Giờ' }, { title: 'Xác Nhận' }]}
@@ -638,199 +330,15 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
 
       {/* STEP 0: SELECT TECHNICIAN (CV) */}
       {currentStep === 0 && (
-        <div>
-          <h3 style={{ fontSize: '15px', color: '#888', marginBottom: '16px' }}>
-            Bước 1: Khách hàng muốn đặt Chuyên viên nào?
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* Free/Auto Specialist */}
-            <Card
-              hoverable
-              styles={{ body: { padding: '16px' } }}
-              style={{
-                borderColor: selectedCV === null ? '#D4A84B' : 'transparent',
-                backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-              }}
-              onClick={() => selectCVOption(null)}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <Avatar size="large" icon={<SmileOutlined />} style={{ backgroundColor: '#D4A84B' }} />
-                <div>
-                  <div style={{ fontWeight: 'bold', fontSize: '15px', color: token.colorText }}>
-                    Không chỉ định chuyên viên (Chuyên viên Tự Do)
-                  </div>
-                  <div style={{ fontSize: '12.5px', color: '#888', marginTop: '2px' }}>
-                    Sắp xếp ngẫu nhiên chuyên viên trống lịch tại Chi nhánh
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Favorite Stylist Suggestion Section */}
-            {favoriteTechs.length > 0 && getFavoriteKTVs().length > 0 && (
-              <div style={{ marginTop: '8px' }}>
-                <div
-                  style={{
-                    fontWeight: 'bold',
-                    fontSize: '13px',
-                    color: '#db2777',
-                    marginBottom: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  <HeartFilled style={{ color: '#db2777' }} /> GỢI Ý CHUYÊN VIÊN ƯA THÍCH CỦA KHÁCH
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {getFavoriteKTVs().map((staff: any) => {
-                    const isSelected = selectedCV?.id === staff.id;
-                    return (
-                      <Card
-                        key={`fav-${staff.id}`}
-                        hoverable
-                        size="small"
-                        styles={{ body: { padding: '12px 16px' } }}
-                        style={{
-                          borderColor: isSelected ? '#db2777' : themeMode === 'dark' ? '#4f1a30' : '#fbcfe8',
-                          backgroundColor: isSelected
-                            ? themeMode === 'dark'
-                              ? 'rgba(219, 39, 119, 0.15)'
-                              : 'rgba(219, 39, 119, 0.05)'
-                            : themeMode === 'dark'
-                              ? '#1e293b'
-                              : '#ffffff',
-                          boxShadow: isSelected ? '0 0 0 1px #db2777' : 'none',
-                          transition: 'all 0.2s',
-                        }}
-                        onClick={() => selectCVOption(staff)}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <Avatar
-                              src={staff.avatar || staff.avatarUrl || undefined}
-                              icon={<UserOutlined />}
-                              style={{ backgroundColor: '#db2777' }}
-                            />
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ fontWeight: 'bold', color: token.colorText }}>{staff.displayName}</div>
-                                <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>
-                                  Ưa thích nhất
-                                </Tag>
-                              </div>
-                              <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
-                                Chi nhánh: {staff.notes || 'Khác'}
-                                {staff.offDays && staff.offDays.length > 0 && (
-                                  <span style={{ color: '#ef4444', marginLeft: '8px', fontWeight: 'bold' }}>
-                                    | {getOffDaysText(staff.offDays)}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div style={{ marginTop: '8px', marginBottom: '8px', fontWeight: 'bold', fontSize: '13px', color: '#888' }}>
-              HOẶC CHỌN CHUYÊN VIÊN YÊU CẦU
-            </div>
-
-            {loadingStaff ? (
-              <div
-                style={{
-                  textAlign: 'center',
-                  padding: '40px 0',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <Spin />
-                <div style={{ color: '#888', fontSize: '13px' }}>Đang tải danh sách chuyên viên...</div>
-              </div>
-            ) : (
-              Object.entries(getGroupedKTVs()).map(([storeName, members]) => (
-                <div key={storeName} style={{ marginBottom: '24px' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      marginBottom: '12px',
-                      paddingBottom: '6px',
-                      borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-                    }}
-                  >
-                    <HomeOutlined style={{ color: '#D4A84B' }} />
-                    <span style={{ fontWeight: 'bold', fontSize: '13.5px', color: token.colorText }}>{storeName}</span>
-                    <Badge
-                      count={members.length}
-                      style={{
-                        backgroundColor: themeMode === 'dark' ? '#334155' : '#f1f5f9',
-                        color: themeMode === 'dark' ? '#cbd5e1' : '#64748b',
-                        boxShadow: 'none',
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {members.map((staff: any) => (
-                      <Card
-                        key={staff.id}
-                        hoverable
-                        size="small"
-                        styles={{ body: { padding: '12px 16px' } }}
-                        style={{
-                          borderColor:
-                            selectedCV?.id === staff.id ? '#D4A84B' : themeMode === 'dark' ? '#334155' : '#e2e8f0',
-                          backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                          boxShadow: selectedCV?.id === staff.id ? '0 0 0 1px #D4A84B' : 'none',
-                          transition: 'all 0.2s',
-                        }}
-                        onClick={() => selectCVOption(staff)}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <Avatar
-                              src={staff.avatar || staff.avatarUrl || undefined}
-                              icon={<UserOutlined />}
-                              style={{ backgroundColor: '#D4A84B' }}
-                            />
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ fontWeight: 'bold', color: token.colorText }}>{staff.displayName}</div>
-                                {favoriteTechs.includes(staff.displayName?.trim()) && (
-                                  <Tag color="magenta" style={{ margin: 0, fontSize: '10.5px' }}>
-                                    Ưa thích
-                                  </Tag>
-                                )}
-                              </div>
-                              <div style={{ fontSize: '12px', color: '#888' }}>
-                                Vai trò: Chuyên viên
-                                {staff.offDays && staff.offDays.length > 0 && (
-                                  <span style={{ color: '#ef4444', marginLeft: '8px', fontWeight: 'bold' }}>
-                                    | {getOffDaysText(staff.offDays)}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        <TechnicianSelector
+          selectedCV={selectedCV}
+          onSelectCVOption={selectCVOption}
+          favoriteTechs={favoriteTechs}
+          getFavoriteKTVs={getFavoriteKTVs}
+          getGroupedKTVs={getGroupedKTVs}
+          loadingStaff={loadingStaff}
+          themeMode={themeMode}
+        />
       )}
 
       {/* STEP 1: SERVICE & CUSTOMER & SLOT SELECT */}
@@ -1070,15 +578,15 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
             )}
 
             {/* Active Combo Balances Suggestions */}
-            {comboBalances.filter((cb: any) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0).length > 0 && (
+            {comboBalances.filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0).length > 0 && (
               <div style={{ marginTop: '8px', marginBottom: '12px' }}>
                 <div style={{ fontSize: '12px', color: '#db2777', fontWeight: 'bold', marginBottom: '6px' }}>
                   🎁 GÓI COMBO ĐANG CHẠY (CLICK ĐỂ CHỌN NHANH DÒNG MI):
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {comboBalances
-                    .filter((cb: any) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0)
-                    .map((cb: any) => {
+                    .filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0)
+                    .map((cb: SafeAny) => {
                       return (
                         <div
                           key={cb.id}
@@ -1250,196 +758,17 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
               </div>
             </div>
 
-            <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: token.colorText, marginBottom: '12px' }}>
-              BẢNG KHUNG GIỜ HOẠT ĐỘNG CHI NHÁNH ({selectedCN?.name || 'Vui lòng chọn chi nhánh'})
-            </h3>
-
-            <Spin spinning={loadingSlots}>
-              <div
-                style={{
-                  background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                  border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                  borderRadius: '8px',
-                  padding: '20px',
-                  maxHeight: 'calc(100vh - 420px)',
-                  overflowY: 'auto',
-                }}
-              >
-                {/* Slot Matrix Legend */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    gap: '12px',
-                    fontSize: '11px',
-                    color: '#888',
-                    marginBottom: '16px',
-                  }}
-                >
-                  <span>
-                    <span style={{ color: '#d4a84b' }}>🟡</span> 1-2 chỗ trống
-                  </span>
-                  <span>
-                    <span style={{ color: '#ef4444' }}>🔴</span> 0 chỗ trống (Hết)
-                  </span>
-                  <span>
-                    <span
-                      style={{
-                        padding: '2px 4px',
-                        background: '#ef4444',
-                        color: '#fff',
-                        borderRadius: '3px',
-                        fontSize: '9px',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      -1
-                    </span>{' '}
-                    Overbook
-                  </span>
-                </div>
-
-                {/* Render Category slots */}
-                {[
-                  { title: 'Morning (Sáng)', list: morning },
-                  { title: 'Afternoon (Chiều)', list: afternoon },
-                  { title: 'Night (Tối)', list: night },
-                ].map((cat) => (
-                  <div key={cat.title} style={{ marginBottom: '20px' }}>
-                    <div
-                      style={{
-                        fontWeight: 'bold',
-                        color: '#888',
-                        fontSize: '12px',
-                        marginBottom: '10px',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {cat.title}
-                    </div>
-                    <Row gutter={[12, 12]}>
-                      {cat.list.map((time) => {
-                        const slotInfo = slotMatrix[time] || { available: 0, roster: 0 };
-                        const availableVal = slotInfo.available;
-                        const isActive = selectedSlot === time;
-
-                        // Available Badge Styles based on rules
-                        let badgeStyle: React.CSSProperties = {
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          minWidth: '22px',
-                          height: '22px',
-                          fontSize: '11px',
-                          fontWeight: 'bold',
-                          borderRadius: '50%',
-                          padding: '0 4px',
-                          transition: 'all 0.2s',
-                        };
-
-                        if (availableVal > 2) {
-                          badgeStyle = {
-                            ...badgeStyle,
-                            background: themeMode === 'dark' ? '#0f172a' : '#f3f4f6',
-                            color: themeMode === 'dark' ? '#94a3b8' : '#6b7280',
-                            border: `1px solid ${themeMode === 'dark' ? '#334155' : '#d9d9d9'}`,
-                          };
-                        } else if (availableVal === 1 || availableVal === 2) {
-                          badgeStyle = {
-                            ...badgeStyle,
-                            background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#fffbe6',
-                            color: themeMode === 'dark' ? '#d4a84b' : '#d46b08',
-                            border: `1px solid ${themeMode === 'dark' ? '#d4a84b' : '#ffe58f'}`,
-                            borderRadius: '11px',
-                            minWidth: '26px',
-                          };
-                        } else if (availableVal === 0) {
-                          badgeStyle = {
-                            ...badgeStyle,
-                            background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : '#fff1f0',
-                            color: '#ef4444',
-                            border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : '#ffccc7'}`,
-                            borderRadius: '11px',
-                            minWidth: '26px',
-                          };
-                        } else {
-                          badgeStyle = {
-                            ...badgeStyle,
-                            background: '#ef4444',
-                            color: '#ffffff',
-                            border: '1px solid #ef4444',
-                            borderRadius: '11px',
-                            minWidth: '26px',
-                          };
-                        }
-                        // Determine slot frame styles matching the badge colors
-                        let frameStyle: React.CSSProperties = {
-                          flex: 1,
-                          textAlign: 'center',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          fontSize: '12px',
-                          padding: '5px 8px',
-                          transition: 'all 0.2s',
-                        };
-
-                        if (isActive) {
-                          frameStyle = {
-                            ...frameStyle,
-                            background: '#D4A84B',
-                            border: '1px solid #D4A84B',
-                            color: '#fff',
-                          };
-                        } else {
-                          if (availableVal > 2) {
-                            frameStyle = {
-                              ...frameStyle,
-                              background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                              border: `1px solid ${themeMode === 'dark' ? '#334155' : '#d9d9d9'}`,
-                              color: themeMode === 'dark' ? '#cbd5e1' : '#1f2937',
-                            };
-                          } else if (availableVal === 1 || availableVal === 2) {
-                            frameStyle = {
-                              ...frameStyle,
-                              background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.08)' : '#fffbe6',
-                              border: `1px solid ${themeMode === 'dark' ? '#d4a84b' : '#ffe58f'}`,
-                              color: themeMode === 'dark' ? '#d4a84b' : '#d46b08',
-                            };
-                          } else if (availableVal === 0) {
-                            frameStyle = {
-                              ...frameStyle,
-                              background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.05)' : '#fff1f0',
-                              border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : '#ffccc7'}`,
-                              color: '#ef4444',
-                            };
-                          } else {
-                            frameStyle = {
-                              ...frameStyle,
-                              background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.1)' : '#fff1f0',
-                              border: '1px solid #ef4444',
-                              color: '#ef4444',
-                            };
-                          }
-                        }
-
-                        return (
-                          <Col span={6} key={time}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <div style={frameStyle} onClick={() => setSelectedSlot(time)}>
-                                {time}
-                              </div>
-
-                              <div style={badgeStyle}>{availableVal}</div>
-                            </div>
-                          </Col>
-                        );
-                      })}
-                    </Row>
-                  </div>
-                ))}
-              </div>
-            </Spin>
+            <SlotMatrixGrid
+              slotMatrix={slotMatrix}
+              loadingSlots={loadingSlots}
+              selectedSlot={selectedSlot}
+              setSelectedSlot={setSelectedSlot}
+              selectedCN={selectedCN}
+              morning={morning}
+              afternoon={afternoon}
+              night={night}
+              themeMode={themeMode}
+            />
           </div>
 
           <Button

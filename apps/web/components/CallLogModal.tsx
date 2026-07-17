@@ -9,7 +9,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
 } from '@ant-design/icons';
-import api from '../lib/api';
+import { apiClient } from '../lib/api-client';
 import { CALL_RESULT_LABELS, CALL_OUTCOME_LABELS } from '@mos-lab/shared';
 import { useTheme } from '../context/ThemeContext';
 
@@ -54,10 +54,10 @@ export default function CallLogModal({
   const handleQuickAction = async (actionType: 'NO_ANSWER' | 'CALL_BACK' | 'BOOKED' | 'RENEWED') => {
     setLoading(true);
     try {
-      const data: any = {
-        planId,
+      const data: SafeAny = {
+        planId: planId || undefined,
         legacyUserId,
-        callType: 'PHONE',
+        callType: 'OUTBOUND' as const,
       };
 
       if (actionType === 'NO_ANSWER') {
@@ -82,10 +82,10 @@ export default function CallLogModal({
         data.note = 'Đã gia hạn/mua combo mới';
       }
 
-      await api.post('/calls', data);
+      await apiClient.calls.create(data);
       message.success('Ghi nhận cuộc gọi nhanh thành công!');
       onSuccess();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Quick call log error:', error);
       message.error('Không thể ghi nhận cuộc gọi.');
     } finally {
@@ -93,23 +93,23 @@ export default function CallLogModal({
     }
   };
 
-  const handleFinish = async (values: any) => {
+  const handleFinish = async (values: SafeAny) => {
     setLoading(true);
     try {
       const data = {
-        planId,
+        planId: planId || undefined,
         legacyUserId,
-        callType: 'PHONE',
+        callType: 'OUTBOUND' as const,
         callResult: values.callResult,
         outcome: values.outcome,
         note: values.note,
         callbackDate: values.callbackDate ? values.callbackDate.format('YYYY-MM-DD') : null,
       };
 
-      await api.post('/calls', data);
+      await apiClient.calls.create(data);
       message.success('Ghi nhận lịch sử cuộc gọi thành công!');
       onSuccess();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Save call log error:', error);
       message.error('Không thể ghi nhận cuộc gọi.');
     } finally {

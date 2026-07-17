@@ -1,7 +1,7 @@
 'use client';
 
 import '../../suppress-warnings';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Table,
   Avatar,
@@ -12,10 +12,8 @@ import {
   Badge,
   Space,
   Modal,
-  Descriptions,
   Tag,
   Typography,
-  message,
   Divider,
   Select,
   theme,
@@ -25,8 +23,8 @@ import {
   Col,
   Spin,
   Timeline,
-  Drawer,
   Tooltip,
+  message,
 } from 'antd';
 import {
   SearchOutlined,
@@ -40,167 +38,136 @@ import {
   UndoOutlined,
   PlusCircleOutlined,
   MinusCircleOutlined,
-  BookOutlined,
   CheckCircleOutlined,
-  RiseOutlined,
   InfoCircleOutlined,
-  InboxOutlined,
-  WarningOutlined,
-  CloseCircleFilled,
 } from '@ant-design/icons';
+import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
-import api from '../../../lib/api';
-import CallLogModal from '../../../components/CallLogModal';
-import CustomerDetailDrawer from '../../../components/CustomerDetailDrawer';
-import BookingWizardDrawer from '../../../components/BookingWizardDrawer';
-import { TableConfigDrawer } from '../../../components/TableConfigDrawer';
+
+const CallLogModal = dynamic(() => import('../../../components/CallLogModal'), { ssr: false });
+const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
+const BookingWizardDrawer = dynamic(() => import('../../../components/BookingWizardDrawer'), { ssr: false });
+const TableConfigDrawer = dynamic(
+  () => import('../../../components/TableConfigDrawer').then((m) => m.TableConfigDrawer),
+  { ssr: false }
+);
 import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
 import { useTableConfig } from '../../../hooks/useTableConfig';
 import { Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
 import dayjs from 'dayjs';
+import { useNycData, TAB_KEYS } from './hooks/useNycData';
+import { getNycColumns } from './components/NycColumns';
+import { formatDuration, formatVND } from '../../../lib/format-utils';
 
 const { Title, Text } = Typography;
-
-interface Touchpoint {
-  key: string;
-  label: string;
-  daysMin: number;
-  daysMax: number;
-  color: string;
-}
-
-interface TabConfigs {
-  [key: string]: Touchpoint[];
-}
-
-const TAB_KEYS = [
-  { id: 'NYC_30', name: 'NYC 30', rangeText: '0 - 30 ngày', minDays: 0, maxDays: 30 },
-  { id: 'NYC_60', name: 'NYC 60', rangeText: '31 - 60 ngày', minDays: 31, maxDays: 60 },
-  { id: 'NYC_90', name: 'NYC 90', rangeText: '61 - 90 ngày', minDays: 61, maxDays: 90 },
-  { id: 'NYC_180', name: 'NYC 180', rangeText: '91 - 180 ngày', minDays: 91, maxDays: 180 },
-  { id: 'NYC_365', name: 'NYC 365', rangeText: '181 - 365 ngày', minDays: 181, maxDays: 365 },
-  { id: 'NYC_365plus', name: 'NYC 365+', rangeText: '> 365 ngày', minDays: 366, maxDays: undefined },
-];
-
-const formatDuration = (secs: number) => {
-  const m = Math.floor(secs / 60);
-  const s = Math.floor(secs % 60);
-  return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
-};
 
 export default function NycCampaignPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const [settingsForm] = Form.useForm();
 
-  const getMostFrequentDay = (bookings: any[]) => {
-    if (!bookings || bookings.length === 0) return 'N/A';
-    const dayCounts = Array(7).fill(0);
-    const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  // Resizable Modal States
+  const [modalWidth, setModalWidth] = useState<number>(700);
+  const [modalHeight, setModalHeight] = useState<number>(550);
 
-    bookings.forEach((b) => {
-      if (b.bookingDate) {
-        const day = new Date(b.bookingDate).getDay();
-        dayCounts[day]++;
-      }
-    });
-
-    let maxIndex = 0;
-    let maxVal = 0;
-    dayCounts.forEach((val, idx) => {
-      if (val > maxVal) {
-        maxVal = val;
-        maxIndex = idx;
-      }
-    });
-
-    return maxVal > 0 ? `${dayNames[maxIndex]} (${maxVal} lần)` : 'N/A';
-  };
-
-  const [currentUser, setCurrentUser] = useState<any>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('mos_user');
-      return stored ? JSON.parse(stored) : null;
-    }
-    return null;
+  const {
+    currentUser,
+    activeTab,
+    activeTouchpointKey,
+    searchQuery,
+    sortField,
+    assignedStaffId,
+    configs,
+    customers,
+    loading,
+    total,
+    currentPage,
+    pageSize,
+    tabCounts,
+    touchpointCounts,
+    overallStats,
+    staffList,
+    settingsModalVisible,
+    callModalVisible,
+    detailModalVisible,
+    bookingWizardVisible,
+    bookingInitialCustomer,
+    selectedConfigTab,
+    selectedPlanInfo,
+    selectedCustomer,
+    dailyPlanList,
+    // setters
+    setActiveTab,
+    setActiveTouchpointKey,
+    setSearchQuery,
+    setSortField,
+    setAssignedStaffId,
+    setCurrentPage,
+    setPageSize,
+    setSettingsModalVisible,
+    setCallModalVisible,
+    setDetailModalVisible,
+    setBookingWizardVisible,
+    setBookingInitialCustomer,
+    setSelectedConfigTab,
+    setSelectedPlanInfo,
+    setSelectedCustomer,
+    // handlers
+    fetchCustomerList,
+    fetchOverallStats,
+    handleAddToPlan,
+    handleOpenCallModal,
+    handleCallSuccess,
+    handleOpenDetailModal,
+    handleOpenSettings,
+    handleConfigTabChange,
+    handleSaveConfig,
+    resetConfigDefaults,
+    handleAssignTelesales,
+    getRowClassName,
+  } = useNycData({
+    settingsForm,
+    onSuccess: (msg) => message.success(msg),
+    onError: (msg) => message.error(msg),
   });
 
-  // Main UI States
-  const [activeTab, setActiveTab] = useState<string>('NYC_30');
-  const [activeTouchpointKey, setActiveTouchpointKey] = useState<string>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortField, setSortField] = useState('daysSinceLastVisit_asc');
-  const [assignedStaffId, setAssignedStaffId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('mos_user');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.role === 'telesales') return 'me';
-      }
-    }
-    return 'all';
-  });
+  const handleDetailClose = React.useCallback(() => {
+    setDetailModalVisible(false);
+  }, [setDetailModalVisible]);
 
-  // Data States
-  const [configs, setConfigs] = useState<TabConfigs>({});
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [total, setTotal] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const handleDetailDeleteSuccess = React.useCallback(() => {
+    setDetailModalVisible(false);
+    fetchCustomerList();
+    fetchOverallStats();
+  }, [setDetailModalVisible, fetchCustomerList, fetchOverallStats]);
+
+  const handleBookingWizardClose = React.useCallback(() => {
+    setBookingWizardVisible(false);
+  }, [setBookingWizardVisible]);
+
+  const handleBookingWizardSuccess = React.useCallback(() => {
+    setBookingWizardVisible(false);
+    fetchCustomerList();
+    fetchOverallStats();
+  }, [setBookingWizardVisible, fetchCustomerList, fetchOverallStats]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('mos_nyc_pageSize');
-    if (saved) {
-      setPageSize(Number(saved));
+    if (typeof window !== 'undefined') {
+      const savedW = localStorage.getItem('mos_nyc_settings_modal_width');
+      if (savedW) {
+        const val = parseInt(savedW, 10);
+        if (!isNaN(val)) setModalWidth(val);
+      }
+      const savedH = localStorage.getItem('mos_nyc_settings_modal_height');
+      if (savedH) {
+        const val = parseInt(savedH, 10);
+        if (!isNaN(val)) setModalHeight(val);
+      }
     }
   }, []);
 
-  // Stats Counters
-  const [tabCounts, setTabCounts] = useState<Record<string, number>>({});
-  const [touchpointCounts, setTouchpointCounts] = useState<Record<string, number>>({});
-  const [overallStats, setOverallStats] = useState({
-    totalNYC: 0,
-    nyc30Count: 0,
-    bookedRate: 0,
-    todayCalls: 0,
-  });
-
-  // Dropdown lists
-  const [staffList, setStaffList] = useState<any[]>([]);
-
-  // Modals Controls
-  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
-  const [callModalVisible, setCallModalVisible] = useState(false);
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [bookingWizardVisible, setBookingWizardVisible] = useState(false);
-  const [bookingInitialCustomer, setBookingInitialCustomer] = useState<any>(null);
-
-  // Resizable Modal States
-  const [modalWidth, setModalWidth] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('mos_nyc_settings_modal_width');
-      if (stored) {
-        const val = parseInt(stored, 10);
-        if (!isNaN(val)) return val;
-      }
-    }
-    return 700;
-  });
-
-  const [modalHeight, setModalHeight] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('mos_nyc_settings_modal_height');
-      if (stored) {
-        const val = parseInt(stored, 10);
-        if (!isNaN(val)) return val;
-      }
-    }
-    return 550;
-  });
-
   const handleResizeMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    console.log('Resize Mousedown started!');
     const handleEl = e.currentTarget as HTMLElement;
     const wrapperEl = handleEl.parentElement;
     if (!wrapperEl) {
@@ -208,22 +175,14 @@ export default function NycCampaignPage() {
       return;
     }
 
-    // Traversal: wrapperEl has style {pointerEvents: 'none'}.
-    // Its first child is a div with style {pointerEvents: 'auto'} wrapping {node}.
-    // So the actual modal element (.ant-modal) is the first child of that container!
     const modalContainer = wrapperEl.firstElementChild as HTMLElement;
     const modalEl = modalContainer ? (modalContainer.firstElementChild as HTMLElement) : null;
     const listEl = document.getElementById('nyc-touchpoints-list') as HTMLElement;
-
-    console.log('Found modalEl:', modalEl);
-    console.log('Found listEl:', listEl);
 
     const startX = e.clientX;
     const startY = e.clientY;
     const startWidth = modalEl ? modalEl.offsetWidth : modalWidth;
     const startHeight = listEl ? listEl.offsetHeight + 200 : modalHeight;
-
-    console.log(`Start X: ${startX}, Y: ${startY}, Width: ${startWidth}, Height: ${startHeight}`);
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
@@ -231,8 +190,6 @@ export default function NycCampaignPage() {
 
       const newWidth = Math.max(500, Math.min(1600, startWidth + deltaX));
       const newHeight = Math.max(400, Math.min(1000, startHeight + deltaY));
-
-      console.log(`Dragging... DeltaX: ${deltaX}, DeltaY: ${deltaY} => NewWidth: ${newWidth}, NewHeight: ${newHeight}`);
 
       if (modalEl) {
         modalEl.style.setProperty('width', `${newWidth}px`, 'important');
@@ -243,7 +200,6 @@ export default function NycCampaignPage() {
     };
 
     const handleMouseUp = (upEvent: MouseEvent) => {
-      console.log('Resize Mouseup triggered.');
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
 
@@ -251,8 +207,6 @@ export default function NycCampaignPage() {
       const finalY = upEvent.clientY - startY;
       const finalWidth = Math.max(500, Math.min(1600, startWidth + finalX));
       const finalHeight = Math.max(400, Math.min(1000, startHeight + finalY));
-
-      console.log(`Final dimensions: Width: ${finalWidth}, Height: ${finalHeight}`);
 
       setModalWidth(finalWidth);
       setModalHeight(finalHeight);
@@ -265,331 +219,7 @@ export default function NycCampaignPage() {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  // Settings Form
-  const [settingsForm] = Form.useForm();
-  const [selectedConfigTab, setSelectedConfigTab] = useState<string>('NYC_30');
-
-  // Selected Records
-  const [selectedPlanInfo, setSelectedPlanInfo] = useState<{
-    legacyUserId: number;
-    customerName: string;
-    planId?: number | null;
-  } | null>(null);
-
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [orderHistory, setOrderHistory] = useState<any[]>([]);
-  const [callHistory, setCallHistory] = useState<any[]>([]);
-  const [detailedData, setDetailedData] = useState<any>(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [dailyPlanList, setDailyPlanList] = useState<number[]>([]); // Track planned user IDs for today
-
-  // Load configuration & Staff lists on mount
-  const fetchConfigs = useCallback(async () => {
-    try {
-      const res = await api.get('/nyc/config');
-      setConfigs(res.data);
-    } catch (err) {
-      console.error('Failed to load touchpoint config:', err);
-      message.error('Không thể tải cấu hình touchpoints.');
-    }
-  }, []);
-
-  const fetchStaffList = useCallback(async () => {
-    if (currentUser?.role !== 'admin') return;
-    try {
-      const res = await api.get('/customers/staff');
-      setStaffList(res.data);
-    } catch (err) {
-      console.error('Failed to load staff list:', err);
-    }
-  }, [currentUser?.role]);
-
-  useEffect(() => {
-    fetchConfigs();
-    fetchStaffList();
-  }, [fetchConfigs, fetchStaffList]);
-
-  // Fetch planned users today to highlight "Add to plan" status
-  const fetchTodayPlans = useCallback(async () => {
-    try {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const response = await api.get('/plans/weekly', {
-        params: { weekStart: todayStr }, // Fetch current week to find today's planned
-      });
-      const plannedIds: number[] = [];
-      const mondayStr = todayStr; // Simplified check
-      response.data.forEach((prog: any) => {
-        // If has daily plan details, map them
-        if (prog.planId) {
-          plannedIds.push(prog.customer.id);
-        }
-      });
-      setDailyPlanList(plannedIds);
-    } catch (error) {
-      console.error('Failed to fetch today plans:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchTodayPlans();
-  }, [fetchTodayPlans]);
-
-  // Fetch main counters for tabs and dashboard summary metrics
-  const fetchOverallStats = useCallback(async () => {
-    try {
-      // 1. Fetch counts for each main tab
-      const counts: Record<string, number> = {};
-      let totalNYC = 0;
-      let nyc30Count = 0;
-
-      await Promise.all(
-        TAB_KEYS.map(async (tab) => {
-          const params: any = {
-            bucket: 'NOT_COMBO_LIVE',
-            daysSinceLastVisitMin: tab.minDays.toString(),
-          };
-          if (tab.maxDays !== undefined) {
-            params.daysSinceLastVisitMax = tab.maxDays.toString();
-          }
-          if (assignedStaffId && assignedStaffId !== 'all') {
-            params.assignedStaffId = assignedStaffId;
-          }
-          if (searchQuery.trim()) {
-            params.search = searchQuery.trim();
-          }
-
-          const res = await api.get('/customers/stats', { params });
-          counts[tab.id] = res.data.total;
-          totalNYC += res.data.total;
-          if (tab.id === 'NYC_30') {
-            nyc30Count = res.data.total;
-          }
-        })
-      );
-
-      setTabCounts(counts);
-
-      // 2. Fetch today's call count and general booking stats
-      const kpiRes = await api.get('/kpi/summary', {
-        params: {
-          startDate: new Date().toISOString().split('T')[0],
-          endDate: new Date().toISOString().split('T')[0],
-        },
-      });
-
-      let totalCalledToday = 0;
-      let totalBooked = 0;
-      let totalAnswered = 0;
-
-      if (kpiRes.data && Array.isArray(kpiRes.data)) {
-        kpiRes.data.forEach((row: any) => {
-          totalCalledToday += Number(row.totalCalled || 0);
-          totalBooked += Number(row.totalBooked || 0);
-          totalAnswered += Number(row.totalAnswered || 0);
-        });
-      } else if (kpiRes.data && typeof kpiRes.data === 'object') {
-        const stats = kpiRes.data.summary || kpiRes.data;
-        totalCalledToday = stats.totalCalled || 0;
-        totalBooked = stats.totalBooked || 0;
-        totalAnswered = stats.totalAnswered || 0;
-      }
-
-      const bookedRate = totalCalledToday > 0 ? Math.round((totalBooked / totalCalledToday) * 100) : 0;
-
-      setOverallStats({
-        totalNYC,
-        nyc30Count,
-        bookedRate,
-        todayCalls: totalCalledToday,
-      });
-    } catch (err) {
-      console.error('Failed to fetch stats:', err);
-    }
-  }, [assignedStaffId, searchQuery]);
-
-  // Fetch counts for touchpoints under the active tab
-  const fetchTouchpointCounts = useCallback(async () => {
-    const activeTouchpoints = configs[activeTab] || [];
-    const counts: Record<string, number> = {};
-
-    try {
-      await Promise.all(
-        activeTouchpoints.map(async (tp) => {
-          const params: any = {
-            bucket: 'NOT_COMBO_LIVE',
-            daysSinceLastVisitMin: tp.daysMin.toString(),
-            daysSinceLastVisitMax: tp.daysMax.toString(),
-          };
-          if (assignedStaffId && assignedStaffId !== 'all') {
-            params.assignedStaffId = assignedStaffId;
-          }
-          if (searchQuery.trim()) {
-            params.search = searchQuery.trim();
-          }
-
-          const res = await api.get('/customers/stats', { params });
-          counts[tp.key] = res.data.total;
-        })
-      );
-      setTouchpointCounts(counts);
-    } catch (err) {
-      console.error('Failed to fetch touchpoint counts:', err);
-    }
-  }, [configs, activeTab, assignedStaffId, searchQuery]);
-
-  // Fetch Customer list based on current active tab and touchpoint selection
-  const fetchCustomerList = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: any = {
-        bucket: 'NOT_COMBO_LIVE',
-        page: currentPage.toString(),
-        limit: pageSize.toString(),
-        sort: sortField,
-      };
-
-      if (assignedStaffId && assignedStaffId !== 'all') {
-        params.assignedStaffId = assignedStaffId;
-      }
-
-      if (searchQuery.trim()) {
-        params.search = searchQuery.trim();
-      }
-
-      // Determine days range based on touchpoint or active tab
-      if (activeTouchpointKey !== 'ALL') {
-        const activeTouchpoints = configs[activeTab] || [];
-        const touch = activeTouchpoints.find((t) => t.key === activeTouchpointKey);
-        if (touch) {
-          params.daysSinceLastVisitMin = touch.daysMin.toString();
-          params.daysSinceLastVisitMax = touch.daysMax.toString();
-        }
-      } else {
-        // Fallback to active tab bounds
-        const currentTabInfo = TAB_KEYS.find((t) => t.id === activeTab);
-        if (currentTabInfo) {
-          params.daysSinceLastVisitMin = currentTabInfo.minDays.toString();
-          if (currentTabInfo.maxDays !== undefined) {
-            params.daysSinceLastVisitMax = currentTabInfo.maxDays.toString();
-          }
-        }
-      }
-
-      const res = await api.get('/customers', { params });
-      setCustomers(res.data.data);
-      setTotal(res.data.pagination.total);
-    } catch (err) {
-      console.error('Failed to load customer list:', err);
-      message.error('Không thể tải danh sách khách hàng.');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, pageSize, activeTab, activeTouchpointKey, searchQuery, sortField, assignedStaffId, configs]);
-
-  // Fetch triggers
-  useEffect(() => {
-    fetchOverallStats();
-  }, [fetchOverallStats]);
-
-  useEffect(() => {
-    if (Object.keys(configs).length > 0) {
-      fetchTouchpointCounts();
-    }
-  }, [configs, activeTab, fetchTouchpointCounts]);
-
-  useEffect(() => {
-    if (Object.keys(configs).length > 0) {
-      fetchCustomerList();
-    }
-  }, [
-    configs,
-    currentPage,
-    pageSize,
-    activeTab,
-    activeTouchpointKey,
-    searchQuery,
-    sortField,
-    assignedStaffId,
-    fetchCustomerList,
-  ]);
-
-  // Reset pagination when filter updates
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab, activeTouchpointKey, searchQuery, sortField, assignedStaffId]);
-
-  // Operations
-  const handleAddToPlan = async (customerId: number) => {
-    try {
-      await api.post('/plans', {
-        legacyUserId: customerId,
-        date: new Date().toISOString().split('T')[0],
-      });
-      message.success('Đã thêm khách hàng vào kế hoạch gọi hôm nay!');
-      setDailyPlanList((prev) => [...prev, customerId]);
-    } catch (err: any) {
-      console.error('Failed to add to call plan:', err);
-      message.error(err.response?.data?.message || 'Không thể thêm khách hàng.');
-    }
-  };
-
-  const handleOpenCallModal = (customer: Customer) => {
-    setSelectedPlanInfo({
-      legacyUserId: customer.id,
-      customerName: customer.name,
-      planId: null, // Independent touchpoint call
-    });
-    setCallModalVisible(true);
-  };
-
-  const handleCallSuccess = () => {
-    setCallModalVisible(false);
-    fetchOverallStats();
-    fetchCustomerList();
-  };
-
-  const handleOpenDetailModal = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setDetailModalVisible(true);
-  };
-
-  // Settings Configuration (Admin only)
-  const handleOpenSettings = () => {
-    setSelectedConfigTab('NYC_30');
-    // Pre-populate settings form
-    const currentTabConfigs = configs['NYC_30'] || [];
-    settingsForm.setFieldsValue({ touchpoints: currentTabConfigs });
-    setSettingsModalVisible(true);
-  };
-
-  const handleConfigTabChange = (val: string) => {
-    setSelectedConfigTab(val);
-    const tabConfigs = configs[val] || [];
-    settingsForm.setFieldsValue({ touchpoints: tabConfigs });
-  };
-
-  const handleSaveConfig = async () => {
-    try {
-      const values = await settingsForm.validateFields();
-
-      // Update local state temporarily for selected tab
-      const updatedConfigs = {
-        ...configs,
-        [selectedConfigTab]: values.touchpoints,
-      };
-
-      await api.put('/nyc/config', updatedConfigs);
-      message.success('Đã xuất bản template cấu hình touchpoints mới thành công!');
-      setConfigs(updatedConfigs);
-      setSettingsModalVisible(false);
-      setActiveTouchpointKey('ALL');
-    } catch (err: any) {
-      console.error('Save configs failed:', err);
-      message.error(err.response?.data?.message || 'Lưu cấu hình thất bại.');
-    }
-  };
-
-  const handleResetConfigDefaults = async () => {
+  const handleResetConfigDefaults = () => {
     Modal.confirm({
       title: 'Xác nhận khôi phục mặc định',
       content: 'Bạn có chắc chắn muốn xóa tất cả cấu hình hiện tại và quay về cài đặt gốc không?',
@@ -597,333 +227,33 @@ export default function NycCampaignPage() {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
-          // Send default template object to reset
-          const defaultConfigs: TabConfigs = {
-            NYC_30: [
-              { key: 'now', label: 'Chạm Now', daysMin: 0, daysMax: 1, color: 'blue' },
-              { key: '3', label: 'Chạm 3', daysMin: 3, daysMax: 3, color: 'cyan' },
-              { key: '7', label: 'Chạm 7', daysMin: 7, daysMax: 7, color: 'green' },
-              { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'orange' },
-              { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'red' },
-            ],
-            NYC_60: [
-              { key: '35', label: 'Chạm 35', daysMin: 31, daysMax: 35, color: 'blue' },
-              { key: '45', label: 'Chạm 45', daysMin: 41, daysMax: 45, color: 'orange' },
-              { key: '55', label: 'Chạm 55', daysMin: 51, daysMax: 55, color: 'red' },
-            ],
-            NYC_90: [
-              { key: '70', label: 'Chạm 70', daysMin: 65, daysMax: 70, color: 'blue' },
-              { key: '80', label: 'Chạm 80', daysMin: 75, daysMax: 80, color: 'orange' },
-            ],
-            NYC_180: [
-              { key: '100', label: 'Chạm 100', daysMin: 95, daysMax: 100, color: 'blue' },
-              { key: '150', label: 'Chạm 150', daysMin: 145, daysMax: 150, color: 'orange' },
-            ],
-            NYC_365: [
-              { key: '200', label: 'Chạm 200', daysMin: 195, daysMax: 200, color: 'blue' },
-              { key: '300', label: 'Chạm 300', daysMin: 295, daysMax: 300, color: 'orange' },
-            ],
-            NYC_365plus: [
-              { key: '400', label: 'Chạm 400', daysMin: 395, daysMax: 400, color: 'blue' },
-              { key: '500', label: 'Chạm 500', daysMin: 495, daysMax: 500, color: 'orange' },
-            ],
-          };
-          await api.put('/nyc/config', defaultConfigs);
+          await resetConfigDefaults();
           message.success('Đã khôi phục cài đặt mặc định thành công.');
-          setConfigs(defaultConfigs);
-          settingsForm.setFieldsValue({ touchpoints: defaultConfigs[selectedConfigTab] });
-        } catch (err: any) {
-          console.error(err);
+        } catch (err) {
           message.error('Khôi phục thất bại.');
         }
       },
     });
   };
 
-  // Helper formats
-  const formatVND = (value: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-  };
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, activeTouchpointKey, searchQuery, sortField, assignedStaffId, setCurrentPage]);
 
   const getActiveTabLabelCount = (id: string) => {
     return tabCounts[id] || 0;
   };
 
-  const getRowClassName = (record: Customer) => {
-    // 1. check callback date ("có hẹn gọi lại -> màu hy vọng")
-    const hasCallback = record.callbackDate
-      ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
-      : false;
-    if (hasCallback) {
-      return themeMode === 'dark' ? 'row-hope-dark' : 'row-hope-light';
-    }
-
-    // 2. check if they have a future booking ("đã booked -> sẽ đến, chuyển sang màu xanh")
-    const isBookingInFuture = record.lastBookingDate ? new Date(record.lastBookingDate) > new Date() : false;
-    if (isBookingInFuture) {
-      const state = record.lastBookingState;
-      const isBooked = state === 'New' || state === 'Confirmed';
-      if (isBooked) {
-        return themeMode === 'dark' ? 'row-booked-future-dark' : 'row-booked-future-light';
-      }
-    }
-
-    // 3. check positive daysSinceLastVisit but missed booking ("đã booked mà chưa tới (missed), chuyển sang màu đỏ lợt")
-    const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
-    if (isBookingInPast) {
-      const state = record.lastBookingState;
-      const isMissed =
-        state &&
-        state !== 'Completed' &&
-        state !== 'ServiceCompleted' &&
-        state !== 'CheckIn' &&
-        state !== 'CheckOut' &&
-        state !== 'ServiceStart';
-      if (isMissed) {
-        return themeMode === 'dark' ? 'row-missed-dark' : 'row-missed-light';
-      }
-    }
-
-    return '';
-  };
-
-  // Columns for main table
-  const columns = [
-    {
-      title: 'Mã KH',
-      dataIndex: 'id',
-      key: 'id',
-      width: 90,
-    },
-    {
-      title: 'Khách Hàng',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text: string, record: Customer) => (
-        <Space
-          style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-          onClick={() => handleOpenDetailModal(record)}
-        >
-          <Avatar
-            src={record.avatar || undefined}
-            icon={<UserOutlined />}
-            style={{
-              backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5',
-              color: '#D4A84B',
-              border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
-              flexShrink: 0,
-            }}
-          />
-          <div>
-            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline transition-all">
-              {text}
-            </div>
-            <div style={{ fontSize: '12px', color: token.colorTextDescription }}>{record.phone}</div>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: 'Chưa tới tiệm (Ngày)',
-      dataIndex: 'daysSinceLastVisit',
-      key: 'daysSinceLastVisit',
-      width: 180,
-      sorter: true,
-      render: (days: number | null, record: Customer) => {
-        // 1. check callback date ("có hẹn gọi lại")
-        const hasCallback = record.callbackDate
-          ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
-          : false;
-        if (hasCallback) {
-          const callbackFormatted = dayjs(record.callbackDate).format('DD/MM/YYYY');
-          return (
-            <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#d4b106', fontWeight: 'bold' }}>
-              🕒 Hẹn gọi lại: {callbackFormatted}
-            </span>
-          );
-        }
-
-        // 2. check future booking ("đã booked -> sẽ đến")
-        const isBookingInFuture = record.lastBookingDate ? new Date(record.lastBookingDate) > new Date() : false;
-        if (isBookingInFuture) {
-          const state = record.lastBookingState;
-          const isBooked = state === 'New' || state === 'Confirmed';
-          if (isBooked) {
-            const bookingFormatted = dayjs(record.lastBookingDate).format('DD/MM/YYYY');
-            return (
-              <span style={{ color: themeMode === 'dark' ? '#73d13d' : '#389e0d', fontWeight: 'bold' }}>
-                📅 Booked: {bookingFormatted}
-              </span>
-            );
-          }
-        }
-
-        // 3. check missed booking ("đã booked mà chưa tới (missed)")
-        const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
-        if (isBookingInPast) {
-          const state = record.lastBookingState;
-          const isMissed =
-            state &&
-            state !== 'Completed' &&
-            state !== 'ServiceCompleted' &&
-            state !== 'CheckIn' &&
-            state !== 'CheckOut' &&
-            state !== 'ServiceStart';
-          if (isMissed) {
-            let missedDays = days;
-            if (record.lastBookingDate) {
-              const bookingDate = new Date(record.lastBookingDate);
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              bookingDate.setHours(0, 0, 0, 0);
-              const diffMs = today.getTime() - bookingDate.getTime();
-              missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-            }
-            return (
-              <span style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold' }}>
-                ⚠️ Missed: {missedDays} ngày
-              </span>
-            );
-          }
-        }
-
-        // 4. normal daysSinceLastVisit ("số dương -> chưa ghé x days, bình thường")
-        return days !== null ? `${days} ngày` : <Text style={{ color: '#888' }}>Chưa từng đến</Text>;
-      },
-    },
-    {
-      title: 'Tổng Chi Tiêu',
-      dataIndex: 'totalSpent',
-      key: 'totalSpent',
-      render: (val: number) => formatVND(val),
-    },
-    {
-      title: 'Booker phụ trách',
-      dataIndex: 'assignedStaff',
-      key: 'assignedStaff',
-      render: (staff: any) =>
-        staff ? (
-          <Tag color="cyan">{staff.displayName}</Tag>
-        ) : (
-          <Text type="secondary" style={{ fontStyle: 'italic' }}>
-            Chưa phân bổ
-          </Text>
-        ),
-    },
-    {
-      title: 'Ngày gọi gần nhất',
-      key: 'lastCallDate',
-      render: (_: any, record: Customer) => {
-        if (!record.lastCall?.createdAt) return '-';
-        return dayjs(record.lastCall.createdAt).format('DD/MM/YYYY HH:mm');
-      },
-    },
-    {
-      title: 'Thời lượng',
-      key: 'lastCallDuration',
-      render: (_: any, record: Customer) => {
-        if (record.lastCall?.durationSec === undefined || record.lastCall?.durationSec === null) return '-';
-        return formatDuration(record.lastCall.durationSec);
-      },
-    },
-    {
-      title: 'Trạng thái cuộc gọi',
-      key: 'lastCallResult',
-      render: (_: any, record: Customer) => {
-        if (!record.lastCall?.callResult) return '-';
-        const result = record.lastCall.callResult;
-        const label = CALL_RESULT_LABELS[result as keyof typeof CALL_RESULT_LABELS] || result;
-        let color = 'default';
-        if (result === 'ANSWERED') color = 'success';
-        else if (result === 'NO_ANSWER') color = 'warning';
-        else if (result === 'BUSY') color = 'orange';
-        else if (result === 'FAILED' || result === 'WRONG_NUMBER') color = 'error';
-        return <Tag color={color}>{label}</Tag>;
-      },
-    },
-    {
-      title: 'Ghi chú cuộc gọi',
-      key: 'lastCallNote',
-      render: (_: any, record: Customer) => {
-        if (!record.lastCall?.note) return '-';
-        const note = record.lastCall.note;
-        const compactNote = note.length > 25 ? `${note.substring(0, 25)}...` : note;
-        return (
-          <Tooltip title={note}>
-            <span style={{ cursor: 'pointer' }}>{compactNote}</span>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      width: 210,
-      render: (_: any, record: Customer) => {
-        const isPlanned = dailyPlanList.includes(record.id);
-        return (
-          <Space size="small">
-            <Button
-              type={isPlanned ? 'dashed' : 'primary'}
-              ghost={!isPlanned}
-              size="small"
-              icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
-              onClick={() => !isPlanned && handleAddToPlan(record.id)}
-              style={!isPlanned ? { borderColor: token.colorPrimary, color: token.colorPrimary } : {}}
-              disabled={isPlanned}
-            >
-              {isPlanned ? 'Đã lên lịch' : 'Lên lịch gọi'}
-            </Button>
-            <Button
-              type="primary"
-              size="small"
-              icon={<PhoneOutlined />}
-              onClick={() => handleOpenCallModal(record)}
-              style={{ background: '#52C41A', borderColor: '#52C41A', color: '#fff' }}
-            >
-              Gọi
-            </Button>
-            <Tooltip title="Chi tiết khách hàng">
-              <Button
-                type="text"
-                shape="circle"
-                icon={<EyeOutlined style={{ color: '#D4A84B' }} />}
-                onClick={() => handleOpenDetailModal(record)}
-              />
-            </Tooltip>
-          </Space>
-        );
-      },
-    },
-  ];
-
-  // History columns for details modal
-  const orderColumns = [
-    {
-      title: 'Mã đơn',
-      dataIndex: 'orderKey',
-      key: 'orderKey',
-    },
-    {
-      title: 'Ngày đặt',
-      dataIndex: 'dateCreated',
-      key: 'dateCreated',
-      render: (dateStr: string) =>
-        new Date(dateStr).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    },
-    {
-      title: 'Tổng tiền',
-      dataIndex: 'totalPrice',
-      key: 'totalPrice',
-      render: (val: number) => formatVND(val),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'orderState',
-      key: 'orderState',
-      render: (val: string) => <Tag color={val === 'Completed' ? 'green' : 'orange'}>{val}</Tag>,
-    },
-  ];
+  const columns = getNycColumns({
+    themeMode,
+    token,
+    handleOpenDetailModal,
+    formatVND,
+    formatDuration,
+    dailyPlanList,
+    handleAddToPlan,
+    handleOpenCallModal,
+  });
 
   const {
     loading: nycConfigLoading,
@@ -943,10 +273,18 @@ export default function NycCampaignPage() {
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <Title level={2} style={{ color: token.colorPrimary, margin: 0, fontWeight: 'bold', letterSpacing: '0.5px' }}>
+          <Title
+            level={2}
+            style={{
+              color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+              margin: 0,
+              fontWeight: 'bold',
+              letterSpacing: '0.5px',
+            }}
+          >
             <ClockCircleOutlined /> CHIẾN DỊCH KHÁCH HÀNG NYC
           </Title>
-          <Text style={{ color: token.colorTextDescription }}>
+          <Text style={{ color: themeMode === 'dark' ? token.colorTextDescription : '#555555' }}>
             Hệ thống chăm sóc đặc biệt dành cho khách hàng chưa mua gói Combo (Single/Combo hết hạn).
           </Text>
         </div>
@@ -967,8 +305,15 @@ export default function NycCampaignPage() {
           <Button
             type="primary"
             icon={<CalendarOutlined />}
-            style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B', fontWeight: 'bold' }}
-            onClick={() => setBookingWizardVisible(true)}
+            style={{
+              backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
+              borderColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
+              fontWeight: 'bold',
+            }}
+            onClick={() => {
+              setBookingInitialCustomer(null);
+              setBookingWizardVisible(true);
+            }}
           >
             Đặt lịch mới
           </Button>
@@ -1000,7 +345,7 @@ export default function NycCampaignPage() {
               Tổng Khách Hàng NYC
             </Text>
             <div style={{ fontSize: '26px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}>
-              {overallStats.totalNYC}{' '}
+              {Object.values(tabCounts).reduce((sum, val) => sum + val, 0)}{' '}
               <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>khách</span>
             </div>
           </Card>
@@ -1017,8 +362,15 @@ export default function NycCampaignPage() {
             <Text type="secondary" style={{ fontSize: '13px' }}>
               NYC 30 (Quan trọng nhất)
             </Text>
-            <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#D4A84B', marginTop: '4px' }}>
-              {overallStats.nyc30Count}{' '}
+            <div
+              style={{
+                fontSize: '26px',
+                fontWeight: 'bold',
+                color: themeMode === 'dark' ? '#D4A84B' : '#87640a',
+                marginTop: '4px',
+              }}
+            >
+              {tabCounts['NYC_30'] || 0}{' '}
               <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>khách</span>
             </div>
           </Card>
@@ -1035,8 +387,18 @@ export default function NycCampaignPage() {
             <Text type="secondary" style={{ fontSize: '13px' }}>
               Hiệu suất Đặt Lịch (Booked Rate)
             </Text>
-            <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#52C41A', marginTop: '4px' }}>
-              {overallStats.bookedRate}%{' '}
+            <div
+              style={{
+                fontSize: '26px',
+                fontWeight: 'bold',
+                color: themeMode === 'dark' ? '#52C41A' : '#237804',
+                marginTop: '4px',
+              }}
+            >
+              {overallStats.totalCalledToday > 0
+                ? Math.round((overallStats.totalBookedToday / overallStats.totalCalledToday) * 100)
+                : 0}
+              %{' '}
               <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
                 đặt lịch
               </span>
@@ -1055,8 +417,15 @@ export default function NycCampaignPage() {
             <Text type="secondary" style={{ fontSize: '13px' }}>
               Đã gọi hôm nay
             </Text>
-            <div style={{ fontSize: '26px', fontWeight: 'bold', color: token.colorPrimary, marginTop: '4px' }}>
-              {overallStats.todayCalls}{' '}
+            <div
+              style={{
+                fontSize: '26px',
+                fontWeight: 'bold',
+                color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                marginTop: '4px',
+              }}
+            >
+              {overallStats.totalCalledToday}{' '}
               <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
                 cuộc gọi
               </span>
@@ -1083,8 +452,8 @@ export default function NycCampaignPage() {
                 count={getActiveTabLabelCount(tab.id)}
                 overflowCount={9999}
                 style={{
-                  backgroundColor: activeTab === tab.id ? '#D4A84B' : themeMode === 'dark' ? '#333' : '#e8e8e8',
-                  color: activeTab === tab.id ? '#000' : themeMode === 'dark' ? '#fff' : '#666',
+                  backgroundColor: activeTab === tab.id ? '#D4A84B' : themeMode === 'dark' ? '#333' : '#d9d9d9',
+                  color: activeTab === tab.id ? '#000' : themeMode === 'dark' ? '#fff' : '#434343',
                 }}
               />
             </Space>
@@ -1113,481 +482,398 @@ export default function NycCampaignPage() {
               )}
             </div>
 
-            {activeTouchpointsList.length === 0 ? (
-              <div style={{ padding: '20px 0', textAlign: 'center', color: token.colorTextDescription }}>
-                Chưa cấu hình chạm nào cho mốc thời gian này.
-              </div>
-            ) : (
-              <Row
-                gutter={[12, 12]}
-                justify="start"
-                style={{ overflowX: 'auto', flexWrap: 'nowrap', paddingBottom: '8px' }}
+            <div
+              className={`p-4 rounded-xl flex items-center justify-between gap-4 overflow-x-auto min-h-[105px] border ${
+                themeMode === 'dark' ? 'bg-[#1a1a1a] border-white/5' : 'bg-slate-50/50 border-slate-100'
+              }`}
+            >
+              {/* All touchpoints capsule */}
+              <div
+                onClick={() => setActiveTouchpointKey('ALL')}
+                className={`flex-1 min-w-[130px] p-3.5 rounded-xl cursor-pointer text-center select-none transition-all duration-300 border-2 ${
+                  activeTouchpointKey === 'ALL'
+                    ? 'border-gold bg-gold/10 shadow-[0_4px_15px_rgba(212,168,75,0.15)] scale-[1.03]'
+                    : themeMode === 'dark'
+                      ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
+                      : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
+                }`}
               >
-                <Col flex="0 0 160px">
-                  <div
-                    onClick={() => setActiveTouchpointKey('ALL')}
-                    style={{
-                      border: `1px solid ${activeTouchpointKey === 'ALL' ? token.colorPrimary : token.colorBorderSecondary}`,
-                      background:
-                        activeTouchpointKey === 'ALL'
-                          ? themeMode === 'dark'
-                            ? 'rgba(212, 168, 75, 0.15)'
-                            : 'rgba(212, 168, 75, 0.08)'
-                          : themeMode === 'dark'
-                            ? '#000'
-                            : '#fafafa',
-                      borderRadius: '8px',
-                      padding: '12px',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      transition: 'all 0.2s',
-                      boxShadow: activeTouchpointKey === 'ALL' ? '0 0 10px rgba(212, 168, 75, 0.3)' : 'none',
-                    }}
-                  >
-                    <BookOutlined
-                      style={{ fontSize: '18px', color: activeTouchpointKey === 'ALL' ? token.colorPrimary : '#888' }}
-                    />
-                    <div style={{ fontWeight: '600', marginTop: '6px', fontSize: '13px', color: token.colorText }}>
-                      Tất cả
-                    </div>
-                    <Text type="secondary" style={{ fontSize: '11px' }}>
-                      Toàn bộ danh sách
-                    </Text>
-                  </div>
-                </Col>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#888', textTransform: 'uppercase' }}>
+                  Tất cả chạm
+                </div>
+                <div
+                  style={{
+                    fontSize: '20px',
+                    fontWeight: '900',
+                    marginTop: '2px',
+                    color:
+                      activeTouchpointKey === 'ALL' ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
+                  }}
+                >
+                  {tabCounts[activeTab] || 0}
+                </div>
+              </div>
 
-                {activeTouchpointsList.map((tp) => {
-                  const isActive = activeTouchpointKey === tp.key;
-                  const count = touchpointCounts[tp.key] || 0;
-
-                  // Compute tag color mapping
-                  let tagBg = 'rgba(136, 136, 136, 0.1)';
-                  let tagBorder = '#888';
-                  let activeGlow = 'rgba(136, 136, 136, 0.3)';
-
-                  if (tp.color === 'blue') {
-                    tagBg = 'rgba(24, 144, 255, 0.1)';
-                    tagBorder = '#1890ff';
-                    activeGlow = 'rgba(24, 144, 255, 0.3)';
-                  } else if (tp.color === 'cyan') {
-                    tagBg = 'rgba(19, 194, 194, 0.1)';
-                    tagBorder = '#19c2c2';
-                    activeGlow = 'rgba(19, 194, 194, 0.3)';
-                  } else if (tp.color === 'green') {
-                    tagBg = 'rgba(82, 196, 26, 0.1)';
-                    tagBorder = '#52c41a';
-                    activeGlow = 'rgba(82, 196, 26, 0.3)';
-                  } else if (tp.color === 'orange') {
-                    tagBg = 'rgba(250, 143, 20, 0.1)';
-                    tagBorder = '#fa8f14';
-                    activeGlow = 'rgba(250, 143, 20, 0.3)';
-                  } else if (tp.color === 'red') {
-                    tagBg = 'rgba(245, 34, 45, 0.1)';
-                    tagBorder = '#f5222d';
-                    activeGlow = 'rgba(245, 34, 45, 0.3)';
-                  } else if (tp.color === 'gold') {
-                    tagBg = 'rgba(212, 168, 75, 0.1)';
-                    tagBorder = '#D4A84B';
-                    activeGlow = 'rgba(212, 168, 75, 0.3)';
-                  }
-
-                  return (
-                    <Col key={tp.key} flex="0 0 180px">
+              {/* Individual touchpoints */}
+              {activeTouchpointsList.map((tp, idx) => {
+                const isSelected = activeTouchpointKey === tp.key;
+                const count = touchpointCounts[tp.key] || 0;
+                return (
+                  <React.Fragment key={tp.key}>
+                    {idx > 0 && (
                       <div
-                        onClick={() => setActiveTouchpointKey(tp.key)}
                         style={{
-                          border: `1px solid ${isActive ? tagBorder : token.colorBorderSecondary}`,
-                          background: isActive ? tagBg : themeMode === 'dark' ? '#000' : '#ffffff',
-                          borderRadius: '8px',
-                          padding: '12px',
-                          cursor: 'pointer',
-                          position: 'relative',
-                          transition: 'all 0.2s',
-                          boxShadow: isActive ? `0 0 12px ${activeGlow}` : 'none',
+                          width: '18px',
+                          height: '2px',
+                          backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
+                    <div
+                      onClick={() => setActiveTouchpointKey(tp.key)}
+                      className={`flex-1 min-w-[140px] p-3.5 rounded-xl cursor-pointer text-center select-none transition-all duration-300 border-2 ${
+                        isSelected
+                          ? 'border-gold bg-gold/10 shadow-[0_4px_15px_rgba(212,168,75,0.15)] scale-[1.03]'
+                          : themeMode === 'dark'
+                            ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
+                            : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
+                      }`}
+                    >
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          color:
+                            tp.color === 'red'
+                              ? themeMode === 'dark'
+                                ? '#ff4d4f'
+                                : '#d9363e'
+                              : tp.color === 'orange'
+                                ? themeMode === 'dark'
+                                  ? '#fa8c16'
+                                  : '#d46b08'
+                                : tp.color === 'green'
+                                  ? themeMode === 'dark'
+                                    ? '#52c41a'
+                                    : '#389e0d'
+                                  : themeMode === 'dark'
+                                    ? '#1890ff'
+                                    : '#096dd9',
+                          textTransform: 'uppercase',
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Tag color={tp.color}>{tp.label}</Tag>
-                          <Badge
-                            count={count}
-                            style={{ backgroundColor: tagBorder, color: '#fff' }}
-                            overflowCount={999}
-                          />
-                        </div>
-                        <div
-                          style={{ fontWeight: 'bold', marginTop: '10px', fontSize: '14px', color: token.colorText }}
-                        >
-                          {tp.daysMin === tp.daysMax ? `${tp.daysMin} ngày` : `${tp.daysMin} - ${tp.daysMax} ngày`}
-                        </div>
-                        <div style={{ fontSize: '11px', color: token.colorTextDescription, marginTop: '2px' }}>
-                          Chưa quay lại tiệm
-                        </div>
+                        {tp.label}
                       </div>
-                    </Col>
-                  );
-                })}
-              </Row>
-            )}
+                      <div
+                        style={{
+                          fontSize: '20px',
+                          fontWeight: '900',
+                          marginTop: '2px',
+                          color: isSelected ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
+                        }}
+                      >
+                        {count}
+                      </div>
+                      <div style={{ fontSize: '9px', color: '#888', marginTop: '2px' }}>
+                        {tp.daysMin === tp.daysMax ? `${tp.daysMin} ngày` : `${tp.daysMin} - ${tp.daysMax} ngày`}
+                      </div>
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+            </div>
           </div>
 
-          <Divider style={{ margin: 0, borderColor: token.colorBorderSecondary }} />
+          <Divider style={{ margin: 0, opacity: 0.5 }} />
 
-          {/* SEARCH & SORT & FILTERS */}
+          {/* SEARCH & FILTERS BAR */}
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <Input
-              placeholder="Tìm kiếm khách hàng theo tên, số điện thoại..."
-              prefix={<SearchOutlined style={{ color: token.colorTextDescription }} />}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ maxWidth: 380 }}
-              suffix={
-                searchQuery ? (
-                  <CloseCircleFilled
-                    onClick={() => setSearchQuery('')}
-                    style={{ color: token.colorTextDescription, cursor: 'pointer', fontSize: '14px' }}
-                  />
-                ) : (
-                  <span style={{ width: '14px', display: 'inline-block' }} />
-                )
-              }
-              size="large"
-            />
-
-            <Space>
-              <Text type="secondary">Sắp xếp theo:</Text>
+            <Space wrap className="w-full md:w-auto">
+              <Input
+                placeholder="Tìm khách hàng (Tên, SĐT, ID)..."
+                prefix={<SearchOutlined style={{ color: '#aaa' }} />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                allowClear
+                style={{ width: 280 }}
+              />
               <Select
                 value={sortField}
                 onChange={(val) => setSortField(val)}
                 style={{ width: 220 }}
                 options={[
-                  { value: 'daysSinceLastVisit_asc', label: 'Ngày chưa quay lại ít nhất' },
-                  { value: 'daysSinceLastVisit_desc', label: 'Ngày chưa quay lại nhiều nhất' },
-                  { value: 'totalSpent_desc', label: 'Chi tiêu cao nhất' },
-                  { value: 'totalSpent_asc', label: 'Chi tiêu thấp nhất' },
-                  { value: 'name_asc', label: 'Tên chữ cái (A-Z)' },
-                  { value: 'name_desc', label: 'Tên chữ cái (Z-A)' },
-                  { value: 'id_desc', label: 'Khách hàng mới nhất' },
+                  { value: 'daysSinceLastVisit_asc', label: 'Chưa ghé tăng dần' },
+                  { value: 'daysSinceLastVisit_desc', label: 'Chưa ghé giảm dần' },
+                  { value: 'totalSpent_desc', label: 'Doanh thu LTV lớn nhất' },
+                  { value: 'lastCallDate_desc', label: 'Gọi gần nhất' },
+                  { value: 'lastCallDate_asc', label: 'Gọi lâu nhất' },
                 ]}
               />
-              <Tooltip title="Cấu hình hiển thị cột">
-                <Button
-                  type="text"
-                  icon={<SettingOutlined style={{ color: token.colorTextDescription }} />}
-                  onClick={openNycConfig}
-                />
-              </Tooltip>
+            </Space>
+            <Space>
+              <Button icon={<SettingOutlined />} onClick={openNycConfig}>
+                Cấu hình cột bảng
+              </Button>
             </Space>
           </div>
         </div>
       </Card>
 
-      {/* DATA TABLE */}
+      {/* CUSTOMERS DATA TABLE */}
       <Table
-        size="small"
-        dataSource={customers}
         columns={nycConfigColumns}
+        dataSource={customers}
         rowKey="id"
-        loading={loading || nycConfigLoading}
-        rowClassName={getRowClassName}
-        components={{
-          header: {
-            cell: ResizableHeaderCell,
-          },
-        }}
-        scroll={{ x: 'max-content' }}
+        loading={loading}
+        className="antd-custom-table"
         pagination={{
           current: currentPage,
           pageSize: pageSize,
           total: total,
           showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
           onChange: (page, size) => {
             setCurrentPage(page);
-            setPageSize(size);
-            localStorage.setItem('mos_nyc_pageSize', String(size));
+            if (size !== pageSize) {
+              setPageSize(size);
+              localStorage.setItem('mos_nyc_pageSize', size.toString());
+            }
           },
-          style: { marginTop: '16px' },
+          showTotal: (totalCount) => `Tổng số: ${totalCount} khách hàng`,
         }}
-        bordered
-        style={{
-          background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
-        }}
-        className="antd-custom-table"
-      />
-
-      {/* CALL LOG MODAL */}
-      <CallLogModal
-        visible={callModalVisible}
-        onCancel={() => setCallModalVisible(false)}
-        onSuccess={handleCallSuccess}
-        planId={selectedPlanInfo?.planId}
-        legacyUserId={selectedPlanInfo?.legacyUserId || 0}
-        customerName={selectedPlanInfo?.customerName || ''}
-      />
-
-      {/* CUSTOMER DETAIL DRAWER (Redesigned Mockup 1 style) */}
-      <CustomerDetailDrawer
-        open={detailModalVisible}
-        customerId={selectedCustomer?.id || null}
-        onClose={() => setDetailModalVisible(false)}
-        onBookAppointment={(cust) => {
-          setDetailModalVisible(false);
-          setBookingInitialCustomer({
-            id: cust.id,
-            name: cust.name,
-            phone: cust.phone,
-            bucket: cust.bucket,
-          });
-          setBookingWizardVisible(true);
+        rowClassName={(record) => getRowClassName(record, themeMode)}
+        components={{
+          header: {
+            cell: ResizableHeaderCell,
+          },
         }}
       />
 
-      {/* BOOKING WIZARD DRAWER WITH SLOTS MATRIX */}
-      <BookingWizardDrawer
-        open={bookingWizardVisible}
-        initialCustomer={bookingInitialCustomer}
-        onClose={() => {
-          setBookingWizardVisible(false);
-          setBookingInitialCustomer(null);
-        }}
-        onSuccess={fetchCustomerList}
-      />
-
-      {/* SETTINGS TEMPLATES CONFIG MODAL (Admin only) */}
-      <Modal
-        className="nyc-config-modal"
-        title={
-          <span style={{ color: '#D4A84B', fontSize: '18px', fontWeight: 'bold' }}>
-            <SettingOutlined /> Cấu Hình Quy Trình Chăm Sóc NYC
-          </span>
-        }
-        open={settingsModalVisible}
-        onCancel={() => setSettingsModalVisible(false)}
-        footer={[
-          <Button key="reset" danger ghost onClick={handleResetConfigDefaults} style={{ float: 'left' }}>
-            <UndoOutlined /> Khôi phục mặc định
-          </Button>,
-          <Button key="close" onClick={() => setSettingsModalVisible(false)}>
-            Hủy
-          </Button>,
-          <Button
-            key="save"
-            type="primary"
-            onClick={handleSaveConfig}
-            style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}
-          >
-            Lưu thành Template chung
-          </Button>,
-        ]}
-        width={modalWidth}
-        style={{ top: 50 }}
-        modalRender={(node) => (
-          <div style={{ position: 'relative', pointerEvents: 'none' }}>
-            <div style={{ pointerEvents: 'auto' }}>{node}</div>
-            <div
-              onMouseDown={handleResizeMouseDown}
-              style={{
-                position: 'absolute',
-                right: '0px',
-                bottom: '0px',
-                width: '28px',
-                height: '28px',
-                cursor: 'se-resize',
-                zIndex: 1060,
-                display: 'flex',
-                alignItems: 'flex-end',
-                justifyContent: 'flex-end',
-                padding: '6px',
-                background: 'transparent',
-                pointerEvents: 'auto',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-              }}
-            >
-              <div
-                style={{
-                  width: '10px',
-                  height: '10px',
-                  borderBottom: `3px solid ${token.colorPrimary}`,
-                  borderRight: `3px solid ${token.colorPrimary}`,
-                  borderRadius: '0 0 3px 0',
-                  pointerEvents: 'none',
-                }}
-              />
-            </div>
-          </div>
-        )}
-      >
-        <div style={{ margin: '12px 0 20px 0' }}>
-          <Text type="secondary">
-            Thiết lập các mốc chạm cho từng tab NYC. Bản lưu này sẽ được xuất bản thành mẫu chung (Template) để mọi nhân
-            sự Online Consultant cùng áp dụng.
-          </Text>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '12px' }}>
-          <span style={{ fontWeight: '500' }}>Cấu hình cho nhóm tab:</span>
-          <Select
-            value={selectedConfigTab}
-            onChange={handleConfigTabChange}
-            style={{ width: 220 }}
-            options={TAB_KEYS.map((t) => ({ value: t.id, label: `${t.name} (${t.rangeText})` }))}
-          />
-        </div>
-
-        <Form form={settingsForm} layout="vertical">
-          <Form.List name="touchpoints">
-            {(fields, { add, remove }) => (
-              <>
-                <div
-                  id="nyc-touchpoints-list"
-                  style={{
-                    height: `${modalHeight - 200}px`,
-                    minHeight: '200px',
-                    overflowY: 'auto',
-                    paddingRight: '8px',
-                  }}
-                >
-                  {fields.map(({ key, name, ...restField }) => (
-                    <Card
-                      key={key}
-                      size="small"
+      {/* RESIZABLE TOUCHPOINT CONFIGURATION MODAL (Admin only) */}
+      {currentUser?.role === 'admin' && (
+        <Modal
+          title={<div style={{ fontSize: '16px', fontWeight: 'bold' }}>⚙️ Cấu hình quy trình chạm NYC</div>}
+          open={settingsModalVisible}
+          onCancel={() => setSettingsModalVisible(false)}
+          onOk={handleSaveConfig}
+          okText="Xuất bản Cấu hình"
+          cancelText="Hủy"
+          width={modalWidth}
+          styles={{
+            body: {
+              padding: '16px 0 0 0',
+              maxHeight: 'calc(100vh - 300px)',
+              overflowY: 'auto',
+            },
+          }}
+          modalRender={(modal) => {
+            if (React.isValidElement(modal)) {
+              return React.cloneElement(modal as SafeAny, {
+                style: {
+                  ...(modal.props as SafeAny)?.style,
+                  position: 'relative',
+                  pointerEvents: 'auto',
+                },
+                children: (
+                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                    {(modal.props as SafeAny)?.children}
+                    {/* Bottom-right corner drag handle */}
+                    <div
+                      onMouseDown={handleResizeMouseDown}
                       style={{
-                        marginBottom: '12px',
-                        background: themeMode === 'dark' ? '#141414' : '#fafafa',
-                        borderColor: token.colorBorderSecondary,
+                        position: 'absolute',
+                        right: '0px',
+                        bottom: '0px',
+                        width: '18px',
+                        height: '18px',
+                        cursor: 'nwse-resize',
+                        zIndex: 9999,
+                        background: 'transparent',
+                        display: 'flex',
+                        alignItems: 'end',
+                        justifyContent: 'end',
+                        padding: '3px',
                       }}
                     >
-                      <Row gutter={12} align="middle">
-                        <Col span={7}>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'label']}
-                            label="Tên chạm (ví dụ: Chạm 3)"
-                            rules={[{ required: true, message: 'Nhập tên chạm' }]}
-                          >
-                            <Input placeholder="Tên chạm" />
-                          </Form.Item>
-                        </Col>
-                        <Col span={5}>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'daysMin']}
-                            label="Số ngày min"
-                            rules={[{ required: true, message: 'Số ngày min' }]}
-                          >
-                            <InputNumber min={0} style={{ width: '100%' }} />
-                          </Form.Item>
-                        </Col>
-                        <Col span={5}>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'daysMax']}
-                            label="Số ngày max"
-                            rules={[{ required: true, message: 'Số ngày max' }]}
-                          >
-                            <InputNumber min={0} style={{ width: '100%' }} />
-                          </Form.Item>
-                        </Col>
-                        <Col span={5}>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'color']}
-                            label="Màu sắc tag"
-                            rules={[{ required: true }]}
-                          >
-                            <Select
-                              options={[
-                                { value: 'blue', label: 'Blue' },
-                                { value: 'cyan', label: 'Cyan' },
-                                { value: 'green', label: 'Green' },
-                                { value: 'orange', label: 'Orange' },
-                                { value: 'red', label: 'Red' },
-                                { value: 'gold', label: 'Gold' },
-                              ]}
-                            />
-                          </Form.Item>
-                        </Col>
-                        <Col span={2} style={{ textAlign: 'center', marginTop: '8px' }}>
-                          <MinusCircleOutlined
-                            onClick={() => remove(name)}
-                            style={{ color: '#FF4D4F', fontSize: '18px', cursor: 'pointer' }}
-                          />
-                        </Col>
-                      </Row>
-
-                      {/* Hidden key field */}
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'key']}
-                        initialValue={`tp_${Date.now()}_${key}`}
-                        style={{ display: 'none' }}
-                      >
-                        <Input type="hidden" />
-                      </Form.Item>
-                    </Card>
-                  ))}
-                </div>
-
-                <Form.Item>
-                  <Button
-                    type="dashed"
-                    onClick={() =>
-                      add({ key: `tp_${Date.now()}`, label: 'Chạm mới', daysMin: 3, daysMax: 3, color: 'blue' })
-                    }
-                    block
-                    icon={<PlusOutlined />}
+                      <svg width="8" height="8" viewBox="0 0 8 8" style={{ fill: '#888', opacity: 0.6 }}>
+                        <path d="M6 0l2 2-6 6H0V6L6 0z M3 5l2 2H3V5z" />
+                      </svg>
+                    </div>
+                  </div>
+                ),
+              });
+            }
+            return modal;
+          }}
+        >
+          <div className="px-5">
+            <div className="flex justify-between items-center mb-4">
+              <Select
+                value={selectedConfigTab}
+                onChange={handleConfigTabChange}
+                style={{ width: 220 }}
+                options={TAB_KEYS.map((k) => ({ value: k.id, label: `${k.name} (${k.rangeText})` }))}
+              />
+              <Button type="dashed" danger onClick={handleResetConfigDefaults} icon={<UndoOutlined />}>
+                Khôi phục mặc định
+              </Button>
+            </div>
+            <Form form={settingsForm} name="touchpoints_configs_form" layout="vertical">
+              <Form.List name="touchpoints">
+                {(fields, { add, remove }) => (
+                  <div
+                    id="nyc-touchpoints-list"
+                    style={{
+                      height: `${modalHeight - 200}px`,
+                      overflowY: 'auto',
+                      paddingRight: '6px',
+                    }}
+                    className="space-y-4 pr-1"
                   >
-                    Thêm Chạm mới
-                  </Button>
-                </Form.Item>
-              </>
-            )}
-          </Form.List>
-        </Form>
-      </Modal>
+                    {fields.map(({ key, name, ...restField }) => (
+                      <Card
+                        key={key}
+                        size="small"
+                        title={<span style={{ fontSize: '12px', fontWeight: 'bold' }}>Touchpoint #{name + 1}</span>}
+                        extra={
+                          <Button type="text" danger onClick={() => remove(name)} icon={<MinusCircleOutlined />} />
+                        }
+                        className={themeMode === 'dark' ? 'bg-[#1c1c1e]' : 'bg-slate-50'}
+                      >
+                        <Row gutter={12}>
+                          <Col span={6}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'key']}
+                              label="Mã định danh (Key)"
+                              rules={[{ required: true, message: 'Nhập key' }]}
+                            >
+                              <Input placeholder="Ví dụ: chạm-7" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={6}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'label']}
+                              label="Tên hiển thị (Label)"
+                              rules={[{ required: true, message: 'Nhập nhãn' }]}
+                            >
+                              <Input placeholder="Ví dụ: Chạm 7 ngày" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={4}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'daysMin']}
+                              label="Min (Ngày)"
+                              rules={[{ required: true, message: 'Nhập min' }]}
+                            >
+                              <InputNumber min={0} style={{ width: '100%' }} />
+                            </Form.Item>
+                          </Col>
+                          <Col span={4}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'daysMax']}
+                              label="Max (Ngày)"
+                              rules={[{ required: true, message: 'Nhập max' }]}
+                            >
+                              <InputNumber min={0} style={{ width: '100%' }} />
+                            </Form.Item>
+                          </Col>
+                          <Col span={4}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'color']}
+                              label="Màu sắc đại diện"
+                              rules={[{ required: true, message: 'Chọn màu' }]}
+                            >
+                              <Select
+                                options={[
+                                  { value: 'blue', label: 'Xanh dương' },
+                                  { value: 'cyan', label: 'Xanh ngọc' },
+                                  { value: 'green', label: 'Xanh lá' },
+                                  { value: 'orange', label: 'Cam' },
+                                  { value: 'red', label: 'Đỏ' },
+                                ]}
+                              />
+                            </Form.Item>
+                          </Col>
+                        </Row>
+                      </Card>
+                    ))}
+                    <Button
+                      type="dashed"
+                      onClick={() => add({ key: '', label: '', daysMin: 0, daysMax: 0, color: 'blue' })}
+                      block
+                      icon={<PlusCircleOutlined />}
+                      style={{ color: '#D4A84B', borderColor: '#D4A84B' }}
+                    >
+                      Thêm chặng chạm mới
+                    </Button>
+                  </div>
+                )}
+              </Form.List>
+            </Form>
+          </div>
+        </Modal>
+      )}
+
+      {/* SUB-COMPONENTS MODALS */}
+      {callModalVisible && selectedPlanInfo && (
+        <CallLogModal
+          visible={callModalVisible}
+          onCancel={() => setCallModalVisible(false)}
+          onSuccess={handleCallSuccess}
+          legacyUserId={selectedPlanInfo.legacyUserId}
+          customerName={selectedPlanInfo.customerName}
+          planId={selectedPlanInfo.planId}
+        />
+      )}
+
+      {detailModalVisible && selectedCustomer && (
+        <CustomerDetailDrawer
+          open={detailModalVisible}
+          customerId={selectedCustomer.id}
+          onClose={handleDetailClose}
+          onDeleteSuccess={handleDetailDeleteSuccess}
+        />
+      )}
+
+      {bookingWizardVisible && (
+        <BookingWizardDrawer
+          open={bookingWizardVisible}
+          onClose={handleBookingWizardClose}
+          onSuccess={handleBookingWizardSuccess}
+          initialCustomer={bookingInitialCustomer}
+        />
+      )}
 
       <TableConfigDrawer
         visible={nycConfigVisible}
         onClose={closeNycConfig}
-        title="Cấu hình cột: Chiến dịch khách hàng NYC"
         columns={nycRawConfig}
         onSave={saveNycConfig}
         onReset={resetNycConfig}
       />
 
       <style jsx global>{`
-        /* Keep theme styling consistent */
-        .antd-custom-table .ant-table {
-          background: ${themeMode === 'dark' ? '#000000' : '#ffffff'} !important;
-          color: ${themeMode === 'dark' ? '#ccc' : '#333'} !important;
+        /* Custom styles for Ant Design Table under Dark Mode */
+        .dark-theme .antd-custom-table .ant-table {
+          background: #141414 !important;
+          color: #ccc !important;
         }
-
         .dark-theme .antd-custom-table .ant-table-thead > tr > th {
-          background: #141414 !important;
-          color: #fff !important;
-          border-bottom: 1px solid #303030 !important;
+          background: #1f1f1f !important;
+          color: #d4a84b !important;
+          border-bottom: 1px solid #2a2a2a !important;
         }
-
-        .light-theme .antd-custom-table .ant-table-thead > tr > th {
-          background: #fafafa !important;
-          color: #000 !important;
-          border-bottom: 1px solid #f0f0f0 !important;
+        .dark-theme .antd-custom-table .ant-table-tbody > tr > td {
+          border-bottom: 1px solid #1a1a1a !important;
         }
-
-        .dark-theme .antd-custom-table .ant-table-cell {
-          border-bottom: 1px solid #1f1f1f !important;
-        }
-
-        .light-theme .antd-custom-table .ant-table-cell {
-          border-bottom: 1px solid #f0f0f0 !important;
-        }
-
-        .dark-theme .ant-table-row:hover > td {
-          background: #141414 !important;
-        }
-
-        .light-theme .ant-table-row:hover > td {
-          background: #fafafa !important;
+        .dark-theme .antd-custom-table .ant-table-row:hover > td {
+          background: #1e1e1e !important;
         }
 
         /* Row highlighting - Light Theme */
@@ -1628,6 +914,24 @@ export default function NycCampaignPage() {
         }
         .dark-theme .row-hope-dark:hover > td {
           background-color: #382c16 !important;
+        }
+
+        /* Gold highlights for both light/dark */
+        .antd-custom-table .ant-pagination-item-active {
+          border-color: #d4a84b !important;
+        }
+        .antd-custom-table .ant-pagination-item-active a {
+          color: #d4a84b !important;
+        }
+
+        /* Compact line height & padding */
+        .antd-custom-table .ant-table-tbody > tr > td {
+          padding: 6px 8px !important;
+          line-height: 1.25 !important;
+        }
+        .antd-custom-table .ant-table-thead > tr > th {
+          padding: 8px 8px !important;
+          line-height: 1.25 !important;
         }
       `}</style>
     </div>

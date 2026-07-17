@@ -1,59 +1,52 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  Drawer,
-  Spin,
-  Card,
-  Avatar,
-  Tag,
-  Tabs,
-  Timeline,
-  theme,
-  message,
-  Space,
-  Button,
-  Popconfirm,
-  Modal,
-  Table,
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  Switch,
-  Tooltip,
-} from 'antd';
+import React, { useMemo } from 'react';
+import { Drawer, Spin, Avatar, Tag, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message } from 'antd';
 import {
   PhoneOutlined,
   UserOutlined,
-  RiseOutlined,
-  InfoCircleOutlined,
-  InboxOutlined,
-  WarningOutlined,
-  ClockCircleOutlined,
   CalendarOutlined,
-  CloseCircleOutlined,
-  SunOutlined,
-  SyncOutlined,
-  ShareAltOutlined,
   DeleteOutlined,
   UndoOutlined,
   EditOutlined,
-  PlusOutlined,
 } from '@ant-design/icons';
+import dynamic from 'next/dynamic';
 import { useTheme } from '../context/ThemeContext';
 import { useOmiCall } from '../context/OmiCallContext';
-import api from '../lib/api';
-import { RescheduleBookingModal } from './RescheduleBookingModal';
-import BookingWizardDrawer from './BookingWizardDrawer';
-import dayjs from 'dayjs';
-import { apiClient } from '../lib/api-client';
+
+const RescheduleBookingModal = dynamic(() => import('./RescheduleBookingModal').then((m) => m.RescheduleBookingModal), {
+  ssr: false,
+});
+const BookingWizardDrawer = dynamic(() => import('./BookingWizardDrawer'), { ssr: false });
+import { useCustomerDetail } from './customer-detail/hooks/useCustomerDetail';
+
+// Sub-components
+import { KpiStatsCard } from './customer-detail/components/KpiStatsCard';
+import { ProfileDetailsCard } from './customer-detail/components/ProfileDetailsCard';
+import { ComboBalancesCard } from './customer-detail/components/ComboBalancesCard';
+import { ReferralCard } from './customer-detail/components/ReferralCard';
+import { BookingsTab } from './customer-detail/components/BookingsTab';
+import { NotesTab } from './customer-detail/components/NotesTab';
+import { CallsTab } from './customer-detail/components/CallsTab';
+
+const GemHistoryModal = dynamic(
+  () => import('./customer-detail/components/GemHistoryModal').then((m) => m.GemHistoryModal),
+  { ssr: false }
+);
+const ComboHistoryModal = dynamic(
+  () => import('./customer-detail/components/ComboHistoryModal').then((m) => m.ComboHistoryModal),
+  { ssr: false }
+);
+const EditCustomerModal = dynamic(
+  () => import('./customer-detail/components/EditCustomerModal').then((m) => m.EditCustomerModal),
+  { ssr: false }
+);
 
 interface CustomerDetailDrawerProps {
   open: boolean;
   customerId: number | null;
   onClose: () => void;
-  onBookAppointment?: (customer: any) => void;
+  onBookAppointment?: (customer: SafeAny) => void;
   onDeleteSuccess?: () => void;
 }
 
@@ -68,578 +61,69 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const { token } = theme.useToken();
   const { makeCall } = useOmiCall();
 
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<any>(null);
-  const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
-  const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<any>(null);
-  const [isGemModalOpen, setIsGemModalOpen] = useState(false);
-  const [isComboModalOpen, setIsComboModalOpen] = useState(false);
-  const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm] = Form.useForm();
-  const [saveLoading, setSaveLoading] = useState(false);
 
-  const handleOpenEditModal = () => {
-    if (!customer) return;
-    editForm.setFieldsValue({
-      name: customer.name,
-      email: customer.email,
-      gender: customer.gender,
-      dob: customer.dob ? dayjs(customer.dob) : null,
-      phones:
-        customer.phones && customer.phones.length > 0
-          ? customer.phones.map((p: any) => ({ id: p.id, phone_number: p.phone_number, is_active: !p.is_disabled }))
-          : [{ phone_number: customer.phone, is_active: true }],
-    });
-    setIsEditModalOpen(true);
-  };
+  const {
+    loading,
+    data,
+    rescheduleModalVisible,
+    selectedBookingForReschedule,
+    isGemModalOpen,
+    isComboModalOpen,
+    bookingWizardOpen,
+    deleteLoading,
+    isEditModalOpen,
+    saveLoading,
+    restoreLoading,
+    forbiddenError,
+    drawerWidth,
+    isDragging,
+    modalWidth,
+    gemModalWidth,
+    // data items
+    customer,
+    stats,
+    comboBalances,
+    bookings,
+    notes,
+    calls,
+    // handlers
+    setRescheduleModalVisible,
+    setSelectedBookingForReschedule,
+    setIsGemModalOpen,
+    setIsComboModalOpen,
+    setBookingWizardOpen,
+    setIsEditModalOpen,
+    fetchDetails,
+    handleMouseDown,
+    handleModalDragStart,
+    handleGemModalDragStart,
+    handleOpenEditModal,
+    handleSaveEdit,
+    handleDeleteCustomer,
+    handleRestoreCustomer,
+    handleCancelBooking,
+    // helpers
+    getMostFrequentDay,
+    getFavoriteTechnicians,
+    getComboDisplayInfo,
+  } = useCustomerDetail({
+    open,
+    customerId,
+    onClose,
+    onDeleteSuccess,
+    editForm,
+    onSuccess: (msg) => message.success(msg),
+    onError: (msg) => message.error(msg),
+  });
 
-  const handleSaveEdit = async () => {
-    try {
-      const values = await editForm.validateFields();
-      setSaveLoading(true);
-
-      const originalPhones = customer.phones || [];
-      const currentPhones = values.phones || [];
-      const phonesPayload = [];
-
-      for (const orig of originalPhones) {
-        const isStillHere = currentPhones.some((curr: any) => curr.id === orig.id);
-        if (!isStillHere) {
-          phonesPayload.push({
-            id: orig.id,
-            phone_number: orig.phone_number,
-            is_deleted: true,
-          });
-        }
-      }
-
-      for (const curr of currentPhones) {
-        phonesPayload.push({
-          id: curr.id,
-          phone_number: curr.phone_number,
-          is_disabled: !curr.is_active,
-        });
-      }
-
-      await apiClient.customers.update(customerId!, {
-        name: values.name,
-        email: values.email || null,
-        gender: values.gender || null,
-        dob: values.dob ? values.dob.format('YYYY-MM-DD') : null,
-        phones: phonesPayload,
-      });
-
-      message.success('Cập nhật thông tin khách hàng thành công!');
-      setIsEditModalOpen(false);
-      fetchDetails();
-    } catch (err: any) {
-      console.error('Update customer failed:', err);
-      message.error(err.response?.data?.message || 'Không thể cập nhật thông tin khách hàng.');
-    } finally {
-      setSaveLoading(false);
-    }
-  };
-
-  const currentUser = React.useMemo(() => {
+  const currentUser = useMemo(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('mos_user');
       return stored ? JSON.parse(stored) : null;
     }
     return null;
   }, []);
-
-  const handleDeleteCustomer = async () => {
-    if (!customerId) return;
-    setDeleteLoading(true);
-    try {
-      await api.delete(`/customers/${customerId}`);
-      message.success('Xóa khách hàng thành công!');
-      if (onDeleteSuccess) {
-        onDeleteSuccess();
-      }
-    } catch (err: any) {
-      console.error('Delete customer error:', err);
-      message.error(err.response?.data?.message || 'Không thể xóa khách hàng.');
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
-
-  const [restoreLoading, setRestoreLoading] = useState(false);
-  const [forbiddenError, setForbiddenError] = useState<string | null>(null);
-
-  const handleRestoreCustomer = async () => {
-    if (!customerId) return;
-    setRestoreLoading(true);
-    try {
-      await api.post(`/customers/${customerId}/restore`);
-      message.success('Khôi phục khách hàng thành công!');
-      if (onDeleteSuccess) {
-        onDeleteSuccess();
-      }
-    } catch (err: any) {
-      console.error('Restore customer error:', err);
-      message.error(err.response?.data?.message || 'Không thể khôi phục khách hàng.');
-    } finally {
-      setRestoreLoading(false);
-    }
-  };
-
-  // Resizable drawer states and hooks
-  const [isDragging, setIsDragging] = useState(false);
-  const [drawerWidth, setDrawerWidth] = useState(1100);
-  const widthRef = React.useRef(drawerWidth);
-
-  useEffect(() => {
-    widthRef.current = drawerWidth;
-  }, [drawerWidth]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('customer_detail_drawer_width');
-      if (saved) {
-        setDrawerWidth(parseInt(saved, 10));
-      }
-    }
-  }, []);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const newWidth = window.innerWidth - e.clientX;
-      const minWidth = 500;
-      const maxWidth = window.innerWidth * 0.95;
-      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
-      setDrawerWidth(clampedWidth);
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      localStorage.setItem('customer_detail_drawer_width', String(widthRef.current));
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging]);
-
-  // Resizable modal states and hooks
-  const [modalWidth, setModalWidth] = useState(800);
-  const [isModalDragging, setIsModalDragging] = useState(false);
-  const [dragStartInfo, setDragStartInfo] = useState<{ x: number; width: number; direction: 'left' | 'right' } | null>(
-    null
-  );
-  const modalWidthRef = React.useRef(modalWidth);
-
-  useEffect(() => {
-    modalWidthRef.current = modalWidth;
-  }, [modalWidth]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('customer_combo_modal_width');
-      if (saved) {
-        setModalWidth(parseInt(saved, 10));
-      }
-    }
-  }, []);
-
-  const handleModalDragStart = useCallback((e: React.MouseEvent, direction: 'left' | 'right') => {
-    e.preventDefault();
-    setDragStartInfo({
-      x: e.clientX,
-      width: modalWidthRef.current,
-      direction,
-    });
-    setIsModalDragging(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isModalDragging || !dragStartInfo) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      let deltaX = 0;
-      if (dragStartInfo.direction === 'right') {
-        deltaX = e.clientX - dragStartInfo.x;
-      } else {
-        deltaX = dragStartInfo.x - e.clientX;
-      }
-
-      const newWidth = dragStartInfo.width + deltaX * 2;
-      const minWidth = 500;
-      const maxWidth = window.innerWidth * 0.95;
-      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
-      setModalWidth(clampedWidth);
-    };
-
-    const handleMouseUp = () => {
-      setIsModalDragging(false);
-      setDragStartInfo(null);
-      localStorage.setItem('customer_combo_modal_width', String(modalWidthRef.current));
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isModalDragging, dragStartInfo]);
-
-  // Resizable gem modal states and hooks
-  const [gemModalWidth, setGemModalWidth] = useState(750);
-  const [isGemModalDragging, setIsGemModalDragging] = useState(false);
-  const [gemDragStartInfo, setGemDragStartInfo] = useState<{
-    x: number;
-    width: number;
-    direction: 'left' | 'right';
-  } | null>(null);
-  const gemModalWidthRef = React.useRef(gemModalWidth);
-
-  useEffect(() => {
-    gemModalWidthRef.current = gemModalWidth;
-  }, [gemModalWidth]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('customer_gem_modal_width');
-      if (saved) {
-        setGemModalWidth(parseInt(saved, 10));
-      }
-    }
-  }, []);
-
-  const handleGemModalDragStart = useCallback((e: React.MouseEvent, direction: 'left' | 'right') => {
-    e.preventDefault();
-    setGemDragStartInfo({
-      x: e.clientX,
-      width: gemModalWidthRef.current,
-      direction,
-    });
-    setIsGemModalDragging(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isGemModalDragging || !gemDragStartInfo) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      let deltaX = 0;
-      if (gemDragStartInfo.direction === 'right') {
-        deltaX = e.clientX - gemDragStartInfo.x;
-      } else {
-        deltaX = gemDragStartInfo.x - e.clientX;
-      }
-
-      const newWidth = gemDragStartInfo.width + deltaX * 2;
-      const minWidth = 500;
-      const maxWidth = window.innerWidth * 0.95;
-      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
-      setGemModalWidth(clampedWidth);
-    };
-
-    const handleMouseUp = () => {
-      setIsGemModalDragging(false);
-      setGemDragStartInfo(null);
-      localStorage.setItem('customer_gem_modal_width', String(gemModalWidthRef.current));
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isGemModalDragging, gemDragStartInfo]);
-
-  const gemColumns = [
-    {
-      title: 'Thời gian',
-      dataIndex: 'dateCreated',
-      key: 'dateCreated',
-      render: (text: string) => (text ? new Date(text).toLocaleString('vi-VN') : 'N/A'),
-      width: '160px',
-    },
-    {
-      title: 'Loại',
-      dataIndex: 'method',
-      key: 'method',
-      render: (method: string, record: any) => {
-        const val = Number(record.amount || 0);
-        const isNegative = val < 0 || method !== 'Credit';
-        return <Tag color={isNegative ? 'error' : 'success'}>{isNegative ? 'Trừ (-)' : 'Cộng (+)'}</Tag>;
-      },
-      width: '100px',
-    },
-    {
-      title: 'Số lượng',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (val: number, record: any) => {
-        const amountVal = Number(val || 0);
-        const isNegative = amountVal < 0 || record.method !== 'Credit';
-        const displayVal = Math.abs(amountVal);
-        return (
-          <span
-            style={{
-              fontWeight: 'bold',
-              color: isNegative
-                ? themeMode === 'dark'
-                  ? '#ff7875'
-                  : '#ff4d4f'
-                : themeMode === 'dark'
-                  ? '#4ade80'
-                  : '#22c55e',
-            }}
-          >
-            {isNegative ? '-' : '+'}
-            {displayVal} 💎
-          </span>
-        );
-      },
-      width: '110px',
-    },
-    {
-      title: 'Số dư khả dụng',
-      dataIndex: 'balance',
-      key: 'balance',
-      render: (val: number) => (
-        <strong style={{ color: themeMode === 'dark' ? '#fbbf24' : '#d97706' }}>{val} 💎</strong>
-      ),
-      width: '130px',
-    },
-    {
-      title: 'Lý do / Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      render: (desc: string) => desc || <span style={{ color: '#888', fontStyle: 'italic' }}>Không có mô tả</span>,
-    },
-    {
-      title: 'Người thực hiện',
-      dataIndex: 'staffName',
-      key: 'staffName',
-      width: '150px',
-    },
-  ];
-
-  const comboHistoryColumns = [
-    {
-      title: 'Tên Combo',
-      key: 'serviceName',
-      render: (_: any, record: any) => (
-        <span style={{ fontWeight: 'bold' }}>
-          {record.serviceName} {record.packageKey ? `(${record.packageKey})` : ''}
-        </span>
-      ),
-    },
-    {
-      title: 'Ngày mua',
-      dataIndex: 'dateCreated',
-      key: 'dateCreated',
-      render: (text: string) => (text ? new Date(text).toLocaleDateString('vi-VN') : 'N/A'),
-      width: '110px',
-    },
-    {
-      title: 'Người bán (CC)',
-      dataIndex: 'creatorStaffName',
-      key: 'creatorStaffName',
-      render: (text: string) => text || 'Hệ thống',
-      width: '130px',
-    },
-    {
-      title: 'Giá tiền',
-      dataIndex: 'packagePrice',
-      key: 'packagePrice',
-      render: (val: number | null | undefined) => {
-        if (val === null || val === undefined) {
-          return 'N/A';
-        }
-        if (val === 0) {
-          return 'Miễn phí';
-        }
-        return `${val.toLocaleString('vi-VN')} đ`;
-      },
-      width: '120px',
-    },
-    {
-      title: 'Số buổi',
-      key: 'sessions',
-      render: (_: any, record: any) => (
-        <span>
-          Mới: <strong>{record.normalCount}</strong> / Dặm: <strong>{record.retainCount}</strong>
-        </span>
-      ),
-      width: '130px',
-    },
-    {
-      title: 'Hạn dùng',
-      dataIndex: 'dateExpired',
-      key: 'dateExpired',
-      render: (text: string) => (text ? new Date(text).toLocaleDateString('vi-VN') : 'Vô thời hạn'),
-      width: '110px',
-    },
-    {
-      title: 'Trạng thái',
-      key: 'status',
-      render: (_: any, record: any) => {
-        const isActive = (record.normalCount || 0) + (record.retainCount || 0) > 0;
-        return <Tag color={isActive ? 'success' : 'default'}>{isActive ? 'Đang chạy' : 'Đã dùng hết'}</Tag>;
-      },
-      width: '110px',
-    },
-  ];
-
-  useEffect(() => {
-    if (open && customerId) {
-      fetchDetails();
-    } else {
-      setData(null);
-      setForbiddenError(null);
-    }
-  }, [open, customerId]);
-
-  const fetchDetails = async () => {
-    setLoading(true);
-    setForbiddenError(null);
-    try {
-      const res = await api.get(`/customers/${customerId}/detailed`);
-      setData(res.data);
-    } catch (err: any) {
-      console.error('Failed to fetch detailed customer:', err);
-      if (err.response?.status === 403) {
-        setForbiddenError(err.response?.data?.message || 'Bạn không có quyền xem thông tin chi tiết khách hàng này.');
-      } else {
-        message.error(err.response?.data?.message || 'Không thể tải thông tin chi tiết khách hàng.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCancelBooking = async (orderId: number) => {
-    try {
-      await api.delete(`/customers/booking/${orderId}`);
-      message.success('Hủy lịch hẹn thành công!');
-      fetchDetails();
-    } catch (err: any) {
-      console.error('[Cancel] Failed to cancel booking:', err);
-      message.error(err.response?.data?.message || 'Có lỗi xảy ra khi hủy lịch hẹn.');
-    }
-  };
-
-  const getMostFrequentDay = (bookings: any[]) => {
-    if (!bookings || bookings.length === 0) return 'N/A';
-    const dayCounts = Array(7).fill(0);
-    const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-
-    bookings.forEach((b) => {
-      if (b.bookingDate) {
-        const day = new Date(b.bookingDate).getDay();
-        dayCounts[day]++;
-      }
-    });
-
-    let maxIndex = 0;
-    let maxVal = 0;
-    dayCounts.forEach((val, idx) => {
-      if (val > maxVal) {
-        maxVal = val;
-        maxIndex = idx;
-      }
-    });
-
-    return maxVal > 0 ? `${dayNames[maxIndex]} (${maxVal} lần)` : 'N/A';
-  };
-
-  const getFavoriteTechnicians = (bookings: any[]) => {
-    if (!bookings || bookings.length === 0) return 'Chưa có';
-    const techCounts: { [key: string]: number } = {};
-
-    bookings.forEach((b) => {
-      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-      if (isCompleted && b.technicianName && b.technicianName !== 'Unknown' && b.technicianName !== 'Kỹ thuật viên') {
-        const name = b.technicianName.trim();
-        if (!name.includes('(Đã nghỉ)')) {
-          techCounts[name] = (techCounts[name] || 0) + 1;
-        }
-      }
-    });
-
-    const sortedTechs = Object.entries(techCounts)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-
-    if (sortedTechs.length === 0) return 'Chưa có';
-
-    const top2 = sortedTechs.slice(0, 2);
-    return top2.map((t) => `${t.name} (${t.count} lần)`).join(', ');
-  };
-
-  const customer = data?.customer;
-  const stats = data?.stats;
-  const comboBalances = data?.comboBalances || [];
-  const bookings = data?.bookings || [];
-  const notes = data?.notes || [];
-  const calls = data?.calls || [];
-
-  const getComboDisplayInfo = (
-    serviceName: string,
-    normalCount: number,
-    retainCount: number,
-    packageNormalCount?: number,
-    packageKey?: string
-  ) => {
-    const nameLower = (serviceName || '').toLowerCase();
-
-    // Try to parse from packageKey first (e.g., '7+3-flawless-mink' -> totalNew = 7, totalRefill = 3)
-    let totalNew: number | null = null;
-    let totalRefill: number | null = null;
-
-    if (packageKey) {
-      const match = packageKey.match(/^(\d+)\+(\d+)/);
-      if (match) {
-        totalNew = parseInt(match[1], 10);
-        totalRefill = parseInt(match[2], 10);
-      }
-    }
-
-    // Fallbacks if not matching X+Y
-    const total = packageNormalCount && packageNormalCount > 0 ? packageNormalCount : null;
-    if (totalNew === null && totalRefill === null) {
-      if (nameLower.includes('refill')) {
-        totalRefill = total;
-        totalNew = 0;
-      } else {
-        totalNew = total;
-        totalRefill = 0;
-      }
-    }
-
-    // Default safe fallback if not set anywhere
-    if (totalNew === null) totalNew = nameLower.includes('new') ? 10 : 0;
-    if (totalRefill === null) totalRefill = nameLower.includes('refill') ? 3 : 0;
-
-    return {
-      displayName: `${serviceName} ${packageKey ? `(${packageKey})` : ''}`,
-      totalNew,
-      totalRefill,
-      total,
-    };
-  };
 
   return (
     <Drawer
@@ -648,36 +132,32 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
               justifyContent: 'space-between',
+              alignItems: 'center',
               width: '100%',
-              paddingRight: '24px',
+              paddingRight: '12px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <Avatar
+                size={40}
                 src={customer.avatar || undefined}
-                icon={<UserOutlined />}
+                icon={!customer.avatar && <UserOutlined />}
                 style={{
-                  backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5',
-                  color: '#D4A84B',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
-                  width: '48px',
-                  height: '48px',
-                  lineHeight: '48px',
-                  fontSize: '20px',
-                  flexShrink: 0,
+                  backgroundColor: themeMode === 'dark' ? '#334155' : '#D4A84B',
+                  border: `2px solid ${themeMode === 'dark' ? '#475569' : '#ffffff'}`,
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                 }}
               />
               <div>
                 <div
                   style={{
-                    fontSize: '18px',
+                    fontSize: '16px',
                     fontWeight: 'bold',
-                    color: themeMode === 'dark' ? '#fff' : '#1f2937',
+                    color: themeMode === 'dark' ? '#ffffff' : '#1f2937',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: '6px',
                   }}
                 >
                   {customer.name}
@@ -696,7 +176,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {customer.phones && customer.phones.length > 0 ? (
-                      customer.phones.map((phoneObj: any) => (
+                      customer.phones.map((phoneObj: SafeAny) => (
                         <span
                           key={phoneObj.id}
                           className={`inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text ${phoneObj.is_disabled ? 'opacity-50 line-through' : ''}`}
@@ -886,415 +366,24 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
               {/* SIDEBAR: Info & Stats */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {/* KPI Card */}
-                <Card
-                  title={
-                    <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                      <RiseOutlined /> CHỈ SỐ TÍCH LUỸ
-                    </span>
-                  }
-                  size="small"
-                  styles={{ body: { padding: '16px' } }}
-                  style={{
-                    backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                    borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
-                  }}
-                >
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div
-                      style={{
-                        background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fdf9f0',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        textAlign: 'center',
-                        border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : 'rgba(212, 168, 75, 0.2)'}`,
-                      }}
-                    >
-                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#D4A84B' }}>
-                        {new Intl.NumberFormat('vi-VN', {
-                          style: 'currency',
-                          currency: 'VND',
-                          notation: 'compact',
-                        }).format(stats?.totalSpent || 0)}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>LTV (Doanh thu)</div>
-                    </div>
+                <KpiStatsCard stats={stats} themeMode={themeMode} onOpenGemModal={() => setIsGemModalOpen(true)} />
 
-                    <div
-                      style={{
-                        background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fdf9f0',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        textAlign: 'center',
-                        border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : 'rgba(212, 168, 75, 0.2)'}`,
-                      }}
-                    >
-                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#D4A84B' }}>
-                        {stats?.totalVisits || 0}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Tổng đặt lịch</div>
-                    </div>
+                <ProfileDetailsCard
+                  customer={customer}
+                  themeMode={themeMode}
+                  bookings={bookings}
+                  getMostFrequentDay={getMostFrequentDay}
+                  getFavoriteTechnicians={getFavoriteTechnicians}
+                />
 
-                    <div
-                      onClick={() => setIsGemModalOpen(true)}
-                      style={{
-                        background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fdf9f0',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        textAlign: 'center',
-                        border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.2)' : 'rgba(212, 168, 75, 0.3)'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(212, 168, 75, 0.2)';
-                        e.currentTarget.style.borderColor = '#fa8c16';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.02)';
-                        e.currentTarget.style.borderColor =
-                          themeMode === 'dark' ? 'rgba(212, 168, 75, 0.2)' : 'rgba(212, 168, 75, 0.3)';
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: '16px',
-                          fontWeight: 'bold',
-                          color: '#fa8c16',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        💎 {stats?.gemBalance || 0}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Kim cương còn lại</div>
-                    </div>
+                <ComboBalancesCard
+                  comboBalances={comboBalances}
+                  themeMode={themeMode}
+                  getComboDisplayInfo={getComboDisplayInfo}
+                  onOpenComboModal={() => setIsComboModalOpen(true)}
+                />
 
-                    <div
-                      style={{
-                        background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fdf9f0',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        textAlign: 'center',
-                        border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : 'rgba(212, 168, 75, 0.2)'}`,
-                      }}
-                    >
-                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#52c41a' }}>
-                        {stats?.avgFrequency ? `${stats.avgFrequency}d` : 'N/A'}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Tần suất (Avg)</div>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Profile Details Card */}
-                <Card
-                  title={
-                    <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                      <InfoCircleOutlined /> THÔNG TIN CÁ NHÂN
-                    </span>
-                  }
-                  size="small"
-                  styles={{ body: { padding: '16px' } }}
-                  style={{
-                    backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                    borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#888' }}>Giới tính:</span>
-                      <span style={{ fontWeight: 'bold' }}>{customer.gender || 'N/A'}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#888' }}>Ngày sinh:</span>
-                      <span style={{ fontWeight: 'bold' }}>{customer.dob || 'N/A'}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#888' }}>Nhóm phân loại:</span>
-                      <Tag color="warning" style={{ margin: 0 }}>
-                        {customer.bucket}
-                      </Tag>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#888' }}>Số ngày chưa quay lại:</span>
-                      <span style={{ fontWeight: 'bold', color: '#ff4d4f' }}>
-                        {customer.daysSinceLastVisit || 0} ngày
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#888' }}>Thứ hay đi nhất:</span>
-                      <span style={{ fontWeight: 'bold', color: '#fa8c16' }}>{getMostFrequentDay(bookings)}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#888' }}>CV ưa thích:</span>
-                      <span style={{ fontWeight: 'bold', color: themeMode === 'dark' ? '#f472b6' : '#db2777' }}>
-                        {getFavoriteTechnicians(bookings)}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#888' }}>Phụ trách (OC):</span>
-                      <span style={{ fontWeight: 'bold', color: themeMode === 'dark' ? '#38bdf8' : '#0284c7' }}>
-                        {customer.onlineConsultant || 'Chưa phân bổ'}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Combo Balances Card */}
-                <Card
-                  title={
-                    <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                      <InboxOutlined /> GÓI DỊCH VỤ ĐANG CHẠY
-                    </span>
-                  }
-                  size="small"
-                  styles={{ body: { padding: '16px' } }}
-                  style={{
-                    backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                    borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
-                  }}
-                >
-                  {comboBalances.filter((cb: any) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0).length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {comboBalances
-                        .filter((cb: any) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0)
-                        .map((cb: any) => {
-                          const info = getComboDisplayInfo(
-                            cb.serviceName,
-                            cb.normalCount,
-                            cb.retainCount,
-                            cb.packageNormalCount,
-                            cb.packageKey
-                          );
-
-                          return (
-                            <div
-                              key={cb.id}
-                              onClick={() => setIsComboModalOpen(true)}
-                              style={{
-                                background: themeMode === 'dark' ? 'rgba(250, 140, 22, 0.05)' : '#fffbe6',
-                                border: `1px solid ${themeMode === 'dark' ? 'rgba(250, 140, 22, 0.2)' : '#ffe58f'}`,
-                                borderRadius: '8px',
-                                padding: '10px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.borderColor = '#fa8c16';
-                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(250, 140, 22, 0.15)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.borderColor =
-                                  themeMode === 'dark' ? 'rgba(250, 140, 22, 0.2)' : '#ffe58f';
-                                e.currentTarget.style.boxShadow = 'none';
-                              }}
-                            >
-                              {/* Header row: Service Name + Package Key in Parentheses */}
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  alignItems: 'flex-start',
-                                  gap: '8px',
-                                }}
-                              >
-                                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fa8c16', flex: 1 }}>
-                                  {cb.serviceName} {cb.packageKey ? `(${cb.packageKey})` : ''}
-                                </div>
-                                <span style={{ fontSize: '10px', color: '#fa8c16', textDecoration: 'underline' }}>
-                                  Chi tiết
-                                </span>
-                              </div>
-
-                              {/* Icons row matching legacy screenshot */}
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  gap: '12px',
-                                  alignItems: 'center',
-                                  fontSize: '12px',
-                                  marginTop: '6px',
-                                  color: themeMode === 'dark' ? '#f1f5f9' : '#334155',
-                                }}
-                              >
-                                <Space size={4}>
-                                  <SunOutlined style={{ color: '#fa8c16', fontSize: '13px' }} />
-                                  <strong>{cb.normalCount}</strong>
-                                </Space>
-
-                                <Space size={4}>
-                                  <SyncOutlined style={{ color: '#1890ff', fontSize: '12px' }} />
-                                  <strong>{cb.retainCount}</strong>
-                                </Space>
-
-                                {cb.dateExpired && (
-                                  <Space size={4} style={{ marginLeft: 'auto' }}>
-                                    <span style={{ fontSize: '12px' }}>💀</span>
-                                    <span style={{ fontSize: '11px', color: '#888' }}>
-                                      {new Date(cb.dateExpired).toLocaleDateString('vi-VN')}
-                                    </span>
-                                  </Space>
-                                )}
-                              </div>
-
-                              {/* Detail list below for clear breakdown */}
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: '2px',
-                                  fontSize: '10.5px',
-                                  marginTop: '6px',
-                                  color: '#888',
-                                  borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#f0f0f0'}`,
-                                  paddingTop: '4px',
-                                }}
-                              >
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <span>New (Nối mới):</span>
-                                  <span>
-                                    <strong>{cb.normalCount}</strong> / {info.totalNew} buổi
-                                  </span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <span>Refill (Dặm):</span>
-                                  <span>
-                                    <strong>{cb.retainCount}</strong> / {info.totalRefill} buổi
-                                  </span>
-                                </div>
-                                {cb.creatorStaffName && (
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
-                                    <span>Người bán (CC):</span>
-                                    <strong style={{ color: themeMode === 'dark' ? '#fff' : '#555' }}>
-                                      {cb.creatorStaffName}
-                                    </strong>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', color: '#888', fontSize: '12px', padding: '12px 0' }}>
-                      Không có gói combo nào đang chạy.
-                    </div>
-                  )}
-                </Card>
-
-                {/* Referral Card */}
-                <Card
-                  title={
-                    <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                      <ShareAltOutlined /> GIỚI THIỆU KHÁCH HÀNG
-                    </span>
-                  }
-                  size="small"
-                  styles={{ body: { padding: '16px' } }}
-                  style={{
-                    backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                    borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
-                    marginTop: '12px',
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* Referred By Section */}
-                    <div>
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          color: '#888',
-                          fontWeight: 'bold',
-                          textTransform: 'uppercase',
-                          marginBottom: '6px',
-                        }}
-                      >
-                        Được giới thiệu bởi
-                      </div>
-                      {data?.referrer ? (
-                        <div
-                          style={{
-                            padding: '10px',
-                            background: themeMode === 'dark' ? 'rgba(82, 196, 26, 0.05)' : '#f6ffed',
-                            border: `1px solid ${themeMode === 'dark' ? 'rgba(82, 196, 26, 0.2)' : '#b7eb8f'}`,
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                          }}
-                        >
-                          <div style={{ fontWeight: 'bold', color: themeMode === 'dark' ? '#4ade80' : '#389e0d' }}>
-                            {data.referrer.name}
-                          </div>
-                          <div style={{ color: '#888', marginTop: '2px' }}>SĐT: {data.referrer.phone}</div>
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>
-                          Tự đăng ký (Không có người giới thiệu)
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Referred List Section */}
-                    <div>
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          color: '#888',
-                          fontWeight: 'bold',
-                          textTransform: 'uppercase',
-                          marginBottom: '8px',
-                        }}
-                      >
-                        Danh sách đã giới thiệu ({data?.referredUsers?.length || 0})
-                      </div>
-                      {data?.referredUsers && data.referredUsers.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {data.referredUsers.map((ru: any) => (
-                            <div
-                              key={ru.id}
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: '8px 10px',
-                                background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#fafafa',
-                                border: `1px solid ${themeMode === 'dark' ? '#334155' : '#f0f0f0'}`,
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                              }}
-                            >
-                              <div>
-                                <div style={{ fontWeight: 'bold', color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>
-                                  {ru.name}
-                                </div>
-                                <div style={{ fontSize: '11px', color: '#888', marginTop: '1px' }}>
-                                  {ru.phone}{' '}
-                                  {ru.dateCreated ? `• ${new Date(ru.dateCreated).toLocaleDateString('vi-VN')}` : ''}
-                                </div>
-                              </div>
-                              {ru.rewardDiamonds > 0 ? (
-                                <Tag color="success" style={{ fontWeight: 'bold', margin: 0 }}>
-                                  +{ru.rewardDiamonds} 💎
-                                </Tag>
-                              ) : (
-                                <span style={{ fontSize: '11px', color: '#888' }}>Chưa nhận thưởng</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>
-                          Chưa giới thiệu khách hàng nào.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
+                <ReferralCard data={data} themeMode={themeMode} />
               </div>
 
               {/* MAIN PANEL: Timelines & History */}
@@ -1314,382 +403,25 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                       key: 'bookings',
                       label: `Lịch sử đặt lịch (${bookings.length})`,
                       children: (
-                        <div
-                          className="custom-scrollbar"
-                          style={{
-                            maxHeight: 'calc(100vh - 240px)',
-                            overflowY: 'auto',
-                            padding: '10px 4px 10px 10px',
-                          }}
-                        >
-                          {bookings.length > 0 ? (
-                            <Timeline
-                              items={bookings.map((b: any) => {
-                                const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-
-                                let formattedDate = 'N/A';
-                                if (b.bookingDate) {
-                                  const d = new Date(b.bookingDate);
-                                  const dayPrefixes = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-                                  const dayPrefix = dayPrefixes[d.getDay()];
-                                  formattedDate = `${dayPrefix}, ${d.toLocaleString('vi-VN')}`;
-                                }
-
-                                return {
-                                  key: b.id,
-                                  color: isCompleted ? 'green' : 'red',
-                                  children: (
-                                    <div
-                                      style={{
-                                        background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#f9fafb',
-                                        border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                                        borderRadius: '8px',
-                                        padding: '12px',
-                                        marginTop: '-6px',
-                                        marginBottom: '10px',
-                                      }}
-                                    >
-                                      <div
-                                        style={{
-                                          display: 'flex',
-                                          justifyContent: 'space-between',
-                                          alignItems: 'center',
-                                          gap: '10px',
-                                          flexWrap: 'wrap',
-                                        }}
-                                      >
-                                        <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
-                                          {b.services && b.services.length > 0 ? b.services.join(', ') : 'Dịch vụ'}
-                                        </span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                          <span style={{ fontSize: '12px', color: '#888' }}>{formattedDate}</span>
-                                          <Tag color={isCompleted ? 'success' : 'error'}>
-                                            {isCompleted ? 'Hoàn thành' : b.orderState}
-                                          </Tag>
-                                        </div>
-                                      </div>
-                                      <div
-                                        style={{
-                                          fontSize: '12px',
-                                          color: '#888',
-                                          marginTop: '4px',
-                                          display: 'flex',
-                                          flexDirection: 'column',
-                                          gap: '2px',
-                                        }}
-                                      >
-                                        <div>
-                                          CN: <strong>{b.branchName}</strong> | CV: <strong>{b.technicianName}</strong>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', opacity: 0.85 }}>
-                                          <span>
-                                            CC IN: <strong>{b.ccInName || 'N/A'}</strong>
-                                          </span>
-                                          <span>
-                                            CC OUT: <strong>{b.ccOutName || 'N/A'}</strong>
-                                          </span>
-                                          <span>
-                                            BK: <strong>{b.bookerName || 'N/A'}</strong>
-                                          </span>
-                                        </div>
-                                      </div>
-                                      {b.bookingNote && (
-                                        <div
-                                          style={{
-                                            fontSize: '12.5px',
-                                            fontStyle: 'italic',
-                                            background: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-                                            borderLeft: '3px solid #D4A84B',
-                                            padding: '6px 10px',
-                                            marginTop: '8px',
-                                            borderRadius: '0 4px 4px 0',
-                                            color: themeMode === 'dark' ? '#d1d5db' : '#374151',
-                                          }}
-                                        >
-                                          Ghi chú đặt lịch: {b.bookingNote}
-                                        </div>
-                                      )}
-                                      {!isCompleted && b.orderState !== 'Cancelled' && (
-                                        <div
-                                          style={{
-                                            display: 'flex',
-                                            justifyContent: 'flex-end',
-                                            marginTop: '10px',
-                                            gap: '8px',
-                                          }}
-                                        >
-                                          <Popconfirm
-                                            title="Xác nhận hủy lịch"
-                                            description="Anh/chị có chắc chắn muốn hủy lịch hẹn này không?"
-                                            okText="Có, Hủy lịch"
-                                            cancelText="Không"
-                                            onConfirm={() => handleCancelBooking(b.id)}
-                                            okButtonProps={{ danger: true }}
-                                          >
-                                            <Button
-                                              type="default"
-                                              danger
-                                              size="small"
-                                              icon={<CloseCircleOutlined />}
-                                              style={{ borderRadius: '4px', fontWeight: '600' }}
-                                            >
-                                              Hủy lịch
-                                            </Button>
-                                          </Popconfirm>
-                                          <Button
-                                            type="primary"
-                                            size="small"
-                                            icon={<CalendarOutlined />}
-                                            style={{
-                                              backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#D4A84B',
-                                              borderColor: themeMode === 'dark' ? '#D4A84B' : '#D4A84B',
-                                              color: themeMode === 'dark' ? '#000000' : '#000000',
-                                              fontWeight: '600',
-                                              borderRadius: '4px',
-                                            }}
-                                            onClick={() => {
-                                              setSelectedBookingForReschedule({
-                                                ...b,
-                                                customerName: customer?.name || 'Khách Hàng',
-                                                customerPhone: customer?.phone || '',
-                                                customerId: customer?.id,
-                                              });
-                                              setRescheduleModalVisible(true);
-                                            }}
-                                          >
-                                            Dời lịch hẹn
-                                          </Button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ),
-                                };
-                              })}
-                            />
-                          ) : (
-                            <div style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>
-                              Không có lịch sử đặt lịch nào.
-                            </div>
-                          )}
-                        </div>
+                        <BookingsTab
+                          bookings={bookings}
+                          themeMode={themeMode}
+                          customer={customer}
+                          handleCancelBooking={handleCancelBooking}
+                          setSelectedBookingForReschedule={setSelectedBookingForReschedule}
+                          setRescheduleModalVisible={setRescheduleModalVisible}
+                        />
                       ),
                     },
                     {
                       key: 'notes',
                       label: `Nhật ký ghi chú (${notes.length})`,
-                      children: (
-                        <div
-                          className="custom-scrollbar"
-                          style={{
-                            maxHeight: 'calc(100vh - 240px)',
-                            overflowY: 'auto',
-                            padding: '10px 4px 10px 10px',
-                          }}
-                        >
-                          {notes.length > 0 ? (
-                            <Timeline
-                              items={notes.map((n: any) => {
-                                const isSticky = n.isSticky;
-                                let formattedDate = 'N/A';
-                                if (n.dateCreated) {
-                                  const d = new Date(n.dateCreated);
-                                  const dayPrefixes = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-                                  const dayPrefix = dayPrefixes[d.getDay()];
-                                  formattedDate = `${dayPrefix}, ${d.toLocaleString('vi-VN')}`;
-                                }
-
-                                return {
-                                  key: n.id,
-                                  dot: isSticky ? (
-                                    <WarningOutlined style={{ color: '#ff4d4f', fontSize: '16px' }} />
-                                  ) : (
-                                    <ClockCircleOutlined style={{ fontSize: '14px' }} />
-                                  ),
-                                  children: (
-                                    <div
-                                      style={{
-                                        background: isSticky
-                                          ? themeMode === 'dark'
-                                            ? 'rgba(255, 77, 79, 0.05)'
-                                            : '#fff1f0'
-                                          : themeMode === 'dark'
-                                            ? 'rgba(255, 255, 255, 0.02)'
-                                            : '#f9fafb',
-                                        border: `1px solid ${isSticky ? '#ffccc7' : themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                                        borderRadius: '8px',
-                                        padding: '12px',
-                                        marginTop: '-6px',
-                                        marginBottom: '10px',
-                                      }}
-                                    >
-                                      <div
-                                        style={{
-                                          display: 'flex',
-                                          justifyContent: 'space-between',
-                                          alignItems: 'center',
-                                          flexWrap: 'wrap',
-                                          gap: '8px',
-                                        }}
-                                      >
-                                        {isSticky && (
-                                          <span
-                                            style={{
-                                              color: '#f5222d',
-                                              fontWeight: 'bold',
-                                              fontSize: '11px',
-                                              textTransform: 'uppercase',
-                                              letterSpacing: '0.5px',
-                                            }}
-                                          >
-                                            <WarningOutlined /> Ghi chú quan trọng
-                                          </span>
-                                        )}
-                                        {!isSticky && <span />}
-                                        <span style={{ fontSize: '11.5px', color: '#888' }}>{formattedDate}</span>
-                                      </div>
-                                      <div
-                                        style={{
-                                          fontSize: '13.5px',
-                                          marginTop: '6px',
-                                          fontWeight: isSticky ? '500' : 'normal',
-                                          color: themeMode === 'dark' ? '#e2e8f0' : '#1f2937',
-                                          whiteSpace: 'pre-wrap',
-                                        }}
-                                      >
-                                        {n.note}
-                                      </div>
-                                      <div
-                                        style={{
-                                          fontSize: '11.5px',
-                                          color: '#888',
-                                          marginTop: '8px',
-                                          borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#f0f0f0'}`,
-                                          paddingTop: '4px',
-                                        }}
-                                      >
-                                        Tạo bởi: <strong>{n.staffName}</strong>
-                                      </div>
-                                    </div>
-                                  ),
-                                };
-                              })}
-                            />
-                          ) : (
-                            <div style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>
-                              Không có nhật ký ghi chú nào.
-                            </div>
-                          )}
-                        </div>
-                      ),
+                      children: <NotesTab notes={notes} themeMode={themeMode} />,
                     },
                     {
                       key: 'calls',
                       label: `Lịch sử cuộc gọi (${calls.length})`,
-                      children: (
-                        <div
-                          className="custom-scrollbar"
-                          style={{
-                            maxHeight: 'calc(100vh - 240px)',
-                            overflowY: 'auto',
-                            padding: '10px 4px 10px 10px',
-                          }}
-                        >
-                          {calls.length > 0 ? (
-                            <Timeline
-                              items={calls.map((c: any) => {
-                                const d = new Date(c.createdAt);
-                                const dayPrefixes = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-                                const dayPrefix = dayPrefixes[d.getDay()];
-                                const formattedDate = `${dayPrefix}, ${d.toLocaleString('vi-VN')}`;
-
-                                return {
-                                  key: c.id,
-                                  children: (
-                                    <div
-                                      style={{
-                                        background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#f9fafb',
-                                        border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                                        borderRadius: '8px',
-                                        padding: '12px',
-                                        marginTop: '-6px',
-                                        marginBottom: '10px',
-                                      }}
-                                    >
-                                      <div
-                                        style={{
-                                          display: 'flex',
-                                          justifyContent: 'space-between',
-                                          alignItems: 'center',
-                                          flexWrap: 'wrap',
-                                          gap: '8px',
-                                        }}
-                                      >
-                                        <Space>
-                                          <Tag color={c.callType === 'OUTBOUND' ? 'blue' : 'purple'}>
-                                            {c.callType === 'OUTBOUND' ? 'Gọi đi' : 'Gọi đến'}
-                                          </Tag>
-                                          <Tag
-                                            color={
-                                              c.callResult === 'ANSWERED'
-                                                ? 'success'
-                                                : c.callResult === 'NO_ANSWER'
-                                                  ? 'warning'
-                                                  : 'error'
-                                            }
-                                          >
-                                            {c.callResult === 'ANSWERED'
-                                              ? 'Đã nghe máy'
-                                              : c.callResult === 'NO_ANSWER'
-                                                ? 'Không nghe'
-                                                : 'Bận/Bị chặn'}
-                                          </Tag>
-                                        </Space>
-                                        <span style={{ fontSize: '11.5px', color: '#888' }}>{formattedDate}</span>
-                                      </div>
-                                      <div
-                                        style={{
-                                          fontSize: '13px',
-                                          marginTop: '6px',
-                                          color: themeMode === 'dark' ? '#cbd5e1' : '#4b5563',
-                                        }}
-                                      >
-                                        <strong>Nội dung cuộc gọi:</strong> {c.note || 'Không có ghi chú chi tiết'}
-                                      </div>
-                                      {c.outcome && (
-                                        <div style={{ marginTop: '6px', fontSize: '12px' }}>
-                                          Kết quả: <Tag color="cyan">{c.outcome}</Tag>
-                                        </div>
-                                      )}
-                                      <div
-                                        style={{
-                                          fontSize: '11px',
-                                          color: '#888',
-                                          marginTop: '8px',
-                                          borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#f0f0f0'}`,
-                                          paddingTop: '4px',
-                                          display: 'flex',
-                                          justifyContent: 'space-between',
-                                        }}
-                                      >
-                                        <span>
-                                          Nhân viên cuộc gọi: <strong>{c.staffName}</strong>
-                                        </span>
-                                        <span>
-                                          Thời lượng: <strong>{c.durationSec ? `${c.durationSec}s` : '0s'}</strong>
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ),
-                                };
-                              })}
-                            />
-                          ) : (
-                            <div style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>
-                              Chưa có lịch sử cuộc gọi nào được ghi nhận.
-                            </div>
-                          )}
-                        </div>
-                      ),
+                      children: <CallsTab calls={calls} themeMode={themeMode} />,
                     },
                   ]}
                 />
@@ -1698,6 +430,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
           )
         )}
       </Spin>
+
       <RescheduleBookingModal
         open={rescheduleModalVisible}
         booking={selectedBookingForReschedule}
@@ -1710,348 +443,32 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         }}
       />
 
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 'bold' }}>
-            <span>💎 Lịch sử giao dịch Kim cương</span>
-            {customer && (
-              <span style={{ fontSize: '13px', color: '#888', fontWeight: 'normal' }}>
-                (Khách hàng: {customer.name})
-              </span>
-            )}
-          </div>
-        }
+      <GemHistoryModal
         open={isGemModalOpen}
         onCancel={() => setIsGemModalOpen(false)}
-        footer={[
-          <Button key="close" type="primary" onClick={() => setIsGemModalOpen(false)}>
-            Đóng
-          </Button>,
-        ]}
-        width={gemModalWidth}
-        styles={{
-          body: { padding: '12px 0 0 0' },
-        }}
-        modalRender={(modal) => {
-          if (React.isValidElement(modal)) {
-            return React.cloneElement(modal as any, {
-              style: {
-                ...(modal.props as any)?.style,
-                position: 'relative',
-              },
-              children: (
-                <>
-                  {(modal.props as any)?.children}
-                  {/* Right edge drag handle */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      right: '-4px',
-                      bottom: 0,
-                      width: '8px',
-                      cursor: 'ew-resize',
-                      zIndex: 10000,
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseDown={(e) => handleGemModalDragStart(e, 'right')}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                    }}
-                  />
-                  {/* Left edge drag handle */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: '-4px',
-                      bottom: 0,
-                      width: '8px',
-                      cursor: 'ew-resize',
-                      zIndex: 10000,
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseDown={(e) => handleGemModalDragStart(e, 'left')}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                    }}
-                  />
-                </>
-              ),
-            });
-          }
-          return modal;
-        }}
-      >
-        <Table
-          dataSource={data?.gemTransactions || []}
-          columns={gemColumns}
-          rowKey="id"
-          pagination={{ pageSize: 8, showSizeChanger: false }}
-          size="small"
-          locale={{ emptyText: 'Không có giao dịch kim cương nào.' }}
-        />
-      </Modal>
+        customer={customer}
+        gemTransactions={data?.gemTransactions || []}
+        gemModalWidth={gemModalWidth}
+        handleGemModalDragStart={handleGemModalDragStart}
+      />
 
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 'bold' }}>
-            <span>📦 Lịch sử mua Combo</span>
-            {customer && (
-              <span style={{ fontSize: '13px', color: '#888', fontWeight: 'normal' }}>
-                (Khách hàng: {customer.name})
-              </span>
-            )}
-          </div>
-        }
+      <ComboHistoryModal
         open={isComboModalOpen}
         onCancel={() => setIsComboModalOpen(false)}
-        footer={[
-          <Button key="close" type="primary" onClick={() => setIsComboModalOpen(false)}>
-            Đóng
-          </Button>,
-        ]}
-        width={modalWidth}
-        styles={{
-          body: { padding: '12px 0 0 0' },
-        }}
-        modalRender={(modal) => {
-          if (React.isValidElement(modal)) {
-            return React.cloneElement(modal as any, {
-              style: {
-                ...(modal.props as any)?.style,
-                position: 'relative',
-              },
-              children: (
-                <>
-                  {(modal.props as any)?.children}
-                  {/* Right edge drag handle */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      right: '-4px',
-                      bottom: 0,
-                      width: '8px',
-                      cursor: 'ew-resize',
-                      zIndex: 10000,
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseDown={(e) => handleModalDragStart(e, 'right')}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                    }}
-                  />
-                  {/* Left edge drag handle */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: '-4px',
-                      bottom: 0,
-                      width: '8px',
-                      cursor: 'ew-resize',
-                      zIndex: 10000,
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseDown={(e) => handleModalDragStart(e, 'left')}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                    }}
-                  />
-                </>
-              ),
-            });
-          }
-          return modal;
-        }}
-      >
-        <Table
-          dataSource={comboBalances}
-          columns={comboHistoryColumns}
-          rowKey="id"
-          pagination={{ pageSize: 8, showSizeChanger: false }}
-          size="small"
-          locale={{ emptyText: 'Không có lịch sử mua combo nào.' }}
-        />
-      </Modal>
-      <Modal
-        title={
-          <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937', fontWeight: 'bold', fontSize: '16px' }}>
-            ✏️ Sửa Thông Tin Khách Hàng
-          </span>
-        }
+        customer={customer}
+        comboBalances={comboBalances}
+        modalWidth={modalWidth}
+        handleModalDragStart={handleModalDragStart}
+      />
+
+      <EditCustomerModal
         open={isEditModalOpen}
         onCancel={() => setIsEditModalOpen(false)}
         onOk={handleSaveEdit}
         confirmLoading={saveLoading}
-        okText="Lưu thay đổi"
-        cancelText="Hủy"
-        width={600}
-        styles={{
-          body: {
-            paddingTop: '16px',
-            backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-          },
-          content: {
-            backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-            color: themeMode === 'dark' ? '#fff' : '#1f2937',
-          },
-          header: {
-            backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-            borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-            paddingBottom: '8px',
-          },
-        }}
-      >
-        <Form form={editForm} layout="vertical" style={{ marginTop: '8px' }}>
-          <Form.Item
-            name="name"
-            label={<span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563' }}>Họ và Tên</span>}
-            rules={[{ required: true, message: 'Vui lòng nhập họ và tên khách hàng' }]}
-          >
-            <Input
-              style={{
-                backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-                color: themeMode === 'dark' ? '#fff' : '#1f2937',
-                borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9',
-              }}
-            />
-          </Form.Item>
+        form={editForm}
+      />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <Form.Item
-              name="gender"
-              label={<span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563' }}>Giới tính</span>}
-            >
-              <Select
-                allowClear
-                style={{ width: '100%' }}
-                styles={{ popup: { root: { backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' } } }}
-                options={[
-                  { value: 'Male', label: 'Nam' },
-                  { value: 'Female', label: 'Nữ' },
-                  { value: 'Other', label: 'Khác' },
-                ]}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="dob"
-              label={<span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563' }}>Ngày sinh</span>}
-            >
-              <DatePicker
-                format="DD/MM/YYYY"
-                style={{
-                  width: '100%',
-                  backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-                  borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9',
-                }}
-                placeholder="Chọn ngày sinh"
-              />
-            </Form.Item>
-          </div>
-
-          <Form.Item
-            name="email"
-            label={<span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563' }}>Email</span>}
-            rules={[{ type: 'email', message: 'Email không hợp lệ' }]}
-          >
-            <Input
-              placeholder="example@domain.com"
-              style={{
-                backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-                color: themeMode === 'dark' ? '#fff' : '#1f2937',
-                borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9',
-              }}
-            />
-          </Form.Item>
-
-          <Card
-            size="small"
-            title={
-              <span style={{ fontSize: '13px', fontWeight: 'bold', color: themeMode === 'dark' ? '#fff' : '#374151' }}>
-                📞 Danh sách số điện thoại
-              </span>
-            }
-            style={{
-              backgroundColor: themeMode === 'dark' ? '#0f172a' : '#f9fafb',
-              borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
-            }}
-          >
-            <Form.List name="phones">
-              {(fields, { add, remove }) => (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {fields.map(({ key, name, ...restField }) => (
-                    <Space key={key} style={{ display: 'flex', width: '100%', alignItems: 'center' }} align="baseline">
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'phone_number']}
-                        rules={[
-                          { required: true, message: 'Số điện thoại không được để trống' },
-                          { pattern: /^[0-9+()-\s]*$/, message: 'Số điện thoại không hợp lệ' },
-                        ]}
-                        style={{ marginBottom: 0, width: '220px' }}
-                      >
-                        <Input
-                          placeholder="Số điện thoại"
-                          style={{
-                            backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                            color: themeMode === 'dark' ? '#fff' : '#1f2937',
-                            borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9',
-                          }}
-                        />
-                      </Form.Item>
-
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'is_active']}
-                        valuePropName="checked"
-                        style={{ marginBottom: 0 }}
-                      >
-                        <Switch checkedChildren="Hoạt động" unCheckedChildren="Khóa" style={{ minWidth: '100px' }} />
-                      </Form.Item>
-
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => remove(name)}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      />
-                    </Space>
-                  ))}
-                  <Button
-                    type="dashed"
-                    onClick={() => add({ phone_number: '', is_active: true })}
-                    block
-                    icon={<PlusOutlined />}
-                    style={{
-                      color: '#D4A84B',
-                      borderColor: '#D4A84B',
-                      marginTop: '8px',
-                    }}
-                  >
-                    Thêm số điện thoại mới
-                  </Button>
-                </div>
-              )}
-            </Form.List>
-          </Card>
-        </Form>
-      </Modal>
       {bookingWizardOpen && (
         <BookingWizardDrawer
           open={bookingWizardOpen}

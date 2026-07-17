@@ -11,7 +11,7 @@ async function run() {
 
     console.log(`Querying ALL orders in database for ${targetDateStr}...`);
 
-    const orders = await prisma.$queryRawUnsafe<any[]>(`
+    const orders = await prisma.$queryRawUnsafe<SafeAny[]>(`
       SELECT id, order_state, total_price, client_store_id,
              CAST(booking_date_start AS CHAR) as startStr, 
              CAST(booking_date_end AS CHAR) as endStr,

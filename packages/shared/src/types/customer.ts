@@ -1,3 +1,5 @@
+import { CallLog } from './call';
+
 export type BucketType = 'COMBO_LIVE' | 'COMBO_DEAD' | 'SINGLE';
 
 export interface Customer {
@@ -112,4 +114,144 @@ export interface BulkDeleteCustomersRequest {
 export interface BulkDeleteCustomersResponse {
   success: boolean;
   count: number;
+}
+
+export interface Appointment {
+  id: number;
+  orderKey: string;
+  bookingDateStart: string | null;
+  bookingDateEnd: string | null;
+  bookingNote: string | null;
+  bookingChannel: string;
+  orderState: string;
+  totalPrice: number;
+  customerId: number;
+  customerName: string;
+  customerAvatar: string | null;
+  customerPhone: string;
+  serviceName?: string;
+  servicePrice?: number;
+  discountPercent?: number;
+  netRevenue?: number;
+  tipAmount?: number;
+  bookingBonus?: number;
+  technicianId?: number | null;
+  storeId?: number | null;
+  branchName?: string;
+  technicianName?: string;
+}
+
+export interface CustomerHistoryEntry {
+  id: number;
+  customerId: number;
+  action: string;
+  note: string | null;
+  createdAt: string;
+  staffName: string | null;
+}
+
+export interface AssignmentHistoryBatch {
+  id: string;
+  createdAt: string;
+  staffName: string;
+  staffId: number;
+  customerCount: number;
+  undone: boolean;
+}
+
+export interface AssignmentHistoryResponse {
+  data: AssignmentHistoryBatch[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export interface AssignmentHistoryDetail {
+  id: number;
+  batchId: string;
+  customerId: number;
+  customerName: string;
+  customerPhone: string;
+  previousStaffName: string | null;
+  newStaffName: string;
+  createdAt: string;
+}
+
+export interface AssignmentHistoryDetailsResponse {
+  data: AssignmentHistoryDetail[];
+}
+
+export interface Referral {
+  id: number;
+  referrerId: number;
+  referredId: number;
+  createdAt: string;
+  referrerName: string;
+  referrerPhone: string;
+  referredName: string;
+  referredPhone: string;
+}
+
+export interface ListAppointmentsResponse {
+  data: Appointment[];
+  total: number;
+  summary?: {
+    totalPlanned: number;
+    totalCheckin: number;
+    totalCompleted: number;
+    totalCancelled: number;
+    totalRevenue: number;
+    totalTips: number;
+    totalBonus: number;
+  } | null;
+}
+
+export interface CustomerNote {
+  id: number;
+  customerId: number;
+  content: string;
+  createdAt: string;
+  staffName: string | null;
+}
+
+export interface ComboBalance {
+  id: number;
+  customerId: number;
+  serviceName: string;
+  totalCount: number;
+  usedCount: number;
+  remainingCount: number;
+  expiryDate: string | null;
+}
+
+export interface DetailedCustomerResponse {
+  customer: Customer;
+  stats: {
+    totalCalls: number;
+    totalBookings: number;
+    totalSpent: number;
+    successRate: number;
+  };
+  comboBalances: ComboBalance[];
+  bookings: Appointment[];
+  notes: CustomerNote[];
+  calls: CallLog[];
+}
+
+export interface Promotion {
+  id: number;
+  name: string;
+  code?: string;
+  discountPercent?: number;
+  description?: string | null;
+}
+
+export interface Service {
+  id: number;
+  name: string;
+  price: number;
+  duration: number;
 }

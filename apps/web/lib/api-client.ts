@@ -15,6 +15,19 @@ import {
   UserRole,
   ColumnConfig,
   BulkDeleteCustomersResponse,
+  CustomerHistoryEntry,
+  AssignmentHistoryResponse,
+  AssignmentHistoryDetailsResponse,
+  Referral,
+  ListAppointmentsResponse,
+  DetailedCustomerResponse,
+  SalaryConfig,
+  TrendDay,
+  TrendsResponse,
+  LeaderboardEntry,
+  Appointment,
+  Promotion,
+  Service,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -56,11 +69,11 @@ export const apiClient = {
       const response = await api.get(`/customers/${id}`);
       return response.data;
     },
-    getHistory: async (id: number): Promise<any[]> => {
+    getHistory: async (id: number): Promise<CustomerHistoryEntry[]> => {
       const response = await api.get(`/customers/${id}/history`);
       return response.data;
     },
-    getRandomIds: async (params: any): Promise<number[]> => {
+    getRandomIds: async (params: Record<string, unknown>): Promise<number[]> => {
       const response = await api.get('/customers/random-ids', { params });
       return response.data;
     },
@@ -72,39 +85,50 @@ export const apiClient = {
       const response = await api.post('/customers/unassign', data);
       return response.data;
     },
-    getStaff: async (): Promise<Staff[]> => {
-      const response = await api.get('/customers/staff');
+    getStaff: async (params?: Record<string, unknown>): Promise<Staff[]> => {
+      const response = await api.get('/customers/staff', { params });
       return response.data;
     },
-    getAssignmentHistory: async (params: any): Promise<any> => {
+    getAssignmentHistory: async (params: Record<string, unknown>): Promise<AssignmentHistoryResponse> => {
       const response = await api.get('/customers/assignment-history', { params });
       return response.data;
     },
-    getAssignmentHistoryDetails: async (batchId: string): Promise<any> => {
+    getAssignmentHistoryDetails: async (batchId: string): Promise<AssignmentHistoryDetailsResponse> => {
       const response = await api.get(`/customers/assignment-history/${batchId}/details`);
       return response.data;
     },
-    undoAssignment: async (batchId: string): Promise<any> => {
+    undoAssignment: async (
+      batchId: string
+    ): Promise<{
+      success: boolean;
+      revertedCount: number;
+      totalCount: number;
+      skippedCount: number;
+    }> => {
       const response = await api.post('/customers/assignment-history/undo', { batchId });
       return response.data;
     },
-    getReferrals: async (): Promise<any[]> => {
+    getReferrals: async (): Promise<Referral[]> => {
       const response = await api.get('/customers/referrals');
       return response.data;
     },
-    getAppointments: async (params: any): Promise<any> => {
+    getAppointments: async (params: Record<string, unknown>): Promise<ListAppointmentsResponse> => {
       const response = await api.get('/customers/appointments', { params });
       return response.data;
     },
-    deleteBooking: async (orderId: number): Promise<any> => {
+    deleteBooking: async (orderId: number): Promise<{ success: boolean; message: string }> => {
       const response = await api.delete(`/customers/booking/${orderId}`);
       return response.data;
     },
-    delete: async (id: number): Promise<any> => {
+    getDetailed: async (id: number): Promise<DetailedCustomerResponse> => {
+      const response = await api.get(`/customers/${id}/detailed`);
+      return response.data;
+    },
+    delete: async (id: number): Promise<{ success: boolean; message: string }> => {
       const response = await api.delete(`/customers/${id}`);
       return response.data;
     },
-    restore: async (id: number): Promise<any> => {
+    restore: async (id: number): Promise<{ success: boolean; message: string }> => {
       const response = await api.post(`/customers/${id}/restore`);
       return response.data;
     },
@@ -121,8 +145,28 @@ export const apiClient = {
         dob: string | null;
         phones: Array<{ id?: number; phone_number: string; is_disabled?: boolean; is_deleted?: boolean }>;
       }
-    ): Promise<any> => {
+    ): Promise<Customer> => {
       const response = await api.put(`/customers/${id}`, data);
+      return response.data;
+    },
+    getPromotions: async (): Promise<Promotion[]> => {
+      const response = await api.get('/customers/promotions');
+      return response.data;
+    },
+    getServices: async (): Promise<Service[]> => {
+      const response = await api.get('/customers/services');
+      return response.data;
+    },
+    getBookingSlots: async (params: Record<string, unknown>): Promise<unknown> => {
+      const response = await api.get('/customers/booking-slots', { params });
+      return response.data;
+    },
+    createBooking: async (data: Record<string, unknown>): Promise<unknown> => {
+      const response = await api.post('/customers/booking', data);
+      return response.data;
+    },
+    updateBooking: async (orderId: number, data: Record<string, unknown>): Promise<unknown> => {
+      const response = await api.put(`/customers/booking/${orderId}`, data);
       return response.data;
     },
   },
@@ -141,11 +185,7 @@ export const apiClient = {
       const response = await api.get('/plans/today');
       return response.data;
     },
-    updateStatus: async (id: number, status: string): Promise<DailyPlan> => {
-      const response = await api.put(`/plans/${id}`, { status });
-      return response.data;
-    },
-    confirm: async (planId: number, data?: any): Promise<DailyPlan> => {
+    confirm: async (planId: number, data?: Record<string, unknown>): Promise<DailyPlan> => {
       const response = await api.put(`/plans/${planId}/confirm`, data);
       return response.data;
     },
@@ -153,7 +193,7 @@ export const apiClient = {
       const response = await api.get('/plans/weekly', { params });
       return response.data;
     },
-    getSuggestions: async (): Promise<any> => {
+    getSuggestions: async (): Promise<unknown> => {
       const response = await api.get('/plans/suggest');
       return response.data;
     },
@@ -176,57 +216,74 @@ export const apiClient = {
       endDate: string;
       staffId?: string;
       role?: string;
-    }): Promise<KPISummary & { salary?: any }> => {
+    }): Promise<KPISummary> => {
       const response = await api.get('/kpi/summary', { params });
       return response.data;
     },
-    getTrends: async (params: any): Promise<any> => {
+    getTrends: async (params: {
+      date_from: string;
+      date_to: string;
+      staff_id?: string;
+      booker?: string;
+    }): Promise<TrendsResponse> => {
       const response = await api.get('/kpi/trends', { params });
       return response.data;
     },
-    getLeaderboard: async (params: any): Promise<any> => {
+    getLeaderboard: async (params: {
+      date_from: string;
+      date_to: string;
+      role?: string;
+    }): Promise<LeaderboardEntry[]> => {
       const response = await api.get('/kpi/leaderboard', { params });
       return response.data;
     },
-    getSalaryConfig: async (): Promise<any> => {
+    getSalaryConfig: async (): Promise<SalaryConfig> => {
       const response = await api.get('/kpi/salary-config');
       return response.data;
     },
-    updateSalaryConfig: async (config: any): Promise<{ success: boolean; message: string }> => {
+    updateSalaryConfig: async (config: SalaryConfig): Promise<{ success: boolean; message: string }> => {
       const response = await api.post('/kpi/salary-config', config);
       return response.data;
     },
-    getBookerAppointments: async (params: any): Promise<any> => {
+    getBookerAppointments: async (params: Record<string, unknown>): Promise<unknown> => {
       const response = await api.get('/kpi/booker-appointments', { params });
+      return response.data;
+    },
+    getStaffLevels: async (): Promise<unknown> => {
+      const response = await api.get('/kpi/staff-levels');
+      return response.data;
+    },
+    updateStaffLevels: async (data: Record<string, unknown>): Promise<unknown> => {
+      const response = await api.post('/kpi/staff-levels', data);
       return response.data;
     },
   },
 
   nyc: {
-    getConfig: async (): Promise<any> => {
+    getConfig: async (): Promise<unknown> => {
       const response = await api.get('/nyc/config');
       return response.data;
     },
-    updateConfig: async (configs: any): Promise<any> => {
+    updateConfig: async (configs: Record<string, unknown>): Promise<unknown> => {
       const response = await api.put('/nyc/config', configs);
       return response.data;
     },
   },
 
   staff: {
-    list: async (params?: any): Promise<Staff[]> => {
+    list: async (params?: Record<string, unknown>): Promise<Staff[]> => {
       const response = await api.get('/staff', { params });
       return response.data;
     },
-    getLegacy: async (): Promise<any[]> => {
+    getLegacy: async (): Promise<unknown[]> => {
       const response = await api.get('/staff/legacy');
       return response.data;
     },
-    create: async (data: any): Promise<Staff> => {
+    create: async (data: Record<string, unknown>): Promise<Staff> => {
       const response = await api.post('/staff', data);
       return response.data;
     },
-    update: async (id: number, data: any): Promise<Staff> => {
+    update: async (id: number, data: Record<string, unknown>): Promise<Staff> => {
       const response = await api.put(`/staff/${id}`, data);
       return response.data;
     },
@@ -237,15 +294,15 @@ export const apiClient = {
   },
 
   roles: {
-    list: async (): Promise<any[]> => {
+    list: async (): Promise<unknown[]> => {
       const response = await api.get('/roles');
       return response.data;
     },
-    create: async (data: any): Promise<any> => {
+    create: async (data: Record<string, unknown>): Promise<unknown> => {
       const response = await api.post('/roles', data);
       return response.data;
     },
-    update: async (key: string, data: any): Promise<any> => {
+    update: async (key: string, data: Record<string, unknown>): Promise<unknown> => {
       const response = await api.put(`/roles/${key}`, data);
       return response.data;
     },
@@ -256,11 +313,11 @@ export const apiClient = {
   },
 
   savedFilters: {
-    list: async (): Promise<any[]> => {
+    list: async (): Promise<unknown[]> => {
       const response = await api.get('/saved-filters');
       return response.data;
     },
-    create: async (data: any): Promise<any> => {
+    create: async (data: Record<string, unknown>): Promise<unknown> => {
       const response = await api.post('/saved-filters', data);
       return response.data;
     },
@@ -292,19 +349,19 @@ export const apiClient = {
   },
 
   omicall: {
-    getSipConfig: async (): Promise<any> => {
+    getSipConfig: async (): Promise<unknown> => {
       const response = await api.get('/omicall/sip-config');
       return response.data;
     },
-    getLatestLog: async (params: { phone: string; direction: string }): Promise<any> => {
+    getLatestLog: async (params: { phone: string; direction: string }): Promise<unknown> => {
       const response = await api.get('/omicall/logs/latest', { params });
       return response.data;
     },
-    listLogs: async (params: any): Promise<any> => {
+    listLogs: async (params: Record<string, unknown>): Promise<unknown> => {
       const response = await api.get('/omicall/logs', { params });
       return response.data;
     },
-    getConfigs: async (): Promise<any[]> => {
+    getConfigs: async (): Promise<unknown[]> => {
       const response = await api.get('/omicall/config');
       return response.data;
     },
@@ -313,12 +370,26 @@ export const apiClient = {
       extension: string;
       phoneNumber?: string;
       sipPassword?: string;
-    }): Promise<any> => {
+    }): Promise<unknown> => {
       const response = await api.post('/omicall/config', data);
       return response.data;
     },
     deleteConfig: async (staffId: number): Promise<{ success: boolean }> => {
       const response = await api.delete(`/omicall/config/${staffId}`);
+      return response.data;
+    },
+    getPlayDetails: async (id: number): Promise<unknown> => {
+      const response = await api.get(`/omicall/logs/${id}/play`);
+      return response.data;
+    },
+    verifyLog: async (id: number, data: Record<string, unknown>): Promise<unknown> => {
+      const response = await api.post(`/omicall/logs/${id}/verify`, data);
+      return response.data;
+    },
+  },
+  dashboard: {
+    getToday: async (params?: Record<string, unknown>): Promise<unknown> => {
+      const response = await api.get('/dashboard/today', { params });
       return response.data;
     },
   },

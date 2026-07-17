@@ -189,10 +189,10 @@ export const getCustomIconComponent = (name: string, props?: IconProps): React.R
   return null;
 };
 
-const lucideComponentsCache: Record<string, React.ComponentType<any>> = {};
+const lucideComponentsCache: Record<string, React.ComponentType<SafeAny>> = {};
 
-export const getDynamicLucideIcon = (name: string): React.ComponentType<any> | null => {
-  const importFn = (dynamicIconImports as any)[name];
+export const getDynamicLucideIcon = (name: string): React.ComponentType<SafeAny> | null => {
+  const importFn = (dynamicIconImports as SafeAny)[name];
   if (!importFn) return null;
 
   if (!lucideComponentsCache[name]) {
@@ -209,7 +209,7 @@ export const getDynamicLucideIcon = (name: string): React.ComponentType<any> | n
 };
 
 // Ant Design Icons whitelist mapping
-const ANTD_ICON_MAP: Record<string, React.ComponentType<any>> = {
+const ANTD_ICON_MAP: Record<string, React.ComponentType<SafeAny>> = {
   OrderedListOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
@@ -231,7 +231,7 @@ const ANTD_ICON_MAP: Record<string, React.ComponentType<any>> = {
   SearchOutlined,
 };
 
-export const getAntdIconComponent = (name: string): React.ComponentType<any> | null => {
+export const getAntdIconComponent = (name: string): React.ComponentType<SafeAny> | null => {
   return ANTD_ICON_MAP[name] || null;
 };
 

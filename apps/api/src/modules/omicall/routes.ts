@@ -16,7 +16,7 @@ export async function omicallRoutes(fastify: FastifyInstance) {
       }
     }
 
-    const body = request.body as any;
+    const body = request.body as SafeAny;
     if (!body) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Empty body' });
     }
@@ -146,9 +146,9 @@ export async function omicallRoutes(fastify: FastifyInstance) {
       }
 
       return { success: true, logId: log.id, analysisStatus: log.analysisStatus };
-    } catch (error: any) {
-      fastify.log.error('OmiCall webhook error:', error);
-      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'OmiCall webhook error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
     }
   });
 
@@ -182,9 +182,9 @@ export async function omicallRoutes(fastify: FastifyInstance) {
       });
 
       return merged;
-    } catch (error: any) {
-      fastify.log.error('Get OmiCall configs error:', error);
-      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get OmiCall configs error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
     }
   });
 
@@ -205,12 +205,12 @@ export async function omicallRoutes(fastify: FastifyInstance) {
     try {
       const encryptedPassword = sipPassword ? encrypt(sipPassword) : undefined;
 
-      const updateData: any = { extension, phoneNumber: phoneNumber || null };
+      const updateData: SafeAny = { extension, phoneNumber: phoneNumber || null };
       if (encryptedPassword !== undefined) {
         updateData.sipPassword = encryptedPassword;
       }
 
-      const createData: any = {
+      const createData: SafeAny = {
         staffId,
         extension,
         phoneNumber: phoneNumber || null,
@@ -230,9 +230,9 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         phoneNumber: config.phoneNumber,
         hasSipPassword: !!config.sipPassword,
       };
-    } catch (error: any) {
-      fastify.log.error('Upsert OmiCall config error:', error);
-      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Upsert OmiCall config error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
     }
   });
 
@@ -260,9 +260,9 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         sipPassword: decryptedPassword,
         phoneNumber: config.phoneNumber || '',
       };
-    } catch (error: any) {
-      fastify.log.error('Get SIP config error:', error);
-      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get SIP config error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
     }
   });
 
@@ -325,9 +325,9 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         customerName,
         legacyUserId: log.legacyUserId,
       };
-    } catch (error: any) {
-      fastify.log.error('Get latest log error:', error);
-      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get latest log error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
     }
   });
 
@@ -349,9 +349,9 @@ export async function omicallRoutes(fastify: FastifyInstance) {
           where: { staffId: parsedStaffId },
         });
         return { success: true };
-      } catch (error: any) {
-        fastify.log.error('Delete OmiCall config error:', error);
-        return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+      } catch (error: SafeAny) {
+        fastify.log.error(error as Error, 'Delete OmiCall config error:');
+        return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
       }
     }
   );
@@ -380,7 +380,7 @@ export async function omicallRoutes(fastify: FastifyInstance) {
     const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
     const take = parseInt(limit, 10);
 
-    const where: any = {};
+    const where: SafeAny = {};
     if (staffId) where.staffId = parseInt(staffId, 10);
     if (status) where.status = status;
     if (happyCallStatus) where.happyCallStatus = happyCallStatus;
@@ -438,9 +438,9 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         page: parseInt(page, 10),
         limit: take,
       };
-    } catch (error: any) {
-      fastify.log.error('Get OmiCall logs error:', error);
-      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get OmiCall logs error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
     }
   });
 
@@ -492,9 +492,9 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         staffName,
         customerName,
       };
-    } catch (error: any) {
-      fastify.log.error('Play call error:', error);
-      return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Play call error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
     }
   });
 
@@ -507,7 +507,7 @@ export async function omicallRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const { action, laughVerifications, notes } = request.body as {
         action: 'approve' | 'reject';
-        laughVerifications?: any;
+        laughVerifications?: SafeAny;
         notes?: string;
       };
 
@@ -573,9 +573,9 @@ export async function omicallRoutes(fastify: FastifyInstance) {
           laughTimestamps: updated.laughTimestamps ? JSON.parse(updated.laughTimestamps) : [],
           qaLaughVerifications: updated.qaLaughVerifications ? JSON.parse(updated.qaLaughVerifications) : [],
         };
-      } catch (error: any) {
-        fastify.log.error('Verify call log error:', error);
-        return reply.status(500).send({ error: 'Internal Server Error', message: error.message });
+      } catch (error: SafeAny) {
+        fastify.log.error(error as Error, 'Verify call log error:');
+        return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
       }
     }
   );

@@ -45,7 +45,7 @@ const DEFAULT_SALARY_CONFIG = {
 };
 
 // Global in-memory cache for Booker Salary Config
-let cachedSalaryConfig: any = null;
+let cachedSalaryConfig: SafeAny = null;
 
 // Fetch salary config from DB or fallback to default
 async function getSalaryConfig(fastify: FastifyInstance) {
@@ -61,7 +61,7 @@ async function getSalaryConfig(fastify: FastifyInstance) {
       return cachedSalaryConfig;
     }
   } catch (err) {
-    fastify.log.error(err as any, 'Error fetching Booker salary config from DB');
+    fastify.log.error(err as SafeAny, 'Error fetching Booker salary config from DB');
   }
   return DEFAULT_SALARY_CONFIG;
 }
@@ -99,7 +99,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
     const staffNames = staffList.map((s) => s.displayName);
 
     // Fetch legacy user profiles to map displayNames to legacy user IDs
-    const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+    const profiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
       `
       SELECT up.user_id as userId, up.full_name as fullName
       FROM \`staff_profile\` sp
@@ -111,12 +111,12 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
     );
 
     // Sort ascending to let duplicates with larger user_id override
-    profiles.sort((a: any, b: any) => Number(a.userId) - Number(b.userId));
+    profiles.sort((a: SafeAny, b: SafeAny) => Number(a.userId) - Number(b.userId));
 
     const staffNameToLegacyIdMap = new Map<string, number>();
     const legacyIdToStaffMap = new Map<number, any>();
 
-    profiles.forEach((p: any) => {
+    profiles.forEach((p: SafeAny) => {
       const staff = staffList.find((s) => s.displayName.toLowerCase().trim() === p.fullName.toLowerCase().trim());
       if (staff) {
         staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
@@ -152,12 +152,12 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
         // Fetch tips
         const orderTipsMap = new Map<number, number>();
         if (completedOrderIds.length > 0) {
-          const orderPayments = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          const orderPayments = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
             SELECT order_id as orderId, tip_amount as tipAmount
             FROM \`order_payment\`
             WHERE order_id IN (${completedOrderIds.join(',')})
           `);
-          orderPayments.forEach((op: any) => {
+          orderPayments.forEach((op: SafeAny) => {
             const existing = orderTipsMap.get(Number(op.orderId)) || 0;
             orderTipsMap.set(Number(op.orderId), existing + Number(op.tipAmount || 0));
           });
@@ -200,7 +200,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
         const balanceIds = userBalances.map((b) => b.id);
         const userBalanceTransactions =
           balanceIds.length > 0
-            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                  usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                  usbt.retain_count, usbt.used_staff_id, usbt.order_id,
@@ -426,7 +426,7 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
 }
 
 async function calculateConsultantSalaryStats(
-  fastify: any,
+  fastify: SafeAny,
   start: Date,
   end: Date,
   targetUserId?: number
@@ -452,16 +452,16 @@ async function calculateConsultantSalaryStats(
     LEFT JOIN \`user_profile\` u ON p.user_id = u.user_id
     WHERE p.date >= ? AND p.date <= ?
   `;
-  const params: any[] = [start, end];
+  const params: SafeAny[] = [start, end];
   if (targetUserId !== undefined) {
     query += ` AND p.user_id = ?`;
     params.push(targetUserId);
   }
-  const payrolls = (await fastify.prisma.legacy.$queryRawUnsafe(query, ...params)) as any[];
+  const payrolls = (await fastify.prisma.legacy.$queryRawUnsafe(query, ...params)) as SafeAny[];
 
   const stats: Record<number, any> = {};
 
-  payrolls.forEach((p: any) => {
+  payrolls.forEach((p: SafeAny) => {
     const uid = Number(p.user_id);
     let baseSalary = 0;
     let salesReward = 0;
@@ -547,6 +547,22 @@ function formatDateTime(d: Date): string {
 }
 
 export async function kpiRoutes(fastify: FastifyInstance) {
+  const parseDateRange = (dateFrom?: string, dateTo?: string, defaultDaysStart = 7) => {
+    const startStr =
+      dateFrom || new Date(Date.now() - defaultDaysStart * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
+    const endStr = dateTo || new Date().toLocaleDateString('en-CA');
+
+    const startPart = startStr.includes('T') ? startStr.split('T')[0] : startStr;
+    const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
+
+    return {
+      startStr: startPart,
+      endStr: endPart,
+      start: new Date(startPart + 'T00:00:00.000Z'),
+      end: new Date(endPart + 'T23:59:59.999Z'),
+    };
+  };
+
   // GET /api/kpi/export-booker-salary (Google Sheets / External tool integration)
   fastify.get('/kpi/export-booker-salary', async (request, reply) => {
     const { key, booker, date_from, date_to } = request.query as {
@@ -565,14 +581,13 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu tham số booker, date_from hoặc date_to.' });
     }
 
-    const start = new Date(date_from + 'T00:00:00.000Z');
-    const end = new Date(date_to + 'T23:59:59.999Z');
+    const { start, end } = parseDateRange(date_from, date_to);
 
     try {
       const config = await getSalaryConfig(fastify);
 
       // Find legacyUserId for the requested booker
-      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT up.user_id as userId, up.full_name as fullName
         FROM \`staff_profile\` sp
@@ -589,7 +604,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       }
 
       // Sort by userId ascending to let duplicates with larger user_id override
-      profiles.sort((a: any, b: any) => Number(a.userId) - Number(b.userId));
+      profiles.sort((a: SafeAny, b: SafeAny) => Number(a.userId) - Number(b.userId));
       const legacyUserId = Number(profiles[profiles.length - 1].userId);
 
       // Fetch all orders for this booker in the date range
@@ -602,7 +617,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         orderBy: { booking_date_start: 'asc' },
       });
 
-      const rows: any[][] = [];
+      const rows: SafeAny[][] = [];
       rows.push([
         'ID',
         'CLIENT',
@@ -632,12 +647,12 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
         const orderPaymentMap = new Map<number, { tips: number; debt: number; totalPaid: number }>();
         if (completedOrderIds.length > 0) {
-          const orderPayments = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          const orderPayments = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
             SELECT order_id as orderId, tip_amount as tipAmount, paid_credit_amount as paidCredit, paid_cash_amount as paidCash, paid_credit_card_amount as paidCard, paid_bank_transfer_amount as paidBank, debt_amount as debt
             FROM \`order_payment\`
             WHERE order_id IN (${completedOrderIds.join(',')})
           `);
-          orderPayments.forEach((op: any) => {
+          orderPayments.forEach((op: SafeAny) => {
             const existing = orderPaymentMap.get(Number(op.orderId)) || { tips: 0, debt: 0, totalPaid: 0 };
             const paidSum =
               Number(op.paidCredit || 0) +
@@ -681,7 +696,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         ) as number[];
         const userProfiles =
           customerIds.length > 0
-            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT user_id as userId, full_name as fullName
           FROM \`user_profile\`
           WHERE user_id IN (${customerIds.join(',')})
@@ -689,7 +704,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             : [];
         const userContacts =
           customerIds.length > 0
-            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT user_id as userId, phone_number as phoneNumber
           FROM \`user_contact\`
           WHERE user_id IN (${customerIds.join(',')})
@@ -713,7 +728,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         const balanceIds = userBalances.map((b) => b.id);
         const userBalanceTransactions =
           balanceIds.length > 0
-            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                  usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                  usbt.retain_count, usbt.used_staff_id, usbt.order_id,
@@ -908,8 +923,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       reply.header('Content-Type', 'text/csv; charset=utf-8');
       reply.header('Content-Disposition', 'attachment; filename=booker-salary.csv');
       return csvContent;
-    } catch (err: any) {
-      fastify.log.error(err as any, 'Export booker salary CSV error');
+    } catch (err: SafeAny) {
+      fastify.log.error(err as SafeAny, 'Export booker salary CSV error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi xuất CSV.' });
     }
   });
@@ -930,7 +945,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const newConfig = request.body as any;
+    const newConfig = request.body as SafeAny;
     if (!newConfig || typeof newConfig !== 'object') {
       return reply.status(400).send({
         error: 'Bad Request',
@@ -952,8 +967,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       cachedSalaryConfig = newConfig;
 
       return { success: true, message: 'Cấu hình lương Booker đã được cập nhật thành công.' };
-    } catch (err: any) {
-      fastify.log.error(err as any, 'Update salary config error');
+    } catch (err: SafeAny) {
+      fastify.log.error(err as SafeAny, 'Update salary config error');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi lưu cấu hình lương.',
@@ -971,8 +986,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         return {};
       }
       return JSON.parse(config.value);
-    } catch (err: any) {
-      fastify.log.error(err as any, 'Get staff levels error');
+    } catch (err: SafeAny) {
+      fastify.log.error(err as SafeAny, 'Get staff levels error');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi tải danh sách cấp độ nhân sự.',
@@ -990,7 +1005,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const levelsMap = request.body as any;
+    const levelsMap = request.body as SafeAny;
     if (!levelsMap || typeof levelsMap !== 'object') {
       return reply.status(400).send({
         error: 'Bad Request',
@@ -1009,8 +1024,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       });
 
       return { success: true, message: 'Đã cập nhật cấp độ mục tiêu nhân sự thành công.' };
-    } catch (err: any) {
-      fastify.log.error(err as any, 'Update staff levels error');
+    } catch (err: SafeAny) {
+      fastify.log.error(err as SafeAny, 'Update staff levels error');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi lưu cấp độ mục tiêu nhân sự.',
@@ -1037,11 +1052,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       targetStaffId = user.id;
     }
 
-    const startStr = startDate || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-    const endStr = endDate || new Date().toLocaleDateString('en-CA');
-
-    const start = new Date(startStr + 'T00:00:00.000Z');
-    const end = new Date(endStr + 'T23:59:59.999Z');
+    const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 7);
 
     try {
       if (role === 'oc' || role === 'consultant') {
@@ -1090,7 +1101,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       const staffNames = staffList.map((s) => s.displayName);
       const profiles =
         staffNames.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
               `
         SELECT user_id as userId, full_name as fullName
         FROM \`user_profile\`
@@ -1101,7 +1112,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           : [];
 
       const staffNameToLegacyIdMap = new Map<string, number>();
-      profiles.forEach((p: any) => {
+      profiles.forEach((p: SafeAny) => {
         staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
       });
 
@@ -1126,7 +1137,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         });
 
         totalCalled = callLogs.length;
-        callLogs.forEach((c: any) => {
+        callLogs.forEach((c: SafeAny) => {
           if (c.status === 'ANSWER') {
             totalAnswered++;
           }
@@ -1171,8 +1182,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         totalEarnings: salary ? salary.totalSalary : totalEarnings,
         salary,
       };
-    } catch (err: any) {
-      fastify.log.error(err as any, 'Summary KPI error');
+    } catch (err: SafeAny) {
+      fastify.log.error(err as SafeAny, 'Summary KPI error');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve KPI summary',
@@ -1190,11 +1201,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       role?: string;
       staffIds?: string;
     };
-    const startStr = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-    const endStr = endDate || new Date().toLocaleDateString('en-CA');
-
-    const start = new Date(startStr + 'T00:00:00.000Z');
-    const end = new Date(endStr + 'T23:59:59.999Z');
+    const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 30);
 
     try {
       if (role === 'oc' || role === 'consultant') {
@@ -1207,11 +1214,11 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           SELECT user_id, full_name, username 
           FROM \`user_profile\` 
           WHERE user_id IN (${uids.join(',')})
-        `)) as any[])
+        `)) as SafeAny[])
             : [];
 
         const profileMap = new Map<number, any>();
-        profiles.forEach((p: any) => {
+        profiles.forEach((p: SafeAny) => {
           profileMap.set(Number(p.user_id), p);
         });
 
@@ -1244,7 +1251,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         return leaderboard;
       }
 
-      const staffWhere: any = { isActive: true };
+      const staffWhere: SafeAny = { isActive: true };
       if (staffIds && staffIds.trim() !== '') {
         staffWhere.id = {
           in: staffIds
@@ -1267,7 +1274,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       const staffNames = staffList.map((s) => s.displayName);
       const profiles =
         staffNames.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
               `
         SELECT up.user_id as userId, up.full_name as fullName
         FROM \`staff_profile\` sp
@@ -1280,7 +1287,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           : [];
 
       const staffNameToLegacyIdMap = new Map<string, number>();
-      profiles.forEach((p: any) => {
+      profiles.forEach((p: SafeAny) => {
         staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
       });
 
@@ -1302,7 +1309,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           },
         });
 
-        callLogs.forEach((c: any) => {
+        callLogs.forEach((c: SafeAny) => {
           const sid = Number(c.staffId);
           const current = callStatsMap.get(sid) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
           current.totalCalled++;
@@ -1329,7 +1336,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           },
         });
 
-        bookedOrders.forEach((o: any) => {
+        bookedOrders.forEach((o: SafeAny) => {
           const uid = Number(o.created_staff_id);
           bookedCountMap.set(uid, (bookedCountMap.get(uid) || 0) + 1);
         });
@@ -1391,8 +1398,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         leaderboard.sort((a, b) => b.totalCheckin - a.totalCheckin);
       }
       return leaderboard;
-    } catch (err: any) {
-      fastify.log.error(err as any, 'Leaderboard KPI error');
+    } catch (err: SafeAny) {
+      fastify.log.error(err as SafeAny, 'Leaderboard KPI error');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve leaderboard statistics',
@@ -1432,17 +1439,13 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
     const bookerName = staff.displayName;
 
-    const startStr = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-    const endStr = endDate || new Date().toLocaleDateString('en-CA');
-
-    const start = new Date(startStr + 'T00:00:00.000Z');
-    const end = new Date(endStr + 'T23:59:59.999Z');
+    const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 30);
 
     try {
       const config = await getSalaryConfig(fastify);
 
       // Find legacyUserId for the requested booker
-      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT user_id as userId, full_name as fullName
         FROM \`user_profile\`
@@ -1459,7 +1462,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       }
 
       // Sort by userId ascending to let duplicates override
-      profiles.sort((a: any, b: any) => Number(a.userId) - Number(b.userId));
+      profiles.sort((a: SafeAny, b: SafeAny) => Number(a.userId) - Number(b.userId));
       const legacyUserId = Number(profiles[profiles.length - 1].userId);
 
       // Fetch all orders for this booker in the date range
@@ -1472,7 +1475,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         orderBy: { booking_date_start: 'desc' },
       });
 
-      const list: any[] = [];
+      const list: SafeAny[] = [];
 
       if (allOrders.length > 0) {
         const completedOrders = allOrders.filter((o) => o.order_state === 'Completed');
@@ -1480,12 +1483,12 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
         const orderPaymentMap = new Map<number, { tips: number; debt: number; totalPaid: number }>();
         if (completedOrderIds.length > 0) {
-          const orderPayments = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          const orderPayments = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
             SELECT order_id as orderId, tip_amount as tipAmount, paid_credit_amount as paidCredit, paid_cash_amount as paidCash, paid_credit_card_amount as paidCard, paid_bank_transfer_amount as paidBank, debt_amount as debt
             FROM \`order_payment\`
             WHERE order_id IN (${completedOrderIds.join(',')})
           `);
-          orderPayments.forEach((op: any) => {
+          orderPayments.forEach((op: SafeAny) => {
             const existing = orderPaymentMap.get(Number(op.orderId)) || { tips: 0, debt: 0, totalPaid: 0 };
             const paidSum =
               Number(op.paidCredit || 0) +
@@ -1529,7 +1532,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         ) as number[];
         const userProfiles =
           customerIds.length > 0
-            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT user_id as userId, full_name as fullName
           FROM \`user_profile\`
           WHERE user_id IN (${customerIds.join(',')})
@@ -1537,7 +1540,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             : [];
         const userContacts =
           customerIds.length > 0
-            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT user_id as userId, phone_number as phoneNumber
           FROM \`user_contact\`
           WHERE user_id IN (${customerIds.join(',')})
@@ -1561,7 +1564,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         const balanceIds = userBalances.map((b) => b.id);
         const userBalanceTransactions =
           balanceIds.length > 0
-            ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                  usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                  usbt.retain_count, usbt.used_staff_id, usbt.order_id,
@@ -1713,8 +1716,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       }
 
       return list;
-    } catch (err: any) {
-      fastify.log.error(err as any, 'KPI booker appointments error');
+    } catch (err: SafeAny) {
+      fastify.log.error(err as SafeAny, 'KPI booker appointments error');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Không thể truy vấn danh sách lịch hẹn đặt.',
@@ -1738,11 +1741,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       targetStaffId = user.id;
     }
 
-    const startStr = startDate || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-    const endStr = endDate || new Date().toLocaleDateString('en-CA');
-
-    const start = new Date(startStr + 'T00:00:00.000Z');
-    const end = new Date(endStr + 'T23:59:59.999Z');
+    const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 7);
 
     try {
       const logs = await fastify.prisma.crm.crmCallLog.findMany({
@@ -1812,8 +1811,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         breakdown,
         dailyTrends,
       };
-    } catch (err: any) {
-      fastify.log.error(err as any, 'KPI trends error');
+    } catch (err: SafeAny) {
+      fastify.log.error(err as SafeAny, 'KPI trends error');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve KPI trend statistics',

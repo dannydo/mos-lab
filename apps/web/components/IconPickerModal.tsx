@@ -19,7 +19,7 @@ interface IconButtonProps {
   onSelect: () => void;
   icon: React.ReactNode;
   label: string;
-  token: any;
+  token: SafeAny;
 }
 
 const IconButton: React.FC<IconButtonProps> = ({ name, isSelected, onSelect, icon, label, token }) => {
@@ -107,7 +107,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
   // 3. Get and filter Ant Design outlined icons
   const outlinedIcons = useMemo(() => {
     return Object.keys(Icons)
-      .filter((name) => name.endsWith('Outlined') && typeof (Icons as any)[name] === 'object')
+      .filter((name) => name.endsWith('Outlined') && typeof (Icons as SafeAny)[name] === 'object')
       .sort();
   }, []);
 
@@ -253,7 +253,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
 
         {activeTab === 'antd'
           ? filteredAntdIcons.map((name) => {
-              const IconComp = (Icons as any)[name];
+              const IconComp = (Icons as SafeAny)[name];
               const isSelected = value === name;
               return (
                 <IconButton

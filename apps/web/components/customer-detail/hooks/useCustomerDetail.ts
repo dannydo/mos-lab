@@ -1,0 +1,497 @@
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import dayjs from 'dayjs';
+import { apiClient } from '../../../lib/api-client';
+
+interface UseCustomerDetailProps {
+  open: boolean;
+  customerId: number | null;
+  onClose: () => void;
+  onDeleteSuccess?: () => void;
+  editForm: SafeAny;
+  onSuccess?: (msg: string) => void;
+  onError?: (msg: string) => void;
+}
+
+export function useCustomerDetail(options: UseCustomerDetailProps) {
+  const { open, customerId, onClose, onDeleteSuccess, editForm } = options;
+  const optionsRef = useRef(options);
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<SafeAny>(null);
+  const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
+  const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<SafeAny>(null);
+  const [isGemModalOpen, setIsGemModalOpen] = useState(false);
+  const [isComboModalOpen, setIsComboModalOpen] = useState(false);
+  const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [forbiddenError, setForbiddenError] = useState<string | null>(null);
+
+  // Resizable drawer
+  const [isDragging, setIsDragging] = useState(false);
+  const [drawerWidth, setDrawerWidth] = useState(1100);
+  const widthRef = useRef(drawerWidth);
+
+  // Resizable modal
+  const [modalWidth, setModalWidth] = useState(800);
+  const [isModalDragging, setIsModalDragging] = useState(false);
+  const [dragStartInfo, setDragStartInfo] = useState<{ x: number; width: number; direction: 'left' | 'right' } | null>(
+    null
+  );
+  const modalWidthRef = useRef(modalWidth);
+
+  // Resizable gem modal
+  const [gemModalWidth, setGemModalWidth] = useState(750);
+  const [isGemModalDragging, setIsGemModalDragging] = useState(false);
+  const [gemDragStartInfo, setGemDragStartInfo] = useState<{
+    x: number;
+    width: number;
+    direction: 'left' | 'right';
+  } | null>(null);
+  const gemModalWidthRef = useRef(gemModalWidth);
+
+  const customer = data?.customer;
+  const stats = data?.stats;
+  const comboBalances = data?.comboBalances || [];
+  const bookings = data?.bookings || [];
+  const notes = data?.notes || [];
+  const calls = data?.calls || [];
+
+  useEffect(() => {
+    widthRef.current = drawerWidth;
+  }, [drawerWidth]);
+
+  useEffect(() => {
+    modalWidthRef.current = modalWidth;
+  }, [modalWidth]);
+
+  useEffect(() => {
+    gemModalWidthRef.current = gemModalWidth;
+  }, [gemModalWidth]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('customer_detail_drawer_width');
+      if (saved) {
+        setDrawerWidth(parseInt(saved, 10));
+      }
+      const savedModal = localStorage.getItem('customer_combo_modal_width');
+      if (savedModal) {
+        setModalWidth(parseInt(savedModal, 10));
+      }
+      const savedGemModal = localStorage.getItem('customer_gem_modal_width');
+      if (savedGemModal) {
+        setGemModalWidth(parseInt(savedGemModal, 10));
+      }
+    }
+  }, []);
+
+  const fetchDetails = useCallback(async () => {
+    if (!customerId) return;
+    setLoading(true);
+    setForbiddenError(null);
+    try {
+      const detailedData = await apiClient.customers.getDetailed(customerId);
+      setData(detailedData);
+    } catch (err) {
+      console.error('Failed to fetch detailed customer:', err);
+      if ((err as SafeAny).response?.status === 403) {
+        setForbiddenError(
+          (err as SafeAny).response?.data?.message || 'Bạn không có quyền xem thông tin chi tiết khách hàng này.'
+        );
+      } else {
+        optionsRef.current?.onError?.(
+          (err as SafeAny).response?.data?.message || 'Không thể tải thông tin chi tiết khách hàng.'
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [customerId]);
+
+  useEffect(() => {
+    if (open && customerId) {
+      fetchDetails();
+    } else {
+      setData(null);
+      setForbiddenError(null);
+    }
+  }, [open, customerId, fetchDetails]);
+
+  // Drawer resize event handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = window.innerWidth - e.clientX;
+      const minWidth = 500;
+      const maxWidth = window.innerWidth * 0.95;
+      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+      setDrawerWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      localStorage.setItem('customer_detail_drawer_width', String(widthRef.current));
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  // Combo Modal drag event handlers
+  const handleModalDragStart = useCallback((e: React.MouseEvent, direction: 'left' | 'right') => {
+    e.preventDefault();
+    setDragStartInfo({
+      x: e.clientX,
+      width: modalWidthRef.current,
+      direction,
+    });
+    setIsModalDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isModalDragging || !dragStartInfo) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      let deltaX = 0;
+      if (dragStartInfo.direction === 'right') {
+        deltaX = e.clientX - dragStartInfo.x;
+      } else {
+        deltaX = dragStartInfo.x - e.clientX;
+      }
+
+      const newWidth = dragStartInfo.width + deltaX * 2;
+      const minWidth = 500;
+      const maxWidth = window.innerWidth * 0.95;
+      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+      setModalWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsModalDragging(false);
+      setDragStartInfo(null);
+      localStorage.setItem('customer_combo_modal_width', String(modalWidthRef.current));
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isModalDragging, dragStartInfo]);
+
+  // Gem Modal drag event handlers
+  const handleGemModalDragStart = useCallback((e: React.MouseEvent, direction: 'left' | 'right') => {
+    e.preventDefault();
+    setGemDragStartInfo({
+      x: e.clientX,
+      width: gemModalWidthRef.current,
+      direction,
+    });
+    setIsGemModalDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isGemModalDragging || !gemDragStartInfo) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      let deltaX = 0;
+      if (gemDragStartInfo.direction === 'right') {
+        deltaX = e.clientX - gemDragStartInfo.x;
+      } else {
+        deltaX = gemDragStartInfo.x - e.clientX;
+      }
+
+      const newWidth = gemDragStartInfo.width + deltaX * 2;
+      const minWidth = 500;
+      const maxWidth = window.innerWidth * 0.95;
+      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+      setGemModalWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsGemModalDragging(false);
+      setGemDragStartInfo(null);
+      localStorage.setItem('customer_gem_modal_width', String(gemModalWidthRef.current));
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isGemModalDragging, gemDragStartInfo]);
+
+  // Save edits handler
+  const handleOpenEditModal = () => {
+    if (!customer) return;
+    editForm.setFieldsValue({
+      name: customer.name,
+      email: customer.email,
+      gender: customer.gender,
+      dob: customer.dob ? dayjs(customer.dob) : null,
+      phones:
+        customer.phones && customer.phones.length > 0
+          ? customer.phones.map((p: SafeAny) => ({ id: p.id, phone_number: p.phone_number, is_active: !p.is_disabled }))
+          : [{ phone_number: customer.phone, is_active: true }],
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      const values = await editForm.validateFields();
+      setSaveLoading(true);
+
+      const originalPhones = customer.phones || [];
+      const currentPhones = values.phones || [];
+      const phonesPayload = [];
+
+      for (const orig of originalPhones) {
+        const isStillHere = currentPhones.some((curr: SafeAny) => curr.id === orig.id);
+        if (!isStillHere) {
+          phonesPayload.push({
+            id: orig.id,
+            phone_number: orig.phone_number,
+            is_deleted: true,
+          });
+        }
+      }
+
+      for (const curr of currentPhones) {
+        phonesPayload.push({
+          id: curr.id,
+          phone_number: curr.phone_number,
+          is_disabled: !curr.is_active,
+        });
+      }
+
+      await apiClient.customers.update(customerId!, {
+        name: values.name,
+        email: values.email || null,
+        gender: values.gender || null,
+        dob: values.dob ? values.dob.format('YYYY-MM-DD') : null,
+        phones: phonesPayload,
+      });
+
+      optionsRef.current?.onSuccess?.('Cập nhật thông tin khách hàng thành công!');
+      setIsEditModalOpen(false);
+      fetchDetails();
+    } catch (err) {
+      console.error('Update customer failed:', err);
+      optionsRef.current?.onError?.(
+        (err as SafeAny).response?.data?.message || 'Không thể cập nhật thông tin khách hàng.'
+      );
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  // Delete & Restore Customer
+  const handleDeleteCustomer = async () => {
+    if (!customerId) return;
+    setDeleteLoading(true);
+    try {
+      await apiClient.customers.delete(customerId);
+      optionsRef.current?.onSuccess?.('Xóa khách hàng thành công!');
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      }
+    } catch (err) {
+      console.error('Delete customer error:', err);
+      optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể xóa khách hàng.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleRestoreCustomer = async () => {
+    if (!customerId) return;
+    setRestoreLoading(true);
+    try {
+      await apiClient.customers.restore(customerId);
+      optionsRef.current?.onSuccess?.('Khôi phục khách hàng thành công!');
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      }
+    } catch (err) {
+      console.error('Restore customer error:', err);
+      optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể khôi phục khách hàng.');
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
+
+  // Cancel booking
+  const handleCancelBooking = async (orderId: number) => {
+    try {
+      await apiClient.customers.deleteBooking(orderId);
+      optionsRef.current?.onSuccess?.('Hủy lịch hẹn thành công!');
+      fetchDetails();
+    } catch (err) {
+      console.error('[Cancel] Failed to cancel booking:', err);
+      optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi hủy lịch hẹn.');
+    }
+  };
+
+  const getMostFrequentDay = (bookingsList: SafeAny[]) => {
+    if (!bookingsList || bookingsList.length === 0) return 'N/A';
+    const dayCounts = Array(7).fill(0);
+    const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+    bookingsList.forEach((b) => {
+      if (b.bookingDate) {
+        const day = new Date(b.bookingDate).getDay();
+        dayCounts[day]++;
+      }
+    });
+
+    let maxIndex = 0;
+    let maxVal = 0;
+    dayCounts.forEach((val, idx) => {
+      if (val > maxVal) {
+        maxVal = val;
+        maxIndex = idx;
+      }
+    });
+
+    return maxVal > 0 ? `${dayNames[maxIndex]} (${maxVal} lần)` : 'N/A';
+  };
+
+  const getFavoriteTechnicians = (bookingsList: SafeAny[]) => {
+    if (!bookingsList || bookingsList.length === 0) return 'Chưa có';
+    const techCounts: { [key: string]: number } = {};
+
+    bookingsList.forEach((b) => {
+      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
+      if (isCompleted && b.technicianName && b.technicianName !== 'Unknown' && b.technicianName !== 'Kỹ thuật viên') {
+        const name = b.technicianName.trim();
+        if (!name.includes('(Đã nghỉ)')) {
+          techCounts[name] = (techCounts[name] || 0) + 1;
+        }
+      }
+    });
+
+    const sortedTechs = Object.entries(techCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    if (sortedTechs.length === 0) return 'Chưa có';
+
+    const top2 = sortedTechs.slice(0, 2);
+    return top2.map((t) => `${t.name} (${t.count} lần)`).join(', ');
+  };
+
+  const getComboDisplayInfo = (
+    serviceName: string,
+    normalCount: number,
+    retainCount: number,
+    packageNormalCount?: number,
+    packageKey?: string
+  ) => {
+    const nameLower = (serviceName || '').toLowerCase();
+
+    let totalNew: number | null = null;
+    let totalRefill: number | null = null;
+
+    if (packageKey) {
+      const match = packageKey.match(/^(\d+)\+(\d+)/);
+      if (match) {
+        totalNew = parseInt(match[1], 10);
+        totalRefill = parseInt(match[2], 10);
+      }
+    }
+
+    const total = packageNormalCount && packageNormalCount > 0 ? packageNormalCount : null;
+    if (totalNew === null && totalRefill === null) {
+      if (nameLower.includes('refill')) {
+        totalRefill = total;
+        totalNew = 0;
+      } else {
+        totalNew = total;
+        totalRefill = 0;
+      }
+    }
+
+    if (totalNew === null) totalNew = nameLower.includes('new') ? 10 : 0;
+    if (totalRefill === null) totalRefill = nameLower.includes('refill') ? 3 : 0;
+
+    return {
+      displayName: `${serviceName} ${packageKey ? `(${packageKey})` : ''}`,
+      totalNew,
+      totalRefill,
+      total,
+    };
+  };
+
+  return {
+    // states
+    loading,
+    data,
+    rescheduleModalVisible,
+    selectedBookingForReschedule,
+    isGemModalOpen,
+    isComboModalOpen,
+    bookingWizardOpen,
+    deleteLoading,
+    isEditModalOpen,
+    editForm,
+    saveLoading,
+    restoreLoading,
+    forbiddenError,
+    drawerWidth,
+    isDragging,
+    modalWidth,
+    gemModalWidth,
+    // data items
+    customer,
+    stats,
+    comboBalances,
+    bookings,
+    notes,
+    calls,
+    // handlers
+    setRescheduleModalVisible,
+    setSelectedBookingForReschedule,
+    setIsGemModalOpen,
+    setIsComboModalOpen,
+    setBookingWizardOpen,
+    setIsEditModalOpen,
+    fetchDetails,
+    handleMouseDown,
+    handleModalDragStart,
+    handleGemModalDragStart,
+    handleOpenEditModal,
+    handleSaveEdit,
+    handleDeleteCustomer,
+    handleRestoreCustomer,
+    handleCancelBooking,
+    // helpers
+    getMostFrequentDay,
+    getFavoriteTechnicians,
+    getComboDisplayInfo,
+  };
+}

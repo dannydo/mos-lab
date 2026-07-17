@@ -178,7 +178,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       const innerWhereClauses: string[] = [];
-      const innerParams: any[] = [];
+      const innerParams: SafeAny[] = [];
 
       // Filter out or in deleted users based on trash flag
       if (trash === 'true') {
@@ -396,14 +396,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const countParams = [...innerParams];
 
       const [dataResult, countResult] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(querySql, ...dataParams),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(countSql, ...countParams),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(querySql, ...dataParams),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams),
       ]);
 
       const total = Number(countResult[0]?.total || 0);
 
       // Fetch assignments for the returned customers
-      const customerIds = dataResult.map((row: any) => Number(row.id));
+      const customerIds = dataResult.map((row: SafeAny) => Number(row.id));
       const assignments =
         customerIds.length > 0
           ? await fastify.prisma.crm.crmCustomerAssignment.findMany({
@@ -424,7 +424,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // Fetch latest bookings for the returned customers
       const latestBookings =
         customerIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
               `SELECT o.user_id as userId, o.booking_date_start as bookingDate, o.order_state as orderState
          FROM \`order\` o
          WHERE o.id IN (
@@ -487,7 +487,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       // Map raw SQL outputs to clean Customer interface types
-      const customers = dataResult.map((row: any) => {
+      const customers = dataResult.map((row: SafeAny) => {
         const assigned = assignmentMap.get(Number(row.id)) || null;
         const booking = bookingMap.get(Number(row.id)) || null;
         const callbackDateVal = callbackMap.get(Number(row.id)) || null;
@@ -533,8 +533,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           pages: Math.ceil(total / limitNum),
         },
       };
-    } catch (error: any) {
-      fastify.log.error('Get customers list error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get customers list error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve customers',
@@ -689,7 +689,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       const innerWhereClauses: string[] = [];
-      const innerParams: any[] = [];
+      const innerParams: SafeAny[] = [];
 
       // Filter out or in deleted users based on trash flag
       if (trash === 'true') {
@@ -792,7 +792,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         GROUP BY bucket
       `;
 
-      const statsResult = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(statsSql, ...innerParams);
+      const statsResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(statsSql, ...innerParams);
 
       const stats = {
         total: 0,
@@ -802,7 +802,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         notComboLive: 0,
       };
 
-      statsResult.forEach((row: any) => {
+      statsResult.forEach((row: SafeAny) => {
         const count = Number(row.count || 0);
         stats.total += count;
         if (row.bucket === 'COMBO_LIVE') stats.comboLive = count;
@@ -813,8 +813,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       stats.notComboLive = stats.total - stats.comboLive;
 
       return stats;
-    } catch (error: any) {
-      fastify.log.error('Get customers stats error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get customers stats error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve stats',
@@ -842,7 +842,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMin,
       referralCountMax,
       excludeAssigned = 'true',
-    } = request.query as any;
+    } = request.query as SafeAny;
 
     const limitNum = parseInt(limit, 10) || 20;
 
@@ -909,7 +909,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       const innerWhereClauses: string[] = [];
-      const innerParams: any[] = [];
+      const innerParams: SafeAny[] = [];
 
       if (excludeAssigned === 'true') {
         const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
@@ -1009,12 +1009,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
       `;
       innerParams.push(limitNum);
 
-      const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(query, ...innerParams);
+      const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(query, ...innerParams);
       const ids = rows.map((r) => Number(r.id));
 
       return { ids };
-    } catch (error: any) {
-      fastify.log.error('Get random customer ids error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get random customer ids error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve random customer IDs',
@@ -1033,8 +1033,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return [];
       }
       return JSON.parse(config.value);
-    } catch (error: any) {
-      fastify.log.error('Get saved filters error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get saved filters error:');
       return [];
     }
   });
@@ -1045,7 +1045,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const { id, name, criteria } = request.body as {
       id?: string;
       name: string;
-      criteria: any;
+      criteria: SafeAny;
     };
 
     if (!name || !criteria) {
@@ -1057,7 +1057,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         where: { key: 'CUSTOMER_SAVED_FILTERS' },
       });
 
-      let filters: any[] = [];
+      let filters: SafeAny[] = [];
       if (config) {
         filters = JSON.parse(config.value);
       }
@@ -1088,8 +1088,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       return newFilter;
-    } catch (error: any) {
-      fastify.log.error('Save filter error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Save filter error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to save filter' });
     }
   });
@@ -1108,7 +1108,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Not Found', message: 'Filters not found' });
       }
 
-      let filters: any[] = JSON.parse(config.value);
+      let filters: SafeAny[] = JSON.parse(config.value);
       filters = filters.filter((f) => f.id !== id);
 
       await fastify.prisma.crm.crmConfig.update({
@@ -1117,8 +1117,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       return { success: true };
-    } catch (error: any) {
-      fastify.log.error('Delete filter error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Delete filter error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to delete filter' });
     }
   });
@@ -1152,7 +1152,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ORDER BY s.position ASC, s.id ASC
       `;
 
-      const dbServices = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(query);
+      const dbServices = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(query);
 
       const mappedServices = dbServices.map((s) => ({
         id: Number(s.id),
@@ -1196,16 +1196,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       // 2. Fetch KTVs from legacy core tables
-      let mappedKTVs: any[] = [];
+      let mappedKTVs: SafeAny[] = [];
 
       // Query active schedules to compute weekly off days
-      const allSchedules = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const allSchedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT user_id, type, type_value 
          FROM staff_working_shift_schedule 
          WHERE is_disabled = 0 AND user_id IS NOT NULL`
       );
 
-      const schedulesByUserId: { [uid: number]: any[] } = {};
+      const schedulesByUserId: { [uid: number]: SafeAny[] } = {};
       for (const s of allSchedules) {
         const uid = Number(s.user_id);
         if (!schedulesByUserId[uid]) schedulesByUserId[uid] = [];
@@ -1213,7 +1213,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       // Query approved week-off requests from staff_day_off
-      const weekOffRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const weekOffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT from_user_id as userId, weekday, COUNT(*) as cnt
          FROM staff_day_off
          WHERE attribute_option_id = 110 AND request_state = 'Approved' AND from_user_id IS NOT NULL
@@ -1251,7 +1251,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const weekdayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
 
         // First check if actual instantiated shifts exist for this date
-        const instantiatedShifts = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        const instantiatedShifts = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT DISTINCT sws.user_id, up.full_name, up.client_store_id, up.avatar
            FROM staff_working_shift sws
            JOIN user_profile up ON sws.user_id = up.user_id
@@ -1263,7 +1263,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         if (activeKTVs.length === 0) {
           // Fallback to schedule templates
-          const schedules = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          const schedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
             `SELECT DISTINCT s.user_id, up.full_name, up.client_store_id, up.avatar
              FROM staff_working_shift_schedule s
              JOIN user_profile up ON s.user_id = up.user_id
@@ -1274,7 +1274,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           );
 
           // Filter out KTVs who requested day-off
-          const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
             `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved'`,
             date
           );
@@ -1301,7 +1301,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
       } else {
         // General active KTVs
-        const activeKTVs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        const activeKTVs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT DISTINCT user_id, full_name, client_store_id, avatar 
            FROM user_profile 
            WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0`
@@ -1326,8 +1326,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       return [...crmStaffList, ...mappedKTVs];
-    } catch (error: any) {
-      fastify.log.error('Get staff list error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get staff list error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve staff list' });
     }
   });
@@ -1336,7 +1336,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // Fetch active promotions for selection during booking
   fastify.get('/customers/promotions', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      const promotions = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const promotions = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT p.id, pl.promotion_name as name, p.promotion_key as promotionKey, p.discount_percentage as discountPercentage, p.discount_amount as discountAmount
          FROM promotion p
          LEFT JOIN promotion_language pl ON p.id = pl.promotion_id AND pl.language_id = 1
@@ -1350,8 +1350,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         discountPercentage: Number(p.discountPercentage),
         discountAmount: Number(p.discountAmount),
       }));
-    } catch (error: any) {
-      fastify.log.error('Get promotions error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get promotions error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve promotions list' });
     }
   });
@@ -1361,7 +1361,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.get('/customers/referrals', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
       // 1. Fetch referrers summary
-      const referrers = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const referrers = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT 
            up.referrer_user_id as referrerId,
            r_up.full_name as referrerName,
@@ -1377,7 +1377,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       );
 
       // 2. Fetch all referred friends at once
-      const referredFriends = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const referredFriends = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT 
            u.id as referredId,
            up.full_name as referredName,
@@ -1395,7 +1395,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const referrerIds = referrers.map((r) => Number(r.referrerId));
       const referralTxs =
         referrerIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
               `SELECT user_id as referrerId, amount, tracking_key FROM user_balance_transaction 
          WHERE template_id = 7 AND currency_id = 3 AND user_id IN (${referrerIds.join(',')})`
             )
@@ -1478,8 +1478,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       return result;
-    } catch (error: any) {
-      fastify.log.error('Get referrals list error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get referrals list error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve referrals list' });
     }
   });
@@ -1508,7 +1508,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       bookingNote,
       promotionId,
       referralPhone,
-    } = request.body as any;
+    } = request.body as SafeAny;
 
     try {
       // Find matching legacy user ID by CRM user (Strictly require direct link)
@@ -1528,7 +1528,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const legacyStaffId = crmStaff.legacyStaffId;
       let validStaffId: number | null = null;
       if (legacyStaffId) {
-        const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT id FROM user WHERE id = ? LIMIT 1`,
           legacyStaffId
         );
@@ -1547,7 +1547,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // Check referrer phone
       let referrerUserId: number | null = null;
       if (referralPhone && referralPhone.trim()) {
-        const referrerContact = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        const referrerContact = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT user_id FROM user_contact WHERE phone_number = ? AND is_disabled = 0 LIMIT 1`,
           referralPhone.trim()
         );
@@ -1571,7 +1571,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           validStaffId
         );
 
-        const lastInsertedUser = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`SELECT LAST_INSERT_ID() as id`);
+        const lastInsertedUser =
+          await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`SELECT LAST_INSERT_ID() as id`);
         if (lastInsertedUser.length === 0 || !lastInsertedUser[0].id) {
           throw new Error('Failed to create new user ID in legacy database.');
         }
@@ -1636,7 +1637,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       let srvPrice = 0;
       let srvDuration = 90;
-      const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT s.duration_minute_standard as duration, sp.service_price as price
          FROM service s
          LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0
@@ -1661,7 +1662,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       let finalPrice = srvPrice;
 
       if (promotionId) {
-        const promoRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        const promoRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT id, campaign_id, discount_percentage, discount_amount FROM promotion WHERE id = ? LIMIT 1`,
           promotionId
         );
@@ -1696,7 +1697,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // 5. Determine booker name and format final booking note to render correctly on legacy client
       let bookerName = user.displayName || '';
       if (validStaffId) {
-        const staffProfile = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        const staffProfile = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
           validStaffId
         );
@@ -1742,7 +1743,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       );
 
       // Get inserted order ID
-      const insertedOrder = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const insertedOrder = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT id FROM \`order\` WHERE order_key = ? LIMIT 1`,
         orderKey
       );
@@ -1838,11 +1839,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       return { success: true, orderId, customerId: finalCustomerId };
-    } catch (error: any) {
-      fastify.log.error('[Booking] Failed to create booking:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, '[Booking] Failed to create booking:');
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: error.message || 'Failed to create booking',
+        message: (error as SafeAny).message || 'Failed to create booking',
       });
     }
   });
@@ -1895,7 +1896,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT id FROM user WHERE id = ? LIMIT 1`,
         crmStaff.legacyStaffId
       );
@@ -1907,7 +1908,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       // 1. Fetch current order details (like duration and user_id)
-      const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT user_id, booking_duration_minute, total_price FROM \`order\` WHERE id = ?`,
         orderId
       );
@@ -1927,7 +1928,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (finalServiceId === 0) {
           finalServiceId = 1; // Map to "Any - Lashes 2"
         }
-        const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT s.duration_minute_standard as duration, sp.service_price as price
            FROM service s
            LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0
@@ -2032,11 +2033,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       );
 
       return reply.send({ success: true, orderId });
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(err, 'Reschedule booking error:');
       return reply
         .status(500)
-        .send({ error: 'Internal Server Error', message: err.message || 'Không thể dời lịch hẹn.' });
+        .send({ error: 'Internal Server Error', message: (err as SafeAny).message || 'Không thể dời lịch hẹn.' });
     }
   });
 
@@ -2056,7 +2057,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     try {
       // 1. Fetch the order details first to verify existence
-      const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT id FROM \`order\` WHERE id = ?`,
         orderId
       );
@@ -2075,11 +2076,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       );
 
       return reply.send({ success: true, orderId });
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(err, 'Cancel booking error:');
       return reply
         .status(500)
-        .send({ error: 'Internal Server Error', message: err.message || 'Không thể hủy lịch hẹn.' });
+        .send({ error: 'Internal Server Error', message: (err as SafeAny).message || 'Không thể hủy lịch hẹn.' });
     }
   });
 
@@ -2101,7 +2102,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     try {
       // 1. Verify user exists in the user table
-      const users = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const users = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT id FROM \`user\` WHERE id = ?`,
         customerId
       );
@@ -2111,7 +2112,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       // 2. Check if user_profile row exists
-      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT id FROM user_profile WHERE user_id = ?`,
         customerId
       );
@@ -2146,11 +2147,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       return reply.send({ success: true, customerId });
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(err, 'Delete customer error:');
       return reply
         .status(500)
-        .send({ error: 'Internal Server Error', message: err.message || 'Không thể xóa khách hàng.' });
+        .send({ error: 'Internal Server Error', message: (err as SafeAny).message || 'Không thể xóa khách hàng.' });
     }
   });
 
@@ -2169,7 +2170,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Danh sách ID khách hàng không hợp lệ.' });
     }
 
-    const customerIds = ids.map((id) => parseInt(id as any, 10)).filter((id) => !isNaN(id));
+    const customerIds = ids.map((id) => parseInt(id as SafeAny, 10)).filter((id) => !isNaN(id));
     if (customerIds.length === 0) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Danh sách ID khách hàng không chứa ID hợp lệ.' });
     }
@@ -2179,14 +2180,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
         let deletedCount = 0;
         for (const customerId of customerIds) {
           // 1. Verify user exists in the user table
-          const users = await tx.$queryRawUnsafe<any[]>(`SELECT id FROM \`user\` WHERE id = ?`, customerId);
+          const users = await tx.$queryRawUnsafe<SafeAny[]>(`SELECT id FROM \`user\` WHERE id = ?`, customerId);
 
           if (users.length === 0) {
             continue;
           }
 
           // 2. Check if user_profile row exists
-          const profiles = await tx.$queryRawUnsafe<any[]>(`SELECT id FROM user_profile WHERE user_id = ?`, customerId);
+          const profiles = await tx.$queryRawUnsafe<SafeAny[]>(
+            `SELECT id FROM user_profile WHERE user_id = ?`,
+            customerId
+          );
 
           if (profiles.length > 0) {
             // Update is_deleted to 1
@@ -2219,11 +2223,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       return reply.send({ success: true, count });
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(err, 'Bulk delete customers error:');
       return reply
         .status(500)
-        .send({ error: 'Internal Server Error', message: err.message || 'Không thể xóa hàng loạt khách hàng.' });
+        .send({
+          error: 'Internal Server Error',
+          message: (err as SafeAny).message || 'Không thể xóa hàng loạt khách hàng.',
+        });
     }
   });
 
@@ -2245,7 +2252,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     try {
       // 1. Verify user exists in the user table
-      const users = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const users = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT id FROM \`user\` WHERE id = ?`,
         customerId
       );
@@ -2255,7 +2262,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       // 2. Check if user_profile row exists
-      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT id FROM user_profile WHERE user_id = ?`,
         customerId
       );
@@ -2290,11 +2297,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       return reply.send({ success: true, customerId });
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(err, 'Restore customer error:');
       return reply
         .status(500)
-        .send({ error: 'Internal Server Error', message: err.message || 'Không thể khôi phục khách hàng.' });
+        .send({
+          error: 'Internal Server Error',
+          message: (err as SafeAny).message || 'Không thể khôi phục khách hàng.',
+        });
     }
   });
 
@@ -2345,7 +2355,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       ]);
 
       return { success: true, count: customerIds.length, batchId };
-    } catch (error: any) {
+    } catch (error: SafeAny) {
       fastify.log.error({ err: error }, 'Assign customers error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to assign customers' });
     }
@@ -2396,7 +2406,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       ]);
 
       return { success: true, count: customerIds.length, batchId };
-    } catch (error: any) {
+    } catch (error: SafeAny) {
       fastify.log.error({ err: error }, 'Unassign customers error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to unassign customers' });
     }
@@ -2491,7 +2501,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           pages: Math.ceil(total / limitNum),
         },
       };
-    } catch (error: any) {
+    } catch (error: SafeAny) {
       fastify.log.error({ err: error }, 'Get assignment history error');
       return reply
         .status(500)
@@ -2534,7 +2544,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const customerIds = historyRecords.map((r) => r.legacyUserId);
 
         // Fetch customer names and phones from legacy database using queryRawUnsafe
-        const legacyCustomers = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const legacyCustomers = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT 
           u.id,
           up.full_name as fullName,
@@ -2563,13 +2573,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
             phone: legacyCust.phone || 'N/A',
             prevStaffName: r.prevStaff?.displayName || 'Chưa phân bổ',
             newStaffName: r.newStaff?.displayName || 'Gỡ Booker',
-            isUndone: r.isUndone === true || (r.isUndone as any) === 1,
+            isUndone: r.isUndone === true || (r.isUndone as SafeAny) === 1,
             undoneAt: r.undoneAt,
           };
         });
 
         return { data };
-      } catch (error: any) {
+      } catch (error: SafeAny) {
         fastify.log.error({ err: error }, 'Get assignment history details error');
         return reply
           .status(500)
@@ -2658,7 +2668,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         totalCount: historyRecords.length,
         skippedCount: historyRecords.length - assignmentsToRevert.length,
       };
-    } catch (error: any) {
+    } catch (error: SafeAny) {
       fastify.log.error({ err: error }, 'Undo assignment error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to undo assignments' });
     }
@@ -2717,7 +2727,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LIMIT 1
       `;
 
-      const result = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(sql, customerId);
+      const result = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, customerId);
 
       if (result.length === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Customer not found' });
@@ -2747,8 +2757,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       };
 
       return customer;
-    } catch (error: any) {
-      fastify.log.error('Get customer by id error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get customer by id error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve customer',
@@ -2796,9 +2806,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LIMIT 50
       `;
 
-      const result = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(sql, customerId);
+      const result = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, customerId);
 
-      const history = result.map((row: any) => ({
+      const history = result.map((row: SafeAny) => ({
         id: row.id,
         orderKey: row.orderKey,
         dateCreated: new Date(row.dateCreated).toISOString(),
@@ -2808,8 +2818,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }));
 
       return history;
-    } catch (error: any) {
-      fastify.log.error('Get customer order history error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get customer order history error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve customer order history',
@@ -2864,7 +2874,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const profileCount = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const profileCount = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT id FROM user_profile WHERE user_id = ? LIMIT 1`,
         customerId
       );
@@ -2932,8 +2942,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       return reply.send({ success: true, message: 'Cập nhật thông tin khách hàng thành công!' });
-    } catch (error: any) {
-      fastify.log.error('Update customer error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Update customer error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi hệ thống khi cập nhật thông tin khách hàng.',
@@ -2996,7 +3006,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE u.id = ?
         LIMIT 1
       `;
-      const customerResult = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(customerSql, customerId);
+      const customerResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(customerSql, customerId);
       if (customerResult.length === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Customer not found' });
       }
@@ -3009,13 +3019,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // 3. Fetch LTV and Total Visits in a single query
       const statsSql = `SELECT SUM(total_price) as totalSpent, COUNT(*) as totalVisits FROM \`order\` WHERE user_id = ? AND order_state = 'Completed'`;
-      const statsResult = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(statsSql, customerId);
+      const statsResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(statsSql, customerId);
       const statsRow = statsResult[0] || {};
       const totalSpent = Number(statsRow.totalSpent || 0);
       const totalVisits = Number(statsRow.totalVisits || 0);
 
       // 4. Calculate Average Visit Frequency (in days)
-      const bookingDatesResult = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const bookingDatesResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT booking_date_start as date FROM \`order\` WHERE user_id = ? AND order_state = 'Completed' ORDER BY booking_date_start ASC`,
         customerId
       );
@@ -3056,10 +3066,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE usb.user_id = ?
         ORDER BY usb.date_created DESC
       `;
-      const comboBalances = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(balanceSql, customerId);
+      const comboBalances = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(balanceSql, customerId);
 
       // Fetch Gem Balance and transactions
-      const gemBalanceRow = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const gemBalanceRow = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT amount FROM user_balance WHERE user_id = ? AND currency_id = 3 LIMIT 1`,
         customerId
       );
@@ -3090,10 +3100,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE ubt.user_id = ? AND ubt.currency_id = 3
         ORDER BY ubt.date_created DESC
       `;
-      const gemTransactions = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(gemTransactionsSql, customerId);
+      const gemTransactions = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(gemTransactionsSql, customerId);
 
       // Fetch Referrer details (Who referred this customer)
-      const referrerRow = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const referrerRow = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT 
            u.id, 
            up.full_name as name, 
@@ -3115,7 +3125,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           : null;
 
       // Fetch Referred Users list (Who this customer referred)
-      const referredUsers = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const referredUsers = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT 
            u.id, 
            up.full_name as name, 
@@ -3130,7 +3140,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       );
 
       // Fetch referral transactions for this user (where they acted as referrer)
-      const referralTxs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const referralTxs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT amount, tracking_key FROM user_balance_transaction 
          WHERE user_id = ? AND template_id = 7 AND currency_id = 3`,
         customerId
@@ -3208,8 +3218,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       `;
 
       const [bookingsRaw, servicesRaw] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(bookingsSql, customerId),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(servicesSql, customerId),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(bookingsSql, customerId),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(servicesSql, customerId),
       ]);
 
       const bookingIds = bookingsRaw.map((b) => Number(b.id));
@@ -3240,7 +3250,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const staffIdArray = Array.from(staffUserIds);
       const staffProfiles =
         staffIdArray.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT user_id as userId, full_name as fullName, is_disabled as isDisabled, is_leaved as isLeaved
         FROM user_profile
         WHERE user_id IN (${staffIdArray.join(',')})
@@ -3305,7 +3315,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE un.user_id = ? AND un.is_disabled = 0
         ORDER BY un.date_created DESC
       `;
-      const notesRaw = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(notesSql, customerId);
+      const notesRaw = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(notesSql, customerId);
       const formattedNotes = notesRaw.map((n) => ({
         id: Number(n.id),
         note: n.note || '',
@@ -3391,7 +3401,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         notes: formattedNotes,
         calls: formattedCalls,
         gemTransactions: (() => {
-          const formatDate = (dateInput: any) => {
+          const formatDate = (dateInput: SafeAny) => {
             if (!dateInput) return '';
             const d = new Date(dateInput);
             const day = String(d.getUTCDate()).padStart(2, '0');
@@ -3400,7 +3410,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             return `${day}/${month}/${year}`;
           };
 
-          const formatGemDescription = (trans: any) => {
+          const formatGemDescription = (trans: SafeAny) => {
             if (trans.description && trans.description.trim()) {
               return trans.description;
             }
@@ -3472,8 +3482,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         referrer: referrer,
         referredUsers: formattedReferred,
       };
-    } catch (error: any) {
-      fastify.log.error('Get detailed customer error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get detailed customer error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve detailed customer profile',
@@ -3530,7 +3540,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           // Strip " CC" suffix from name if it exists to match legacy user full_name
           const cleanName = staff.displayName.replace(/\s+CC$/i, '').trim();
 
-          const profiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          const profiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
             `
             SELECT up.user_id as userId
             FROM \`staff_profile\` sp
@@ -3571,7 +3581,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         FROM \`order\` o
         WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
       `;
-      const countParams: any[] = [new Date(dateFrom), new Date(dateTo)];
+      const countParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
 
       if (filterByStaff) {
         if (assignedCustomerIds.length > 0) {
@@ -3597,7 +3607,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled')`;
       }
 
-      const countResult = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(countSql, ...countParams);
+      const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams);
       const total = Number(countResult[0]?.total || 0);
 
       // 3. Query orders/bookings in range with pagination
@@ -3627,7 +3637,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
       `;
 
-      const params: any[] = [new Date(dateFrom), new Date(dateTo)];
+      const params: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
 
       if (filterByStaff) {
         if (assignedCustomerIds.length > 0) {
@@ -3656,7 +3666,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       sql += ` ORDER BY o.booking_date_start ASC LIMIT ? OFFSET ?`;
       params.push(limitNum, offsetNum);
 
-      const result = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(sql, ...params);
+      const result = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, ...params);
 
       // 4. Fetch payment details and service details for completed/active orders to calculate financial metrics
       const orderIds = result.map((o) => Number(o.id));
@@ -3664,12 +3674,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const orderPaymentMap = new Map<number, { tips: number; debt: number; totalPaid: number }>();
       if (completedOrderIds.length > 0) {
-        const orderPayments = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const orderPayments = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT order_id as orderId, tip_amount as tipAmount, paid_credit_amount as paidCredit, paid_cash_amount as paidCash, paid_credit_card_amount as paidCard, paid_bank_transfer_amount as paidBank, debt_amount as debt
           FROM \`order_payment\`
           WHERE order_id IN (${completedOrderIds.join(',')})
         `);
-        orderPayments.forEach((op: any) => {
+        orderPayments.forEach((op: SafeAny) => {
           const existing = orderPaymentMap.get(Number(op.orderId)) || { tips: 0, debt: 0, totalPaid: 0 };
           const paidSum =
             Number(op.paidCredit || 0) + Number(op.paidCash || 0) + Number(op.paidCard || 0) + Number(op.paidBank || 0);
@@ -3708,7 +3718,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const conf = await fastify.prisma.crm.crmConfig.findUnique({
         where: { key: 'BOOKER_SALARY_CONFIG' },
       });
-      let config: any = {
+      let config: SafeAny = {
         baseSalary: 5500000,
         tipsPercent: 7,
         clientBonusFullSet: { discount0: 35000, discount30: 12000, discount50: 6000, discountMore: 1000 },
@@ -3736,7 +3746,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
           AND o.order_state != 'Cancelled'
       `;
-      const allOrdersParams: any[] = [new Date(dateFrom), new Date(dateTo)];
+      const allOrdersParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
 
       if (filterByStaff && staffLegacyId) {
         if (staffRole === 'oc') {
@@ -3747,7 +3757,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         allOrdersParams.push(staffLegacyId);
       }
 
-      const allOrdersInRange = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(allOrdersSql, ...allOrdersParams);
+      const allOrdersInRange = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(allOrdersSql, ...allOrdersParams);
 
       // Collect all customer IDs from both allOrdersInRange and the paginated result
       const allRangeUserIds = allOrdersInRange.map((o) => Number(o.userId)).filter((id) => !isNaN(id));
@@ -3764,7 +3774,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const balanceIds = userBalances.map((b) => b.id);
       const userBalanceTransactions =
         balanceIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                usbt.retain_count, usbt.used_staff_id, usbt.order_id,
@@ -3849,7 +3859,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       let summaryTotalNetRev = 0;
 
       if (summaryCompletedOrderIds.length > 0) {
-        const summaryPayments = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const summaryPayments = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT order_id as orderId, tip_amount as tipAmount
           FROM \`order_payment\`
           WHERE order_id IN (${summaryCompletedOrderIds.join(',')})
@@ -3975,7 +3985,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const totalSalary = baseSalary + summaryClientBonus + doneBonus + missedBonus + tipBonus + revBonus;
 
-      const appointments = result.map((row: any) => {
+      const appointments = result.map((row: SafeAny) => {
         let serviceName = 'Không có thông tin';
         let price = 0;
         let discountPercent = 0;
@@ -4079,11 +4089,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
           totalSalary,
         },
       };
-    } catch (error: any) {
+    } catch (error: SafeAny) {
       fastify.log.error(error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: error.message || 'Failed to retrieve appointments',
+        message: (error as SafeAny).message || 'Failed to retrieve appointments',
       });
     }
   });
@@ -4111,12 +4121,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const storeId = storeNameToIdMap[storeName] || 6;
 
       // 1. Fetch Roster from core shift tables
-      let roster: any[] = [];
+      let roster: SafeAny[] = [];
       const dayOfWeek = new Date(date).getDay();
       const weekdayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
 
       // Check if actual instantiated shifts exist for this date and store
-      const instantiatedShifts = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const instantiatedShifts = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT sws.user_id, CAST(sws.start_time AS CHAR) as start_time_str, CAST(sws.end_time AS CHAR) as end_time_str, up.full_name
          FROM staff_working_shift sws
          JOIN user_profile up ON sws.user_id = up.user_id
@@ -4133,7 +4143,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }));
       } else {
         // Fall back to schedule templates
-        const schedules = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        const schedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT s.user_id, s.type, s.type_value, CAST(s.start_time AS CHAR) as start_time_str, CAST(s.end_time AS CHAR) as end_time_str, up.full_name
            FROM staff_working_shift_schedule s
            JOIN user_profile up ON s.user_id = up.user_id
@@ -4152,7 +4162,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
 
         // Filter out KTVs who requested day-off
-        const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved'`,
           date
         );
@@ -4169,7 +4179,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // If technicianId is provided, filter the roster to only contain that KTV
       if (technicianId) {
-        const ktvProfile = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        const ktvProfile = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
           parseInt(technicianId, 10)
         );
@@ -4190,10 +4200,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       let apptsQuery = `SELECT time_start, duration 
                         FROM wingsctrl_appointments 
                         WHERE store = ? AND DATE(time_start) = ? AND status != 'cancelled'`;
-      const apptsParams: any[] = [storeName, date];
+      const apptsParams: SafeAny[] = [storeName, date];
 
       if (technicianId) {
-        const ktvProfile = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        const ktvProfile = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
           parseInt(technicianId, 10)
         );
@@ -4212,7 +4222,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const appointments = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(apptsQuery, ...apptsParams);
+      const appointments = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(apptsQuery, ...apptsParams);
 
       // 3. Generate slots (09:00 to 20:00, every 15m)
       const matrix: { [time: string]: { available: number; roster: number } } = {};
@@ -4268,8 +4278,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       return matrix;
-    } catch (error: any) {
-      fastify.log.error('Calculate booking slots error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Calculate booking slots error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to calculate booking slots' });
     }
   });
@@ -4316,8 +4326,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ],
       };
       return defaultConfigs;
-    } catch (error: any) {
-      fastify.log.error('Get NYC config error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get NYC config error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve touchpoint config',
@@ -4374,8 +4384,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         },
       });
       return { success: true, message: 'Đã lưu cấu hình template touchpoints thành công.' };
-    } catch (error: any) {
-      fastify.log.error('Save NYC config error:', error);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Save NYC config error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to save touchpoint config',
@@ -4463,7 +4473,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const userProfiles =
         userIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT up.user_id as userId, up.full_name as fullName, up.avatar, u.email, u.gender, u.date_of_birth as dob
         FROM \`user_profile\` up
         LEFT JOIN \`user\` u ON up.user_id = u.id
@@ -4473,7 +4483,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const userContacts =
         userIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT user_id as userId, phone_number as phoneNumber
         FROM \`user_contact\`
         WHERE user_id IN (${userIds.join(',')}) AND is_disabled = 0
@@ -4490,7 +4500,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const balanceIds = userBalances.map((b) => b.id);
       const userBalanceTransactions =
         balanceIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                usbt.retain_count, usbt.used_staff_id, usbt.order_id,
@@ -4540,7 +4550,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const promotions =
         promoIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT p.id, p.promotion_key as promotionKey, pl.promotion_name as name
         FROM promotion p
         LEFT JOIN promotion_language pl ON p.id = pl.promotion_id AND pl.language_id = 1
@@ -4550,7 +4560,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const promoMap = new Map(promotions.map((p) => [Number(p.id), p.name || p.promotionKey || `PROMO-${p.id}`]));
 
-      const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT up.user_id as userId, up.full_name as fullName
         FROM \`staff_profile\` sp
         JOIN \`user_profile\` up ON sp.user_id = up.user_id
@@ -4620,9 +4630,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return false;
       };
 
-      const bookingsCombo: any[] = [];
-      const bookingsOc: any[] = [];
-      const bookingsOther: any[] = [];
+      const bookingsCombo: SafeAny[] = [];
+      const bookingsOc: SafeAny[] = [];
+      const bookingsOther: SafeAny[] = [];
 
       const formatBookingDateTime = (d: Date | null) => {
         if (!d) return 'N/A';
@@ -4755,14 +4765,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const comingProducts =
         comingOrderIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT * FROM \`order_product\` WHERE order_id IN (${comingOrderIds.join(',')})
       `)
           : [];
 
       const comingCombos =
         comingOrderIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT * FROM \`order_service_combo\` WHERE order_id IN (${comingOrderIds.join(',')})
       `)
           : [];
@@ -4771,7 +4781,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const activeCcRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const activeCcRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT DISTINCT s.staffId
         FROM (
@@ -4788,14 +4798,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const activeCcs: { id: number; name: string; branch: 'detham' | 'pxl' | 'estella' }[] = [];
 
       if (activeCcIds.length > 0) {
-        const ccProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const ccProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT user_id as userId, full_name as fullName
           FROM \`user_profile\`
           WHERE user_id IN (${activeCcIds.join(',')}) AND provider = 'Staff' AND is_disabled = 0
         `);
 
         // Map each CC to their preferred store in a single grouped query (Batch CC preference fetch)
-        const prefStores = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const prefStores = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT s.staffId, o.client_store_id as storeId, COUNT(*) as count
           FROM (
             SELECT check_in_staff_id as staffId, order_id 
@@ -4842,13 +4852,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       // 1. Query schedules for weekly off calculations
-      const allSchedules = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const allSchedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT user_id, type, type_value, start_time, end_time 
          FROM staff_working_shift_schedule 
          WHERE is_disabled = 0 AND user_id IS NOT NULL`
       );
 
-      const schedulesByUserId: { [uid: number]: any[] } = {};
+      const schedulesByUserId: { [uid: number]: SafeAny[] } = {};
       for (const s of allSchedules) {
         const uid = Number(s.user_id);
         if (!schedulesByUserId[uid]) schedulesByUserId[uid] = [];
@@ -4856,7 +4866,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       // 2. Query approved week-off requests
-      const weekOffRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const weekOffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT from_user_id as userId, weekday, COUNT(*) as cnt
          FROM staff_day_off
          WHERE attribute_option_id = 110 AND request_state = 'Approved' AND from_user_id IS NOT NULL
@@ -4889,7 +4899,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       };
 
       // 3. Query specific day-offs for target date
-      const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT from_user_id FROM staff_day_off 
          WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved' AND from_user_id IS NOT NULL`,
         targetDateStr
@@ -4897,7 +4907,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const offUserIds = new Set(dayOffs.map((d) => Number(d.from_user_id)));
 
       // 4. Query active CVs (technicians)
-      const activeCvs = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const activeCvs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT user_id as userId, full_name as fullName, client_store_id as storeId
         FROM \`user_profile\`
         WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0
@@ -5137,7 +5147,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const normalizeName = (name: string) => (name || '').trim().toLowerCase();
 
       // Fetch working shifts for today
-      const workingShifts = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const workingShifts = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT * FROM \`staff_working_shift\` WHERE \`date\` = ?
       `,
@@ -5149,7 +5159,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         shiftMap.set(Number(ws.user_id), ws);
       });
 
-      const getShiftType = (startTime: any, endTime: any): 'sáng' | 'chiều' | 'full' => {
+      const getShiftType = (startTime: SafeAny, endTime: SafeAny): 'sáng' | 'chiều' | 'full' => {
         if (!startTime) return 'full';
 
         let startStr = '';
@@ -5183,7 +5193,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // Update CCs' shift, attendance, and doing from actual check-in records (workingShifts)
       Object.keys(branchDetailMap).forEach((bKey) => {
-        branchDetailMap[bKey].cc.forEach((cc: any) => {
+        branchDetailMap[bKey].cc.forEach((cc: SafeAny) => {
           const wsRecord = shiftMap.get(cc.id);
 
           let shift: 'sáng' | 'chiều' | 'full' | 'off' = 'full';
@@ -5367,9 +5377,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // Helper function to find and move CC to their active branch today
       const getOrMoveCC = (ccId: number, targetBranchKey: string) => {
-        let ccObj: any = null;
+        let ccObj: SafeAny = null;
         Object.keys(branchDetailMap).forEach((k) => {
-          const foundIdx = branchDetailMap[k].cc.findIndex((c: any) => c.id === ccId);
+          const foundIdx = branchDetailMap[k].cc.findIndex((c: SafeAny) => c.id === ccId);
           if (foundIdx !== -1) {
             ccObj = branchDetailMap[k].cc[foundIdx];
             if (k !== targetBranchKey) {
@@ -5401,7 +5411,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
 
         // Ensure CC is in target branch
-        const exists = branchDetailMap[targetBranchKey].cc.some((c: any) => c.id === ccId);
+        const exists = branchDetailMap[targetBranchKey].cc.some((c: SafeAny) => c.id === ccId);
         if (!exists) {
           branchDetailMap[targetBranchKey].cc.push(ccObj);
         }
@@ -5530,7 +5540,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // Compute unique clients count for each CC today, and set default idle states
       Object.keys(branchDetailMap).forEach((bKey) => {
-        branchDetailMap[bKey].cc.forEach((cc: any) => {
+        branchDetailMap[bKey].cc.forEach((cc: SafeAny) => {
           const ccId = cc.id;
           const ccServices = comingServices.filter(
             (s) => s.check_in_staff_id === ccId || s.check_out_staff_id === ccId
@@ -5554,7 +5564,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         bookingsOc,
         bookingsOther,
       });
-    } catch (error: any) {
+    } catch (error: SafeAny) {
       fastify.log.error(error, 'Fetch dashboard today error:');
       return reply.status(500).send({
         error: 'Internal Server Error',

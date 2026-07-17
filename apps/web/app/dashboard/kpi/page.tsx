@@ -1,7 +1,7 @@
 'use client';
 
 import '../../suppress-warnings';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import {
   Typography,
   Card,
@@ -16,19 +16,16 @@ import {
   Progress,
   Badge,
   Spin,
-  message,
   Divider,
   Button,
-  Tag,
   Tooltip,
+  message,
 } from 'antd';
 import {
   PhoneOutlined,
   CalendarOutlined,
-  CheckCircleOutlined,
   PieChartOutlined,
   TrophyOutlined,
-  TeamOutlined,
   UserOutlined,
   DollarOutlined,
   SettingOutlined,
@@ -37,502 +34,76 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
-dayjs.extend(isoWeek);
-import api from '../../../lib/api';
+import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
+import { useKpiData } from './hooks/useKpiData';
 
 // Modular Sub-components
 import KpiTrendsChart from './components/KpiTrendsChart';
-import SalaryConfigDrawer from './components/SalaryConfigDrawer';
-import AppointmentsAuditDrawer from './components/AppointmentsAuditDrawer';
+const SalaryConfigDrawer = dynamic(() => import('./components/SalaryConfigDrawer'), { ssr: false });
+const AppointmentsAuditDrawer = dynamic(() => import('./components/AppointmentsAuditDrawer'), { ssr: false });
+import { getLeaderboardColumns } from './components/KpiColumns';
+import { LeaderboardSummary } from './components/LeaderboardSummary';
 
-const { Title, Text, Paragraph } = Typography;
+dayjs.extend(isoWeek);
+
+const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
-interface BookerSalary {
-  role?: 'telesales' | 'oc';
-  baseSalary: number;
-  doneCount?: number;
-  missedCount?: number;
-  missedRate?: number;
-  clientBonus?: number;
-  doneBonus?: number;
-  missedBonus?: number;
-  tipBonus?: number;
-  revBonus?: number;
-  totalTips?: number;
-  totalNetRev?: number;
-  totalSalary: number;
-
-  // Online Consultant specific fields
-  salesReward?: number;
-  servicingReward?: number;
-  growthReward?: number;
-  storeServicingReward?: number;
-  checkins?: number;
-  checkinLateMin?: number;
-
-  // Match tier info
-  doneLevelCount?: number;
-  missedLevelRate?: number;
-  revLevelRate?: number;
-  revLevelMin?: number;
-}
-
-interface KpiSummary {
-  totalPlanned: number;
-  totalCalled: number;
-  totalAnswered: number;
-  totalBooked: number;
-  totalCheckin: number;
-  totalEarnings: number;
-  salary: BookerSalary | null;
-}
-
-interface OutcomeBreakdown {
-  BOOKED: number;
-  CALL_BACK: number;
-  NO_ANSWER: number;
-  BUSY: number;
-  WRONG_NUMBER: number;
-  OTHERS: number;
-}
-
-interface TrendDay {
-  date: string;
-  planned: number;
-  called: number;
-}
-
-interface LeaderboardEntry {
-  staffId: number;
-  displayName: string;
-  username: string;
-  totalPlanned: number;
-  totalCalled: number;
-  totalAnswered: number;
-  totalBooked: number;
-  totalCheckin: number;
-  answerRate: number;
-  bookingRate: number;
-  checkinRate: number;
-  totalEarnings: number;
-  salary: BookerSalary;
-}
+import { BookerSalary, LeaderboardEntry } from '@mos-lab/shared';
+import { getPercent } from '../../../lib/format-utils';
 
 export default function KPIPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
-  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Filters state
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
-  const [referenceDate, setReferenceDate] = useState<dayjs.Dayjs>(dayjs());
-  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>(() => {
-    const start = dayjs().startOf('month');
-    const end = dayjs().endOf('month');
-    return [start, end];
+  const {
+    currentUser,
+    viewMode,
+    setViewMode,
+    referenceDate,
+    setReferenceDate,
+    dateRange,
+    setDateRange,
+    pickerOpen,
+    setPickerOpen,
+    selectedBookerId,
+    selectedBookerName,
+    selectedStaffRecord,
+    appointmentsDrawerOpen,
+    setAppointmentsDrawerOpen,
+    selectedStaffId,
+    setSelectedStaffId,
+    selectedRole,
+    setSelectedRole,
+    loading,
+    summary,
+    breakdown,
+    trends,
+    leaderboard,
+    configDrawerOpen,
+    setConfigDrawerOpen,
+    fetchKpiData,
+    handleShowAppointments,
+    getPeriodLabel,
+    handleNavigate,
+  } = useKpiData({
+    onSuccess: (msg) => message.success(msg),
+    onError: (msg) => message.error(msg),
   });
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  // Sync dateRange when viewMode or referenceDate changes
-  useEffect(() => {
-    let start = referenceDate;
-    let end = referenceDate;
-
-    if (viewMode === 'month') {
-      start = referenceDate.startOf('month');
-      end = referenceDate.endOf('month');
-    } else if (viewMode === 'week') {
-      start = referenceDate.startOf('isoWeek');
-      end = referenceDate.endOf('isoWeek');
-    } else if (viewMode === 'day') {
-      start = referenceDate.startOf('day');
-      end = referenceDate.endOf('day');
-    }
-
-    setDateRange([start, end]);
-  }, [viewMode, referenceDate]);
-
-  // Booker detailed appointments drilldown
-  const [selectedBookerId, setSelectedBookerId] = useState<number | null>(null);
-  const [selectedBookerName, setSelectedBookerName] = useState<string>('');
-  const [selectedStaffRecord, setSelectedStaffRecord] = useState<LeaderboardEntry | null>(null);
-  const [appointmentsDrawerOpen, setAppointmentsDrawerOpen] = useState(false);
-
-  const handleShowAppointments = (staffId: number, displayName: string) => {
-    setSelectedBookerId(staffId);
-    setSelectedBookerName(displayName);
-    const matchedRecord = leaderboard.find((item) => item.staffId === staffId);
-    setSelectedStaffRecord(matchedRecord || null);
-    setAppointmentsDrawerOpen(true);
-  };
-
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('ALL');
-  const [selectedRole, setSelectedRole] = useState<'telesales' | 'oc'>('telesales');
-
-  // Reset staff selection when role changes
-  useEffect(() => {
-    setSelectedStaffId('ALL');
-  }, [selectedRole]);
-
-  // Data state
-  const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState<KpiSummary | null>(null);
-  const [breakdown, setBreakdown] = useState<OutcomeBreakdown | null>(null);
-  const [trends, setTrends] = useState<TrendDay[]>([]);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-
-  // Configuration Drawer state
-  const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
-
-  // Fetch logged in user
-  useEffect(() => {
-    const stored = localStorage.getItem('mos_user');
-    if (stored) {
-      setCurrentUser(JSON.parse(stored));
-    }
-  }, []);
-
-  // Fetch KPI data
-  const fetchKpiData = useCallback(async () => {
-    if (!dateRange[0] || !dateRange[1]) return;
-
-    setLoading(true);
-    const startDate = dateRange[0].format('YYYY-MM-DD');
-    const endDate = dateRange[1].format('YYYY-MM-DD');
-
-    const params: any = { startDate, endDate, role: selectedRole };
-    if (selectedStaffId !== 'ALL') {
-      params.staffId = selectedStaffId;
-    }
-
-    try {
-      const stored = localStorage.getItem('mos_user');
-      const userObj = stored ? JSON.parse(stored) : null;
-      const isAdmin = userObj && userObj.role === 'admin';
-
-      const [summaryRes, trendsRes, leaderboardRes] = (await Promise.all([
-        api.get('/kpi/summary', { params }),
-        api.get('/kpi/trends', { params }),
-        isAdmin
-          ? api.get('/kpi/leaderboard', { params: { startDate, endDate, role: selectedRole } })
-          : Promise.resolve(null),
-      ])) as [any, any, any];
-
-      setSummary(summaryRes.data);
-      setBreakdown(trendsRes.data.breakdown);
-      setTrends(trendsRes.data.dailyTrends);
-      if (leaderboardRes) {
-        setLeaderboard(leaderboardRes.data);
-      }
-    } catch (err: any) {
-      console.error('Fetch KPI data error:', err);
-      message.error(err.response?.data?.message || 'Không thể tải báo cáo hiệu suất');
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange, selectedStaffId, selectedRole]);
-
-  useEffect(() => {
-    fetchKpiData();
-  }, [fetchKpiData]);
-
-  // Quick Date presets and navigation
-  const getPeriodLabel = () => {
-    if (!dateRange[0] || !dateRange[1]) return 'Chọn thời gian';
-
-    const [start, end] = dateRange;
-    let expectedStart = referenceDate;
-    let expectedEnd = referenceDate;
-
-    if (viewMode === 'month') {
-      expectedStart = referenceDate.startOf('month');
-      expectedEnd = referenceDate.endOf('month');
-    } else if (viewMode === 'week') {
-      expectedStart = referenceDate.startOf('isoWeek');
-      expectedEnd = referenceDate.endOf('isoWeek');
-    } else if (viewMode === 'day') {
-      expectedStart = referenceDate.startOf('day');
-      expectedEnd = referenceDate.endOf('day');
-    }
-
-    const isMatched = start.isSame(expectedStart, 'day') && end.isSame(expectedEnd, 'day');
-
-    if (!isMatched) {
-      return `${start.format('DD/MM')} - ${end.format('DD/MM')}`;
-    }
-
-    if (viewMode === 'month') {
-      return `Tháng ${referenceDate.format('MM/YYYY')}`;
-    }
-    if (viewMode === 'week') {
-      const startStr = referenceDate.startOf('isoWeek').format('DD/MM');
-      const endStr = referenceDate.endOf('isoWeek').format('DD/MM');
-      return `Tuần ${referenceDate.isoWeek()} (${startStr} - ${endStr})`;
-    }
-
-    // Day mode
-    const today = dayjs().startOf('day');
-    const yesterday = dayjs().subtract(1, 'day').startOf('day');
-    const ref = referenceDate.startOf('day');
-    if (ref.isSame(today)) {
-      return `Hôm nay (${ref.format('DD/MM')})`;
-    }
-    if (ref.isSame(yesterday)) {
-      return `Hôm qua (${ref.format('DD/MM')})`;
-    }
-    return ref.format('DD/MM/YYYY');
-  };
-
-  const handleNavigate = (direction: number) => {
-    setReferenceDate((prev) => prev.add(direction, viewMode as any));
-  };
 
   const isAdmin = currentUser?.role === 'admin';
 
-  // Calculate percentages safely
-  const getPercent = (value: number, total: number) => {
-    if (!total || total === 0) return 0;
-    return Math.round((value / total) * 100);
-  };
-
-  // Custom Leaderboard columns
-  const leaderboardColumns =
-    selectedRole === 'oc'
-      ? [
-          {
-            title: 'Client Consultant',
-            key: 'name',
-            render: (record: LeaderboardEntry) => (
-              <Space>
-                <UserOutlined style={{ color: '#722ED1' }} />
-                <span style={{ fontWeight: '600', color: token.colorText }}>{record.displayName}</span>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
-                  ({record.username})
-                </Text>
-              </Space>
-            ),
-          },
-          {
-            title: 'Số lần check-in',
-            dataIndex: 'totalCheckin',
-            key: 'totalCheckin',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalCheckin - b.totalCheckin,
-            render: (val: number) => <span style={{ fontWeight: '600', color: token.colorText }}>{val}</span>,
-          },
-          {
-            title: 'Tổng số phút trễ',
-            key: 'checkinLateMin',
-            render: (record: LeaderboardEntry) => {
-              const mins = record.salary?.checkinLateMin || 0;
-              return (
-                <span style={{ color: mins < 0 ? '#FF4D4F' : token.colorText }}>
-                  {mins < 0 ? `${Math.abs(mins)} phút` : 'Đúng giờ'}
-                </span>
-              );
-            },
-          },
-          {
-            title: 'Lương cứng',
-            key: 'baseSalary',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
-              (a.salary?.baseSalary || 0) - (b.salary?.baseSalary || 0),
-            render: (record: LeaderboardEntry) => (
-              <span>{(record.salary?.baseSalary || 0).toLocaleString('vi-VN')} đ</span>
-            ),
-          },
-          {
-            title: 'Thưởng doanh số',
-            key: 'salesReward',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
-              (a.salary?.salesReward || 0) - (b.salary?.salesReward || 0),
-            render: (record: LeaderboardEntry) => (
-              <span>{(record.salary?.salesReward || 0).toLocaleString('vi-VN')} đ</span>
-            ),
-          },
-          {
-            title: 'Thưởng phục vụ',
-            key: 'servicingReward',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
-              (a.salary?.servicingReward || 0) - (b.salary?.servicingReward || 0),
-            render: (record: LeaderboardEntry) => (
-              <span>{(record.salary?.servicingReward || 0).toLocaleString('vi-VN')} đ</span>
-            ),
-          },
-          {
-            title: 'Thưởng tăng trưởng',
-            key: 'growthReward',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
-              (a.salary?.growthReward || 0) - (b.salary?.growthReward || 0),
-            render: (record: LeaderboardEntry) => (
-              <span>{(record.salary?.growthReward || 0).toLocaleString('vi-VN')} đ</span>
-            ),
-          },
-          {
-            title: 'Thưởng phục vụ CH',
-            key: 'storeServicingReward',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
-              (a.salary?.storeServicingReward || 0) - (b.salary?.storeServicingReward || 0),
-            render: (record: LeaderboardEntry) => (
-              <span>{(record.salary?.storeServicingReward || 0).toLocaleString('vi-VN')} đ</span>
-            ),
-          },
-          {
-            title: 'Thu nhập Client Consultant',
-            key: 'totalEarnings',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalEarnings - b.totalEarnings,
-            render: (record: LeaderboardEntry) => (
-              <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
-                {(record.totalEarnings || 0).toLocaleString('vi-VN')} đ
-              </span>
-            ),
-          },
-        ]
-      : [
-          {
-            title: 'Online Consultant (Booker)',
-            key: 'name',
-            render: (record: LeaderboardEntry) => (
-              <Space>
-                <UserOutlined style={{ color: token.colorPrimary }} />
-                <span
-                  style={{
-                    fontWeight: '600',
-                    color: token.colorPrimary,
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                  }}
-                  onClick={() => handleShowAppointments(record.staffId, record.displayName)}
-                >
-                  {record.displayName}
-                </span>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
-                  ({record.username})
-                </Text>
-              </Space>
-            ),
-          },
-          {
-            title: 'Kế hoạch',
-            dataIndex: 'totalPlanned',
-            key: 'totalPlanned',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalPlanned - b.totalPlanned,
-          },
-          {
-            title: 'Đã gọi',
-            key: 'totalCalled',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalCalled - b.totalCalled,
-            render: (record: LeaderboardEntry) => (
-              <span>
-                {record.totalCalled}{' '}
-                <Text type="secondary" style={{ fontSize: '12px' }}>
-                  ({getPercent(record.totalCalled, record.totalPlanned)}%)
-                </Text>
-              </span>
-            ),
-          },
-          {
-            title: 'Đặt lịch (Booked)',
-            key: 'bookingRate',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalBooked - b.totalBooked,
-            render: (record: LeaderboardEntry) => (
-              <span>
-                <b style={{ color: token.colorPrimary }}>{record.totalBooked}</b>
-                <Progress
-                  percent={record.bookingRate}
-                  size="small"
-                  strokeColor={token.colorPrimary}
-                  style={{ width: '80px', marginLeft: '8px' }}
-                />
-              </span>
-            ),
-          },
-          {
-            title: 'Đến tiệm (Checkin)',
-            key: 'checkinRate',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalCheckin - b.totalCheckin,
-            render: (record: LeaderboardEntry) => (
-              <span>
-                <b style={{ color: '#722ED1' }}>{record.totalCheckin}</b>
-                <Progress
-                  percent={record.checkinRate}
-                  size="small"
-                  strokeColor="#722ED1"
-                  style={{ width: '80px', marginLeft: '8px' }}
-                />
-              </span>
-            ),
-          },
-          {
-            title: 'Lương cứng',
-            key: 'baseSalary',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
-              (a.salary?.baseSalary || 0) - (b.salary?.baseSalary || 0),
-            render: (record: LeaderboardEntry) => (
-              <span>{(record.salary?.baseSalary || 0).toLocaleString('vi-VN')} đ</span>
-            ),
-          },
-          {
-            title: 'Thưởng check-in',
-            key: 'clientBonus',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
-              (a.salary?.clientBonus || 0) - (b.salary?.clientBonus || 0),
-            render: (record: LeaderboardEntry) => (
-              <span>{(record.salary?.clientBonus || 0).toLocaleString('vi-VN')} đ</span>
-            ),
-          },
-          {
-            title: 'Thưởng mốc DONE',
-            key: 'doneBonus',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
-              (a.salary?.doneBonus || 0) - (b.salary?.doneBonus || 0),
-            render: (record: LeaderboardEntry) => (
-              <span>{(record.salary?.doneBonus || 0).toLocaleString('vi-VN')} đ</span>
-            ),
-          },
-          {
-            title: 'Thưởng/Phạt lỡ',
-            key: 'missedBonus',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
-              (a.salary?.missedBonus || 0) - (b.salary?.missedBonus || 0),
-            render: (record: LeaderboardEntry) => {
-              const val = record.salary?.missedBonus || 0;
-              return (
-                <span style={{ color: val < 0 ? '#FF4D4F' : token.colorText }}>
-                  {val >= 0 ? '+' : ''}
-                  {val.toLocaleString('vi-VN')} đ
-                </span>
-              );
-            },
-          },
-          {
-            title: 'Thưởng tips (7%)',
-            key: 'tipBonus',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.tipBonus || 0) - (b.salary?.tipBonus || 0),
-            render: (record: LeaderboardEntry) => (
-              <span>{(record.salary?.tipBonus || 0).toLocaleString('vi-VN')} đ</span>
-            ),
-          },
-          {
-            title: 'Thưởng doanh thu',
-            key: 'revBonus',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.revBonus || 0) - (b.salary?.revBonus || 0),
-            render: (record: LeaderboardEntry) => (
-              <span>{(record.salary?.revBonus || 0).toLocaleString('vi-VN')} đ</span>
-            ),
-          },
-          {
-            title: 'Thu nhập Online Consultant',
-            key: 'totalEarnings',
-            sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalEarnings - b.totalEarnings,
-            render: (record: LeaderboardEntry) => (
-              <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
-                {(record.totalEarnings || 0).toLocaleString('vi-VN')} đ
-              </span>
-            ),
-          },
-        ];
+  const leaderboardColumns = React.useMemo(
+    () =>
+      getLeaderboardColumns({
+        selectedRole,
+        token,
+        handleShowAppointments,
+        getPercent,
+      }),
+    [selectedRole, token, handleShowAppointments]
+  );
 
   return (
     <div>
@@ -584,7 +155,6 @@ export default function KPIPage() {
                 <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
               </Space.Compact>
 
-              {/* Invisible RangePicker that gets triggered programmatically */}
               <RangePicker
                 value={dateRange}
                 onChange={(dates) => {
@@ -878,7 +448,7 @@ export default function KPIPage() {
                     <div
                       style={{
                         padding: '12px',
-                        borderRight: isAdmin ? 'none' : `1px solid ${token.colorBorderSecondary}`,
+                        borderRight: `1px solid ${token.colorBorderSecondary}`,
                       }}
                       className="md:border-r"
                     >
@@ -904,7 +474,7 @@ export default function KPIPage() {
                     <div
                       style={{
                         padding: '12px',
-                        borderRight: isAdmin ? 'none' : `1px solid ${token.colorBorderSecondary}`,
+                        borderRight: `1px solid ${token.colorBorderSecondary}`,
                       }}
                       className="md:border-r"
                     >
@@ -977,12 +547,10 @@ export default function KPIPage() {
 
           {/* CHARTS SECTION */}
           <Row gutter={[16, 16]} className="mb-6">
-            {/* CALL VOLUME TRENDS CHART */}
             <Col xs={24} lg={16}>
               <KpiTrendsChart trends={trends} />
             </Col>
 
-            {/* CALL OUTCOMES BREAKDOWN */}
             <Col xs={24} lg={8}>
               <Card
                 title={
@@ -1082,157 +650,9 @@ export default function KPIPage() {
                 scroll={{ x: 'max-content' }}
                 className="antd-custom-table"
                 locale={{ emptyText: 'Chưa có dữ liệu thống kê nhân viên' }}
-                summary={(pageData) => {
-                  let totalPlanned = 0;
-                  let totalCalled = 0;
-                  let totalBooked = 0;
-                  let totalCheckin = 0;
-
-                  let totalBaseSalary = 0;
-                  let totalClientBonus = 0;
-                  let totalDoneBonus = 0;
-                  let totalMissedBonus = 0;
-                  let totalTipBonus = 0;
-                  let totalRevBonus = 0;
-
-                  let totalSalesReward = 0;
-                  let totalServicingReward = 0;
-                  let totalGrowthReward = 0;
-                  let totalStoreServicingReward = 0;
-
-                  let totalEarnings = 0;
-
-                  pageData.forEach((record: any) => {
-                    totalPlanned += record.totalPlanned || 0;
-                    totalCalled += record.totalCalled || 0;
-                    totalBooked += record.totalBooked || 0;
-                    totalCheckin += record.totalCheckin || 0;
-
-                    totalBaseSalary += record.salary?.baseSalary || 0;
-                    totalClientBonus += record.salary?.clientBonus || 0;
-                    totalDoneBonus += record.salary?.doneBonus || 0;
-                    totalMissedBonus += record.salary?.missedBonus || 0;
-                    totalTipBonus += record.salary?.tipBonus || 0;
-                    totalRevBonus += record.salary?.revBonus || 0;
-
-                    totalSalesReward += record.salary?.salesReward || 0;
-                    totalServicingReward += record.salary?.servicingReward || 0;
-                    totalGrowthReward += record.salary?.growthReward || 0;
-                    totalStoreServicingReward += record.salary?.storeServicingReward || 0;
-
-                    totalEarnings += record.totalEarnings || 0;
-                  });
-
-                  return (
-                    <Table.Summary fixed="bottom">
-                      <Table.Summary.Row
-                        style={{
-                          background: selectedRole === 'oc' ? 'rgba(114, 46, 209, 0.05)' : 'rgba(212, 168, 75, 0.05)',
-                        }}
-                      >
-                        <Table.Summary.Cell index={0} colSpan={1}>
-                          <span style={{ fontWeight: 'bold', color: token.colorText }}>Tổng cộng</span>
-                        </Table.Summary.Cell>
-                        {selectedRole === 'oc' ? (
-                          <>
-                            <Table.Summary.Cell index={1}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalCheckin}</span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={2}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>-</span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={3}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
-                                {totalBaseSalary.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={4}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
-                                {totalSalesReward.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={5}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
-                                {totalServicingReward.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={6}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
-                                {totalGrowthReward.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={7}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
-                                {totalStoreServicingReward.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={8}>
-                              <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
-                                {totalEarnings.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                          </>
-                        ) : (
-                          <>
-                            <Table.Summary.Cell index={1}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalPlanned}</span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={2}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalCalled}</span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={3}>
-                              <span style={{ fontWeight: 'bold', color: token.colorPrimary }}>{totalBooked}</span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={4}>
-                              <span style={{ fontWeight: 'bold', color: '#722ED1' }}>{totalCheckin}</span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={5}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
-                                {totalBaseSalary.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={6}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
-                                {totalClientBonus.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={7}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
-                                {totalDoneBonus.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={8}>
-                              <span
-                                style={{
-                                  fontWeight: 'bold',
-                                  color: totalMissedBonus < 0 ? '#FF4D4F' : token.colorText,
-                                }}
-                              >
-                                {totalMissedBonus >= 0 ? '+' : ''}
-                                {totalMissedBonus.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={9}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
-                                {totalTipBonus.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={10}>
-                              <span style={{ fontWeight: 'bold', color: token.colorText }}>
-                                {totalRevBonus.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={11}>
-                              <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
-                                {totalEarnings.toLocaleString('vi-VN')} đ
-                              </span>
-                            </Table.Summary.Cell>
-                          </>
-                        )}
-                      </Table.Summary.Row>
-                    </Table.Summary>
-                  );
-                }}
+                summary={(pageData) => (
+                  <LeaderboardSummary pageData={pageData} selectedRole={selectedRole} token={token} />
+                )}
               />
             </Card>
           )}
