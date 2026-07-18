@@ -25,6 +25,7 @@ export interface CallLog {
 
   // Joined relation fields for UI
   staffName?: string;
+  staffAvatar?: string | null;
 }
 
 export interface CreateCallRequest {

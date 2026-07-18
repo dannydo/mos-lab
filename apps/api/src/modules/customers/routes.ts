@@ -3366,12 +3366,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const staffProfiles =
         staffIdArray.length > 0
           ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT user_id as userId, full_name as fullName, is_disabled as isDisabled, is_leaved as isLeaved
+        SELECT user_id as userId, full_name as fullName, is_disabled as isDisabled, is_leaved as isLeaved, avatar
         FROM user_profile
         WHERE user_id IN (${staffIdArray.join(',')})
       `)
           : [];
       const staffNamesMap = new Map<number, string>(staffProfiles.map((s) => [Number(s.userId), s.fullName]));
+      const staffAvatarMap = new Map<number, string | null>(
+        staffProfiles.map((s) => [Number(s.userId), s.avatar || null])
+      );
       const staffInactiveMap = new Map<number, boolean>(
         staffProfiles.map((s) => [
           Number(s.userId),
@@ -3410,6 +3413,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           ccInName: checkInStaffId ? staffNamesMap.get(Number(checkInStaffId)) || 'Tư vấn viên' : 'Unknown',
           ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên' : 'Unknown',
           bookerName: b.createdStaffId ? staffNamesMap.get(Number(b.createdStaffId)) || 'Unknown' : 'Unknown',
+          ccInAvatar: checkInStaffId ? staffAvatarMap.get(Number(checkInStaffId)) || null : null,
+          ccOutAvatar: checkOutStaffId ? staffAvatarMap.get(Number(checkOutStaffId)) || null : null,
+          bookerAvatar: b.createdStaffId ? staffAvatarMap.get(Number(b.createdStaffId)) || null : null,
           technicianId: firstCvStaffId ? Number(firstCvStaffId) : null,
           storeId: b.storeId ? Number(b.storeId) : null,
           services: servicesByOrderId.get(Number(b.id)) || [],
@@ -3425,7 +3431,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           un.is_sticky as isSticky,
           un.is_issue as isIssue,
           un.date_created as dateCreated,
-          COALESCE(up.full_name, 'System') as staffName
+          COALESCE(up.full_name, 'System') as staffName,
+          up.avatar as staffAvatar
         FROM user_note un
         LEFT JOIN user_profile up ON un.created_staff_id = up.user_id
         WHERE un.user_id = ? AND un.is_disabled = 0
@@ -3440,6 +3447,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         isIssue: Boolean(n.isIssue),
         dateCreated: n.dateCreated ? new Date(n.dateCreated).toISOString() : null,
         staffName: n.staffName,
+        staffAvatar: n.staffAvatar || null,
       }));
 
       // 8. Fetch CRM Call Logs
@@ -3450,9 +3458,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const staffIds = Array.from(new Set(logs.map((l) => l.staffId)));
       const staffList = await fastify.prisma.crm.crmStaff.findMany({
         where: { id: { in: staffIds } },
-        select: { id: true, displayName: true },
+        select: { id: true, displayName: true, avatarUrl: true },
       });
       const staffMap = new Map(staffList.map((s) => [s.id, s.displayName]));
+      const staffAvatarUrlMap = new Map(staffList.map((s) => [s.id, s.avatarUrl || null]));
       const formattedCalls = logs.map((log) => ({
         id: log.id,
         planId: log.planId,
@@ -3464,6 +3473,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         callbackDate: log.callbackDate ? new Date(log.callbackDate).toISOString().split('T')[0] : null,
         createdAt: log.createdAt.toISOString(),
         staffName: staffMap.get(log.staffId) || 'Unknown Staff',
+        staffAvatar: staffAvatarUrlMap.get(log.staffId) || null,
       }));
 
       const comboWalletBalance = comboBalances.reduce((sum, cb) => {

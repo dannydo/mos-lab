@@ -18,6 +18,7 @@ interface NoteItem {
   note: string;
   date: Date;
   formattedTime: string;
+  staffAvatar?: string | null;
 }
 
 interface GroupedBooking {
@@ -119,7 +120,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
   });
 
   // 2. Add Booking note
-  bookings.forEach((b) => {
+  bookings.forEach((b: SafeAny) => {
     if (b.bookingNote && b.bookingNote.trim() !== '') {
       const group = groupsMap.get(String(b.id));
       if (group) {
@@ -130,6 +131,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
           note: b.bookingNote,
           date: b.bookingDate ? new Date(b.bookingDate) : new Date(),
           formattedTime: 'Đặt lịch',
+          staffAvatar: b.bookerAvatar || null,
         });
       }
     }
@@ -159,7 +161,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
   };
 
   // 3. Add CC notes (order_note)
-  notes.forEach((n) => {
+  notes.forEach((n: SafeAny) => {
     if (n.noteFieldKey !== 'order_note') return;
 
     let targetBookingId = n.orderId ? String(n.orderId) : null;
@@ -177,6 +179,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
       formattedTime: n.dateCreated
         ? new Date(n.dateCreated).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         : '',
+      staffAvatar: n.staffAvatar || null,
     };
 
     if (targetBookingId && groupsMap.has(targetBookingId)) {
@@ -197,7 +200,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
   });
 
   // 4. Add CS notes (general + call logs)
-  notes.forEach((n) => {
+  notes.forEach((n: SafeAny) => {
     if (n.noteFieldKey === 'order_note') return;
 
     let targetBookingId = n.orderId ? String(n.orderId) : null;
@@ -215,6 +218,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
       formattedTime: n.dateCreated
         ? new Date(n.dateCreated).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         : '',
+      staffAvatar: n.staffAvatar || null,
     };
 
     if (targetBookingId && groupsMap.has(targetBookingId)) {
@@ -234,7 +238,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
     }
   });
 
-  calls.forEach((c) => {
+  calls.forEach((c: SafeAny) => {
     if (!c.note || c.note.trim() === '') return;
 
     const closest = findClosestBooking(c.createdAt);
@@ -249,6 +253,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
       formattedTime: c.createdAt
         ? new Date(c.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         : '',
+      staffAvatar: c.staffAvatar || null,
     };
 
     if (targetBookingId && groupsMap.has(targetBookingId)) {
@@ -490,15 +495,16 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
                         {/* Department Avatar representation */}
                         <Avatar
                           size={32}
+                          src={n.staffAvatar || undefined}
                           style={{
                             backgroundColor: deptColors.avatarBg,
                             color: deptColors.avatarColor,
                             fontWeight: 'bold',
-                            fontSize: '12px',
+                            fontSize: '13px',
                             flexShrink: 0,
                           }}
                         >
-                          {n.department}
+                          {!n.staffAvatar && (n.staffName ? n.staffName.trim().charAt(0).toUpperCase() : '?')}
                         </Avatar>
 
                         {/* Note Content Block */}

@@ -139,6 +139,12 @@ export interface Appointment {
   storeId?: number | null;
   branchName?: string;
   technicianName?: string;
+  ccInName?: string;
+  ccOutName?: string;
+  bookerName?: string;
+  ccInAvatar?: string | null;
+  ccOutAvatar?: string | null;
+  bookerAvatar?: string | null;
 }
 
 export interface CustomerHistoryEntry {
@@ -220,6 +226,7 @@ export interface CustomerNote {
   isSticky?: boolean;
   isIssue?: boolean;
   dateCreated?: string | null;
+  staffAvatar?: string | null;
 }
 
 export interface ComboBalance {
