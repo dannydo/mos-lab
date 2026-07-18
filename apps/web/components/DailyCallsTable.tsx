@@ -330,12 +330,63 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
         key: 'duration',
         width: 110,
         render: (sec: number | null) => {
-          const formatted = formatDuration(sec);
-          return (
-            <Tag color="blue" style={{ fontFamily: 'monospace', fontWeight: '600' }}>
-              {formatted === '-' ? '00:00' : formatted}
-            </Tag>
-          );
+          const seconds = sec || 0;
+          const formatted = seconds === 0 ? '00:00' : formatDuration(seconds);
+
+          let tagStyles: React.CSSProperties = {
+            fontFamily: 'monospace',
+            fontWeight: '600',
+            borderRadius: '4px',
+            borderWidth: '1.5px',
+            borderStyle: 'solid',
+            padding: '2px 8px',
+            fontSize: '13px',
+          };
+
+          if (seconds === 0) {
+            tagStyles = {
+              ...tagStyles,
+              color: themeMode === 'dark' ? '#595959' : '#8c8c8c',
+              borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9',
+              background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+              opacity: 0.5,
+              fontWeight: '400',
+            };
+          } else if (seconds < 30) {
+            tagStyles = {
+              ...tagStyles,
+              color: themeMode === 'dark' ? '#13c2c2' : '#08979c',
+              borderColor: themeMode === 'dark' ? '#00474f' : '#87e8de',
+              background: themeMode === 'dark' ? '#002329' : '#e6fffb',
+            };
+          } else if (seconds < 60) {
+            tagStyles = {
+              ...tagStyles,
+              color: themeMode === 'dark' ? '#1890ff' : '#096dd9',
+              borderColor: themeMode === 'dark' ? '#003a8c' : '#91d5ff',
+              background: themeMode === 'dark' ? '#001d66' : '#e6f7ff',
+            };
+          } else if (seconds < 180) {
+            tagStyles = {
+              ...tagStyles,
+              color: themeMode === 'dark' ? '#fa8c16' : '#d46b08',
+              borderColor: themeMode === 'dark' ? '#873800' : '#ffd591',
+              background: themeMode === 'dark' ? '#612500' : '#fff7e6',
+              fontWeight: '700',
+            };
+          } else {
+            tagStyles = {
+              ...tagStyles,
+              color: themeMode === 'dark' ? '#52c41a' : '#389e0d',
+              borderColor: themeMode === 'dark' ? '#237804' : '#b7eb8f',
+              background: themeMode === 'dark' ? '#135200' : '#f6ffed',
+              fontWeight: '800',
+              borderWidth: '2px',
+              boxShadow: '0 2px 0 rgba(0, 0, 0, 0.015)',
+            };
+          }
+
+          return <Tag style={tagStyles}>{formatted === '-' ? '00:00' : formatted}</Tag>;
         },
       },
       {
