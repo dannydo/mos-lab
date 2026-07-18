@@ -28,6 +28,7 @@ import {
   Appointment,
   Promotion,
   Service,
+  DailyCallEntry,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -206,6 +207,14 @@ export const apiClient = {
     },
     listByCustomer: async (customerId: number): Promise<CallLog[]> => {
       const response = await api.get(`/calls/${customerId}`);
+      return response.data;
+    },
+    listDaily: async (params: {
+      date: string;
+      scope: 'all' | 'me' | 'nyc';
+      staffId?: string;
+    }): Promise<DailyCallEntry[]> => {
+      const response = await api.get('/calls/daily', { params });
       return response.data;
     },
   },

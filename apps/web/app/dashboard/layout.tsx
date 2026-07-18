@@ -2,7 +2,7 @@
 
 import '../suppress-warnings';
 import React, { useEffect, useState, Suspense, useCallback } from 'react';
-import { Layout, Menu, Button, Avatar, Space, Dropdown, theme, message, Tag } from 'antd';
+import { Layout, Menu, Button, Avatar, Space, Dropdown, theme, message, Tag, Badge } from 'antd';
 import {
   UserOutlined,
   TeamOutlined,
@@ -24,6 +24,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
 
 const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
+const DailyCallsDrawer = dynamic(() => import('../../components/DailyCallsDrawer'), { ssr: false });
 import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
 import { OmiCallProvider } from '../../context/OmiCallContext';
@@ -186,6 +187,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isDashboardVisible, setIsDashboardVisible] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('TN');
   const [onlineMembers, setOnlineMembers] = useState<SafeAny[]>([]);
+  const [isDailyCallsOpen, setIsDailyCallsOpen] = useState(false);
+  const [dailyCallsCount, setDailyCallsCount] = useState(0);
+
+  const fetchDailyCallsCount = useCallback(async () => {
+    try {
+      const todayStr = dayjs().format('YYYY-MM-DD');
+      const res = await apiClient.calls.listDaily({ date: todayStr, scope: 'me' });
+      setDailyCallsCount(res.length);
+    } catch (err) {
+      console.error('Fetch daily calls count error:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDailyCallsCount();
+    const interval = setInterval(fetchDailyCallsCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchDailyCallsCount]);
 
   const fetchOnlineStaff = useCallback(async () => {
     try {
@@ -492,6 +511,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               )}
 
+              <Badge count={dailyCallsCount} offset={[-8, 2]} size="small" showZero={false}>
+                <Button
+                  type="text"
+                  icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+                  onClick={() => setIsDailyCallsOpen(true)}
+                  style={{
+                    fontSize: '16px',
+                    marginRight: '16px',
+                    color: token.colorText,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  title="Cuộc gọi hôm nay"
+                />
+              </Badge>
+
               <Button
                 type="text"
                 icon={
@@ -543,6 +579,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           visible={isDashboardVisible}
           onClose={() => setIsDashboardVisible(false)}
           initialMemberId={selectedMemberId}
+        />
+
+        <DailyCallsDrawer
+          open={isDailyCallsOpen}
+          onClose={() => {
+            setIsDailyCallsOpen(false);
+            fetchDailyCallsCount();
+          }}
         />
 
         <style jsx global>{`

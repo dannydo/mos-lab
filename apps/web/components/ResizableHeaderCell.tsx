@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
 
 interface ResizableHeaderCellProps extends React.HTMLAttributes<HTMLTableHeaderCellElement> {
   width?: number;
@@ -14,7 +14,11 @@ export const ResizableHeaderCell: React.FC<ResizableHeaderCellProps> = ({
   children,
   ...restProps
 }) => {
-  if (!width || !onResize) {
+  const [resizing, setResizing] = useState(false);
+  const cellRef = useRef<HTMLTableHeaderCellElement>(null);
+
+  // If onResize callback is not present, fallback to standard th
+  if (!onResize) {
     return (
       <th style={style} {...restProps}>
         {children}
@@ -25,9 +29,11 @@ export const ResizableHeaderCell: React.FC<ResizableHeaderCellProps> = ({
   const handleMouseDown = (e: React.MouseEvent<HTMLSpanElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    setResizing(true);
 
     const startX = e.clientX;
-    const startWidth = width;
+    // Resolve start width: prioritise set width prop, fallback to actual offset width
+    const startWidth = width || (cellRef.current ? cellRef.current.offsetWidth : 120);
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
@@ -37,6 +43,7 @@ export const ResizableHeaderCell: React.FC<ResizableHeaderCellProps> = ({
     };
 
     const handleMouseUp = () => {
+      setResizing(false);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
@@ -47,13 +54,15 @@ export const ResizableHeaderCell: React.FC<ResizableHeaderCellProps> = ({
 
   return (
     <th
+      ref={cellRef}
       style={{
         ...style,
         position: 'relative',
+        userSelect: resizing ? 'none' : 'auto',
       }}
       {...restProps}
     >
-      {children}
+      <div style={{ display: 'inline-block', width: '100%' }}>{children}</div>
       <span
         style={{
           position: 'absolute',
@@ -64,6 +73,8 @@ export const ResizableHeaderCell: React.FC<ResizableHeaderCellProps> = ({
           cursor: 'col-resize',
           zIndex: 10,
           userSelect: 'none',
+          background: resizing ? 'rgba(212, 168, 75, 0.4)' : 'transparent',
+          transition: 'background 0.2s',
         }}
         onMouseDown={handleMouseDown}
         className="table-column-resize-handle"

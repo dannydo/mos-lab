@@ -38,3 +38,31 @@ export interface CreateCallRequest {
   outcome?: CallOutcome;
   callbackDate?: string;
 }
+
+export interface DailyCallEntry {
+  id: number;
+  createdAt: string;
+  durationSec: number | null;
+  note: string | null;
+  callResult: string | null;
+  outcome: string | null;
+  callerStaff: {
+    id: number;
+    displayName: string;
+    avatarUrl?: string | null;
+  };
+  customer: {
+    id: number;
+    name: string;
+    phone: string;
+    avatar: string | null;
+    bucket: string;
+    daysSinceLastVisit: number | null;
+    lastBookingDate: string | null;
+    totalSpent: number;
+    assignedStaff: {
+      id: number;
+      displayName: string;
+    } | null;
+  } | null;
+}

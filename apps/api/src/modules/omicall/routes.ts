@@ -140,6 +140,18 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         },
       });
 
+      // Sync durationSec to crmCallLog if linked
+      if (log.callLogId) {
+        await fastify.prisma.crm.crmCallLog
+          .update({
+            where: { id: log.callLogId },
+            data: { durationSec: duration },
+          })
+          .catch((err) => {
+            fastify.log.error(err, `Failed to update durationSec for CallLog ${log.callLogId}`);
+          });
+      }
+
       // Trigger immediate analysis if pending and answer
       if (log.analysisStatus === 'PENDING') {
         triggerImmediateAnalysis(fastify, log.id);
