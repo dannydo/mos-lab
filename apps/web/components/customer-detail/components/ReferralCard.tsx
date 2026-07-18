@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, Tag } from 'antd';
-import { ShareAltOutlined } from '@ant-design/icons';
+import { ShareAltOutlined, SketchOutlined } from '@ant-design/icons';
 
 interface ReferralCardProps {
   data: SafeAny;
@@ -99,8 +99,18 @@ export const ReferralCard: React.FC<ReferralCardProps> = ({ data, themeMode }) =
                     </div>
                   </div>
                   {ru.rewardDiamonds > 0 ? (
-                    <Tag color="success" style={{ fontWeight: 'bold', margin: 0 }}>
-                      +{ru.rewardDiamonds} 💎
+                    <Tag
+                      color="success"
+                      style={{
+                        fontWeight: 'bold',
+                        margin: 0,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <span>+{ru.rewardDiamonds}</span>
+                      <SketchOutlined style={{ color: '#0ea5e9' }} />
                     </Tag>
                   ) : (
                     <span style={{ fontSize: '11px', color: '#888' }}>Chưa nhận thưởng</span>

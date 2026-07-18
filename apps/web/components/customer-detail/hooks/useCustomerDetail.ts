@@ -58,6 +58,28 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
   } | null>(null);
   const gemModalWidthRef = useRef(gemModalWidth);
 
+  // Resizable tip modal
+  const [isTipModalOpen, setIsTipModalOpen] = useState(false);
+  const [tipModalWidth, setTipModalWidth] = useState(750);
+  const [isTipModalDragging, setIsTipModalDragging] = useState(false);
+  const [tipDragStartInfo, setTipDragStartInfo] = useState<{
+    x: number;
+    width: number;
+    direction: 'left' | 'right';
+  } | null>(null);
+  const tipModalWidthRef = useRef(tipModalWidth);
+
+  // Resizable revenue modal
+  const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false);
+  const [revenueModalWidth, setRevenueModalWidth] = useState(1050);
+  const [isRevenueModalDragging, setIsRevenueModalDragging] = useState(false);
+  const [revenueDragStartInfo, setRevenueDragStartInfo] = useState<{
+    x: number;
+    width: number;
+    direction: 'left' | 'right';
+  } | null>(null);
+  const revenueModalWidthRef = useRef(revenueModalWidth);
+
   const customer = data?.customer;
   const stats = data?.stats;
   const comboBalances = data?.comboBalances || [];
@@ -78,6 +100,14 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
   }, [gemModalWidth]);
 
   useEffect(() => {
+    tipModalWidthRef.current = tipModalWidth;
+  }, [tipModalWidth]);
+
+  useEffect(() => {
+    revenueModalWidthRef.current = revenueModalWidth;
+  }, [revenueModalWidth]);
+
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('customer_detail_drawer_width');
       if (saved) {
@@ -90,6 +120,14 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
       const savedGemModal = localStorage.getItem('customer_gem_modal_width');
       if (savedGemModal) {
         setGemModalWidth(parseInt(savedGemModal, 10));
+      }
+      const savedTipModal = localStorage.getItem('customer_tip_modal_width');
+      if (savedTipModal) {
+        setTipModalWidth(parseInt(savedTipModal, 10));
+      }
+      const savedRevenueModal = localStorage.getItem('customer_revenue_modal_width');
+      if (savedRevenueModal) {
+        setRevenueModalWidth(parseInt(savedRevenueModal, 10));
       }
     }
   }, []);
@@ -244,6 +282,94 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isGemModalDragging, gemDragStartInfo]);
+
+  // Tip Modal drag event handlers
+  const handleTipModalDragStart = useCallback((e: React.MouseEvent, direction: 'left' | 'right') => {
+    e.preventDefault();
+    setTipDragStartInfo({
+      x: e.clientX,
+      width: tipModalWidthRef.current,
+      direction,
+    });
+    setIsTipModalDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isTipModalDragging || !tipDragStartInfo) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      let deltaX = 0;
+      if (tipDragStartInfo.direction === 'right') {
+        deltaX = e.clientX - tipDragStartInfo.x;
+      } else {
+        deltaX = tipDragStartInfo.x - e.clientX;
+      }
+
+      const newWidth = tipDragStartInfo.width + deltaX * 2;
+      const minWidth = 500;
+      const maxWidth = window.innerWidth * 0.95;
+      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+      setTipModalWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsTipModalDragging(false);
+      setTipDragStartInfo(null);
+      localStorage.setItem('customer_tip_modal_width', String(tipModalWidthRef.current));
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isTipModalDragging, tipDragStartInfo]);
+
+  // Revenue Modal drag event handlers
+  const handleRevenueModalDragStart = useCallback((e: React.MouseEvent, direction: 'left' | 'right') => {
+    e.preventDefault();
+    setRevenueDragStartInfo({
+      x: e.clientX,
+      width: revenueModalWidthRef.current,
+      direction,
+    });
+    setIsRevenueModalDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isRevenueModalDragging || !revenueDragStartInfo) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      let deltaX = 0;
+      if (revenueDragStartInfo.direction === 'right') {
+        deltaX = e.clientX - revenueDragStartInfo.x;
+      } else {
+        deltaX = revenueDragStartInfo.x - e.clientX;
+      }
+
+      const newWidth = revenueDragStartInfo.width + deltaX * 2;
+      const minWidth = 600;
+      const maxWidth = window.innerWidth * 0.95;
+      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+      setRevenueModalWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsRevenueModalDragging(false);
+      setRevenueDragStartInfo(null);
+      localStorage.setItem('customer_revenue_modal_width', String(revenueModalWidthRef.current));
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isRevenueModalDragging, revenueDragStartInfo]);
 
   // Save edits handler
   const handleOpenEditModal = () => {
@@ -405,6 +531,98 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     return top2.map((t) => `${t.name} (${t.count} lần)`).join(', ');
   };
 
+  const getFavoriteBranch = (bookingsList: SafeAny[]) => {
+    if (!bookingsList || bookingsList.length === 0) return 'N/A';
+    const branchCounts: { [key: string]: number } = {};
+
+    bookingsList.forEach((b) => {
+      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
+      if (isCompleted && b.branchName) {
+        const name = b.branchName.trim();
+        branchCounts[name] = (branchCounts[name] || 0) + 1;
+      }
+    });
+
+    const sortedBranches = Object.entries(branchCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    if (sortedBranches.length === 0) return 'N/A';
+    return `${sortedBranches[0].name} (${sortedBranches[0].count} lần)`;
+  };
+
+  const getRecentTechnician = (bookingsList: SafeAny[]) => {
+    if (!bookingsList || bookingsList.length === 0) return 'N/A';
+
+    // Sort bookings by date descending
+    const sorted = [...bookingsList].sort((a, b) => {
+      const dateA = a.bookingDate ? new Date(a.bookingDate).getTime() : 0;
+      const dateB = b.bookingDate ? new Date(b.bookingDate).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    for (const b of sorted) {
+      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
+      if (isCompleted && b.technicianName && b.technicianName !== 'Unknown' && b.technicianName !== 'Kỹ thuật viên') {
+        const name = b.technicianName.trim();
+        if (!name.includes('(Đã nghỉ)')) {
+          return name;
+        }
+      }
+    }
+    return 'N/A';
+  };
+
+  const getFavoriteTimeSlot = (bookingsList: SafeAny[]) => {
+    if (!bookingsList || bookingsList.length === 0) return 'N/A';
+    const hourCounts: { [key: number]: number } = {};
+
+    bookingsList.forEach((b) => {
+      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
+      if (isCompleted && b.bookingDate) {
+        const hour = new Date(b.bookingDate).getHours();
+        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+      }
+    });
+
+    const sortedHours = Object.entries(hourCounts)
+      .map(([hour, count]) => ({ hour: parseInt(hour, 10), count }))
+      .sort((a, b) => b.count - a.count);
+
+    if (sortedHours.length === 0) return 'N/A';
+    const favoriteHour = sortedHours[0].hour;
+    const startStr = favoriteHour < 10 ? `0${favoriteHour}:00` : `${favoriteHour}:00`;
+    const endHour = (favoriteHour + 1) % 24;
+    const endStr = endHour < 10 ? `0${endHour}:00` : `${endHour}:00`;
+    return `${startStr} - ${endStr} (${sortedHours[0].count} lần)`;
+  };
+
+  const getRecentVisitTime = (bookingsList: SafeAny[]) => {
+    if (!bookingsList || bookingsList.length === 0) return 'N/A';
+
+    // Sort bookings by date descending
+    const sorted = [...bookingsList].sort((a, b) => {
+      const dateA = a.bookingDate ? new Date(a.bookingDate).getTime() : 0;
+      const dateB = b.bookingDate ? new Date(b.bookingDate).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+    for (const b of sorted) {
+      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
+      if (isCompleted && b.bookingDate) {
+        const date = new Date(b.bookingDate);
+        const dayOfWeek = dayNames[date.getDay()];
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const timeStr = `${hours < 10 ? `0${hours}` : hours}:${minutes < 10 ? `0${minutes}` : minutes}`;
+        return `${dayOfWeek} lúc ${timeStr}`;
+      }
+    }
+    return 'N/A';
+  };
+
   const getComboDisplayInfo = (
     serviceName: string,
     normalCount: number,
@@ -466,6 +684,10 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     isDragging,
     modalWidth,
     gemModalWidth,
+    isTipModalOpen,
+    tipModalWidth,
+    isRevenueModalOpen,
+    revenueModalWidth,
     // data items
     customer,
     stats,
@@ -480,10 +702,14 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     setIsComboModalOpen,
     setBookingWizardOpen,
     setIsEditModalOpen,
+    setIsTipModalOpen,
+    setIsRevenueModalOpen,
     fetchDetails,
     handleMouseDown,
     handleModalDragStart,
     handleGemModalDragStart,
+    handleTipModalDragStart,
+    handleRevenueModalDragStart,
     handleOpenEditModal,
     handleSaveEdit,
     handleDeleteCustomer,
@@ -493,5 +719,9 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     getMostFrequentDay,
     getFavoriteTechnicians,
     getComboDisplayInfo,
+    getFavoriteBranch,
+    getRecentTechnician,
+    getFavoriteTimeSlot,
+    getRecentVisitTime,
   };
 }

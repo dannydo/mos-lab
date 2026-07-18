@@ -23,6 +23,7 @@ import { useCustomerDetail } from './customer-detail/hooks/useCustomerDetail';
 // Sub-components
 import { KpiStatsCard } from './customer-detail/components/KpiStatsCard';
 import { ProfileDetailsCard } from './customer-detail/components/ProfileDetailsCard';
+import { BookingHabitsCard } from './customer-detail/components/BookingHabitsCard';
 import { ComboBalancesCard } from './customer-detail/components/ComboBalancesCard';
 import { ReferralCard } from './customer-detail/components/ReferralCard';
 import { BookingsTab } from './customer-detail/components/BookingsTab';
@@ -39,6 +40,14 @@ const ComboHistoryModal = dynamic(
 );
 const EditCustomerModal = dynamic(
   () => import('./customer-detail/components/EditCustomerModal').then((m) => m.EditCustomerModal),
+  { ssr: false }
+);
+const TipHistoryModal = dynamic(
+  () => import('./customer-detail/components/TipHistoryModal').then((m) => m.TipHistoryModal),
+  { ssr: false }
+);
+const RevenueHistoryModal = dynamic(
+  () => import('./customer-detail/components/RevenueHistoryModal').then((m) => m.RevenueHistoryModal),
   { ssr: false }
 );
 
@@ -80,7 +89,12 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     isDragging,
     modalWidth,
     gemModalWidth,
+    isTipModalOpen,
+    tipModalWidth,
+    isRevenueModalOpen,
+    revenueModalWidth,
     // data items
+
     customer,
     stats,
     comboBalances,
@@ -94,11 +108,16 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     setIsComboModalOpen,
     setBookingWizardOpen,
     setIsEditModalOpen,
+    setIsTipModalOpen,
+    setIsRevenueModalOpen,
     fetchDetails,
     handleMouseDown,
     handleModalDragStart,
     handleGemModalDragStart,
+    handleTipModalDragStart,
+    handleRevenueModalDragStart,
     handleOpenEditModal,
+
     handleSaveEdit,
     handleDeleteCustomer,
     handleRestoreCustomer,
@@ -107,6 +126,10 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     getMostFrequentDay,
     getFavoriteTechnicians,
     getComboDisplayInfo,
+    getFavoriteBranch,
+    getRecentTechnician,
+    getFavoriteTimeSlot,
+    getRecentVisitTime,
   } = useCustomerDetail({
     open,
     customerId,
@@ -366,14 +389,25 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
               {/* SIDEBAR: Info & Stats */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <KpiStatsCard stats={stats} themeMode={themeMode} onOpenGemModal={() => setIsGemModalOpen(true)} />
+                <KpiStatsCard
+                  stats={stats}
+                  themeMode={themeMode}
+                  onOpenGemModal={() => setIsGemModalOpen(true)}
+                  onOpenTipModal={() => setIsTipModalOpen(true)}
+                  onOpenRevenueModal={() => setIsRevenueModalOpen(true)}
+                />
 
-                <ProfileDetailsCard
-                  customer={customer}
+                <ProfileDetailsCard customer={customer} themeMode={themeMode} />
+
+                <BookingHabitsCard
                   themeMode={themeMode}
                   bookings={bookings}
-                  getMostFrequentDay={getMostFrequentDay}
+                  getFavoriteBranch={getFavoriteBranch}
                   getFavoriteTechnicians={getFavoriteTechnicians}
+                  getRecentTechnician={getRecentTechnician}
+                  getMostFrequentDay={getMostFrequentDay}
+                  getFavoriteTimeSlot={getFavoriteTimeSlot}
+                  getRecentVisitTime={getRecentVisitTime}
                 />
 
                 <ComboBalancesCard
@@ -450,6 +484,24 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         gemTransactions={data?.gemTransactions || []}
         gemModalWidth={gemModalWidth}
         handleGemModalDragStart={handleGemModalDragStart}
+      />
+
+      <TipHistoryModal
+        open={isTipModalOpen}
+        onCancel={() => setIsTipModalOpen(false)}
+        customer={customer}
+        tipTransactions={data?.tipTransactions || []}
+        modalWidth={tipModalWidth}
+        handleModalDragStart={handleTipModalDragStart}
+      />
+
+      <RevenueHistoryModal
+        open={isRevenueModalOpen}
+        onCancel={() => setIsRevenueModalOpen(false)}
+        customer={customer}
+        revenueTransactions={data?.revenueTransactions || []}
+        modalWidth={revenueModalWidth}
+        handleModalDragStart={handleRevenueModalDragStart}
       />
 
       <ComboHistoryModal

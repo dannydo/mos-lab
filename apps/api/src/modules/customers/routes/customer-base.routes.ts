@@ -547,6 +547,7 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
   // Return count per bucket (COMBO_LIVE, COMBO_DEAD, SINGLE)
   fastify.get('/customers/stats', { preHandler: [requireAuth] }, async (request, reply) => {
     const {
+      bucket,
       search,
       ids,
       daysSinceLastVisitMin,
@@ -564,6 +565,7 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
       assignedStaffId,
       trash,
     } = request.query as {
+      bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE';
       search?: string;
       ids?: string;
       daysSinceLastVisitMin?: string;
@@ -717,6 +719,19 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
           )
         )`);
         innerParams.push(searchLike, searchLike);
+      }
+
+      // 2. Filter by Bucket (Optimized using usb_agg joins)
+      if (bucket && bucket !== 'ALL') {
+        if (bucket === 'SINGLE') {
+          innerWhereClauses.push('usb_agg.user_id IS NULL');
+        } else if (bucket === 'COMBO_LIVE') {
+          innerWhereClauses.push('usb_agg.live_count > 0');
+        } else if (bucket === 'COMBO_DEAD') {
+          innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
+        } else if (bucket === 'NOT_COMBO_LIVE') {
+          innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+        }
       }
 
       // 3. daysSinceLastVisit Filters
@@ -1727,28 +1742,64 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
         where: { user_id: customerId },
       });
 
-      // 3. Fetch LTV and Total Visits in a single query
-      const statsSql = `SELECT SUM(total_price) as totalSpent, COUNT(*) as totalVisits FROM \`order\` WHERE user_id = ? AND order_state = 'Completed'`;
-      const statsResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(statsSql, customerId);
-      const statsRow = statsResult[0] || {};
-      const totalSpent = Number(statsRow.totalSpent || 0);
-      const totalVisits = Number(statsRow.totalVisits || 0);
-
-      // 4. Calculate Average Visit Frequency (in days)
-      const bookingDatesResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT booking_date_start as date FROM \`order\` WHERE user_id = ? AND order_state = 'Completed' ORDER BY booking_date_start ASC`,
+      // 3. Fetch Completed Orders for financial and frequency metrics
+      const completedOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT o.id, o.order_key as orderKey, o.booking_date_start as bookingDate, o.total_price as totalPrice, o.assigned_staff_id as technicianId, o.created_staff_id as createdStaffId
+         FROM \`order\` o
+         WHERE o.user_id = ? AND o.order_state = 'Completed'
+         ORDER BY o.booking_date_start DESC`,
         customerId
       );
+
+      const totalSpent = completedOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
+      const totalVisits = completedOrders.length;
+
+      // 4. Calculate Average Visit Frequency (in days)
       let avgFrequency = 0;
-      if (bookingDatesResult.length > 1) {
+      if (completedOrders.length > 1) {
+        // Chronological order for calculating distance between consecutive dates
+        const sortedBookingDates = [...completedOrders]
+          .map((o) => new Date(o.bookingDate).getTime())
+          .sort((a, b) => a - b);
         let totalDays = 0;
-        for (let i = 1; i < bookingDatesResult.length; i++) {
-          const prev = new Date(bookingDatesResult[i - 1].date).getTime();
-          const curr = new Date(bookingDatesResult[i].date).getTime();
-          totalDays += (curr - prev) / (1000 * 60 * 60 * 24);
+        for (let i = 1; i < sortedBookingDates.length; i++) {
+          totalDays += (sortedBookingDates[i] - sortedBookingDates[i - 1]) / (1000 * 60 * 60 * 24);
         }
-        avgFrequency = Number((totalDays / (bookingDatesResult.length - 1)).toFixed(1));
+        avgFrequency = Number((totalDays / (sortedBookingDates.length - 1)).toFixed(1));
       }
+
+      // 4b. Fetch tips information from order_payment
+      const completedOrderIds = completedOrders.map((o) => Number(o.id));
+      const orderPaymentMap = new Map<number, { tips: number; debt: number; totalPaid: number }>();
+      if (completedOrderIds.length > 0) {
+        const orderPayments = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT order_id as orderId, tip_amount as tipAmount, paid_credit_amount as paidCredit, paid_cash_amount as paidCash, paid_credit_card_amount as paidCard, paid_bank_transfer_amount as paidBank, debt_amount as debt
+          FROM \`order_payment\`
+          WHERE order_id IN (${completedOrderIds.join(',')})
+        `);
+        orderPayments.forEach((op: SafeAny) => {
+          const existing = orderPaymentMap.get(Number(op.orderId)) || { tips: 0, debt: 0, totalPaid: 0 };
+          const paidSum =
+            Number(op.paidCredit || 0) + Number(op.paidCash || 0) + Number(op.paidCard || 0) + Number(op.paidBank || 0);
+          orderPaymentMap.set(Number(op.orderId), {
+            tips: existing.tips + Number(op.tipAmount || 0),
+            debt: existing.debt + Number(op.debt || 0),
+            totalPaid: existing.totalPaid + paidSum,
+          });
+        });
+      }
+
+      let totalTips = 0;
+      let tipCount = 0;
+      completedOrders.forEach((o) => {
+        const payInfo = orderPaymentMap.get(Number(o.id));
+        if (payInfo && payInfo.tips > 0) {
+          totalTips += payInfo.tips;
+          tipCount += 1;
+        }
+      });
+      const tipRate = totalVisits > 0 ? Number(((tipCount / totalVisits) * 100).toFixed(1)) : 0;
+      const avgTip = tipCount > 0 ? Math.round(totalTips / tipCount) : 0;
 
       // 5. Fetch Combo Balances
       const balanceSql = `
@@ -1927,16 +1978,80 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
         WHERE os.user_id = ?
       `;
 
-      const [bookingsRaw, servicesRaw] = await Promise.all([
+      const orderServicesSql = `
+        SELECT 
+          os.order_id as orderId,
+          os.total_price as totalPrice,
+          os.service_id as serviceId,
+          COALESCE(sl.service_name, s.service_key) as serviceName
+        FROM order_service os
+        LEFT JOIN service s ON os.service_id = s.id
+        LEFT JOIN service_language sl ON os.service_id = sl.service_id AND sl.language_id = 1
+        WHERE os.user_id = ?
+      `;
+
+      const orderCombosSql = `
+        SELECT 
+          osc.order_id as orderId,
+          osc.total_price as totalPrice,
+          osc.service_id as serviceId,
+          COALESCE(sl.service_name, s.service_key) as serviceName
+        FROM order_service_combo osc
+        LEFT JOIN service s ON osc.service_id = s.id
+        LEFT JOIN service_language sl ON osc.service_id = sl.service_id AND sl.language_id = 1
+        WHERE osc.user_id = ?
+      `;
+
+      const orderProductsSql = `
+        SELECT 
+          op.order_id as orderId,
+          op.total_price as totalPrice,
+          op.product_id as productId,
+          COALESCE(pl.product_name, 'Sản phẩm') as productName
+        FROM order_product op
+        LEFT JOIN product_language pl ON op.product_id = pl.product_id AND pl.language_id = 1
+        WHERE op.user_id = ?
+      `;
+
+      const [bookingsRaw, servicesRaw, orderServicesRaw, orderCombosRaw, orderProductsRaw] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(bookingsSql, customerId),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(servicesSql, customerId),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(orderServicesSql, customerId),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(orderCombosSql, customerId),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(orderProductsSql, customerId),
       ]);
 
-      const bookingIds = bookingsRaw.map((b) => Number(b.id));
+      const servicesByOrderIdDetail = new Map<number, { name: string; price: number }[]>();
+      for (const os of orderServicesRaw) {
+        const orderId = Number(os.orderId);
+        const list = servicesByOrderIdDetail.get(orderId) || [];
+        list.push({ name: os.serviceName, price: Number(os.totalPrice || 0) });
+        servicesByOrderIdDetail.set(orderId, list);
+      }
+
+      const combosByOrderIdDetail = new Map<number, { name: string; price: number }[]>();
+      for (const oc of orderCombosRaw) {
+        const orderId = Number(oc.orderId);
+        const list = combosByOrderIdDetail.get(orderId) || [];
+        list.push({ name: oc.serviceName, price: Number(oc.totalPrice || 0) });
+        combosByOrderIdDetail.set(orderId, list);
+      }
+
+      const productsByOrderIdDetail = new Map<number, { name: string; price: number }[]>();
+      for (const op of orderProductsRaw) {
+        const orderId = Number(op.orderId);
+        const list = productsByOrderIdDetail.get(orderId) || [];
+        list.push({ name: op.productName, price: Number(op.totalPrice || 0) });
+        productsByOrderIdDetail.set(orderId, list);
+      }
+
+      const allOrderIds = Array.from(
+        new Set([...bookingsRaw.map((b) => Number(b.id)), ...completedOrders.map((o) => Number(o.id))])
+      );
       const orderServicesDetails =
-        bookingIds.length > 0
+        allOrderIds.length > 0
           ? await fastify.prisma.legacy.order_service.findMany({
-              where: { order_id: { in: bookingIds } },
+              where: { order_id: { in: allOrderIds } },
               select: {
                 order_id: true,
                 assigned_staff_id: true,
@@ -1950,6 +2065,10 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
       for (const b of bookingsRaw) {
         if (b.technicianId) staffUserIds.add(Number(b.technicianId));
         if (b.createdStaffId) staffUserIds.add(Number(b.createdStaffId));
+      }
+      for (const o of completedOrders) {
+        if (o.technicianId) staffUserIds.add(Number(o.technicianId));
+        if (o.createdStaffId) staffUserIds.add(Number(o.createdStaffId));
       }
       for (const os of orderServicesDetails) {
         if (os.assigned_staff_id) staffUserIds.add(Number(os.assigned_staff_id));
@@ -2091,6 +2210,9 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
           comboWalletBalance: comboWalletBalance,
           gemBalance: gemBalance,
           avgFrequency: avgFrequency,
+          totalTips: totalTips,
+          tipRate: tipRate,
+          avgTip: avgTip,
         },
         comboBalances: comboBalances.map((cb) => ({
           id: Number(cb.id),
@@ -2189,6 +2311,52 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
             staffName: t.staffName || 'Hệ thống',
           }));
         })(),
+        tipTransactions: completedOrders.map((o) => {
+          const payInfo = orderPaymentMap.get(Number(o.id));
+          const orderSvs = orderServicesDetails.filter((os) => Number(os.order_id) === Number(o.id));
+          const checkOutStaffId = orderSvs.find((os) => os.check_out_staff_id)?.check_out_staff_id;
+          const firstCvStaffId = o.technicianId || orderSvs.find((os) => os.assigned_staff_id)?.assigned_staff_id;
+
+          return {
+            id: Number(o.id),
+            orderKey: o.orderKey,
+            bookingDate: o.bookingDate ? new Date(o.bookingDate).toISOString().replace('Z', '+07:00') : null,
+            totalPrice: Number(o.totalPrice || 0),
+            tipAmount: payInfo ? payInfo.tips : 0,
+            technicianName: (() => {
+              if (!firstCvStaffId) return 'Unknown';
+              const name = staffNamesMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên';
+              const isInactive = staffInactiveMap.get(Number(firstCvStaffId));
+              return isInactive ? `${name} (Đã nghỉ)` : name;
+            })(),
+            ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên' : 'Unknown',
+          };
+        }),
+        revenueTransactions: completedOrders.map((o) => {
+          const payInfo = orderPaymentMap.get(Number(o.id));
+          const orderSvs = orderServicesDetails.filter((os) => Number(os.order_id) === Number(o.id));
+          const checkOutStaffId = orderSvs.find((os) => os.check_out_staff_id)?.check_out_staff_id;
+          const firstCvStaffId = o.technicianId || orderSvs.find((os) => os.assigned_staff_id)?.assigned_staff_id;
+
+          return {
+            id: Number(o.id),
+            orderKey: o.orderKey,
+            bookingDate: o.bookingDate ? new Date(o.bookingDate).toISOString().replace('Z', '+07:00') : null,
+            totalPrice: Number(o.totalPrice || 0),
+            tipAmount: payInfo ? payInfo.tips : 0,
+            debtAmount: payInfo ? payInfo.debt : 0,
+            technicianName: (() => {
+              if (!firstCvStaffId) return 'Unknown';
+              const name = staffNamesMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên';
+              const isInactive = staffInactiveMap.get(Number(firstCvStaffId));
+              return isInactive ? `${name} (Đã nghỉ)` : name;
+            })(),
+            ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên' : 'Unknown',
+            services: servicesByOrderIdDetail.get(Number(o.id)) || [],
+            combos: combosByOrderIdDetail.get(Number(o.id)) || [],
+            products: productsByOrderIdDetail.get(Number(o.id)) || [],
+          };
+        }),
         referrer: referrer,
         referredUsers: formattedReferred,
       };
@@ -2342,12 +2510,10 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, count });
     } catch (err) {
       fastify.log.error(err, 'Bulk delete customers error:');
-      return reply
-        .status(500)
-        .send({
-          error: 'Internal Server Error',
-          message: (err as SafeAny).message || 'Không thể xóa hàng loạt khách hàng.',
-        });
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: (err as SafeAny).message || 'Không thể xóa hàng loạt khách hàng.',
+      });
     }
   });
 
@@ -2416,12 +2582,10 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, customerId });
     } catch (err) {
       fastify.log.error(err, 'Restore customer error:');
-      return reply
-        .status(500)
-        .send({
-          error: 'Internal Server Error',
-          message: (err as SafeAny).message || 'Không thể khôi phục khách hàng.',
-        });
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: (err as SafeAny).message || 'Không thể khôi phục khách hàng.',
+      });
     }
   });
 }

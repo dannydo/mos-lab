@@ -252,7 +252,17 @@ export async function omicallRoutes(fastify: FastifyInstance) {
       }
 
       const sipRealm = process.env.OMICALL_SIP_DOMAIN || 'quangnguyen2';
-      const decryptedPassword = config.sipPassword ? decrypt(config.sipPassword) : '';
+      let decryptedPassword = '';
+      if (config.sipPassword) {
+        try {
+          decryptedPassword = decrypt(config.sipPassword);
+        } catch (err: any) {
+          fastify.log.warn(
+            err,
+            `Failed to decrypt SIP password for staffId ${user.id}. Invalid key or corrupted data.`
+          );
+        }
+      }
 
       return {
         sipRealm,

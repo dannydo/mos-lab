@@ -17,6 +17,28 @@ export function formatVND(value: number | null | undefined): string {
 }
 
 /**
+ * Formats a number compactly using M, B, K notation.
+ * e.g., 22000000 -> "22M đ"
+ *       1500000000 -> "1.5B đ"
+ *       150000 -> "150K đ"
+ */
+export function formatCompactVND(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '0 đ';
+  const absVal = Math.abs(value);
+  const suffix = ' đ';
+  if (absVal >= 1_000_000_000) {
+    return `${(value / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B${suffix}`;
+  }
+  if (absVal >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')}M${suffix}`;
+  }
+  if (absVal >= 1_000) {
+    return `${(value / 1_000).toFixed(1).replace(/\.0$/, '')}K${suffix}`;
+  }
+  return `${value}${suffix}`;
+}
+
+/**
  * Formats duration in seconds into a readable string.
  * e.g., 125 -> "02:05" or "02m 05s" depending on style
  */

@@ -7,18 +7,9 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 interface ProfileDetailsCardProps {
   customer: SafeAny;
   themeMode: 'light' | 'dark';
-  bookings: SafeAny[];
-  getMostFrequentDay: (bookings: SafeAny[]) => string;
-  getFavoriteTechnicians: (bookings: SafeAny[]) => string;
 }
 
-export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({
-  customer,
-  themeMode,
-  bookings,
-  getMostFrequentDay,
-  getFavoriteTechnicians,
-}) => {
+export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ customer, themeMode }) => {
   return (
     <Card
       title={
@@ -51,16 +42,6 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#888' }}>Số ngày chưa quay lại:</span>
           <span style={{ fontWeight: 'bold', color: '#ff4d4f' }}>{customer.daysSinceLastVisit || 0} ngày</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: '#888' }}>Thứ hay đi nhất:</span>
-          <span style={{ fontWeight: 'bold', color: '#fa8c16' }}>{getMostFrequentDay(bookings)}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: '#888' }}>CV ưa thích:</span>
-          <span style={{ fontWeight: 'bold', color: themeMode === 'dark' ? '#f472b6' : '#db2777' }}>
-            {getFavoriteTechnicians(bookings)}
-          </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#888' }}>Phụ trách (OC):</span>
