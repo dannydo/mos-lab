@@ -107,6 +107,7 @@ async function main() {
         where: { callUuid: matchedCsvRow.call_uuid },
         update: {
           direction: matchedCsvRow.direction,
+          status: 'ANSWER',
           sourceNumber: matchedCsvRow.source_number,
           destinationNumber: matchedCsvRow.destination_number,
           duration: matchedCsvRow.duration,
@@ -119,6 +120,7 @@ async function main() {
         create: {
           callUuid: matchedCsvRow.call_uuid,
           direction: matchedCsvRow.direction,
+          status: 'ANSWER',
           sourceNumber: matchedCsvRow.source_number,
           destinationNumber: matchedCsvRow.destination_number,
           duration: matchedCsvRow.duration,
