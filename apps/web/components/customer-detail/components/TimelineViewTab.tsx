@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Tag, Segmented, Space, Avatar, Empty } from 'antd';
-import { CalendarOutlined, InfoCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { CalendarOutlined, InfoCircleOutlined, EnvironmentOutlined, CheckOutlined } from '@ant-design/icons';
 
 interface TimelineViewTabProps {
   bookings: SafeAny[];
@@ -70,6 +70,20 @@ const DEPT_COLORS = {
   },
 };
 
+const getDaysDiffText = (bookingDate: string | Date) => {
+  if (!bookingDate) return '';
+  const d = new Date(bookingDate);
+  const today = new Date();
+  const date1 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const date2 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffTime = date2.getTime() - date1.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Hôm nay';
+  if (diffDays > 0) return `${diffDays} ngày trước`;
+  return `${Math.abs(diffDays)} ngày nữa`;
+};
+
 export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, notes, calls, themeMode }) => {
   const [activeSegment, setActiveSegment] = useState<'all' | 'booking' | 'cc' | 'cs'>('all');
 
@@ -88,6 +102,13 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
     if (typeof window !== 'undefined') {
       localStorage.setItem('customer_detail_timeline_segment', value);
     }
+  };
+
+  const getGeneralGroupKey = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `general-${y}-${m}-${d}`;
   };
 
   // --- Grouping Logic ---
@@ -185,15 +206,16 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
     if (targetBookingId && groupsMap.has(targetBookingId)) {
       groupsMap.get(targetBookingId)!.notes.push(item);
     } else {
-      let generalGroup = groupsMap.get('general');
+      const groupKey = getGeneralGroupKey(item.date);
+      let generalGroup = groupsMap.get(groupKey);
       if (!generalGroup) {
         generalGroup = {
-          id: 'general',
-          bookingDate: new Date(0),
+          id: groupKey,
+          bookingDate: item.date,
           formattedDate: 'Ghi chú ngoài lịch',
           notes: [],
         };
-        groupsMap.set('general', generalGroup);
+        groupsMap.set(groupKey, generalGroup);
       }
       generalGroup.notes.push(item);
     }
@@ -224,15 +246,16 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
     if (targetBookingId && groupsMap.has(targetBookingId)) {
       groupsMap.get(targetBookingId)!.notes.push(item);
     } else {
-      let generalGroup = groupsMap.get('general');
+      const groupKey = getGeneralGroupKey(item.date);
+      let generalGroup = groupsMap.get(groupKey);
       if (!generalGroup) {
         generalGroup = {
-          id: 'general',
-          bookingDate: new Date(0),
+          id: groupKey,
+          bookingDate: item.date,
           formattedDate: 'Ghi chú ngoài lịch',
           notes: [],
         };
-        groupsMap.set('general', generalGroup);
+        groupsMap.set(groupKey, generalGroup);
       }
       generalGroup.notes.push(item);
     }
@@ -259,33 +282,33 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
     if (targetBookingId && groupsMap.has(targetBookingId)) {
       groupsMap.get(targetBookingId)!.notes.push(item);
     } else {
-      let generalGroup = groupsMap.get('general');
+      const groupKey = getGeneralGroupKey(item.date);
+      let generalGroup = groupsMap.get(groupKey);
       if (!generalGroup) {
         generalGroup = {
-          id: 'general',
-          bookingDate: new Date(0),
+          id: groupKey,
+          bookingDate: item.date,
           formattedDate: 'Ghi chú ngoài lịch',
           notes: [],
         };
-        groupsMap.set('general', generalGroup);
+        groupsMap.set(groupKey, generalGroup);
       }
       generalGroup.notes.push(item);
     }
   });
 
-  // Update general group date to match highest note date for sorting
-  if (groupsMap.has('general')) {
-    const generalGroup = groupsMap.get('general')!;
-    if (generalGroup.notes.length > 0) {
-      const dates = generalGroup.notes.map((n) => n.date.getTime());
+  // Update general group dates to match highest note date for sorting, and set correct formattedDate
+  groupsMap.forEach((group, key) => {
+    if (key.startsWith('general-') && group.notes.length > 0) {
+      const dates = group.notes.map((n) => n.date.getTime());
       const maxDate = new Date(Math.max(...dates));
-      generalGroup.bookingDate = maxDate;
+      group.bookingDate = maxDate;
       const dayPrefixes = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
       const dayPrefix = dayPrefixes[maxDate.getDay()];
       const pad = (n: number) => n.toString().padStart(2, '0');
-      generalGroup.formattedDate = `Ghi chú ngoài lịch (${dayPrefix}, ${pad(maxDate.getDate())}/${pad(maxDate.getMonth() + 1)})`;
+      group.formattedDate = `Ghi chú ngoài lịch (${dayPrefix}, ${pad(maxDate.getDate())}/${pad(maxDate.getMonth() + 1)})`;
     }
-  }
+  });
 
   // --- Filter and Sort Groups ---
   const rawGroups = Array.from(groupsMap.values());
@@ -354,7 +377,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
       >
         {processedGroups.length > 0 ? (
           processedGroups.map((group) => {
-            const isBooking = group.id !== 'general';
+            const isBooking = !group.id.startsWith('general');
             const isCompleted = group.orderState === 'ServiceCompleted' || group.orderState === 'Completed';
 
             const cardBg = !isBooking
@@ -413,7 +436,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
                   }}
                 >
                   <div>
-                    {group.id === 'general' ? (
+                    {group.id.startsWith('general') ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <InfoCircleOutlined style={{ color: '#D4A84B', fontSize: '15px' }} />
                         <strong style={{ fontSize: '14.5px', color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
@@ -464,24 +487,42 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
                     >
                       {group.formattedDate}
                     </span>
-                    {group.orderState && (
-                      <Tag
-                        color={
-                          group.orderState === 'ServiceCompleted' || group.orderState === 'Completed'
-                            ? 'success'
-                            : 'error'
-                        }
+                    {group.bookingDate && (
+                      <span
                         style={{
-                          margin: 0,
+                          fontSize: '11px',
                           fontWeight: '600',
-                          fontSize: '12px',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: themeMode === 'dark' ? 'rgba(24, 144, 255, 0.15)' : '#e6f7ff',
+                          color: themeMode === 'dark' ? '#40a9ff' : '#1890ff',
                         }}
                       >
-                        {group.orderState === 'ServiceCompleted' || group.orderState === 'Completed'
-                          ? 'Hoàn thành'
-                          : group.orderState}
-                      </Tag>
+                        {getDaysDiffText(group.bookingDate)}
+                      </span>
                     )}
+                    {group.orderState &&
+                      (group.orderState === 'ServiceCompleted' || group.orderState === 'Completed' ? (
+                        <CheckOutlined
+                          style={{
+                            color: '#52c41a',
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            marginLeft: '4px',
+                          }}
+                        />
+                      ) : (
+                        <Tag
+                          color="error"
+                          style={{
+                            margin: 0,
+                            fontWeight: '600',
+                            fontSize: '12px',
+                          }}
+                        >
+                          {group.orderState}
+                        </Tag>
+                      ))}
                   </div>
                 </div>
 

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Tag, Popconfirm, Button } from 'antd';
-import { CloseCircleOutlined, CalendarOutlined } from '@ant-design/icons';
+import { CloseCircleOutlined, CalendarOutlined, CheckOutlined } from '@ant-design/icons';
 
 interface BookingsTabProps {
   bookings: SafeAny[];
@@ -12,6 +12,20 @@ interface BookingsTabProps {
   setSelectedBookingForReschedule: (b: SafeAny) => void;
   setRescheduleModalVisible: (visible: boolean) => void;
 }
+
+const getDaysDiffText = (bookingDate: string | Date) => {
+  if (!bookingDate) return '';
+  const d = new Date(bookingDate);
+  const today = new Date();
+  const date1 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const date2 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffTime = date2.getTime() - date1.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Hôm nay';
+  if (diffDays > 0) return `${diffDays} ngày trước`;
+  return `${Math.abs(diffDays)} ngày nữa`;
+};
 
 export const BookingsTab: React.FC<BookingsTabProps> = ({
   bookings,
@@ -77,7 +91,33 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '12px', color: '#888' }}>{formattedDate}</span>
-                    <Tag color={isCompleted ? 'success' : 'error'}>{isCompleted ? 'Hoàn thành' : b.orderState}</Tag>
+                    {b.bookingDate && (
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: themeMode === 'dark' ? 'rgba(24, 144, 255, 0.15)' : '#e6f7ff',
+                          color: themeMode === 'dark' ? '#40a9ff' : '#1890ff',
+                        }}
+                      >
+                        {getDaysDiffText(b.bookingDate)}
+                      </span>
+                    )}
+                    {isCompleted ? (
+                      <CheckOutlined
+                        style={{
+                          color: '#52c41a',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                        }}
+                      />
+                    ) : (
+                      <Tag color="error" style={{ margin: 0 }}>
+                        {b.orderState}
+                      </Tag>
+                    )}
                   </div>
                 </div>
                 <div
