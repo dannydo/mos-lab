@@ -126,6 +126,46 @@ export async function callRoutes(fastify: FastifyInstance) {
             })
             .catch(() => {});
         }
+      } else {
+        // Booker gọi điện và lưu log không kèm callUuid / omicallLogId
+        // Thực hiện so khớp ngược (Reverse Smart Link):
+        // Tìm cuộc gọi OmiCall thô gần nhất (trong vòng +/- 10 phút)
+        // của khách hàng này và booker này mà chưa liên kết với CallLog nào (callLogId = null)
+        const callTime = new Date();
+        const tenMinutesAgo = new Date(callTime.getTime() - 10 * 60 * 1000);
+        const tenMinutesAfter = new Date(callTime.getTime() + 10 * 60 * 1000);
+
+        const matchedOmicallLog = await fastify.prisma.crm.crmOmicallLog.findFirst({
+          where: {
+            legacyUserId,
+            staffId: user.id,
+            callLogId: null,
+            createdAt: {
+              gte: tenMinutesAgo,
+              lte: tenMinutesAfter,
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (matchedOmicallLog) {
+          await fastify.prisma.crm.crmOmicallLog
+            .update({
+              where: { id: matchedOmicallLog.id },
+              data: { callLogId: callLog.id },
+            })
+            .catch(() => {});
+
+          await fastify.prisma.crm.crmCallLog
+            .update({
+              where: { id: callLog.id },
+              data: {
+                durationSec: matchedOmicallLog.duration,
+                callUuid: matchedOmicallLog.callUuid,
+              },
+            })
+            .catch(() => {});
+        }
       }
 
       return callLog;

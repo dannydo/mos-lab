@@ -96,6 +96,30 @@ export async function omicallRoutes(fastify: FastifyInstance) {
       });
       if (existingCallLog) {
         callLogId = existingCallLog.id;
+      } else if (legacyUserId && staffId) {
+        // So khớp thông minh thời gian thực (Real-time Smart Match):
+        // Tìm cuộc gọi Telesales gần nhất (tạo trong khoảng +/- 10 phút so với cuộc gọi OmiCall)
+        // của khách hàng này và booker này mà chưa có durationSec
+        const callTime = timeStartCall || new Date();
+        const tenMinutesAgo = new Date(callTime.getTime() - 10 * 60 * 1000);
+        const tenMinutesAfter = new Date(callTime.getTime() + 10 * 60 * 1000);
+
+        const matchedCallLog = await fastify.prisma.crm.crmCallLog.findFirst({
+          where: {
+            legacyUserId,
+            staffId,
+            durationSec: null,
+            createdAt: {
+              gte: tenMinutesAgo,
+              lte: tenMinutesAfter,
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (matchedCallLog) {
+          callLogId = matchedCallLog.id;
+        }
       }
 
       // 6. Save OmiCall Log
@@ -145,7 +169,10 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         await fastify.prisma.crm.crmCallLog
           .update({
             where: { id: log.callLogId },
-            data: { durationSec: duration },
+            data: {
+              durationSec: duration,
+              callUuid: callUuid,
+            },
           })
           .catch((err) => {
             fastify.log.error(err, `Failed to update durationSec for CallLog ${log.callLogId}`);
