@@ -219,6 +219,32 @@ export async function callRoutes(fastify: FastifyInstance) {
         return [];
       }
 
+      // Fetch linked Omicall logs
+      const logIds = logs.map((l) => l.id);
+      const callUuuids = logs.map((l) => l.callUuid).filter((u): u is string => u !== null);
+
+      const omicallLogs = await fastify.prisma.crm.crmOmicallLog.findMany({
+        where: {
+          OR: [{ callLogId: { in: logIds } }, { callUuid: { in: callUuuids } }],
+        },
+        select: {
+          id: true,
+          callUuid: true,
+          callLogId: true,
+          happyCallStatus: true,
+        },
+      });
+
+      const omicallMap = new Map();
+      omicallLogs.forEach((ol) => {
+        if (ol.callLogId) {
+          omicallMap.set(`id_${ol.callLogId}`, ol);
+        }
+        if (ol.callUuid) {
+          omicallMap.set(`uuid_${ol.callUuid}`, ol);
+        }
+      });
+
       // 2. Fetch staff list for mapping callers
       const staffIds = Array.from(new Set(logs.map((l) => l.staffId)));
       const staffList = await fastify.prisma.crm.crmStaff.findMany({
@@ -297,6 +323,8 @@ export async function callRoutes(fastify: FastifyInstance) {
         const caller = staffMap.get(log.staffId) || { id: log.staffId, displayName: 'Unknown', avatarUrl: null };
         const custData = customerMap.get(log.legacyUserId);
         const assignedStaff = assignmentMap.get(log.legacyUserId);
+        const omicallInfo =
+          omicallMap.get(`id_${log.id}`) || (log.callUuid ? omicallMap.get(`uuid_${log.callUuid}`) : null);
 
         return {
           id: log.id,
@@ -306,6 +334,9 @@ export async function callRoutes(fastify: FastifyInstance) {
           callResult: log.callResult,
           outcome: log.outcome,
           callerStaff: caller,
+          callUuid: log.callUuid,
+          omicallLogId: omicallInfo ? omicallInfo.id : null,
+          happyCallStatus: omicallInfo ? omicallInfo.happyCallStatus : 'NONE',
           customer: custData
             ? {
                 id: Number(custData.id),

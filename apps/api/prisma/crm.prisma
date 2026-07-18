@@ -194,6 +194,9 @@ model CrmOmicallLog {
   qaLaughVerifications String? @map("qa_laugh_verifications") @db.Text
                               // JSON: [{"timestamp":12.5,"verified":true}, {"timestamp":45.8,"verified":false}]
   qaNotes           String?   @map("qa_notes") @db.Text
+  qaScore           Int?      @map("qa_score")
+  qaTags            String?   @map("qa_tags") @db.Text
+  qaChecklist       String?   @map("qa_checklist") @db.Text
 
   createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
 

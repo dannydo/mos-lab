@@ -39,6 +39,7 @@ import { DailyCallEntry } from '@mos-lab/shared';
 
 const CustomerDetailDrawer = dynamic(() => import('./CustomerDetailDrawer'), { ssr: false });
 const TableConfigDrawer = dynamic(() => import('./TableConfigDrawer').then((m) => m.TableConfigDrawer), { ssr: false });
+const QAPlayerDrawer = dynamic(() => import('./QAPlayerDrawer').then((m) => m.QAPlayerDrawer), { ssr: false });
 
 const { Text, Title } = Typography;
 
@@ -71,6 +72,13 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
   // Drawer states
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
+  const [qaDrawerOpen, setQaDrawerOpen] = useState(false);
+  const [selectedOmicallLogId, setSelectedOmicallLogId] = useState<number | null>(null);
+
+  const openQADrawer = useCallback((omicallLogId: number) => {
+    setSelectedOmicallLogId(omicallLogId);
+    setQaDrawerOpen(true);
+  }, []);
 
   // Load current user and restore settings from localStorage on client mount
   useEffect(() => {
@@ -443,8 +451,73 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
           </Text>
         ),
       },
+      {
+        title: 'Happy Call',
+        key: 'action',
+        width: 120,
+        fixed: 'right' as const,
+        render: (_: SafeAny, record: DailyCallEntry) => {
+          const logId = record.omicallLogId;
+          const status = record.happyCallStatus || 'NONE';
+          const isAnswered = record.callResult === 'ANSWERED';
+
+          if (!isAnswered) {
+            return <span style={{ fontSize: '12px', color: '#8c8c8c' }}>Không bắt máy</span>;
+          }
+
+          if (!logId) {
+            return <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#8c8c8c' }}>Không ghi âm</span>;
+          }
+
+          let btnText = 'Chưa xét';
+          let btnType: 'primary' | 'default' = 'primary';
+          const borderStyle: React.CSSProperties = {
+            fontWeight: '600',
+            borderRadius: '6px',
+            fontSize: '12px',
+          };
+
+          if (status === 'APPROVED') {
+            btnText = 'Đồng ý';
+            btnType = 'default';
+            borderStyle.borderColor = '#52c41a';
+            borderStyle.color = '#52c41a';
+          } else if (status === 'REJECTED') {
+            btnText = 'Từ chối';
+            btnType = 'default';
+            borderStyle.borderColor = '#ff4d4f';
+            borderStyle.color = '#ff4d4f';
+          } else if (status === 'PENDING_APPROVAL') {
+            btnText = 'Chờ duyệt';
+            btnType = 'default';
+            borderStyle.borderColor = '#faad14';
+            borderStyle.color = '#faad14';
+          } else {
+            // NONE -> Chưa xét
+            btnType = 'primary';
+            borderStyle.backgroundColor = token.colorPrimary;
+            borderStyle.borderColor = token.colorPrimary;
+            borderStyle.color = '#000';
+          }
+
+          return (
+            <Button
+              size="small"
+              type={btnType}
+              style={borderStyle}
+              onClick={(e) => {
+                e.stopPropagation();
+                openQADrawer(logId);
+              }}
+              className="hover:scale-105 active:scale-95 transition-all duration-150"
+            >
+              {btnText}
+            </Button>
+          );
+        },
+      },
     ];
-  }, [themeMode, token, makeCall]);
+  }, [themeMode, token, makeCall, openQADrawer]);
 
   // Hook for column config customizations
   const {
@@ -603,6 +676,16 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
         open={customerDrawerOpen}
         customerId={selectedCustomerId}
         onClose={() => setCustomerDrawerOpen(false)}
+      />
+
+      {/* QA Player Drawer */}
+      <QAPlayerDrawer
+        open={qaDrawerOpen}
+        omicallLogId={selectedOmicallLogId}
+        onClose={() => setQaDrawerOpen(false)}
+        onVerifySuccess={() => {
+          fetchDailyCalls(selectedDate, scope, selectedStaffId);
+        }}
       />
 
       <style jsx global>{`

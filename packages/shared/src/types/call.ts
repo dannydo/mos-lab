@@ -46,6 +46,9 @@ export interface DailyCallEntry {
   note: string | null;
   callResult: string | null;
   outcome: string | null;
+  callUuid?: string | null;
+  omicallLogId?: number | null;
+  happyCallStatus?: string;
   callerStaff: {
     id: number;
     displayName: string;

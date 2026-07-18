@@ -514,14 +514,18 @@ export async function omicallRoutes(fastify: FastifyInstance) {
 
       // Fetch staff and customer names
       let staffName = null;
+      let staffAvatarUrl = null;
       let customerName = null;
 
       if (log.staffId) {
         const staff = await fastify.prisma.crm.crmStaff.findUnique({
           where: { id: log.staffId },
-          select: { displayName: true },
+          select: { displayName: true, avatarUrl: true },
         });
-        if (staff) staffName = staff.displayName;
+        if (staff) {
+          staffName = staff.displayName;
+          staffAvatarUrl = staff.avatarUrl;
+        }
       }
 
       if (log.legacyUserId) {
@@ -538,7 +542,10 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         ...log,
         laughTimestamps: log.laughTimestamps ? JSON.parse(log.laughTimestamps) : [],
         qaLaughVerifications: log.qaLaughVerifications ? JSON.parse(log.qaLaughVerifications) : [],
+        qaTags: log.qaTags ? JSON.parse(log.qaTags) : [],
+        qaChecklist: log.qaChecklist ? JSON.parse(log.qaChecklist) : {},
         staffName,
+        staffAvatarUrl,
         customerName,
       };
     } catch (error: SafeAny) {
@@ -554,19 +561,31 @@ export async function omicallRoutes(fastify: FastifyInstance) {
     { preHandler: [requireAuth, requireRole(['admin', 'manager'])] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const { action, laughVerifications, notes } = request.body as {
-        action: 'approve' | 'reject';
+      const {
+        action,
+        laughVerifications,
+        notes,
+        happyCallStatus: reqStatus,
+        happyCallReason: reqReason,
+        qaNotes: reqNotes,
+        qaScore: reqScore,
+        qaTags: reqTags,
+        qaChecklist: reqChecklist,
+      } = request.body as {
+        action?: 'approve' | 'reject';
         laughVerifications?: SafeAny;
         notes?: string;
+        happyCallStatus?: string;
+        happyCallReason?: string | null;
+        qaNotes?: string | null;
+        qaScore?: number | null;
+        qaTags?: string[] | null;
+        qaChecklist?: Record<string, boolean> | null;
       };
 
       const logId = parseInt(id, 10);
       if (isNaN(logId)) {
         return reply.status(400).send({ error: 'Bad Request', message: 'Invalid log id' });
-      }
-
-      if (!action || !['approve', 'reject'].includes(action)) {
-        return reply.status(400).send({ error: 'Bad Request', message: 'action must be approve or reject' });
       }
 
       const user = request.user as { id: number };
@@ -580,14 +599,6 @@ export async function omicallRoutes(fastify: FastifyInstance) {
           return reply.status(404).send({ error: 'Not Found', message: 'Log not found' });
         }
 
-        // Guard: only PENDING_APPROVAL logs can be approved/rejected
-        if (log.happyCallStatus !== 'PENDING_APPROVAL') {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: `Cannot verify: current status is '${log.happyCallStatus}', expected 'PENDING_APPROVAL'`,
-          });
-        }
-
         const qaLaughVerifications = laughVerifications
           ? typeof laughVerifications === 'string'
             ? laughVerifications
@@ -596,12 +607,19 @@ export async function omicallRoutes(fastify: FastifyInstance) {
 
         let happyCallStatus = log.happyCallStatus;
         let happyCallReason = log.happyCallReason;
+        let qaNotes = notes !== undefined ? notes : log.qaNotes;
 
-        if (action === 'approve') {
-          happyCallStatus = 'APPROVED';
-          happyCallReason = 'manual_approved';
-        } else if (action === 'reject') {
-          happyCallStatus = 'REJECTED';
+        if (action) {
+          if (action === 'approve') {
+            happyCallStatus = 'APPROVED';
+            happyCallReason = 'manual_approved';
+          } else if (action === 'reject') {
+            happyCallStatus = 'REJECTED';
+          }
+        } else if (reqStatus) {
+          happyCallStatus = reqStatus;
+          happyCallReason = reqReason !== undefined ? reqReason : log.happyCallReason;
+          qaNotes = reqNotes !== undefined ? reqNotes : log.qaNotes;
         }
 
         const updated = await fastify.prisma.crm.crmOmicallLog.update({
@@ -612,8 +630,12 @@ export async function omicallRoutes(fastify: FastifyInstance) {
             qaVerified: true,
             qaVerifiedBy: user.id,
             qaVerifiedAt: new Date(),
-            qaLaughVerifications,
-            qaNotes: notes || null,
+            qaLaughVerifications: qaLaughVerifications || log.qaLaughVerifications,
+            qaNotes: qaNotes || null,
+            qaScore: reqScore !== undefined ? reqScore : log.qaScore,
+            qaTags: reqTags !== undefined ? (reqTags ? JSON.stringify(reqTags) : null) : log.qaTags,
+            qaChecklist:
+              reqChecklist !== undefined ? (reqChecklist ? JSON.stringify(reqChecklist) : null) : log.qaChecklist,
           },
         });
 
@@ -621,6 +643,8 @@ export async function omicallRoutes(fastify: FastifyInstance) {
           ...updated,
           laughTimestamps: updated.laughTimestamps ? JSON.parse(updated.laughTimestamps) : [],
           qaLaughVerifications: updated.qaLaughVerifications ? JSON.parse(updated.qaLaughVerifications) : [],
+          qaTags: updated.qaTags ? JSON.parse(updated.qaTags) : [],
+          qaChecklist: updated.qaChecklist ? JSON.parse(updated.qaChecklist) : {},
         };
       } catch (error: SafeAny) {
         fastify.log.error(error as Error, 'Verify call log error:');
