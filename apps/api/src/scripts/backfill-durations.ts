@@ -1,113 +1,106 @@
-import { PrismaClient } from '../generated/crm-client/index.js';
-import axios from 'axios';
+import { PrismaClient as CrmPrisma } from '../generated/crm-client/index.js';
+import { PrismaClient as LegacyPrisma } from '../generated/legacy-client/index.js';
 
-const prisma = new PrismaClient();
-const apiKey = process.env.OMICALL_API_KEY;
+const prismaCrm = new CrmPrisma();
+const prismaLegacy = new LegacyPrisma();
+
+// Lấy 9 chữ số cuối của số điện thoại để so khớp
+function getLast9Digits(phone: string): string {
+  const cleaned = phone.replace(/\D/g, ''); // Chỉ giữ số
+  return cleaned.slice(-9);
+}
 
 async function backfill() {
-  console.log('=== STARTING DURATION BACKFILL ===');
+  console.log('=== STARTING SMART DURATION BACKFILL ===');
 
-  if (!apiKey) {
-    console.error('OMICALL_API_KEY is not defined in environment!');
-    return;
-  }
-
-  // Bước 1: Lấy các cuộc gọi có callUuid nhưng durationSec là null
-  const logsWithUuid = await prisma.crmCallLog.findMany({
+  // Lấy các cuộc gọi Telesales (crmCallLog) đang bị null durationSec hoặc bằng 0
+  const logsToBackfill = await prismaCrm.crmCallLog.findMany({
     where: {
-      durationSec: null,
-      callUuid: { not: null },
+      OR: [{ durationSec: null }, { durationSec: 0 }],
     },
   });
 
-  console.log(`Found ${logsWithUuid.length} logs with callUuid and null durationSec.`);
+  console.log(`Found ${logsToBackfill.length} Telesales logs to backfill.`);
 
-  let updatedCount = 0;
-  for (const log of logsWithUuid) {
-    if (!log.callUuid) continue;
+  let matchedCount = 0;
+
+  for (const log of logsToBackfill) {
     try {
-      console.log(`Fetching detail for callUuid: ${log.callUuid}...`);
-      const response = await axios.get(
-        `https://public-v1.omicall.com/api/call/transaction/detail?call_uuid=${log.callUuid}`,
-        {
-          headers: {
-            Accept: 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          timeout: 5000,
-        }
-      );
-
-      const data = response.data;
-      const duration = data?.payload?.bill_sec || data?.payload?.duration || data?.bill_sec || data?.duration;
-
-      if (duration !== undefined && duration !== null) {
-        await prisma.crmCallLog.update({
-          where: { id: log.id },
-          data: { durationSec: Number(duration) },
-        });
-        console.log(`Successfully updated CallLog ID ${log.id} with duration: ${duration}s`);
-        updatedCount++;
-      } else {
-        console.log(`No duration found in OmiCall payload for uuid ${log.callUuid}`);
-      }
-    } catch (err: any) {
-      console.error(`Failed to fetch/update for uuid ${log.callUuid}:`, err.message);
-    }
-    // Delay 200ms để tránh rate limit
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-
-  console.log(`Step 1 complete. Updated ${updatedCount} logs directly from OmiCall.`);
-
-  // Bước 2: Với các cuộc gọi không có callUuid nhưng bị null durationSec
-  // Tìm trong crmOmicallLog (bảng local đã sync từ webhook) để so khớp theo legacyUserId và thời gian
-  const logsWithoutUuid = await prisma.crmCallLog.findMany({
-    where: {
-      durationSec: null,
-      callUuid: null,
-    },
-  });
-
-  console.log(`Found ${logsWithoutUuid.length} logs without callUuid and null durationSec.`);
-  let step2Updated = 0;
-
-  for (const log of logsWithoutUuid) {
-    // Tìm omicallLog cùng legacyUserId, staffId và thời gian lệch không quá 5 phút (300 giây)
-    const startRange = new Date(log.createdAt.getTime() - 5 * 60 * 1000);
-    const endRange = new Date(log.createdAt.getTime() + 5 * 60 * 1000);
-
-    const match = await prisma.crmOmicallLog.findFirst({
-      where: {
-        legacyUserId: log.legacyUserId,
-        staffId: log.staffId,
-        createdAt: {
-          gte: startRange,
-          lte: endRange,
-        },
-        duration: { gt: 0 },
-      },
-    });
-
-    if (match) {
-      await prisma.crmCallLog.update({
-        where: { id: log.id },
-        data: {
-          callUuid: match.callUuid,
-          durationSec: match.duration,
+      // 1. Tìm các số điện thoại liên kết với legacyUserId của khách hàng này
+      const userContacts = await prismaLegacy.user_contact.findMany({
+        where: {
+          user_id: log.legacyUserId,
+          is_disabled: false,
         },
       });
-      console.log(
-        `Step 2: Matched CallLog ID ${log.id} with OmiCall Log ID ${match.id} (duration: ${match.duration}s)`
-      );
-      step2Updated++;
+
+      if (userContacts.length === 0) {
+        // console.log(`No contacts found for customer ID ${log.legacyUserId}`);
+        continue;
+      }
+
+      // Lấy danh sách 9 chữ số cuối của các số điện thoại khách hàng
+      const phoneLast9s = userContacts.map((c) => getLast9Digits(c.phone_number)).filter(Boolean);
+      if (phoneLast9s.length === 0) continue;
+
+      // 2. Tìm trong crmOmicallLog (bảng webhook lưu log tổng đài)
+      // Mốc thời gian chênh lệch +/- 10 phút
+      const startRange = new Date(log.createdAt.getTime() - 10 * 60 * 1000);
+      const endRange = new Date(log.createdAt.getTime() + 10 * 60 * 1000);
+
+      const omicallLogs = await prismaCrm.crmOmicallLog.findMany({
+        where: {
+          createdAt: {
+            gte: startRange,
+            lte: endRange,
+          },
+          duration: { gt: 0 },
+        },
+      });
+
+      // Lọc các omicall logs có destinationNumber hoặc sourceNumber khớp 9 chữ số cuối
+      const match = omicallLogs.find((o) => {
+        const destLast9 = getLast9Digits(o.destinationNumber);
+        const srcLast9 = getLast9Digits(o.sourceNumber);
+        return phoneLast9s.includes(destLast9) || phoneLast9s.includes(srcLast9);
+      });
+
+      if (match) {
+        // Cập nhật CrmCallLog
+        await prismaCrm.crmCallLog.update({
+          where: { id: log.id },
+          data: {
+            callUuid: match.callUuid,
+            durationSec: match.duration,
+          },
+        });
+
+        // Cập nhật ngược lại CrmOmicallLog để tạo mối liên kết
+        await prismaCrm.crmOmicallLog.update({
+          where: { id: match.id },
+          data: {
+            callLogId: log.id,
+            legacyUserId: log.legacyUserId,
+            staffId: log.staffId,
+          },
+        });
+
+        console.log(
+          `[MATCHED] CallLog ID ${log.id} (user ${log.legacyUserId}) <-> OmiCall Log ID ${match.id} (${match.duration}s, UUID: ${match.callUuid})`
+        );
+        matchedCount++;
+      }
+    } catch (err: any) {
+      console.error(`Error processing CallLog ID ${log.id}:`, err.message);
     }
   }
 
-  console.log(`Step 2 complete. Matched and updated ${step2Updated} logs via local omicall logs.`);
-  console.log(`=== BACKFILL COMPLETED. TOTAL UPDATED: ${updatedCount + step2Updated} ===`);
+  console.log(`=== BACKFILL COMPLETED. TOTAL MATCHED & UPDATED: ${matchedCount} ===`);
 }
 
 backfill()
   .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prismaCrm.$disconnect();
+    await prismaLegacy.$disconnect();
+  });
