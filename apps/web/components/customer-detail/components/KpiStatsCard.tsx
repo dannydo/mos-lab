@@ -224,7 +224,7 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
           <div>
             <div style={valueStyle}>{formatCompactVND(stats?.totalTips || 0)}</div>
             <div style={subtextStyle}>
-              Tỉ lệ {stats?.tipRate || 0}% | Avg {formatCompactVND(stats?.avgTip || 0)}
+              {stats?.tipRate || 0}% (Avg {formatCompactVND(stats?.avgTip || 0).replace(' đ', '')})
             </div>
           </div>
         </div>
