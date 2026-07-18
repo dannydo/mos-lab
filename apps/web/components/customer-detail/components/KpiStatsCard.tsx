@@ -20,6 +20,35 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
   onOpenTipModal,
   onOpenRevenueModal,
 }) => {
+  const cardStyle = (color: string) => ({
+    background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
+    padding: '12px 14px',
+    borderRadius: '12px',
+    border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+    borderLeft: `4px solid ${color}`,
+    cursor: 'pointer',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: themeMode === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.02)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    height: '92px',
+  });
+
+  const valueStyle = {
+    fontSize: '20px',
+    fontWeight: '800',
+    color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
+    lineHeight: '1.2',
+  };
+
+  const subtextStyle = {
+    fontSize: '11px',
+    color: '#888',
+    marginTop: '2px',
+    fontWeight: '400',
+  };
+
   return (
     <Card
       title={
@@ -35,23 +64,10 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
       }}
     >
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-        {/* Box 1: LTV (Doanh thu) */}
+        {/* Box 1: LTV */}
         <div
           onClick={onOpenRevenueModal}
-          style={{
-            background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
-            padding: '12px 14px',
-            borderRadius: '12px',
-            border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-            borderLeft: '4px solid #D4A84B',
-            cursor: 'pointer',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: themeMode === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.02)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            height: '82px',
-          }}
+          style={cardStyle('#D4A84B') as React.CSSProperties}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
             e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(212, 168, 75, 0.15)';
@@ -64,8 +80,8 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
             e.currentTarget.style.borderColor = themeMode === 'dark' ? '#334155' : '#e2e8f0';
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', color: '#888', fontWeight: '500' }}>LTV (Doanh thu)</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>LTV</span>
             <div
               style={{
                 width: '26px',
@@ -75,38 +91,21 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
               <LineChartOutlined style={{ color: '#D4A84B', fontSize: '13px' }} />
             </div>
           </div>
-          <div
-            style={{
-              fontSize: '19px',
-              fontWeight: '800',
-              color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
-              marginTop: '2px',
-            }}
-          >
-            {formatCompactVND(stats?.totalSpent || 0)}
+          <div>
+            <div style={valueStyle}>{formatCompactVND(stats?.totalSpent || 0)}</div>
+            <div style={subtextStyle}>Tổng chi tiêu</div>
           </div>
         </div>
 
-        {/* Box 2: Lịch hẹn / Tần suất */}
+        {/* Box 2: Lịch hẹn */}
         <div
-          style={{
-            background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
-            padding: '12px 14px',
-            borderRadius: '12px',
-            border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-            borderLeft: '4px solid #14b8a6',
-            boxShadow: themeMode === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.02)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            height: '82px',
-            transition: 'all 0.3s ease',
-          }}
+          style={cardStyle('#14b8a6') as React.CSSProperties}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
             e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(20, 184, 166, 0.15)';
@@ -119,8 +118,8 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
             e.currentTarget.style.borderColor = themeMode === 'dark' ? '#334155' : '#e2e8f0';
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', color: '#888', fontWeight: '500' }}>Lịch hẹn / Tần suất</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>Lịch hẹn</span>
             <div
               style={{
                 width: '26px',
@@ -130,40 +129,27 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
               <CalendarOutlined style={{ color: '#14b8a6', fontSize: '13px' }} />
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '2px' }}>
-            <span style={{ fontSize: '19px', fontWeight: '800', color: themeMode === 'dark' ? '#f8fafc' : '#0f172a' }}>
-              {stats?.totalVisits || 0}
-            </span>
-            <span style={{ color: '#888', fontSize: '12px' }}>lần</span>
-            <span style={{ color: '#888', fontWeight: 'normal', fontSize: '12px', margin: '0 1px' }}>/</span>
-            <span style={{ color: '#14b8a6', fontWeight: '700', fontSize: '14px' }}>
-              {stats?.avgFrequency ? `${Math.round(Number(stats.avgFrequency))} ngày` : 'N/A'}
-            </span>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', lineHeight: '1.2' }}>
+              <span style={valueStyle}>{stats?.totalVisits || 0}</span>
+              <span style={{ color: '#888', fontSize: '12px', fontWeight: '500' }}>lần</span>
+            </div>
+            <div style={subtextStyle}>
+              {stats?.avgFrequency ? `Mỗi ${Math.round(Number(stats.avgFrequency))} ngày` : 'Chưa có tần suất'}
+            </div>
           </div>
         </div>
 
-        {/* Box 3: Kim cương còn lại */}
+        {/* Box 3: Kim Cương */}
         <div
           onClick={onOpenGemModal}
-          style={{
-            background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
-            padding: '12px 14px',
-            borderRadius: '12px',
-            border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-            borderLeft: '4px solid #0ea5e9',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            boxShadow: themeMode === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.02)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            height: '82px',
-          }}
+          style={cardStyle('#0ea5e9') as React.CSSProperties}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
             e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(14, 165, 233, 0.15)';
@@ -176,8 +162,8 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
             e.currentTarget.style.borderColor = themeMode === 'dark' ? '#334155' : '#e2e8f0';
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', color: '#888', fontWeight: '500' }}>Kim cương còn lại</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>Kim Cương</span>
             <div
               style={{
                 width: '26px',
@@ -187,43 +173,25 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
               <SketchOutlined style={{ color: '#0ea5e9', fontSize: '13px' }} />
             </div>
           </div>
-          <div
-            style={{
-              fontSize: '19px',
-              fontWeight: '800',
-              color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
-              marginTop: '2px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-          >
-            {stats?.gemBalance || 0} <span style={{ fontSize: '12px', color: '#888', fontWeight: 'normal' }}>💎</span>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', lineHeight: '1.2' }}>
+              <span style={valueStyle}>{stats?.gemBalance || 0}</span>
+              <span style={{ fontSize: '13px', color: '#888' }}>💎</span>
+            </div>
+            <div style={subtextStyle}>Số dư tích luỹ</div>
           </div>
         </div>
 
         {/* Box 4: Tips */}
         <div
           onClick={onOpenTipModal}
-          style={{
-            background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
-            padding: '12px 14px',
-            borderRadius: '12px',
-            border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-            borderLeft: '4px solid #22c55e',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            boxShadow: themeMode === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.02)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            height: '82px',
-          }}
+          style={cardStyle('#22c55e') as React.CSSProperties}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
             e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(34, 197, 94, 0.15)';
@@ -236,21 +204,8 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
             e.currentTarget.style.borderColor = themeMode === 'dark' ? '#334155' : '#e2e8f0';
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span
-              style={{
-                fontSize: '11px',
-                color: '#888',
-                fontWeight: '500',
-                maxWidth: '80%',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-              title={`Tips (${stats?.tipRate || 0}% | Avg ${formatCompactVND(stats?.avgTip || 0)})`}
-            >
-              Tips ({stats?.tipRate || 0}% | Avg {formatCompactVND(stats?.avgTip || 0)})
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>Tips</span>
             <div
               style={{
                 width: '26px',
@@ -260,20 +215,17 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
               <DollarOutlined style={{ color: '#22c55e', fontSize: '13px' }} />
             </div>
           </div>
-          <div
-            style={{
-              fontSize: '19px',
-              fontWeight: '800',
-              color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
-              marginTop: '2px',
-            }}
-          >
-            {formatCompactVND(stats?.totalTips || 0)}
+          <div>
+            <div style={valueStyle}>{formatCompactVND(stats?.totalTips || 0)}</div>
+            <div style={subtextStyle}>
+              Tỉ lệ {stats?.tipRate || 0}% | Avg {formatCompactVND(stats?.avgTip || 0)}
+            </div>
           </div>
         </div>
       </div>
