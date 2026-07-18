@@ -215,6 +215,11 @@ export interface CustomerNote {
   content: string;
   createdAt: string;
   staffName: string | null;
+  note?: string;
+  noteFieldKey?: string;
+  isSticky?: boolean;
+  isIssue?: boolean;
+  dateCreated?: string | null;
 }
 
 export interface ComboBalance {

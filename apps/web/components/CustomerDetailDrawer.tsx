@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { Drawer, Spin, Avatar, Tag, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message } from 'antd';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Drawer, Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message } from 'antd';
 import {
   PhoneOutlined,
   UserOutlined,
@@ -29,6 +29,7 @@ import { ReferralCard } from './customer-detail/components/ReferralCard';
 import { BookingsTab } from './customer-detail/components/BookingsTab';
 import { NotesTab } from './customer-detail/components/NotesTab';
 import { CallsTab } from './customer-detail/components/CallsTab';
+import { TimelineViewTab } from './customer-detail/components/TimelineViewTab';
 
 const GemHistoryModal = dynamic(
   () => import('./customer-detail/components/GemHistoryModal').then((m) => m.GemHistoryModal),
@@ -147,6 +148,86 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     }
     return null;
   }, []);
+
+  const [activeTabKey, setActiveTabKey] = useState<string>('bookings');
+
+  // Sync tab with localStorage on mount & open changes
+  useEffect(() => {
+    if (open && typeof window !== 'undefined') {
+      const saved = localStorage.getItem('customer_detail_active_tab');
+      if (saved) {
+        setActiveTabKey(saved);
+      } else {
+        setActiveTabKey('bookings');
+      }
+    }
+  }, [open]);
+
+  const handleTabChange = (key: string) => {
+    setActiveTabKey(key);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('customer_detail_active_tab', key);
+    }
+  };
+
+  const timelineCount = useMemo(() => {
+    const bookingIdsWithNotes = new Set<string>();
+
+    bookings.forEach((b: SafeAny) => {
+      if (b.bookingNote && b.bookingNote.trim() !== '') {
+        bookingIdsWithNotes.add(String(b.id));
+      }
+    });
+
+    const findClosestBooking = (dateStr: string | null) => {
+      if (!dateStr || bookings.length === 0) return null;
+      const targetTime = new Date(dateStr).getTime();
+      let closestBooking: SafeAny = null;
+      let minDiff = Infinity;
+
+      bookings.forEach((b: SafeAny) => {
+        if (!b.bookingDate) return;
+        const diff = Math.abs(new Date(b.bookingDate).getTime() - targetTime);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestBooking = b;
+        }
+      });
+
+      if (minDiff <= 432000000) {
+        return closestBooking;
+      }
+      return null;
+    };
+
+    let hasGeneralNotes = false;
+
+    notes.forEach((n: SafeAny) => {
+      let targetBookingId = n.orderId ? String(n.orderId) : null;
+      if (!targetBookingId) {
+        const closest = findClosestBooking(n.dateCreated);
+        if (closest) targetBookingId = String(closest.id);
+      }
+      if (targetBookingId) {
+        bookingIdsWithNotes.add(targetBookingId);
+      } else {
+        hasGeneralNotes = true;
+      }
+    });
+
+    calls.forEach((c: SafeAny) => {
+      if (!c.note || c.note.trim() === '') return;
+      const closest = findClosestBooking(c.createdAt);
+      const targetBookingId = closest ? String(closest.id) : null;
+      if (targetBookingId) {
+        bookingIdsWithNotes.add(targetBookingId);
+      } else {
+        hasGeneralNotes = true;
+      }
+    });
+
+    return bookingIdsWithNotes.size + (hasGeneralNotes ? 1 : 0);
+  }, [bookings, notes, calls]);
 
   return (
     <Drawer
@@ -431,7 +512,8 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                 }}
               >
                 <Tabs
-                  defaultActiveKey="bookings"
+                  activeKey={activeTabKey}
+                  onChange={handleTabChange}
                   items={[
                     {
                       key: 'bookings',
@@ -445,6 +527,13 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                           setSelectedBookingForReschedule={setSelectedBookingForReschedule}
                           setRescheduleModalVisible={setRescheduleModalVisible}
                         />
+                      ),
+                    },
+                    {
+                      key: 'timeline',
+                      label: `Tổng hợp ghi chú (${timelineCount})`,
+                      children: (
+                        <TimelineViewTab bookings={bookings} notes={notes} calls={calls} themeMode={themeMode} />
                       ),
                     },
                     {

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Timeline, Tag, Popconfirm, Button } from 'antd';
+import { Tag, Popconfirm, Button } from 'antd';
 import { CloseCircleOutlined, CalendarOutlined } from '@ant-design/icons';
 
 interface BookingsTabProps {
@@ -31,8 +31,8 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
       }}
     >
       {bookings.length > 0 ? (
-        <Timeline
-          items={bookings.map((b: SafeAny) => {
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {bookings.map((b: SafeAny) => {
             const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
 
             let formattedDate = 'N/A';
@@ -43,135 +43,143 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
               formattedDate = `${dayPrefix}, ${d.toLocaleString('vi-VN')}`;
             }
 
-            return {
-              key: b.id,
-              color: isCompleted ? 'green' : 'red',
-              children: (
+            return (
+              <div
+                key={b.id}
+                style={{
+                  background: isCompleted
+                    ? themeMode === 'dark'
+                      ? 'rgba(255, 255, 255, 0.02)'
+                      : '#f9fafb'
+                    : themeMode === 'dark'
+                      ? 'rgba(239, 68, 68, 0.03)'
+                      : '#fff5f5',
+                  border: isCompleted
+                    ? `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`
+                    : '1px solid #ff4d4f',
+                  borderLeft: isCompleted ? '4px solid #52c41a' : '4px solid #ff4d4f',
+                  boxShadow: isCompleted ? 'none' : '0 0 10px rgba(255, 77, 79, 0.15)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                }}
+              >
                 <div
                   style={{
-                    background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#f9fafb',
-                    border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                    borderRadius: '8px',
-                    padding: '12px',
-                    marginTop: '-6px',
-                    marginBottom: '10px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '10px',
+                    flexWrap: 'wrap',
                   }}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: '10px',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
-                      {b.services && b.services.length > 0 ? b.services.join(', ') : 'Dịch vụ'}
-                    </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#888' }}>{formattedDate}</span>
-                      <Tag color={isCompleted ? 'success' : 'error'}>{isCompleted ? 'Hoàn thành' : b.orderState}</Tag>
-                    </div>
+                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                    {b.services && b.services.length > 0 ? b.services.join(', ') : 'Dịch vụ'}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#888' }}>{formattedDate}</span>
+                    <Tag color={isCompleted ? 'success' : 'error'}>{isCompleted ? 'Hoàn thành' : b.orderState}</Tag>
                   </div>
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      color: '#888',
-                      marginTop: '4px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '2px',
-                    }}
-                  >
-                    <div>
-                      CN: <strong>{b.branchName}</strong> | CV: <strong>{b.technicianName}</strong>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', opacity: 0.85 }}>
-                      <span>
-                        CC IN: <strong>{b.ccInName || 'N/A'}</strong>
-                      </span>
-                      <span>
-                        CC OUT: <strong>{b.ccOutName || 'N/A'}</strong>
-                      </span>
-                      <span>
-                        BK: <strong>{b.bookerName || 'N/A'}</strong>
-                      </span>
-                    </div>
-                  </div>
-                  {b.bookingNote && (
-                    <div
-                      style={{
-                        fontSize: '12.5px',
-                        fontStyle: 'italic',
-                        background: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-                        borderLeft: '3px solid #D4A84B',
-                        padding: '6px 10px',
-                        marginTop: '8px',
-                        borderRadius: '0 4px 4px 0',
-                        color: themeMode === 'dark' ? '#d1d5db' : '#374151',
-                      }}
-                    >
-                      Ghi chú đặt lịch: {b.bookingNote}
-                    </div>
-                  )}
-                  {!isCompleted && b.orderState !== 'Cancelled' && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        marginTop: '10px',
-                        gap: '8px',
-                      }}
-                    >
-                      <Popconfirm
-                        title="Xác nhận hủy lịch"
-                        description="Anh/chị có chắc chắn muốn hủy lịch hẹn này không?"
-                        okText="Có, Hủy lịch"
-                        cancelText="Không"
-                        onConfirm={() => handleCancelBooking(b.id)}
-                        okButtonProps={{ danger: true }}
-                      >
-                        <Button
-                          type="default"
-                          danger
-                          size="small"
-                          icon={<CloseCircleOutlined />}
-                          style={{ borderRadius: '4px', fontWeight: '600' }}
-                        >
-                          Hủy lịch
-                        </Button>
-                      </Popconfirm>
-                      <Button
-                        type="primary"
-                        size="small"
-                        icon={<CalendarOutlined />}
-                        style={{
-                          backgroundColor: '#D4A84B',
-                          borderColor: '#D4A84B',
-                          color: '#000000',
-                          fontWeight: '600',
-                          borderRadius: '4px',
-                        }}
-                        onClick={() => {
-                          setSelectedBookingForReschedule({
-                            ...b,
-                            customerName: customer?.name || 'Khách Hàng',
-                            customerPhone: customer?.phone || '',
-                            customerId: customer?.id,
-                          });
-                          setRescheduleModalVisible(true);
-                        }}
-                      >
-                        Dời lịch hẹn
-                      </Button>
-                    </div>
-                  )}
                 </div>
-              ),
-            };
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: '#888',
+                    marginTop: '4px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                  }}
+                >
+                  <div>
+                    CN: <strong>{b.branchName}</strong> | CV: <strong>{b.technicianName}</strong>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', opacity: 0.85 }}>
+                    <span>
+                      CC IN: <strong>{b.checkinStaffName || 'Unknown'}</strong>
+                    </span>
+                    <span>
+                      CC OUT: <strong>{b.checkoutStaffName || 'Unknown'}</strong>
+                    </span>
+                    <span>
+                      BK: <strong>{b.bookerStaffName || 'Unknown'}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                {b.bookingNote && b.bookingNote.trim() !== '' && (
+                  <div
+                    style={{
+                      background: themeMode === 'dark' ? '#0f172a' : '#fff',
+                      border: `1px solid ${themeMode === 'dark' ? '#1e293b' : '#f0f0f0'}`,
+                      borderRadius: '6px',
+                      padding: '8px 12px',
+                      marginTop: '8px',
+                      fontStyle: 'italic',
+                      fontSize: '13px',
+                      color: themeMode === 'dark' ? '#cbd5e1' : '#4b5563',
+                      borderLeft: `3px solid ${themeMode === 'dark' ? '#D4A84B' : '#d4b106'}`,
+                    }}
+                  >
+                    Ghi chú đặt lịch: {b.bookingNote}
+                  </div>
+                )}
+
+                {!isCompleted && b.orderState !== 'Cancelled' && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      marginTop: '10px',
+                      gap: '8px',
+                    }}
+                  >
+                    <Popconfirm
+                      title="Xác nhận hủy lịch"
+                      description="Anh/chị có chắc chắn muốn hủy lịch hẹn này không?"
+                      okText="Có, Hủy lịch"
+                      cancelText="Không"
+                      onConfirm={() => handleCancelBooking(b.id)}
+                      okButtonProps={{ danger: true }}
+                    >
+                      <Button
+                        type="default"
+                        danger
+                        size="small"
+                        icon={<CloseCircleOutlined />}
+                        style={{ borderRadius: '4px', fontWeight: '600' }}
+                      >
+                        Hủy lịch
+                      </Button>
+                    </Popconfirm>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<CalendarOutlined />}
+                      style={{
+                        backgroundColor: '#D4A84B',
+                        borderColor: '#D4A84B',
+                        color: '#000000',
+                        fontWeight: '600',
+                        borderRadius: '4px',
+                      }}
+                      onClick={() => {
+                        setSelectedBookingForReschedule({
+                          ...b,
+                          customerName: customer?.name || 'Khách Hàng',
+                          customerPhone: customer?.phone || '',
+                          customerId: customer?.id,
+                        });
+                        setRescheduleModalVisible(true);
+                      }}
+                    >
+                      Dời lịch hẹn
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
           })}
-        />
+        </div>
       ) : (
         <div style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>Không có lịch sử đặt lịch nào.</div>
       )}

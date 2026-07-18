@@ -3421,6 +3421,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         SELECT 
           un.id,
           un.note,
+          un.note_field_key as noteFieldKey,
           un.is_sticky as isSticky,
           un.is_issue as isIssue,
           un.date_created as dateCreated,
@@ -3434,6 +3435,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const formattedNotes = notesRaw.map((n) => ({
         id: Number(n.id),
         note: n.note || '',
+        noteFieldKey: n.noteFieldKey || 'note',
         isSticky: Boolean(n.isSticky),
         isIssue: Boolean(n.isIssue),
         dateCreated: n.dateCreated ? new Date(n.dateCreated).toISOString() : null,
