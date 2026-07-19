@@ -18,7 +18,7 @@ import {
   Select,
   message,
 } from 'antd';
-import { ClockCircleOutlined, SyncOutlined, ShopOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, SyncOutlined, ShopOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
@@ -128,26 +128,46 @@ export default function TodayDashboard() {
             type="vertical"
             style={{ height: '32px', borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9' }}
           />
-          <DatePicker
-            value={data.selectedDate}
-            onChange={(date) => {
-              if (date) {
-                data.setSelectedDate(date);
-                localStorage.setItem('today_selected_date', date.format('YYYY-MM-DD'));
-              }
-            }}
-            format="DD/MM/YYYY"
-            allowClear={false}
-            style={{ width: '140px' }}
-          />
+          <Space.Compact>
+            <Button
+              icon={<LeftOutlined />}
+              onClick={() => {
+                if (data.selectedDate) {
+                  const prevDate = data.selectedDate.subtract(1, 'day');
+                  data.setSelectedDate(prevDate);
+                  localStorage.setItem('today_selected_date', prevDate.format('YYYY-MM-DD'));
+                }
+              }}
+            />
+            <DatePicker
+              value={data.selectedDate}
+              onChange={(date) => {
+                if (date) {
+                  data.setSelectedDate(date);
+                  localStorage.setItem('today_selected_date', date.format('YYYY-MM-DD'));
+                }
+              }}
+              format="DD/MM/YYYY"
+              allowClear={false}
+              style={{ width: '130px' }}
+            />
+            <Button
+              icon={<RightOutlined />}
+              onClick={() => {
+                if (data.selectedDate) {
+                  const nextDate = data.selectedDate.add(1, 'day');
+                  data.setSelectedDate(nextDate);
+                  localStorage.setItem('today_selected_date', nextDate.format('YYYY-MM-DD'));
+                }
+              }}
+            />
+          </Space.Compact>
           <Button
             type="primary"
             icon={<SyncOutlined spin={data.loading || data.silentLoading} />}
             onClick={data.handleRefresh}
             style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000000', fontWeight: 'bold' }}
-          >
-            Làm mới
-          </Button>
+          />
 
           {data.selectedDate?.isSame(dayjs(), 'day') && (
             <>

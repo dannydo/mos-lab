@@ -255,7 +255,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
       }
       setCountdown((prev) => {
         if (prev <= 1) {
-          fetchDashboardData(selectedDate, true);
+          window.location.reload();
           return refreshInterval;
         }
         return prev - 1;
@@ -266,8 +266,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchDashboardData(selectedDate, true);
-        setCountdown(refreshInterval);
+        window.location.reload();
       }
     };
 
