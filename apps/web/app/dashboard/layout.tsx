@@ -183,12 +183,20 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { themeMode, toggleTheme } = useTheme();
+  const { token } = theme.useToken();
+
   const [collapsed, setCollapsed] = useState(false);
   const [isDashboardVisible, setIsDashboardVisible] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('TN');
   const [onlineMembers, setOnlineMembers] = useState<SafeAny[]>([]);
   const [isDailyCallsOpen, setIsDailyCallsOpen] = useState(false);
   const [dailyCallsCount, setDailyCallsCount] = useState(0);
+  const [user, setUser] = useState<SafeAny>(null);
+  const [loading, setLoading] = useState(true);
+  const [isImpersonating, setIsImpersonating] = useState(false);
 
   const fetchDailyCallsCount = useCallback(async () => {
     try {
@@ -201,10 +209,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
+    if (loading || !user) return;
     fetchDailyCallsCount();
     const interval = setInterval(fetchDailyCallsCount, 30000);
     return () => clearInterval(interval);
-  }, [fetchDailyCallsCount]);
+  }, [fetchDailyCallsCount, loading, user]);
 
   const fetchOnlineStaff = useCallback(async () => {
     try {
@@ -259,10 +268,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
+    if (loading || !user) return;
     fetchOnlineStaff();
     const interval = setInterval(fetchOnlineStaff, 25000);
     return () => clearInterval(interval);
-  }, [fetchOnlineStaff]);
+  }, [fetchOnlineStaff, loading, user]);
 
   useEffect(() => {
     const saved = localStorage.getItem('mos_sidebar_collapsed');
@@ -276,13 +286,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setCollapsed(nextVal);
     localStorage.setItem('mos_sidebar_collapsed', String(nextVal));
   };
-  const [user, setUser] = useState<SafeAny>(null);
-  const [loading, setLoading] = useState(true);
-  const [isImpersonating, setIsImpersonating] = useState(false);
-  const router = useRouter();
-  const pathname = usePathname();
-  const { themeMode, toggleTheme } = useTheme();
-  const { token } = theme.useToken();
 
   useEffect(() => {
     // Check authentication
@@ -293,19 +296,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!tokenStr || !storedUser) {
       localStorage.removeItem('mos_token');
       localStorage.removeItem('mos_user');
+      localStorage.removeItem('mos_omicall_auto_init');
       localStorage.removeItem('mos_original_token');
       localStorage.removeItem('mos_original_user');
       router.push('/login');
     } else {
-      setUser(JSON.parse(storedUser));
+      const parsed = JSON.parse(storedUser);
+      setUser(parsed);
       setIsImpersonating(hasOriginal);
       setLoading(false);
+
+      // Background profile sync to fetch latest user config & auto-init roles
+      apiClient.auth
+        .me()
+        .then((res: SafeAny) => {
+          if (res?.user) {
+            localStorage.setItem('mos_user', JSON.stringify(res.user));
+            if (res.resolvedOmicallAutoInit !== undefined) {
+              localStorage.setItem('mos_omicall_auto_init', String(!!res.resolvedOmicallAutoInit));
+            }
+            setUser(res.user);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to sync profile in background:', err);
+        });
     }
   }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem('mos_token');
     localStorage.removeItem('mos_user');
+    localStorage.removeItem('mos_omicall_auto_init');
     localStorage.removeItem('mos_original_token');
     localStorage.removeItem('mos_original_user');
     router.push('/login');

@@ -53,4 +53,7 @@ export interface OmiCallContextType {
   setSelectedAudioInputId: (deviceId: string) => void;
   setSelectedAudioOutputId: (deviceId: string) => void;
   refreshAudioDevices: () => Promise<void>;
+  omicallReady: boolean;
+  setOmicallReady: (ready: boolean) => void;
+  lastRegisterEvent?: SafeAny;
 }

@@ -24,6 +24,7 @@ export interface Staff {
   legacyStaffId?: number | null;
   lastLoginAt?: string | null;
   lastActiveAt?: string | null;
+  omicallAutoInit?: boolean | null;
 }
 
 export interface LoginRequest {
@@ -34,6 +35,7 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   user: Staff;
+  resolvedOmicallAutoInit?: boolean;
 }
 
 export interface AuthState {
@@ -48,6 +50,7 @@ export interface Role {
   viewKPI: boolean;
   viewTeamKPI: boolean;
   manageStaff: boolean;
+  omicallAutoInit: boolean;
   isSystem: boolean;
   description?: string;
   createdAt: string;

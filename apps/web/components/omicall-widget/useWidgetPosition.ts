@@ -4,6 +4,8 @@ export const useWidgetPosition = () => {
   const [widgetMinimized, setWidgetMinimizedState] = useState(false);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [size, setSize] = useState<{ width: number; height: number }>({ width: 384, height: 320 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
 
   const setWidgetMinimized = (min: boolean) => {
     setWidgetMinimizedState(min);
@@ -24,6 +26,7 @@ export const useWidgetPosition = () => {
     }
 
     e.preventDefault();
+    setIsDragging(true);
     const startX = e.clientX;
     const startY = e.clientY;
     const currentWidth = isMinimized ? 56 : size.width;
@@ -32,6 +35,9 @@ export const useWidgetPosition = () => {
     const initialX = position?.x ?? window.innerWidth - currentWidth - 24;
     const initialY = position?.y ?? window.innerHeight - currentHeight - 24;
     let hasMoved = false;
+
+    let animationFrameId: number | null = null;
+    let latestPos = { x: initialX, y: initialY };
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
@@ -43,14 +49,27 @@ export const useWidgetPosition = () => {
 
       const newX = Math.max(10, Math.min(window.innerWidth - currentWidth - 10, initialX + deltaX));
       const newY = Math.max(10, Math.min(window.innerHeight - currentHeight - 10, initialY + deltaY));
-      const newPos = { x: newX, y: newY };
-      setPosition(newPos);
-      localStorage.setItem('omi_widget_pos', JSON.stringify(newPos));
+      latestPos = { x: newX, y: newY };
+
+      if (animationFrameId === null) {
+        animationFrameId = requestAnimationFrame(() => {
+          setPosition(latestPos);
+          animationFrameId = null;
+        });
+      }
     };
 
     const handleMouseUp = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      setIsDragging(false);
+
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
+
+      // Save position to localStorage once when dragging ends
+      localStorage.setItem('omi_widget_pos', JSON.stringify(latestPos));
 
       if (isMinimized && !hasMoved) {
         setWidgetMinimized(false);
@@ -64,6 +83,7 @@ export const useWidgetPosition = () => {
   const handleResizeStart = (e: React.MouseEvent, direction: 'bottom-right' | 'bottom-left' | 'bottom') => {
     e.preventDefault();
     e.stopPropagation();
+    setIsResizing(true);
 
     const startX = e.clientX;
     const startY = e.clientY;
@@ -71,6 +91,10 @@ export const useWidgetPosition = () => {
     const startHeight = size.height;
     const startXPos = position?.x ?? window.innerWidth - size.width - 24;
     const startYPos = position?.y ?? window.innerHeight - size.height - 24;
+
+    let animationFrameId: number | null = null;
+    let latestSize = { width: startWidth, height: startHeight };
+    let latestX = startXPos;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
@@ -91,19 +115,34 @@ export const useWidgetPosition = () => {
         newHeight = Math.max(240, Math.min(600, startHeight + deltaY));
       }
 
-      setSize({ width: newWidth, height: newHeight });
-      localStorage.setItem('omi_widget_size', JSON.stringify({ width: newWidth, height: newHeight }));
+      latestSize = { width: newWidth, height: newHeight };
+      latestX = newX;
 
-      if (direction === 'bottom-left') {
-        const newPos = { x: newX, y: position?.y ?? startYPos };
-        setPosition(newPos);
-        localStorage.setItem('omi_widget_pos', JSON.stringify(newPos));
+      if (animationFrameId === null) {
+        animationFrameId = requestAnimationFrame(() => {
+          setSize(latestSize);
+          if (direction === 'bottom-left') {
+            setPosition({ x: latestX, y: position?.y ?? startYPos });
+          }
+          animationFrameId = null;
+        });
       }
     };
 
     const handleMouseUp = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      setIsResizing(false);
+
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
+
+      // Save size and position once when resizing ends
+      localStorage.setItem('omi_widget_size', JSON.stringify(latestSize));
+      if (direction === 'bottom-left') {
+        localStorage.setItem('omi_widget_pos', JSON.stringify({ x: latestX, y: position?.y ?? startYPos }));
+      }
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -150,6 +189,8 @@ export const useWidgetPosition = () => {
     setSize,
     handleDragStart,
     handleResizeStart,
+    isDragging,
+    isResizing,
   };
 };
 export default useWidgetPosition;

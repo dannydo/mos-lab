@@ -479,6 +479,16 @@ export default function StaffPage() {
                   </Checkbox>
                 </Form.Item>
               </Col>
+              <Col span={24}>
+                <Form.Item name="omicallAutoInit" valuePropName="checked" style={{ marginBottom: 4 }}>
+                  <Checkbox>
+                    <Text style={{ fontWeight: 500 }}>Tự động nhận cuộc gọi OmiCall (`omicallAutoInit`)</Text>
+                    <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
+                      Tự động khởi chạy OmiCall SDK và đăng ký SIP khi đăng nhập để sẵn sàng nhận cuộc gọi đến.
+                    </Paragraph>
+                  </Checkbox>
+                </Form.Item>
+              </Col>
             </Row>
           </Card>
 

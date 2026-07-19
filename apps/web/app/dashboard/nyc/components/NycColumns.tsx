@@ -49,17 +49,20 @@ export const getNycColumns = ({
             src={record.avatar || undefined}
             icon={<UserOutlined />}
             style={{
-              backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5',
+              backgroundColor: 'var(--avatar-bg)',
               color: '#D4A84B',
-              border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
+              border: '1px solid var(--avatar-border)',
               flexShrink: 0,
             }}
           />
           <div>
-            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline transition-all">
+            <div
+              style={{ fontWeight: '600', color: 'var(--client-name-color)' }}
+              className="hover:underline transition-all"
+            >
               {text}
             </div>
-            <div style={{ fontSize: '12px', color: token.colorTextDescription }}>{record.phone}</div>
+            <div style={{ fontSize: '12px', color: 'var(--client-phone-color)' }}>{record.phone}</div>
           </div>
         </Space>
       ),
@@ -128,7 +131,7 @@ export const getNycColumns = ({
         return days !== null ? (
           `${days} ngày`
         ) : (
-          <Text style={{ color: themeMode === 'dark' ? '#8c8c8c' : '#595959' }}>Chưa từng đến</Text>
+          <Text style={{ color: 'var(--client-desc-color)' }}>Chưa từng đến</Text>
         );
       },
     },
@@ -146,7 +149,7 @@ export const getNycColumns = ({
         staff ? (
           <Tag color="cyan">{staff.displayName}</Tag>
         ) : (
-          <span style={{ fontStyle: 'italic', color: themeMode === 'dark' ? '#8c8c8c' : '#595959' }}>Chưa phân bổ</span>
+          <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)' }}>Chưa phân bổ</span>
         ),
     },
     {

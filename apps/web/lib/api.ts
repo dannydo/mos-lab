@@ -23,4 +23,24 @@ api.interceptors.request.use(
   }
 );
 
+// Global response interceptor to handle 401 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('mos_token');
+        localStorage.removeItem('mos_user');
+        localStorage.removeItem('mos_omicall_auto_init');
+        localStorage.removeItem('mos_original_token');
+        localStorage.removeItem('mos_original_user');
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

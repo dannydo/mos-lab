@@ -32,7 +32,7 @@ export const WidgetMinimized: React.FC<WidgetMinimizedProps> = ({
       }}
     >
       {callState === 'connected' ? (
-        <span className="text-black font-bold text-xs">{formatDuration(callDuration)}</span>
+        <span className="text-black font-bold text-xs font-mono">{formatDuration(callDuration)}</span>
       ) : (
         <PhoneOutlined style={{ fontSize: '20px', color: 'black' }} />
       )}

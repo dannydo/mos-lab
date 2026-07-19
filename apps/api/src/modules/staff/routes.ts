@@ -19,6 +19,7 @@ interface CreateStaffInput {
   avatarUrl?: string | null;
   notes?: string | null;
   legacyStaffId?: string | number | null;
+  omicallAutoInit?: boolean | null;
 }
 
 export async function staffRoutes(fastify: FastifyInstance) {
@@ -55,6 +56,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         isActive: true,
         avatarUrl: true,
         lastActiveAt: true,
+        omicallAutoInit: true,
       };
 
       if (currentUser.role === 'admin') {
@@ -129,6 +131,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
           legacyStaffId: true,
           lastLoginAt: true,
           lastActiveAt: true,
+          omicallAutoInit: true,
         },
       });
 
@@ -165,6 +168,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       avatarUrl,
       notes,
       legacyStaffId,
+      omicallAutoInit,
     } = request.body as CreateStaffInput;
 
     if (!username || !displayName) {
@@ -214,6 +218,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
               ? legacyStaffId
               : parseInt(legacyStaffId, 10)
             : null,
+          omicallAutoInit: omicallAutoInit !== undefined ? omicallAutoInit : null,
         },
       });
 
@@ -271,6 +276,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       avatarUrl,
       notes,
       legacyStaffId,
+      omicallAutoInit,
     } = request.body as CreateStaffInput;
 
     try {
@@ -297,6 +303,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       if (emergencyPhone !== undefined) updateData.emergencyPhone = emergencyPhone;
       if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
       if (notes !== undefined) updateData.notes = notes;
+      if (omicallAutoInit !== undefined) updateData.omicallAutoInit = omicallAutoInit;
       if (legacyStaffId !== undefined) {
         updateData.legacyStaffId = legacyStaffId
           ? typeof legacyStaffId === 'number'

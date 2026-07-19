@@ -5,6 +5,18 @@ import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
 import { LoginRequest, LoginResponse } from '@mos-lab/shared';
 
 export async function authRoutes(fastify: FastifyInstance) {
+  // Helper to resolve auto init based on staff & role
+  const resolveOmicallAutoInit = async (staffMember: SafeAny) => {
+    if (staffMember.omicallAutoInit === true) return true;
+    if (staffMember.omicallAutoInit === false) return false;
+
+    // Inherit from role
+    const roleRecord = await fastify.prisma.crm.crmRole.findUnique({
+      where: { key: staffMember.role },
+    });
+    return !!roleRecord?.omicallAutoInit;
+  };
+
   // POST /api/auth/login
   fastify.post('/auth/login', async (request, reply) => {
     const { username, password } = request.body as LoginRequest;
@@ -63,10 +75,12 @@ export async function authRoutes(fastify: FastifyInstance) {
           displayName: updatedStaff.displayName,
           role: updatedStaff.role as SafeAny,
           isActive: updatedStaff.isActive,
+          omicallAutoInit: updatedStaff.omicallAutoInit,
           createdAt: updatedStaff.createdAt.toISOString(),
           lastLoginAt: updatedStaff.lastLoginAt ? updatedStaff.lastLoginAt.toISOString() : null,
           lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null,
         },
+        resolvedOmicallAutoInit: await resolveOmicallAutoInit(updatedStaff),
       };
 
       return response;
@@ -208,10 +222,12 @@ export async function authRoutes(fastify: FastifyInstance) {
           role: updatedStaff.role as SafeAny,
           isActive: updatedStaff.isActive,
           avatarUrl: updatedStaff.avatarUrl,
+          omicallAutoInit: updatedStaff.omicallAutoInit,
           createdAt: updatedStaff.createdAt.toISOString(),
           lastLoginAt: updatedStaff.lastLoginAt ? updatedStaff.lastLoginAt.toISOString() : null,
           lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null,
         },
+        resolvedOmicallAutoInit: await resolveOmicallAutoInit(updatedStaff),
       };
 
       return response;
@@ -248,10 +264,12 @@ export async function authRoutes(fastify: FastifyInstance) {
           role: staff.role as SafeAny,
           isActive: staff.isActive,
           avatarUrl: staff.avatarUrl,
+          omicallAutoInit: staff.omicallAutoInit,
           createdAt: staff.createdAt.toISOString(),
           lastLoginAt: staff.lastLoginAt ? staff.lastLoginAt.toISOString() : null,
           lastActiveAt: staff.lastActiveAt ? staff.lastActiveAt.toISOString() : null,
         },
+        resolvedOmicallAutoInit: await resolveOmicallAutoInit(staff),
       };
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get profile error:');
@@ -326,8 +344,10 @@ export async function authRoutes(fastify: FastifyInstance) {
           role: targetStaff.role as SafeAny,
           isActive: targetStaff.isActive,
           avatarUrl: targetStaff.avatarUrl,
+          omicallAutoInit: targetStaff.omicallAutoInit,
           createdAt: targetStaff.createdAt.toISOString(),
         },
+        resolvedOmicallAutoInit: await resolveOmicallAutoInit(targetStaff),
       };
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Impersonation error:');

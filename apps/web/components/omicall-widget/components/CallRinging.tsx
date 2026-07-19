@@ -12,7 +12,7 @@ interface CallRingingProps {
 
 export const CallRinging: React.FC<CallRingingProps> = ({ currentCall, isSimulated, descColor, hangUp, children }) => {
   return (
-    <div className="p-6 text-center space-y-5">
+    <div className="p-6 text-center space-y-5 relative overflow-hidden h-full flex flex-col justify-between">
       <div className="h-14 w-14 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center mx-auto text-blue-400 animate-bounce">
         <PhoneOutlined className="text-2xl" />
       </div>

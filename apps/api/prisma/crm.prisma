@@ -31,6 +31,7 @@ model CrmStaff {
   legacyStaffId    Int?      @map("legacy_staff_id")
   lastLoginAt      DateTime? @map("last_login_at") @db.DateTime(0)
   lastActiveAt     DateTime? @map("last_active_at") @db.DateTime(0)
+  omicallAutoInit  Boolean?  @map("omicall_auto_init") @db.TinyInt
 
   customerAssignments CrmCustomerAssignment[]
   prevHistory         CrmAssignmentHistory[] @relation("PrevStaffHistory")
@@ -116,6 +117,7 @@ model CrmRole {
   viewKPI     Boolean  @default(false) @map("view_kpi") @db.TinyInt
   viewTeamKPI Boolean  @default(false) @map("view_team_kpi") @db.TinyInt
   manageStaff Boolean  @default(false) @map("manage_staff") @db.TinyInt
+  omicallAutoInit Boolean @default(false) @map("omicall_auto_init") @db.TinyInt
   isSystem    Boolean  @default(false) @map("is_system") @db.TinyInt
   description String?  @db.Text
   createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)

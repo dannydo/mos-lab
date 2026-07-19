@@ -138,6 +138,8 @@ export function useStaffData(options?: UseStaffDataOptions) {
         notes: staff.notes,
         password: '',
         legacyStaffId: staff.legacyStaffId || null,
+        omicallAutoInit:
+          staff.omicallAutoInit === null || staff.omicallAutoInit === undefined ? 'inherit' : staff.omicallAutoInit,
       });
     } else {
       staffForm?.resetFields();
@@ -146,6 +148,7 @@ export function useStaffData(options?: UseStaffDataOptions) {
         isActive: true,
         gender: 'Other',
         legacyStaffId: null,
+        omicallAutoInit: 'inherit',
       });
     }
     setIsStaffModalOpen(true);
@@ -158,6 +161,10 @@ export function useStaffData(options?: UseStaffDataOptions) {
         ...values,
         joinedAt: values.joinedAt ? values.joinedAt.format('YYYY-MM-DD') : null,
         birthDate: values.birthDate ? values.birthDate.format('YYYY-MM-DD') : null,
+        omicallAutoInit:
+          values.omicallAutoInit === 'inherit'
+            ? null
+            : values.omicallAutoInit === true || values.omicallAutoInit === 'true',
       };
 
       if (editingStaff && !payload.password) {
@@ -240,6 +247,7 @@ export function useStaffData(options?: UseStaffDataOptions) {
         viewKPI: role.viewKPI,
         viewTeamKPI: role.viewTeamKPI,
         manageStaff: role.manageStaff,
+        omicallAutoInit: !!role.omicallAutoInit,
         description: role.description,
       });
     } else {
@@ -249,6 +257,7 @@ export function useStaffData(options?: UseStaffDataOptions) {
         viewKPI: false,
         viewTeamKPI: false,
         manageStaff: false,
+        omicallAutoInit: false,
       });
     }
     setIsRoleModalOpen(true);

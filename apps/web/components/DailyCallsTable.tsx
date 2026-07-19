@@ -236,17 +236,17 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
                 src={record.customer.avatar || undefined}
                 icon={<UserOutlined />}
                 style={{
-                  backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5',
+                  backgroundColor: 'var(--avatar-bg)',
                   color: '#D4A84B',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
+                  border: '1px solid var(--avatar-border)',
                   flexShrink: 0,
                 }}
               />
               <div>
-                <span className="hover:underline font-semibold" style={{ color: token.colorText }}>
+                <span className="hover:underline font-semibold" style={{ color: 'var(--client-name-color)' }}>
                   {record.customer.name}
                 </span>
-                <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
+                <div style={{ fontSize: '11px', color: 'var(--client-phone-color)' }}>
                   {record.customer.phone || 'Không có SĐT'}
                 </div>
               </div>
@@ -270,7 +270,7 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
                 e.stopPropagation();
                 makeCall(phone, record.customer!.name, record.customer!.id, record.customer?.avatar || undefined);
               }}
-              style={{ padding: 0, fontWeight: '600', color: token.colorText }}
+              style={{ padding: 0, fontWeight: '600', color: 'var(--client-name-color)' }}
             >
               {phone}
             </Button>
@@ -300,7 +300,7 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
           return days !== null && days !== undefined ? (
             `${days} ngày`
           ) : (
-            <Text style={{ color: token.colorTextDescription }}>Chưa từng đến</Text>
+            <Text style={{ color: 'var(--client-desc-color)' }}>Chưa từng đến</Text>
           );
         },
       },
@@ -322,7 +322,7 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
               {staff.displayName}
             </Tag>
           ) : (
-            <span style={{ fontStyle: 'italic', color: token.colorTextDescription }}>Chưa phân bổ</span>
+            <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)' }}>Chưa phân bổ</span>
           ),
       },
       {
@@ -446,7 +446,10 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
         dataIndex: 'note',
         key: 'callNotes',
         render: (text: string | null) => (
-          <Text style={{ fontSize: '13px', color: token.colorText }} ellipsis={{ tooltip: text || undefined }}>
+          <Text
+            style={{ fontSize: '13px', color: 'var(--client-name-color)' }}
+            ellipsis={{ tooltip: text || undefined }}
+          >
             {text || '-'}
           </Text>
         ),

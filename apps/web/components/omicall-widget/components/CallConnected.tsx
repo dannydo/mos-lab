@@ -38,7 +38,7 @@ export const CallConnected: React.FC<CallConnectedProps> = ({
   formatDuration,
 }) => {
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-6 space-y-5 relative overflow-hidden h-full flex flex-col justify-between">
       <div className="text-center">
         <div className="text-3xl font-bold font-mono tracking-tight">{formatDuration(callDuration)}</div>
         <p className="text-[10px] uppercase tracking-wider mt-1" style={{ color: descColor }}>
@@ -76,7 +76,7 @@ export const CallConnected: React.FC<CallConnectedProps> = ({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs" style={{ color: descColor }}>
           <span>Tiến trình KPI cuộc gọi</span>
-          <span className="font-bold">{callDuration}s</span>
+          <span className="font-mono font-bold">{callDuration}s</span>
         </div>
         <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden relative">
           {/* 30s marker */}

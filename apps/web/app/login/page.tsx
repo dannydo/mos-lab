@@ -67,10 +67,11 @@ export default function LoginPage() {
         credential: googleResponse.credential,
       });
 
-      const { token, user } = data;
+      const { token, user, resolvedOmicallAutoInit } = data;
 
       localStorage.setItem('mos_token', token);
       localStorage.setItem('mos_user', JSON.stringify(user));
+      localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập Google thành công! Chào mừng ${user.displayName}`);
       router.push('/dashboard/customers');
@@ -92,10 +93,11 @@ export default function LoginPage() {
         name: nameToMock,
       });
 
-      const { token, user } = data;
+      const { token, user, resolvedOmicallAutoInit } = data;
 
       localStorage.setItem('mos_token', token);
       localStorage.setItem('mos_user', JSON.stringify(user));
+      localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập Google (Mock) thành công! Chào mừng ${user.displayName}`);
       router.push('/dashboard/customers');
@@ -116,10 +118,11 @@ export default function LoginPage() {
         password: values.password,
       });
 
-      const { token, user } = data;
+      const { token, user, resolvedOmicallAutoInit } = data;
 
       localStorage.setItem('mos_token', token);
       localStorage.setItem('mos_user', JSON.stringify(user));
+      localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập thành công! Chào mừng ${user.displayName}`);
       router.push('/dashboard/customers');

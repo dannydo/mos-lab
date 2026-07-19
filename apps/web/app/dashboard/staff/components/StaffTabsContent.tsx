@@ -151,14 +151,27 @@ export default function StaffTabsContent({
           </Row>
 
           <Row gutter={16}>
-            <Col span={24}>
+            <Col span={12}>
               <Form.Item
                 name="isActive"
                 label={<Text style={{ color: token.colorText }}>Trạng thái tài khoản</Text>}
                 valuePropName="checked"
-                extra="Nhân viên được phép đăng nhập vào hệ thống CRM khi trạng thái hoạt động."
+                extra="Cho phép đăng nhập vào hệ thống CRM khi trạng thái hoạt động."
               >
                 <Switch checkedChildren="Hoạt động" unCheckedChildren="Tạm khóa" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="omicallAutoInit"
+                label={<Text style={{ color: token.colorText }}>Tự động nhận cuộc gọi OmiCall</Text>}
+                extra="Bật/Tắt tự động khởi chạy OmiCall khi đăng nhập hoặc theo mặc định vai trò."
+              >
+                <Select placeholder="Chọn trạng thái">
+                  <Option value="inherit">Mặc định (Theo vai trò)</Option>
+                  <Option value={true}>Bật tự động nhận cuộc gọi</Option>
+                  <Option value={false}>Tắt tự động nhận cuộc gọi</Option>
+                </Select>
               </Form.Item>
             </Col>
           </Row>

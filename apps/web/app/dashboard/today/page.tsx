@@ -42,7 +42,18 @@ const RealtimeClock = React.memo(() => {
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
-  return <strong style={{ color: '#D4A84B', fontSize: '14px' }}>{time}</strong>;
+  return (
+    <strong
+      style={{
+        color: '#D4A84B',
+        fontSize: '14px',
+        fontVariantNumeric: 'tabular-nums',
+        fontFeatureSettings: '"tnum"',
+      }}
+    >
+      {time}
+    </strong>
+  );
 });
 RealtimeClock.displayName = 'RealtimeClock';
 
@@ -160,7 +171,18 @@ export default function TodayDashboard() {
                     color: data.autoRefresh ? '#52c41a' : token.colorTextDescription,
                   }}
                 >
-                  Tự động tải lại {data.autoRefresh && `(${data.countdown}s)`}
+                  Tự động tải lại{' '}
+                  {data.autoRefresh && (
+                    <span
+                      style={{
+                        fontVariantNumeric: 'tabular-nums',
+                        fontFeatureSettings: '"tnum"',
+                        display: 'inline-block',
+                      }}
+                    >
+                      ({data.countdown}s)
+                    </span>
+                  )}
                 </span>
               </Space>
               {data.autoRefresh && (

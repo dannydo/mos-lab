@@ -39,6 +39,19 @@
 ## 4. Kiểm thử trước khi đẩy code
 * Trước khi hoàn thành chỉnh sửa UI, lập trình viên/Agent phải thực hiện kiểm thử giao diện bằng cách nhấp vào biểu tượng theme (mặt trời/mặt trăng) trên header để verify các bảng biểu, modal, drawer và văn bản hiển thị rõ ràng trên cả hai nền sáng và tối.
 
+## 5. Quy tắc định dạng số & Ngăn chặn giật giao diện (Number Jitter Prevention Rules)
+* Đối với tất cả các thành phần hiển thị thời gian chạy, thời gian thực tế, thời lượng cuộc gọi, số đếm ngược, hoặc bất kỳ chỉ số dạng số nào thay đổi liên tục:
+  * **Luôn sử dụng** định dạng hiển thị **Tabular Numbers** (các chữ số có chiều rộng bằng nhau) để ngăn chặn hiện tượng số thay đổi làm xê dịch chiều ngang của dòng chữ ("giật giật").
+  * **Cách thực hiện trong CSS/Tailwind:** Sử dụng class Tailwind `tabular-nums` hoặc style `font-variant-numeric: tabular-nums` (kèm theo `font-feature-settings: "tnum"` để tối ưu hiển thị trên các trình duyệt cũ/hệ điều hành cũ).
+  * **Ví dụ trong React inline style:**
+    ```typescript
+    style={{ fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"' }}
+    ```
+  * **Ví dụ trong Tailwind class:**
+    ```html
+    <span className="tabular-nums">...</span>
+    ```
+
 ---
 
 # Booker Salary API Configuration & Usage Rules

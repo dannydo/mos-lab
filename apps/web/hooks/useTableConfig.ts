@@ -5,6 +5,7 @@ import type { TableColumnType } from 'antd';
 import { ColumnConfig } from '@mos-lab/shared';
 import { apiClient } from '../lib/api-client';
 import { message } from 'antd';
+import { useTheme } from '../context/ThemeContext';
 import {
   AVAILABLE_ICONS,
   getDefaultIcon,
@@ -16,6 +17,7 @@ import {
 export { AVAILABLE_ICONS, getDefaultIcon, renderIconHelper, getDynamicLucideIcon, getCustomIconComponent };
 
 export function useTableConfig<T = Record<string, unknown>>(tableId: string, staticColumns: TableColumnType<T>[]) {
+  const { themeMode } = useTheme();
   const [loading, setLoading] = useState(true);
   const [configVisible, setConfigVisible] = useState(false);
   const [rawConfig, setRawConfig] = useState<ColumnConfig[]>([]);
@@ -23,9 +25,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
 
   // Keep reference to staticColumns to avoid re-renders and circular dependencies
   const staticColsRef = useRef(staticColumns);
-  useEffect(() => {
-    staticColsRef.current = staticColumns;
-  }, [staticColumns]);
+  staticColsRef.current = staticColumns;
 
   // 1. Initial Column Metadata Constructor
   const createDefaultConfigFromStatic = useCallback((staticCols: TableColumnType<T>[]): ColumnConfig[] => {
@@ -180,7 +180,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
       .sort((a, b) => (a.orderIndex ?? 9999) - (b.orderIndex ?? 9999));
 
     setMergedColumns(merged as TableColumnType<T>[]);
-  }, [rawConfig, handleColumnResize]);
+  }, [rawConfig, handleColumnResize, themeMode]);
 
   return {
     loading,

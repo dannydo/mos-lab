@@ -181,6 +181,26 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
     return null;
   };
 
+  // Helper to find the next booking (first booking on or after note date)
+  const findNextBooking = (dateStr: string | null) => {
+    if (!dateStr || bookings.length === 0) return null;
+    const targetTime = new Date(dateStr).getTime();
+    let nextBooking: SafeAny = null;
+    let minDiff = Infinity;
+
+    bookings.forEach((b: SafeAny) => {
+      if (!b.bookingDate) return;
+      const bTime = new Date(b.bookingDate).getTime();
+      const diff = bTime - targetTime;
+      if (diff >= 0 && diff < minDiff) {
+        minDiff = diff;
+        nextBooking = b;
+      }
+    });
+
+    return nextBooking;
+  };
+
   // 3. Add CC notes (order_note)
   notes.forEach((n: SafeAny) => {
     if (n.noteFieldKey !== 'order_note') return;
@@ -188,7 +208,12 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
     let targetBookingId = n.orderId ? String(n.orderId) : null;
     if (!targetBookingId) {
       const closest = findClosestBooking(n.dateCreated);
-      if (closest) targetBookingId = String(closest.id);
+      if (closest) {
+        targetBookingId = String(closest.id);
+      } else {
+        const nextB = findNextBooking(n.dateCreated);
+        if (nextB) targetBookingId = String(nextB.id);
+      }
     }
 
     const item: NoteItem = {
@@ -228,7 +253,12 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
     let targetBookingId = n.orderId ? String(n.orderId) : null;
     if (!targetBookingId) {
       const closest = findClosestBooking(n.dateCreated);
-      if (closest) targetBookingId = String(closest.id);
+      if (closest) {
+        targetBookingId = String(closest.id);
+      } else {
+        const nextB = findNextBooking(n.dateCreated);
+        if (nextB) targetBookingId = String(nextB.id);
+      }
     }
 
     const item: NoteItem = {
@@ -265,7 +295,11 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
     if (!c.note || c.note.trim() === '') return;
 
     const closest = findClosestBooking(c.createdAt);
-    const targetBookingId = closest ? String(closest.id) : null;
+    let targetBookingId = closest ? String(closest.id) : null;
+    if (!targetBookingId) {
+      const nextB = findNextBooking(c.createdAt);
+      if (nextB) targetBookingId = String(nextB.id);
+    }
 
     const item: NoteItem = {
       id: `cs-call-${c.id}`,
@@ -531,6 +565,15 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
                   {group.notes.map((n) => {
                     const deptColors = DEPT_COLORS[n.department] || DEPT_COLORS.KHÁC;
 
+                    const isSameDay =
+                      n.date.getFullYear() === group.bookingDate.getFullYear() &&
+                      n.date.getMonth() === group.bookingDate.getMonth() &&
+                      n.date.getDate() === group.bookingDate.getDate();
+
+                    const displayTime = isSameDay
+                      ? n.formattedTime
+                      : `${String(n.date.getDate()).padStart(2, '0')}/${String(n.date.getMonth() + 1).padStart(2, '0')} ${n.formattedTime}`;
+
                     return (
                       <div key={n.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                         {/* Department Avatar representation */}
@@ -576,7 +619,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
                                 {n.staffName}
                               </span>
                             </Space>
-                            <span style={{ fontSize: '11px', color: '#888' }}>{n.formattedTime}</span>
+                            <span style={{ fontSize: '11px', color: '#888' }}>{displayTime}</span>
                           </div>
 
                           {/* Note text bubble */}

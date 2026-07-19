@@ -8,6 +8,7 @@ interface RoleInput {
   viewKPI?: boolean;
   viewTeamKPI?: boolean;
   manageStaff?: boolean;
+  omicallAutoInit?: boolean;
   description?: string;
 }
 
@@ -30,7 +31,8 @@ export async function rolesRoutes(fastify: FastifyInstance) {
 
   // POST /api/roles - Create a new custom role (Admin only)
   fastify.post('/roles', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
-    const { key, name, color, viewKPI, viewTeamKPI, manageStaff, description } = request.body as RoleInput;
+    const { key, name, color, viewKPI, viewTeamKPI, manageStaff, omicallAutoInit, description } =
+      request.body as RoleInput;
 
     if (!key || !name) {
       return reply.status(400).send({
@@ -68,6 +70,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           viewKPI: !!viewKPI,
           viewTeamKPI: !!viewTeamKPI,
           manageStaff: !!manageStaff,
+          omicallAutoInit: !!omicallAutoInit,
           isSystem: false,
           description,
         },
@@ -89,7 +92,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
   // PUT /api/roles/:key - Update a role (Admin only)
   fastify.put('/roles/:key', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
     const { key } = request.params as { key: string };
-    const { name, color, viewKPI, viewTeamKPI, manageStaff, description } = request.body as RoleInput;
+    const { name, color, viewKPI, viewTeamKPI, manageStaff, omicallAutoInit, description } = request.body as RoleInput;
 
     try {
       const existingRole = await fastify.prisma.crm.crmRole.findUnique({
@@ -108,10 +111,12 @@ export async function rolesRoutes(fastify: FastifyInstance) {
         viewKPI?: boolean;
         viewTeamKPI?: boolean;
         manageStaff?: boolean;
+        omicallAutoInit?: boolean;
       } = {};
       if (name !== undefined) updateData.name = name;
       if (color !== undefined) updateData.color = color;
       if (description !== undefined) updateData.description = description;
+      if (omicallAutoInit !== undefined) updateData.omicallAutoInit = !!omicallAutoInit;
 
       // Allow modifying permissions
       // Lock permissions for system roles to prevent lockout, EXCEPT:
