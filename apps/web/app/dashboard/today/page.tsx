@@ -191,7 +191,7 @@ export default function TodayDashboard() {
                     color: data.autoRefresh ? '#52c41a' : token.colorTextDescription,
                   }}
                 >
-                  Tự động tải lại{' '}
+                  F5{' '}
                   {data.autoRefresh && (
                     <span
                       style={{
