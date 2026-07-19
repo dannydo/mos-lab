@@ -38,6 +38,7 @@ interface TodayComingTableProps {
   comingCategory: 'all' | 'combo' | 'oc' | 'other';
   setComingCategory: (category: 'all' | 'combo' | 'oc' | 'other') => void;
   openCustomerDrawer: (record: SafeAny) => void;
+  allComingList: ComingClientData[];
 }
 
 const TodayComingTable = React.memo(function TodayComingTable({
@@ -47,11 +48,34 @@ const TodayComingTable = React.memo(function TodayComingTable({
   comingCategory,
   setComingCategory,
   openCustomerDrawer,
+  allComingList,
 }: TodayComingTableProps) {
   const { token } = theme.useToken();
   const { makeCall } = useOmiCall();
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
+
+  const tabCounts = React.useMemo(() => {
+    const branchComing = (allComingList || []).filter((item) => {
+      if (comingBranch !== 'all' && item.branchKey !== comingBranch) {
+        return false;
+      }
+      return true;
+    });
+
+    const all = branchComing.length;
+    let combo = 0;
+    let oc = 0;
+    let other = 0;
+
+    branchComing.forEach((item) => {
+      if (item.category === 'combo') combo++;
+      else if (item.category === 'oc') oc++;
+      else if (item.category === 'other') other++;
+    });
+
+    return { all, combo, oc, other };
+  }, [allComingList, comingBranch]);
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -285,10 +309,10 @@ const TodayComingTable = React.memo(function TodayComingTable({
           localStorage.setItem('today_coming_category', key);
         }}
         items={[
-          { key: 'all', label: 'Tất cả khách đến' },
-          { key: 'combo', label: 'Khách gói Combo' },
-          { key: 'oc', label: 'Khách Telesales' },
-          { key: 'other', label: 'Khách Lẻ / Khác' },
+          { key: 'all', label: `Tất cả khách đến (${tabCounts.all})` },
+          { key: 'combo', label: `Khách gói Combo (${tabCounts.combo})` },
+          { key: 'oc', label: `Khách Telesales (${tabCounts.oc})` },
+          { key: 'other', label: `Khách Lẻ / Khác (${tabCounts.other})` },
         ]}
         style={{ marginBottom: '12px' }}
       />

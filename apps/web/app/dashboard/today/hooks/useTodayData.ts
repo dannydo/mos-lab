@@ -14,6 +14,7 @@ export interface BookingData {
   promo: string | null;
   booker: string;
   channel?: string;
+  category?: 'combo' | 'oc' | 'other';
   createdTime: string;
   avatarColor?: string;
   code?: string;
@@ -55,6 +56,7 @@ export interface ComingClientData {
   booker: string;
   channel?: string;
   category?: string;
+  branchKey?: string;
   cc: string;
   cv: string;
   service: string;
@@ -333,16 +335,18 @@ export function useTodayData(options?: UseTodayDataOptions) {
     });
   }, [allBookings, bookingFilter, bookingBranch]);
 
-  const activeComingList = useMemo(() => {
-    const fullList = Object.keys(branchesData).flatMap((branchKey) =>
+  const allComingList = useMemo(() => {
+    return Object.keys(branchesData).flatMap((branchKey) =>
       (branchesData[branchKey].coming || []).map((item) => ({
         ...item,
         branchName: getBranchLabel(branchKey),
         branchKey,
       }))
     );
+  }, [branchesData]);
 
-    const filtered = fullList.filter((item) => {
+  const activeComingList = useMemo(() => {
+    const filtered = allComingList.filter((item) => {
       if (comingBranch !== 'all' && item.branchKey !== comingBranch) {
         return false;
       }
@@ -353,7 +357,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
     });
 
     return [...filtered].sort((a, b) => a.time.localeCompare(b.time));
-  }, [branchesData, comingBranch, comingCategory]);
+  }, [allComingList, comingBranch, comingCategory]);
 
   const activeShopData = useMemo(() => {
     const raw =
@@ -426,6 +430,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
     allBookings,
     bookingBranchCounts,
     filteredBookings,
+    allComingList,
     activeComingList,
     activeShopData,
 

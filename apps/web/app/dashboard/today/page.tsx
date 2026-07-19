@@ -253,6 +253,7 @@ export default function TodayDashboard() {
                 setBookingBranch={data.setBookingBranch}
                 openCustomerDrawer={data.openCustomerDrawer}
                 bookingBranchCounts={data.bookingBranchCounts}
+                allBookings={data.allBookings}
               />
             </Col>
 
@@ -265,6 +266,7 @@ export default function TodayDashboard() {
                 comingCategory={data.comingCategory}
                 setComingCategory={data.setComingCategory}
                 openCustomerDrawer={data.openCustomerDrawer}
+                allComingList={data.allComingList}
               />
             </Col>
 

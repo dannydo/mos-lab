@@ -39,6 +39,7 @@ interface TodayBookingsTableProps {
   setBookingBranch: (branch: 'all' | 'detham' | 'pxl' | 'estella') => void;
   openCustomerDrawer: (record: SafeAny) => void;
   bookingBranchCounts: { dt: number; pxl: number; ep: number; total: number };
+  allBookings: BookingData[];
 }
 
 const TodayBookingsTable = React.memo(function TodayBookingsTable({
@@ -49,11 +50,36 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
   setBookingBranch,
   openCustomerDrawer,
   bookingBranchCounts,
+  allBookings,
 }: TodayBookingsTableProps) {
   const { token } = theme.useToken();
   const { makeCall } = useOmiCall();
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
+
+  const tabCounts = React.useMemo(() => {
+    const branchBookings = (allBookings || []).filter((b) => {
+      if (bookingBranch !== 'all') {
+        if (bookingBranch === 'detham' && b.branchName !== 'Đề Thám') return false;
+        if (bookingBranch === 'pxl' && b.branchName !== 'PXL') return false;
+        if (bookingBranch === 'estella' && b.branchName !== 'Estella') return false;
+      }
+      return true;
+    });
+
+    const all = branchBookings.length;
+    let combo = 0;
+    let oc = 0;
+    let other = 0;
+
+    branchBookings.forEach((b) => {
+      if (b.category === 'combo') combo++;
+      else if (b.category === 'oc') oc++;
+      else if (b.category === 'other') other++;
+    });
+
+    return { all, combo, oc, other };
+  }, [allBookings, bookingBranch]);
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -310,10 +336,10 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
           localStorage.setItem('today_booking_filter', key);
         }}
         items={[
-          { key: 'all', label: 'Tất cả booking' },
-          { key: 'combo', label: 'Booking gói Combo' },
-          { key: 'oc', label: 'Booking Telesales' },
-          { key: 'other', label: 'Lẻ / Khác' },
+          { key: 'all', label: `Tất cả booking (${tabCounts.all})` },
+          { key: 'combo', label: `Booking gói Combo (${tabCounts.combo})` },
+          { key: 'oc', label: `Booking Telesales (${tabCounts.oc})` },
+          { key: 'other', label: `Lẻ / Khác (${tabCounts.other})` },
         ]}
         style={{ marginBottom: '12px' }}
       />
