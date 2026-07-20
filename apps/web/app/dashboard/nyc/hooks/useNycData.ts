@@ -30,6 +30,7 @@ export interface UseNycDataOptions {
   settingsForm?: SafeAny; // Ant Design FormInstance
   onSuccess?: (msg: string) => void;
   onError?: (msg: string) => void;
+  onWarning?: (msg: string) => void;
 }
 
 export function useNycData(options?: UseNycDataOptions) {
@@ -91,6 +92,7 @@ export function useNycData(options?: UseNycDataOptions) {
 
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [dailyPlanList, setDailyPlanList] = useState<number[]>([]); // Track planned user IDs for today
+  const [addingIds, setAddingIds] = useState<number[]>([]);
 
   // Load configuration & Staff lists on mount
   const fetchConfigs = useCallback(async () => {
@@ -318,6 +320,8 @@ export function useNycData(options?: UseNycDataOptions) {
 
   // Actions
   const handleAddToPlan = async (customerId: number) => {
+    if (addingIds.includes(customerId)) return;
+    setAddingIds((prev) => [...prev, customerId]);
     try {
       await apiClient.plans.create({
         legacyUserId: customerId,
@@ -327,7 +331,17 @@ export function useNycData(options?: UseNycDataOptions) {
       setDailyPlanList((prev) => [...prev, customerId]);
     } catch (err) {
       console.error('Failed to add to call plan:', err);
-      optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể thêm khách hàng.');
+      if ((err as SafeAny).response?.status === 409) {
+        optionsRef.current?.onWarning?.(
+          (err as SafeAny).response?.data?.message || 'Khách hàng này đã có trong kế hoạch gọi.'
+        );
+        // Add to dailyPlanList so it gets disabled immediately
+        setDailyPlanList((prev) => [...prev, customerId]);
+      } else {
+        optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể thêm khách hàng.');
+      }
+    } finally {
+      setAddingIds((prev) => prev.filter((id) => id !== customerId));
     }
   };
 
@@ -496,6 +510,7 @@ export function useNycData(options?: UseNycDataOptions) {
     selectedPlanInfo,
     selectedCustomer,
     dailyPlanList,
+    addingIds,
     // setters
     setActiveTab,
     setActiveTouchpointKey,

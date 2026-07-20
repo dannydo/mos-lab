@@ -96,6 +96,7 @@ export default function NycCampaignPage() {
     selectedPlanInfo,
     selectedCustomer,
     dailyPlanList,
+    addingIds,
     // setters
     setActiveTab,
     setActiveTouchpointKey,
@@ -129,6 +130,7 @@ export default function NycCampaignPage() {
     settingsForm,
     onSuccess: (msg) => message.success(msg),
     onError: (msg) => message.error(msg),
+    onWarning: (msg) => message.warning(msg),
   });
 
   const handleDetailClose = React.useCallback(() => {
@@ -253,6 +255,7 @@ export default function NycCampaignPage() {
     dailyPlanList,
     handleAddToPlan,
     handleOpenCallModal,
+    addingIds,
   });
 
   const {

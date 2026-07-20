@@ -17,6 +17,7 @@ interface NycColumnsOptions {
   dailyPlanList: number[];
   handleAddToPlan: (id: number) => void;
   handleOpenCallModal: (record: Customer) => void;
+  addingIds?: number[];
 }
 
 export const getNycColumns = ({
@@ -28,6 +29,7 @@ export const getNycColumns = ({
   dailyPlanList,
   handleAddToPlan,
   handleOpenCallModal,
+  addingIds = [],
 }: NycColumnsOptions) => {
   return [
     {
@@ -203,14 +205,16 @@ export const getNycColumns = ({
       width: 210,
       render: (_: SafeAny, record: Customer) => {
         const isPlanned = dailyPlanList.includes(record.id);
+        const isAdding = addingIds.includes(record.id);
         return (
           <Space size="small">
             <Button
               type={isPlanned ? 'dashed' : 'primary'}
               ghost={!isPlanned}
               size="small"
+              loading={isAdding}
               icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
-              onClick={() => !isPlanned && handleAddToPlan(record.id)}
+              onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
               style={
                 !isPlanned
                   ? {
@@ -219,7 +223,7 @@ export const getNycColumns = ({
                     }
                   : {}
               }
-              disabled={isPlanned}
+              disabled={isPlanned || isAdding}
             >
               {isPlanned ? 'Đã lên lịch' : 'Lên lịch gọi'}
             </Button>
