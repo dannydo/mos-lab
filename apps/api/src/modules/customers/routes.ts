@@ -2351,8 +2351,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // Insert into user_note raw table
       await fastify.prisma.legacy.$executeRawUnsafe(
-        `INSERT INTO user_note (user_id, note, note_field_key, is_sticky, created_staff_id, is_disabled, date_created)
-         VALUES (?, ?, ?, ?, ?, 0, NOW())`,
+        `INSERT INTO user_note (client_id, client_business_id, user_id, note, note_field_key, is_sticky, is_issue, created_staff_id, is_disabled, date_created)
+         VALUES (11, 1, ?, ?, ?, ?, 0, ?, 0, NOW())`,
         customerId,
         note.trim(),
         noteFieldKey || 'note',
