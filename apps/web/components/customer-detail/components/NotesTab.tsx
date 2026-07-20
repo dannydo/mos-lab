@@ -54,7 +54,7 @@ export const NotesTab: React.FC<NotesTabProps> = ({ notes, themeMode, currentUse
                     border: `1px solid ${isSticky ? '#ffccc7' : themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
                     borderRadius: '8px',
                     padding: '12px',
-                    marginTop: '-6px',
+                    marginTop: '0px',
                     marginBottom: '10px',
                   }}
                 >
