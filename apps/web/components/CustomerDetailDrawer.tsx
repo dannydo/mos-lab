@@ -11,6 +11,7 @@ import {
   EditOutlined,
   FormOutlined,
   PushpinFilled,
+  PushpinOutlined,
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../context/ThemeContext';
@@ -129,6 +130,8 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     handleDeleteCustomer,
     handleRestoreCustomer,
     handleCancelBooking,
+    handleUnpinNote,
+    unpinLoading,
     // helpers
     getMostFrequentDay,
     getFavoriteTechnicians,
@@ -567,17 +570,49 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                             <div
                               key={n.id}
                               style={{
-                                fontSize: '13px',
-                                color: themeMode === 'dark' ? '#cbd5e1' : '#3f3f46',
-                                lineHeight: '1.5',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                                gap: '12px',
                                 borderLeft: `2px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.4)' : '#ffa39e'}`,
                                 paddingLeft: '10px',
                               }}
                             >
-                              <div style={{ whiteSpace: 'pre-wrap', fontWeight: '500' }}>{n.note}</div>
-                              <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
-                                Bởi: <strong>{n.staffName}</strong> ({formattedDate})
+                              <div style={{ flex: 1 }}>
+                                <div
+                                  style={{
+                                    whiteSpace: 'pre-wrap',
+                                    fontWeight: '500',
+                                    fontSize: '13px',
+                                    color: themeMode === 'dark' ? '#cbd5e1' : '#3f3f46',
+                                    lineHeight: '1.5',
+                                  }}
+                                >
+                                  {n.note}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                                  Bởi: <strong>{n.staffName}</strong> ({formattedDate})
+                                </div>
                               </div>
+                              {currentUser?.role === 'admin' && (
+                                <Tooltip title="Bỏ ghim ghi chú">
+                                  <Button
+                                    type="text"
+                                    size="small"
+                                    danger
+                                    icon={<PushpinOutlined style={{ fontSize: '14px' }} />}
+                                    loading={unpinLoading}
+                                    onClick={() => handleUnpinNote(n.id)}
+                                    style={{
+                                      padding: '0 4px',
+                                      height: '22px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  />
+                                </Tooltip>
+                              )}
                             </div>
                           );
                         })}

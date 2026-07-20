@@ -33,6 +33,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
   const [saveLoading, setSaveLoading] = useState(false);
 
   const [restoreLoading, setRestoreLoading] = useState(false);
+  const [unpinLoading, setUnpinLoading] = useState(false);
   const [forbiddenError, setForbiddenError] = useState<string | null>(null);
 
   // Resizable drawer
@@ -483,6 +484,22 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     }
   };
 
+  // Unpin customer note
+  const handleUnpinNote = async (noteId: number) => {
+    if (!customerId) return;
+    setUnpinLoading(true);
+    try {
+      const res = await apiClient.customers.unpinNote(customerId, noteId);
+      optionsRef.current?.onSuccess?.(res.message || 'Bỏ ghim ghi chú thành công!');
+      fetchDetails();
+    } catch (err) {
+      console.error('Failed to unpin note:', err);
+      optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể bỏ ghim ghi chú.');
+    } finally {
+      setUnpinLoading(false);
+    }
+  };
+
   const getMostFrequentDay = (bookingsList: SafeAny[]) => {
     if (!bookingsList || bookingsList.length === 0) return 'N/A';
     const dayCounts = Array(7).fill(0);
@@ -715,6 +732,8 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     handleDeleteCustomer,
     handleRestoreCustomer,
     handleCancelBooking,
+    handleUnpinNote,
+    unpinLoading,
     // helpers
     getMostFrequentDay,
     getFavoriteTechnicians,

@@ -177,6 +177,10 @@ export const apiClient = {
       const response = await api.post(`/customers/${id}/notes`, data);
       return response.data;
     },
+    unpinNote: async (customerId: number, noteId: number): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post(`/customers/${customerId}/notes/${noteId}/unpin`);
+      return response.data;
+    },
   },
 
   plans: {
