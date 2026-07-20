@@ -25,6 +25,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
 const DailyCallsDrawer = dynamic(() => import('../../components/DailyCallsDrawer'), { ssr: false });
+const CallLogModal = dynamic(() => import('../../components/CallLogModal'), { ssr: false });
 import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
 import { OmiCallProvider } from '../../context/OmiCallContext';
@@ -668,6 +669,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         `}</style>
       </Layout>
       <OmiCallWidget />
+      <CallLogModal />
     </OmiCallProvider>
   );
 }

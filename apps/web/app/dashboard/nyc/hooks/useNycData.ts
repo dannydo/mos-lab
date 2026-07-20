@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
 import { Customer, Staff } from '@mos-lab/shared';
+import { useOmiCall } from '../../../../context/OmiCallContext';
 
 export interface Touchpoint {
   key: string;
@@ -75,7 +76,6 @@ export function useNycData(options?: UseNycDataOptions) {
 
   // Modals Controls
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
-  const [callModalVisible, setCallModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [bookingWizardVisible, setBookingWizardVisible] = useState(false);
   const [bookingInitialCustomer, setBookingInitialCustomer] = useState<Customer | null>(null);
@@ -83,12 +83,7 @@ export function useNycData(options?: UseNycDataOptions) {
   // Selected Config Tab
   const [selectedConfigTab, setSelectedConfigTab] = useState<string>('NYC_30');
 
-  // Selected Records
-  const [selectedPlanInfo, setSelectedPlanInfo] = useState<{
-    legacyUserId: number;
-    customerName: string;
-    planId?: number | null;
-  } | null>(null);
+  const { makeCall } = useOmiCall();
 
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [dailyPlanList, setDailyPlanList] = useState<number[]>([]); // Track planned user IDs for today
@@ -345,20 +340,17 @@ export function useNycData(options?: UseNycDataOptions) {
     }
   };
 
-  const handleOpenCallModal = (customer: Customer) => {
-    setSelectedPlanInfo({
-      legacyUserId: customer.id,
-      customerName: customer.name,
-      planId: null, // Independent touchpoint call
-    });
-    setCallModalVisible(true);
-  };
-
-  const handleCallSuccess = () => {
-    setCallModalVisible(false);
-    fetchOverallStats();
-    fetchCustomerList();
-  };
+  // Listen to global call log saved event to refresh NYC list and stats
+  useEffect(() => {
+    const handleLogSaved = () => {
+      fetchOverallStats();
+      fetchCustomerList();
+    };
+    window.addEventListener('mos-call-log-saved', handleLogSaved);
+    return () => {
+      window.removeEventListener('mos-call-log-saved', handleLogSaved);
+    };
+  }, [fetchOverallStats, fetchCustomerList]);
 
   const handleOpenDetailModal = (customer: Customer) => {
     setSelectedCustomer(customer);
@@ -502,12 +494,10 @@ export function useNycData(options?: UseNycDataOptions) {
     staffList,
     configs,
     settingsModalVisible,
-    callModalVisible,
     detailModalVisible,
     bookingWizardVisible,
     bookingInitialCustomer,
     selectedConfigTab,
-    selectedPlanInfo,
     selectedCustomer,
     dailyPlanList,
     addingIds,
@@ -520,19 +510,15 @@ export function useNycData(options?: UseNycDataOptions) {
     setCurrentPage,
     setPageSize,
     setSettingsModalVisible,
-    setCallModalVisible,
     setDetailModalVisible,
     setBookingWizardVisible,
     setBookingInitialCustomer,
     setSelectedConfigTab,
-    setSelectedPlanInfo,
     setSelectedCustomer,
     // handlers
     fetchCustomerList,
     fetchOverallStats,
     handleAddToPlan,
-    handleOpenCallModal,
-    handleCallSuccess,
     handleOpenDetailModal,
     handleOpenSettings,
     handleConfigTabChange,

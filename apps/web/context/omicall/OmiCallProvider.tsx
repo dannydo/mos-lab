@@ -45,6 +45,36 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   const [omicallReady, setOmicallReadyState] = useState(false);
   const [lastRegisterEvent, setLastRegisterEvent] = useState<SafeAny>(null);
 
+  // Global CallLogModal states
+  const [isCallLogModalOpen, setIsCallLogModalOpen] = useState(false);
+  const [callLogCustomerInfo, setCallLogCustomerInfo] = useState<{
+    legacyUserId: number;
+    customerName: string;
+    planId?: number | null;
+  } | null>(null);
+
+  // Shared AI Analysis states
+  const [resolvedLog, setResolvedLog] = useState<SafeAny>(null);
+  const [submittingWrapup, setSubmittingWrapup] = useState(false);
+
+  const openCallLogModal = useCallback(
+    (info: { legacyUserId: number; customerName: string; planId?: number | null }) => {
+      setCallLogCustomerInfo(info);
+      setIsCallLogModalOpen(true);
+    },
+    []
+  );
+
+  const closeCallLogModal = useCallback(() => {
+    setIsCallLogModalOpen(false);
+    setCallLogCustomerInfo(null);
+    if (callStateRef.current === 'wrapup') {
+      setCallState('idle');
+      setCurrentCall(null);
+      setResolvedLog(null);
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setToken(localStorage.getItem('mos_token'));
@@ -191,6 +221,63 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       if (timer) clearInterval(timer);
     };
   }, [callState]);
+
+  // Polling AI analysis log during wrapup
+  useEffect(() => {
+    if (callState !== 'wrapup' || !currentCall) {
+      setResolvedLog(null);
+      return;
+    }
+
+    if (isSimulated) {
+      setResolvedLog({
+        id: 0,
+        customerName: currentCall.name,
+        legacyUserId: currentCall.legacyUserId || 0,
+        callUuid: currentCall.callUuid || 'simulated-' + Date.now(),
+      });
+      return;
+    }
+
+    let intervalId: SafeAny = null;
+    let attempts = 0;
+
+    const pollLog = async () => {
+      attempts++;
+      try {
+        const data = (await apiClient.omicall.getLatestLog({
+          phone: currentCall.phone,
+          direction: currentCall.direction,
+        })) as SafeAny;
+
+        if (data && data.id) {
+          setResolvedLog(data);
+
+          // Update current call with resolved customer name and ID
+          setCurrentCall({
+            ...currentCall,
+            legacyUserId: data.legacyUserId,
+            name: data.customerName || currentCall.name,
+            callUuid: data.callUuid,
+          });
+
+          clearInterval(intervalId);
+          return;
+        }
+      } catch (err) {
+        // Log not ready yet
+      }
+
+      if (attempts >= 20) {
+        console.warn('[OmiCallWidget] AI analysis polling timed out');
+        clearInterval(intervalId);
+      }
+    };
+
+    intervalId = setInterval(pollLog, 3000);
+    pollLog();
+    return () => clearInterval(intervalId);
+  }, [callState, currentCall, isSimulated, setCurrentCall]);
 
   // 4. SDK Initialise and SIP Device registration
   useEffect(() => {
@@ -360,6 +447,18 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       if (data.callUuid || data.call_uuid) {
         setCurrentCall((prev) => (prev ? { ...prev, callUuid: data.callUuid || data.call_uuid } : null));
       }
+
+      // Auto-open global CallLogModal
+      const activeCallDetail = currentCallRef.current;
+      if (activeCallDetail) {
+        setCallLogCustomerInfo({
+          legacyUserId: activeCallDetail.legacyUserId || 0,
+          customerName: activeCallDetail.name || 'Khách hàng',
+          planId: activeCallDetail.planId || null,
+        });
+        setIsCallLogModalOpen(true);
+      }
+
       cleanupOmiCallMediaBridge(data);
     };
 
@@ -598,7 +697,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   }, [token, shouldInit]);
 
   // 5. Calling Actions
-  const makeCall = async (phone: string, name?: string, customerId?: number, avatar?: string) => {
+  const makeCall = async (phone: string, name?: string, customerId?: number, avatar?: string, planId?: number) => {
     if (isTabMuted) {
       message.warning('Có cuộc gọi đang diễn ra trên một tab khác.');
       return;
@@ -613,6 +712,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       direction: 'outbound',
       legacyUserId: customerId,
       avatar: avatar || null,
+      planId: planId || null,
     });
     setShouldInit(true);
   };
@@ -780,6 +880,17 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       if (simulatedTimerRef.current) clearTimeout(simulatedTimerRef.current);
       setCallState('wrapup');
       stopRingback();
+
+      // Auto-open global CallLogModal for simulated calls
+      const activeCallDetail = currentCallRef.current;
+      if (activeCallDetail) {
+        setCallLogCustomerInfo({
+          legacyUserId: activeCallDetail.legacyUserId || 0,
+          customerName: activeCallDetail.name || 'Khách hàng',
+          planId: activeCallDetail.planId || null,
+        });
+        setIsCallLogModalOpen(true);
+      }
       return;
     }
 
@@ -863,6 +974,14 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         omicallReady,
         setOmicallReady,
         lastRegisterEvent,
+        isCallLogModalOpen,
+        callLogCustomerInfo,
+        openCallLogModal,
+        closeCallLogModal,
+        resolvedLog,
+        setResolvedLog,
+        submittingWrapup,
+        setSubmittingWrapup,
       }}
     >
       {children}

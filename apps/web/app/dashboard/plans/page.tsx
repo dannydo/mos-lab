@@ -39,7 +39,7 @@ import {
 import dynamic from 'next/dynamic';
 import { apiClient } from '../../../lib/api-client';
 
-const CallLogModal = dynamic(() => import('../../../components/CallLogModal'), { ssr: false });
+import { useOmiCall } from '../../../context/OmiCallContext';
 import { Customer, CustomerWeeklyProgress, BucketType } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
@@ -74,13 +74,7 @@ export default function PlansPage() {
   });
   const [suggestsLoading, setSuggestsLoading] = useState(false);
 
-  // Call log modal controls
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedPlanInfo, setSelectedPlanInfo] = useState<{
-    legacyUserId: number;
-    customerName: string;
-    planId?: number | null;
-  } | null>(null);
+  const { openCallLogModal } = useOmiCall();
 
   // Helper: Format Vietnamese Date
   const formatShortDate = React.useCallback((date: Date) => {
@@ -187,19 +181,27 @@ export default function PlansPage() {
   );
 
   // Open call log modal
-  const openCallLog = React.useCallback((record: CustomerWeeklyProgress, dayDate: Date) => {
-    setSelectedPlanInfo({
-      legacyUserId: record.customer.id,
-      customerName: record.customer.name,
-      planId: record.planId,
-    });
-    setModalVisible(true);
-  }, []);
+  const openCallLog = React.useCallback(
+    (record: CustomerWeeklyProgress, dayDate: Date) => {
+      openCallLogModal({
+        legacyUserId: record.customer.id,
+        customerName: record.customer.name,
+        planId: record.planId,
+      });
+    },
+    [openCallLogModal]
+  );
 
-  const handleCallSuccess = () => {
-    setModalVisible(false);
-    fetchWeeklyPlans();
-  };
+  // Listen to global call log saved event to refresh weekly plans
+  useEffect(() => {
+    const handleLogSaved = () => {
+      fetchWeeklyPlans();
+    };
+    window.addEventListener('mos-call-log-saved', handleLogSaved);
+    return () => {
+      window.removeEventListener('mos-call-log-saved', handleLogSaved);
+    };
+  }, [fetchWeeklyPlans]);
 
   // Check if date is today
   const isToday = React.useCallback((date: Date) => {
@@ -713,18 +715,6 @@ export default function PlansPage() {
           </div>
         )}
       </Drawer>
-
-      {/* CALL LOG MODAL */}
-      {selectedPlanInfo && (
-        <CallLogModal
-          visible={modalVisible}
-          onCancel={() => setModalVisible(false)}
-          onSuccess={handleCallSuccess}
-          planId={selectedPlanInfo.planId}
-          legacyUserId={selectedPlanInfo.legacyUserId}
-          customerName={selectedPlanInfo.customerName}
-        />
-      )}
 
       <style jsx global>{`
         /* Highlight today's column */

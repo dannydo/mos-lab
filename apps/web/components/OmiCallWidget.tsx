@@ -8,7 +8,6 @@ import { PhoneOutlined } from '@ant-design/icons';
 
 // Custom Hooks
 import useWidgetPosition from './omicall-widget/useWidgetPosition';
-import useWrapupForm from './omicall-widget/useWrapupForm';
 
 // Components
 import WidgetHeader from './omicall-widget/components/WidgetHeader';
@@ -70,32 +69,17 @@ export default function OmiCallWidget() {
     isResizing,
   } = positionHook;
 
-  // AI Wrapup & Form Hook
-  const wrapupHook = useWrapupForm(
-    currentCall,
-    callState,
-    isSimulated,
-    callDuration,
-    setCallState,
-    setCurrentCall,
-    setWidgetMinimized
-  );
-
-  const {
-    noteForm,
-    selectedTags,
-    submittingWrapup,
-    resolvedLog,
-    setResolvedLog,
-    availableTags,
-    handleTagToggle,
-    handleSaveWrapup,
-  } = wrapupHook;
-
   // Auto-expand widget when there is an incoming call
   useEffect(() => {
     if (callState === 'incoming') {
       setWidgetMinimized(false);
+    }
+  }, [callState, setWidgetMinimized]);
+
+  // Auto-minimize widget when call ends (wrapup)
+  useEffect(() => {
+    if (callState === 'wrapup') {
+      setWidgetMinimized(true);
     }
   }, [callState, setWidgetMinimized]);
 
@@ -331,23 +315,11 @@ export default function OmiCallWidget() {
         {/* WRAP-UP STATE */}
         {!isTabMuted && callState === 'wrapup' && (
           <WrapupPanel
-            currentCall={currentCall}
-            callDuration={callDuration}
-            resolvedLog={resolvedLog}
-            submittingWrapup={submittingWrapup}
-            availableTags={availableTags}
-            selectedTags={selectedTags}
-            handleTagToggle={handleTagToggle}
-            handleSaveWrapup={handleSaveWrapup}
-            noteForm={noteForm}
             isDark={isDark}
             textColor={textColor}
             descColor={descColor}
             borderColor={borderColor}
             subBg={subBg}
-            setCallState={setCallState}
-            setCurrentCall={setCurrentCall}
-            setResolvedLog={setResolvedLog}
             formatDuration={formatDuration}
           />
         )}

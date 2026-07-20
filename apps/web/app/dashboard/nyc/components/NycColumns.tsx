@@ -16,7 +16,13 @@ interface NycColumnsOptions {
   formatDuration: (secs: number) => string;
   dailyPlanList: number[];
   handleAddToPlan: (id: number) => void;
-  handleOpenCallModal: (record: Customer) => void;
+  makeCall: (
+    phone: string,
+    name?: string,
+    customerId?: number,
+    avatar?: string,
+    planId?: number
+  ) => Promise<void> | void;
   addingIds?: number[];
 }
 
@@ -28,7 +34,7 @@ export const getNycColumns = ({
   formatDuration,
   dailyPlanList,
   handleAddToPlan,
-  handleOpenCallModal,
+  makeCall,
   addingIds = [],
 }: NycColumnsOptions) => {
   return [
@@ -64,7 +70,19 @@ export const getNycColumns = ({
             >
               {text}
             </div>
-            <div style={{ fontSize: '12px', color: 'var(--client-phone-color)' }}>{record.phone}</div>
+            {record.phone && (
+              <div
+                style={{ fontSize: '12px', color: '#D4A84B', fontWeight: '500' }}
+                className="hover:underline cursor-pointer flex items-center gap-1 mt-0.5"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  makeCall(record.phone, record.name, record.id, record.avatar || undefined);
+                }}
+              >
+                <PhoneOutlined style={{ fontSize: '10px' }} />
+                <span>{record.phone}</span>
+              </div>
+            )}
           </div>
         </Space>
       ),
@@ -202,7 +220,7 @@ export const getNycColumns = ({
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 210,
+      width: 110,
       render: (_: SafeAny, record: Customer) => {
         const isPlanned = dailyPlanList.includes(record.id);
         const isAdding = addingIds.includes(record.id);
@@ -227,23 +245,6 @@ export const getNycColumns = ({
             >
               {isPlanned ? 'Đã lên lịch' : 'Lên lịch gọi'}
             </Button>
-            <Button
-              type="primary"
-              size="small"
-              icon={<PhoneOutlined />}
-              onClick={() => handleOpenCallModal(record)}
-              style={{ background: '#52C41A', borderColor: '#52C41A', color: '#fff' }}
-            >
-              Gọi
-            </Button>
-            <Tooltip title="Chi tiết khách hàng">
-              <Button
-                type="text"
-                shape="circle"
-                icon={<EyeOutlined style={{ color: themeMode === 'dark' ? '#D4A84B' : '#87640a' }} />}
-                onClick={() => handleOpenDetailModal(record)}
-              />
-            </Tooltip>
           </Space>
         );
       },

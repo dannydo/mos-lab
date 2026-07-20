@@ -22,6 +22,7 @@ export interface CurrentCall {
   sdkUid?: string | null;
   legacyUserId?: number | null;
   avatar?: string | null;
+  planId?: number | null;
 }
 
 export interface OmiCallContextType {
@@ -32,7 +33,7 @@ export interface OmiCallContextType {
   callState: CallState;
   callDuration: number;
   currentCall: CurrentCall | null;
-  makeCall: (phone: string, name?: string, customerId?: number, avatar?: string) => Promise<void>;
+  makeCall: (phone: string, name?: string, customerId?: number, avatar?: string, planId?: number) => Promise<void>;
   executeCall: () => Promise<void>;
   cancelConfirm: () => void;
   answerCall: () => void;
@@ -56,4 +57,16 @@ export interface OmiCallContextType {
   omicallReady: boolean;
   setOmicallReady: (ready: boolean) => void;
   lastRegisterEvent?: SafeAny;
+
+  // Global CallLogModal features
+  isCallLogModalOpen: boolean;
+  callLogCustomerInfo: { legacyUserId: number; customerName: string; planId?: number | null } | null;
+  openCallLogModal: (info: { legacyUserId: number; customerName: string; planId?: number | null }) => void;
+  closeCallLogModal: () => void;
+
+  // Share AI analysis wrapup polling properties
+  resolvedLog: SafeAny;
+  setResolvedLog: (log: SafeAny) => void;
+  submittingWrapup: boolean;
+  setSubmittingWrapup: (submitting: boolean) => void;
 }

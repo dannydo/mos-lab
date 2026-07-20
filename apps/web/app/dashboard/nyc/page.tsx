@@ -44,7 +44,6 @@ import {
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 
-const CallLogModal = dynamic(() => import('../../../components/CallLogModal'), { ssr: false });
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 const BookingWizardDrawer = dynamic(() => import('../../../components/BookingWizardDrawer'), { ssr: false });
 const TableConfigDrawer = dynamic(
@@ -58,6 +57,7 @@ import dayjs from 'dayjs';
 import { useNycData, TAB_KEYS } from './hooks/useNycData';
 import { getNycColumns } from './components/NycColumns';
 import { formatDuration, formatVND } from '../../../lib/format-utils';
+import { useOmiCall } from '../../../context/OmiCallContext';
 
 const { Title, Text } = Typography;
 
@@ -65,6 +65,7 @@ export default function NycCampaignPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const [settingsForm] = Form.useForm();
+  const { makeCall } = useOmiCall();
 
   // Resizable Modal States
   const [modalWidth, setModalWidth] = useState<number>(700);
@@ -88,12 +89,10 @@ export default function NycCampaignPage() {
     overallStats,
     staffList,
     settingsModalVisible,
-    callModalVisible,
     detailModalVisible,
     bookingWizardVisible,
     bookingInitialCustomer,
     selectedConfigTab,
-    selectedPlanInfo,
     selectedCustomer,
     dailyPlanList,
     addingIds,
@@ -106,19 +105,15 @@ export default function NycCampaignPage() {
     setCurrentPage,
     setPageSize,
     setSettingsModalVisible,
-    setCallModalVisible,
     setDetailModalVisible,
     setBookingWizardVisible,
     setBookingInitialCustomer,
     setSelectedConfigTab,
-    setSelectedPlanInfo,
     setSelectedCustomer,
     // handlers
     fetchCustomerList,
     fetchOverallStats,
     handleAddToPlan,
-    handleOpenCallModal,
-    handleCallSuccess,
     handleOpenDetailModal,
     handleOpenSettings,
     handleConfigTabChange,
@@ -254,7 +249,7 @@ export default function NycCampaignPage() {
     formatDuration,
     dailyPlanList,
     handleAddToPlan,
-    handleOpenCallModal,
+    makeCall,
     addingIds,
   });
 
@@ -821,18 +816,6 @@ export default function NycCampaignPage() {
             </Form>
           </div>
         </Modal>
-      )}
-
-      {/* SUB-COMPONENTS MODALS */}
-      {callModalVisible && selectedPlanInfo && (
-        <CallLogModal
-          visible={callModalVisible}
-          onCancel={() => setCallModalVisible(false)}
-          onSuccess={handleCallSuccess}
-          legacyUserId={selectedPlanInfo.legacyUserId}
-          customerName={selectedPlanInfo.customerName}
-          planId={selectedPlanInfo.planId}
-        />
       )}
 
       {detailModalVisible && selectedCustomer && (
