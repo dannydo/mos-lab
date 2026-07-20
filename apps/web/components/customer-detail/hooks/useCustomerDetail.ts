@@ -500,6 +500,29 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     }
   };
 
+  // Pin/Unpin note toggle
+  const handlePinToggle = async (noteId: number, currentSticky: boolean) => {
+    if (!customerId) return;
+    setUnpinLoading(true);
+    try {
+      if (currentSticky) {
+        const res = await apiClient.customers.unpinNote(customerId, noteId);
+        optionsRef.current?.onSuccess?.(res.message || 'Bỏ ghim ghi chú thành công!');
+      } else {
+        const res = await apiClient.customers.pinNote(customerId, noteId);
+        optionsRef.current?.onSuccess?.(res.message || 'Ghim ghi chú thành công!');
+      }
+      fetchDetails();
+    } catch (err) {
+      console.error('Failed to toggle pin state:', err);
+      optionsRef.current?.onError?.(
+        (err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi cập nhật trạng thái ghim.'
+      );
+    } finally {
+      setUnpinLoading(false);
+    }
+  };
+
   const getMostFrequentDay = (bookingsList: SafeAny[]) => {
     if (!bookingsList || bookingsList.length === 0) return 'N/A';
     const dayCounts = Array(7).fill(0);
@@ -733,6 +756,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     handleRestoreCustomer,
     handleCancelBooking,
     handleUnpinNote,
+    handlePinToggle,
     unpinLoading,
     // helpers
     getMostFrequentDay,

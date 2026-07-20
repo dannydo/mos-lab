@@ -1,15 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Timeline } from 'antd';
-import { WarningOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { Timeline, Button, Tooltip } from 'antd';
+import { WarningOutlined, ClockCircleOutlined, PushpinFilled, PushpinOutlined } from '@ant-design/icons';
 
 interface NotesTabProps {
   notes: SafeAny[];
   themeMode: 'light' | 'dark';
+  currentUser?: SafeAny;
+  onPinToggle?: (noteId: number, currentSticky: boolean) => Promise<void>;
+  unpinLoading?: boolean;
 }
 
-export const NotesTab: React.FC<NotesTabProps> = ({ notes, themeMode }) => {
+export const NotesTab: React.FC<NotesTabProps> = ({ notes, themeMode, currentUser, onPinToggle, unpinLoading }) => {
   return (
     <div
       className="custom-scrollbar"
@@ -64,7 +67,7 @@ export const NotesTab: React.FC<NotesTabProps> = ({ notes, themeMode }) => {
                       gap: '8px',
                     }}
                   >
-                    {isSticky && (
+                    {isSticky ? (
                       <span
                         style={{
                           color: '#f5222d',
@@ -72,13 +75,38 @@ export const NotesTab: React.FC<NotesTabProps> = ({ notes, themeMode }) => {
                           fontSize: '11px',
                           textTransform: 'uppercase',
                           letterSpacing: '0.5px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
                         }}
                       >
                         <WarningOutlined /> Ghi chú quan trọng
                       </span>
+                    ) : (
+                      <span />
                     )}
-                    {!isSticky && <span />}
-                    <span style={{ fontSize: '11.5px', color: '#888' }}>{formattedDate}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '11.5px', color: '#888' }}>{formattedDate}</span>
+                      {currentUser?.role === 'admin' && onPinToggle && (
+                        <Tooltip title={isSticky ? 'Bỏ ghim ghi chú' : 'Ghim ghi chú'}>
+                          <Button
+                            type="text"
+                            size="small"
+                            onClick={() => onPinToggle(n.id, isSticky)}
+                            loading={unpinLoading}
+                            style={{
+                              padding: '0 4px',
+                              height: '22px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: isSticky ? '#ff4d4f' : undefined,
+                            }}
+                            icon={isSticky ? <PushpinFilled /> : <PushpinOutlined />}
+                          />
+                        </Tooltip>
+                      )}
+                    </div>
                   </div>
                   <div
                     style={{

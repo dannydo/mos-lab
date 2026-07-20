@@ -131,6 +131,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     handleRestoreCustomer,
     handleCancelBooking,
     handleUnpinNote,
+    handlePinToggle,
     unpinLoading,
     // helpers
     getMostFrequentDay,
@@ -647,7 +648,15 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     {
                       key: 'notes',
                       label: `Nhật ký ghi chú (${notes.length})`,
-                      children: <NotesTab notes={notes} themeMode={themeMode} />,
+                      children: (
+                        <NotesTab
+                          notes={notes}
+                          themeMode={themeMode}
+                          currentUser={currentUser}
+                          onPinToggle={handlePinToggle}
+                          unpinLoading={unpinLoading}
+                        />
+                      ),
                     },
                     {
                       key: 'calls',

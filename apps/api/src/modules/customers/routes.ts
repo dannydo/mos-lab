@@ -2405,6 +2405,41 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // POST /api/customers/:id/notes/:noteId/pin
+  // Pin a customer note (admin only)
+  fastify.post('/customers/:id/notes/:noteId/pin', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id, noteId } = request.params as { id: string; noteId: string };
+    const user = request.user as { id: number; role: string };
+
+    if (user.role !== 'admin') {
+      return reply
+        .status(403)
+        .send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép ghim ghi chú.' });
+    }
+
+    const customerId = parseInt(id, 10);
+    const parsedNoteId = parseInt(noteId, 10);
+    if (isNaN(customerId) || isNaN(parsedNoteId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Tham số không hợp lệ.' });
+    }
+
+    try {
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `UPDATE user_note SET is_sticky = 1 WHERE id = ? AND user_id = ?`,
+        parsedNoteId,
+        customerId
+      );
+
+      return reply.send({ success: true, message: 'Ghim ghi chú thành công' });
+    } catch (err: SafeAny) {
+      fastify.log.error(err, `Pin customer note error for customer ${customerId}, note ${parsedNoteId}:`);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: (err as SafeAny).message || 'Không thể ghim ghi chú.',
+      });
+    }
+  });
+
   // POST /api/customers/assign
   // Assign multiple customers to a staff member
   fastify.post('/customers/assign', { preHandler: [requireAuth] }, async (request, reply) => {
