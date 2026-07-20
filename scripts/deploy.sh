@@ -48,7 +48,9 @@ ssh -o StrictHostKeyChecking=no live-wings "
   pnpm --filter @mos-lab/api exec prisma db push --schema=prisma/crm.prisma --skip-generate
 
   echo '[VPS] Building project packages...'
-  pnpm build
+  pnpm --filter @mos-lab/shared build
+  pnpm --filter @mos-lab/api build
+  pnpm --filter @mos-lab/web build
 
   echo '[VPS] Restarting Backend API via PM2...'
   pm2 restart mos-lab-api
