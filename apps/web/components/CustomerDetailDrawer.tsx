@@ -10,6 +10,7 @@ import {
   UndoOutlined,
   EditOutlined,
   FormOutlined,
+  PushpinFilled,
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../context/ThemeContext';
@@ -529,6 +530,60 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   minHeight: '600px',
                 }}
               >
+                {/* Pinned / Sticky Notes Alert Box */}
+                {notes && notes.some((n: SafeAny) => n.isSticky) && (
+                  <div
+                    style={{
+                      background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.05)' : '#fff1f0',
+                      border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.2)' : '#ffccc7'}`,
+                      borderRadius: '8px',
+                      padding: '12px 16px',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <PushpinFilled style={{ color: '#ff4d4f', fontSize: '15px' }} />
+                      <strong
+                        style={{
+                          color: themeMode === 'dark' ? '#f87171' : '#cf1322',
+                          fontSize: '13px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                        }}
+                      >
+                        Ghi chú quan trọng
+                      </strong>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {notes
+                        .filter((n: SafeAny) => n.isSticky)
+                        .map((n: SafeAny) => {
+                          let formattedDate = '';
+                          if (n.dateCreated) {
+                            const d = new Date(n.dateCreated);
+                            formattedDate = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+                          }
+                          return (
+                            <div
+                              key={n.id}
+                              style={{
+                                fontSize: '13px',
+                                color: themeMode === 'dark' ? '#cbd5e1' : '#3f3f46',
+                                lineHeight: '1.5',
+                                borderLeft: `2px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.4)' : '#ffa39e'}`,
+                                paddingLeft: '10px',
+                              }}
+                            >
+                              <div style={{ whiteSpace: 'pre-wrap', fontWeight: '500' }}>{n.note}</div>
+                              <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                                Bởi: <strong>{n.staffName}</strong> ({formattedDate})
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
                 <Tabs
                   activeKey={activeTabKey}
                   onChange={handleTabChange}
