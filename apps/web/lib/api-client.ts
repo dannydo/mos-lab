@@ -170,6 +170,13 @@ export const apiClient = {
       const response = await api.put(`/customers/booking/${orderId}`, data);
       return response.data;
     },
+    createNote: async (
+      id: number,
+      data: { note: string; noteFieldKey: 'note' | 'order_note'; isSticky?: boolean }
+    ): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post(`/customers/${id}/notes`, data);
+      return response.data;
+    },
   },
 
   plans: {

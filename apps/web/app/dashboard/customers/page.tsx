@@ -71,6 +71,7 @@ export default function CustomersPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const [modal, contextHolder] = Modal.useModal();
+  const tableRef = React.useRef<{ openConfig: () => void } | null>(null);
 
   const data = useCustomerData({
     onSuccess: (msg) => message.success(msg),
@@ -281,6 +282,7 @@ export default function CustomersPage() {
               themeMode={themeMode}
               token={token}
               currentUser={data.currentUser}
+              openConfig={() => tableRef.current?.openConfig()}
               hasActiveFilters={data.hasActiveFilters}
               clearFilters={data.clearFilters}
               applyFilter={data.applyFilter}
@@ -412,6 +414,7 @@ export default function CustomersPage() {
       )}
 
       <CustomerTable
+        ref={tableRef}
         customers={data.customers}
         loading={data.loading}
         total={data.total}

@@ -1,0 +1,10 @@
+{
+  "name": "Wings Lashes",
+  "short_name": "lashes",
+  "ad_account_id": "646164975411124",
+  "business_id": "478795852605472",
+  "asset_id": "227058864869557",
+  "campaign_prefixes": ["[WL]"],
+  "data_dir": "data/lashes",
+  "report_path": "reports/lashes_report.md"
+}

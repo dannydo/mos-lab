@@ -1,0 +1,164 @@
+{
+  "_meta": {
+    "persona_name": "Bạn Mai - Tệp Đổi Nghề & Khởi Nghiệp",
+    "brand": "Wings Academy",
+    "short_name": "WA_BanMai_DoiNghe",
+    "created_at": "2026-06-24",
+    "description": "Nữ 23-35 tuổi đang muốn đổi nghề hoặc khởi nghiệp trong ngành làm đẹp. Thu nhập hiện tại bấp bênh, đang tìm kiếm nghề tự do có thu nhập 15-30 triệu/tháng. Nhạy cảm về rủi ro học phí cao nhưng được thuyết phục bởi cam kết bao ra nghề.",
+    "facebook_audience_name": "[WA] Bạn Mai - Đổi Nghề Khởi Nghiệp (23-35F | HCM)",
+    "funnel_stage": "TOFU",
+    "objective": "MESSAGES",
+    "estimated_budget_per_day_vnd": 80000
+  },
+
+  "demographics": {
+    "age_min": 23,
+    "age_max": 35,
+    "genders": ["female"],
+    "relationship_statuses": []
+  },
+
+  "locations": {
+    "strategy": "radius_around_studio",
+    "primary_city": "Ho Chi Minh City",
+    "districts_priority": [
+      "Quận 1",
+      "Quận 3",
+      "Quận 5",
+      "Quận 10",
+      "Bình Thạnh",
+      "Phú Nhuận",
+      "Gò Vấp",
+      "Quận 4",
+      "Quận 8"
+    ],
+    "radius_km": 10,
+    "radius_center": "Phạm Ngũ Lão, Quận 1, TP.HCM",
+    "notes": "Học viên đổi nghề thường đi làm hoặc ở vùng ven trung tâm, bán kính 10km là phù hợp. Mở rộng hơn so với tệp định cư (5km) vì họ có động lực đi học xa hơn khi thực sự muốn thay đổi cuộc sống."
+  },
+
+  "interests": {
+    "primary": [
+      {
+        "name": "Nail salon",
+        "category": "Beauty & Personal Care",
+        "rationale": "Người đang trong ngành làm đẹp / muốn chuyển qua"
+      },
+      {
+        "name": "Eyelash extensions",
+        "category": "Beauty & Personal Care",
+        "rationale": "Quan tâm trực tiếp đến nối mi"
+      },
+      {
+        "name": "Spa",
+        "category": "Beauty & Personal Care",
+        "rationale": "Đang làm hoặc muốn làm trong ngành spa/thẩm mỹ"
+      },
+      {
+        "name": "Cosmetology",
+        "category": "Education",
+        "rationale": "Quan tâm đến học ngành thẩm mỹ chuyên nghiệp"
+      },
+      {
+        "name": "Makeup",
+        "category": "Beauty & Personal Care",
+        "rationale": "Tệp làm đẹp chung, sở thích gần với nối mi"
+      }
+    ],
+    "career_change": [
+      {
+        "name": "Entrepreneurship",
+        "category": "Business",
+        "rationale": "Muốn tự kinh doanh, mở tiệm"
+      },
+      {
+        "name": "Small business",
+        "category": "Business",
+        "rationale": "Muốn tự mở tiệm nhỏ hoặc làm dịch vụ tại nhà"
+      },
+      {
+        "name": "Freelancing",
+        "category": "Career",
+        "rationale": "Muốn thoát làm công ăn lương, chuyển sang công việc tự do"
+      },
+      {
+        "name": "Vocational education",
+        "category": "Education",
+        "rationale": "Quan tâm đến học nghề"
+      },
+      {
+        "name": "Online business",
+        "category": "Business",
+        "rationale": "Tệp muốn tự kinh doanh online/offline"
+      }
+    ],
+    "income_aspiration": [
+      {
+        "name": "Personal finance",
+        "category": "Finance",
+        "rationale": "Quan tâm đến cải thiện tài chính cá nhân"
+      },
+      {
+        "name": "Self-improvement",
+        "category": "Lifestyle",
+        "rationale": "Muốn phát triển bản thân, không bằng lòng với hiện tại"
+      }
+    ],
+    "exclude": ["High-end fashion", "Luxury goods", "International travel"],
+    "exclude_rationale": "Loại bỏ tệp thu nhập cao đã ổn định - họ không có nhu cầu đổi nghề mạnh như Bạn Mai"
+  },
+
+  "behaviors": {
+    "include": [
+      {
+        "name": "Engaged shoppers",
+        "rationale": "Người thường xuyên tương tác và có ý định mua hàng"
+      },
+      {
+        "name": "Small business owners",
+        "rationale": "Người đang hoặc muốn kinh doanh nhỏ"
+      }
+    ]
+  },
+
+  "custom_audiences": {
+    "lookalike_source": "WA_InboxLeads_2026",
+    "notes": "Khi đủ data, tạo Lookalike 1% từ danh sách học viên đã đăng ký khóa học Basic"
+  },
+
+  "ad_copy_angles": [
+    {
+      "angle": "Thu nhập",
+      "hook": "Từ nhân viên văn phòng → thu nhập 15-30 triệu/tháng chỉ sau 3 tuần học",
+      "cta": "Nhắn tin hỏi lịch học"
+    },
+    {
+      "angle": "Cam kết bao ra nghề",
+      "hook": "Bảo hành kiểu Úc: Học 2 buổi thử, không ưng hoàn 100% học phí",
+      "cta": "Nhắn tin đăng ký học thử miễn phí"
+    },
+    {
+      "angle": "Tự chủ tài chính",
+      "hook": "Không cần sếp, không cần giờ hành chính - làm nail/mi tại nhà thu 20tr+/tháng",
+      "cta": "Tìm hiểu khóa học ngay"
+    },
+    {
+      "angle": "Kỹ thuật độc quyền",
+      "hook": "Học kỹ thuật nối mi bóng tối độc quyền của Wings - bộ mi từ 500K-2tr/bộ",
+      "cta": "Nhắn tin để xem thêm"
+    }
+  ],
+
+  "campaign_naming": {
+    "campaign": "[WA][BanMai] Đổi Nghề Khởi Nghiệp - Reels - Messages",
+    "adset": "[WA][BanMai] F23-35 HCM 10km - Interests Beauty&Career",
+    "ad_prefix": "[WA][BanMai]"
+  },
+
+  "kpis": {
+    "target_cost_per_message_vnd": 15000,
+    "target_ctr_percent": 2.0,
+    "evaluation_period_days": 7,
+    "notes": "So sánh với benchmark tệp định cư: ~13k/tin nhắn. Tệp đổi nghề dự kiến cao hơn 10-20% vì audience rộng hơn."
+  }
+}

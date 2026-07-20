@@ -1,0 +1,10 @@
+{
+  "name": "Wings Academy",
+  "short_name": "academy",
+  "ad_account_id": "646164975411124",
+  "business_id": "478795852605472",
+  "asset_id": "227058864869557",
+  "campaign_prefixes": ["[WA]", "Boosted Reel", "Standard Ad", "Video views Reel"],
+  "data_dir": "data/academy",
+  "report_path": "reports/academy_report.md"
+}

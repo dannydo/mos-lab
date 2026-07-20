@@ -2319,6 +2319,57 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // POST /api/customers/:id/notes
+  // Create a new note for a customer in user_note table
+  fastify.post('/customers/:id/notes', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { note, noteFieldKey, isSticky } = request.body as {
+      note: string;
+      noteFieldKey: 'note' | 'order_note';
+      isSticky?: boolean;
+    };
+
+    const customerId = parseInt(id, 10);
+    if (isNaN(customerId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'ID khách hàng không hợp lệ' });
+    }
+
+    if (!note || !note.trim()) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Nội dung ghi chú là bắt buộc' });
+    }
+
+    try {
+      const user = request.user as { id: number };
+
+      // Get the legacyStaffId of the logged-in CRM staff
+      const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
+        where: { id: user.id },
+        select: { legacyStaffId: true },
+      });
+
+      const staffId = crmStaff?.legacyStaffId || 0;
+
+      // Insert into user_note raw table
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `INSERT INTO user_note (user_id, note, note_field_key, is_sticky, created_staff_id, is_disabled, date_created)
+         VALUES (?, ?, ?, ?, ?, 0, NOW())`,
+        customerId,
+        note.trim(),
+        noteFieldKey || 'note',
+        isSticky ? 1 : 0,
+        staffId
+      );
+
+      return reply.send({ success: true, message: 'Thêm ghi chú thành công' });
+    } catch (err: SafeAny) {
+      fastify.log.error(err, `Create customer note error for customer ${customerId}:`);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: (err as SafeAny).message || 'Không thể tạo ghi chú cho khách hàng.',
+      });
+    }
+  });
+
   // POST /api/customers/assign
   // Assign multiple customers to a staff member
   fastify.post('/customers/assign', { preHandler: [requireAuth] }, async (request, reply) => {

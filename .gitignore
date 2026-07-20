@@ -47,3 +47,10 @@ AGENTS.md
 .agents/skills/
 docs/wiki/
 
+# Python virtual environments
+.venv/
+venv/
+*venv*/
+*.pyc
+__pycache__/
+

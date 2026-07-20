@@ -11,6 +11,7 @@ import {
   TeamOutlined,
   ClearOutlined,
   SaveOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 
 // Shared and custom sub-components
@@ -66,6 +67,7 @@ interface CustomerFiltersProps {
   handleSaveFilter: () => Promise<void>;
   activeFilterId: string | null;
   PRESET_FILTERS: SafeAny[];
+  openConfig?: () => void;
 }
 
 const CustomerFilters = React.memo(function CustomerFilters({
@@ -113,6 +115,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
   handleSaveFilter,
   activeFilterId,
   PRESET_FILTERS,
+  openConfig,
 }: CustomerFiltersProps) {
   const { token } = theme.useToken();
 
@@ -189,6 +192,12 @@ const CustomerFilters = React.memo(function CustomerFilters({
             Bộ lọc nâng cao
           </Button>
         </Badge>
+
+        {openConfig && (
+          <Button icon={<SettingOutlined />} onClick={openConfig}>
+            Cấu hình cột
+          </Button>
+        )}
 
         {hasActiveFilters && (
           <>

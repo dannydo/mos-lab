@@ -9,6 +9,7 @@ import {
   DeleteOutlined,
   UndoOutlined,
   EditOutlined,
+  FormOutlined,
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../context/ThemeContext';
@@ -41,6 +42,10 @@ const ComboHistoryModal = dynamic(
 );
 const EditCustomerModal = dynamic(
   () => import('./customer-detail/components/EditCustomerModal').then((m) => m.EditCustomerModal),
+  { ssr: false }
+);
+const CreateNoteModal = dynamic(
+  () => import('./customer-detail/components/CreateNoteModal').then((m) => m.CreateNoteModal),
   { ssr: false }
 );
 const TipHistoryModal = dynamic(
@@ -150,6 +155,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   }, []);
 
   const [activeTabKey, setActiveTabKey] = useState<string>('bookings');
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
 
   // Sync tab with localStorage on mount & open changes
   useEffect(() => {
@@ -365,6 +371,18 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     color: themeMode === 'dark' ? '#fff' : '#1f2937',
                   }}
                   onClick={handleOpenEditModal}
+                />
+              </Tooltip>
+              <Tooltip title="Thêm Ghi Chú">
+                <Button
+                  type="default"
+                  icon={<FormOutlined />}
+                  style={{
+                    fontWeight: 'bold',
+                    borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9',
+                    color: themeMode === 'dark' ? '#fff' : '#1f2937',
+                  }}
+                  onClick={() => setIsNoteModalOpen(true)}
                 />
               </Tooltip>
               <Button
@@ -608,6 +626,16 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         onOk={handleSaveEdit}
         confirmLoading={saveLoading}
         form={editForm}
+      />
+
+      <CreateNoteModal
+        open={isNoteModalOpen}
+        customerId={customer ? customer.id : null}
+        onCancel={() => setIsNoteModalOpen(false)}
+        onSuccess={() => {
+          setIsNoteModalOpen(false);
+          fetchDetails();
+        }}
       />
 
       {bookingWizardOpen && (
