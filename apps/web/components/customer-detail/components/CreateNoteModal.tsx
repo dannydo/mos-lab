@@ -130,7 +130,7 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ open, customer
               <Switch />
             </Form.Item>
             <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937', fontWeight: '500' }}>
-              Đánh dấu là ghi chú quan trọng (Ghim lên đầu)
+              Quan trọng và ghim
             </span>
           </div>
         </Form.Item>
