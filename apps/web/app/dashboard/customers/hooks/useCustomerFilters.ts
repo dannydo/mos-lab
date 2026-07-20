@@ -72,6 +72,13 @@ export const useCustomerFilters = (
     }
   }, []);
 
+  // Load saved filters on mount / when currentUser changes
+  useEffect(() => {
+    if (currentUser) {
+      fetchSavedFilters();
+    }
+  }, [currentUser, fetchSavedFilters]);
+
   const handleSearch = useCallback((val: string) => {
     setSearchQuery(val);
   }, []);
@@ -191,7 +198,7 @@ export const useCustomerFilters = (
   const handleDeleteFilter = useCallback(
     async (id: string, name: string) => {
       try {
-        await apiClient.savedFilters.delete(Number(id));
+        await apiClient.savedFilters.delete(id);
         optionsRef.current?.onSuccess?.(`Đã xóa bộ lọc "${name}"`);
         fetchSavedFilters();
         if (activeFilterId === id) {

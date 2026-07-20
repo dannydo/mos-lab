@@ -330,7 +330,7 @@ export const apiClient = {
       const response = await api.post('/saved-filters', data);
       return response.data;
     },
-    delete: async (id: number): Promise<{ success: boolean }> => {
+    delete: async (id: string | number): Promise<{ success: boolean }> => {
       const response = await api.delete(`/saved-filters/${id}`);
       return response.data;
     },
