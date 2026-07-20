@@ -352,7 +352,8 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
       // Filter notes in group based on segment
       const filteredNotes = group.notes.filter((n) => {
         if (activeSegment === 'all') return true;
-        return n.department.toLowerCase() === activeSegment;
+        const targetDept = activeSegment === 'booking' ? 'bk' : activeSegment;
+        return n.department.toLowerCase() === targetDept;
       });
 
       // Sort notes: BK first, then CC, then CS
