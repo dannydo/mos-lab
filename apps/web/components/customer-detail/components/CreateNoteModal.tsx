@@ -124,14 +124,15 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ open, customer
           </Radio.Group>
         </Form.Item>
 
-        <Form.Item
-          name="isSticky"
-          valuePropName="checked"
-          label={
-            <span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563', fontWeight: '500' }}>Ghim ghi chú</span>
-          }
-        >
-          <Switch checkedChildren="Quan trọng (Ghi chú quan trọng)" unCheckedChildren="Bình thường" />
+        <Form.Item style={{ marginBottom: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Form.Item name="isSticky" valuePropName="checked" noStyle>
+              <Switch />
+            </Form.Item>
+            <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937', fontWeight: '500' }}>
+              Đánh dấu là ghi chú quan trọng (Ghim lên đầu)
+            </span>
+          </div>
         </Form.Item>
       </Form>
     </Modal>
