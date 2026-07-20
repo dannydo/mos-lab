@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { TableColumnType } from 'antd';
 import { ColumnConfig } from '@mos-lab/shared';
 import { apiClient } from '../lib/api-client';
@@ -21,7 +21,6 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
   const [loading, setLoading] = useState(true);
   const [configVisible, setConfigVisible] = useState(false);
   const [rawConfig, setRawConfig] = useState<ColumnConfig[]>([]);
-  const [mergedColumns, setMergedColumns] = useState<TableColumnType<T>[]>([]);
 
   // Keep reference to staticColumns to avoid re-renders and circular dependencies
   const staticColsRef = useRef(staticColumns);
@@ -125,15 +124,14 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
   );
 
   // 6. Merge rawConfig metadata with static column definitions (functions, renders, align)
-  useEffect(() => {
+  const mergedColumns = useMemo(() => {
     if (rawConfig.length === 0) {
-      setMergedColumns(staticColsRef.current);
-      return;
+      return staticColumns;
     }
 
     const configMap = new Map(rawConfig.map((col, index) => [col.key, { ...col, index }]));
 
-    const merged = staticColsRef.current
+    const merged = staticColumns
       .map((staticCol) => {
         const key = (staticCol.key || staticCol.dataIndex) as string;
         const config = configMap.get(key);
@@ -179,8 +177,8 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
       .filter((col) => col.visible !== false)
       .sort((a, b) => (a.orderIndex ?? 9999) - (b.orderIndex ?? 9999));
 
-    setMergedColumns(merged as TableColumnType<T>[]);
-  }, [rawConfig, handleColumnResize, themeMode]);
+    return merged as TableColumnType<T>[];
+  }, [rawConfig, staticColumns, handleColumnResize, themeMode]);
 
   return {
     loading,
