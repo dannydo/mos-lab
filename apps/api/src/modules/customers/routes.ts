@@ -259,14 +259,41 @@ export async function customerRoutes(fastify: FastifyInstance) {
           innerWhereClauses.push(`(
             EXISTS (
               SELECT 1 FROM user_service_balance usb_nl
+              LEFT JOIN service_price sp_nl ON usb_nl.service_price_id = sp_nl.id
+              LEFT JOIN service_language sl_nl ON usb_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
               WHERE usb_nl.user_id = u.id 
                 AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
+                AND (COALESCE(sp_nl.service_price, 0) > 0 OR (usb_nl.total_normal_balance_amount + usb_nl.total_retain_balance_amount) > 0)
+                AND (sp_nl.service_price_package_key IS NULL OR (
+                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+                ))
+                AND (sl_nl.service_name IS NULL OR (
+                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+                ))
             ) OR EXISTS (
               SELECT 1 FROM \`order\` o_nl
               JOIN order_service os_nl ON os_nl.order_id = o_nl.id
+              LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
+              LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
+              LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
               WHERE o_nl.user_id = u.id 
                 AND o_nl.date_created >= ? AND o_nl.date_created <= ? 
-                AND os_nl.user_service_type = 'combo'
+                AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
+                AND COALESCE(NULLIF(os_nl.total_price, 0), sp_nl.service_price, 0) > 0
+                AND (sp_nl.service_price_package_key IS NULL OR (
+                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+                ))
+                AND (sl_nl.service_name IS NULL OR (
+                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+                ))
             )
           )`);
           innerParams.push(dFromStr, dToStr, dFromStr, dToStr);
@@ -652,6 +679,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
           WHERE usb.user_id IN (${customerIds.join(',')})
             AND usb.date_created >= ? AND usb.date_created <= ?
             AND (COALESCE(sp.service_price, 0) > 0 OR (usb.total_normal_balance_amount + usb.total_retain_balance_amount) > 0)
+            AND (sp.service_price_package_key IS NULL OR (
+              LOWER(sp.service_price_package_key) NOT LIKE '%single%'
+              AND LOWER(sp.service_price_package_key) NOT LIKE '%refill%'
+              AND LOWER(sp.service_price_package_key) NOT LIKE '%balance%'
+            ))
+            AND (sl.service_name IS NULL OR (
+              LOWER(sl.service_name) NOT LIKE '%single%'
+              AND LOWER(sl.service_name) NOT LIKE '%refill%'
+              AND LOWER(sl.service_name) NOT LIKE '%balance%'
+            ))
           ORDER BY usb.date_created DESC
         `,
           dFromStr,
@@ -686,7 +723,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
           LEFT JOIN user_profile up_cv ON os.assigned_staff_id = up_cv.user_id
           WHERE o.user_id IN (${customerIds.join(',')})
             AND o.date_created >= ? AND o.date_created <= ?
-            AND os.user_service_type = 'combo'
+            AND (os.user_service_type = 'combo' OR s.service_group = 'combo')
+            AND COALESCE(NULLIF(os.total_price, 0), sp.service_price, 0) > 0
+            AND (sp.service_price_package_key IS NULL OR (
+              LOWER(sp.service_price_package_key) NOT LIKE '%single%'
+              AND LOWER(sp.service_price_package_key) NOT LIKE '%refill%'
+              AND LOWER(sp.service_price_package_key) NOT LIKE '%balance%'
+            ))
+            AND (sl.service_name IS NULL OR (
+              LOWER(sl.service_name) NOT LIKE '%single%'
+              AND LOWER(sl.service_name) NOT LIKE '%refill%'
+              AND LOWER(sl.service_name) NOT LIKE '%balance%'
+            ))
           ORDER BY o.date_created DESC
         `,
           dFromStr,
@@ -1027,14 +1075,41 @@ export async function customerRoutes(fastify: FastifyInstance) {
           innerWhereClauses.push(`(
             EXISTS (
               SELECT 1 FROM user_service_balance usb_nl
+              LEFT JOIN service_price sp_nl ON usb_nl.service_price_id = sp_nl.id
+              LEFT JOIN service_language sl_nl ON usb_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
               WHERE usb_nl.user_id = u.id 
                 AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
+                AND (COALESCE(sp_nl.service_price, 0) > 0 OR (usb_nl.total_normal_balance_amount + usb_nl.total_retain_balance_amount) > 0)
+                AND (sp_nl.service_price_package_key IS NULL OR (
+                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+                ))
+                AND (sl_nl.service_name IS NULL OR (
+                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+                ))
             ) OR EXISTS (
               SELECT 1 FROM \`order\` o_nl
               JOIN order_service os_nl ON os_nl.order_id = o_nl.id
+              LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
+              LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
+              LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
               WHERE o_nl.user_id = u.id 
                 AND o_nl.date_created >= ? AND o_nl.date_created <= ? 
-                AND os_nl.user_service_type = 'combo'
+                AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
+                AND COALESCE(NULLIF(os_nl.total_price, 0), sp_nl.service_price, 0) > 0
+                AND (sp_nl.service_price_package_key IS NULL OR (
+                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+                ))
+                AND (sl_nl.service_name IS NULL OR (
+                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+                ))
             )
           )`);
           innerParams.push(dFromStr, dToStr, dFromStr, dToStr);
