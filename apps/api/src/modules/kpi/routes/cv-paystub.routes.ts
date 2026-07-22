@@ -380,7 +380,10 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         );
 
         let totalWorkHours = 0;
-        let hourlyWage = 0;
+        let regularHours = 0;
+        let regularHourlyWage = 0;
+        let offDaysWorkHours = 0;
+        let offDaysWorkWage = 0;
         let offDaysWorked = 0;
         const activeDays = userFilteredDays.length;
 
@@ -392,12 +395,18 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           const isOffDayWork = userOffDayDates.has(r.dateStr);
           if (isOffDayWork) {
             offDaysWorked += 1;
+            offDaysWorkHours += dayHours;
+            offDaysWorkWage += Math.round(dayHours * hourlyRate * 2);
+          } else {
+            regularHours += dayHours;
+            regularHourlyWage += Math.round(dayHours * hourlyRate);
           }
-          const multiplier = isOffDayWork ? 2 : 1;
-          hourlyWage += Math.round(dayHours * hourlyRate * multiplier);
         });
 
         totalWorkHours = Math.round(totalWorkHours * 100) / 100;
+        regularHours = Math.round(regularHours * 100) / 100;
+        offDaysWorkHours = Math.round(offDaysWorkHours * 100) / 100;
+        const hourlyWage = regularHourlyWage + offDaysWorkWage;
 
         const xoayData = cvXoayMap.get(staffId) || { bonus: 0, serviceCount: 0 };
         const cvXoayBonus = xoayData.bonus;
@@ -420,13 +429,15 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         // Apply Seniority Bonus percentage on CV Xoay Bonus
         let appliedBonusPercent = 0;
         const sortedRules = [...seniorityBonusConfig].sort((a, b) => b.minMonths - a.minMonths);
-        const matchedRule = sortedRules.find((rule) => seniorityMonths >= rule.minMonths);
-        if (matchedRule) {
-          appliedBonusPercent = matchedRule.bonusPercent;
+        for (const rule of sortedRules) {
+          if (seniorityMonths >= rule.minMonths) {
+            appliedBonusPercent = rule.bonusPercent;
+            break;
+          }
         }
-        const seniorityBonus = Math.round(cvXoayBonus * (appliedBonusPercent / 100));
+        const seniorityBonus = Math.round((cvXoayBonus * appliedBonusPercent) / 100);
 
-        const totalIncome = hourlyWage + cvXoayBonus + seniorityBonus + cvTipBonus;
+        const totalIncome = hourlyWage + cvXoayBonus + cvTipBonus + seniorityBonus;
 
         grandTotalHourlyWage += hourlyWage;
         grandTotalCvXoayBonus += cvXoayBonus;
@@ -439,6 +450,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           staffName: String(staff.fullName || ''),
           store: String(staff.store || 'PXL'),
           totalWorkHours,
+          regularHours,
+          regularHourlyWage,
           hourlyRate,
           hourlyWage,
           cvXoayBonus,
@@ -450,6 +463,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           seniorityBonusPercent: appliedBonusPercent,
           activeDays,
           offDaysWorked,
+          offDaysWorkHours,
+          offDaysWorkWage,
         };
       });
 

@@ -776,40 +776,96 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
             </div>
 
             <div className="border rounded-lg p-3 space-y-2">
-              <div className="flex justify-between items-center py-1 border-b">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  1. Lương Giờ ({formatHoursToHoursMinutes(selectedRecord.totalWorkHours)} x{' '}
-                  {selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ/h):
-                </span>
-                <span className="tabular-nums font-semibold">{selectedRecord.hourlyWage.toLocaleString('vi-VN')}đ</span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b">
-                <span className="text-sm text-slate-600 dark:text-slate-400">2. Thưởng Ca CV (Xoay):</span>
-                <span className="tabular-nums font-semibold text-blue-500">
-                  +{selectedRecord.cvXoayBonus.toLocaleString('vi-VN')}đ
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  3. Thưởng Thâm Niên (
-                  {(() => {
-                    const months = selectedRecord.seniorityMonths || 0;
-                    const years = Math.floor(months / 12);
-                    const remainingMonths = months % 12;
-                    return years > 0 ? `${years} năm ${remainingMonths} th` : `${months} tháng`;
-                  })()}{' '}
-                  - +{selectedRecord.seniorityBonusPercent || 0}%):
-                </span>
-                <span className="tabular-nums font-semibold text-orange-500">
-                  +{(selectedRecord.seniorityBonus || 0).toLocaleString('vi-VN')}đ
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b">
-                <span className="text-sm text-slate-600 dark:text-slate-400">4. Thưởng CV Tip:</span>
-                <span className="tabular-nums font-semibold text-purple-500">
-                  +{selectedRecord.cvTipBonus.toLocaleString('vi-VN')}đ
-                </span>
-              </div>
+              {selectedRecord.offDaysWorked && selectedRecord.offDaysWorked > 0 ? (
+                <>
+                  <div className="flex justify-between items-center py-1 border-b">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                      1. Lương Giờ Ngày Thường ({formatHoursToHoursMinutes(selectedRecord.regularHours || 0)} x{' '}
+                      {selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ/h):
+                    </span>
+                    <span className="tabular-nums font-semibold">
+                      {(selectedRecord.regularHourlyWage || 0).toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b bg-amber-500/10 px-2 rounded">
+                    <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+                      2. Lương Đi Làm Ngày Nghỉ Tuần (x2) (
+                      {formatHoursToHoursMinutes(selectedRecord.offDaysWorkHours || 0)} x{' '}
+                      {selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ/h x 2):
+                    </span>
+                    <span className="tabular-nums font-bold text-amber-600 dark:text-amber-400">
+                      +{(selectedRecord.offDaysWorkWage || 0).toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">3. Thưởng Ca CV (Xoay):</span>
+                    <span className="tabular-nums font-semibold text-blue-500">
+                      +{selectedRecord.cvXoayBonus.toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                      4. Thưởng Thâm Niên (
+                      {(() => {
+                        const months = selectedRecord.seniorityMonths || 0;
+                        const years = Math.floor(months / 12);
+                        const remainingMonths = months % 12;
+                        return years > 0 ? `${years} năm ${remainingMonths} th` : `${months} tháng`;
+                      })()}{' '}
+                      - +{selectedRecord.seniorityBonusPercent || 0}%):
+                    </span>
+                    <span className="tabular-nums font-semibold text-orange-500">
+                      +{(selectedRecord.seniorityBonus || 0).toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">5. Thưởng CV Tip:</span>
+                    <span className="tabular-nums font-semibold text-purple-500">
+                      +{selectedRecord.cvTipBonus.toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center py-1 border-b">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                      1. Lương Giờ ({formatHoursToHoursMinutes(selectedRecord.totalWorkHours)} x{' '}
+                      {selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ/h):
+                    </span>
+                    <span className="tabular-nums font-semibold">
+                      {selectedRecord.hourlyWage.toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">2. Thưởng Ca CV (Xoay):</span>
+                    <span className="tabular-nums font-semibold text-blue-500">
+                      +{selectedRecord.cvXoayBonus.toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                      3. Thưởng Thâm Niên (
+                      {(() => {
+                        const months = selectedRecord.seniorityMonths || 0;
+                        const years = Math.floor(months / 12);
+                        const remainingMonths = months % 12;
+                        return years > 0 ? `${years} năm ${remainingMonths} th` : `${months} tháng`;
+                      })()}{' '}
+                      - +{selectedRecord.seniorityBonusPercent || 0}%):
+                    </span>
+                    <span className="tabular-nums font-semibold text-orange-500">
+                      +{(selectedRecord.seniorityBonus || 0).toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">4. Thưởng CV Tip:</span>
+                    <span className="tabular-nums font-semibold text-purple-500">
+                      +{selectedRecord.cvTipBonus.toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                </>
+              )}
+
               <div className="flex justify-between items-center pt-2 font-bold text-base">
                 <span>TỔNG THU NHẬP TẠM TÍNH:</span>
                 <span className="tabular-nums text-emerald-600 dark:text-emerald-400">

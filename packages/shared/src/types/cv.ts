@@ -98,7 +98,11 @@ export interface CvPaystubRecord {
   seniorityBonus?: number;
   seniorityBonusPercent?: number;
   activeDays?: number;
+  regularHours?: number;
+  regularHourlyWage?: number;
   offDaysWorked?: number;
+  offDaysWorkHours?: number;
+  offDaysWorkWage?: number;
 }
 
 export interface CvPaystubResponse {
