@@ -106,7 +106,7 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
           min={0}
           step={1000000}
           formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0')}
-          parser={(v) => (v ? Number(v.replace(/,/g, '')) : 0)}
+          parser={(v) => (v ? (Number(v.replace(/,/g, '')) as unknown as 0) : 0)}
           onChange={(newVal) => handleTierChange(index, 'value_required_min', newVal || 0)}
           className="w-full tabular-nums"
           addonAfter="đ"
@@ -123,7 +123,7 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
           min={0}
           step={1000000}
           formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0')}
-          parser={(v) => (v ? Number(v.replace(/,/g, '')) : 0)}
+          parser={(v) => (v ? (Number(v.replace(/,/g, '')) as unknown as 0) : 0)}
           onChange={(newVal) => handleTierChange(index, 'value_required_max', newVal || 0)}
           className="w-full tabular-nums"
           placeholder="0 = Không giới hạn"
@@ -207,7 +207,7 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
                 min={0}
                 step={10000}
                 formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0')}
-                parser={(v) => (v ? Number(v.replace(/,/g, '')) : 0)}
+                parser={(v) => (v ? (Number(v.replace(/,/g, '')) as unknown as 0) : 0)}
                 className="w-full tabular-nums font-semibold text-blue-500"
                 addonAfter="đ"
               />
@@ -222,7 +222,7 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
                 min={0}
                 step={5000}
                 formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0')}
-                parser={(v) => (v ? Number(v.replace(/,/g, '')) : 0)}
+                parser={(v) => (v ? (Number(v.replace(/,/g, '')) as unknown as 0) : 0)}
                 className="w-full tabular-nums font-semibold text-purple-500"
                 addonAfter="đ"
               />

@@ -54,7 +54,7 @@ const formatHoursToHoursMinutes = (totalHours: number) => {
 interface CvThuNhapTabProps {
   dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
   selectedStore?: string;
-  currentUser?: Record<string, unknown>;
+  currentUser?: Record<string, unknown> | null;
 }
 
 export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: CvThuNhapTabProps) {
