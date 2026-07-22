@@ -272,13 +272,36 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         GROUP BY st.user_id
       `;
 
-      const [hourlyRatesRows, reportStaffRows, dayOffsRows, cvXoayBonusRows, cvTipBonusRows] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(reportStaffQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(dayOffsQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvXoayBonusQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvTipBonusQuery),
-      ]);
+      // 6. Query Technician Points (for Level calculation)
+      const techPointsQuery = `
+        SELECT 
+          sb.user_id as staff_id,
+          COALESCE(SUM(sb.bonus_amount), 0) as total_points
+        FROM \`staff_bonus\` sb
+        JOIN \`order_service\` os ON sb.order_service_id = os.id
+        JOIN \`order\` o ON os.order_id = o.id
+        JOIN \`report_order\` ro ON o.id = ro.order_id
+        WHERE sb.user_id IN (${validStaffListStr})
+          AND sb.bonus_type = 'BonusPoint'
+          AND ro.date BETWEEN '${startPart}' AND '${endPart}'
+          AND o.order_state = 'Completed'
+        GROUP BY sb.user_id
+      `;
+
+      const [hourlyRatesRows, reportStaffRows, dayOffsRows, cvXoayBonusRows, cvTipBonusRows, techPointsRows] =
+        await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(reportStaffQuery),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(dayOffsQuery),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvXoayBonusQuery),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvTipBonusQuery),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(techPointsQuery),
+        ]);
+
+      const techPointsMap = new Map<number, number>();
+      techPointsRows.forEach((r: SafeAny) => {
+        techPointsMap.set(Number(r.staff_id), Number(r.total_points || 0));
+      });
 
       const hourlyRateMap = new Map<number, number>();
       hourlyRatesRows.forEach((r: SafeAny) => {
@@ -437,6 +460,9 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         }
         const seniorityBonus = Math.round((cvXoayBonus * appliedBonusPercent) / 100);
 
+        const totalPoints = techPointsMap.get(staffId) || 0;
+        const techLevel = Math.floor(totalPoints / 100) + 1;
+
         const totalIncome = hourlyWage + cvXoayBonus + cvTipBonus + seniorityBonus;
 
         grandTotalHourlyWage += hourlyWage;
@@ -461,6 +487,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           seniorityMonths,
           seniorityBonus,
           seniorityBonusPercent: appliedBonusPercent,
+          techLevel,
           activeDays,
           offDaysWorked,
           offDaysWorkHours,

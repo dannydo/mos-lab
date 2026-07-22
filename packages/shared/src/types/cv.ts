@@ -97,6 +97,7 @@ export interface CvPaystubRecord {
   seniorityMonths?: number;
   seniorityBonus?: number;
   seniorityBonusPercent?: number;
+  techLevel?: number;
   activeDays?: number;
   regularHours?: number;
   regularHourlyWage?: number;

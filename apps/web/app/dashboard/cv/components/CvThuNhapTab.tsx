@@ -425,15 +425,37 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       title: 'CV',
       dataIndex: 'staffName',
       key: 'staffName',
-      width: 170,
-      render: (text: string, record: CvPaystubRecord) => (
-        <div>
-          <div className="font-bold text-sm" style={{ color: token.colorText }}>
-            {text}
+      width: 210,
+      render: (text: string, record: CvPaystubRecord, index: number) => {
+        const initial = text ? text.trim().charAt(0).toUpperCase() : '?';
+        const rank = index + 1;
+        let rankBadge = null;
+        if (rank === 1) rankBadge = <span className="text-base mr-1 shrink-0">🥇</span>;
+        else if (rank === 2) rankBadge = <span className="text-base mr-1 shrink-0">🥈</span>;
+        else if (rank === 3) rankBadge = <span className="text-base mr-1 shrink-0">🥉</span>;
+
+        return (
+          <div className="flex items-center gap-2">
+            {rankBadge}
+            <div className="w-8 h-8 rounded-full bg-blue-900/30 dark:bg-blue-950/60 border border-blue-400/40 text-blue-500 dark:text-blue-400 flex items-center justify-center font-extrabold text-xs shrink-0 shadow-sm">
+              {initial}
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-sm leading-snug" style={{ color: token.colorText }}>
+                {text}
+              </span>
+              <span className="inline-block mt-0.5">
+                <Tag
+                  color="blue"
+                  className="m-0 text-[10px] font-bold px-1.5 py-0 rounded border-blue-300 dark:border-blue-800"
+                >
+                  Level {record.techLevel || 1}
+                </Tag>
+              </span>
+            </div>
           </div>
-          <span className="text-[11px] text-slate-400 font-mono">ID: {record.staffId}</span>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Store',
