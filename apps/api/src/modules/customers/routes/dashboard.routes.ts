@@ -111,6 +111,83 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/loca/config
+  // Get touchpoint config for LoCa campaign
+  fastify.get('/loca/config', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const config = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'LOCA_TOUCHPOINTS_CONFIG' },
+      });
+      if (config) {
+        return JSON.parse(config.value);
+      }
+      const defaultConfigs = {
+        LOCA_ALL: [
+          { key: 'now', label: 'Chạm 24h', daysMin: 0, daysMax: 1, color: 'blue' },
+          { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'cyan' },
+          { key: '19', label: 'Chạm 19', daysMin: 19, daysMax: 19, color: 'cyan' },
+          { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'green' },
+          { key: '23', label: 'Chạm 23', daysMin: 23, daysMax: 23, color: 'green' },
+          { key: '25', label: 'Chạm 25', daysMin: 25, daysMax: 25, color: 'green' },
+          { key: '30', label: 'Chạm 30', daysMin: 30, daysMax: 30, color: 'orange' },
+          { key: '35', label: 'Chạm 35', daysMin: 35, daysMax: 35, color: 'orange' },
+          { key: '40', label: 'Chạm 40', daysMin: 40, daysMax: 40, color: 'orange' },
+          { key: '45', label: 'Chạm 45', daysMin: 45, daysMax: 45, color: 'red' },
+          { key: '50', label: 'Chạm 50', daysMin: 50, daysMax: 50, color: 'red' },
+          { key: '55', label: 'Chạm 55', daysMin: 55, daysMax: 55, color: 'red' },
+          { key: '60', label: 'Chạm 60', daysMin: 60, daysMax: 60, color: 'red' },
+        ],
+      };
+      return defaultConfigs;
+    } catch (error) {
+      fastify.log.error(error as Error, 'Get LoCa config error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve touchpoint config',
+      });
+    }
+  });
+
+  // PUT /api/loca/config
+  // Save touchpoint config for LoCa campaign (Admins only)
+  fastify.put('/loca/config', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string };
+    if (user.role !== 'admin') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Chỉ Admin mới có quyền cấu hình touchpoints.',
+      });
+    }
+
+    const configs = request.body as Record<string, any[]>;
+    if (typeof configs !== 'object' || configs === null) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Configs must be an object',
+      });
+    }
+
+    try {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: 'LOCA_TOUCHPOINTS_CONFIG' },
+        create: {
+          key: 'LOCA_TOUCHPOINTS_CONFIG',
+          value: JSON.stringify(configs),
+        },
+        update: {
+          value: JSON.stringify(configs),
+        },
+      });
+      return { success: true, message: 'Đã lưu cấu hình template touchpoints thành công.' };
+    } catch (error) {
+      fastify.log.error(error as Error, 'Save LoCa config error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to save touchpoint config',
+      });
+    }
+  });
+
   // GET /api/dashboard/today - Real operational data for the "today" dashboard
   fastify.get('/dashboard/today', { preHandler: [requireAuth] }, async (request, reply) => {
     const { date } = request.query as { date?: string };

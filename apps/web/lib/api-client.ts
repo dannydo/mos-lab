@@ -423,6 +423,17 @@ export const apiClient = {
     },
   },
 
+  loca: {
+    getConfig: async (): Promise<unknown> => {
+      const response = await api.get('/loca/config');
+      return response.data;
+    },
+    updateConfig: async (configs: Record<string, unknown>): Promise<unknown> => {
+      const response = await api.put('/loca/config', configs);
+      return response.data;
+    },
+  },
+
   staff: {
     list: async (params?: Record<string, unknown>): Promise<Staff[]> => {
       const response = await api.get('/staff', { params });
@@ -615,7 +626,10 @@ export const apiClient = {
       const response = await api.get('/kpi/bk/config');
       return response.data;
     },
-    saveConfig: async (data: { activeBkIds?: number[]; config?: Partial<BkSalaryConfig> }): Promise<{ success: boolean; message: string }> => {
+    saveConfig: async (data: {
+      activeBkIds?: number[];
+      config?: Partial<BkSalaryConfig>;
+    }): Promise<{ success: boolean; message: string }> => {
       const response = await api.post('/kpi/bk/config', data);
       return response.data;
     },

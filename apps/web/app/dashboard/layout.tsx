@@ -16,6 +16,7 @@ import {
   RightOutlined,
   SolutionOutlined,
   ClockCircleOutlined,
+  HeartOutlined,
   ShareAltOutlined,
   AudioOutlined,
 } from '@ant-design/icons';
@@ -65,6 +66,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
       return assignedStaffId === 'me' ? 'my-customers' : 'customers-all';
     }
     if (pathname.includes('/dashboard/nyc')) return 'nyc';
+    if (pathname.includes('/dashboard/loca')) return 'loca';
     if (pathname.includes('/dashboard/appointments')) return 'my-appointments';
     if (pathname.includes('/dashboard/plans')) return 'plans';
     if (pathname.includes('/dashboard/calls')) return 'calls';
@@ -126,6 +128,12 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
       icon: <ClockCircleOutlined />,
       label: 'Chiến dịch NYC',
       onClick: () => router.push('/dashboard/nyc'),
+    },
+    {
+      key: 'loca',
+      icon: <HeartOutlined />,
+      label: 'Chiến dịch LoCa',
+      onClick: () => router.push('/dashboard/loca'),
     },
     {
       key: 'my-appointments',

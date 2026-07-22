@@ -143,12 +143,15 @@ export default function TodayStats({
   branchesData,
   showTax,
 }: TodayStatsProps) {
-  const getItemPrice = (item: SafeAny) => {
-    if (typeof item.price === 'number') return item.price;
-    const ltvStr = item.ltv || '';
-    const parsed = Number(ltvStr.replace(/[^\d]/g, ''));
-    return isNaN(parsed) ? 0 : parsed;
-  };
+  const getItemPrice = React.useCallback(
+    (item: SafeAny) => {
+      const rawPrice =
+        typeof item.price === 'number' ? item.price : Number(String(item.ltv || '').replace(/[^\d]/g, '')) || 0;
+      const tax = Number(item.tax || 0);
+      return showTax ? rawPrice : rawPrice - tax;
+    },
+    [showTax]
+  );
 
   const comingBranchStats = React.useMemo(() => {
     let dtCount = 0,
@@ -187,7 +190,7 @@ export default function TodayStats({
       totalCount,
       totalPrice,
     };
-  }, [branchesData]);
+  }, [branchesData, getItemPrice]);
 
   const comingStats = React.useMemo(() => {
     let comboCount = 0,
@@ -222,7 +225,7 @@ export default function TodayStats({
       totalCount,
       totalPrice,
     };
-  }, [branchesData]);
+  }, [branchesData, getItemPrice]);
 
   const totalRevenueData = React.useMemo(() => {
     const revLe = Object.values(branchesData).reduce((sum, b) => sum + (showTax ? b.revLe || 0 : b.netLe || 0), 0);

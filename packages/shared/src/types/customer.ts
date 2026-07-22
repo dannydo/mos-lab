@@ -39,6 +39,15 @@ export interface Customer {
     callResult: string | null;
     note: string | null;
   } | null;
+  newComboDetails?: {
+    comboName?: string;
+    comboPrice?: number;
+    purchaseDate?: string;
+    bookerName?: string;
+    ccInName?: string;
+    ccOutName?: string;
+    cvName?: string;
+  } | null;
 }
 
 export interface CustomerStats {
@@ -105,6 +114,8 @@ export interface CustomerStatsResponse {
   comboDead: number;
   single: number;
   notComboLive: number;
+  hsd30?: number;
+  lsd1?: number;
 }
 
 export interface BulkDeleteCustomersRequest {

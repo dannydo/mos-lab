@@ -25,6 +25,8 @@ import {
   Timeline,
   Tooltip,
   message,
+  Segmented,
+  DatePicker,
 } from 'antd';
 import {
   SearchOutlined,
@@ -34,12 +36,16 @@ import {
   SettingOutlined,
   UserOutlined,
   ClockCircleOutlined,
+  HeartOutlined,
   PlusOutlined,
   UndoOutlined,
   PlusCircleOutlined,
   MinusCircleOutlined,
   CheckCircleOutlined,
   InfoCircleOutlined,
+  MessageOutlined,
+  LeftOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
@@ -54,14 +60,14 @@ import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
 import { useTableConfig } from '../../../hooks/useTableConfig';
 import { Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
 import dayjs from 'dayjs';
-import { useNycData, TAB_KEYS } from './hooks/useNycData';
-import { getNycColumns } from './components/NycColumns';
+import { useLocaData, TAB_KEYS } from './hooks/useLocaData';
+import { getLocaColumns, getNewLocaColumns } from './components/LocaColumns';
 import { formatDuration, formatVND } from '../../../lib/format-utils';
 import { useOmiCall } from '../../../context/OmiCallContext';
 
 const { Title, Text } = Typography;
 
-export default function NycCampaignPage() {
+export default function LocaCampaignPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const [settingsForm] = Form.useForm();
@@ -75,6 +81,7 @@ export default function NycCampaignPage() {
     currentUser,
     activeTab,
     activeTouchpointKey,
+    contactSubTab,
     searchQuery,
     sortField,
     assignedStaffId,
@@ -92,36 +99,40 @@ export default function NycCampaignPage() {
     detailModalVisible,
     bookingWizardVisible,
     bookingInitialCustomer,
-    selectedConfigTab,
     selectedCustomer,
     dailyPlanList,
     addingIds,
+    datePreset,
+    selectedDate,
     // setters
     setActiveTab,
     setActiveTouchpointKey,
+    setContactSubTab,
     setSearchQuery,
     setSortField,
     setAssignedStaffId,
     setCurrentPage,
     setPageSize,
+    setDatePreset,
+    setSelectedDate,
     setSettingsModalVisible,
     setDetailModalVisible,
     setBookingWizardVisible,
     setBookingInitialCustomer,
-    setSelectedConfigTab,
     setSelectedCustomer,
     // handlers
     fetchCustomerList,
     fetchOverallStats,
+    handlePrevDate,
+    handleNextDate,
     handleAddToPlan,
     handleOpenDetailModal,
     handleOpenSettings,
-    handleConfigTabChange,
     handleSaveConfig,
     resetConfigDefaults,
     handleAssignTelesales,
     getRowClassName,
-  } = useNycData({
+  } = useLocaData({
     settingsForm,
     onSuccess: (msg) => message.success(msg),
     onError: (msg) => message.error(msg),
@@ -150,12 +161,12 @@ export default function NycCampaignPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedW = localStorage.getItem('mos_nyc_settings_modal_width');
+      const savedW = localStorage.getItem('mos_loca_settings_modal_width');
       if (savedW) {
         const val = parseInt(savedW, 10);
         if (!isNaN(val)) setModalWidth(val);
       }
-      const savedH = localStorage.getItem('mos_nyc_settings_modal_height');
+      const savedH = localStorage.getItem('mos_loca_settings_modal_height');
       if (savedH) {
         const val = parseInt(savedH, 10);
         if (!isNaN(val)) setModalHeight(val);
@@ -167,7 +178,7 @@ export default function NycCampaignPage() {
     e.preventDefault();
     const handleEl = e.currentTarget as HTMLElement;
     const modalEl = (handleEl.closest('.ant-modal') || handleEl.closest('.ant-modal-content')) as HTMLElement;
-    const listEl = document.getElementById('nyc-touchpoints-list') as HTMLElement;
+    const listEl = document.getElementById('loca-touchpoints-list') as HTMLElement;
 
     const startX = e.clientX;
     const startY = e.clientY;
@@ -202,8 +213,8 @@ export default function NycCampaignPage() {
       setModalWidth(finalWidth);
       setModalHeight(finalHeight);
 
-      localStorage.setItem('mos_nyc_settings_modal_width', finalWidth.toString());
-      localStorage.setItem('mos_nyc_settings_modal_height', finalHeight.toString());
+      localStorage.setItem('mos_loca_settings_modal_width', finalWidth.toString());
+      localStorage.setItem('mos_loca_settings_modal_height', finalHeight.toString());
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -229,13 +240,26 @@ export default function NycCampaignPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, activeTouchpointKey, searchQuery, sortField, assignedStaffId, setCurrentPage]);
+  }, [activeTab, activeTouchpointKey, contactSubTab, searchQuery, sortField, assignedStaffId, setCurrentPage]);
 
   const getActiveTabLabelCount = (id: string) => {
     return tabCounts[id] || 0;
   };
 
-  const columns = getNycColumns({
+  const columns = getLocaColumns({
+    themeMode,
+    token,
+    handleOpenDetailModal,
+    formatVND,
+    formatDuration,
+    dailyPlanList,
+    handleAddToPlan,
+    makeCall,
+    addingIds,
+    sortField,
+  });
+
+  const newLocaColumns = getNewLocaColumns({
     themeMode,
     token,
     handleOpenDetailModal,
@@ -249,17 +273,17 @@ export default function NycCampaignPage() {
   });
 
   const {
-    loading: nycConfigLoading,
-    columns: nycConfigColumns,
-    rawConfig: nycRawConfig,
-    configVisible: nycConfigVisible,
-    openConfig: openNycConfig,
-    closeConfig: closeNycConfig,
-    saveConfig: saveNycConfig,
-    resetConfig: resetNycConfig,
-  } = useTableConfig('nyc_campaign_table', columns);
+    loading: locaConfigLoading,
+    columns: locaConfigColumns,
+    rawConfig: locaRawConfig,
+    configVisible: locaConfigVisible,
+    openConfig: openLocaConfig,
+    closeConfig: closeLocaConfig,
+    saveConfig: saveLocaConfig,
+    resetConfig: resetLocaConfig,
+  } = useTableConfig('loca_campaign_table', columns);
 
-  const activeTouchpointsList = configs[activeTab] || [];
+  const activeTouchpointsList = configs['LOCA_ALL'] || [];
 
   return (
     <div>
@@ -275,10 +299,10 @@ export default function NycCampaignPage() {
               letterSpacing: '0.5px',
             }}
           >
-            <ClockCircleOutlined /> CHIẾN DỊCH KHÁCH HÀNG NYC
+            <HeartOutlined style={{ color: '#ff4d4f' }} /> CHIẾN DỊCH KHÁCH HÀNG LoCa (Love Care)
           </Title>
           <Text style={{ color: themeMode === 'dark' ? token.colorTextDescription : '#555555' }}>
-            Hệ thống chăm sóc đặc biệt dành cho khách hàng chưa mua gói Combo (Single/Combo hết hạn).
+            Hệ thống chăm sóc đặc biệt dành cho khách hàng Combo Live (còn hạn, còn lần sử dụng).
           </Text>
         </div>
         <Space wrap>
@@ -335,10 +359,10 @@ export default function NycCampaignPage() {
             }}
           >
             <Text type="secondary" style={{ fontSize: '13px' }}>
-              Tổng Khách Hàng NYC
+              Tổng KH LoCa (Combo Live)
             </Text>
             <div style={{ fontSize: '26px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}>
-              {Object.values(tabCounts).reduce((sum, val) => sum + val, 0)}{' '}
+              {overallStats.totalComboLive}{' '}
               <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>khách</span>
             </div>
           </Card>
@@ -353,17 +377,17 @@ export default function NycCampaignPage() {
             }}
           >
             <Text type="secondary" style={{ fontSize: '13px' }}>
-              NYC 30 (Quan trọng nhất)
+              HSD 30 (Sắp hết hạn)
             </Text>
             <div
               style={{
                 fontSize: '26px',
                 fontWeight: 'bold',
-                color: themeMode === 'dark' ? '#D4A84B' : '#87640a',
+                color: themeMode === 'dark' ? '#ff7875' : '#cf1322',
                 marginTop: '4px',
               }}
             >
-              {tabCounts['NYC_30'] || 0}{' '}
+              {tabCounts['HSD_30'] || 0}{' '}
               <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>khách</span>
             </div>
           </Card>
@@ -378,23 +402,18 @@ export default function NycCampaignPage() {
             }}
           >
             <Text type="secondary" style={{ fontSize: '13px' }}>
-              Hiệu suất Đặt Lịch (Booked Rate)
+              LSD 1 (Còn 1 lần dùng)
             </Text>
             <div
               style={{
                 fontSize: '26px',
                 fontWeight: 'bold',
-                color: themeMode === 'dark' ? '#52C41A' : '#237804',
+                color: themeMode === 'dark' ? '#fa8c16' : '#d46b08',
                 marginTop: '4px',
               }}
             >
-              {overallStats.totalCalledToday > 0
-                ? Math.round((overallStats.totalBookedToday / overallStats.totalCalledToday) * 100)
-                : 0}
-              %{' '}
-              <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
-                đặt lịch
-              </span>
+              {tabCounts['LSD_1'] || 0}{' '}
+              <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>khách</span>
             </div>
           </Card>
         </Col>
@@ -464,134 +483,184 @@ export default function NycCampaignPage() {
         }}
       >
         <div className="flex flex-col gap-6">
-          {/* TOUCHPOINTS PIPELINE TIMELINE */}
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <Text style={{ fontWeight: '600', color: token.colorText }}>QUY TRÌNH CHĂM SÓC THEO CHẠM</Text>
-              {activeTouchpointKey !== 'ALL' && (
-                <Button type="link" size="small" onClick={() => setActiveTouchpointKey('ALL')}>
-                  Xem tất cả khách hàng
-                </Button>
-              )}
-            </div>
-
-            <div
-              className={`p-2.5 rounded-xl flex items-center justify-between gap-1.5 overflow-x-auto min-h-[68px] border ${
-                themeMode === 'dark' ? 'bg-[#1a1a1a] border-white/5' : 'bg-slate-50/50 border-slate-100'
-              }`}
-            >
-              {/* All touchpoints capsule */}
-              <div
-                onClick={() => setActiveTouchpointKey('ALL')}
-                className={`flex-1 min-w-[72px] px-2.5 py-1.5 rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
-                  activeTouchpointKey === 'ALL'
-                    ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
-                    : themeMode === 'dark'
-                      ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
-                      : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
-                }`}
-              >
-                <div
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    color: '#888',
-                    textTransform: 'uppercase',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Tất cả chạm
-                </div>
-                <div
-                  style={{
-                    fontSize: '15px',
-                    fontWeight: '900',
-                    marginTop: '1px',
-                    fontVariantNumeric: 'tabular-nums',
-                    fontFeatureSettings: '"tnum"',
-                    color:
-                      activeTouchpointKey === 'ALL' ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
-                  }}
-                >
-                  {tabCounts[activeTab] || 0}
-                </div>
+          {/* PIPELINE FOR LOCA_ALL TAB */}
+          {activeTab === 'LOCA_ALL' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <Text style={{ fontWeight: '600', color: token.colorText }}>QUY TRÌNH CHĂM SÓC THEO CHẠM</Text>
+                {activeTouchpointKey !== 'ALL' && (
+                  <Button type="link" size="small" onClick={() => setActiveTouchpointKey('ALL')}>
+                    Xem tất cả khách hàng
+                  </Button>
+                )}
               </div>
 
-              {/* Individual touchpoints */}
-              {activeTouchpointsList.map((tp, idx) => {
-                const isSelected = activeTouchpointKey === tp.key;
-                const count = touchpointCounts[tp.key] || 0;
-                return (
-                  <React.Fragment key={tp.key}>
-                    {idx > 0 && (
-                      <div
-                        style={{
-                          width: '6px',
-                          height: '2px',
-                          backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                          flexShrink: 0,
-                        }}
-                      />
-                    )}
-                    <div
-                      onClick={() => setActiveTouchpointKey(tp.key)}
-                      className={`flex-1 min-w-[68px] px-2 py-1.5 rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
-                        isSelected
-                          ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
-                          : themeMode === 'dark'
-                            ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
-                            : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
-                      }`}
-                    >
-                      <div
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: '800',
-                          whiteSpace: 'nowrap',
-                          color:
-                            tp.color === 'red'
-                              ? themeMode === 'dark'
-                                ? '#ff4d4f'
-                                : '#d9363e'
-                              : tp.color === 'orange'
-                                ? themeMode === 'dark'
-                                  ? '#fa8c16'
-                                  : '#d46b08'
-                                : tp.color === 'green'
-                                  ? themeMode === 'dark'
-                                    ? '#52c41a'
-                                    : '#389e0d'
-                                  : themeMode === 'dark'
-                                    ? '#1890ff'
-                                    : '#096dd9',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {tp.label}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: '15px',
-                          fontWeight: '900',
-                          marginTop: '1px',
-                          fontVariantNumeric: 'tabular-nums',
-                          fontFeatureSettings: '"tnum"',
-                          color: isSelected ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
-                        }}
-                      >
-                        {count}
-                      </div>
-                      <div style={{ fontSize: '8.5px', color: '#888', marginTop: '1px' }}>
-                        {tp.daysMin === tp.daysMax ? `${tp.daysMin}d` : `${tp.daysMin}-${tp.daysMax}d`}
-                      </div>
-                    </div>
-                  </React.Fragment>
-                );
-              })}
-            </div>
-          </div>
+              <div
+                className={`p-2.5 rounded-xl flex items-center justify-between gap-1.5 overflow-x-auto min-h-[68px] border ${
+                  themeMode === 'dark' ? 'bg-[#1a1a1a] border-white/5' : 'bg-slate-50/50 border-slate-100'
+                }`}
+              >
+                {/* All touchpoints capsule */}
+                <div
+                  onClick={() => setActiveTouchpointKey('ALL')}
+                  className={`flex-1 min-w-[72px] px-2.5 py-1.5 rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
+                    activeTouchpointKey === 'ALL'
+                      ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
+                      : themeMode === 'dark'
+                        ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
+                        : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
+                  }`}
+                >
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      color: '#888',
+                      textTransform: 'uppercase',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Tất cả chạm
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '15px',
+                      fontWeight: '900',
+                      marginTop: '1px',
+                      fontVariantNumeric: 'tabular-nums',
+                      fontFeatureSettings: '"tnum"',
+                      color:
+                        activeTouchpointKey === 'ALL'
+                          ? themeMode === 'dark'
+                            ? '#D4A84B'
+                            : '#87640a'
+                          : token.colorText,
+                    }}
+                  >
+                    {tabCounts['LOCA_ALL'] || 0}
+                  </div>
+                </div>
 
-          <Divider style={{ margin: 0, opacity: 0.5 }} />
+                {/* Individual touchpoints */}
+                {activeTouchpointsList.map((tp, idx) => {
+                  const isSelected = activeTouchpointKey === tp.key;
+                  const count = touchpointCounts[tp.key] || 0;
+                  return (
+                    <React.Fragment key={tp.key}>
+                      {idx > 0 && (
+                        <div
+                          style={{
+                            width: '6px',
+                            height: '2px',
+                            backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
+                      <div
+                        onClick={() => setActiveTouchpointKey(tp.key)}
+                        className={`flex-1 min-w-[68px] px-2 py-1.5 rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
+                          isSelected
+                            ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
+                            : themeMode === 'dark'
+                              ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
+                              : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
+                        }`}
+                      >
+                        <div
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: '800',
+                            whiteSpace: 'nowrap',
+                            color:
+                              tp.color === 'red'
+                                ? themeMode === 'dark'
+                                  ? '#ff4d4f'
+                                  : '#d9363e'
+                                : tp.color === 'orange'
+                                  ? themeMode === 'dark'
+                                    ? '#fa8c16'
+                                    : '#d46b08'
+                                  : tp.color === 'green'
+                                    ? themeMode === 'dark'
+                                      ? '#52c41a'
+                                      : '#389e0d'
+                                    : themeMode === 'dark'
+                                      ? '#1890ff'
+                                      : '#096dd9',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {tp.label}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '15px',
+                            fontWeight: '900',
+                            marginTop: '1px',
+                            fontVariantNumeric: 'tabular-nums',
+                            fontFeatureSettings: '"tnum"',
+                            color: isSelected ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
+                          }}
+                        >
+                          {count}
+                        </div>
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* CONTACTED SUB-TAB SELECTOR */}
+          {activeTab === 'CONTACTED' && (
+            <div className="flex items-center gap-3">
+              <Text style={{ fontWeight: '600' }}>Hình thức liên hệ:</Text>
+              <Segmented
+                value={contactSubTab}
+                onChange={(val) => setContactSubTab(val as 'ALL' | 'CALL' | 'TEXT')}
+                options={[
+                  { value: 'ALL', label: 'Tất cả' },
+                  { value: 'CALL', label: 'Cuộc gọi (Call)', icon: <PhoneOutlined /> },
+                  { value: 'TEXT', label: 'Tin nhắn (Zalo/Msg/SMS)', icon: <MessageOutlined /> },
+                ]}
+              />
+            </div>
+          )}
+
+          {activeTab === 'LOCA_ALL' && <Divider style={{ margin: 0, opacity: 0.5 }} />}
+
+          {/* DATE FILTER BAR FOR NEW LOCA TAB */}
+          {activeTab === 'NEW_LOCA' && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Segmented
+                value={datePreset}
+                onChange={(val) => setDatePreset(val as 'today' | 'week' | 'month')}
+                options={[
+                  { value: 'month', label: 'Tháng' },
+                  { value: 'week', label: 'Tuần' },
+                  { value: 'today', label: 'Ngày' },
+                ]}
+              />
+              <Space.Compact style={{ display: 'flex', alignItems: 'center' }}>
+                <Button icon={<LeftOutlined />} onClick={handlePrevDate} />
+                <DatePicker
+                  value={selectedDate}
+                  onChange={(date) => {
+                    if (date) setSelectedDate(date);
+                  }}
+                  picker={datePreset === 'month' ? 'month' : datePreset === 'week' ? 'week' : 'date'}
+                  format={
+                    datePreset === 'month' ? '[Tháng] MM/YYYY' : datePreset === 'week' ? '[Tuần] ww/YYYY' : 'DD/MM/YYYY'
+                  }
+                  allowClear={false}
+                  style={{ width: 145 }}
+                />
+                <Button icon={<RightOutlined />} onClick={handleNextDate} />
+              </Space.Compact>
+            </div>
+          )}
 
           {/* SEARCH & FILTERS BAR */}
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -619,7 +688,7 @@ export default function NycCampaignPage() {
             </Space>
             <Space>
               <Tooltip title="Cấu hình cột bảng">
-                <Button icon={<SettingOutlined />} onClick={openNycConfig} />
+                <Button icon={<SettingOutlined />} onClick={openLocaConfig} />
               </Tooltip>
             </Space>
           </div>
@@ -628,7 +697,7 @@ export default function NycCampaignPage() {
 
       {/* CUSTOMERS DATA TABLE */}
       <Table
-        columns={nycConfigColumns}
+        columns={activeTab === 'NEW_LOCA' ? newLocaColumns : locaConfigColumns}
         dataSource={customers}
         rowKey="id"
         loading={loading}
@@ -660,7 +729,7 @@ export default function NycCampaignPage() {
             setCurrentPage(page);
             if (size !== pageSize) {
               setPageSize(size);
-              localStorage.setItem('mos_nyc_pageSize', size.toString());
+              localStorage.setItem('mos_loca_pageSize', size.toString());
             }
           },
           showTotal: (totalCount) => `Tổng số: ${totalCount} khách hàng`,
@@ -676,7 +745,7 @@ export default function NycCampaignPage() {
       {/* RESIZABLE TOUCHPOINT CONFIGURATION MODAL (Admin only) */}
       {currentUser?.role === 'admin' && (
         <Modal
-          title={<div style={{ fontSize: '16px', fontWeight: 'bold' }}>⚙️ Cấu hình quy trình chạm NYC</div>}
+          title={<div style={{ fontSize: '16px', fontWeight: 'bold' }}>⚙️ Cấu hình quy trình chạm LoCa</div>}
           open={settingsModalVisible}
           onCancel={() => setSettingsModalVisible(false)}
           onOk={handleSaveConfig}
@@ -703,7 +772,6 @@ export default function NycCampaignPage() {
                 children: (
                   <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                     {(modal.props as SafeAny)?.children}
-                    {/* Bottom-right corner drag handle */}
                     <div
                       onMouseDown={handleResizeMouseDown}
                       title="Kéo góc để thay đổi kích thước Modal (Kích thước được tự động lưu)"
@@ -736,22 +804,16 @@ export default function NycCampaignPage() {
           }}
         >
           <div className="px-5">
-            <div className="flex justify-between items-center mb-4">
-              <Select
-                value={selectedConfigTab}
-                onChange={handleConfigTabChange}
-                style={{ width: 220 }}
-                options={TAB_KEYS.map((k) => ({ value: k.id, label: `${k.name} (${k.rangeText})` }))}
-              />
+            <div className="flex justify-end items-center mb-4">
               <Button type="dashed" danger onClick={handleResetConfigDefaults} icon={<UndoOutlined />}>
                 Khôi phục mặc định
               </Button>
             </div>
-            <Form form={settingsForm} name="touchpoints_configs_form" layout="vertical">
+            <Form form={settingsForm} name="loca_touchpoints_form" layout="vertical">
               <Form.List name="touchpoints">
                 {(fields, { add, remove }) => (
                   <div
-                    id="nyc-touchpoints-list"
+                    id="loca-touchpoints-list"
                     style={{
                       height: `${modalHeight - 200}px`,
                       overflowY: 'auto',
@@ -777,7 +839,7 @@ export default function NycCampaignPage() {
                               label="Mã định danh (Key)"
                               rules={[{ required: true, message: 'Nhập key' }]}
                             >
-                              <Input placeholder="Ví dụ: chạm-7" />
+                              <Input placeholder="Ví dụ: chạm-17" />
                             </Form.Item>
                           </Col>
                           <Col span={6}>
@@ -787,7 +849,7 @@ export default function NycCampaignPage() {
                               label="Tên hiển thị (Label)"
                               rules={[{ required: true, message: 'Nhập nhãn' }]}
                             >
-                              <Input placeholder="Ví dụ: Chạm 7 ngày" />
+                              <Input placeholder="Ví dụ: Chạm 17 ngày" />
                             </Form.Item>
                           </Col>
                           <Col span={4}>
@@ -831,14 +893,8 @@ export default function NycCampaignPage() {
                         </Row>
                       </Card>
                     ))}
-                    <Button
-                      type="dashed"
-                      onClick={() => add({ key: '', label: '', daysMin: 0, daysMax: 0, color: 'blue' })}
-                      block
-                      icon={<PlusCircleOutlined />}
-                      style={{ color: '#D4A84B', borderColor: '#D4A84B' }}
-                    >
-                      Thêm chặng chạm mới
+                    <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                      Thêm Mốc Chạm Mới
                     </Button>
                   </div>
                 )}
@@ -848,6 +904,7 @@ export default function NycCampaignPage() {
         </Modal>
       )}
 
+      {/* DRAWERS */}
       {detailModalVisible && selectedCustomer && (
         <CustomerDetailDrawer
           open={detailModalVisible}
@@ -867,89 +924,12 @@ export default function NycCampaignPage() {
       )}
 
       <TableConfigDrawer
-        visible={nycConfigVisible}
-        onClose={closeNycConfig}
-        columns={nycRawConfig}
-        onSave={saveNycConfig}
-        onReset={resetNycConfig}
+        visible={locaConfigVisible}
+        columns={locaRawConfig}
+        onClose={closeLocaConfig}
+        onSave={saveLocaConfig}
+        onReset={resetLocaConfig}
       />
-
-      <style jsx global>{`
-        /* Custom styles for Ant Design Table under Dark Mode */
-        .dark-theme .antd-custom-table .ant-table {
-          background: #141414 !important;
-          color: #ccc !important;
-        }
-        .dark-theme .antd-custom-table .ant-table-thead > tr > th {
-          background: #1f1f1f !important;
-          color: #d4a84b !important;
-          border-bottom: 1px solid #2a2a2a !important;
-        }
-        .dark-theme .antd-custom-table .ant-table-tbody > tr > td {
-          border-bottom: 1px solid #1a1a1a !important;
-        }
-        .dark-theme .antd-custom-table .ant-table-row:hover > td {
-          background: #1e1e1e !important;
-        }
-
-        /* Row highlighting - Light Theme */
-        .light-theme .row-missed-light > td {
-          background-color: #fff1f0 !important;
-        }
-        .light-theme .row-booked-future-light > td {
-          background-color: #f6ffed !important;
-        }
-        .light-theme .row-hope-light > td {
-          background-color: #fffbe6 !important;
-        }
-        .light-theme .row-missed-light:hover > td {
-          background-color: #ffe8e6 !important;
-        }
-        .light-theme .row-booked-future-light:hover > td {
-          background-color: #ebfcdd !important;
-        }
-        .light-theme .row-hope-light:hover > td {
-          background-color: #fffac6 !important;
-        }
-
-        /* Row highlighting - Dark Theme */
-        .dark-theme .row-missed-dark > td {
-          background-color: #2a1215 !important;
-        }
-        .dark-theme .row-booked-future-dark > td {
-          background-color: #162c1b !important;
-        }
-        .dark-theme .row-hope-dark > td {
-          background-color: #2b2111 !important;
-        }
-        .dark-theme .row-missed-dark:hover > td {
-          background-color: #381b1e !important;
-        }
-        .dark-theme .row-booked-future-dark:hover > td {
-          background-color: #1e3a24 !important;
-        }
-        .dark-theme .row-hope-dark:hover > td {
-          background-color: #382c16 !important;
-        }
-
-        /* Gold highlights for both light/dark */
-        .antd-custom-table .ant-pagination-item-active {
-          border-color: #d4a84b !important;
-        }
-        .antd-custom-table .ant-pagination-item-active a {
-          color: #d4a84b !important;
-        }
-
-        /* Compact line height & padding */
-        .antd-custom-table .ant-table-tbody > tr > td {
-          padding: 6px 8px !important;
-          line-height: 1.25 !important;
-        }
-        .antd-custom-table .ant-table-thead > tr > th {
-          padding: 8px 8px !important;
-          line-height: 1.25 !important;
-        }
-      `}</style>
     </div>
   );
 }

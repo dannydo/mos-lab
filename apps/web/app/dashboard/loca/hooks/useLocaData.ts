@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
 import { Customer, Staff } from '@mos-lab/shared';
@@ -19,30 +19,37 @@ export interface TabConfigs {
 }
 
 export const TAB_KEYS = [
-  { id: 'NYC_30', name: 'NYC 30', rangeText: '0 - 30 ngày', minDays: 0, maxDays: 30 },
-  { id: 'NYC_60', name: 'NYC 60', rangeText: '31 - 60 ngày', minDays: 31, maxDays: 60 },
-  { id: 'NYC_90', name: 'NYC 90', rangeText: '61 - 90 ngày', minDays: 61, maxDays: 90 },
-  { id: 'NYC_180', name: 'NYC 180', rangeText: '91 - 180 ngày', minDays: 91, maxDays: 180 },
-  { id: 'NYC_365', name: 'NYC 365', rangeText: '181 - 365 ngày', minDays: 181, maxDays: 365 },
-  { id: 'NYC_365plus', name: 'NYC 365+', rangeText: '> 365 ngày', minDays: 366, maxDays: undefined },
+  { id: 'NEW_LOCA', name: 'New LoCa', description: 'Khách hàng vừa mua Combo mới' },
+  { id: 'LOCA_ALL', name: 'LoCa (Tất cả)', description: 'Tất cả khách hàng Combo Live' },
+  { id: 'CONTACTED', name: 'Contacted', description: 'Khách hàng đã liên hệ' },
+  { id: 'CALLBACK', name: 'Callback', description: 'Khách hàng hẹn gọi lại' },
+  { id: 'BOOKED', name: 'Booked', description: 'Khách hàng đã book lịch' },
+  { id: 'HSD_30', name: 'HSD 30', description: 'Hạn sử dụng Combo <= 30 ngày' },
+  { id: 'LSD_1', name: 'LSD 1', description: 'Lần sử dụng Combo còn 1' },
+  { id: 'SP', name: 'SP', description: 'Khách hàng có mua sản phẩm' },
 ];
 
-export interface UseNycDataOptions {
+export interface UseLocaDataOptions {
   settingsForm?: SafeAny; // Ant Design FormInstance
   onSuccess?: (msg: string) => void;
   onError?: (msg: string) => void;
   onWarning?: (msg: string) => void;
 }
 
-export function useNycData(options?: UseNycDataOptions) {
+export function useLocaData(options?: UseLocaDataOptions) {
   const optionsRef = useRef(options);
   useEffect(() => {
     optionsRef.current = options;
   }, [options]);
 
   // Main UI States
-  const [activeTab, setActiveTab] = useState<string>('NYC_30');
+  const [activeTab, setActiveTab] = useState<string>('NEW_LOCA');
   const [activeTouchpointKey, setActiveTouchpointKey] = useState<string>('ALL');
+  const [contactSubTab, setContactSubTab] = useState<'ALL' | 'CALL' | 'TEXT'>('ALL');
+
+  // Date Navigation States for New LoCa
+  const [datePreset, setDatePreset] = useState<'today' | 'week' | 'month'>('today');
+  const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs>(dayjs());
 
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,8 +72,10 @@ export function useNycData(options?: UseNycDataOptions) {
   const [tabCounts, setTabCounts] = useState<{ [key: string]: number }>({});
   const [touchpointCounts, setTouchpointCounts] = useState<{ [key: string]: number }>({});
   const [overallStats, setOverallStats] = useState({
+    totalComboLive: 0,
+    hsd30Count: 0,
+    lsd1Count: 0,
     totalCalledToday: 0,
-    totalPlannedToday: 0,
     totalBookedToday: 0,
   });
 
@@ -80,23 +89,20 @@ export function useNycData(options?: UseNycDataOptions) {
   const [bookingWizardVisible, setBookingWizardVisible] = useState(false);
   const [bookingInitialCustomer, setBookingInitialCustomer] = useState<Customer | null>(null);
 
-  // Selected Config Tab
-  const [selectedConfigTab, setSelectedConfigTab] = useState<string>('NYC_30');
-
   const { makeCall } = useOmiCall();
 
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [dailyPlanList, setDailyPlanList] = useState<number[]>([]); // Track planned user IDs for today
+  const [dailyPlanList, setDailyPlanList] = useState<number[]>([]);
   const [addingIds, setAddingIds] = useState<number[]>([]);
 
   // Load configuration & Staff lists on mount
   const fetchConfigs = useCallback(async () => {
     try {
-      const data = await apiClient.nyc.getConfig();
+      const data = await apiClient.loca.getConfig();
       setConfigs(data as SafeAny);
     } catch (err) {
       console.error('Failed to load touchpoint config:', err);
-      optionsRef.current?.onError?.('Không thể tải cấu hình touchpoints.');
+      optionsRef.current?.onError?.('Không thể tải cấu hình touchpoints LoCa.');
     }
   }, []);
 
@@ -124,7 +130,7 @@ export function useNycData(options?: UseNycDataOptions) {
           console.error('Failed to parse user from localStorage', e);
         }
       }
-      const savedPageSize = localStorage.getItem('mos_nyc_pageSize');
+      const savedPageSize = localStorage.getItem('mos_loca_pageSize');
       if (savedPageSize) {
         setPageSize(Number(savedPageSize));
       }
@@ -164,9 +170,15 @@ export function useNycData(options?: UseNycDataOptions) {
         endDate: dayjs().endOf('day').toISOString(),
       };
       const kpiData = await apiClient.kpi.getSummary(params);
+
+      // Get COMBO_LIVE stats count
+      const comboLiveStats = await apiClient.customers.getStats({ bucket: 'COMBO_LIVE' } as SafeAny);
+
       setOverallStats({
+        totalComboLive: comboLiveStats?.comboLive || comboLiveStats?.total || 0,
+        hsd30Count: comboLiveStats?.hsd30 || 0,
+        lsd1Count: comboLiveStats?.lsd1 || 0,
         totalCalledToday: kpiData?.totalCalled || 0,
-        totalPlannedToday: kpiData?.totalPlanned || 0,
         totalBookedToday: kpiData?.totalBooked || 0,
       });
     } catch (err) {
@@ -178,15 +190,47 @@ export function useNycData(options?: UseNycDataOptions) {
     fetchOverallStats();
   }, [fetchOverallStats]);
 
+  // Date Range calculation for New LoCa
+  const dateRange = useMemo(() => {
+    if (datePreset === 'month') {
+      return {
+        dateFrom: selectedDate.startOf('month').format('YYYY-MM-DD 00:00:00'),
+        dateTo: selectedDate.endOf('month').format('YYYY-MM-DD 23:59:59'),
+      };
+    } else if (datePreset === 'week') {
+      return {
+        dateFrom: selectedDate.startOf('week').format('YYYY-MM-DD 00:00:00'),
+        dateTo: selectedDate.endOf('week').format('YYYY-MM-DD 23:59:59'),
+      };
+    } else {
+      return {
+        dateFrom: selectedDate.format('YYYY-MM-DD 00:00:00'),
+        dateTo: selectedDate.format('YYYY-MM-DD 23:59:59'),
+      };
+    }
+  }, [datePreset, selectedDate]);
+
+  const handlePrevDate = useCallback(() => {
+    if (datePreset === 'month') setSelectedDate((d) => d.subtract(1, 'month'));
+    else if (datePreset === 'week') setSelectedDate((d) => d.subtract(1, 'week'));
+    else setSelectedDate((d) => d.subtract(1, 'day'));
+  }, [datePreset]);
+
+  const handleNextDate = useCallback(() => {
+    if (datePreset === 'month') setSelectedDate((d) => d.add(1, 'month'));
+    else if (datePreset === 'week') setSelectedDate((d) => d.add(1, 'week'));
+    else setSelectedDate((d) => d.add(1, 'day'));
+  }, [datePreset]);
+
   // Fetch Touchpoint Counts for tabs
   const fetchTouchpointCounts = useCallback(async () => {
     try {
-      const activeTabConfig = configs[activeTab] || [];
+      const activeTabConfig = configs['LOCA_ALL'] || [];
       const counts: { [key: string]: number } = {};
 
       const countPromises = activeTabConfig.map(async (tp) => {
         const params = {
-          bucket: 'NOT_COMBO_LIVE',
+          bucket: 'COMBO_LIVE',
           daysSinceLastVisitMin: tp.daysMin !== undefined ? tp.daysMin.toString() : undefined,
           daysSinceLastVisitMax: tp.daysMax !== undefined ? tp.daysMax.toString() : undefined,
           search: searchQuery || undefined,
@@ -197,14 +241,8 @@ export function useNycData(options?: UseNycDataOptions) {
         counts[tp.key] = stats.total;
       });
 
-      // Total touchpoint count in tab
       const totalParams = {
-        bucket: 'NOT_COMBO_LIVE',
-        daysSinceLastVisitMin: (activeTab === 'NYC_365plus'
-          ? 366
-          : TAB_KEYS.find((tk) => tk.id === activeTab)?.minDays
-        )?.toString(),
-        daysSinceLastVisitMax: TAB_KEYS.find((tk) => tk.id === activeTab)?.maxDays?.toString(),
+        bucket: 'COMBO_LIVE',
         search: searchQuery || undefined,
         assignedStaffId:
           assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
@@ -217,17 +255,27 @@ export function useNycData(options?: UseNycDataOptions) {
       counts['ALL'] = totalStats.total;
       setTouchpointCounts(counts);
 
-      // Extract all tab counts
+      // Extract all main tab counts
       const allTabsPromises = TAB_KEYS.map(async (tk) => {
-        const tabParams = {
-          bucket: 'NOT_COMBO_LIVE',
-          daysSinceLastVisitMin: tk.minDays !== undefined ? tk.minDays.toString() : undefined,
-          daysSinceLastVisitMax: tk.maxDays !== undefined ? tk.maxDays.toString() : undefined,
+        const tabParams: SafeAny = {
+          bucket: tk.id === 'NEW_LOCA' ? 'NEW_LOCA' : 'COMBO_LIVE',
           search: searchQuery || undefined,
           assignedStaffId:
             assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
         };
-        const stats = await apiClient.customers.getStats(tabParams as SafeAny);
+
+        if (tk.id === 'NEW_LOCA') {
+          tabParams.dateFrom = dateRange.dateFrom;
+          tabParams.dateTo = dateRange.dateTo;
+        }
+        if (tk.id === 'HSD_30') tabParams.hsd30 = 'true';
+        if (tk.id === 'LSD_1') tabParams.lsd1 = 'true';
+        if (tk.id === 'SP') tabParams.hasProduct = 'true';
+        if (tk.id === 'CALLBACK') tabParams.hasCallback = 'true';
+        if (tk.id === 'BOOKED') tabParams.hasFutureBooking = 'true';
+        if (tk.id === 'CONTACTED') tabParams.contacted = 'true';
+
+        const stats = await apiClient.customers.getStats(tabParams);
         return { id: tk.id, total: stats.total };
       });
 
@@ -240,7 +288,7 @@ export function useNycData(options?: UseNycDataOptions) {
     } catch (err) {
       console.error('Failed to load touchpoint counts:', err);
     }
-  }, [configs, activeTab, searchQuery, assignedStaffId, currentUser]);
+  }, [configs, searchQuery, assignedStaffId, currentUser, dateRange]);
 
   useEffect(() => {
     if (Object.keys(configs).length > 0) {
@@ -251,37 +299,52 @@ export function useNycData(options?: UseNycDataOptions) {
   const fetchCustomerList = useCallback(async () => {
     setLoading(true);
     try {
-      const activeTabConfig = configs[activeTab] || [];
+      const activeTabConfig = configs['LOCA_ALL'] || [];
       const currentTp = activeTabConfig.find((tp) => tp.key === activeTouchpointKey);
 
-      let daysFrom = currentTp ? currentTp.daysMin : undefined;
-      let daysTo = currentTp ? currentTp.daysMax : undefined;
+      const daysFrom = currentTp ? currentTp.daysMin : undefined;
+      const daysTo = currentTp ? currentTp.daysMax : undefined;
 
-      if (activeTouchpointKey === 'ALL') {
-        const tkInfo = TAB_KEYS.find((tk) => tk.id === activeTab);
-        daysFrom = tkInfo?.minDays;
-        daysTo = tkInfo?.maxDays;
-      }
-
-      const params = {
-        bucket: 'NOT_COMBO_LIVE',
-        daysSinceLastVisitMin: daysFrom !== undefined ? daysFrom.toString() : undefined,
-        daysSinceLastVisitMax: daysTo !== undefined ? daysTo.toString() : undefined,
+      const params: SafeAny = {
+        bucket: activeTab === 'NEW_LOCA' ? 'NEW_LOCA' : 'COMBO_LIVE',
+        daysSinceLastVisitMin:
+          activeTab === 'NEW_LOCA' ? undefined : daysFrom !== undefined ? daysFrom.toString() : undefined,
+        daysSinceLastVisitMax:
+          activeTab === 'NEW_LOCA' ? undefined : daysTo !== undefined ? daysTo.toString() : undefined,
         search: searchQuery || undefined,
-        sort: sortField || undefined,
-        sortField: sortField || undefined,
+        sort:
+          activeTab === 'NEW_LOCA' && sortField === 'daysSinceLastVisit' ? 'purchaseDate_desc' : sortField || undefined,
+        sortField:
+          activeTab === 'NEW_LOCA' && sortField === 'daysSinceLastVisit' ? 'purchaseDate_desc' : sortField || undefined,
         page: currentPage,
         limit: pageSize,
         assignedStaffId:
           assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
       };
 
-      const data = await apiClient.customers.list(params as SafeAny);
+      if (activeTab === 'NEW_LOCA') {
+        params.dateFrom = dateRange.dateFrom;
+        params.dateTo = dateRange.dateTo;
+      }
+
+      if (activeTab === 'HSD_30') params.hsd30 = 'true';
+      if (activeTab === 'LSD_1') params.lsd1 = 'true';
+      if (activeTab === 'SP') params.hasProduct = 'true';
+      if (activeTab === 'CALLBACK') params.hasCallback = 'true';
+      if (activeTab === 'BOOKED') params.hasFutureBooking = 'true';
+      if (activeTab === 'CONTACTED') {
+        params.contacted = 'true';
+        if (contactSubTab !== 'ALL') {
+          params.contactType = contactSubTab;
+        }
+      }
+
+      const data = await apiClient.customers.list(params);
       setCustomers(data.data);
       setTotal(data.pagination.total);
     } catch (err) {
       console.error('Failed to load customer list:', err);
-      optionsRef.current?.onError?.('Không thể tải danh sách khách hàng.');
+      optionsRef.current?.onError?.('Không thể tải danh sách khách hàng LoCa.');
     } finally {
       setLoading(false);
     }
@@ -290,11 +353,13 @@ export function useNycData(options?: UseNycDataOptions) {
     pageSize,
     activeTab,
     activeTouchpointKey,
+    contactSubTab,
     searchQuery,
     sortField,
     assignedStaffId,
     configs,
     currentUser,
+    dateRange,
   ]);
 
   useEffect(() => {
@@ -307,6 +372,7 @@ export function useNycData(options?: UseNycDataOptions) {
     pageSize,
     activeTab,
     activeTouchpointKey,
+    contactSubTab,
     searchQuery,
     sortField,
     assignedStaffId,
@@ -330,7 +396,6 @@ export function useNycData(options?: UseNycDataOptions) {
         optionsRef.current?.onWarning?.(
           (err as SafeAny).response?.data?.message || 'Khách hàng này đã có trong kế hoạch gọi.'
         );
-        // Add to dailyPlanList so it gets disabled immediately
         setDailyPlanList((prev) => [...prev, customerId]);
       } else {
         optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể thêm khách hàng.');
@@ -340,7 +405,6 @@ export function useNycData(options?: UseNycDataOptions) {
     }
   };
 
-  // Listen to global call log saved event to refresh NYC list and stats
   useEffect(() => {
     const handleLogSaved = () => {
       fetchOverallStats();
@@ -358,16 +422,9 @@ export function useNycData(options?: UseNycDataOptions) {
   };
 
   const handleOpenSettings = () => {
-    setSelectedConfigTab('NYC_30');
-    const currentTabConfigs = configs['NYC_30'] || [];
-    optionsRef.current?.settingsForm?.setFieldsValue({ touchpoints: currentTabConfigs });
+    const currentConfigs = configs['LOCA_ALL'] || [];
+    optionsRef.current?.settingsForm?.setFieldsValue({ touchpoints: currentConfigs });
     setSettingsModalVisible(true);
-  };
-
-  const handleConfigTabChange = (val: string) => {
-    setSelectedConfigTab(val);
-    const tabConfigs = configs[val] || [];
-    optionsRef.current?.settingsForm?.setFieldsValue({ touchpoints: tabConfigs });
   };
 
   const handleSaveConfig = async () => {
@@ -375,12 +432,11 @@ export function useNycData(options?: UseNycDataOptions) {
     try {
       const values = await optionsRef.current.settingsForm.validateFields();
       const updatedConfigs = {
-        ...configs,
-        [selectedConfigTab]: values.touchpoints,
+        LOCA_ALL: values.touchpoints,
       };
 
-      await apiClient.nyc.updateConfig(updatedConfigs);
-      optionsRef.current.onSuccess?.('Đã xuất bản template cấu hình touchpoints mới thành công!');
+      await apiClient.loca.updateConfig(updatedConfigs);
+      optionsRef.current.onSuccess?.('Đã xuất bản cấu hình mốc chạm LoCa thành công!');
       setConfigs(updatedConfigs);
       setSettingsModalVisible(false);
       setActiveTouchpointKey('ALL');
@@ -392,38 +448,25 @@ export function useNycData(options?: UseNycDataOptions) {
 
   const resetConfigDefaults = async () => {
     const defaultConfigs: TabConfigs = {
-      NYC_30: [
-        { key: 'now', label: 'Chạm Now', daysMin: 0, daysMax: 1, color: 'blue' },
-        { key: '3', label: 'Chạm 3', daysMin: 3, daysMax: 3, color: 'cyan' },
-        { key: '7', label: 'Chạm 7', daysMin: 7, daysMax: 7, color: 'green' },
-        { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'orange' },
-        { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'red' },
-      ],
-      NYC_60: [
-        { key: '35', label: 'Chạm 35', daysMin: 31, daysMax: 35, color: 'blue' },
-        { key: '45', label: 'Chạm 45', daysMin: 41, daysMax: 45, color: 'orange' },
-        { key: '55', label: 'Chạm 55', daysMin: 51, daysMax: 55, color: 'red' },
-      ],
-      NYC_90: [
-        { key: '70', label: 'Chạm 70', daysMin: 65, daysMax: 70, color: 'blue' },
-        { key: '80', label: 'Chạm 80', daysMin: 75, daysMax: 80, color: 'orange' },
-      ],
-      NYC_180: [
-        { key: '100', label: 'Chạm 100', daysMin: 95, daysMax: 100, color: 'blue' },
-        { key: '150', label: 'Chạm 150', daysMin: 145, daysMax: 150, color: 'orange' },
-      ],
-      NYC_365: [
-        { key: '200', label: 'Chạm 200', daysMin: 195, daysMax: 200, color: 'blue' },
-        { key: '300', label: 'Chạm 300', daysMin: 295, daysMax: 300, color: 'orange' },
-      ],
-      NYC_365plus: [
-        { key: '400', label: 'Chạm 400', daysMin: 395, daysMax: 400, color: 'blue' },
-        { key: '500', label: 'Chạm 500', daysMin: 495, daysMax: 500, color: 'orange' },
+      LOCA_ALL: [
+        { key: 'now', label: 'Chạm 24h', daysMin: 0, daysMax: 1, color: 'blue' },
+        { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'cyan' },
+        { key: '19', label: 'Chạm 19', daysMin: 19, daysMax: 19, color: 'cyan' },
+        { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'green' },
+        { key: '23', label: 'Chạm 23', daysMin: 23, daysMax: 23, color: 'green' },
+        { key: '25', label: 'Chạm 25', daysMin: 25, daysMax: 25, color: 'green' },
+        { key: '30', label: 'Chạm 30', daysMin: 30, daysMax: 30, color: 'orange' },
+        { key: '35', label: 'Chạm 35', daysMin: 35, daysMax: 35, color: 'orange' },
+        { key: '40', label: 'Chạm 40', daysMin: 40, daysMax: 40, color: 'orange' },
+        { key: '45', label: 'Chạm 45', daysMin: 45, daysMax: 45, color: 'red' },
+        { key: '50', label: 'Chạm 50', daysMin: 50, daysMax: 50, color: 'red' },
+        { key: '55', label: 'Chạm 55', daysMin: 55, daysMax: 55, color: 'red' },
+        { key: '60', label: 'Chạm 60', daysMin: 60, daysMax: 60, color: 'red' },
       ],
     };
-    await apiClient.nyc.updateConfig(defaultConfigs);
+    await apiClient.loca.updateConfig(defaultConfigs);
     setConfigs(defaultConfigs);
-    optionsRef.current?.settingsForm?.setFieldsValue({ touchpoints: defaultConfigs[selectedConfigTab] });
+    optionsRef.current?.settingsForm?.setFieldsValue({ touchpoints: defaultConfigs['LOCA_ALL'] });
   };
 
   const handleAssignTelesales = async (customerIds: number[], staffId: number) => {
@@ -458,21 +501,6 @@ export function useNycData(options?: UseNycDataOptions) {
       }
     }
 
-    const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
-    if (isBookingInPast) {
-      const state = record.lastBookingState;
-      const isMissed =
-        state &&
-        state !== 'Completed' &&
-        state !== 'ServiceCompleted' &&
-        state !== 'CheckIn' &&
-        state !== 'CheckOut' &&
-        state !== 'ServiceStart';
-      if (isMissed) {
-        return themeMode === 'dark' ? 'row-missed-dark' : 'row-missed-light';
-      }
-    }
-
     return '';
   };
 
@@ -480,6 +508,7 @@ export function useNycData(options?: UseNycDataOptions) {
     currentUser,
     activeTab,
     activeTouchpointKey,
+    contactSubTab,
     searchQuery,
     sortField,
     assignedStaffId,
@@ -497,31 +526,35 @@ export function useNycData(options?: UseNycDataOptions) {
     detailModalVisible,
     bookingWizardVisible,
     bookingInitialCustomer,
-    selectedConfigTab,
     selectedCustomer,
     dailyPlanList,
     addingIds,
+    datePreset,
+    selectedDate,
     // setters
     setActiveTab,
     setActiveTouchpointKey,
+    setContactSubTab,
     setSearchQuery,
     setSortField,
     setAssignedStaffId,
     setCurrentPage,
     setPageSize,
+    setDatePreset,
+    setSelectedDate,
     setSettingsModalVisible,
     setDetailModalVisible,
     setBookingWizardVisible,
     setBookingInitialCustomer,
-    setSelectedConfigTab,
     setSelectedCustomer,
     // handlers
     fetchCustomerList,
     fetchOverallStats,
+    handlePrevDate,
+    handleNextDate,
     handleAddToPlan,
     handleOpenDetailModal,
     handleOpenSettings,
-    handleConfigTabChange,
     handleSaveConfig,
     resetConfigDefaults,
     handleAssignTelesales,

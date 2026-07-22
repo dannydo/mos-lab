@@ -11,7 +11,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       search,
       page = '1',
       limit = '20',
-      sort = 'id_desc',
+      sort,
+      sortField,
       daysSinceLastVisitMin,
       daysSinceLastVisitMax,
       totalSpentMin,
@@ -27,12 +28,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
       assignedStaffId,
       trash,
       ids,
+      hsd30,
+      lsd1,
+      hasProduct,
+      contacted,
+      contactType,
+      hasCallback,
+      hasFutureBooking,
+      dateFrom,
+      dateTo,
     } = request.query as {
-      bucket?: BucketType | 'ALL';
+      bucket?: BucketType | 'ALL' | 'NEW_LOCA';
       search?: string;
       page?: string;
       limit?: string;
       sort?: string;
+      sortField?: string;
       daysSinceLastVisitMin?: string;
       daysSinceLastVisitMax?: string;
       totalSpentMin?: string;
@@ -48,6 +59,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
       assignedStaffId?: string;
       trash?: string;
       ids?: string;
+      hsd30?: string;
+      lsd1?: string;
+      hasProduct?: string;
+      contacted?: string;
+      contactType?: string;
+      hasCallback?: string;
+      hasFutureBooking?: string;
+      dateFrom?: string;
+      dateTo?: string;
     };
 
     let limitNum = parseInt(limit, 10) || 20;
@@ -65,6 +85,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     try {
+      const sortParam = (sortField || sort || 'id_desc') as string;
+
       // Determine what joins and select fields we need in the inner query to optimize performance
       const needContact = search && search.trim() !== '';
       const needServiceBalance = bucket && bucket !== 'ALL';
@@ -72,8 +94,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const needSpent =
         (totalSpentMin !== undefined && totalSpentMin !== '') ||
         (totalSpentMax !== undefined && totalSpentMax !== '') ||
-        sort === 'totalSpent_desc' ||
-        sort === 'totalSpent_asc';
+        sortParam === 'totalSpent_desc' ||
+        sortParam === 'totalSpent_asc';
 
       const needVisits =
         (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
@@ -104,7 +126,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
             ) as live_count,
             SUM(normal_count) as normalCount,
             SUM(retain_count) as retainCount,
-            MAX(date_expired) as expiryDate
+            MAX(date_expired) as expiryDate,
+            MAX(date_created) as max_date_created
           FROM user_service_balance
           GROUP BY user_id
         ) as usb_agg ON u.id = usb_agg.user_id`;
@@ -135,6 +158,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           WHERE referrer_user_id IS NOT NULL
           GROUP BY referrer_user_id
         ) as ref_counts ON u.id = ref_counts.referrer_user_id`;
+      }
+      if (hasFutureBooking === 'true') {
+        innerJoins += ` LEFT JOIN (
+          SELECT user_id, MIN(booking_date_start) as nextBookingDate
+          FROM \`order\`
+          WHERE booking_date_start > NOW() AND order_state IN ('New', 'Confirmed')
+          GROUP BY user_id
+        ) as fb_agg ON u.id = fb_agg.user_id`;
       }
 
       let allowedUserIds: number[] | null = null;
@@ -208,15 +239,29 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       // 2. Filter by Bucket (Optimized using usb_agg joins)
-      if (bucket && bucket !== 'ALL') {
-        if (bucket === 'SINGLE') {
+      const bStr = bucket as string;
+      if (bStr && bStr !== 'ALL') {
+        if (bStr === 'SINGLE') {
           innerWhereClauses.push('usb_agg.user_id IS NULL');
-        } else if (bucket === 'COMBO_LIVE') {
+        } else if (bStr === 'COMBO_LIVE') {
           innerWhereClauses.push('usb_agg.live_count > 0');
-        } else if (bucket === 'COMBO_DEAD') {
+        } else if (bStr === 'COMBO_DEAD') {
           innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
-        } else if (bucket === 'NOT_COMBO_LIVE') {
+        } else if (bStr === 'NOT_COMBO_LIVE') {
           innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+        } else if (bStr === 'NEW_LOCA') {
+          const dFromStr = dateFrom
+            ? dateFrom.slice(0, 19).replace('T', ' ')
+            : new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
+          const dToStr = dateTo
+            ? dateTo.slice(0, 19).replace('T', ' ')
+            : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM user_service_balance usb_nl
+            WHERE usb_nl.user_id = u.id 
+              AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
+          )`);
+          innerParams.push(dFromStr, dToStr);
         }
       }
 
@@ -278,27 +323,108 @@ export async function customerRoutes(fastify: FastifyInstance) {
         innerParams.push(parseInt(referralCountMax, 10));
       }
 
+      // LoCa Campaign Filters
+      if (hsd30 === 'true') {
+        innerWhereClauses.push(
+          'usb_agg.expiryDate IS NOT NULL AND DATEDIFF(usb_agg.expiryDate, NOW()) BETWEEN 0 AND 30'
+        );
+      }
+      if (lsd1 === 'true') {
+        innerWhereClauses.push('(COALESCE(usb_agg.normalCount, 0) + COALESCE(usb_agg.retainCount, 0)) = 1');
+      }
+      if (hasProduct === 'true') {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM order_service os_p 
+          WHERE os_p.user_id = u.id AND (
+            LOWER(COALESCE(os_p.service_group, '')) LIKE '%product%' OR 
+            LOWER(COALESCE(os_p.service_type, '')) LIKE '%product%' OR 
+            LOWER(COALESCE(os_p.user_service_type, '')) LIKE '%product%'
+          )
+        )`);
+      }
+      if (hasCallback === 'true') {
+        const callbackLogs = await fastify.prisma.crm.crmCallLog.findMany({
+          where: { callbackDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+          select: { legacyUserId: true },
+        });
+        const cbUserIds = [...new Set(callbackLogs.map((l) => l.legacyUserId))];
+        if (cbUserIds.length === 0) {
+          return { data: [], pagination: { total: 0, page: pageNum, limit: limitNum, pages: 0 } };
+        }
+        innerWhereClauses.push(`u.id IN (${cbUserIds.join(',')})`);
+      }
+      if (hasFutureBooking === 'true') {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM \`order\` o_bk 
+          WHERE o_bk.user_id = u.id AND o_bk.booking_date_start > NOW() AND o_bk.order_state IN ('New', 'Confirmed')
+        )`);
+      }
+      if (contacted === 'true') {
+        let callTypeFilter: SafeAny = undefined;
+        if (contactType === 'TEXT') {
+          callTypeFilter = { in: ['TEXT', 'ZALO', 'MESSENGER', 'SMS'] };
+        } else if (contactType === 'CALL') {
+          callTypeFilter = { in: ['CALL', 'OUTBOUND', 'INBOUND'] };
+        }
+        const contactedLogs = await fastify.prisma.crm.crmCallLog.findMany({
+          where: callTypeFilter ? { callType: callTypeFilter } : undefined,
+          select: { legacyUserId: true },
+        });
+        const contactedUserIds = [...new Set(contactedLogs.map((l) => l.legacyUserId))];
+        if (contactedUserIds.length === 0) {
+          return { data: [], pagination: { total: 0, page: pageNum, limit: limitNum, pages: 0 } };
+        }
+        innerWhereClauses.push(`u.id IN (${contactedUserIds.join(',')})`);
+      }
+
       const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
 
       // Sorting
       let innerOrderBy = 'ORDER BY u.id DESC';
       let outerOrderBy = 'ORDER BY id DESC';
-      if (sort === 'daysSinceLastVisit_desc') {
+      if (
+        sortParam === 'purchaseDate_desc' ||
+        sortParam === 'comboPurchaseDate_desc' ||
+        (bStr === 'NEW_LOCA' && (sortParam === 'daysSinceLastVisit_desc' || !sortParam))
+      ) {
+        innerOrderBy = 'ORDER BY COALESCE(usb_agg.max_date_created, u.date_created) DESC';
+        outerOrderBy = 'ORDER BY COALESCE(usb_agg.max_date_created, u.date_created) DESC';
+      } else if (sortParam === 'purchaseDate_asc' || sortParam === 'comboPurchaseDate_asc') {
+        innerOrderBy = 'ORDER BY COALESCE(usb_agg.max_date_created, u.date_created) ASC';
+        outerOrderBy = 'ORDER BY COALESCE(usb_agg.max_date_created, u.date_created) ASC';
+      } else if (
+        hasFutureBooking === 'true' &&
+        (sortParam === 'daysSinceLastVisit_asc' || sortParam === 'daysSinceLastVisit_desc')
+      ) {
+        if (sortParam === 'daysSinceLastVisit_desc') {
+          innerOrderBy = 'ORDER BY fb_agg.nextBookingDate DESC';
+          outerOrderBy = 'ORDER BY fb_agg.nextBookingDate DESC';
+        } else {
+          innerOrderBy = 'ORDER BY fb_agg.nextBookingDate ASC';
+          outerOrderBy = 'ORDER BY fb_agg.nextBookingDate ASC';
+        }
+      } else if (sortParam === 'daysSinceLastVisit_desc') {
         innerOrderBy = 'ORDER BY up.last_order_booking ASC';
         outerOrderBy = 'ORDER BY daysSinceLastVisit DESC';
-      } else if (sort === 'daysSinceLastVisit_asc') {
+      } else if (sortParam === 'daysSinceLastVisit_asc') {
         innerOrderBy = 'ORDER BY up.last_order_booking DESC';
         outerOrderBy = 'ORDER BY daysSinceLastVisit ASC';
-      } else if (sort === 'totalSpent_desc') {
+      } else if (sortParam === 'id_asc') {
+        innerOrderBy = 'ORDER BY u.id ASC';
+        outerOrderBy = 'ORDER BY id ASC';
+      } else if (sortParam === 'id_desc') {
+        innerOrderBy = 'ORDER BY u.id DESC';
+        outerOrderBy = 'ORDER BY id DESC';
+      } else if (sortParam === 'totalSpent_desc') {
         innerOrderBy = 'ORDER BY COALESCE(order_counts.totalSpent, 0) DESC';
         outerOrderBy = 'ORDER BY totalSpent DESC';
-      } else if (sort === 'totalSpent_asc') {
+      } else if (sortParam === 'totalSpent_asc') {
         innerOrderBy = 'ORDER BY COALESCE(order_counts.totalSpent, 0) ASC';
         outerOrderBy = 'ORDER BY totalSpent ASC';
-      } else if (sort === 'name_asc') {
+      } else if (sortParam === 'name_asc') {
         innerOrderBy = 'ORDER BY up.full_name ASC';
         outerOrderBy = 'ORDER BY name ASC';
-      } else if (sort === 'name_desc') {
+      } else if (sortParam === 'name_desc') {
         innerOrderBy = 'ORDER BY up.full_name DESC';
         outerOrderBy = 'ORDER BY name DESC';
       }
@@ -377,7 +503,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
             ) as live_count,
             SUM(normal_count) as normalCount,
             SUM(retain_count) as retainCount,
-            MAX(date_expired) as expiryDate
+            MAX(date_expired) as expiryDate,
+            MAX(date_created) as max_date_created
           FROM user_service_balance
           GROUP BY user_id
         ) as usb_agg ON u.id = usb_agg.user_id
@@ -486,12 +613,175 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       });
 
+      const newComboMap = new Map<number, any>();
+      if (customerIds.length > 0 && bucket === 'NEW_LOCA') {
+        const dFromStr = dateFrom
+          ? dateFrom.slice(0, 19).replace('T', ' ')
+          : new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
+        const dToStr = dateTo
+          ? dateTo.slice(0, 19).replace('T', ' ')
+          : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
+
+        // 1. Fetch user_service_balance records for combo purchased in date range per customer ONLY (paid combos)
+        const usbRecords = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `
+          SELECT 
+            usb.id,
+            usb.user_id as userId,
+            usb.date_created as dateCreated,
+            usb.created_staff_id as createdStaffId,
+            CONCAT(
+              COALESCE(sl.service_name, s.service_key, usb.service_group, 'Combo Mới Mua'),
+              IF(sp.service_price_package_key IS NOT NULL AND sp.service_price_package_key != '', CONCAT(' (', sp.service_price_package_key, ')'), '')
+            ) as comboName,
+            COALESCE(sp.service_price, usb.total_normal_balance_amount + usb.total_retain_balance_amount, 0) as comboPrice,
+            up.full_name as creatorStaffName
+          FROM user_service_balance usb
+          LEFT JOIN service s ON usb.service_id = s.id
+          LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
+          LEFT JOIN service_price sp ON usb.service_price_id = sp.id
+          LEFT JOIN user_profile up ON usb.created_staff_id = up.user_id
+          WHERE usb.user_id IN (${customerIds.join(',')})
+            AND usb.date_created >= ? AND usb.date_created <= ?
+            AND (COALESCE(sp.service_price, 0) > 0 OR (usb.total_normal_balance_amount + usb.total_retain_balance_amount) > 0)
+          ORDER BY usb.date_created DESC
+        `,
+          dFromStr,
+          dToStr
+        );
+
+        const allUsbRecords = usbRecords;
+
+        // 2. Fetch combo orders per customer in date range
+        const comboOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `
+          SELECT 
+            o.id as orderId,
+            o.user_id as userId,
+            o.booking_note as bookingNote,
+            o.total_price as totalPrice,
+            o.date_created as dateCreated,
+            o.created_staff_id as createdStaffId,
+            o.assigned_staff_id as orderAssignedStaffId,
+            up_created.full_name as createdStaffName,
+            up_assigned.full_name as assignedStaffName
+          FROM \`order\` o
+          LEFT JOIN user_profile up_created ON o.created_staff_id = up_created.user_id
+          LEFT JOIN user_profile up_assigned ON o.assigned_staff_id = up_assigned.user_id
+          WHERE o.user_id IN (${customerIds.join(',')})
+            AND o.date_created >= ? AND o.date_created <= ?
+          ORDER BY o.date_created DESC
+        `,
+          dFromStr,
+          dToStr
+        );
+
+        // 3. Fetch order_service records for details (check-in, check-out, CV)
+        const orderIds = comboOrders.map((c) => Number(c.orderId)).filter((id) => id > 0);
+        const orderSvsMap = new Map<
+          number,
+          { checkIn: string; checkOut: string; cv: string; serviceTitle: string; price: number }
+        >();
+        if (orderIds.length > 0) {
+          const svs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT 
+              os.order_id as orderId, 
+              os.user_id as userId,
+              os.check_in_staff_id as checkInId, 
+              os.check_out_staff_id as checkOutId, 
+              os.assigned_staff_id as assignedId,
+              os.user_service_type as userServiceType,
+              os.service_group as serviceGroup,
+              os.service_type as serviceType,
+              os.total_price as totalPrice,
+              up_in.full_name as checkInName,
+              up_out.full_name as checkOutName,
+              up_cv.full_name as cvName,
+              COALESCE(sl.service_name, s.service_key, os.service_group) as serviceTitle
+            FROM order_service os
+            LEFT JOIN service s ON os.service_id = s.id
+            LEFT JOIN service_language sl ON os.service_id = sl.service_id AND sl.language_id = 1
+            LEFT JOIN user_profile up_in ON os.check_in_staff_id = up_in.user_id
+            LEFT JOIN user_profile up_out ON os.check_out_staff_id = up_out.user_id
+            LEFT JOIN user_profile up_cv ON os.assigned_staff_id = up_cv.user_id
+            WHERE os.order_id IN (${orderIds.join(',')})
+            ORDER BY os.id DESC
+          `);
+          svs.forEach((s) => {
+            const oId = Number(s.orderId);
+            const uId = Number(s.userId);
+            if (!orderSvsMap.has(oId)) {
+              const checkIn = s.checkInName ? String(s.checkInName).trim() : '';
+              const checkOut = s.checkOutName ? String(s.checkOutName).trim() : '';
+              const cv = s.cvName ? String(s.cvName).trim() : '';
+              const serviceTitle = s.serviceTitle || s.serviceGroup || 'Combo Mới Mua';
+              const price = Number(s.totalPrice || 0);
+              orderSvsMap.set(oId, { checkIn, checkOut, cv, serviceTitle, price });
+            }
+          });
+        }
+
+        const customerUsbMap = new Map<number, any>();
+        allUsbRecords.forEach((u) => {
+          const uid = Number(u.userId);
+          if (!customerUsbMap.has(uid)) {
+            customerUsbMap.set(uid, u);
+          }
+        });
+
+        const customerOrderMap = new Map<number, any>();
+        comboOrders.forEach((co) => {
+          const uid = Number(co.userId);
+          if (!customerOrderMap.has(uid)) {
+            customerOrderMap.set(uid, co);
+          }
+        });
+
+        customerIds.forEach((uid) => {
+          const usb = customerUsbMap.get(uid);
+          if (usb) {
+            const ord = customerOrderMap.get(uid);
+            const svInfo = ord ? orderSvsMap.get(Number(ord.orderId)) : null;
+
+            const creatorStaffName = (usb.creatorStaffName || ord?.createdStaffName || '').trim();
+            const bookerName = ord?.createdStaffName || creatorStaffName || 'System';
+
+            // CC Out: CheckOut staff or creator staff (Người bán CC)
+            const rawCcOut = svInfo?.checkOut || creatorStaffName || ord?.createdStaffName || '';
+            const ccOutName = rawCcOut ? rawCcOut : 'Chưa nhận';
+
+            // CC In: CheckIn staff or fallback to CC Out
+            const rawCcIn = svInfo?.checkIn || (ccOutName !== 'Chưa nhận' ? ccOutName : '');
+            const ccInName = rawCcIn ? rawCcIn : 'Chưa nhận';
+
+            // CV (Chuyên viên): Assigned staff on service / order
+            const rawCv = svInfo?.cv || ord?.assignedStaffName || '';
+            const cvName = rawCv ? rawCv : 'Chưa phân công';
+
+            const comboName = usb.comboName || 'Combo Mới Mua';
+            const comboPrice = Number(usb.comboPrice || 0);
+            const purchaseDate = usb.dateCreated ? new Date(usb.dateCreated).toISOString() : null;
+
+            newComboMap.set(uid, {
+              comboName,
+              comboPrice,
+              purchaseDate,
+              bookerName,
+              ccInName,
+              ccOutName,
+              cvName,
+            });
+          }
+        });
+      }
+
       // Map raw SQL outputs to clean Customer interface types
       const customers = dataResult.map((row: SafeAny) => {
         const assigned = assignmentMap.get(Number(row.id)) || null;
         const booking = bookingMap.get(Number(row.id)) || null;
         const callbackDateVal = callbackMap.get(Number(row.id)) || null;
         const lastCallVal = latestCallMap.get(Number(row.id)) || null;
+        const newComboDetails = newComboMap.get(Number(row.id)) || null;
 
         return {
           id: Number(row.id),
@@ -521,6 +811,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           lastBookingDate: booking && booking.bookingDate ? new Date(booking.bookingDate).toISOString() : null,
           callbackDate: callbackDateVal ? new Date(callbackDateVal).toISOString().split('T')[0] : null,
           lastCall: lastCallVal,
+          newComboDetails,
         };
       });
 
@@ -563,8 +854,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMax,
       assignedStaffId,
       trash,
+      hsd30,
+      lsd1,
+      hasProduct,
+      contacted,
+      contactType,
+      hasCallback,
+      hasFutureBooking,
+      dateFrom,
+      dateTo,
     } = request.query as {
-      bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE';
+      bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE' | 'NEW_LOCA';
       search?: string;
       ids?: string;
       daysSinceLastVisitMin?: string;
@@ -581,6 +881,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMax?: string;
       assignedStaffId?: string;
       trash?: string;
+      hsd30?: string;
+      lsd1?: string;
+      hasProduct?: string;
+      contacted?: string;
+      contactType?: string;
+      hasCallback?: string;
+      hasFutureBooking?: string;
+      dateFrom?: string;
+      dateTo?: string;
     };
 
     const adminUser = request.user as { id: number; role: string };
@@ -621,7 +930,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
               WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
               ELSE 0 
             END
-          ) as live_count
+          ) as live_count,
+          SUM(normal_count) as normalCount,
+          SUM(retain_count) as retainCount,
+          MAX(date_expired) as expiryDate
         FROM user_service_balance
         GROUP BY user_id
       ) as usb_agg ON u.id = usb_agg.user_id`;
@@ -721,15 +1033,29 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       // 2. Filter by Bucket (Optimized using usb_agg joins)
-      if (bucket && bucket !== 'ALL') {
-        if (bucket === 'SINGLE') {
+      const bStrStats = bucket as string;
+      if (bStrStats && bStrStats !== 'ALL') {
+        if (bStrStats === 'SINGLE') {
           innerWhereClauses.push('usb_agg.user_id IS NULL');
-        } else if (bucket === 'COMBO_LIVE') {
+        } else if (bStrStats === 'COMBO_LIVE') {
           innerWhereClauses.push('usb_agg.live_count > 0');
-        } else if (bucket === 'COMBO_DEAD') {
+        } else if (bStrStats === 'COMBO_DEAD') {
           innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
-        } else if (bucket === 'NOT_COMBO_LIVE') {
+        } else if (bStrStats === 'NOT_COMBO_LIVE') {
           innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+        } else if (bStrStats === 'NEW_LOCA') {
+          const dFromStr = dateFrom
+            ? dateFrom.slice(0, 19).replace('T', ' ')
+            : new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
+          const dToStr = dateTo
+            ? dateTo.slice(0, 19).replace('T', ' ')
+            : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM user_service_balance usb_nl
+            WHERE usb_nl.user_id = u.id 
+              AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
+          )`);
+          innerParams.push(dFromStr, dToStr);
         }
       }
 
@@ -791,6 +1117,60 @@ export async function customerRoutes(fastify: FastifyInstance) {
         innerParams.push(parseInt(referralCountMax, 10));
       }
 
+      // LoCa Campaign Filters
+      if (hsd30 === 'true') {
+        innerWhereClauses.push(
+          'usb_agg.expiryDate IS NOT NULL AND DATEDIFF(usb_agg.expiryDate, NOW()) BETWEEN 0 AND 30'
+        );
+      }
+      if (lsd1 === 'true') {
+        innerWhereClauses.push('(COALESCE(usb_agg.normalCount, 0) + COALESCE(usb_agg.retainCount, 0)) = 1');
+      }
+      if (hasProduct === 'true') {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM order_service os_p 
+          WHERE os_p.user_id = u.id AND (
+            LOWER(COALESCE(os_p.service_group, '')) LIKE '%product%' OR 
+            LOWER(COALESCE(os_p.service_type, '')) LIKE '%product%' OR 
+            LOWER(COALESCE(os_p.user_service_type, '')) LIKE '%product%'
+          )
+        )`);
+      }
+      if (hasCallback === 'true') {
+        const callbackLogs = await fastify.prisma.crm.crmCallLog.findMany({
+          where: { callbackDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+          select: { legacyUserId: true },
+        });
+        const cbUserIds = [...new Set(callbackLogs.map((l) => l.legacyUserId))];
+        if (cbUserIds.length === 0) {
+          return { total: 0, comboLive: 0, comboDead: 0, single: 0, notComboLive: 0, hsd30: 0, lsd1: 0 };
+        }
+        innerWhereClauses.push(`u.id IN (${cbUserIds.join(',')})`);
+      }
+      if (hasFutureBooking === 'true') {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM \`order\` o_bk 
+          WHERE o_bk.user_id = u.id AND o_bk.booking_date_start > NOW() AND o_bk.order_state IN ('New', 'Confirmed')
+        )`);
+      }
+      if (contacted === 'true') {
+        let callTypeFilter: SafeAny = undefined;
+        if (contactType === 'TEXT') {
+          callTypeFilter = { in: ['TEXT', 'ZALO', 'MESSENGER', 'SMS'] };
+        } else if (contactType === 'CALL') {
+          callTypeFilter = { in: ['CALL', 'OUTBOUND', 'INBOUND'] };
+        }
+        const contactedLogs = await fastify.prisma.crm.crmCallLog.findMany({
+          where: callTypeFilter ? { callType: callTypeFilter } : undefined,
+          select: { legacyUserId: true },
+        });
+        const contactedUserIds = [...new Set(contactedLogs.map((l) => l.legacyUserId))];
+        if (contactedUserIds.length === 0) {
+          return { total: 0, comboLive: 0, comboDead: 0, single: 0, notComboLive: 0, hsd30: 0, lsd1: 0 };
+        }
+        innerWhereClauses.push(`u.id IN (${contactedUserIds.join(',')})`);
+      }
+
       const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
 
       const statsSql = `
@@ -800,7 +1180,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
             WHEN usb_agg.live_count > 0 THEN 'COMBO_LIVE'
             ELSE 'COMBO_DEAD'
           END as bucket,
-          COUNT(*) as count
+          COUNT(*) as count,
+          SUM(CASE WHEN usb_agg.live_count > 0 AND usb_agg.expiryDate IS NOT NULL AND DATEDIFF(usb_agg.expiryDate, NOW()) BETWEEN 0 AND 30 THEN 1 ELSE 0 END) as hsd30Count,
+          SUM(CASE WHEN usb_agg.live_count > 0 AND (COALESCE(usb_agg.normalCount, 0) + COALESCE(usb_agg.retainCount, 0)) = 1 THEN 1 ELSE 0 END) as lsd1Count
         FROM user u
         ${statsInnerJoins}
         ${innerWhereString}
@@ -815,12 +1197,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
         comboDead: 0,
         single: 0,
         notComboLive: 0,
+        hsd30: 0,
+        lsd1: 0,
       };
 
       statsResult.forEach((row: SafeAny) => {
         const count = Number(row.count || 0);
         stats.total += count;
-        if (row.bucket === 'COMBO_LIVE') stats.comboLive = count;
+        if (row.bucket === 'COMBO_LIVE') {
+          stats.comboLive = count;
+          stats.hsd30 = Number(row.hsd30Count || 0);
+          stats.lsd1 = Number(row.lsd1Count || 0);
+        }
         if (row.bucket === 'COMBO_DEAD') stats.comboDead = count;
         if (row.bucket === 'SINGLE') stats.single = count;
       });
@@ -4702,6 +5090,83 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return { success: true, message: 'Đã lưu cấu hình template touchpoints thành công.' };
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Save NYC config error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to save touchpoint config',
+      });
+    }
+  });
+
+  // GET /loca/config
+  // Get touchpoint config for LoCa campaign
+  fastify.get('/loca/config', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const config = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'LOCA_TOUCHPOINTS_CONFIG' },
+      });
+      if (config) {
+        return JSON.parse(config.value);
+      }
+      const defaultConfigs = {
+        LOCA_ALL: [
+          { key: 'now', label: 'Chạm 24h', daysMin: 0, daysMax: 1, color: 'blue' },
+          { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'cyan' },
+          { key: '19', label: 'Chạm 19', daysMin: 19, daysMax: 19, color: 'cyan' },
+          { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'green' },
+          { key: '23', label: 'Chạm 23', daysMin: 23, daysMax: 23, color: 'green' },
+          { key: '25', label: 'Chạm 25', daysMin: 25, daysMax: 25, color: 'green' },
+          { key: '30', label: 'Chạm 30', daysMin: 30, daysMax: 30, color: 'orange' },
+          { key: '35', label: 'Chạm 35', daysMin: 35, daysMax: 35, color: 'orange' },
+          { key: '40', label: 'Chạm 40', daysMin: 40, daysMax: 40, color: 'orange' },
+          { key: '45', label: 'Chạm 45', daysMin: 45, daysMax: 45, color: 'red' },
+          { key: '50', label: 'Chạm 50', daysMin: 50, daysMax: 50, color: 'red' },
+          { key: '55', label: 'Chạm 55', daysMin: 55, daysMax: 55, color: 'red' },
+          { key: '60', label: 'Chạm 60', daysMin: 60, daysMax: 60, color: 'red' },
+        ],
+      };
+      return defaultConfigs;
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get LoCa config error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve touchpoint config',
+      });
+    }
+  });
+
+  // PUT /loca/config
+  // Save touchpoint config for LoCa campaign (Admins only)
+  fastify.put('/loca/config', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string };
+    if (user.role !== 'admin') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Chỉ Admin mới có quyền cấu hình touchpoints.',
+      });
+    }
+
+    const configs = request.body as Record<string, any[]>;
+    if (typeof configs !== 'object' || configs === null) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Configs must be an object',
+      });
+    }
+
+    try {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: 'LOCA_TOUCHPOINTS_CONFIG' },
+        create: {
+          key: 'LOCA_TOUCHPOINTS_CONFIG',
+          value: JSON.stringify(configs),
+        },
+        update: {
+          value: JSON.stringify(configs),
+        },
+      });
+      return { success: true, message: 'Đã lưu cấu hình template touchpoints thành công.' };
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Save LoCa config error:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to save touchpoint config',
