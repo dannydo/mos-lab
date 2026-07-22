@@ -4,12 +4,7 @@ import { CvConfigResponse, CvStaffOption, CvXoayRecord, CvXoayReportResponse } f
 
 type SafeAny = any;
 
-let cachedActiveCvIds: number[] | null = null;
-
 async function getActiveCvIds(fastify: FastifyInstance): Promise<number[] | null> {
-  if (cachedActiveCvIds !== null) {
-    return cachedActiveCvIds;
-  }
   try {
     const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
       where: { key: 'ACTIVE_CV_STAFF_CONFIG' },
@@ -17,18 +12,13 @@ async function getActiveCvIds(fastify: FastifyInstance): Promise<number[] | null
     if (configRecord && configRecord.value) {
       const parsed = JSON.parse(configRecord.value);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        cachedActiveCvIds = parsed.map((id: SafeAny) => Number(id)).filter((id: number) => !isNaN(id));
-        return cachedActiveCvIds;
+        return parsed.map((id: SafeAny) => Number(id)).filter((id: number) => !isNaN(id));
       }
     }
   } catch (err) {
     fastify.log.error(err as SafeAny, 'Error fetching ACTIVE_CV_STAFF_CONFIG from DB');
   }
   return null;
-}
-
-export function setCachedActiveCvIds(ids: number[]) {
-  cachedActiveCvIds = ids;
 }
 
 export async function registerCvRoutes(fastify: FastifyInstance) {
@@ -320,8 +310,6 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
         update: { value: jsonValue, updatedAt: new Date() },
         create: { key: 'ACTIVE_CV_STAFF_CONFIG', value: jsonValue },
       });
-
-      setCachedActiveCvIds(cleanIds);
 
       return reply.send({ success: true, activeCvIds: cleanIds });
     } catch (err) {

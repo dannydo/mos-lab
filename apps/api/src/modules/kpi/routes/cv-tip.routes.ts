@@ -4,12 +4,7 @@ import { CvTipLeaderboardEntry, CvTipLeaderboardResponse, CvTipRecord, CvTipResp
 
 type SafeAny = any;
 
-let cachedActiveCvIds: number[] | null = null;
-
 async function getActiveCvIds(fastify: FastifyInstance): Promise<number[] | null> {
-  if (cachedActiveCvIds !== null) {
-    return cachedActiveCvIds;
-  }
   try {
     const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
       where: { key: 'ACTIVE_CV_STAFF_CONFIG' },
@@ -17,14 +12,13 @@ async function getActiveCvIds(fastify: FastifyInstance): Promise<number[] | null
     if (configRecord && configRecord.value) {
       const parsed = JSON.parse(configRecord.value);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        cachedActiveCvIds = parsed.map((id: SafeAny) => Number(id)).filter((id: number) => !isNaN(id));
-        return cachedActiveCvIds;
+        return parsed.map((id: SafeAny) => Number(id)).filter((id: number) => !isNaN(id));
       }
     }
   } catch (err) {
     fastify.log.error(err as SafeAny, 'Error fetching ACTIVE_CV_STAFF_CONFIG for CV Tip from DB');
   }
-  return [47510, 48026, 46092, 37790, 34295, 51659];
+  return null;
 }
 
 export async function registerCvTipRoutes(fastify: FastifyInstance) {

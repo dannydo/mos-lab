@@ -4,12 +4,7 @@ import { CcTipLeaderboardEntry, CcTipLeaderboardResponse, CcTipRecord, CcTipResp
 
 type SafeAny = any;
 
-let cachedActiveCcIds: number[] | null = null;
-
 async function getActiveCcIds(fastify: FastifyInstance): Promise<number[] | null> {
-  if (cachedActiveCcIds !== null) {
-    return cachedActiveCcIds;
-  }
   try {
     const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
       where: { key: 'ACTIVE_CC_STAFF_CONFIG' },
@@ -17,14 +12,13 @@ async function getActiveCcIds(fastify: FastifyInstance): Promise<number[] | null
     if (configRecord && configRecord.value) {
       const parsed = JSON.parse(configRecord.value);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        cachedActiveCcIds = parsed.map((id) => Number(id)).filter((id) => !isNaN(id));
-        return cachedActiveCcIds;
+        return parsed.map((id) => Number(id)).filter((id) => !isNaN(id));
       }
     }
   } catch (err) {
     fastify.log.error(err as SafeAny, 'Error fetching ACTIVE_CC_STAFF_CONFIG for CC Tip from DB');
   }
-  return [37790, 34295, 46092, 51659, 48026, 48997];
+  return null;
 }
 
 export async function registerCcTipRoutes(fastify: FastifyInstance) {

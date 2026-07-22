@@ -4,29 +4,21 @@ import { CcLeaderboardEntry, CcStaffOption, CcXoayRecord } from '@mos-lab/shared
 
 type SafeAny = any;
 
-// Global in-memory cache for Active CC Staff IDs
-let cachedActiveCcIds: number[] | null = null;
-
 async function getActiveCcIds(fastify: FastifyInstance): Promise<number[] | null> {
-  if (cachedActiveCcIds !== null) {
-    return cachedActiveCcIds;
-  }
   try {
     const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
       where: { key: 'ACTIVE_CC_STAFF_CONFIG' },
     });
-    if (configRecord) {
-      cachedActiveCcIds = JSON.parse(configRecord.value);
-      return cachedActiveCcIds;
+    if (configRecord && configRecord.value) {
+      const parsed = JSON.parse(configRecord.value);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((id: SafeAny) => Number(id)).filter((id: number) => !isNaN(id));
+      }
     }
   } catch (err) {
     fastify.log.error(err as SafeAny, 'Error fetching ACTIVE_CC_STAFF_CONFIG from DB');
   }
   return null;
-}
-
-export function setCachedActiveCcIds(ids: number[]) {
-  cachedActiveCcIds = ids;
 }
 
 export async function registerCcRoutes(fastify: FastifyInstance) {
@@ -292,8 +284,6 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
           value: JSON.stringify(activeCcIds),
         },
       });
-
-      setCachedActiveCcIds(activeCcIds);
 
       return { success: true, message: 'Đã cập nhật danh sách CC toàn cục thành công!' };
     } catch (err) {
