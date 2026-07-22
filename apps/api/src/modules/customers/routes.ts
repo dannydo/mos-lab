@@ -256,12 +256,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
           const dToStr = dateTo
             ? dateTo.slice(0, 19).replace('T', ' ')
             : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
-          innerWhereClauses.push(`EXISTS (
-            SELECT 1 FROM user_service_balance usb_nl
-            WHERE usb_nl.user_id = u.id 
-              AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
+          innerWhereClauses.push(`(
+            EXISTS (
+              SELECT 1 FROM user_service_balance usb_nl
+              WHERE usb_nl.user_id = u.id 
+                AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
+            ) OR EXISTS (
+              SELECT 1 FROM \`order\` o_nl
+              JOIN order_service os_nl ON os_nl.order_id = o_nl.id
+              WHERE o_nl.user_id = u.id 
+                AND o_nl.date_created >= ? AND o_nl.date_created <= ? 
+                AND os_nl.user_service_type = 'combo'
+            )
           )`);
-          innerParams.push(dFromStr, dToStr);
+          innerParams.push(dFromStr, dToStr, dFromStr, dToStr);
         }
       }
 
@@ -622,7 +630,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           ? dateTo.slice(0, 19).replace('T', ' ')
           : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
 
-        // 1. Fetch user_service_balance records for combo purchased in date range per customer ONLY (paid combos)
+        // 1. Fetch user_service_balance records for combo purchased in date range per customer
         const usbRecords = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `
           SELECT 
@@ -650,79 +658,43 @@ export async function customerRoutes(fastify: FastifyInstance) {
           dToStr
         );
 
-        const allUsbRecords = usbRecords;
-
-        // 2. Fetch combo orders per customer in date range
+        // 2. Fetch combo orders per customer in date range (direct combo sales in order_service)
         const comboOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `
           SELECT 
             o.id as orderId,
             o.user_id as userId,
-            o.booking_note as bookingNote,
-            o.total_price as totalPrice,
             o.date_created as dateCreated,
             o.created_staff_id as createdStaffId,
-            o.assigned_staff_id as orderAssignedStaffId,
             up_created.full_name as createdStaffName,
-            up_assigned.full_name as assignedStaffName
+            COALESCE(NULLIF(os.total_price, 0), sp.service_price, 0) as comboPrice,
+            CONCAT(
+              COALESCE(sl.service_name, s.service_key, os.service_group, 'Combo Mới Mua'),
+              IF(sp.service_price_package_key IS NOT NULL AND sp.service_price_package_key != '', CONCAT(' (', sp.service_price_package_key, ')'), '')
+            ) as comboName,
+            up_in.full_name as checkInName,
+            up_out.full_name as checkOutName,
+            up_cv.full_name as cvName
           FROM \`order\` o
+          JOIN order_service os ON os.order_id = o.id
+          LEFT JOIN service s ON os.service_id = s.id
+          LEFT JOIN service_language sl ON os.service_id = sl.service_id AND sl.language_id = 1
+          LEFT JOIN service_price sp ON os.service_price_id = sp.id
           LEFT JOIN user_profile up_created ON o.created_staff_id = up_created.user_id
-          LEFT JOIN user_profile up_assigned ON o.assigned_staff_id = up_assigned.user_id
+          LEFT JOIN user_profile up_in ON os.check_in_staff_id = up_in.user_id
+          LEFT JOIN user_profile up_out ON os.check_out_staff_id = up_out.user_id
+          LEFT JOIN user_profile up_cv ON os.assigned_staff_id = up_cv.user_id
           WHERE o.user_id IN (${customerIds.join(',')})
             AND o.date_created >= ? AND o.date_created <= ?
+            AND os.user_service_type = 'combo'
           ORDER BY o.date_created DESC
         `,
           dFromStr,
           dToStr
         );
 
-        // 3. Fetch order_service records for details (check-in, check-out, CV)
-        const orderIds = comboOrders.map((c) => Number(c.orderId)).filter((id) => id > 0);
-        const orderSvsMap = new Map<
-          number,
-          { checkIn: string; checkOut: string; cv: string; serviceTitle: string; price: number }
-        >();
-        if (orderIds.length > 0) {
-          const svs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-            SELECT 
-              os.order_id as orderId, 
-              os.user_id as userId,
-              os.check_in_staff_id as checkInId, 
-              os.check_out_staff_id as checkOutId, 
-              os.assigned_staff_id as assignedId,
-              os.user_service_type as userServiceType,
-              os.service_group as serviceGroup,
-              os.service_type as serviceType,
-              os.total_price as totalPrice,
-              up_in.full_name as checkInName,
-              up_out.full_name as checkOutName,
-              up_cv.full_name as cvName,
-              COALESCE(sl.service_name, s.service_key, os.service_group) as serviceTitle
-            FROM order_service os
-            LEFT JOIN service s ON os.service_id = s.id
-            LEFT JOIN service_language sl ON os.service_id = sl.service_id AND sl.language_id = 1
-            LEFT JOIN user_profile up_in ON os.check_in_staff_id = up_in.user_id
-            LEFT JOIN user_profile up_out ON os.check_out_staff_id = up_out.user_id
-            LEFT JOIN user_profile up_cv ON os.assigned_staff_id = up_cv.user_id
-            WHERE os.order_id IN (${orderIds.join(',')})
-            ORDER BY os.id DESC
-          `);
-          svs.forEach((s) => {
-            const oId = Number(s.orderId);
-            const uId = Number(s.userId);
-            if (!orderSvsMap.has(oId)) {
-              const checkIn = s.checkInName ? String(s.checkInName).trim() : '';
-              const checkOut = s.checkOutName ? String(s.checkOutName).trim() : '';
-              const cv = s.cvName ? String(s.cvName).trim() : '';
-              const serviceTitle = s.serviceTitle || s.serviceGroup || 'Combo Mới Mua';
-              const price = Number(s.totalPrice || 0);
-              orderSvsMap.set(oId, { checkIn, checkOut, cv, serviceTitle, price });
-            }
-          });
-        }
-
         const customerUsbMap = new Map<number, any>();
-        allUsbRecords.forEach((u) => {
+        usbRecords.forEach((u) => {
           const uid = Number(u.userId);
           if (!customerUsbMap.has(uid)) {
             customerUsbMap.set(uid, u);
@@ -739,28 +711,30 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         customerIds.forEach((uid) => {
           const usb = customerUsbMap.get(uid);
-          if (usb) {
-            const ord = customerOrderMap.get(uid);
-            const svInfo = ord ? orderSvsMap.get(Number(ord.orderId)) : null;
-
-            const creatorStaffName = (usb.creatorStaffName || ord?.createdStaffName || '').trim();
+          const ord = customerOrderMap.get(uid);
+          if (usb || ord) {
+            const creatorStaffName = (usb?.creatorStaffName || ord?.createdStaffName || '').trim();
             const bookerName = ord?.createdStaffName || creatorStaffName || 'System';
 
             // CC Out: CheckOut staff or creator staff (Người bán CC)
-            const rawCcOut = svInfo?.checkOut || creatorStaffName || ord?.createdStaffName || '';
+            const rawCcOut = ord?.checkOutName || creatorStaffName || '';
             const ccOutName = rawCcOut ? rawCcOut : 'Chưa nhận';
 
             // CC In: CheckIn staff or fallback to CC Out
-            const rawCcIn = svInfo?.checkIn || (ccOutName !== 'Chưa nhận' ? ccOutName : '');
+            const rawCcIn = ord?.checkInName || (ccOutName !== 'Chưa nhận' ? ccOutName : '');
             const ccInName = rawCcIn ? rawCcIn : 'Chưa nhận';
 
             // CV (Chuyên viên): Assigned staff on service / order
-            const rawCv = svInfo?.cv || ord?.assignedStaffName || '';
+            const rawCv = ord?.cvName || '';
             const cvName = rawCv ? rawCv : 'Chưa phân công';
 
-            const comboName = usb.comboName || 'Combo Mới Mua';
-            const comboPrice = Number(usb.comboPrice || 0);
-            const purchaseDate = usb.dateCreated ? new Date(usb.dateCreated).toISOString() : null;
+            const comboName = usb?.comboName || ord?.comboName || 'Combo Mới Mua';
+            const comboPrice = Number(usb?.comboPrice || ord?.comboPrice || 0);
+            const purchaseDate = usb?.dateCreated
+              ? new Date(usb.dateCreated).toISOString()
+              : ord?.dateCreated
+                ? new Date(ord.dateCreated).toISOString()
+                : null;
 
             newComboMap.set(uid, {
               comboName,
@@ -1050,12 +1024,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
           const dToStr = dateTo
             ? dateTo.slice(0, 19).replace('T', ' ')
             : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
-          innerWhereClauses.push(`EXISTS (
-            SELECT 1 FROM user_service_balance usb_nl
-            WHERE usb_nl.user_id = u.id 
-              AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
+          innerWhereClauses.push(`(
+            EXISTS (
+              SELECT 1 FROM user_service_balance usb_nl
+              WHERE usb_nl.user_id = u.id 
+                AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
+            ) OR EXISTS (
+              SELECT 1 FROM \`order\` o_nl
+              JOIN order_service os_nl ON os_nl.order_id = o_nl.id
+              WHERE o_nl.user_id = u.id 
+                AND o_nl.date_created >= ? AND o_nl.date_created <= ? 
+                AND os_nl.user_service_type = 'combo'
+            )
           )`);
-          innerParams.push(dFromStr, dToStr);
+          innerParams.push(dFromStr, dToStr, dFromStr, dToStr);
         }
       }
 
