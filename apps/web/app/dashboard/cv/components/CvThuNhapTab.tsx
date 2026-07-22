@@ -425,14 +425,24 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       title: 'CV',
       dataIndex: 'staffName',
       key: 'staffName',
-      width: 210,
+      width: 220,
       render: (text: string, record: CvPaystubRecord, index: number) => {
         const initial = text ? text.trim().charAt(0).toUpperCase() : '?';
         const rank = index + 1;
         let rankBadge = null;
-        if (rank === 1) rankBadge = <span className="text-base mr-1 shrink-0">🥇</span>;
-        else if (rank === 2) rankBadge = <span className="text-base mr-1 shrink-0">🥈</span>;
-        else if (rank === 3) rankBadge = <span className="text-base mr-1 shrink-0">🥉</span>;
+        if (rank === 1) {
+          rankBadge = <span className="text-base shrink-0 w-6 text-center">🥇</span>;
+        } else if (rank === 2) {
+          rankBadge = <span className="text-base shrink-0 w-6 text-center">🥈</span>;
+        } else if (rank === 3) {
+          rankBadge = <span className="text-base shrink-0 w-6 text-center">🥉</span>;
+        } else {
+          rankBadge = (
+            <span className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500 w-6 text-center shrink-0">
+              #{rank}
+            </span>
+          );
+        }
 
         return (
           <div className="flex items-center gap-2">
