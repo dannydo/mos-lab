@@ -179,3 +179,46 @@ body {
 .dark-theme .ant-tabs-nav {
   border-bottom-color: #1f2937 !important;
 }
+
+/* Full Bleed Table Cards - Removes redundant 24px inner padding around tables */
+.full-bleed-card > .ant-card-body {
+  padding: 0 !important;
+}
+
+.full-bleed-card .ant-table-pagination {
+  margin: 12px 16px !important;
+}
+
+/* Dashboard Main Tabs Card Padding & Tab Styling Optimization */
+.dashboard-main-tabs-card > .ant-card-body {
+  padding: 12px 16px 16px 16px !important;
+}
+
+.dashboard-main-tabs-card .ant-tabs-nav {
+  margin-bottom: 16px !important;
+}
+
+.dashboard-main-tabs-card .ant-tabs-tab {
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 8px 16px !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.dashboard-main-tabs-card .ant-tabs-tab .anticon {
+  margin-inline-end: 8px !important;
+  font-size: 15px !important;
+}
+
+/* Sticky Table Headers for Long Records */
+.full-bleed-card .ant-table-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+
+/* Compact Table Row Mode */
+.compact-table .ant-table-cell {
+  padding: 6px 12px !important;
+}
+

@@ -39,11 +39,12 @@ import { useTheme } from '../../../context/ThemeContext';
 import { useKpiData } from './hooks/useKpiData';
 
 // Modular Sub-components
-import KpiTrendsChart from './components/KpiTrendsChart';
+const KpiTrendsChart = dynamic(() => import('./components/KpiTrendsChart'), { ssr: false, loading: () => <Spin /> });
 const SalaryConfigDrawer = dynamic(() => import('./components/SalaryConfigDrawer'), { ssr: false });
 const AppointmentsAuditDrawer = dynamic(() => import('./components/AppointmentsAuditDrawer'), { ssr: false });
 import { getLeaderboardColumns } from './components/KpiColumns';
 import { LeaderboardSummary } from './components/LeaderboardSummary';
+import { PageHeader } from '../../../components/ui';
 
 dayjs.extend(isoWeek);
 
@@ -108,18 +109,11 @@ export default function KPIPage() {
   return (
     <div>
       {/* HEADER SECTION */}
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-        <div>
-          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
-            KPI & Báo Cáo Hiệu Suất
-          </Title>
-          <Text style={{ color: token.colorTextDescription }}>
-            Giám sát tỷ lệ chuyển đổi cuộc gọi thành lịch hẹn và doanh thu thưởng commission
-          </Text>
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <Space wrap>
+      <PageHeader
+        title="KPI & Báo Cáo Hiệu Suất"
+        subtitle="Giám sát tỷ lệ chuyển đổi cuộc gọi thành lịch hẹn và doanh thu thưởng commission"
+        extra={
+          <Space wrap size={8}>
             <Radio.Group
               value={viewMode}
               onChange={(e) => {
@@ -175,47 +169,47 @@ export default function KPIPage() {
                 }}
               />
             </div>
-          </Space>
 
-          {isAdmin && (
-            <>
-              <Radio.Group
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                optionType="button"
-                buttonStyle="solid"
-                style={{ marginRight: '8px' }}
-              >
-                <Radio.Button value="telesales">Online Consultant</Radio.Button>
-                <Radio.Button value="oc">Client Consultant</Radio.Button>
-              </Radio.Group>
-              <Select
-                value={selectedStaffId}
-                onChange={setSelectedStaffId}
-                style={{ width: 170 }}
-                options={[
-                  {
-                    value: 'ALL',
-                    label: selectedRole === 'oc' ? 'Tất cả Client Consultant' : 'Tất cả Online Consultant',
-                  },
-                  ...leaderboard.map((s) => ({ value: s.staffId.toString(), label: s.displayName })),
-                ]}
-                placeholder="Chọn nhân viên"
-              />
-              {selectedRole === 'telesales' && (
-                <Button
-                  type="primary"
-                  icon={<SettingOutlined />}
-                  onClick={() => setConfigDrawerOpen(true)}
-                  style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
+            {isAdmin && (
+              <>
+                <Radio.Group
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  optionType="button"
+                  buttonStyle="solid"
+                  style={{ marginRight: '8px' }}
                 >
-                  Cấu hình lương
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+                  <Radio.Button value="telesales">Online Consultant</Radio.Button>
+                  <Radio.Button value="oc">Client Consultant</Radio.Button>
+                </Radio.Group>
+                <Select
+                  value={selectedStaffId}
+                  onChange={setSelectedStaffId}
+                  style={{ width: 170 }}
+                  options={[
+                    {
+                      value: 'ALL',
+                      label: selectedRole === 'oc' ? 'Tất cả Client Consultant' : 'Tất cả Online Consultant',
+                    },
+                    ...leaderboard.map((s) => ({ value: s.staffId.toString(), label: s.displayName })),
+                  ]}
+                  placeholder="Chọn nhân viên"
+                />
+                {selectedRole === 'telesales' && (
+                  <Button
+                    type="primary"
+                    icon={<SettingOutlined />}
+                    onClick={() => setConfigDrawerOpen(true)}
+                    style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
+                  >
+                    Cấu hình lương
+                  </Button>
+                )}
+              </>
+            )}
+          </Space>
+        }
+      />
 
       {loading ? (
         <div className="flex justify-center items-center py-24" style={{ height: '300px' }}>

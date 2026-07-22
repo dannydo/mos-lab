@@ -1,21 +1,21 @@
 'use client';
 
 import React from 'react';
-import { Card, Row, Col, Table, Space, Tag, Badge, Typography, theme } from 'antd';
+import { Row, Col, Table, Space, Tag, Badge, Typography } from 'antd';
 import { TeamOutlined, UserOutlined } from '@ant-design/icons';
 import { ShopCCData, ShopCVData } from '../hooks/useTodayData';
+import { SectionCard, StatusTag } from '../../../../components/ui';
 
 const { Text } = Typography;
 
 interface TodayStaffAttendanceProps {
-  themeMode: 'light' | 'dark';
+  themeMode?: 'light' | 'dark';
   token: SafeAny;
   ccList: ShopCCData[];
   cvList: ShopCVData[];
 }
 
 const TodayStaffAttendance = React.memo(function TodayStaffAttendance({
-  themeMode,
   token,
   ccList,
   cvList,
@@ -66,7 +66,7 @@ const TodayStaffAttendance = React.memo(function TodayStaffAttendance({
     }
 
     return (
-      <span style={{ cursor: 'help' }}>
+      <span style={{ cursor: 'help' }} title={attText}>
         <Space size={6}>
           <span
             style={{
@@ -88,17 +88,16 @@ const TodayStaffAttendance = React.memo(function TodayStaffAttendance({
     <Row gutter={[24, 24]}>
       {/* CV list */}
       <Col xs={24} xl={12}>
-        <Card
+        <SectionCard
           title={
             <Space>
               <UserOutlined style={{ color: '#D4A84B' }} />
-              <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
+              <span className="text-sm font-bold">
                 [CV] Chuyên viên đang làm gì? Bao nhiêu khách?
               </span>
             </Space>
           }
-          styles={{ body: { padding: 0 } }}
-          style={{ borderColor: token.colorBorderSecondary }}
+          bodyPadding={0}
         >
           <Table
             dataSource={cvList}
@@ -126,9 +125,7 @@ const TodayStaffAttendance = React.memo(function TodayStaffAttendance({
                 dataIndex: 'branchName',
                 key: 'branchName',
                 render: (b: string) => (
-                  <Tag color="cyan" style={{ fontWeight: 'bold' }}>
-                    {b}
-                  </Tag>
+                  <StatusTag status="cyan" label={b} />
                 ),
               },
               {
@@ -142,27 +139,26 @@ const TodayStaffAttendance = React.memo(function TodayStaffAttendance({
                 dataIndex: 'clients',
                 key: 'clients',
                 align: 'center',
-                render: (n) => <strong style={{ fontSize: '13px' }}>{n} khách</strong>,
+                render: (n) => <strong className="tabular-nums text-xs">{n} khách</strong>,
               },
             ]}
             className="antd-custom-table"
           />
-        </Card>
+        </SectionCard>
       </Col>
 
       {/* CC list */}
       <Col xs={24} xl={12}>
-        <Card
+        <SectionCard
           title={
             <Space>
               <TeamOutlined style={{ color: '#D4A84B' }} />
-              <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
+              <span className="text-sm font-bold">
                 [CC] Client Consultant đang làm gì? Bao nhiêu khách?
               </span>
             </Space>
           }
-          styles={{ body: { padding: 0 } }}
-          style={{ borderColor: token.colorBorderSecondary }}
+          bodyPadding={0}
         >
           <Table
             dataSource={ccList}
@@ -250,7 +246,7 @@ const TodayStaffAttendance = React.memo(function TodayStaffAttendance({
             ]}
             className="antd-custom-table"
           />
-        </Card>
+        </SectionCard>
       </Col>
     </Row>
   );

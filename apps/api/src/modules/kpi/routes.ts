@@ -7,6 +7,7 @@ import { registerExportRoutes } from './routes/export.routes.js';
 import { registerCvRoutes } from './routes/cv.routes.js';
 import { registerCvTipRoutes } from './routes/cv-tip.routes.js';
 import { registerCvPaystubRoutes } from './routes/cv-paystub.routes.js';
+import { registerBkRoutes } from './routes/bk.routes.js';
 
 // Default configuration parameters for Booker Salary
 const DEFAULT_SALARY_CONFIG = {
@@ -561,6 +562,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   await registerCvRoutes(fastify);
   await registerCvTipRoutes(fastify);
   await registerCvPaystubRoutes(fastify);
+  await registerBkRoutes(fastify);
 
   const parseDateRange = (dateFrom?: string, dateTo?: string, defaultDaysStart = 7) => {
     const startStr =

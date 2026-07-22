@@ -26,6 +26,8 @@ import {
   UserOutlined,
   PercentageOutlined,
   GiftOutlined,
+  CompressOutlined,
+  ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { CcTipLeaderboardEntry, CcTipRecord } from '@mos-lab/shared';
@@ -34,6 +36,15 @@ import { useTheme } from '../../../../context/ThemeContext';
 import CcAvatar from './CcAvatar';
 
 const { Text } = Typography;
+
+export const formatStoreCode = (store?: string | null): string => {
+  if (!store) return 'PXL';
+  const s = String(store).toUpperCase().trim();
+  if (s.includes('ESTELLA') || s.includes('EP')) return 'EP';
+  if (s.includes('THAM') || s.includes('DE') || s.includes('DT')) return 'DT';
+  if (s.includes('PXL') || s.includes('PHAN')) return 'PXL';
+  return s;
+};
 
 interface CcTipTabProps {
   loading?: boolean;
@@ -63,6 +74,7 @@ export default function CcTipTab({
   // Tip filter status: 'ALL' | 'TIPPED' | 'NO_TIP'
   const [tipFilter, setTipFilter] = useState<'ALL' | 'TIPPED' | 'NO_TIP'>('ALL');
   const [searchText, setSearchText] = useState('');
+  const [isCompact, setIsCompact] = useState(false);
 
   // Summary Metrics
   const [summary, setSummary] = useState({
@@ -150,13 +162,13 @@ export default function CcTipTab({
       title: 'Hạng',
       dataIndex: 'rank',
       key: 'rank',
-      width: 70,
+      width: 60,
       align: 'center' as const,
       render: (rank: number) => {
-        if (rank === 1) return <span style={{ fontSize: '20px' }}>🥇</span>;
-        if (rank === 2) return <span style={{ fontSize: '20px' }}>🥈</span>;
-        if (rank === 3) return <span style={{ fontSize: '20px' }}>🥉</span>;
-        return <span className="tabular-nums font-semibold text-gray-500">#{rank}</span>;
+        if (rank === 1) return <span style={{ fontSize: '18px' }}>🥇</span>;
+        if (rank === 2) return <span style={{ fontSize: '18px' }}>🥈</span>;
+        if (rank === 3) return <span style={{ fontSize: '18px' }}>🥉</span>;
+        return <span className="tabular-nums font-semibold text-slate-500 text-xs">#{rank}</span>;
       },
     },
     {
@@ -166,31 +178,24 @@ export default function CcTipTab({
       render: (name: string, record: CcTipLeaderboardEntry) => {
         const isSelected = selectedCcName === name;
         return (
-          <Space className="cursor-pointer group" onClick={() => setSelectedCcName(isSelected ? null : name)}>
-            <CcAvatar name={name} src={record.avatar} isSelected={isSelected} size={36} />
+          <Space className="cursor-pointer group whitespace-nowrap" onClick={() => setSelectedCcName(isSelected ? null : name)} size={8}>
+            <CcAvatar name={name} src={record.avatar} isSelected={isSelected} size={32} />
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 whitespace-nowrap">
                 <span
-                  className={`font-bold text-sm transition-colors ${
-                    isSelected ? 'text-amber-500 underline underline-offset-4' : 'hover:text-amber-500'
+                  className={`font-semibold text-xs transition-colors whitespace-nowrap ${
+                    isSelected ? 'text-amber-400 underline underline-offset-2' : 'hover:text-amber-400'
                   }`}
                   style={{ color: isSelected ? undefined : token.colorText }}
                 >
                   {name}
                 </span>
+                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">· {formatStoreCode(record.store)}</span>
                 {isSelected && (
-                  <Tag color="gold" icon={<CheckCircleOutlined />} className="font-semibold text-[10px]">
+                  <Tag color="gold" icon={<CheckCircleOutlined />} className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap">
                     Đang lọc
                   </Tag>
                 )}
-              </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <Tag color={record.store === 'PXL' ? 'blue' : 'purple'} className="text-[10px] m-0">
-                  CN: {record.store}
-                </Tag>
-                <Text type="secondary" className="text-[11px] opacity-0 group-hover:opacity-100 transition-opacity">
-                  (Click để lọc)
-                </Text>
               </div>
             </div>
           </Space>
@@ -202,7 +207,7 @@ export default function CcTipTab({
       dataIndex: 'totalVisits',
       key: 'totalVisits',
       align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums font-bold text-blue-500 text-sm">👥 {val} lượt</span>,
+      render: (val: number) => <span className="tabular-nums font-semibold text-blue-400 text-xs">👥 {val} lượt</span>,
     },
     {
       title: 'Lượt Khách Tip & Tỷ Lệ',
@@ -212,12 +217,12 @@ export default function CcTipTab({
       render: (val: number, record: CcTipLeaderboardEntry) => (
         <Tooltip title={`Đã nhận tip từ ${val} / ${record.totalVisits} lượt khách (${record.tipRatePercent}%)`}>
           <div className="w-full text-right">
-            <div className="tabular-nums font-bold text-cyan-500 text-sm">🟢 {val} lượt tip</div>
+            <div className="tabular-nums font-semibold text-cyan-400 text-xs">🟢 {val} lượt tip</div>
             <div className="flex items-center justify-end gap-1.5 mt-0.5">
-              <span className="tabular-nums text-[11px] text-gray-400 font-medium">
-                Tỷ lệ tip: <strong className="text-emerald-500">{record.tipRatePercent}%</strong>
+              <span className="tabular-nums text-[11px] text-slate-400 font-medium">
+                Tỷ lệ tip: <strong className="text-emerald-400">{record.tipRatePercent}%</strong>
               </span>
-              <div className="w-12">
+              <div className="w-10">
                 <Progress
                   percent={record.tipRatePercent}
                   size="small"
@@ -237,7 +242,7 @@ export default function CcTipTab({
       key: 'totalCustomerTipAmount',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-semibold text-purple-400 text-sm">
+        <span className="tabular-nums font-semibold text-purple-400 text-xs">
           {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
@@ -248,7 +253,7 @@ export default function CcTipTab({
       key: 'totalCcTipBonus',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-amber-500 text-base">
+        <span className="tabular-nums font-bold text-emerald-400 text-sm">
           +{Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
@@ -261,59 +266,71 @@ export default function CcTipTab({
       title: 'Check-in',
       dataIndex: 'checkinTime',
       key: 'checkinTime',
-      width: 160,
-      render: (val: string) => <span className="tabular-nums text-xs text-gray-400 font-medium">{val}</span>,
+      width: 140,
+      render: (val: string) => <span className="tabular-nums text-xs text-slate-400 font-medium">{val}</span>,
     },
     {
       title: 'Khách Hàng',
       dataIndex: 'clientName',
       key: 'clientName',
-      render: (val: string) => <span className="font-bold text-sm text-sky-400">{val || 'Khách Vãng Lai'}</span>,
+      render: (val: string) => <span className="font-semibold text-xs text-sky-400">{val || 'Khách Vãng Lai'}</span>,
     },
     {
       title: 'Chi Nhánh',
       dataIndex: 'store',
       key: 'store',
-      width: 100,
+      width: 90,
       render: (val: string) => (
-        <Tag color={val === 'PXL' ? 'blue' : 'purple'} className="font-semibold text-xs m-0">
-          {val}
-        </Tag>
+        <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(val)}</span>
       ),
     },
     {
       title: 'Tên Dịch Vụ',
       dataIndex: 'serviceName',
       key: 'serviceName',
-      render: (val: string) => <span className="font-semibold text-gray-200 text-sm">{val}</span>,
+      render: (val: string) => <span className="font-medium text-slate-300 text-xs">{val}</span>,
     },
     {
       title: 'CC In',
       dataIndex: 'ccInName',
       key: 'ccInName',
-      render: (val: string) =>
-        val ? (
-          <Space size={6}>
-            <CcAvatar name={val} size={24} />
-            <span className="font-medium text-amber-400 text-xs">{val}</span>
-          </Space>
-        ) : (
-          <span className="text-gray-500 text-xs">---</span>
-        ),
+      width: 140,
+      render: (val: string, r: CcTipRecord) => {
+        if (!val) return <span className="text-slate-500 text-xs">-</span>;
+        const isSame = !r.ccOutName || r.ccInName === r.ccOutName;
+        if (isSame) {
+          return (
+            <Space size={4} className="text-xs text-slate-300 whitespace-nowrap">
+              <CcAvatar name={val} size={20} />
+              <span>{val}</span>
+              <span className="text-emerald-400 font-bold text-[10px]" title="CC In/Out đồng nhất">✓</span>
+            </Space>
+          );
+        }
+        return (
+          <Tag color="orange" className="m-0 text-[11px] font-medium border-orange-500/30 whitespace-nowrap">
+            In: {val}
+          </Tag>
+        );
+      },
     },
     {
       title: 'CC Out',
       dataIndex: 'ccOutName',
       key: 'ccOutName',
-      render: (val: string) =>
-        val ? (
-          <Space size={6}>
-            <CcAvatar name={val} size={24} />
-            <span className="font-medium text-purple-400 text-xs">{val}</span>
-          </Space>
-        ) : (
-          <span className="text-gray-500 text-xs">---</span>
-        ),
+      width: 140,
+      render: (val: string, r: CcTipRecord) => {
+        if (!val) return <span className="text-slate-500 text-xs">-</span>;
+        const isSame = !r.ccInName || r.ccInName === r.ccOutName;
+        if (isSame) {
+          return <span className="text-slate-500 text-xs italic whitespace-nowrap">Đồng nhất</span>;
+        }
+        return (
+          <Tag color="purple" className="m-0 text-[11px] font-medium border-purple-500/30 whitespace-nowrap">
+            Out: {val}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Tip Khách Cho (100%)',
@@ -321,7 +338,7 @@ export default function CcTipTab({
       key: 'totalCustomerTip',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-semibold text-purple-400">
+        <span className="tabular-nums font-semibold text-purple-400 text-xs">
           {val > 0 ? `${val.toLocaleString('vi-VN')} đ` : '0 đ'}
         </span>
       ),
@@ -331,9 +348,9 @@ export default function CcTipTab({
       dataIndex: 'ccTipPercentage',
       key: 'ccTipPercentage',
       align: 'center' as const,
-      width: 100,
+      width: 90,
       render: (val: number) => (
-        <Tag color={val > 0 ? 'cyan' : 'default'} className="font-bold tabular-nums text-xs m-0">
+        <Tag color={val > 0 ? 'cyan' : 'default'} className="font-bold tabular-nums text-xs m-0 py-0 px-1.5">
           {val}%
         </Tag>
       ),
@@ -344,7 +361,7 @@ export default function CcTipTab({
       key: 'ccTipAmount',
       align: 'right' as const,
       render: (val: number) => (
-        <span className={`tabular-nums font-bold text-sm ${val > 0 ? 'text-amber-500' : 'text-gray-500'}`}>
+        <span className={`tabular-nums font-bold text-xs ${val > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
           {val > 0 ? `+${val.toLocaleString('vi-VN')} đ` : '0 đ'}
         </span>
       ),
@@ -354,11 +371,11 @@ export default function CcTipTab({
       dataIndex: 'tipStatus',
       key: 'tipStatus',
       align: 'center' as const,
-      width: 120,
+      width: 110,
       render: (status: 'Tipped' | 'No Tip') => (
         <Tag
           color={status === 'Tipped' ? 'success' : 'default'}
-          className="font-bold text-xs px-2.5 py-0.5 rounded-full"
+          className="font-semibold text-xs py-0 px-2 rounded-full m-0"
         >
           {status === 'Tipped' ? '🟢 Có Tip' : '⚪ Không Tip'}
         </Tag>
@@ -367,7 +384,7 @@ export default function CcTipTab({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-4">
       {/* Top 4 KPI Metric Cards */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={6}>
@@ -453,8 +470,9 @@ export default function CcTipTab({
 
       {/* Tip Leaderboard Card */}
       <Card
-        className="shadow-xl border border-slate-200 dark:border-slate-800"
-        style={{ marginBottom: '24px' }}
+        className="full-bleed-card shadow-sm rounded-xl"
+        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+        styles={{ body: { padding: 0 } }}
         title={
           <div className="flex items-center gap-2">
             <TrophyOutlined className="text-amber-500 text-lg" />
@@ -498,7 +516,8 @@ export default function CcTipTab({
 
       {/* Detail Customer Tipped & Non-Tipped Serviced Table */}
       <Card
-        className="shadow-xl border border-slate-200 dark:border-slate-800"
+        className="full-bleed-card shadow-sm rounded-xl"
+        styles={{ body: { padding: 0 } }}
         title={
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -538,9 +557,18 @@ export default function CcTipTab({
                 size="small"
               />
 
-              <Button icon={<ReloadOutlined />} size="small" onClick={fetchTipData} loading={loading}>
-                Làm mới
-              </Button>
+              <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
+                <Button
+                  icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
+                  size="small"
+                  onClick={() => setIsCompact(!isCompact)}
+                  className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
+                />
+              </Tooltip>
+
+              <Tooltip title="Làm mới dữ liệu">
+                <Button icon={<ReloadOutlined />} size="small" onClick={fetchTipData} loading={loading} />
+              </Tooltip>
             </div>
           </div>
         }
@@ -556,9 +584,9 @@ export default function CcTipTab({
             pageSizeOptions: ['20', '50', '100', '200'],
             showTotal: (total) => `Tổng cộng ${total} ca phục vụ`,
           }}
-          size="middle"
+          size="small"
           scroll={{ x: 1000 }}
-          className="tabular-nums"
+          className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
         />
       </Card>
     </div>

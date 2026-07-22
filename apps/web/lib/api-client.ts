@@ -48,6 +48,21 @@ import {
   DailySalesBonusTransaction,
   DailySalesBonusQueryParams,
   DailySalesBonusTransactionsQueryParams,
+  BkBookingLeaderboardEntry,
+  BkBookingLeaderboardResponse,
+  BkBookingResponse,
+  BkDoneLeaderboardEntry,
+  BkDoneLeaderboardResponse,
+  BkDoneResponse,
+  BkTipLeaderboardEntry,
+  BkTipLeaderboardResponse,
+  BkTipResponse,
+  BkRevenueLeaderboardEntry,
+  BkRevenueLeaderboardResponse,
+  BkRevenueResponse,
+  BkPaystubResponse,
+  BkConfigResponse,
+  BkSalaryConfig,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -555,6 +570,53 @@ export const apiClient = {
       params: DailySalesBonusTransactionsQueryParams
     ): Promise<{ data: DailySalesBonusTransaction[]; total: number }> => {
       const response = await api.get('/gamification/daily-sales-bonus/transactions', { params });
+      return response.data;
+    },
+  },
+
+  bk: {
+    getBookingLeaderboard: async (params?: Record<string, unknown>): Promise<BkBookingLeaderboardResponse> => {
+      const response = await api.get('/kpi/bk/booking/leaderboard', { params });
+      return response.data;
+    },
+    getBookingDetails: async (params?: Record<string, unknown>): Promise<BkBookingResponse> => {
+      const response = await api.get('/kpi/bk/booking/details', { params });
+      return response.data;
+    },
+    getDoneLeaderboard: async (params?: Record<string, unknown>): Promise<BkDoneLeaderboardResponse> => {
+      const response = await api.get('/kpi/bk/done/leaderboard', { params });
+      return response.data;
+    },
+    getDoneDetails: async (params?: Record<string, unknown>): Promise<BkDoneResponse> => {
+      const response = await api.get('/kpi/bk/done/details', { params });
+      return response.data;
+    },
+    getTipLeaderboard: async (params?: Record<string, unknown>): Promise<BkTipLeaderboardResponse> => {
+      const response = await api.get('/kpi/bk/tip/leaderboard', { params });
+      return response.data;
+    },
+    getTipDetails: async (params?: Record<string, unknown>): Promise<BkTipResponse> => {
+      const response = await api.get('/kpi/bk/tip/details', { params });
+      return response.data;
+    },
+    getRevenueLeaderboard: async (params?: Record<string, unknown>): Promise<BkRevenueLeaderboardResponse> => {
+      const response = await api.get('/kpi/bk/revenue/leaderboard', { params });
+      return response.data;
+    },
+    getRevenueDetails: async (params?: Record<string, unknown>): Promise<BkRevenueResponse> => {
+      const response = await api.get('/kpi/bk/revenue/details', { params });
+      return response.data;
+    },
+    getPaystub: async (params?: Record<string, unknown>): Promise<BkPaystubResponse> => {
+      const response = await api.get('/kpi/bk/paystub', { params });
+      return response.data;
+    },
+    getConfig: async (): Promise<BkConfigResponse> => {
+      const response = await api.get('/kpi/bk/config');
+      return response.data;
+    },
+    saveConfig: async (data: { activeBkIds?: number[]; config?: Partial<BkSalaryConfig> }): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/kpi/bk/config', data);
       return response.data;
     },
   },

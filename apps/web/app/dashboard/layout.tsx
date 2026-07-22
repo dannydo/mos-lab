@@ -72,6 +72,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     if (pathname.includes('/dashboard/kpi')) return 'kpi';
     if (pathname.includes('/dashboard/cc')) return 'cc';
     if (pathname.includes('/dashboard/cv')) return 'cv';
+    if (pathname.includes('/dashboard/bk')) return 'bk';
     if (pathname.includes('/dashboard/staff')) return 'staff';
 
     if (pathname.includes('/dashboard/referrals')) return 'referrals';
@@ -167,6 +168,12 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
       icon: <TeamOutlined />,
       label: 'Báo Cáo CV',
       onClick: () => router.push('/dashboard/cv'),
+    },
+    {
+      key: 'bk',
+      icon: <CalendarOutlined />,
+      label: 'Báo Cáo BK',
+      onClick: () => router.push('/dashboard/bk'),
     }
   );
 

@@ -24,7 +24,9 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
 
   // Keep reference to staticColumns to avoid re-renders and circular dependencies
   const staticColsRef = useRef(staticColumns);
-  staticColsRef.current = staticColumns;
+  useEffect(() => {
+    staticColsRef.current = staticColumns;
+  }, [staticColumns]);
 
   // 1. Initial Column Metadata Constructor
   const createDefaultConfigFromStatic = useCallback((staticCols: TableColumnType<T>[]): ColumnConfig[] => {

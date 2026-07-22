@@ -267,7 +267,7 @@ export default function CcDiamondTab({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-4">
       {/* Top Summary Cards */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={8}>
@@ -369,8 +369,9 @@ export default function CcDiamondTab({
 
       {/* Main Table Card */}
       <Card
-        className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-xl"
-        style={{ background: themeMode === 'dark' ? '#141414' : '#ffffff' }}
+        className="full-bleed-card shadow-sm rounded-xl"
+        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+        styles={{ body: { padding: 0 } }}
       >
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
           <Input
@@ -383,9 +384,9 @@ export default function CcDiamondTab({
           />
 
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={fetchDiamondData} loading={loading} className="rounded-lg">
-              Làm mới
-            </Button>
+            <Tooltip title="Làm mới dữ liệu">
+              <Button icon={<ReloadOutlined />} onClick={fetchDiamondData} loading={loading} className="rounded-lg" />
+            </Tooltip>
             <Button
               type="primary"
               icon={<DownloadOutlined />}

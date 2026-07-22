@@ -35,6 +35,8 @@ import {
   CalendarOutlined,
   LoginOutlined,
   LogoutOutlined,
+  CompressOutlined,
+  ExpandOutlined,
 } from '@ant-design/icons';
 import { CvPaystubRecord, CvWorkLogDetailRecord } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
@@ -44,12 +46,23 @@ import CcAvatar from '../../cc/components/CcAvatar';
 
 const { Text } = Typography;
 
-const formatHoursToHoursMinutes = (totalHours: number) => {
-  if (!totalHours || totalHours <= 0) return '0 giờ';
+export const formatStoreCode = (store?: string | null): string => {
+  if (!store) return 'PXL';
+  const s = String(store).toUpperCase().trim();
+  if (s.includes('ESTELLA') || s.includes('EP')) return 'EP';
+  if (s.includes('ACADEMY') || s.includes('ADT')) return 'ADT';
+  if (s.includes('THAM') || s.includes('DE') || s.includes('DT')) return 'DT';
+  if (s.includes('CMT8')) return 'CMT8';
+  if (s.includes('PXL') || s.includes('PHAN')) return 'PXL';
+  return s;
+};
+
+const formatHoursToHoursMinutes = (totalHours: number, compact = false) => {
+  if (!totalHours || totalHours <= 0) return compact ? '0h' : '0 giờ';
   const hrs = Math.floor(totalHours);
   const mins = Math.round((totalHours - hrs) * 60);
-  if (mins <= 0) return `${hrs} giờ`;
-  return `${hrs} giờ ${mins} phút`;
+  if (mins <= 0) return compact ? `${hrs}h` : `${hrs} giờ`;
+  return compact ? `${hrs}h ${mins}m` : `${hrs} giờ ${mins} phút`;
 };
 
 interface CvThuNhapTabProps {
@@ -73,6 +86,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
 
   const [searchText, setSearchText] = useState('');
   const [pageSize, setPageSize] = useState<number>(20);
+  const [isCompact, setIsCompact] = useState(false);
 
   // Seniority config state
   const [seniorityRules, setSeniorityRules] = useState<{ minMonths: number; bonusPercent: number }[]>([]);
@@ -426,41 +440,33 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       title: 'CV',
       dataIndex: 'staffName',
       key: 'staffName',
-      width: 220,
+      width: 160,
       render: (text: string, record: CvPaystubRecord, index: number) => {
-        const initial = text ? text.trim().charAt(0).toUpperCase() : '?';
         const rank = index + 1;
         let rankBadge = null;
         if (rank === 1) {
-          rankBadge = <span className="text-base shrink-0 w-6 text-center">🥇</span>;
+          rankBadge = <span className="text-sm shrink-0 w-5 text-center">🥇</span>;
         } else if (rank === 2) {
-          rankBadge = <span className="text-base shrink-0 w-6 text-center">🥈</span>;
+          rankBadge = <span className="text-sm shrink-0 w-5 text-center">🥈</span>;
         } else if (rank === 3) {
-          rankBadge = <span className="text-base shrink-0 w-6 text-center">🥉</span>;
+          rankBadge = <span className="text-sm shrink-0 w-5 text-center">🥉</span>;
         } else {
           rankBadge = (
-            <span className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500 w-6 text-center shrink-0">
+            <span className="text-xs font-semibold text-slate-500 w-5 text-center shrink-0">
               #{rank}
             </span>
           );
         }
 
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
             {rankBadge}
-            <CcAvatar name={text} src={record.avatar} size={32} />
-            <div className="flex flex-col">
-              <span className="font-bold text-sm leading-snug" style={{ color: token.colorText }}>
+            <CcAvatar name={text} src={record.avatar} size={26} />
+            <div className="flex items-center gap-1 whitespace-nowrap">
+              <span className="font-semibold text-xs text-slate-200 whitespace-nowrap">
                 {text}
               </span>
-              <span className="inline-block mt-0.5">
-                <Tag
-                  color="blue"
-                  className="m-0 text-[10px] font-bold px-1.5 py-0 rounded border-blue-300 dark:border-blue-800"
-                >
-                  Level {record.techLevel || 1}
-                </Tag>
-              </span>
+              <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">L{record.techLevel || 1}</span>
             </div>
           </div>
         );
@@ -470,13 +476,16 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       title: 'Store',
       dataIndex: 'store',
       key: 'store',
-      width: 90,
-      render: (text: string) => <Tag color="blue">{text}</Tag>,
+      width: 60,
+      align: 'center' as const,
+      render: (text: string) => (
+        <span className="text-xs font-medium text-slate-400 whitespace-nowrap">{formatStoreCode(text)}</span>
+      ),
     },
     {
       title: 'Công & Giờ Làm',
       key: 'workTime',
-      width: 155,
+      width: 110,
       align: 'right' as const,
       render: (_: unknown, record: CvPaystubRecord) => {
         const val = record.totalWorkHours || 0;
@@ -486,40 +495,35 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
 
         const hasOffWork = offDays > 0;
 
-        const tagClass = hasOffWork
-          ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60'
-          : days > 0
-            ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30'
-            : 'bg-slate-50 dark:bg-slate-900/40 text-slate-400 dark:text-slate-600 border border-slate-200/40 dark:border-slate-800/40';
-
-        const daysContent = hasOffWork ? (
+        const daysContent = days === 0 ? (
+          <span className="text-slate-600 font-medium text-[11px]">0 ngày</span>
+        ) : hasOffWork ? (
           <Tooltip title={`Có ${offDays} ngày đi làm vào ngày nghỉ tuần (Được tính x2 lương giờ)`}>
-            <span className="cursor-help">
-              {regularDays}
-              <span className="text-orange-600 dark:text-orange-400 font-extrabold ml-0.5">+{offDays}</span>
-              <span> ngày</span>
+            <span className="cursor-help text-amber-400 font-semibold text-[11px]">
+              {regularDays}+{offDays} ngày
             </span>
           </Tooltip>
         ) : (
-          <span>{days} ngày</span>
+          <span className="text-slate-400 font-medium text-[11px]">{days} ngày</span>
         );
 
         return (
-          <div className="flex flex-col items-end w-full text-right">
-            <Button
-              type="link"
-              size="small"
-              onClick={() => handleOpenWorkLogs(record)}
-              className="p-0 font-semibold text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 hover:underline flex justify-end items-center w-full h-auto"
-            >
-              <ClockCircleOutlined className="text-blue-400 dark:text-blue-500 text-[11px] mr-1" />
-              <span className="tabular-nums">{formatHoursToHoursMinutes(val)}</span>
-            </Button>
-            <span
-              className={`inline-block px-1.5 py-0.5 text-[10px] font-semibold rounded mt-1 tabular-nums ${tagClass}`}
-            >
+          <div className="flex flex-col items-end w-full text-right leading-tight">
+            {val > 0 ? (
+              <Button
+                type="link"
+                size="small"
+                onClick={() => handleOpenWorkLogs(record)}
+                className="p-0 font-bold text-xs text-sky-400 hover:text-sky-300 hover:underline flex justify-end items-center h-auto"
+              >
+                <span className="tabular-nums font-mono text-xs">{formatHoursToHoursMinutes(val, true)}</span>
+              </Button>
+            ) : (
+              <span className="tabular-nums font-mono text-xs text-slate-500 font-medium">0h</span>
+            )}
+            <div className="tabular-nums mt-0.5 whitespace-nowrap">
               {daysContent}
-            </span>
+            </div>
           </div>
         );
       },
@@ -528,18 +532,18 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       title: 'Lương Giờ',
       dataIndex: 'hourlyWage',
       key: 'hourlyWage',
-      width: 130,
+      width: 95,
       align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums font-semibold">{val.toLocaleString('vi-VN')}đ</span>,
+      render: (val: number) => <span className="tabular-nums font-medium text-xs text-slate-300">{val.toLocaleString('vi-VN')}đ</span>,
     },
     {
       title: 'CV Xoay',
       dataIndex: 'cvXoayBonus',
       key: 'cvXoayBonus',
-      width: 150,
+      width: 100,
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-semibold text-blue-600 dark:text-blue-400">
+        <span className="tabular-nums font-semibold text-xs text-blue-400">
           +{val.toLocaleString('vi-VN')}đ
         </span>
       ),
@@ -547,43 +551,37 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
     {
       title: 'Thưởng Thâm Niên',
       key: 'seniorityBonus',
-      width: 170,
+      width: 125,
       align: 'right' as const,
       render: (_: unknown, record: CvPaystubRecord) => {
         const months = record.seniorityMonths || 0;
         const years = Math.floor(months / 12);
         const remainingMonths = months % 12;
-        const seniorityStr = years > 0 ? `${years} năm ${remainingMonths} th` : `${months} tháng`;
+        const seniorityStr = years > 0 ? `${years}y ${remainingMonths}m` : `${months}m`;
         const bonus = record.seniorityBonus || 0;
         const percent = record.seniorityBonusPercent || 0;
 
-        let colorClass = 'text-slate-400 dark:text-slate-600';
-        let subColorClass = 'text-slate-400/70 dark:text-slate-600/70';
+        let colorClass = 'text-slate-500';
 
         if (percent > 0) {
           if (percent <= 5) {
-            colorClass = 'text-blue-500 dark:text-blue-400';
-            subColorClass = 'text-blue-400/70 dark:text-blue-500/70';
+            colorClass = 'text-blue-400';
           } else if (percent <= 10) {
-            colorClass = 'text-teal-500 dark:text-teal-400';
-            subColorClass = 'text-teal-400/70 dark:text-teal-500/70';
+            colorClass = 'text-teal-400';
           } else if (percent <= 15) {
-            colorClass = 'text-emerald-500 dark:text-emerald-400';
-            subColorClass = 'text-emerald-400/70 dark:text-emerald-500/70';
+            colorClass = 'text-emerald-400';
           } else if (percent <= 20) {
-            colorClass = 'text-orange-500 dark:text-orange-400';
-            subColorClass = 'text-orange-400/70 dark:text-orange-500/70';
+            colorClass = 'text-amber-400';
           } else {
-            colorClass = 'text-purple-500 dark:text-purple-400';
-            subColorClass = 'text-purple-400/70 dark:text-purple-500/70';
+            colorClass = 'text-purple-400';
           }
         }
 
         return (
           <div>
-            <span className={`tabular-nums font-bold block ${colorClass}`}>+{bonus.toLocaleString('vi-VN')}đ</span>
-            <span className={`block text-[11px] font-medium tabular-nums ${subColorClass}`}>
-              {seniorityStr} ({percent > 0 ? `+${percent}%` : '0%'})
+            <span className={`tabular-nums font-semibold text-xs block ${colorClass}`}>+{bonus.toLocaleString('vi-VN')}đ</span>
+            <span className="block text-[10px] font-medium tabular-nums text-slate-500">
+              {seniorityStr} {percent > 0 ? `[+${percent}%]` : '[0%]'}
             </span>
           </div>
         );
@@ -593,10 +591,10 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       title: 'CV Tip',
       dataIndex: 'cvTipBonus',
       key: 'cvTipBonus',
-      width: 150,
+      width: 100,
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-semibold text-purple-600 dark:text-purple-400">
+        <span className="tabular-nums font-semibold text-xs text-purple-400">
           +{val.toLocaleString('vi-VN')}đ
         </span>
       ),
@@ -605,10 +603,10 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       title: 'Tổng Thu Nhập',
       dataIndex: 'totalIncome',
       key: 'totalIncome',
-      width: 170,
+      width: 120,
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400 text-base">
+        <span className="tabular-nums font-bold text-emerald-400 text-sm">
           {val.toLocaleString('vi-VN')}đ
         </span>
       ),
@@ -616,14 +614,14 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
     {
       title: 'Action',
       key: 'action',
-      width: 110,
+      width: 90,
       align: 'center' as const,
       render: (_: unknown, record: CvPaystubRecord) => (
         <Button
-          type="primary"
-          ghost
+          type="default"
           size="small"
-          icon={<EyeOutlined />}
+          icon={<EyeOutlined className="text-amber-400" />}
+          className="text-[11px] font-medium border-slate-700 hover:border-amber-400 hover:text-amber-400 px-2"
           onClick={() => {
             setSelectedRecord(record);
             setModalOpen(true);
@@ -636,7 +634,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {/* Metrics Row */}
       <Row gutter={[12, 12]}>
         <Col xs={24} sm={4} md={4} lg={4} xl={4}>
@@ -678,11 +676,11 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Thưởng Thâm Niên"
-              value={summary.totalSeniorityBonus || 0}
+              title="Tổng Thưởng Thâm Niên"
+              value={summary.totalSeniorityBonus}
               suffix="đ"
-              valueStyle={{ color: '#fa8c16', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
-              prefix={<SettingOutlined />}
+              valueStyle={{ color: '#d4a84b', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
+              prefix={<GiftOutlined />}
             />
           </Card>
         </Col>
@@ -694,7 +692,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Thưởng CV Tip"
+              title="Tổng Thưởng CV Tip"
               value={summary.totalCvTipBonus}
               suffix="đ"
               valueStyle={{ color: '#722ed1', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
@@ -725,6 +723,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
         className="full-bleed-card shadow-sm rounded-xl"
         variant="outlined"
         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+        styles={{ body: { padding: 0 } }}
         title={
           <div className="flex flex-wrap justify-between items-center gap-2 py-1">
             <div className="flex items-center gap-2">
@@ -750,11 +749,18 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 allowClear
-                style={{ width: 250 }}
+                style={{ width: 200 }}
               />
-              <Button icon={<ClockCircleOutlined />} onClick={fetchData} loading={loading}>
-                Tải lại
-              </Button>
+              <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
+                <Button
+                  icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
+                  onClick={() => setIsCompact(!isCompact)}
+                  className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
+                />
+              </Tooltip>
+              <Tooltip title="Làm mới dữ liệu">
+                <Button icon={<ClockCircleOutlined />} onClick={fetchData} loading={loading} />
+              </Tooltip>
             </Space>
           </div>
         }
@@ -773,9 +779,9 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
               localStorage.setItem('cv_paystub_page_size', size.toString());
             },
           }}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 'max-content' }}
           size="small"
-          className="antd-custom-table"
+          className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
         />
       </Card>
 

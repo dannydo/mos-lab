@@ -2,7 +2,7 @@
 
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, theme, DatePicker, Select, Radio, Space, Button, Tabs, Spin, message } from 'antd';
+import { Typography, Card, theme, DatePicker, Select, Radio, Space, Button, Tabs, Spin, message, Tooltip } from 'antd';
 import {
   CalendarOutlined,
   LeftOutlined,
@@ -24,12 +24,14 @@ import { apiClient } from '../../../lib/api-client';
 import { CcLeaderboardEntry, CcXoayRecord } from '@mos-lab/shared';
 
 import CcLeaderboardCard from './components/CcLeaderboardCard';
-import CcXoayTab from './components/CcXoayTab';
-import CcThuongTab from './components/CcThuongTab';
-import CcGameTab from './components/CcGameTab';
-import CcTipTab from './components/CcTipTab';
-import CcDiamondTab from './components/CcDiamondTab';
-import CcThuNhapTab from './components/CcThuNhapTab';
+import { PageHeader } from '../../../components/ui';
+
+const CcXoayTab = dynamic(() => import('./components/CcXoayTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
+const CcThuongTab = dynamic(() => import('./components/CcThuongTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
+const CcGameTab = dynamic(() => import('./components/CcGameTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
+const CcTipTab = dynamic(() => import('./components/CcTipTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
+const CcDiamondTab = dynamic(() => import('./components/CcDiamondTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
+const CcThuNhapTab = dynamic(() => import('./components/CcThuNhapTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
 const CcConfigDrawer = dynamic(() => import('./components/CcConfigDrawer'), { ssr: false });
 
 dayjs.extend(isoWeek);
@@ -160,13 +162,10 @@ export default function CcDashboardPage() {
   const tabItems = [
     {
       key: 'xoay',
-      label: (
-        <span>
-          <TableOutlined /> CC Xoay
-        </span>
-      ),
+      icon: <TableOutlined />,
+      label: 'CC Xoay',
       children: (
-        <div>
+        <div className="flex flex-col gap-4">
           <CcLeaderboardCard
             leaderboard={leaderboardData}
             loading={loading}
@@ -181,11 +180,8 @@ export default function CcDashboardPage() {
     },
     {
       key: 'thuong',
-      label: (
-        <span>
-          <GiftOutlined /> CC Daily Bonus
-        </span>
-      ),
+      icon: <GiftOutlined />,
+      label: 'CC Daily Bonus',
       children: (
         <CcThuongTab
           loading={loading}
@@ -200,11 +196,8 @@ export default function CcDashboardPage() {
     },
     {
       key: 'tip',
-      label: (
-        <span>
-          <DollarOutlined /> CC Tip
-        </span>
-      ),
+      icon: <DollarOutlined />,
+      label: 'CC Tip',
       children: (
         <CcTipTab
           loading={loading}
@@ -219,31 +212,22 @@ export default function CcDashboardPage() {
     },
     {
       key: 'diamond',
-      label: (
-        <span>
-          <SketchOutlined /> Kim Cương
-        </span>
-      ),
+      icon: <SketchOutlined />,
+      label: 'Kim Cương',
       children: (
         <CcDiamondTab dateRange={dateRange} selectedStore={selectedStore} selectedConsultant={selectedConsultant} />
       ),
     },
     {
       key: 'game',
-      label: (
-        <span>
-          <RocketOutlined /> CC Game
-        </span>
-      ),
+      icon: <RocketOutlined />,
+      label: 'CC Game',
       children: <CcGameTab />,
     },
     {
       key: 'thunhap',
-      label: (
-        <span>
-          <WalletOutlined /> CC Thu Nhập
-        </span>
-      ),
+      icon: <WalletOutlined />,
+      label: 'CC Thu Nhập',
       children: <CcThuNhapTab dateRange={dateRange} selectedStore={selectedStore} />,
     },
   ];
@@ -251,19 +235,11 @@ export default function CcDashboardPage() {
   return (
     <div>
       {/* HEADER & GLOBAL FILTER BAR */}
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-        <div>
-          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
-            Báo Cáo CC (Client Consultant)
-          </Title>
-          <Text style={{ color: token.colorTextDescription }}>
-            Theo dõi dữ liệu CC Xoay, thưởng sản phẩm combo, gamification và thu nhập live của tư vấn viên
-          </Text>
-        </div>
-
-        {/* TOP FILTER CONTROLS */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <Space wrap>
+      <PageHeader
+        title="Báo Cáo CC (Client Consultant)"
+        subtitle="Theo dõi dữ liệu CC Xoay, thưởng sản phẩm combo, gamification và thu nhập live của tư vấn viên"
+        extra={
+          <Space wrap size={8}>
             {/* View Mode Switcher: Tháng / Tuần / Ngày */}
             <Radio.Group
               value={viewMode}
@@ -348,23 +324,24 @@ export default function CcDashboardPage() {
             />
 
             {/* Config Button (Admin Global Config) */}
-            <Button
-              type="primary"
-              icon={<SettingOutlined />}
-              onClick={() => setConfigDrawerOpen(true)}
-              style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
-            >
-              Cấu hình CC
-            </Button>
+            <Tooltip title="Cấu hình CC">
+              <Button
+                type="primary"
+                icon={<SettingOutlined />}
+                onClick={() => setConfigDrawerOpen(true)}
+                style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
+              />
+            </Tooltip>
           </Space>
-        </div>
-      </div>
+        }
+      />
 
       {/* 4 MAIN TABS */}
       <Card
         variant="outlined"
         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-        className="shadow-sm rounded-xl"
+        styles={{ body: { padding: '12px 16px 16px 16px' } }}
+        className="shadow-sm rounded-xl dashboard-main-tabs-card"
       >
         <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} size="large" />
       </Card>

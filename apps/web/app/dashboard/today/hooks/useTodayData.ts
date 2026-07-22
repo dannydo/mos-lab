@@ -149,6 +149,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
   const [comingBranch, setComingBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
   const [comingCategory, setComingCategory] = useState<'all' | 'combo' | 'oc' | 'other'>('all');
   const [shopBranch, setShopBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
+  const [selectedBooker, setSelectedBooker] = useState<string | null>(null);
 
   // Drawer states
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -249,8 +250,6 @@ export function useTodayData(options?: UseTodayDataOptions) {
     const isToday = selectedDate.isSame(dayjs(), 'day');
     if (!isToday) return;
 
-    let timer: SafeAny;
-
     const tick = () => {
       if (document.visibilityState !== 'visible') {
         return;
@@ -264,7 +263,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
       });
     };
 
-    timer = setInterval(tick, 1000);
+    const timer = setInterval(tick, 1000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -331,9 +330,12 @@ export function useTodayData(options?: UseTodayDataOptions) {
         if (bookingBranch === 'pxl' && b.branchName !== 'PXL') return false;
         if (bookingBranch === 'estella' && b.branchName !== 'Estella') return false;
       }
+      if (selectedBooker && (b.booker || '').toLowerCase() !== selectedBooker.toLowerCase()) {
+        return false;
+      }
       return true;
     });
-  }, [allBookings, bookingFilter, bookingBranch]);
+  }, [allBookings, bookingFilter, bookingBranch, selectedBooker]);
 
   const allComingList = useMemo(() => {
     return Object.keys(branchesData).flatMap((branchKey) =>
@@ -353,11 +355,14 @@ export function useTodayData(options?: UseTodayDataOptions) {
       if (comingCategory !== 'all' && item.category !== comingCategory) {
         return false;
       }
+      if (selectedBooker && (item.booker || '').toLowerCase() !== selectedBooker.toLowerCase()) {
+        return false;
+      }
       return true;
     });
 
     return [...filtered].sort((a, b) => a.time.localeCompare(b.time));
-  }, [allComingList, comingBranch, comingCategory]);
+  }, [allComingList, comingBranch, comingCategory, selectedBooker]);
 
   const activeShopData = useMemo(() => {
     const raw =
@@ -418,6 +423,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
     comingBranch,
     comingCategory,
     shopBranch,
+    selectedBooker,
     drawerVisible,
     selectedCustomer,
     showTax,
@@ -444,6 +450,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
     setComingBranch,
     setComingCategory,
     setShopBranch,
+    setSelectedBooker,
     setDrawerVisible,
     setSelectedCustomer,
     setShowTax,

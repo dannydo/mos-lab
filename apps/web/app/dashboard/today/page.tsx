@@ -3,7 +3,6 @@
 import '../../suppress-warnings';
 import React, { useEffect, useState } from 'react';
 import {
-  Typography,
   Card,
   theme,
   DatePicker,
@@ -29,8 +28,7 @@ import TodayStats from './components/TodayStats';
 import TodayBookingsTable from './components/TodayBookingsTable';
 import TodayComingTable from './components/TodayComingTable';
 import TodayStaffAttendance from './components/TodayStaffAttendance';
-
-const { Title, Text } = Typography;
+import { PageHeader } from '../../../components/ui';
 
 const RealtimeClock = React.memo(() => {
   const [time, setTime] = useState('');
@@ -87,145 +85,119 @@ export default function TodayDashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Title & Control Header */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '16px',
-          padding: '16px 24px',
-          background: themeMode === 'dark' ? '#111827' : '#fffbe6',
-          borderRadius: '12px',
-          border: `1px solid ${themeMode === 'dark' ? '#1f2937' : '#ffd666'}`,
-        }}
-      >
-        <div>
-          <Title
-            level={4}
-            style={{
-              margin: 0,
-              color: themeMode === 'dark' ? '#D4A84B' : '#873800',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <ClockCircleOutlined /> Control Board Hôm Nay (Today operations)
-          </Title>
-          <Text style={{ fontSize: '13px', color: themeMode === 'dark' ? '#a6a6a6' : '#595959' }}>
-            Giám sát thời gian thực lịch đặt mới, luồng khách đến và trạng thái phục vụ của CC & CV.
-          </Text>
-        </div>
-
-        <Space size="middle" style={{ flexWrap: 'wrap' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '11px', color: token.colorTextDescription }}>Thời gian thực tế</div>
-            <RealtimeClock />
-          </div>
-          <Divider
-            type="vertical"
-            style={{ height: '32px', borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9' }}
-          />
-          <Space.Compact>
-            <Button
-              icon={<LeftOutlined />}
-              onClick={() => {
-                if (data.selectedDate) {
-                  const prevDate = data.selectedDate.subtract(1, 'day');
-                  data.setSelectedDate(prevDate);
-                  localStorage.setItem('today_selected_date', prevDate.format('YYYY-MM-DD'));
-                }
-              }}
+      <PageHeader
+        title="Control Board Hôm Nay (Today operations)"
+        subtitle="Giám sát thời gian thực lịch đặt mới, luồng khách đến và trạng thái phục vụ của CC & CV"
+        icon={<ClockCircleOutlined />}
+        extra={
+          <Space size="middle" style={{ flexWrap: 'wrap' }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '11px', color: token.colorTextDescription }}>Thời gian thực tế</div>
+              <RealtimeClock />
+            </div>
+            <Divider
+              type="vertical"
+              style={{ height: '32px', borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9' }}
             />
-            <DatePicker
-              value={data.selectedDate}
-              onChange={(date) => {
-                if (date) {
-                  data.setSelectedDate(date);
-                  localStorage.setItem('today_selected_date', date.format('YYYY-MM-DD'));
-                }
-              }}
-              format="DD/MM/YYYY"
-              allowClear={false}
-              style={{ width: '130px' }}
-            />
-            <Button
-              icon={<RightOutlined />}
-              onClick={() => {
-                if (data.selectedDate) {
-                  const nextDate = data.selectedDate.add(1, 'day');
-                  data.setSelectedDate(nextDate);
-                  localStorage.setItem('today_selected_date', nextDate.format('YYYY-MM-DD'));
-                }
-              }}
-            />
-          </Space.Compact>
-          <Button
-            type="primary"
-            icon={<SyncOutlined spin={data.loading || data.silentLoading} />}
-            onClick={data.handleRefresh}
-            style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000000', fontWeight: 'bold' }}
-          />
-
-          {data.selectedDate?.isSame(dayjs(), 'day') && (
-            <>
-              <Divider
-                type="vertical"
-                style={{ height: '32px', borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9' }}
+            <Space.Compact>
+              <Button
+                icon={<LeftOutlined />}
+                onClick={() => {
+                  if (data.selectedDate) {
+                    const prevDate = data.selectedDate.subtract(1, 'day');
+                    data.setSelectedDate(prevDate);
+                    localStorage.setItem('today_selected_date', prevDate.format('YYYY-MM-DD'));
+                  }
+                }}
               />
-              <Space size="small">
-                <Switch
-                  checked={data.autoRefresh}
-                  onChange={(checked) => {
-                    data.setAutoRefresh(checked);
-                    localStorage.setItem('today_auto_refresh', String(checked));
-                  }}
-                  size="small"
+              <DatePicker
+                value={data.selectedDate}
+                onChange={(date) => {
+                  if (date) {
+                    data.setSelectedDate(date);
+                    localStorage.setItem('today_selected_date', date.format('YYYY-MM-DD'));
+                  }
+                }}
+                format="DD/MM/YYYY"
+                allowClear={false}
+                style={{ width: '130px' }}
+              />
+              <Button
+                icon={<RightOutlined />}
+                onClick={() => {
+                  if (data.selectedDate) {
+                    const nextDate = data.selectedDate.add(1, 'day');
+                    data.setSelectedDate(nextDate);
+                    localStorage.setItem('today_selected_date', nextDate.format('YYYY-MM-DD'));
+                  }
+                }}
+              />
+            </Space.Compact>
+            <Button
+              type="primary"
+              icon={<SyncOutlined spin={data.loading || data.silentLoading} />}
+              onClick={data.handleRefresh}
+              style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000000', fontWeight: 'bold' }}
+            />
+
+            {data.selectedDate?.isSame(dayjs(), 'day') && (
+              <>
+                <Divider
+                  type="vertical"
+                  style={{ height: '32px', borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9' }}
                 />
-                <span
-                  style={{
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: data.autoRefresh ? '#52c41a' : token.colorTextDescription,
-                  }}
-                >
-                  F5{' '}
-                  {data.autoRefresh && (
-                    <span
-                      style={{
-                        fontVariantNumeric: 'tabular-nums',
-                        fontFeatureSettings: '"tnum"',
-                        display: 'inline-block',
-                      }}
-                    >
-                      ({data.countdown}s)
-                    </span>
-                  )}
-                </span>
-              </Space>
-              {data.autoRefresh && (
-                <Select
-                  size="small"
-                  value={data.refreshInterval}
-                  onChange={(val) => {
-                    data.setRefreshInterval(val);
-                    localStorage.setItem('today_refresh_interval', String(val));
-                  }}
-                  options={[
-                    { value: 15, label: '15s' },
-                    { value: 30, label: '30s' },
-                    { value: 60, label: '1m' },
-                    { value: 180, label: '3m' },
-                  ]}
-                  style={{ width: '70px' }}
-                />
-              )}
-            </>
-          )}
-        </Space>
-      </div>
+                <Space size="small">
+                  <Switch
+                    checked={data.autoRefresh}
+                    onChange={(checked) => {
+                      data.setAutoRefresh(checked);
+                      localStorage.setItem('today_auto_refresh', String(checked));
+                    }}
+                    size="small"
+                  />
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: data.autoRefresh ? '#52c41a' : token.colorTextDescription,
+                    }}
+                  >
+                    F5{' '}
+                    {data.autoRefresh && (
+                      <span
+                        style={{
+                          fontVariantNumeric: 'tabular-nums',
+                          fontFeatureSettings: '"tnum"',
+                          display: 'inline-block',
+                        }}
+                      >
+                        ({data.countdown}s)
+                      </span>
+                    )}
+                  </span>
+                </Space>
+                {data.autoRefresh && (
+                  <Select
+                    size="small"
+                    value={data.refreshInterval}
+                    onChange={(val) => {
+                      data.setRefreshInterval(val);
+                      localStorage.setItem('today_refresh_interval', String(val));
+                    }}
+                    options={[
+                      { value: 15, label: '15s' },
+                      { value: 30, label: '30s' },
+                      { value: 60, label: '1m' },
+                      { value: 180, label: '3m' },
+                    ]}
+                    style={{ width: '70px' }}
+                  />
+                )}
+              </>
+            )}
+          </Space>
+        }
+      />
 
       <Spin spinning={data.loading}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -251,6 +223,8 @@ export default function TodayDashboard() {
                 setBookingFilter={data.setBookingFilter}
                 bookingBranch={data.bookingBranch}
                 setBookingBranch={data.setBookingBranch}
+                selectedBooker={data.selectedBooker}
+                setSelectedBooker={data.setSelectedBooker}
                 openCustomerDrawer={data.openCustomerDrawer}
                 bookingBranchCounts={data.bookingBranchCounts}
                 allBookings={data.allBookings}
@@ -265,6 +239,8 @@ export default function TodayDashboard() {
                 setComingBranch={data.setComingBranch}
                 comingCategory={data.comingCategory}
                 setComingCategory={data.setComingCategory}
+                selectedBooker={data.selectedBooker}
+                setSelectedBooker={data.setSelectedBooker}
                 openCustomerDrawer={data.openCustomerDrawer}
                 allComingList={data.allComingList}
               />

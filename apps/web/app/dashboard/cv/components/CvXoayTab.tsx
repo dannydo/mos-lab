@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Tag, theme, Row, Col, Statistic, Input, Space, Button } from 'antd';
+import { Card, Table, Tag, theme, Row, Col, Statistic, Input, Space, Button, Tooltip } from 'antd';
 import {
   TrophyOutlined,
   DollarOutlined,
@@ -11,6 +11,8 @@ import {
   SafetyCertificateOutlined,
   FilterOutlined,
   SettingOutlined,
+  CompressOutlined,
+  ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { CvXoayRecord } from '@mos-lab/shared';
@@ -18,6 +20,15 @@ import { apiClient } from '../../../../lib/api-client';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import CcAvatar from '../../cc/components/CcAvatar';
+
+export const formatStoreCode = (store?: string | null): string => {
+  if (!store) return 'PXL';
+  const s = String(store).toUpperCase().trim();
+  if (s.includes('ESTELLA') || s.includes('EP')) return 'EP';
+  if (s.includes('THAM') || s.includes('DE') || s.includes('DT')) return 'DT';
+  if (s.includes('PXL') || s.includes('PHAN')) return 'PXL';
+  return s;
+};
 
 interface CvXoayTabProps {
   loading?: boolean;
@@ -49,6 +60,7 @@ export default function CvXoayTab({
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<CvXoayRecord[]>([]);
   const [searchText, setSearchText] = useState('');
+  const [isCompact, setIsCompact] = useState(false);
   const [summary, setSummary] = useState({
     totalServices: 0,
     totalBonus: 0,
@@ -174,13 +186,13 @@ export default function CvXoayTab({
       title: 'Hạng',
       dataIndex: 'rank',
       key: 'rank',
-      width: 70,
+      width: 60,
       align: 'center' as const,
       render: (rank: number) => {
-        if (rank === 1) return <span style={{ fontSize: '20px' }}>🥇</span>;
-        if (rank === 2) return <span style={{ fontSize: '20px' }}>🥈</span>;
-        if (rank === 3) return <span style={{ fontSize: '20px' }}>🥉</span>;
-        return <span className="tabular-nums font-semibold text-gray-500">#{rank}</span>;
+        if (rank === 1) return <span style={{ fontSize: '18px' }}>🥇</span>;
+        if (rank === 2) return <span style={{ fontSize: '18px' }}>🥈</span>;
+        if (rank === 3) return <span style={{ fontSize: '18px' }}>🥉</span>;
+        return <span className="tabular-nums font-semibold text-slate-500 text-xs">#{rank}</span>;
       },
     },
     {
@@ -190,15 +202,21 @@ export default function CvXoayTab({
       render: (name: string, record: CvLeaderboardRow) => {
         const isSelected = searchText.toLowerCase() === name.toLowerCase();
         return (
-          <Space className="cursor-pointer">
-            <CcAvatar name={name} src={record.avatar} size={34} isSelected={isSelected} />
+          <Space className="cursor-pointer group whitespace-nowrap" size={8}>
+            <CcAvatar name={name} src={record.avatar} size={32} isSelected={isSelected} />
             <div>
-              <div className="font-bold text-sm" style={{ color: token.colorText }}>
-                {name}
+              <div className="flex items-center gap-1.5 whitespace-nowrap">
+                <span
+                  className={`font-semibold text-xs transition-colors whitespace-nowrap ${
+                    isSelected ? 'text-amber-400 underline underline-offset-2' : 'hover:text-amber-400'
+                  }`}
+                  style={{ color: isSelected ? undefined : token.colorText }}
+                >
+                  {name}
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">· {formatStoreCode(record.store)}</span>
+                <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">L{record.techLevel}</span>
               </div>
-              <Tag color="blue" className="text-[10px] m-0 tabular-nums">
-                Level {record.techLevel}
-              </Tag>
             </div>
           </Space>
         );
@@ -208,15 +226,17 @@ export default function CvXoayTab({
       title: 'Cơ Sở',
       dataIndex: 'store',
       key: 'store',
-      width: 90,
-      render: (store: string) => <Tag color="cyan">{store}</Tag>,
+      width: 80,
+      render: (store: string) => (
+        <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(store)}</span>
+      ),
     },
     {
       title: 'Lượt Ca Dịch Vụ',
       dataIndex: 'totalServices',
       key: 'totalServices',
       align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums font-bold text-purple-500">{val} ca</span>,
+      render: (val: number) => <span className="tabular-nums font-semibold text-purple-400 text-xs">{val} ca</span>,
     },
     {
       title: 'Tổng Điểm Tích Luỹ',
@@ -224,7 +244,7 @@ export default function CvXoayTab({
       key: 'totalPoints',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-amber-500">+{val.toLocaleString('vi-VN')} pts</span>
+        <span className="tabular-nums font-semibold text-blue-400 text-xs">+{val.toLocaleString('vi-VN')} pts</span>
       ),
     },
     {
@@ -233,7 +253,7 @@ export default function CvXoayTab({
       key: 'totalBonus',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
+        <span className="tabular-nums font-bold text-emerald-400 text-sm">
           {val.toLocaleString('vi-VN')}đ
         </span>
       ),
@@ -245,24 +265,20 @@ export default function CvXoayTab({
       title: 'Thời Gian Check-in',
       dataIndex: 'checkin',
       key: 'checkin',
-      width: 155,
-      render: (text: string) => <span className="tabular-nums font-mono text-xs">{text}</span>,
+      width: 140,
+      render: (text: string) => <span className="tabular-nums text-xs text-slate-400 font-medium">{text}</span>,
     },
     {
       title: 'Chuyên Viên (CV)',
       dataIndex: 'techName',
       key: 'techName',
-      width: 180,
+      width: 160,
       render: (text: string, record: CvXoayRecord) => (
-        <Space size={8}>
-          <CcAvatar name={text} src={record.avatar} size={28} />
-          <div>
-            <div className="font-semibold text-sm" style={{ color: token.colorText }}>
-              {text || 'N/A'}
-            </div>
-            <Tag color="blue" className="text-[10px] mt-0.5 tabular-nums">
-              Level {record.techLevel}
-            </Tag>
+        <Space size={6} className="whitespace-nowrap">
+          <CcAvatar name={text} src={record.avatar} size={24} />
+          <div className="flex items-center gap-1 whitespace-nowrap">
+            <span className="font-semibold text-xs text-slate-200 whitespace-nowrap">{text || 'N/A'}</span>
+            <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">· L{record.techLevel}</span>
           </div>
         </Space>
       ),
@@ -271,72 +287,75 @@ export default function CvXoayTab({
       title: 'Khách Hàng',
       dataIndex: 'clientName',
       key: 'clientName',
-      width: 140,
-      render: (text: string) => <span className="font-medium text-xs">{text || 'Khách Vãng Lai'}</span>,
+      width: 130,
+      render: (text: string) => <span className="font-semibold text-xs text-sky-400">{text || 'Khách Vãng Lai'}</span>,
     },
     {
       title: 'Cơ Sở',
       dataIndex: 'store',
       key: 'store',
-      width: 90,
-      render: (text: string) => <Tag color="cyan">{text}</Tag>,
+      width: 80,
+      render: (text: string) => (
+        <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(text)}</span>
+      ),
     },
     {
       title: 'Tên Dịch Vụ',
       dataIndex: 'serviceName',
       key: 'serviceName',
-      width: 180,
-      render: (text: string) => <span className="text-xs font-semibold">{text}</span>,
+      width: 170,
+      render: (text: string) => <span className="text-xs font-medium text-slate-300">{text}</span>,
     },
     {
       title: 'FAL Rule',
       dataIndex: 'falRule',
       key: 'falRule',
-      width: 100,
+      width: 80,
       render: (rule?: string) => {
-        if (!rule) return <Tag color="default">-</Tag>;
-        if (rule === 'Fix') return <Tag color="error">Fix</Tag>;
-        if (rule === 'Adjust') return <Tag color="warning">Adjust</Tag>;
-        if (rule === 'Log') return <Tag color="purple">Log</Tag>;
-        return <Tag color="blue">{rule}</Tag>;
+        if (!rule) return <span className="text-slate-500 text-xs">-</span>;
+        return (
+          <Tag color={rule === 'Fix' ? 'error' : rule === 'Adjust' ? 'warning' : 'default'} className="font-semibold text-[10px] m-0 py-0 px-1">
+            {rule}
+          </Tag>
+        );
       },
     },
     {
       title: 'Bóc Tách Điểm (Class/Fan/Type/Lash/Design/Color)',
       key: 'pointBreakdown',
-      width: 240,
+      width: 220,
       render: (_: unknown, record: CvXoayRecord) => (
-        <div className="text-[11px] space-y-0.5 tabular-nums">
+        <div className="text-[10px] space-y-0.5 tabular-nums">
           <div className="flex gap-1 flex-wrap">
             {record.classPts > 0 && (
-              <Tag color="green" className="m-0 text-[10px] tabular-nums">
-                Class: +{record.classPts}
-              </Tag>
+              <span className="text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded font-mono">
+                Class +{record.classPts}
+              </span>
             )}
             {record.fanPts > 0 && (
-              <Tag color="gold" className="m-0 text-[10px] tabular-nums">
-                Fan: +{record.fanPts}
-              </Tag>
+              <span className="text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded font-mono">
+                Fan +{record.fanPts}
+              </span>
             )}
             {record.typePts > 0 && (
-              <Tag color="geekblue" className="m-0 text-[10px] tabular-nums">
-                Type: +{record.typePts}
-              </Tag>
+              <span className="text-sky-400 bg-sky-500/10 px-1 py-0.5 rounded font-mono">
+                Type +{record.typePts}
+              </span>
             )}
             {record.lashPts > 0 && (
-              <Tag color="volcano" className="m-0 text-[10px] tabular-nums">
-                Lash: +{record.lashPts}
-              </Tag>
+              <span className="text-rose-400 bg-rose-500/10 px-1 py-0.5 rounded font-mono">
+                Lash +{record.lashPts}
+              </span>
             )}
             {record.designPts > 0 && (
-              <Tag color="magenta" className="m-0 text-[10px] tabular-nums">
-                Design: +{record.designPts}
-              </Tag>
+              <span className="text-purple-400 bg-purple-500/10 px-1 py-0.5 rounded font-mono">
+                Design +{record.designPts}
+              </span>
             )}
             {record.colorPts > 0 && (
-              <Tag color="purple" className="m-0 text-[10px] tabular-nums">
-                Color: +{record.colorPts}
-              </Tag>
+              <span className="text-indigo-400 bg-indigo-500/10 px-1 py-0.5 rounded font-mono">
+                Color +{record.colorPts}
+              </span>
             )}
           </div>
         </div>
@@ -346,30 +365,30 @@ export default function CvXoayTab({
       title: 'Điểm Ca (+pts)',
       dataIndex: 'techPoints',
       key: 'techPoints',
-      width: 110,
+      width: 100,
       align: 'right' as const,
       render: (pts: number) => (
-        <span className="tabular-nums font-bold text-amber-500">+{pts.toLocaleString('vi-VN')} pts</span>
+        <span className="tabular-nums font-bold text-xs text-cyan-400">+{pts.toLocaleString('vi-VN')} pts</span>
       ),
     },
     {
       title: 'Điểm Tích Luỹ (Accu)',
       dataIndex: 'pointsAccu',
       key: 'pointsAccu',
-      width: 130,
+      width: 110,
       align: 'right' as const,
       render: (accu: number) => (
-        <span className="tabular-nums font-semibold text-blue-500">{accu.toLocaleString('vi-VN')} pts</span>
+        <span className="tabular-nums font-semibold text-xs text-blue-400">{accu.toLocaleString('vi-VN')} pts</span>
       ),
     },
     {
       title: 'Thưởng Ca CV (đ)',
       dataIndex: 'techBonus',
       key: 'techBonus',
-      width: 130,
+      width: 110,
       align: 'right' as const,
       render: (bonus: number) => (
-        <span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
+        <span className="tabular-nums font-bold text-xs text-emerald-400">
           {bonus.toLocaleString('vi-VN')}đ
         </span>
       ),
@@ -388,9 +407,9 @@ export default function CvXoayTab({
   } = useTableConfig('cv_xoay_table', staticColumns);
 
   return (
-    <div className="space-y-4">
-      {/* Metrics Row */}
-      <Row gutter={[16, 16]} className="mb-2">
+    <div className="flex flex-col gap-4">
+      {/* 3 Top Summary Metrics */}
+      <Row gutter={[16, 16]} className="mb-4">
         <Col xs={24} sm={8}>
           <Card
             variant="outlined"
@@ -398,14 +417,14 @@ export default function CvXoayTab({
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Lượt Dịch Vụ CV"
+              title="Tổng Lượt Ca Làm"
               value={summary.totalServices}
+              suffix="lượt"
               valueStyle={{ color: '#1890ff', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<ThunderboltOutlined />}
             />
           </Card>
         </Col>
-
         <Col xs={24} sm={8}>
           <Card
             variant="outlined"
@@ -413,15 +432,14 @@ export default function CvXoayTab({
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Điểm CV Tích Luỹ"
+              title="Tổng Điểm Tích Lũy (Points)"
               value={summary.totalPoints}
               suffix="pts"
-              valueStyle={{ color: '#faad14', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
+              valueStyle={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<TrophyOutlined />}
             />
           </Card>
         </Col>
-
         <Col xs={24} sm={8}>
           <Card
             variant="outlined"
@@ -441,9 +459,10 @@ export default function CvXoayTab({
 
       {/* Leaderboard Card */}
       <Card
-        className="full-bleed-card shadow-sm mb-6 rounded-xl"
+        className="full-bleed-card shadow-sm mb-4 rounded-xl"
         variant="outlined"
-        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary, marginBottom: '24px' }}
+        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary, marginBottom: '16px' }}
+        styles={{ body: { padding: 0 } }}
         title={
           <div className="flex flex-wrap justify-between items-center gap-2">
             <div className="flex items-center gap-2">
@@ -498,6 +517,7 @@ export default function CvXoayTab({
         className="full-bleed-card shadow-sm rounded-xl"
         variant="outlined"
         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+        styles={{ body: { padding: 0 } }}
         title={
           <div className="flex flex-wrap justify-between items-center gap-2 py-1">
             <div className="flex items-center gap-2">
@@ -521,12 +541,19 @@ export default function CvXoayTab({
                 allowClear
                 style={{ width: 250 }}
               />
-              <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
-                Tải lại
-              </Button>
-              <Button icon={<SettingOutlined />} onClick={openConfig}>
-                Cấu hình cột
-              </Button>
+              <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
+                <Button
+                  icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
+                  onClick={() => setIsCompact(!isCompact)}
+                  className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
+                />
+              </Tooltip>
+              <Tooltip title="Làm mới dữ liệu">
+                <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading} />
+              </Tooltip>
+              <Tooltip title="Cấu hình cột">
+                <Button icon={<SettingOutlined />} onClick={openConfig} />
+              </Tooltip>
             </Space>
           </div>
         }
@@ -549,7 +576,7 @@ export default function CvXoayTab({
           scroll={{ x: 1300 }}
           size="small"
           bordered
-          className="antd-custom-table"
+          className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
         />
       </Card>
 

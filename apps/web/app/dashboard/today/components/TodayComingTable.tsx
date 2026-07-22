@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Card, Tabs, Select, Button, Table, Space, Avatar, Tag, Typography, theme } from 'antd';
+import { Tabs, Select, Button, Table, Space, Avatar, Tag, Typography, theme } from 'antd';
 import { SettingOutlined, PhoneOutlined, EyeOutlined } from '@ant-design/icons';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
-import { ResizableHeaderCell } from '../../../../components/ResizableHeaderCell';
 import { ComingClientData } from '../hooks/useTodayData';
+import { SectionCard } from '../../../../components/ui';
 
 const { Text } = Typography;
 
@@ -37,6 +37,8 @@ interface TodayComingTableProps {
   setComingBranch: (branch: 'all' | 'detham' | 'pxl' | 'estella') => void;
   comingCategory: 'all' | 'combo' | 'oc' | 'other';
   setComingCategory: (category: 'all' | 'combo' | 'oc' | 'other') => void;
+  selectedBooker?: string | null;
+  setSelectedBooker?: (booker: string | null) => void;
   openCustomerDrawer: (record: SafeAny) => void;
   allComingList: ComingClientData[];
 }
@@ -47,6 +49,8 @@ const TodayComingTable = React.memo(function TodayComingTable({
   setComingBranch,
   comingCategory,
   setComingCategory,
+  selectedBooker,
+  setSelectedBooker,
   openCustomerDrawer,
   allComingList,
 }: TodayComingTableProps) {
@@ -126,11 +130,20 @@ const TodayComingTable = React.memo(function TodayComingTable({
       title: 'Chi nhánh',
       dataIndex: 'branchName',
       key: 'branchName',
-      render: (b: string) => (
-        <Tag color={getStoreColor(b)} style={{ fontWeight: 'bold' }}>
-          {b}
-        </Tag>
-      ),
+      render: (b: string) => {
+        const branchName = b || 'Đề Thám';
+        const branchKey = branchName === 'Đề Thám' ? 'detham' : branchName === 'PXL' ? 'pxl' : 'estella';
+        return (
+          <Tag
+            color={getStoreColor(branchName)}
+            className="cursor-pointer hover:opacity-80 font-bold transition-opacity"
+            onClick={() => setComingBranch(branchKey)}
+            title={`Lọc danh sách khách đến theo chi nhánh: ${branchName}`}
+          >
+            {branchName}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Khách hàng',
@@ -203,7 +216,15 @@ const TodayComingTable = React.memo(function TodayComingTable({
       title: 'Booker',
       dataIndex: 'booker',
       key: 'booker',
-      render: (b: string) => <span style={{ fontWeight: 500 }}>{b}</span>,
+      render: (b: string) => (
+        <span
+          className="font-semibold text-amber-500 hover:underline cursor-pointer transition-colors"
+          onClick={() => setSelectedBooker && setSelectedBooker(b)}
+          title={`Lọc danh sách khách đến theo Booker: ${b}`}
+        >
+          {b}
+        </span>
+      ),
     },
     {
       title: 'Channel',
@@ -249,7 +270,6 @@ const TodayComingTable = React.memo(function TodayComingTable({
   ];
 
   const {
-    loading: comingConfigLoading,
     columns: comingConfigColumns,
     rawConfig: comingRawConfig,
     configVisible: comingConfigVisible,
@@ -260,18 +280,10 @@ const TodayComingTable = React.memo(function TodayComingTable({
   } = useTableConfig('today_coming_table', comingColumns);
 
   return (
-    <Card
+    <SectionCard
       title={
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '12px',
-          }}
-        >
-          <span style={{ fontSize: '15px', color: token.colorPrimary, fontWeight: 'bold' }}>
+        <div className="flex justify-between items-center flex-wrap gap-3">
+          <span className="text-sm font-bold" style={{ color: token.colorPrimary }}>
             Danh sách khách đến cửa hàng ({activeComingList.length})
           </span>
           <Space>
@@ -295,12 +307,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
           </Space>
         </div>
       }
-      styles={{ body: { padding: '12px' } }}
-      style={{
-        background: token.colorBgContainer,
-        borderColor: token.colorBorderSecondary,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-      }}
+      bodyPadding="12px"
     >
       <Tabs
         activeKey={comingCategory}
@@ -314,14 +321,52 @@ const TodayComingTable = React.memo(function TodayComingTable({
           { key: 'oc', label: `Khách Telesales (${tabCounts.oc})` },
           { key: 'other', label: `Khách Lẻ / Khác (${tabCounts.other})` },
         ]}
+        size="small"
         style={{ marginBottom: '12px' }}
       />
+
+      {(comingBranch !== 'all' || selectedBooker) && (
+        <div className="flex items-center gap-2 mb-3 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Bộ lọc đang mở:</span>
+          {comingBranch !== 'all' && (
+            <Tag
+              color="cyan"
+              closable
+              onClose={() => setComingBranch('all')}
+              className="font-semibold text-xs py-0.5"
+            >
+              Chi nhánh: {comingBranch === 'detham' ? 'Đề Thám' : comingBranch === 'pxl' ? 'PXL' : 'Estella'}
+            </Tag>
+          )}
+          {selectedBooker && (
+            <Tag
+              color="gold"
+              closable
+              onClose={() => setSelectedBooker && setSelectedBooker(null)}
+              className="font-semibold text-xs py-0.5"
+            >
+              Booker: {selectedBooker}
+            </Tag>
+          )}
+          <Button
+            type="link"
+            size="small"
+            danger
+            className="text-xs p-0 h-auto font-medium"
+            onClick={() => {
+              setComingBranch('all');
+              if (setSelectedBooker) setSelectedBooker(null);
+            }}
+          >
+            Xoá bộ lọc
+          </Button>
+        </div>
+      )}
 
       <Table
         dataSource={activeComingList}
         columns={comingConfigColumns}
-        loading={comingConfigLoading}
-        rowKey="key"
+        rowKey={(record) => record.key || `${record.customer}-${record.time}`}
         pagination={{
           current: currentPage,
           pageSize: pageSize,
@@ -335,11 +380,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
           showTotal: (total) => `Tổng số: ${total} khách`,
         }}
         size="small"
-        components={{
-          header: {
-            cell: ResizableHeaderCell,
-          },
-        }}
+        bordered
         className="antd-custom-table"
       />
 
@@ -350,7 +391,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
         onSave={saveComingConfig}
         onReset={resetComingConfig}
       />
-    </Card>
+    </SectionCard>
   );
 });
 

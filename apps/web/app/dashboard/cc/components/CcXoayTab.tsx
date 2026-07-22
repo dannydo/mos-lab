@@ -1,14 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, Table, Tag, Input, Space, Button, Typography, theme, Tooltip } from 'antd';
-import { SearchOutlined, ReloadOutlined, InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
+import {
+  SearchOutlined,
+  ReloadOutlined,
+  SettingOutlined,
+  CompressOutlined,
+  ExpandOutlined,
+} from '@ant-design/icons';
 import { CcXoayRecord } from '@mos-lab/shared';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import CcAvatar from './CcAvatar';
-
-const { Text } = Typography;
 
 interface CcXoayTabProps {
   data: CcXoayRecord[];
@@ -17,233 +21,244 @@ interface CcXoayTabProps {
   onRefresh?: () => void;
 }
 
-export default function CcXoayTab({ data, loading, total = 0, onRefresh }: CcXoayTabProps) {
+function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
   const { token } = theme.useToken();
   const [searchText, setSearchText] = useState('');
+  const [isCompact, setIsCompact] = useState(false);
 
-  const filteredData = React.useMemo(() => {
+  const filteredData = useMemo(() => {
     if (!searchText) return data;
     const lower = searchText.toLowerCase();
-    return data.filter(
-      (r) =>
-        r.clientName.toLowerCase().includes(lower) ||
-        r.serviceName.toLowerCase().includes(lower) ||
-        r.consultantName.toLowerCase().includes(lower) ||
-        String(r.serviceId).includes(lower) ||
-        r.store.toLowerCase().includes(lower)
-    );
+    return data.filter((item) => {
+      return (
+        item.clientName?.toLowerCase().includes(lower) ||
+        item.serviceName?.toLowerCase().includes(lower) ||
+        item.consultantName?.toLowerCase().includes(lower) ||
+        item.store?.toLowerCase().includes(lower)
+      );
+    });
   }, [data, searchText]);
 
-  const staticColumns = [
-    {
-      title: 'Service ID',
-      dataIndex: 'serviceId',
-      key: 'serviceId',
-      width: 100,
-      fixed: 'left' as const,
-      render: (val: number) => <span className="tabular-nums font-mono font-medium">#{val}</span>,
-    },
-    {
-      title: 'Check-in',
-      dataIndex: 'checkin',
-      key: 'checkin',
-      width: 150,
-      render: (val: string) => <span className="tabular-nums text-xs">{val}</span>,
-    },
-    {
-      title: 'Khách Hàng',
-      dataIndex: 'clientName',
-      key: 'clientName',
-      width: 140,
-      render: (val: string) => <span className="font-semibold">{val}</span>,
-    },
-    {
-      title: 'Chi Nhánh',
-      dataIndex: 'store',
-      key: 'store',
-      width: 100,
-      render: (val: string) => (
-        <Tag color={val === 'PXL' ? 'blue' : 'purple'} className="font-medium">
-          {val}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Tên Dịch Vụ / Bộ Mi',
-      dataIndex: 'serviceName',
-      key: 'serviceName',
-      width: 220,
-      render: (val: string) => <span className="font-medium text-amber-600 dark:text-amber-400">{val}</span>,
-    },
-    {
-      title: 'Loại',
-      dataIndex: 'serviceType',
-      key: 'serviceType',
-      width: 90,
-      render: (val: string) => <Tag color={val === 'Normal' ? 'green' : 'orange'}>{val}</Tag>,
-    },
-    {
-      title: 'CC Tư Vấn',
-      dataIndex: 'consultantName',
-      key: 'consultantName',
-      width: 170,
-      render: (val: string, record: CcXoayRecord) => (
-        <Space size={8}>
-          <CcAvatar name={val} src={record.avatar} size={26} />
-          <span className="font-semibold">{val}</span>
-        </Space>
-      ),
-    },
-    {
-      title: 'Level CC',
-      dataIndex: 'consultantLevel',
-      key: 'consultantLevel',
-      width: 90,
-      align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums">{val}</span>,
-    },
-    {
-      title: 'CC Bonus (đ)',
-      dataIndex: 'consultantBonus',
-      key: 'consultantBonus',
-      width: 130,
-      align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-bold text-emerald-500">
-          +{Math.round(val || 0).toLocaleString('vi-VN')} đ
-        </span>
-      ),
-    },
-    {
-      title: 'Points Accu',
-      dataIndex: 'pointsAccu',
-      key: 'pointsAccu',
-      width: 120,
-      align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-blue-500">{val.toLocaleString('vi-VN')}</span>
-      ),
-    },
-    {
-      title: 'Điểm CC',
-      dataIndex: 'consultantPoints',
-      key: 'consultantPoints',
-      width: 90,
-      align: 'right' as const,
-      render: (val: number) => (
-        <Tag color="cyan" className="tabular-nums font-bold">
-          +{val} pts
-        </Tag>
-      ),
-    },
-    {
-      title: 'CC In',
-      dataIndex: 'ccInName',
-      key: 'ccInName',
-      width: 160,
-      render: (val: string) =>
-        val ? (
+  const staticColumns = useMemo(
+    () => [
+      {
+        title: 'Check-in',
+        dataIndex: 'checkin',
+        key: 'checkin',
+        width: 150,
+        render: (val: string) => <span className="tabular-nums text-xs text-slate-400">{val}</span>,
+      },
+      {
+        title: 'Khách Hàng',
+        dataIndex: 'clientName',
+        key: 'clientName',
+        width: 140,
+        render: (val: string) => <span className="font-semibold text-slate-200">{val}</span>,
+      },
+      {
+        title: 'Chi Nhánh',
+        dataIndex: 'store',
+        key: 'store',
+        width: 90,
+        render: (val: string) => {
+          const storeCode = val === 'ESTELLA-PLACE' || val === 'ESTELLA' ? 'EP' : val === 'DE-THAM' || val === 'Đề Thám' ? 'DT' : val;
+          return <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {storeCode}</span>;
+        },
+      },
+      {
+        title: 'Tên Dịch Vụ / Bộ Mi',
+        dataIndex: 'serviceName',
+        key: 'serviceName',
+        width: 220,
+        render: (val: string) => <span className="font-medium text-amber-400">{val}</span>,
+      },
+      {
+        title: 'Loại',
+        dataIndex: 'serviceType',
+        key: 'serviceType',
+        width: 90,
+        render: (val: string) =>
+          val === 'Normal' ? (
+            <span className="text-xs text-slate-500">Normal</span>
+          ) : (
+            <Tag color="amber" className="m-0 text-[11px] font-semibold border-amber-500/30">
+              {val}
+            </Tag>
+          ),
+      },
+      {
+        title: 'CC Tư Vấn',
+        dataIndex: 'consultantName',
+        key: 'consultantName',
+        width: 160,
+        render: (val: string, record: CcXoayRecord) => (
           <Space size={6}>
-            <CcAvatar name={val} size={22} />
-            <span className="text-xs">{val}</span>
+            <CcAvatar name={val} src={record.avatar} size={24} />
+            <span className="font-semibold text-xs">{val}</span>
           </Space>
-        ) : (
-          <span className="text-gray-400 text-xs">-</span>
         ),
-    },
-    {
-      title: 'CC Out',
-      dataIndex: 'ccOutName',
-      key: 'ccOutName',
-      width: 160,
-      render: (val: string) =>
-        val ? (
-          <Space size={6}>
-            <CcAvatar name={val} size={22} />
-            <span className="text-xs">{val}</span>
-          </Space>
-        ) : (
-          <span className="text-gray-400 text-xs">-</span>
+      },
+      {
+        title: 'Level CC',
+        dataIndex: 'consultantLevel',
+        key: 'consultantLevel',
+        width: 80,
+        align: 'right' as const,
+        render: (val: number) => <span className="tabular-nums font-semibold text-xs text-slate-300">{val}</span>,
+      },
+      {
+        title: 'CC Bonus (đ)',
+        dataIndex: 'consultantBonus',
+        key: 'consultantBonus',
+        width: 120,
+        align: 'right' as const,
+        render: (val: number) => (
+          <span className="tabular-nums font-bold text-emerald-400 text-xs">
+            +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+          </span>
         ),
-    },
-    {
-      title: 'Class',
-      dataIndex: 'class',
-      key: 'class',
-      width: 140,
-      render: (val: string, r: CcXoayRecord) => (
-        <span className="text-xs">
-          {val}{' '}
-          <Tag color="default" className="tabular-nums text-[10px] ml-1">
-            {r.classPts}p
-          </Tag>
-        </span>
-      ),
-    },
-    {
-      title: 'Fan',
-      dataIndex: 'fan',
-      key: 'fan',
-      width: 80,
-      render: (val: string, r: CcXoayRecord) => (
-        <Tag color="geekblue" className="tabular-nums">
-          {val} ({r.fanPts}p)
-        </Tag>
-      ),
-    },
-    {
-      title: 'Type',
-      dataIndex: 'type',
-      key: 'type',
-      width: 100,
-      render: (val: string, r: CcXoayRecord) => (
-        <span>
-          {val} ({r.typePts}p)
-        </span>
-      ),
-    },
-    {
-      title: 'Số Sợi',
-      dataIndex: 'lashCount',
-      key: 'lashCount',
-      width: 100,
-      align: 'right' as const,
-      render: (val: number, r: CcXoayRecord) => (
-        <span className="tabular-nums font-mono">
-          {val} sợi ({r.lashPts}p)
-        </span>
-      ),
-    },
-    {
-      title: 'Dáng Mi',
-      dataIndex: 'design',
-      key: 'design',
-      width: 110,
-      render: (val: string, r: CcXoayRecord) => (
-        <Tag color="magenta">
-          {val} ({r.designPts}p)
-        </Tag>
-      ),
-    },
-    {
-      title: 'Màu Mi',
-      dataIndex: 'color',
-      key: 'color',
-      width: 100,
-      render: (val: string, r: CcXoayRecord) => (
-        <Tag color={val === 'Đen' ? 'black' : val === 'Nâu' ? 'gold' : 'purple'}>
-          {val} ({r.colorPts}p)
-        </Tag>
-      ),
-    },
-    {
-      title: 'FAL Rule',
-      dataIndex: 'falRule',
-      key: 'falRule',
-      width: 90,
-      render: (val?: string) => val || '-',
-    },
-  ];
+      },
+      {
+        title: 'Points Accu',
+        dataIndex: 'pointsAccu',
+        key: 'pointsAccu',
+        width: 110,
+        align: 'right' as const,
+        render: (val: number) => (
+          <span className="tabular-nums font-semibold text-blue-400 text-xs">{val.toLocaleString('vi-VN')}</span>
+        ),
+      },
+      {
+        title: 'Điểm CC',
+        dataIndex: 'consultantPoints',
+        key: 'consultantPoints',
+        width: 90,
+        align: 'right' as const,
+        render: (val: number) => (
+          <span className="tabular-nums font-bold text-cyan-400 text-xs">
+            +{val} pts
+          </span>
+        ),
+      },
+      {
+        title: 'CC In',
+        dataIndex: 'ccInName',
+        key: 'ccInName',
+        width: 140,
+        render: (val: string, r: CcXoayRecord) => {
+          if (!val) return <span className="text-slate-500 text-xs">-</span>;
+          const isSame = !r.ccOutName || r.ccInName === r.ccOutName;
+          if (isSame) {
+            return (
+              <Space size={4} className="text-xs text-slate-300">
+                <CcAvatar name={val} size={20} />
+                <span>{val}</span>
+                <span className="text-emerald-400 font-bold text-[10px]" title="CC In/Out đồng nhất">✓</span>
+              </Space>
+            );
+          }
+          return (
+            <Tag color="orange" className="m-0 text-[11px] font-medium border-orange-500/30">
+              In: {val}
+            </Tag>
+          );
+        },
+      },
+      {
+        title: 'CC Out',
+        dataIndex: 'ccOutName',
+        key: 'ccOutName',
+        width: 140,
+        render: (val: string, r: CcXoayRecord) => {
+          if (!val) return <span className="text-slate-500 text-xs">-</span>;
+          const isSame = !r.ccInName || r.ccInName === r.ccOutName;
+          if (isSame) {
+            return <span className="text-slate-500 text-xs italic">Đồng nhất</span>;
+          }
+          return (
+            <Tag color="purple" className="m-0 text-[11px] font-medium border-purple-500/30">
+              Out: {val}
+            </Tag>
+          );
+        },
+      },
+      {
+        title: 'Class',
+        dataIndex: 'class',
+        key: 'class',
+        width: 130,
+        render: (val: string, r: CcXoayRecord) => (
+          <span className="text-xs text-slate-300">
+            {val} <span className="text-slate-500 text-[10px]">({r.classPts}p)</span>
+          </span>
+        ),
+      },
+      {
+        title: 'Fan',
+        dataIndex: 'fan',
+        key: 'fan',
+        width: 80,
+        render: (val: string, r: CcXoayRecord) => (
+          <span className="tabular-nums text-xs text-slate-400">
+            {val} <span className="text-slate-500 text-[10px]">({r.fanPts}p)</span>
+          </span>
+        ),
+      },
+      {
+        title: 'Type',
+        dataIndex: 'type',
+        key: 'type',
+        width: 90,
+        render: (val: string, r: CcXoayRecord) => (
+          <span className="text-xs text-slate-400">
+            {val} <span className="text-slate-500 text-[10px]">({r.typePts}p)</span>
+          </span>
+        ),
+      },
+      {
+        title: 'Số Sợi',
+        dataIndex: 'lashCount',
+        key: 'lashCount',
+        width: 95,
+        align: 'right' as const,
+        render: (val: number, r: CcXoayRecord) => (
+          <span className="tabular-nums text-xs text-slate-300">
+            {val}s <span className="text-slate-500 text-[10px]">({r.lashPts}p)</span>
+          </span>
+        ),
+      },
+      {
+        title: 'Dáng Mi',
+        dataIndex: 'design',
+        key: 'design',
+        width: 100,
+        render: (val: string, r: CcXoayRecord) => (
+          <span className="text-xs text-slate-400">
+            {val} <span className="text-slate-500 text-[10px]">({r.designPts}p)</span>
+          </span>
+        ),
+      },
+      {
+        title: 'Màu Mi',
+        dataIndex: 'color',
+        key: 'color',
+        width: 90,
+        render: (val: string, r: CcXoayRecord) => (
+          <span className="text-xs text-slate-400">
+            {val} <span className="text-slate-500 text-[10px]">({r.colorPts}p)</span>
+          </span>
+        ),
+      },
+      {
+        title: 'FAL Rule',
+        dataIndex: 'falRule',
+        key: 'falRule',
+        width: 80,
+        render: (val?: string) => <span className="text-xs text-slate-500">{val || '-'}</span>,
+      },
+    ],
+    []
+  );
 
   const {
     loading: configLoading,
@@ -262,11 +277,8 @@ export default function CcXoayTab({ data, loading, total = 0, onRefresh }: CcXoa
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="font-bold text-base" style={{ color: token.colorText }}>
-              Bảng Dữ Liệu Báo Cáo CC Xoay (Chi Tiết Từng Lượt Dịch Vụ)
+              Bảng Dữ Liệu Báo Cáo CC Xoay
             </span>
-            <Tooltip title="Thưởng công thức chạy theo tháng trên lượt khách check-in và bóc tách kỹ thuật bộ mi">
-              <InfoCircleOutlined className="text-gray-400" />
-            </Tooltip>
           </div>
 
           <Space wrap>
@@ -275,23 +287,31 @@ export default function CcXoayTab({ data, loading, total = 0, onRefresh }: CcXoa
               placeholder="Tìm khách hàng, dịch vụ, CC..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 250 }}
+              style={{ width: 220 }}
               allowClear
             />
+            <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
+              <Button
+                icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
+                onClick={() => setIsCompact(!isCompact)}
+                className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
+              />
+            </Tooltip>
             {onRefresh && (
-              <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-                Làm mới
-              </Button>
+              <Tooltip title="Làm mới dữ liệu">
+                <Button icon={<ReloadOutlined />} onClick={onRefresh} />
+              </Tooltip>
             )}
-            <Button icon={<SettingOutlined />} onClick={openConfig}>
-              Cấu hình cột
-            </Button>
+            <Tooltip title="Cấu hình cột">
+              <Button icon={<SettingOutlined />} onClick={openConfig} />
+            </Tooltip>
           </Space>
         </div>
       }
       variant="outlined"
       style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-      className="shadow-sm rounded-xl"
+      styles={{ body: { padding: 0 } }}
+      className="full-bleed-card shadow-sm rounded-xl"
     >
       <Table
         dataSource={filteredData}
@@ -307,7 +327,7 @@ export default function CcXoayTab({ data, loading, total = 0, onRefresh }: CcXoa
           showSizeChanger: true,
           showTotal: (totalCount) => `Tổng cộng ${totalCount} bản ghi lượt dịch vụ`,
         }}
-        className="antd-custom-table"
+        className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
         locale={{ emptyText: 'Không có dữ liệu CC Xoay trong khoảng thời gian này' }}
       />
 
@@ -322,3 +342,5 @@ export default function CcXoayTab({ data, loading, total = 0, onRefresh }: CcXoa
     </Card>
   );
 }
+
+export default React.memo(CcXoayTabComponent);

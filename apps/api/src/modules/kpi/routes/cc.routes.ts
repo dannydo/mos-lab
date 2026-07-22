@@ -38,6 +38,15 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
     };
   };
 
+  const formatStoreCode = (store?: string | null): string => {
+    if (!store) return 'PXL';
+    const s = String(store).toUpperCase().trim();
+    if (s.includes('ESTELLA') || s.includes('EP')) return 'EP';
+    if (s.includes('THAM') || s.includes('DE') || s.includes('DT')) return 'DT';
+    if (s.includes('PXL') || s.includes('PHAN')) return 'PXL';
+    return s;
+  };
+
   // Helper to parse technical specs from service name or order details
   const parseServiceSpecs = (serviceName: string) => {
     const sLower = serviceName.toLowerCase();
@@ -110,17 +119,20 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
     // Fan
     let fan = '1D';
     let fanPts = 0;
-    if (sLower.includes('5d')) {
+    if (sLower.includes('5d') || sLower.includes('1110')) {
       fan = '5D';
       fanPts = 3;
-    } else if (sLower.includes('4d')) {
+    } else if (sLower.includes('4d') || sLower.includes('flawless') || sLower.includes('volume') || sLower.includes('ivylight')) {
       fan = '4D';
       fanPts = 2;
-    } else if (sLower.includes('3d')) {
+    } else if (sLower.includes('3d') || sLower.includes('hyperlight')) {
       fan = '3D';
       fanPts = 1;
-    } else if (sLower.includes('2d')) {
+    } else if (sLower.includes('2d') || sLower.includes('ultralight')) {
       fan = '2D';
+      fanPts = 0;
+    } else if (sLower.includes('classic')) {
+      fan = '1D';
       fanPts = 0;
     } else {
       fan = '1D';
@@ -447,7 +459,7 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
           checkin: String(row.checkinStr || ''),
           checkinTime: String(row.checkinTimeStr || ''),
           clientName: String(row.clientName || ''),
-          store: String(row.store || 'PXL'),
+          store: formatStoreCode(row.store),
           serviceName: String(row.serviceName || ''),
           serviceType: String(row.serviceType || 'Normal'),
           consultantName: activeConsultantName,
@@ -460,7 +472,7 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
           ccOutName,
           class: specs.className,
           classPts: Number(row.classPts) || specs.classPts,
-          fan: specs.fan,
+          fan: Number(row.fanPts) === 3 ? '5D' : Number(row.fanPts) === 2 ? '4D' : Number(row.fanPts) === 1 ? '3D' : specs.fan,
           fanPts: Number(row.fanPts) || specs.fanPts,
           type: specs.serviceType === 'Retain' ? 'Refill' : 'New Set',
           typePts: Number(row.typePts) || specs.typePts,

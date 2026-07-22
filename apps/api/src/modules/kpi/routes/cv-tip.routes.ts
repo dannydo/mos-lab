@@ -206,8 +206,9 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           COALESCE(sl.service_name, s.service_key) as serviceName,
           COALESCE(tech_p.full_name, '') as techName,
           COALESCE(tech_p.avatar, '') as avatar,
-          COALESCE(st.tip_amount, 0) as totalCustomerTip,
-          COALESCE(ROUND(st.tip_amount * 0.7), 0) as cvTipAmount
+          COALESCE(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END, 0) as totalCustomerTip,
+          COALESCE(st.tip_amount, 0) as cvTipAmount,
+          COALESCE(st.tip_percentage, 70) as cvTipPercentage
         FROM \`order\` o
         JOIN order_service os ON os.order_id = o.id
         JOIN report_order ro ON o.id = ro.order_id
@@ -238,7 +239,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           avatar: String(row.avatar || '') || null,
           totalCustomerTip: Math.round(Number(row.totalCustomerTip || 0)),
           cvTipAmount,
-          cvTipPercentage: 70,
+          cvTipPercentage: Number(row.cvTipPercentage || 70),
           tipStatus: isTipped ? 'Tipped' : 'No Tip',
         };
       });

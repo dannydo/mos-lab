@@ -259,11 +259,11 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         GROUP BY os.assigned_staff_id
       `;
 
-      // 5. Query CV Tip 70%
+      // 5. Query CV Tip (st.tip_amount is already the 70% tip bonus)
       const cvTipBonusQuery = `
         SELECT 
           st.user_id as staff_id,
-          COALESCE(SUM(ROUND(st.tip_amount * 0.7)), 0) as total_cv_tip
+          COALESCE(SUM(st.tip_amount), 0) as total_cv_tip
         FROM \`staff_tip\` st
         JOIN \`order\` o ON st.order_id = o.id
         JOIN \`report_order\` ro ON o.id = ro.order_id

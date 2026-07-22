@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, DatePicker, Select, Radio, Tabs, Button, Typography, Space, theme } from 'antd';
+import { Card, DatePicker, Select, Radio, Tabs, Button, Typography, Space, theme, Tooltip } from 'antd';
 import {
   CalendarOutlined,
   LeftOutlined,
@@ -233,14 +233,14 @@ export default function CvReportPage() {
             />
 
             {/* Config Button (Gold Themed) */}
-            <Button
-              type="primary"
-              icon={<SettingOutlined />}
-              onClick={() => setConfigDrawerOpen(true)}
-              style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
-            >
-              Cấu hình CV
-            </Button>
+            <Tooltip title="Cấu hình CV">
+              <Button
+                type="primary"
+                icon={<SettingOutlined />}
+                onClick={() => setConfigDrawerOpen(true)}
+                style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
+              />
+            </Tooltip>
           </Space>
         </div>
       </div>
@@ -249,7 +249,8 @@ export default function CvReportPage() {
       <Card
         variant="outlined"
         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-        className="shadow-sm rounded-xl"
+        styles={{ body: { padding: '12px 16px 16px 16px' } }}
+        className="shadow-sm rounded-xl dashboard-main-tabs-card"
       >
         <Tabs
           activeKey={activeTab}
@@ -259,11 +260,8 @@ export default function CvReportPage() {
           items={[
             {
               key: 'xoay',
-              label: (
-                <span className="flex items-center gap-2 font-semibold">
-                  <ThunderboltOutlined /> CV Xoay
-                </span>
-              ),
+              icon: <ThunderboltOutlined />,
+              label: 'CV Xoay',
               children: (
                 <CvXoayTab
                   dateRange={dateRange}
@@ -274,22 +272,16 @@ export default function CvReportPage() {
             },
             {
               key: 'tip',
-              label: (
-                <span className="flex items-center gap-2 font-semibold">
-                  <GiftOutlined /> CV Tip
-                </span>
-              ),
+              icon: <GiftOutlined />,
+              label: 'CV Tip',
               children: (
                 <CvTipTab dateRange={dateRange} selectedStore={selectedStore} selectedConsultant={selectedConsultant} />
               ),
             },
             {
               key: 'thunhap',
-              label: (
-                <span className="flex items-center gap-2 font-semibold">
-                  <WalletOutlined /> CV Thu Nhập
-                </span>
-              ),
+              icon: <WalletOutlined />,
+              label: 'CV Thu Nhập',
               children: <CvThuNhapTab dateRange={dateRange} selectedStore={selectedStore} currentUser={currentUser} />,
             },
           ]}

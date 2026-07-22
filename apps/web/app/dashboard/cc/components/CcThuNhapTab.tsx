@@ -447,9 +447,9 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
     : [];
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       {/* SUMMARY STAT CARDS AT TOP */}
-      <Row gutter={[16, 16]} className="mb-6">
+      <Row gutter={[16, 16]} className="mb-4">
         <Col xs={12} sm={8} lg={4}>
           <Card
             size="small"
@@ -573,7 +573,8 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
         }
         variant="outlined"
         style={{ background: token.colorBgContainer, borderColor: '#d4a84b' }}
-        className="shadow-sm rounded-xl mb-6"
+        styles={{ body: { padding: 0 } }}
+        className="full-bleed-card shadow-sm rounded-xl"
       >
         <Table
           dataSource={filteredData}

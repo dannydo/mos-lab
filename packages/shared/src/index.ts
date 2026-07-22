@@ -10,3 +10,4 @@ export * from './types/cc-thuong';
 export * from './types/cc-tip';
 export * from './types/cc-diamond';
 export * from './types/cv';
+export * from './types/bk';

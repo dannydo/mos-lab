@@ -77,7 +77,66 @@ async function getActiveCcIds(fastify: FastifyInstance): Promise<number[] | null
 
 export async function gamificationRoutes(fastify: FastifyInstance) {
   // 1. GET /api/gamification/daily-sales-bonus/consultant
-  fastify.get('/gamification/daily-sales-bonus/consultant', async (request, reply) => {
+  fastify.get(
+    '/gamification/daily-sales-bonus/consultant',
+    {
+      schema: {
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              data: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    date: { type: 'string' },
+                    user_id: { type: 'number' },
+                    consultant_name: { type: 'string' },
+                    avatar: { type: ['string', 'null'] },
+                    store_code: { type: 'string' },
+                    single_sales: { type: 'number' },
+                    combo_sales: { type: 'number' },
+                    combo_count: { type: 'number' },
+                    product_sales: { type: 'number' },
+                    product_count: { type: 'number' },
+                    debt_collected: { type: 'number' },
+                    vat: { type: 'number' },
+                    debt: { type: 'number' },
+                    total_sales: { type: 'number' },
+                    commission_rate_percent: { type: 'number' },
+                    daily_bonus: { type: 'number' },
+                    green_visits: { type: 'number' },
+                    total_visits: { type: 'number' },
+                  },
+                },
+              },
+              total: { type: 'number' },
+              activeStaff: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    userId: { type: 'number' },
+                    displayName: { type: 'string' },
+                    avatar: { type: ['string', 'null'] },
+                  },
+                },
+              },
+            },
+          },
+          '5xx': {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
     const { dateFrom, dateTo, consultantId, storeId } = request.query as {
       dateFrom?: string;
       dateTo?: string;
