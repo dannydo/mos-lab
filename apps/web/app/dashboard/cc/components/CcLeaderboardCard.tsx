@@ -5,6 +5,7 @@ import { Card, Table, Tag, Typography, Progress, theme, Space, Tooltip } from 'a
 import { TrophyOutlined, FilterOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { CcLeaderboardEntry } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
+import CcAvatar from './CcAvatar';
 
 const { Text } = Typography;
 
@@ -46,15 +47,7 @@ export default function CcLeaderboardCard({
         const isSelected = selectedConsultant === name;
         return (
           <Space className="cursor-pointer group">
-            <div
-              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                isSelected
-                  ? 'bg-amber-500 text-black shadow-md scale-105'
-                  : 'bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20'
-              }`}
-            >
-              {name.charAt(0)}
-            </div>
+            <CcAvatar name={name} src={record.avatar} isSelected={isSelected} size={36} />
             <div>
               <div className="flex items-center gap-2">
                 <span

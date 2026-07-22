@@ -2,6 +2,7 @@ export interface CcTipLeaderboardEntry {
   rank: number;
   consultantId: number;
   displayName: string;
+  avatar?: string | null;
   store: string;
   totalVisits: number;
   tippedVisits: number;
@@ -21,6 +22,7 @@ export interface CcTipRecord {
   ccInName: string;
   ccOutName: string;
   consultantName: string;
+  avatar?: string | null;
   totalCustomerTip: number;
   ccTipAmount: number;
   ccTipPercentage: number;

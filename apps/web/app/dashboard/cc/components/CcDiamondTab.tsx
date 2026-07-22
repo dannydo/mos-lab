@@ -17,6 +17,7 @@ import dayjs from 'dayjs';
 import { CcDiamondEntry, CcDiamondResponse } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
+import CcAvatar from './CcAvatar';
 import CcDiamondDetailModal from './CcDiamondDetailModal';
 
 const { Text, Title } = Typography;
@@ -113,14 +114,17 @@ export default function CcDiamondTab({
       dataIndex: 'tenCc',
       key: 'tenCc',
       render: (text: string, record: CcDiamondEntry) => (
-        <div className="flex items-center gap-2">
-          <Text className="font-semibold text-slate-800 dark:text-slate-200">{text}</Text>
-          {record.rank === 1 && (
-            <Tag color="gold" className="m-0 rounded-full px-2 py-0.5 text-xs">
-              Top 1 💎
-            </Tag>
-          )}
-        </div>
+        <Space size={8}>
+          <CcAvatar name={text} src={record.avatar} size={32} />
+          <div className="flex items-center gap-2">
+            <Text className="font-semibold text-slate-800 dark:text-slate-200">{text}</Text>
+            {record.rank === 1 && (
+              <Tag color="gold" className="m-0 rounded-full px-2 py-0.5 text-xs">
+                Top 1 💎
+              </Tag>
+            )}
+          </div>
+        </Space>
       ),
     },
     {

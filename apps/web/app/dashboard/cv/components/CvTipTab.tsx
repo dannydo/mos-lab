@@ -30,6 +30,7 @@ import {
 import dayjs from 'dayjs';
 import { CvTipLeaderboardEntry, CvTipRecord } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
+import CcAvatar from '../../cc/components/CcAvatar';
 
 const { Text } = Typography;
 
@@ -173,20 +174,12 @@ export default function CvTipTab({
               }
             }}
           >
-            <div
-              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                isSelected
-                  ? 'bg-amber-500 text-black shadow-md scale-105'
-                  : 'bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20'
-              }`}
-            >
-              {name.charAt(0)}
-            </div>
+            <CcAvatar name={name} src={record.avatar} size={36} isSelected={isSelected} />
             <div>
               <div className="flex items-center gap-2">
                 <span
                   className={`font-bold text-sm transition-colors ${
-                    isSelected ? 'text-amber-500 underline underline-offset-4' : 'hover:text-amber-500'
+                    isSelected ? 'text-amber-500 font-extrabold' : 'hover:text-amber-500'
                   }`}
                   style={{ color: isSelected ? undefined : token.colorText }}
                 >
@@ -281,8 +274,13 @@ export default function CvTipTab({
       title: 'Chuyên Viên (CV)',
       dataIndex: 'techName',
       key: 'techName',
-      width: 140,
-      render: (text: string) => <span className="font-semibold text-xs text-amber-500">{text}</span>,
+      width: 170,
+      render: (text: string, record: CvTipRecord) => (
+        <Space size={8}>
+          <CcAvatar name={text} src={record.avatar} size={28} />
+          <span className="font-semibold text-xs text-amber-500">{text}</span>
+        </Space>
+      ),
     },
     {
       title: 'Khách Hàng',

@@ -70,6 +70,7 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
         SELECT 
           cc.user_id as staffId,
           up.full_name as displayName,
+          up.avatar as avatar,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COUNT(DISTINCT cc.order_id) as totalVisits,
           COUNT(DISTINCT CASE WHEN st.id IS NOT NULL AND st.tip_amount > 0 THEN cc.order_id END) as tippedVisits,
@@ -89,7 +90,7 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
           AND o.booking_date_start <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${storeFilterClause}
-        GROUP BY cc.user_id, up.full_name, store
+        GROUP BY cc.user_id, up.full_name, up.avatar, store
         ORDER BY totalCcTipBonus DESC
       `;
 
@@ -118,6 +119,7 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
           rank: index + 1,
           consultantId: Number(r.staffId),
           displayName: String(r.displayName || ''),
+          avatar: String(r.avatar || '') || null,
           store: String(r.store || 'PXL'),
           totalVisits,
           tippedVisits,

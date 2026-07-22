@@ -40,6 +40,7 @@ import { CvPaystubRecord, CvWorkLogDetailRecord } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import dayjs from 'dayjs';
+import CcAvatar from '../../cc/components/CcAvatar';
 
 const { Text } = Typography;
 
@@ -447,9 +448,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
         return (
           <div className="flex items-center gap-2">
             {rankBadge}
-            <div className="w-8 h-8 rounded-full bg-blue-900/30 dark:bg-blue-950/60 border border-blue-400/40 text-blue-500 dark:text-blue-400 flex items-center justify-center font-extrabold text-xs shrink-0 shadow-sm">
-              {initial}
-            </div>
+            <CcAvatar name={text} src={record.avatar} size={32} />
             <div className="flex flex-col">
               <span className="font-bold text-sm leading-snug" style={{ color: token.colorText }}>
                 {text}

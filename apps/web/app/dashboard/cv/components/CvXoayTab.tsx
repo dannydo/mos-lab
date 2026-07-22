@@ -17,6 +17,7 @@ import { CvXoayRecord } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
+import CcAvatar from '../../cc/components/CcAvatar';
 
 interface CvXoayTabProps {
   loading?: boolean;
@@ -28,6 +29,7 @@ interface CvXoayTabProps {
 interface CvLeaderboardRow {
   rank: number;
   techName: string;
+  avatar?: string | null;
   store: string;
   techLevel: number;
   totalServices: number;
@@ -102,6 +104,7 @@ export default function CvXoayTab({
       string,
       {
         techName: string;
+        avatar?: string | null;
         store: string;
         techLevel: number;
         totalServices: number;
@@ -115,6 +118,7 @@ export default function CvXoayTab({
       const name = item.techName || 'Chưa phân công';
       const existing = map.get(name) || {
         techName: name,
+        avatar: item.avatar,
         store: item.store || 'PXL',
         techLevel: item.techLevel || 1,
         totalServices: 0,
@@ -123,6 +127,9 @@ export default function CvXoayTab({
         maxPointsAccu: 0,
       };
 
+      if (!existing.avatar && item.avatar) {
+        existing.avatar = item.avatar;
+      }
       existing.totalServices += 1;
       existing.totalPoints += item.techPoints;
       existing.totalBonus += item.techBonus;
@@ -184,13 +191,7 @@ export default function CvXoayTab({
         const isSelected = searchText.toLowerCase() === name.toLowerCase();
         return (
           <Space className="cursor-pointer">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                isSelected ? 'bg-blue-500 text-white shadow-md' : 'bg-blue-500/10 text-blue-500'
-              }`}
-            >
-              {name.charAt(0)}
-            </div>
+            <CcAvatar name={name} src={record.avatar} size={34} isSelected={isSelected} />
             <div>
               <div className="font-bold text-sm" style={{ color: token.colorText }}>
                 {name}
@@ -251,16 +252,19 @@ export default function CvXoayTab({
       title: 'Chuyên Viên (CV)',
       dataIndex: 'techName',
       key: 'techName',
-      width: 150,
+      width: 180,
       render: (text: string, record: CvXoayRecord) => (
-        <div>
-          <div className="font-semibold text-sm" style={{ color: token.colorText }}>
-            {text || 'N/A'}
+        <Space size={8}>
+          <CcAvatar name={text} src={record.avatar} size={28} />
+          <div>
+            <div className="font-semibold text-sm" style={{ color: token.colorText }}>
+              {text || 'N/A'}
+            </div>
+            <Tag color="blue" className="text-[10px] mt-0.5 tabular-nums">
+              Level {record.techLevel}
+            </Tag>
           </div>
-          <Tag color="blue" className="text-[10px] mt-0.5 tabular-nums">
-            Level {record.techLevel}
-          </Tag>
-        </div>
+        </Space>
       ),
     },
     {

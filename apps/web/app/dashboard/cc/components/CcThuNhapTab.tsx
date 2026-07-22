@@ -35,6 +35,7 @@ import {
 import { CcPaystubRecord, CcPaystubResponse, CcWorkLogDetailRecord, CcWorkLogDetailResponse } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import dayjs from 'dayjs';
+import CcAvatar from './CcAvatar';
 
 const { Text } = Typography;
 
@@ -251,13 +252,14 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       title: 'Hạng / CC',
       dataIndex: 'displayName',
       key: 'displayName',
-      width: 220,
+      width: 240,
       render: (name: string, record: CcPaystubRecord, index: number) => {
         return (
           <Space className="group cursor-pointer" onClick={() => handleOpenDetailModal(record)}>
-            <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-500 font-bold flex items-center justify-center text-xs group-hover:bg-amber-500 group-hover:text-black transition-all">
+            <span className="tabular-nums font-bold text-xs w-6 text-center">
               {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
-            </div>
+            </span>
+            <CcAvatar name={name} src={record.avatar} size={32} />
             <div>
               <div className="font-bold text-sm" style={{ color: token.colorText }}>
                 {name}

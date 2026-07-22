@@ -162,7 +162,16 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
 - Mỗi khi người dùng cung cấp đường dẫn API (ví dụ: `https://api.wingslashes.com/...` hoặc `https://api.orb/...`), **không gọi trực tiếp endpoint ngoài**.
 - **Chủ động tra cứu source code `wingslashes` nội bộ**: Truy cập và kiểm tra mã nguồn/repository `wingslashes` trên hệ thống local để đối chiếu câu lệnh SQL, công thức tính toán và logic dữ liệu chính xác của API đó.
 
+---
 
+# 📞 OmiCall Switchboard Diagnostic & Testing Rules
 
+Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall WebRTC phải tuân thủ:
 
+1. **Chẩn đoán Trực tiếp Gateway (Direct Gateway Inspection)**:
+   - Trước khi giả định lỗi ở phía Frontend, luôn thực hiện test kết nối SIP WebSocket đến `wss://sig.omicrm.com`.
+   - Kiểm tra mã phản hồi SIP: `200 OK` (Thành công), `401/407` (Yêu cầu Digest Auth), `480 Temporarily Unavailable / Cause 16` (Hết tiền cước thoại OmiCall Portal / Khóa Trunk Viettel).
 
+2. **Cung cấp Chế độ Gọi Mô phỏng (Simulation Mode)**:
+   - Tất cả các widget cuộc gọi OmiCall trên CRM phải cung cấp tùy chọn chuyển đổi linh hoạt giữa `SIP Thực tế` và `Mô phỏng (Test)`.
+   - Khi SIP thực tế bị ngắt do lỗi cước OmiCall, tự động chuyển sang Chế độ Mô phỏng để bảo đảm trải nghiệm test mượt mà cho Booker và Khách hàng.

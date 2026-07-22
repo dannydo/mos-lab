@@ -1,11 +1,18 @@
 import React from 'react';
-import { Button, Avatar } from 'antd';
-import { UserOutlined, CheckCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Button, Avatar, Segmented } from 'antd';
+import {
+  UserOutlined,
+  CheckCircleOutlined,
+  LoadingOutlined,
+  PhoneOutlined,
+  ExperimentOutlined,
+} from '@ant-design/icons';
 
 interface CallConfirmingProps {
   currentCall: SafeAny;
   isRegistered: boolean;
   isSimulated: boolean;
+  setIsSimulated?: (simulated: boolean) => void;
   isDark: boolean;
   textColor: string;
   descColor: string;
@@ -19,6 +26,7 @@ export const CallConfirming: React.FC<CallConfirmingProps> = ({
   currentCall,
   isRegistered,
   isSimulated,
+  setIsSimulated,
   isDark,
   textColor,
   descColor,
@@ -28,7 +36,7 @@ export const CallConfirming: React.FC<CallConfirmingProps> = ({
   cancelConfirm,
 }) => {
   return (
-    <div className="p-6 text-center space-y-5">
+    <div className="p-6 text-center space-y-4">
       <div className="flex justify-center relative">
         <div className="relative">
           <Avatar
@@ -61,25 +69,61 @@ export const CallConfirming: React.FC<CallConfirmingProps> = ({
         </p>
       </div>
 
+      {/* Mode Selector */}
+      {setIsSimulated && (
+        <div className="flex flex-col items-center gap-1">
+          <div className="text-[11px] font-medium" style={{ color: descColor }}>
+            Chế độ cuộc gọi:
+          </div>
+          <Segmented
+            size="small"
+            options={[
+              {
+                label: (
+                  <div className="flex items-center gap-1 text-xs px-1">
+                    <PhoneOutlined />
+                    <span>SIP Thực tế</span>
+                  </div>
+                ),
+                value: 'real',
+              },
+              {
+                label: (
+                  <div className="flex items-center gap-1 text-xs px-1">
+                    <ExperimentOutlined />
+                    <span>Mô phỏng (Test)</span>
+                  </div>
+                ),
+                value: 'simulated',
+              },
+            ]}
+            value={isSimulated ? 'simulated' : 'real'}
+            onChange={(val) => setIsSimulated(val === 'simulated')}
+          />
+        </div>
+      )}
+
       {/* Connection Status */}
       <div
-        className="text-xs flex items-center justify-center gap-2 py-1.5 px-4 rounded-full mx-auto w-fit"
+        className="text-xs flex items-center justify-center gap-2 py-1 px-4 rounded-full mx-auto w-fit"
         style={{ background: subBg }}
       >
         {isRegistered || isSimulated ? (
           <>
             <CheckCircleOutlined className="text-emerald-500" />
-            <span className="font-semibold text-emerald-500">Tổng đài đã sẵn sàng</span>
+            <span className="font-semibold text-emerald-500">
+              {isSimulated ? 'Chế độ Mô phỏng (Sẵn sàng)' : 'Tổng đài SIP đã kết nối'}
+            </span>
           </>
         ) : (
           <>
             <LoadingOutlined className="text-amber-500" />
-            <span className="font-semibold text-amber-500">Đang khởi tạo tổng đài...</span>
+            <span className="font-semibold text-amber-500">Đang kết nối tổng đài...</span>
           </>
         )}
       </div>
 
-      <div className="flex justify-center gap-3 pt-2">
+      <div className="flex justify-center gap-3 pt-1">
         <Button
           type="primary"
           shape="round"

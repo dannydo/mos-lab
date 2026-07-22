@@ -31,6 +31,7 @@ import dayjs from 'dayjs';
 import { CcTipLeaderboardEntry, CcTipRecord } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
+import CcAvatar from './CcAvatar';
 
 const { Text } = Typography;
 
@@ -166,15 +167,7 @@ export default function CcTipTab({
         const isSelected = selectedCcName === name;
         return (
           <Space className="cursor-pointer group" onClick={() => setSelectedCcName(isSelected ? null : name)}>
-            <div
-              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                isSelected
-                  ? 'bg-amber-500 text-black shadow-md scale-105'
-                  : 'bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20'
-              }`}
-            >
-              {name.charAt(0)}
-            </div>
+            <CcAvatar name={name} src={record.avatar} isSelected={isSelected} size={36} />
             <div>
               <div className="flex items-center gap-2">
                 <span
@@ -298,13 +291,29 @@ export default function CcTipTab({
       title: 'CC In',
       dataIndex: 'ccInName',
       key: 'ccInName',
-      render: (val: string) => <span className="font-medium text-amber-400 text-sm">{val || '---'}</span>,
+      render: (val: string) =>
+        val ? (
+          <Space size={6}>
+            <CcAvatar name={val} size={24} />
+            <span className="font-medium text-amber-400 text-xs">{val}</span>
+          </Space>
+        ) : (
+          <span className="text-gray-500 text-xs">---</span>
+        ),
     },
     {
       title: 'CC Out',
       dataIndex: 'ccOutName',
       key: 'ccOutName',
-      render: (val: string) => <span className="font-medium text-purple-400 text-sm">{val || '---'}</span>,
+      render: (val: string) =>
+        val ? (
+          <Space size={6}>
+            <CcAvatar name={val} size={24} />
+            <span className="font-medium text-purple-400 text-xs">{val}</span>
+          </Space>
+        ) : (
+          <span className="text-gray-500 text-xs">---</span>
+        ),
     },
     {
       title: 'Tip Khách Cho (100%)',

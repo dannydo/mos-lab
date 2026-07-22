@@ -6,6 +6,7 @@ import { SearchOutlined, ReloadOutlined, InfoCircleOutlined, SettingOutlined } f
 import { CcXoayRecord } from '@mos-lab/shared';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
+import CcAvatar from './CcAvatar';
 
 const { Text } = Typography;
 
@@ -85,8 +86,13 @@ export default function CcXoayTab({ data, loading, total = 0, onRefresh }: CcXoa
       title: 'CC Tư Vấn',
       dataIndex: 'consultantName',
       key: 'consultantName',
-      width: 150,
-      render: (val: string) => <span className="font-medium">{val}</span>,
+      width: 170,
+      render: (val: string, record: CcXoayRecord) => (
+        <Space size={8}>
+          <CcAvatar name={val} src={record.avatar} size={26} />
+          <span className="font-semibold">{val}</span>
+        </Space>
+      ),
     },
     {
       title: 'Level CC',
@@ -134,13 +140,31 @@ export default function CcXoayTab({ data, loading, total = 0, onRefresh }: CcXoa
       title: 'CC In',
       dataIndex: 'ccInName',
       key: 'ccInName',
-      width: 140,
+      width: 160,
+      render: (val: string) =>
+        val ? (
+          <Space size={6}>
+            <CcAvatar name={val} size={22} />
+            <span className="text-xs">{val}</span>
+          </Space>
+        ) : (
+          <span className="text-gray-400 text-xs">-</span>
+        ),
     },
     {
       title: 'CC Out',
       dataIndex: 'ccOutName',
       key: 'ccOutName',
-      width: 140,
+      width: 160,
+      render: (val: string) =>
+        val ? (
+          <Space size={6}>
+            <CcAvatar name={val} size={22} />
+            <span className="text-xs">{val}</span>
+          </Space>
+        ) : (
+          <span className="text-gray-400 text-xs">-</span>
+        ),
     },
     {
       title: 'Class',

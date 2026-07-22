@@ -70,6 +70,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
         SELECT 
           tech.assigned_staff_id as staffId,
           up.full_name as displayName,
+          up.avatar as avatar,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COUNT(DISTINCT tech.order_id) as totalVisits,
           COUNT(DISTINCT CASE WHEN st.id IS NOT NULL AND st.tip_amount > 0 THEN tech.order_id END) as tippedVisits,
@@ -87,7 +88,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           AND o.booking_date_start <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${storeFilterClause}
-        GROUP BY tech.assigned_staff_id, up.full_name, store
+        GROUP BY tech.assigned_staff_id, up.full_name, up.avatar, store
         ORDER BY totalCvTipBonus DESC
       `;
 
@@ -116,6 +117,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           rank: index + 1,
           technicianId: Number(r.staffId),
           displayName: String(r.displayName || ''),
+          avatar: String(r.avatar || '') || null,
           store: String(r.store || 'PXL'),
           totalVisits,
           tippedVisits,
@@ -203,6 +205,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           COALESCE(csl.client_store_name, '') as store,
           COALESCE(sl.service_name, s.service_key) as serviceName,
           COALESCE(tech_p.full_name, '') as techName,
+          COALESCE(tech_p.avatar, '') as avatar,
           COALESCE(st.tip_amount, 0) as totalCustomerTip,
           COALESCE(ROUND(st.tip_amount * 0.7), 0) as cvTipAmount
         FROM \`order\` o
@@ -232,6 +235,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           store: String(row.store || 'PXL'),
           serviceName: String(row.serviceName || ''),
           techName: String(row.techName || ''),
+          avatar: String(row.avatar || '') || null,
           totalCustomerTip: Math.round(Number(row.totalCustomerTip || 0)),
           cvTipAmount,
           cvTipPercentage: 70,

@@ -7,6 +7,7 @@ export interface CcXoayRecord {
   serviceName: string;
   serviceType: 'Normal' | 'Retain' | string;
   consultantName: string;
+  avatar?: string | null;
   consultantLevel: number;
   consultantBonus: number;
   pointsAccu: number;
@@ -32,6 +33,7 @@ export interface CcLeaderboardEntry {
   rank: number;
   consultantId: number | string;
   displayName: string;
+  avatar?: string | null;
   store: string;
   level: number;
   totalCheckins: number;

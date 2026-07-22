@@ -114,7 +114,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
       }
 
       const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT DISTINCT up.user_id as userId, up.full_name as displayName
+        SELECT DISTINCT up.user_id as userId, up.full_name as displayName, up.avatar as avatar
         FROM \`user_profile\` up
         JOIN \`staff_profile\` sp ON sp.user_id = up.user_id
         LEFT JOIN \`user_group_language\` ugl ON up.user_group_id = ugl.user_group_id
@@ -126,10 +126,11 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         return { data: [], total: 0, activeStaff: [] };
       }
 
-      const staffMap = new Map<number, { name: string; store: string }>();
+      const staffMap = new Map<number, { name: string; avatar: string | null; store: string }>();
       staffProfiles.forEach((s) => {
         staffMap.set(Number(s.userId), {
           name: s.displayName,
+          avatar: s.avatar ? String(s.avatar) : null,
           store: s.displayName.includes('PXL') ? 'PXL' : 'De Tham',
         });
       });
@@ -310,12 +311,13 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
       const getOrCreateRecord = (d: string, uid: number, store_code?: string) => {
         const k = mapKey(d, uid);
         if (!grouped.has(k)) {
-          const sInfo = staffMap.get(uid) || { name: `Staff #${uid}`, store: 'PXL' };
+          const sInfo = staffMap.get(uid) || { name: `Staff #${uid}`, avatar: null, store: 'PXL' };
           grouped.set(k, {
             id: k,
             date: d,
             user_id: uid,
             consultant_name: sInfo.name,
+            avatar: sInfo.avatar,
             store_code: store_code || sInfo.store,
             single_sales: 0,
             combo_sales: 0,
@@ -431,7 +433,11 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
       return {
         data: result,
         total: result.length,
-        activeStaff: staffProfiles.map((s) => ({ userId: Number(s.userId), displayName: s.displayName })),
+        activeStaff: staffProfiles.map((s) => ({
+          userId: Number(s.userId),
+          displayName: s.displayName,
+          avatar: s.avatar ? String(s.avatar) : null,
+        })),
       };
     } catch (err) {
       fastify.log.error(err as Error, 'Get daily sales bonus consultant error');

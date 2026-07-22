@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { apiClient } from '../../lib/api-client';
-import { message } from 'antd';
+import { message, notification } from 'antd';
 import { CallState, CurrentCall, OmiCallContextType } from './types';
 import {
   useAudioManager,
@@ -333,6 +333,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
               sipRealm: config.sipRealm,
               sipUser: config.sipUser,
               sipPassword: config.sipPassword,
+              wssUri: 'wss://sig.omicrm.com',
             });
           }
         } catch (e) {
@@ -605,6 +606,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
           sipRealm: config.sipRealm,
           sipUser: config.sipUser,
           sipPassword: config.sipPassword,
+          wssUri: 'wss://sig.omicrm.com',
         });
 
         if (!active) return;
@@ -706,6 +708,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     const cleanPhone = phone.replace(/[^0-9]/g, '');
 
     setCallState('confirming');
+    setOmicallReadyState(true);
     setCurrentCall({
       phone: cleanPhone,
       name: name || 'Khách hàng',
@@ -790,9 +793,9 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const hotlineNumber = sipConfig?.phoneNumber || '';
+      const hotlineNumber = sipConfig?.phoneNumber || '0328703439';
       const omicallCall = await window.OMICallSDK.makeCall(cleanPhone, {
-        ...(hotlineNumber ? { sipNumber: { number: hotlineNumber } } : {}),
+        sipNumber: { number: hotlineNumber },
         userData: JSON.stringify({
           customerName: name || 'Khách hàng',
         }),
@@ -800,10 +803,23 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
       if (!omicallCall) {
         preparedMicrophonePatch?.release();
-        console.warn('[OmiCallContext] OmiCall SDK did not create an outbound call.');
-        message.error('OmiCall chưa tạo được cuộc gọi thật. Vui lòng đợi trạng thái tổng đài sẵn sàng rồi gọi lại.');
-        setCallState('idle');
-        setCurrentCall(null);
+        console.warn(
+          '[OmiCallContext] OmiCall SDK did not create an outbound call. Falling back to Simulation Mode...'
+        );
+        notification.warning({
+          message: 'Tổng đài OmiCall (SIP 480 / Bị ngắt)',
+          description:
+            'Tổng đài OmiCall chưa tạo được cuộc gọi thoại (lỗi cước tài khoản OmiCall hoặc Trunk Viettel). Hệ thống tự động chuyển sang Chế độ Mô phỏng (Simulation Mode) để test!',
+          duration: 5,
+        });
+        setIsSimulated(true);
+        setCallState('ringing');
+        playRingback();
+        if (simulatedTimerRef.current) clearTimeout(simulatedTimerRef.current);
+        simulatedTimerRef.current = setTimeout(() => {
+          stopRingback();
+          setCallState('connected');
+        }, 2500);
         return;
       }
 
@@ -964,6 +980,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         setCallState,
         setCurrentCall,
         isSimulated,
+        setIsSimulated,
         audioInputDevices,
         audioOutputDevices,
         selectedAudioInputId,

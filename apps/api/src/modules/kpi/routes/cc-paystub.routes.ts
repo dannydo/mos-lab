@@ -59,6 +59,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         SELECT 
           up.user_id as userId,
           up.full_name as fullName,
+          up.avatar as avatar,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store
         FROM \`user_profile\` up
         LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
@@ -418,6 +419,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         return {
           consultantId: uid,
           displayName: s.fullName,
+          avatar: String(s.avatar || '') || null,
           store: s.store,
           hourlyWage,
           totalWorkHours,

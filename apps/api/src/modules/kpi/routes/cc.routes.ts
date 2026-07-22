@@ -356,6 +356,7 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
           COALESCE(csl.client_store_name, '') AS store,
           COALESCE(sl.service_name, s.service_key) AS serviceName,
           COALESCE(checkout_p.full_name, checkin_p.full_name, '') AS consultantName,
+          COALESCE(checkout_p.avatar, checkin_p.avatar, '') AS avatar,
           COALESCE(checkin_p.full_name, '') AS ccInName,
           COALESCE(checkout_p.full_name, '') AS ccOutName,
 
@@ -450,6 +451,7 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
           serviceName: String(row.serviceName || ''),
           serviceType: String(row.serviceType || 'Normal'),
           consultantName: activeConsultantName,
+          avatar: String(row.avatar || '') || null,
           consultantLevel: calculatedLevel,
           consultantBonus,
           pointsAccu: Math.round(newTotal * 10) / 10,
@@ -519,6 +521,7 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
         SELECT 
           sb.user_id as staffId,
           up.full_name as displayName,
+          up.avatar as avatar,
           COUNT(DISTINCT sb.order_id) as totalCheckins,
           COUNT(DISTINCT sb.order_service_id) as totalServices,
           SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) as totalPointsAccu,
@@ -545,7 +548,7 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
           GROUP BY staff_id
         ) combo ON combo.staff_id = sb.user_id
         WHERE sb.date_created >= ? AND sb.date_created <= ? ${activeCcFilter}
-        GROUP BY sb.user_id, up.full_name
+        GROUP BY sb.user_id, up.full_name, up.avatar
         ORDER BY totalPointsAccu DESC
         LIMIT 30
       `,
@@ -609,6 +612,7 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
             rank: index + 1,
             consultantId: staffId,
             displayName,
+            avatar: s.avatar ? String(s.avatar) : null,
             store: index % 2 === 0 ? 'PXL' : 'De Tham',
             level,
             totalCheckins,

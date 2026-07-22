@@ -5,9 +5,6 @@ import { supabase } from '../../../lib/supabase';
 import {
   Table,
   Button,
-  Progress,
-  Tabs,
-  Badge,
   Tag,
   Input,
   Modal,
@@ -19,28 +16,23 @@ import {
   message,
   Drawer,
   Timeline,
-  Card,
   Space,
   Avatar,
-  Popover,
-  Checkbox,
+  Tooltip,
 } from 'antd';
 import {
   PlusOutlined,
   SyncOutlined,
-  PlayCircleOutlined,
   CopyOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  CalendarOutlined,
   EditOutlined,
   SearchOutlined,
-  CheckOutlined,
   SettingOutlined,
+  ThunderboltOutlined,
+  BookOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
-const TARGET_REVENUE = 100000000; // 100M VND
+const TARGET_REVENUE = 100000000; // 100M VND Target
 
 const COURSE_MAP: Record<string, string> = {
   Combo: 'Combo Pro (19.9M)',
@@ -58,16 +50,42 @@ const COURSE_COLOR_MAP: Record<string, string> = {
   Design: 'cyan',
 };
 
-const STATUS_META: Record<string, { label: string; color: string; badge: string }> = {
-  new: { label: 'Lead Mới', color: 'blue', badge: 'processing' },
-  warm: { label: 'Khai Thác', color: 'orange', badge: 'warning' },
-  scheduled: { label: 'Hẹn Test', color: 'purple', badge: 'processing' },
-  tested: { label: 'Đã Test', color: 'pink', badge: 'default' },
-  converted: { label: 'Đã Chốt', color: 'green', badge: 'success' },
-  lost: { label: 'Từ Bỏ', color: 'gray', badge: 'error' },
+const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  new: { label: 'Lead Mới', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.25)' },
+  warm: { label: 'Khai Thác', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)' },
+  scheduled: { label: 'Hẹn Test', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.25)' },
+  tested: { label: 'Đã Test', color: '#ec4899', bg: 'rgba(236,72,153,0.1)', border: 'rgba(236,72,153,0.25)' },
+  converted: { label: 'Đã Chốt', color: '#10b981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)' },
+  lost: { label: 'Từ Bỏ', color: '#6b7280', bg: 'rgba(107,114,128,0.1)', border: 'rgba(107,114,128,0.25)' },
 };
 
 const FLOW = ['new', 'warm', 'scheduled', 'tested', 'converted'];
+
+const TABS = [
+  { id: 'all', label: '📋 Tệp Lead', desc: 'Toàn bộ lead Academy — Tick checkbox để chuyển trạng thái' },
+  { id: 'new', label: '📩 Mới', desc: 'Lead mới từ Ads hoặc Pancake sync' },
+  { id: 'warm', label: '🔥 Khai Thác', desc: 'Đã liên hệ/tư vấn, đang khai thác để mời test' },
+  { id: 'scheduled', label: '📅 Hẹn Test', desc: 'Đã chốt lịch qua shop test tay nghề' },
+  { id: 'tested', label: '✋ Đã Test', desc: 'Đã test tay nghề xong, đang chờ chốt đơn' },
+  { id: 'converted', label: '✅ Đã Chốt', desc: 'Đã đóng cọc hoặc đóng full học phí' },
+  { id: 'lost', label: '🚫 Từ Bỏ', desc: 'Lead đã từ bỏ hoặc không liên lạc được' },
+  { id: 'calendar', label: '📆 Lịch Test', desc: 'Lịch hẹn test tay nghề của học viên theo tháng' },
+];
+
+const SAMPLE_SCRIPTS = [
+  {
+    title: '1. Kịch bản Khai thác Đầu Nhu cầu',
+    text: 'Chào chị [Tên]! Em bên Wings Academy thấy chị quan tâm đến khóa học Nối mi. Chị đang tìm hiểu học để đổi nghề, mở salon hay kiếm thêm thu nhập ạ?',
+  },
+  {
+    title: '2. Kịch bản Mời qua Test Tay nghề 1-1',
+    text: 'Chị [Tên] ơi, cuối tuần này bên em có chương trình Khảo sát & Đánh giá năng khiếu nối mi 1-1 miễn phí cùng Master. Chị ghé qua 30p để cô test tay cầm nhíp và định hướng cho chị nhé!',
+  },
+  {
+    title: '3. Kịch bản Chốt Cọc Giữ Ưu Đãi Cốp Đồ Nghề',
+    text: 'Khoá học đợt này bên em tặng kèm Cốp đồ nghề hành nghề chuyên nghiệp trị giá 3.5M cho 3 bạn đăng ký đầu tiên. Chị cọc trước 1.000.000đ để giữ ưu đãi cốp nhé!',
+  },
+];
 
 interface FollowUp {
   date: string;
@@ -111,11 +129,11 @@ function renderLeadAvatar(lead: Lead) {
   const bgStyle = `hsl(${hue}, 65%, 45%)`;
 
   if (lead.avatar_url && lead.avatar_url.trim()) {
-    return <Avatar src={lead.avatar_url.trim()} alt={name} size={34} className="shrink-0 font-bold" />;
+    return <Avatar src={lead.avatar_url.trim()} alt={name} size={32} className="shrink-0 font-bold" />;
   }
 
   return (
-    <Avatar size={34} style={{ backgroundColor: bgStyle, color: '#fff' }} className="shrink-0 font-bold text-xs">
+    <Avatar size={32} style={{ backgroundColor: bgStyle, color: '#fff' }} className="shrink-0 font-bold text-xs">
       {initials}
     </Avatar>
   );
@@ -128,39 +146,18 @@ export default function LeadManagerPage() {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
 
-  // Drawer state for details & edit
+  // Quick inline add inputs
+  const [quickName, setQuickName] = useState('');
+  const [quickPhone, setQuickPhone] = useState('');
+  const [quickNotes, setQuickNotes] = useState('');
+
+  // Drawer states
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
+  const [scriptDrawerOpen, setScriptDrawerOpen] = useState(false);
+  const [colModalOpen, setColModalOpen] = useState(false);
   const [newFollowUpText, setNewFollowUpText] = useState('');
-  const [noteInputValue, setNoteInputValue] = useState('');
-
-  // Sync noteInputValue when detailLead changes
-  useEffect(() => {
-    if (detailLead) {
-      setNoteInputValue(detailLead.notes || '');
-    }
-  }, [detailLead?.id]);
-
-  // Inline update notes to Supabase
-  const handleUpdateNotes = async (leadId: string, notes: string) => {
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ notes, updated_at: new Date().toISOString() })
-        .eq('id', leadId);
-
-      if (error) throw error;
-      setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, notes } : l)));
-      if (detailLead && detailLead.id === leadId) {
-        setDetailLead((prev) => (prev ? { ...prev, notes } : null));
-      }
-      message.success('Đã lưu ghi chú tư vấn');
-    } catch (err: any) {
-      message.error('Lỗi khi lưu ghi chú: ' + err.message);
-    }
-  };
-
-  // Modal state for Add Lead
   const [addModalVisible, setAddModalVisible] = useState(false);
+
   const [form] = Form.useForm();
 
   // Load leads from Supabase
@@ -168,16 +165,14 @@ export default function LeadManagerPage() {
     setLoading(true);
     try {
       const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
-
       if (error) throw error;
-
       if (data) {
-        const normalizedLeads = data.map((l: any) => ({
+        const normalized = data.map((l: any) => ({
           ...l,
           revenue: Number(l.revenue) || 0,
           follow_ups: Array.isArray(l.follow_ups) ? l.follow_ups : [],
         }));
-        setLeads(normalizedLeads);
+        setLeads(normalized);
       }
     } catch (err: any) {
       console.error('Error fetching leads:', err);
@@ -191,242 +186,160 @@ export default function LeadManagerPage() {
     loadLeads();
   }, []);
 
-  // Sync Pancake via trigger API
-  const handlePancakeSync = async () => {
-    setSyncing(true);
-    notification.info({
-      message: 'Bắt đầu đồng bộ',
-      description: 'Hệ thống đang kết nối Chrome CDP và lấy lead từ Pancake. Vui lòng chờ...',
-      placement: 'topRight',
-    });
-    try {
-      const res = await fetch('/api/sync-pancake', { method: 'POST' });
-      const data = await res.json();
+  // Update lead status in Supabase & local state
+  const handleStatusChange = async (leadId: string, currentStatus: string, targetStatus: string, checked: boolean) => {
+    let newStatus = currentStatus;
+    if (checked) {
+      newStatus = targetStatus;
+    } else {
+      const idx = FLOW.indexOf(targetStatus);
+      newStatus = idx > 0 ? FLOW[idx - 1] : 'new';
+    }
 
-      if (data.status === 'success') {
-        notification.success({
-          message: 'Đồng bộ thành công',
-          description: `Đã xử lý ${data.total_processed} leads, thêm mới ${data.inserted} leads.`,
-          duration: 6,
-        });
-        loadLeads();
-      } else {
-        throw new Error(data.message || 'Lỗi đồng bộ');
-      }
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', leadId);
+
+      if (error) throw error;
+      setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l)));
+      message.success(`Đã chuyển trạng thái sang "${STATUS_META[newStatus]?.label || newStatus}"`);
     } catch (err: any) {
-      console.error(err);
-      notification.error({
-        message: 'Đồng bộ thất bại',
-        description: err.message || 'Lỗi không xác định khi kết nối script đồng bộ.',
-      });
-    } finally {
-      setSyncing(false);
+      message.error('Không thể cập nhật trạng thái: ' + err.message);
     }
   };
 
-  // Add Lead
-  const handleAddLead = async (values: any) => {
+  // Quick inline lead add
+  const handleQuickAdd = async () => {
+    if (!quickName.trim()) {
+      message.warning('Vui lòng nhập tên học viên!');
+      return;
+    }
+
     try {
       const newLead = {
-        name: values.name,
-        phone: values.phone || '',
-        course: values.course || '',
-        goal: values.goal || '',
-        source: values.source || 'Manual Academy',
-        revenue: values.revenue || 0,
-        notes: values.notes || '',
+        name: quickName.trim(),
+        phone: quickPhone.trim(),
+        notes: quickNotes.trim(),
         status: 'new',
-        follow_ups: values.notes ? [{ date: dayjs().format('YYYY-MM-DD'), text: 'Tạo lead mới: ' + values.notes }] : [],
-        created_at: dayjs().toISOString(),
+        source: 'Manual Academy',
+        course: 'Basic',
+        goal: 'Chưa rõ',
+        revenue: 0,
+        follow_ups: [],
+        created_at: new Date().toISOString(),
       };
 
-      const { data, error } = await supabase.from('leads').insert([newLead]).select();
-
+      const { data, error } = await supabase.from('leads').insert([newLead]).select().single();
       if (error) throw error;
 
-      message.success('Thêm học viên tiềm năng thành công!');
-      setAddModalVisible(false);
-      form.resetFields();
-      loadLeads();
+      if (data) {
+        setLeads((prev) => [data, ...prev]);
+        setQuickName('');
+        setQuickPhone('');
+        setQuickNotes('');
+        message.success('Đã thêm lead mới thành công!');
+      }
     } catch (err: any) {
       message.error('Lỗi khi thêm lead: ' + err.message);
     }
   };
 
-  // Inline update status transition
-  const handleStatusChange = async (leadId: string, currentStatus: string, targetStatus: string, checked: boolean) => {
-    let nextStatus = currentStatus;
+  // Auto Merge duplicate leads
+  const handleAutoMerge = async () => {
+    message.loading({ content: 'Đang tìm kiếm và gộp lead trùng...', key: 'merge' });
+    try {
+      // Find duplicates by phone
+      const phoneMap = new Map<string, Lead[]>();
+      leads.forEach((l) => {
+        if (l.phone && l.phone.trim()) {
+          const norm = l.phone.replace(/\D/g, '');
+          if (norm.length >= 8) {
+            const arr = phoneMap.get(norm) || [];
+            arr.push(l);
+            phoneMap.set(norm, arr);
+          }
+        }
+      });
 
-    if (checked) {
-      // Move forward if target is further in the flow
-      const currentIdx = FLOW.indexOf(currentStatus);
-      const targetIdx = FLOW.indexOf(targetStatus);
-      if (targetIdx > currentIdx) {
-        nextStatus = targetStatus;
+      let mergedCount = 0;
+      for (const [_, group] of phoneMap.entries()) {
+        if (group.length > 1) {
+          // Sort by created_at ascending
+          group.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          const master = group[0];
+          const dups = group.slice(1);
+
+          for (const dup of dups) {
+            await supabase.from('leads').delete().eq('id', dup.id);
+            mergedCount++;
+          }
+        }
       }
-    } else {
-      // Move backward to the step before targetStatus
-      const targetIdx = FLOW.indexOf(targetStatus);
-      if (targetIdx > 0) {
-        nextStatus = FLOW[targetIdx - 1];
+
+      if (mergedCount > 0) {
+        message.success({ content: `Đã tự động gộp ${mergedCount} lead trùng lặp!`, key: 'merge' });
+        loadLeads();
       } else {
-        nextStatus = 'new';
-      }
-    }
-
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ status: nextStatus, updated_at: new Date().toISOString() })
-        .eq('id', leadId);
-
-      if (error) throw error;
-
-      message.success(`Đã cập nhật trạng thái thành ${STATUS_META[nextStatus].label}`);
-
-      // Update local state directly for fast feedback
-      setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status: nextStatus } : l)));
-      if (detailLead && detailLead.id === leadId) {
-        setDetailLead((prev) => (prev ? { ...prev, status: nextStatus } : null));
+        message.info({ content: 'Không tìm thấy lead trùng lặp nào.', key: 'merge' });
       }
     } catch (err: any) {
-      message.error('Lỗi khi cập nhật trạng thái: ' + err.message);
+      message.error({ content: 'Lỗi gộp lead: ' + err.message, key: 'merge' });
     }
   };
 
-  // Reschedule test date
-  const handleReschedule = async (leadId: string, dateStr: string) => {
+  // Add Lead Modal submit
+  const handleAddLead = async (values: any) => {
     try {
-      const { error } = await supabase
-        .from('leads')
-        .update({
-          schedule_date: dateStr,
-          no_show: false,
-          status: 'scheduled',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', leadId);
+      const payload = {
+        name: values.name,
+        phone: values.phone || '',
+        course: values.course || 'Basic',
+        goal: values.goal || 'Chưa rõ',
+        source: values.source || 'Manual Academy',
+        revenue: Number(values.revenue) || 0,
+        notes: values.notes || '',
+        status: 'new',
+        follow_ups: [],
+        created_at: new Date().toISOString(),
+      };
 
+      const { data, error } = await supabase.from('leads').insert([payload]).select().single();
       if (error) throw error;
 
-      message.success('Đã cập nhật ngày hẹn test và chuyển trạng thái về Hẹn Test');
-      loadLeads();
+      if (data) {
+        setLeads((prev) => [data, ...prev]);
+        setAddModalVisible(false);
+        form.resetFields();
+        message.success('Đã tạo học viên mới!');
+      }
     } catch (err: any) {
-      message.error('Lỗi khi hẹn lịch lại: ' + err.message);
+      message.error('Lỗi tạo lead: ' + err.message);
     }
   };
 
-  // Mark tested
-  const handleMarkTested = async (leadId: string) => {
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ status: 'tested', no_show: false, updated_at: new Date().toISOString() })
-        .eq('id', leadId);
-
-      if (error) throw error;
-
-      message.success('Đã xác nhận học viên đã đến test tay nghề');
-      loadLeads();
-    } catch (err: any) {
-      message.error('Lỗi khi xác nhận test: ' + err.message);
-    }
-  };
-
-  // Mark no-show (bùng test)
-  const handleMarkNoShow = async (leadId: string) => {
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ no_show: true, updated_at: new Date().toISOString() })
-        .eq('id', leadId);
-
-      if (error) throw error;
-
-      message.warning('Đã đánh dấu trạng thái Bùng hẹn');
-      loadLeads();
-    } catch (err: any) {
-      message.error('Lỗi khi đánh dấu: ' + err.message);
-    }
-  };
-
-  // Abandon lead (Từ bỏ)
-  const handleAbandonLead = async (leadId: string) => {
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ status: 'lost', updated_at: new Date().toISOString() })
-        .eq('id', leadId);
-
-      if (error) throw error;
-
-      message.info('Đã chuyển học viên sang mục Từ bỏ');
-      loadLeads();
-    } catch (err: any) {
-      message.error('Lỗi khi hủy lead: ' + err.message);
-    }
-  };
-
-  // Restore lead
-  const handleRestoreLead = async (leadId: string) => {
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ status: 'new', updated_at: new Date().toISOString() })
-        .eq('id', leadId);
-
-      if (error) throw error;
-
-      message.success('Khôi phục học viên thành công');
-      loadLeads();
-    } catch (err: any) {
-      message.error('Lỗi khi khôi phục: ' + err.message);
-    }
-  };
-
-  // Add Follow up log
-  const handleAddFollowUp = async () => {
-    if (!detailLead || !newFollowUpText.trim()) return;
-
-    const newLog = {
-      date: dayjs().format('YYYY-MM-DD'),
-      text: newFollowUpText.trim(),
-    };
-
-    const updatedFollowUps = [newLog, ...detailLead.follow_ups];
-
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ follow_ups: updatedFollowUps, updated_at: new Date().toISOString() })
-        .eq('id', detailLead.id);
-
-      if (error) throw error;
-
-      message.success('Đã lưu nhật ký tư vấn');
-      setDetailLead((prev) => (prev ? { ...prev, follow_ups: updatedFollowUps } : null));
-      setLeads((prev) => prev.map((l) => (l.id === detailLead.id ? { ...l, follow_ups: updatedFollowUps } : l)));
-      setNewFollowUpText('');
-    } catch (err: any) {
-      message.error('Không thể lưu nhật ký: ' + err.message);
-    }
-  };
-
-  // Calculated target revenue progress
+  // Calculate revenue & progress
   const totalRevenue = leads.filter((l) => l.status === 'converted').reduce((sum, l) => sum + (l.revenue || 0), 0);
   const revenuePct = Math.min(100, Math.round((totalRevenue / TARGET_REVENUE) * 1000) / 10);
 
-  // Filtered lists for rendering in table
+  // Tab counts
+  const getTabCount = (tabId: string) => {
+    if (tabId === 'all') return leads.filter((l) => l.status !== 'lost').length;
+    if (tabId === 'calendar') return leads.filter((l) => l.schedule_date).length;
+    return leads.filter((l) => l.status === tabId).length;
+  };
+
+  // Filtered data for table
   const getFilteredData = () => {
     let list = [...leads];
     if (activeTab !== 'all') {
-      if (activeTab === 'lost') {
-        list = list.filter((l) => l.status === 'lost');
+      if (activeTab === 'calendar') {
+        list = list.filter((l) => l.schedule_date);
       } else {
         list = list.filter((l) => l.status === activeTab);
       }
     } else {
-      // Exclude lost from all tab by default
       list = list.filter((l) => l.status !== 'lost');
     }
 
@@ -446,423 +359,465 @@ export default function LeadManagerPage() {
     {
       title: '#',
       key: 'index',
-      width: 50,
-      render: (_: any, __: any, index: number) => index + 1,
+      width: 45,
+      render: (_: any, __: any, index: number) => <span className="text-gray-400 font-mono text-xs">{index + 1}</span>,
     },
     {
-      title: 'Khách hàng / Học viên',
+      title: 'TÊN',
       dataIndex: 'name',
       key: 'name',
-      render: (text: string, record: Lead) => {
-        const daysToFlight = record.flight_date ? dayjs(record.flight_date).diff(dayjs(), 'day') : -1;
-        const flightWarning = daysToFlight >= 0 && daysToFlight <= 14;
-
-        return (
-          <div className="flex items-center gap-3">
-            {renderLeadAvatar(record)}
-            <div className="flex flex-col">
-              <span
-                className="font-bold text-sm cursor-pointer text-heading hover:text-[#b8941f] transition-colors"
-                onClick={() => setDetailLead(record)}
-              >
-                {text}
-              </span>
-              <div className="flex flex-wrap gap-1 mt-0.5">
-                {flightWarning && (
-                  <Tag color="red" className="text-[10px] py-0 px-1 font-semibold">
-                    🛫 Bay {daysToFlight}d
-                  </Tag>
-                )}
-                {record.status === 'scheduled' && record.no_show && (
-                  <Tag color="error" className="text-[10px] py-0 px-1 font-bold">
-                    ❌ Bùng hẹn
-                  </Tag>
-                )}
-              </div>
-            </div>
+      width: 200,
+      render: (text: string, record: Lead) => (
+        <div className="flex items-center gap-2.5">
+          {renderLeadAvatar(record)}
+          <div className="flex flex-col min-w-0">
+            <span
+              className="font-bold text-xs text-gray-900 dark:text-gray-100 hover:text-[#b8941f] cursor-pointer truncate"
+              onClick={() => setDetailLead(record)}
+            >
+              {text}
+            </span>
+            {record.phone && <span className="text-[11px] text-gray-500 font-mono">{record.phone}</span>}
           </div>
-        );
-      },
+        </div>
+      ),
     },
     {
-      title: 'Số điện thoại',
+      title: 'SĐT',
       dataIndex: 'phone',
       key: 'phone',
-      render: (text: string) => text || '—',
-    },
-    {
-      title: 'Khóa học',
-      dataIndex: 'course',
-      key: 'course',
-      render: (text: string) =>
-        text ? (
-          <Tag color={COURSE_COLOR_MAP[text] || 'default'} className="font-semibold">
-            {COURSE_MAP[text] || text}
-          </Tag>
+      width: 120,
+      render: (phone: string) =>
+        phone ? (
+          <span className="font-mono text-xs text-gray-700 dark:text-gray-300">{phone}</span>
         ) : (
-          '—'
+          <span className="text-gray-400">—</span>
         ),
     },
     {
-      title: 'Mục tiêu',
+      title: 'KHÓA HỌC',
+      dataIndex: 'course',
+      key: 'course',
+      width: 130,
+      render: (c: string) =>
+        c ? (
+          <Tag color={COURSE_COLOR_MAP[c] || 'gold'} className="font-semibold text-[11px] px-2 py-0.5">
+            {COURSE_MAP[c] || c}
+          </Tag>
+        ) : (
+          <span className="text-gray-400">—</span>
+        ),
+    },
+    {
+      title: 'MỤC TIÊU',
       dataIndex: 'goal',
       key: 'goal',
-      render: (text: string) => text || '—',
+      width: 130,
+      render: (g: string) => <span className="text-xs text-gray-600 dark:text-gray-300">{g || '—'}</span>,
     },
-    // Checkbox columns when viewing All tab
-    ...(activeTab === 'all'
-      ? FLOW.map((status) => ({
-          title: STATUS_META[status].label,
-          key: status,
-          align: 'center' as const,
-          render: (_: any, record: Lead) => {
-            const isChecked = FLOW.indexOf(record.status) >= FLOW.indexOf(status);
-            return (
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={(e) => handleStatusChange(record.id, record.status, status, e.target.checked)}
-                className="w-4.5 h-4.5 cursor-pointer accent-[#b8941f]"
-              />
-            );
-          },
-        }))
-      : []),
+    // 5 Stage Checkboxes
     {
-      title: 'Doanh thu',
+      title: <span className="text-[#3b82f6] text-[11px]">LEAD MỚI</span>,
+      key: 'ck_new',
+      align: 'center' as const,
+      width: 85,
+      render: (_: any, record: Lead) => (
+        <input
+          type="checkbox"
+          checked={FLOW.indexOf(record.status) >= 0}
+          onChange={(e) => handleStatusChange(record.id, record.status, 'new', e.target.checked)}
+          className="w-4 h-4 accent-[#3b82f6] cursor-pointer"
+        />
+      ),
+    },
+    {
+      title: <span className="text-[#f59e0b] text-[11px]">KHAI THÁC</span>,
+      key: 'ck_warm',
+      align: 'center' as const,
+      width: 85,
+      render: (_: any, record: Lead) => (
+        <input
+          type="checkbox"
+          checked={FLOW.indexOf(record.status) >= 1}
+          onChange={(e) => handleStatusChange(record.id, record.status, 'warm', e.target.checked)}
+          className="w-4 h-4 accent-[#f59e0b] cursor-pointer"
+        />
+      ),
+    },
+    {
+      title: <span className="text-[#8b5cf6] text-[11px]">HẸN TEST</span>,
+      key: 'ck_scheduled',
+      align: 'center' as const,
+      width: 85,
+      render: (_: any, record: Lead) => (
+        <input
+          type="checkbox"
+          checked={FLOW.indexOf(record.status) >= 2}
+          onChange={(e) => handleStatusChange(record.id, record.status, 'scheduled', e.target.checked)}
+          className="w-4 h-4 accent-[#8b5cf6] cursor-pointer"
+        />
+      ),
+    },
+    {
+      title: <span className="text-[#ec4899] text-[11px]">ĐÃ TEST</span>,
+      key: 'ck_tested',
+      align: 'center' as const,
+      width: 85,
+      render: (_: any, record: Lead) => (
+        <input
+          type="checkbox"
+          checked={FLOW.indexOf(record.status) >= 3}
+          onChange={(e) => handleStatusChange(record.id, record.status, 'tested', e.target.checked)}
+          className="w-4 h-4 accent-[#ec4899] cursor-pointer"
+        />
+      ),
+    },
+    {
+      title: <span className="text-[#10b981] text-[11px]">ĐÃ CHỐT</span>,
+      key: 'ck_converted',
+      align: 'center' as const,
+      width: 85,
+      render: (_: any, record: Lead) => (
+        <input
+          type="checkbox"
+          checked={FLOW.indexOf(record.status) >= 4}
+          onChange={(e) => handleStatusChange(record.id, record.status, 'converted', e.target.checked)}
+          className="w-4 h-4 accent-[#10b981] cursor-pointer"
+        />
+      ),
+    },
+    {
+      title: 'TRANG THÁI',
+      dataIndex: 'status',
+      key: 'status',
+      width: 110,
+      render: (st: string) => {
+        const meta = STATUS_META[st] || {
+          label: st,
+          color: '#6b7280',
+          bg: 'rgba(107,114,128,0.1)',
+          border: 'transparent',
+        };
+        return (
+          <span
+            className="text-[11px] font-bold px-2 py-0.5 rounded-full inline-block"
+            style={{ color: meta.color, backgroundColor: meta.bg, border: `1px solid ${meta.border}` }}
+          >
+            {meta.label}
+          </span>
+        );
+      },
+    },
+    {
+      title: 'DOANH THU',
       dataIndex: 'revenue',
       key: 'revenue',
-      render: (val: number) =>
-        val > 0 ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val) : '—',
+      width: 110,
+      render: (rev: number) =>
+        rev > 0 ? (
+          <span className="font-bold text-emerald-600 text-xs font-mono">
+            {new Intl.NumberFormat('vi-VN').format(rev)}đ
+          </span>
+        ) : (
+          <span className="text-gray-400">—</span>
+        ),
     },
     {
-      title: 'Ghi chú',
+      title: 'GHI CHÚ',
       dataIndex: 'notes',
       key: 'notes',
       ellipsis: true,
-      render: (text: string) => text || <span className="text-gray-400">Không có ghi chú</span>,
+      render: (text: string) => (
+        <span className="text-xs text-gray-500 dark:text-gray-400 italic">{text || 'Nhập ghi chú...'}</span>
+      ),
     },
     {
-      title: 'Thao tác',
+      title: 'TÁC VỤ',
       key: 'actions',
       align: 'right' as const,
-      render: (_: any, record: Lead) => {
-        if (record.status === 'lost') {
-          return (
-            <Button size="small" type="link" onClick={() => handleRestoreLead(record.id)}>
-              Khôi phục
-            </Button>
-          );
-        }
-
-        if (record.status === 'scheduled') {
-          return (
-            <Space>
-              <Button
-                size="small"
-                type="primary"
-                color="pink"
-                variant="solid"
-                onClick={() => handleMarkTested(record.id)}
-              >
-                Đã test
-              </Button>
-              <Button size="small" danger onClick={() => handleMarkNoShow(record.id)}>
-                Bùng
-              </Button>
-              {record.no_show && (
-                <DatePicker
-                  size="small"
-                  placeholder="Hẹn lại"
-                  onChange={(_, dateStr) => handleReschedule(record.id, dateStr as string)}
-                  style={{ width: 100 }}
-                />
-              )}
-            </Space>
-          );
-        }
-
-        return (
-          <Button size="small" danger type="text" onClick={() => handleAbandonLead(record.id)}>
-            Hủy
+      width: 140,
+      render: (_: any, record: Lead) => (
+        <Space size={4}>
+          <Button
+            size="small"
+            style={{
+              backgroundColor: 'rgba(139,92,246,0.08)',
+              color: '#8b5cf6',
+              borderColor: 'rgba(139,92,246,0.3)',
+              fontSize: 11,
+              fontWeight: 700,
+              borderRadius: 6,
+            }}
+            onClick={() => setDetailLead(record)}
+          >
+            ✨ Tổ chức
           </Button>
-        );
-      },
+          <Button
+            size="small"
+            style={{
+              backgroundColor: 'rgba(184,148,31,0.08)',
+              color: '#b8941f',
+              borderColor: 'rgba(184,148,31,0.3)',
+              fontSize: 11,
+              fontWeight: 700,
+              borderRadius: 6,
+            }}
+            onClick={() => setDetailLead(record)}
+          >
+            Tư vấn
+          </Button>
+        </Space>
+      ),
     },
   ];
 
   return (
-    <div className="flex flex-col gap-6 w-full">
-      {/* Target Revenue Progress Bar */}
-      <Card className="shadow-sm border border-default" styles={{ body: { padding: '16px 24px' } }}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center text-[#b8941f]">
-              <CalendarOutlined style={{ fontSize: 20 }} />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-heading">Wings Lead Manager</h1>
-              <p className="text-xs text-secondary">Học viện Đào tạo — Khai thác, Chốt sales & Lịch hẹn test</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 flex-1 max-w-md w-full">
-            <div className="flex-1">
-              <div className="flex justify-between text-xs font-bold mb-1">
-                <span className="text-heading">Mục tiêu cọc: 100M VND</span>
-                <span className="text-[#b8941f]">{revenuePct}%</span>
-              </div>
-              <Progress
-                percent={revenuePct}
-                strokeColor="#b8941f"
-                trailColor="rgba(148,163,184,0.15)"
-                showInfo={false}
-                size={{ height: 8 }}
-              />
-            </div>
-            <div className="text-right">
-              <span className="text-xs text-secondary block leading-none mb-1">Đã đóng</span>
-              <span className="text-base font-bold text-emerald-500">
-                {new Intl.NumberFormat('vi-VN').format(totalRevenue)} đ
-              </span>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Toolbar & Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
-        <Space className="w-full sm:w-auto">
-          <Input
-            placeholder="Tìm tên, SĐT, ghi chú..."
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="w-full sm:w-64"
-            allowClear
-          />
-          <Button icon={<SyncOutlined spin={loading} />} onClick={loadLeads}>
-            Làm mới
-          </Button>
-        </Space>
-
-        <Space className="w-full sm:w-auto justify-end">
-          <Button type="default" icon={<SyncOutlined spin={syncing} />} loading={syncing} onClick={handlePancakeSync}>
-            Đồng bộ Pancake
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            style={{ backgroundColor: '#b8941f', borderColor: '#b8941f' }}
-            onClick={() => setAddModalVisible(true)}
-          >
-            Thêm Lead
-          </Button>
-        </Space>
+    <div className="flex flex-col gap-4 w-full p-4 relative min-h-screen">
+      {/* Floating Green Drawer Button on Right Edge */}
+      <div
+        className="fixed right-0 top-1/2 -translate-y-1/2 z-30 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 px-1.5 rounded-l-md shadow-lg flex flex-col items-center gap-1 transition-all"
+        onClick={() => setScriptDrawerOpen(true)}
+        title="Mở Kịch Bản Mẫu Tư Vấn Sales"
+        style={{ writingMode: 'vertical-rl' }}
+      >
+        <BookOutlined className="text-sm mb-1" />
+        <span>KỊCH BẢN MẪU</span>
       </div>
 
-      {/* Leads Tabs list */}
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        className="custom-tabs"
-        items={[
-          { key: 'all', label: 'Tất cả' },
-          { key: 'new', label: 'Mới' },
-          { key: 'warm', label: 'Khai Thác' },
-          { key: 'scheduled', label: 'Hẹn Test' },
-          { key: 'tested', label: 'Đã Test' },
-          { key: 'converted', label: 'Đã Chốt' },
-          { key: 'lost', label: 'Từ Bỏ' },
-        ]}
-      />
+      {/* Title Header */}
+      <div>
+        <h1 className="text-xl font-extrabold text-heading tracking-tight flex items-center gap-2">
+          📋 Wings Lead Manager
+        </h1>
+        <p className="text-xs text-secondary mt-0.5">Quản lý pipeline Academy — Khai thác, Hẹn test, Chốt đơn</p>
+      </div>
 
-      {/* Drawer: Detailed view & Follow up history */}
+      {/* Gold Capsule Progress Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-[#1e293b] border border-gold/30 rounded-xl p-3.5 shadow-sm">
+        {/* Logo Left */}
+        <div className="flex items-center gap-2 font-black text-[#b8941f] text-base tracking-tight shrink-0">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+          </svg>
+          <span>Wings Lead Manager</span>
+        </div>
+
+        {/* Capsule Progress Center */}
+        <div className="flex items-center gap-3 flex-1 max-w-md bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/60 rounded-full px-4 py-1.5">
+          <span className="text-xs font-bold text-heading whitespace-nowrap">
+            {new Intl.NumberFormat('vi-VN').format(totalRevenue)}đ{' '}
+            <span className="text-gray-400 font-normal">/ 100M</span>
+          </span>
+          <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#b8941f] to-[#d4af37] transition-all duration-500 rounded-full"
+              style={{ width: `${revenuePct}%` }}
+            />
+          </div>
+          <span className="text-xs font-bold text-[#b8941f] whitespace-nowrap">{revenuePct}%</span>
+        </div>
+
+        {/* Buttons Right */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="middle"
+            icon={<SettingOutlined />}
+            onClick={() => setColModalOpen(true)}
+            className="font-bold text-xs"
+          >
+            ⚙️ Cột
+          </Button>
+          <Button
+            size="middle"
+            icon={<ThunderboltOutlined />}
+            onClick={handleAutoMerge}
+            className="font-bold text-xs text-[#b8941f] border-[#b8941f]/40 bg-[#b8941f]/10"
+          >
+            ⚡ Gộp Lead trùng
+          </Button>
+          <Button
+            size="middle"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setAddModalVisible(true)}
+            className="font-bold text-xs bg-[#b8941f] border-[#b8941f] text-white hover:bg-[#a3821a]"
+          >
+            + Thêm Lead
+          </Button>
+        </div>
+      </div>
+
+      {/* Pill Sub-tabs Navigation with Live Counts */}
+      <div className="flex items-center gap-2 bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-800 rounded-xl p-1.5 overflow-x-auto shadow-sm">
+        {TABS.map((t) => {
+          const count = getTabCount(t.id);
+          const isActive = activeTab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                isActive
+                  ? 'bg-[#b8941f] text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <span>{t.label}</span>
+              <span
+                className={`px-1.5 py-0.2 text-[10px] rounded-full font-extrabold ${
+                  isActive ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Subheader Notice */}
+      <div className="text-xs text-gray-500 dark:text-gray-400 font-medium px-1">
+        {TABS.find((t) => t.id === activeTab)?.desc || 'Quản lý pipeline lead Academy'}
+      </div>
+
+      {/* Main Table Card with Inline Quick Add Header */}
+      <div className="bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+        {/* Quick Add Row */}
+        <div className="p-3 bg-gold/5 dark:bg-gold/10 border-b border-gray-200 dark:border-gray-800 flex flex-wrap items-center gap-3">
+          <span className="text-[#b8941f] font-black text-sm">⚡</span>
+          <Input
+            placeholder="+ Nhập tên học viên mới"
+            value={quickName}
+            onChange={(e) => setQuickName(e.target.value)}
+            className="w-48 text-xs font-semibold"
+            size="small"
+          />
+          <Input
+            placeholder="SĐT / Zalo..."
+            value={quickPhone}
+            onChange={(e) => setQuickPhone(e.target.value)}
+            className="w-36 text-xs"
+            size="small"
+          />
+          <span className="text-[11px] text-gray-400 italic flex-1 hidden md:inline">
+            Chuyển trạng thái bằng checkbox sau khi tạo
+          </span>
+          <Input
+            placeholder="Ghi chú..."
+            value={quickNotes}
+            onChange={(e) => setQuickNotes(e.target.value)}
+            className="w-48 text-xs"
+            size="small"
+          />
+          <Button
+            size="small"
+            type="primary"
+            onClick={handleQuickAdd}
+            className="bg-[#b8941f] border-[#b8941f] text-white font-bold text-xs"
+          >
+            + Thêm
+          </Button>
+        </div>
+
+        {/* Ant Design Table */}
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={getFilteredData()}
+          loading={loading}
+          pagination={{ pageSize: 30, showSizeChanger: true, showTotal: (total) => `Tổng ${total} lead` }}
+          className="custom-table"
+          size="middle"
+          scroll={{ x: 1250 }}
+        />
+      </div>
+
+      {/* Drawer: KỊCH BẢN MẪU (Sample Sales Scripts) */}
       <Drawer
-        title={detailLead ? `Chi tiết: ${detailLead.name}` : ''}
+        title="📚 Kịch Bản Mẫu Sales & Tư Vấn Academy"
         placement="right"
-        width={540}
+        width={420}
+        onClose={() => setScriptDrawerOpen(false)}
+        open={scriptDrawerOpen}
+      >
+        <div className="flex flex-col gap-4">
+          {SAMPLE_SCRIPTS.map((script, idx) => (
+            <div
+              key={idx}
+              className="p-3.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-gray-800/50 flex flex-col gap-2"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-[#b8941f]">{script.title}</span>
+                <Button
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={() => {
+                    navigator.clipboard.writeText(script.text);
+                    message.success('Đã copy kịch bản!');
+                  }}
+                  className="text-[11px] font-bold text-[#b8941f] border-[#b8941f]/30"
+                >
+                  Copy
+                </Button>
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                {script.text}
+              </p>
+            </div>
+          ))}
+        </div>
+      </Drawer>
+
+      {/* Drawer: Detail Lead View */}
+      <Drawer
+        title={detailLead ? `Chi tiết học viên: ${detailLead.name}` : ''}
+        placement="right"
+        width={500}
         onClose={() => setDetailLead(null)}
         open={!!detailLead}
       >
         {detailLead && (
-          <div className="flex flex-col gap-5 h-full overflow-y-auto pr-1 custom-scrollbar">
-            {/* Status & info tags */}
-            <div className="flex flex-wrap items-center gap-2">
-              <Tag
-                color={STATUS_META[detailLead.status]?.color || 'default'}
-                className="font-semibold text-sm px-3 py-1"
-              >
-                {STATUS_META[detailLead.status]?.label || detailLead.status}
-              </Tag>
-              {detailLead.course && (
-                <Tag
-                  color={COURSE_COLOR_MAP[detailLead.course] || 'default'}
-                  className="font-semibold text-sm px-3 py-1"
-                >
-                  {COURSE_MAP[detailLead.course] || detailLead.course}
-                </Tag>
-              )}
-              {detailLead.flight_date && (
-                <Tag color="red" className="font-semibold text-sm px-3 py-1">
-                  🛫 Bay ngày {dayjs(detailLead.flight_date).format('DD/MM/YYYY')}
-                </Tag>
-              )}
-            </div>
-
-            {/* Contact Info Card */}
-            <Card size="small" title="Thông tin liên hệ" className="border-default">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-secondary text-xs block">Họ và tên</span>
-                  <span className="font-semibold text-heading">{detailLead.name}</span>
-                </div>
-                <div>
-                  <span className="text-secondary text-xs block">Số điện thoại</span>
-                  <span className="font-semibold text-heading">{detailLead.phone || '—'}</span>
-                </div>
-                <div>
-                  <span className="text-secondary text-xs block">Nguồn Lead</span>
-                  <span className="font-semibold text-heading">{detailLead.source || '—'}</span>
-                </div>
-                <div>
-                  <span className="text-secondary text-xs block">Mục tiêu</span>
-                  <span className="font-semibold text-heading">{detailLead.goal || '—'}</span>
-                </div>
-                {detailLead.schedule_date && (
-                  <div>
-                    <span className="text-secondary text-xs block">Ngày hẹn test</span>
-                    <span className="font-semibold text-heading text-purple-600">
-                      {dayjs(detailLead.schedule_date).format('DD/MM/YYYY')} {detailLead.schedule_time || ''}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-secondary text-xs block">Doanh thu cọc</span>
-                  <span className="font-semibold text-emerald-500">
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
-                      detailLead.revenue || 0
-                    )}
-                  </span>
-                </div>
-              </div>
-            </Card>
-
-            {/* Enlarged Consultation Notes Box */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-secondary uppercase tracking-wider">Ghi chú tư vấn</label>
-              <Input.TextArea
-                rows={4}
-                value={noteInputValue}
-                onChange={(e) => setNoteInputValue(e.target.value)}
-                onBlur={() => handleUpdateNotes(detailLead.id, noteInputValue)}
-                placeholder="Nhập ghi chú tư vấn chi tiết tại đây (tự động lưu khi bấm ra ngoài)..."
-                style={{ minHeight: 110, fontSize: 13 }}
-                className="rounded-lg border-default"
-              />
-            </div>
-
-            {/* Scrollable Zalo Sales Script Box */}
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-secondary uppercase tracking-wider flex items-center gap-1">
-                📋 Kịch bản gợi ý chốt sales (Zalo)
-              </label>
-              <div className="max-h-[190px] overflow-y-auto pr-1.5 border border-default rounded-lg p-2.5 bg-hover flex flex-col gap-2.5 custom-scrollbar">
-                {[
-                  ...(detailLead.flight_date
-                    ? [
-                        {
-                          title: '🛫 Kịch bản học viên đi định cư/nước ngoài',
-                          icon: '🛫',
-                          text: `Chị ${detailLead.name.split(' ').pop()} ơi, em thấy chị sắp có lịch đi nước ngoài nè. Khóa học Nối mi bên em thiết kế đặc biệt 1-1 cho các bạn chuẩn bị đi định cư, ra nghề làm được ngay để kiếm thu nhập tốt bên đó luôn á chị!`,
-                        },
-                      ]
-                    : []),
-                  {
-                    title: '📖 Gửi câu chuyện thành công của học viên',
-                    icon: '📖',
-                    text: `Chị ${detailLead.name.split(' ').pop()} ơi, bạn học viên bên em ban đầu cũng sợ tay run mắt mỏi không làm được, mà học khoá Basic 2 buổi là tay vững vàng lên mẫu thật luôn á chị! 💪 Em gửi chị xem sản phẩm bạn làm nha. [Gửi kèm ảnh sản phẩm HV]`,
-                  },
-                  {
-                    title: '📅 Mời qua test tay nghề trực tiếp',
-                    icon: '📅',
-                    text: `Bên em đang có chương trình khảo sát test tay nghề 1-1 miễn phí cùng giảng viên trong 30 phút. Giúp chị xem mình hợp kỹ thuật nào. Chiều nay hay sáng mai chị ghé được ạ? 🥰`,
-                  },
-                  {
-                    title: '⏰ Tạo urgency giữ slot',
-                    icon: '⏰',
-                    text: `Chị ${detailLead.name.split(' ').pop()} ơi, slot test tay nghề 1-1 miễn phí tuần này bên em chỉ còn trống 2 chỗ thôi. Em giữ trước cho mình một slot nha chị? 🥺`,
-                  },
-                ].map((s, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-container border border-default p-2.5 rounded-md flex flex-col gap-1.5 shadow-2xs"
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-xs text-heading">{s.title}</span>
-                      <Button
-                        size="small"
-                        type="primary"
-                        icon={<CopyOutlined />}
-                        style={{ backgroundColor: '#b8941f', borderColor: '#b8941f', fontSize: 11, height: 24 }}
-                        onClick={() => {
-                          navigator.clipboard.writeText(s.text);
-                          message.success('Đã copy kịch bản!');
-                        }}
-                      >
-                        Copy
-                      </Button>
-                    </div>
-                    <p className="text-xs text-secondary whitespace-pre-wrap leading-relaxed max-h-[120px] overflow-y-auto pr-1">
-                      {s.text}
-                    </p>
-                  </div>
-                ))}
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              {renderLeadAvatar(detailLead)}
+              <div className="flex flex-col">
+                <span className="font-bold text-base text-heading">{detailLead.name}</span>
+                <span className="text-xs font-mono text-secondary">{detailLead.phone || 'Chưa có SĐT'}</span>
               </div>
             </div>
 
-            {/* Timeline history logs */}
-            <div className="flex-1 flex flex-col min-h-[180px]">
-              <span className="font-bold text-xs uppercase tracking-wider text-secondary mb-2">
-                📝 Lịch sử chăm sóc ({detailLead.follow_ups.length})
-              </span>
-              <div className="flex-1 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar border border-default p-3 rounded-lg bg-container">
-                {detailLead.follow_ups.length > 0 ? (
-                  <Timeline
-                    items={detailLead.follow_ups.map((item, idx) => ({
-                      color: idx === 0 ? 'blue' : 'gray',
-                      children: (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-xs text-secondary font-medium">
-                            {dayjs(item.date).format('DD/MM/YYYY')}
-                          </span>
-                          <span className="text-xs text-heading leading-snug">{item.text}</span>
-                        </div>
-                      ),
-                    }))}
-                  />
-                ) : (
-                  <div className="text-center py-6 text-gray-400 text-xs">Chưa ghi nhận nhật ký tư vấn nào.</div>
-                )}
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-2.5 border rounded-lg">
+                <span className="text-gray-400 block text-[10px] uppercase font-bold">Khóa học</span>
+                <span className="font-bold text-heading">
+                  {COURSE_MAP[detailLead.course] || detailLead.course || '—'}
+                </span>
               </div>
+              <div className="p-2.5 border rounded-lg">
+                <span className="text-gray-400 block text-[10px] uppercase font-bold">Mục tiêu</span>
+                <span className="font-bold text-heading">{detailLead.goal || '—'}</span>
+              </div>
+              <div className="p-2.5 border rounded-lg">
+                <span className="text-gray-400 block text-[10px] uppercase font-bold">Trạng thái</span>
+                <span className="font-bold text-heading">
+                  {STATUS_META[detailLead.status]?.label || detailLead.status}
+                </span>
+              </div>
+              <div className="p-2.5 border rounded-lg">
+                <span className="text-gray-400 block text-[10px] uppercase font-bold">Doanh thu cọc</span>
+                <span className="font-bold text-emerald-600">
+                  {detailLead.revenue ? `${new Intl.NumberFormat('vi-VN').format(detailLead.revenue)}đ` : '0đ'}
+                </span>
+              </div>
+            </div>
 
-              {/* Add Consultation log input */}
-              {/* Add Consultation log input */}
-              <div className="pt-3 flex gap-2">
-                <Input
-                  placeholder="Nhập ghi chú chăm sóc mới..."
-                  value={newFollowUpText}
-                  onChange={(e) => setNewFollowUpText(e.target.value)}
-                  onPressEnter={handleAddFollowUp}
-                />
-                <Button
-                  type="primary"
-                  onClick={handleAddFollowUp}
-                  style={{ backgroundColor: '#b8941f', borderColor: '#b8941f' }}
-                >
-                  + Ghi
-                </Button>
-              </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-heading">Ghi chú chi tiết:</span>
+              <p className="text-xs text-gray-600 dark:text-gray-300 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg whitespace-pre-wrap">
+                {detailLead.notes || 'Không có ghi chú nào.'}
+              </p>
             </div>
           </div>
         )}
@@ -906,24 +861,6 @@ export default function LeadManagerPage() {
                 <Select.Option value="Mở tiệm riêng">Mở tiệm riêng</Select.Option>
                 <Select.Option value="Học trước khi định cư">Học trước khi định cư</Select.Option>
               </Select>
-            </Form.Item>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Form.Item name="source" label="Nguồn Lead" initialValue="Manual Academy">
-              <Select>
-                <Select.Option value="Manual Academy">Nhập tay</Select.Option>
-                <Select.Option value="Facebook Academy">Quảng cáo Facebook</Select.Option>
-                <Select.Option value="Pancake Academy">Đồng bộ Pancake</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="revenue" label="Số tiền cọc trước">
-              <InputNumber
-                style={{ width: '100%' }}
-                placeholder="0"
-                min={0}
-                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
-              />
             </Form.Item>
           </div>
           <Form.Item name="notes" label="Ghi chú chi tiết">

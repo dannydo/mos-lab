@@ -44,6 +44,7 @@ export async function fetchDiamondData(fastify: FastifyInstance, dateFromDay: st
     SELECT
         up_cc.user_id                                            AS cc_id,
         up_cc.full_name                                          AS TEN_CC,
+        up_cc.avatar                                             AS AVATAR,
         ROUND(SUM(rscc.total_check_in + rscc.total_check_out) / 2) AS TONG_KHACH,
         COALESCE(ref.cnt, 0)                                     AS SO_KH_DIAMOND
     FROM report_staff_client_consultant rscc
@@ -62,7 +63,7 @@ export async function fetchDiamondData(fastify: FastifyInstance, dateFromDay: st
     ) ref ON ref.cc_id = rscc.user_id
     WHERE rscc.client_business_id = 1
       AND rscc.date BETWEEN ? AND ?
-    GROUP BY rscc.user_id
+    GROUP BY rscc.user_id, up_cc.user_id, up_cc.full_name, up_cc.avatar
     HAVING TONG_KHACH > 0
     ORDER BY SO_KH_DIAMOND DESC, up_cc.full_name ASC
   `;
@@ -95,6 +96,7 @@ export async function fetchDiamondData(fastify: FastifyInstance, dateFromDay: st
       rank: rank++,
       ccId,
       tenCc,
+      avatar: r.AVATAR ? String(r.AVATAR) : null,
       tongKhach,
       soKhachDiamond,
       thuongDiamond,

@@ -17,6 +17,7 @@ export interface DailySalesBonusConsultantRecord {
   date: string; // YYYY-MM-DD
   user_id: number;
   consultant_name: string;
+  avatar?: string | null;
   store_code?: string;
   combo_sales: number;
   combo_count?: number;
@@ -43,6 +44,7 @@ export interface DailySalesBonusLeaderboardEntry {
   rank: number;
   consultantId: number;
   displayName: string;
+  avatar?: string | null;
   store: string;
   comboSalesCount: number;
   comboSales: number;

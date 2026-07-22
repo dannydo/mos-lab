@@ -81,6 +81,7 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
           COALESCE(csl.client_store_name, '') AS store,
           COALESCE(sl.service_name, s.service_key) AS serviceName,
           COALESCE(tech_p.full_name, '') AS techName,
+          COALESCE(tech_p.avatar, '') AS avatar,
           COALESCE(checkin_p.full_name, '') AS ccInName,
           COALESCE(checkout_p.full_name, '') AS ccOutName,
 
@@ -158,6 +159,7 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
           serviceName: String(r.serviceName || ''),
           serviceType: String(r.serviceType || 'Normal'),
           techName: String(r.techName || ''),
+          avatar: String(r.avatar || '') || null,
           techLevel,
           techBonus: Math.round(Number(r.techBonus || 0)),
           pointsAccu: newAccu,

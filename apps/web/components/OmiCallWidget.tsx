@@ -42,6 +42,7 @@ export default function OmiCallWidget() {
     setCallState,
     setCurrentCall,
     isSimulated,
+    setIsSimulated,
     audioInputDevices,
     audioOutputDevices,
     selectedAudioInputId,
@@ -69,9 +70,14 @@ export default function OmiCallWidget() {
     isResizing,
   } = positionHook;
 
-  // Auto-expand widget when there is an incoming call
+  // Auto-expand widget when initiating a call (confirming), receiving a call (incoming), ringing, or connected
   useEffect(() => {
-    if (callState === 'incoming') {
+    if (
+      callState === 'confirming' ||
+      callState === 'incoming' ||
+      callState === 'ringing' ||
+      callState === 'connected'
+    ) {
       setWidgetMinimized(false);
     }
   }, [callState, setWidgetMinimized]);
@@ -250,6 +256,7 @@ export default function OmiCallWidget() {
             currentCall={currentCall}
             isRegistered={isRegistered}
             isSimulated={isSimulated}
+            setIsSimulated={setIsSimulated}
             isDark={isDark}
             textColor={textColor}
             descColor={descColor}

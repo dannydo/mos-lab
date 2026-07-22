@@ -36,6 +36,7 @@ import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import CcThuongConfigModal from './CcThuongConfigModal';
 import CcThuongTransactionsModal from './CcThuongTransactionsModal';
+import CcAvatar from './CcAvatar';
 
 const { Text } = Typography;
 
@@ -71,7 +72,7 @@ export default function CcThuongTab({
   const [selectedTxConsultantId, setSelectedTxConsultantId] = useState<number | undefined>(undefined);
   const [selectedTxConsultantName, setSelectedTxConsultantName] = useState<string | undefined>(undefined);
 
-  const [activeStaff, setActiveStaff] = useState<{ userId: number; displayName: string }[]>([]);
+  const [activeStaff, setActiveStaff] = useState<{ userId: number; displayName: string; avatar?: string | null }[]>([]);
 
   // Sync external consultant filter if passed
   useEffect(() => {
@@ -132,6 +133,7 @@ export default function CcThuongTab({
       {
         consultantId: number;
         displayName: string;
+        avatar?: string | null;
         store: string;
         comboCount: number;
         comboSales: number;
@@ -148,6 +150,7 @@ export default function CcThuongTab({
       map.set(s.userId, {
         consultantId: s.userId,
         displayName: s.displayName,
+        avatar: s.avatar,
         store: s.displayName.includes('PXL') ? 'PXL' : 'De Tham',
         comboCount: 0,
         comboSales: 0,
@@ -165,6 +168,7 @@ export default function CcThuongTab({
         map.set(r.user_id, {
           consultantId: r.user_id,
           displayName: r.consultant_name,
+          avatar: r.avatar,
           store: r.store_code || 'PXL',
           comboCount: 0,
           comboSales: 0,
@@ -186,6 +190,7 @@ export default function CcThuongTab({
       item.totalSales += r.total_sales || 0;
       item.totalBonus += r.daily_bonus || 0;
       if (r.store_code) item.store = r.store_code;
+      if (r.avatar && !item.avatar) item.avatar = r.avatar;
     });
 
     const sorted = Array.from(map.values()).sort((a, b) => b.totalBonus - a.totalBonus);
@@ -198,6 +203,7 @@ export default function CcThuongTab({
         rank: idx + 1,
         consultantId: item.consultantId,
         displayName: item.displayName,
+        avatar: item.avatar,
         store: item.store,
         comboSalesCount: item.comboCount,
         comboSales: item.comboSales,
@@ -257,15 +263,7 @@ export default function CcThuongTab({
         const isSelected = selectedCcName === name;
         return (
           <Space className="cursor-pointer group">
-            <div
-              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                isSelected
-                  ? 'bg-amber-500 text-black shadow-md scale-105'
-                  : 'bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20'
-              }`}
-            >
-              {name.charAt(0)}
-            </div>
+            <CcAvatar name={name} src={record.avatar} isSelected={isSelected} size={36} />
             <div>
               <div className="flex items-center gap-2">
                 <span
@@ -424,16 +422,19 @@ export default function CcThuongTab({
       title: 'Tư Vấn Viên (CC)',
       dataIndex: 'consultant_name',
       key: 'consultant_name',
-      width: 160,
+      width: 190,
       render: (val: string, record: DailySalesBonusConsultantRecord) => (
-        <div>
-          <span className="font-semibold">{val}</span>
-          {record.store_code && (
-            <Tag color={record.store_code === 'PXL' ? 'blue' : 'purple'} className="ml-2 text-[10px]">
-              {record.store_code}
-            </Tag>
-          )}
-        </div>
+        <Space size={8}>
+          <CcAvatar name={val} src={record.avatar} size={28} />
+          <div>
+            <span className="font-semibold">{val}</span>
+            {record.store_code && (
+              <Tag color={record.store_code === 'PXL' ? 'blue' : 'purple'} className="ml-2 text-[10px]">
+                {record.store_code}
+              </Tag>
+            )}
+          </div>
+        </Space>
       ),
     },
     {

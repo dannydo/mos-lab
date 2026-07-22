@@ -238,7 +238,13 @@ export default function StaffPage() {
           <Spin size="large" />
         </div>
       ) : (
-        <Table columns={columns} dataSource={users.map((u) => ({ ...u, key: u.id }))} pagination={false} size="small" />
+        <Table
+          rowKey={(record, index) => record.id || record.email || `staff-${index}`}
+          columns={columns}
+          dataSource={users}
+          pagination={false}
+          size="small"
+        />
       )}
 
       {/* Form Modal */}

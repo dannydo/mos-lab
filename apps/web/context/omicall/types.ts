@@ -47,6 +47,7 @@ export interface OmiCallContextType {
   setCallState: (state: CallState) => void;
   setCurrentCall: (call: CurrentCall | null) => void;
   isSimulated: boolean;
+  setIsSimulated: (simulated: boolean) => void;
   audioInputDevices: MediaDeviceInfo[];
   audioOutputDevices: MediaDeviceInfo[];
   selectedAudioInputId: string;

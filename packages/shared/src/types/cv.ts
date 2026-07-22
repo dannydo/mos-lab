@@ -7,6 +7,7 @@ export interface CvXoayRecord {
   serviceName: string;
   serviceType: string;
   techName: string;
+  avatar?: string | null;
   techLevel: number;
   techBonus: number;
   pointsAccu: number;
@@ -36,6 +37,7 @@ export interface CvTipLeaderboardEntry {
   rank: number;
   technicianId: number;
   displayName: string;
+  avatar?: string | null;
   store: string;
   totalVisits: number;
   tippedVisits: number;
@@ -64,6 +66,7 @@ export interface CvTipRecord {
   store: string;
   serviceName: string;
   techName: string;
+  avatar?: string | null;
   totalCustomerTip: number;
   cvTipAmount: number; // 70% share
   cvTipPercentage: number; // 70%
@@ -86,6 +89,7 @@ export interface CvTipResponse {
 export interface CvPaystubRecord {
   staffId: number;
   staffName: string;
+  avatar?: string | null;
   store: string;
   totalWorkHours: number;
   hourlyRate: number;

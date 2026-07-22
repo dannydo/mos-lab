@@ -2,6 +2,7 @@ export interface CcDiamondEntry {
   rank?: number;
   ccId: number;
   tenCc: string;
+  avatar?: string | null;
   tongKhach: number;
   soKhachDiamond: number;
   thuongDiamond: number;
