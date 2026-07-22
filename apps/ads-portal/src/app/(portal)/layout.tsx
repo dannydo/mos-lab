@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
@@ -42,8 +42,13 @@ const NAV_ITEMS = [
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { themeMode, toggleTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-layout transition-colors duration-200">
@@ -53,8 +58,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           collapsed ? 'w-[70px]' : 'w-[260px]'
         }`}
         style={{
-          backgroundColor: themeMode === 'dark' ? '#0d1222' : '#ffffff',
-          borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : '#e2e8f0',
+          backgroundColor: mounted && themeMode === 'dark' ? '#0d1222' : '#ffffff',
+          borderColor: mounted && themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : '#e2e8f0',
         }}
       >
         {/* Brand logo header */}
@@ -78,8 +83,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             onClick={() => setCollapsed(!collapsed)}
             className="absolute -right-3 top-5 z-50 w-6 h-6 rounded-full border border-default bg-container flex items-center justify-center p-0 text-secondary hover:text-primary"
             style={{
-              backgroundColor: themeMode === 'dark' ? '#0d1222' : '#ffffff',
-              borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : '#e2e8f0',
+              backgroundColor: mounted && themeMode === 'dark' ? '#0d1222' : '#ffffff',
+              borderColor: mounted && themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : '#e2e8f0',
             }}
           >
             {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
@@ -104,7 +109,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                   style={{
                     color: isActive ? '#b8941f' : undefined,
                     backgroundColor: isActive
-                      ? themeMode === 'dark'
+                      ? mounted && themeMode === 'dark'
                         ? 'rgba(184, 148, 31, 0.12)'
                         : 'rgba(184, 148, 31, 0.08)'
                       : undefined,
@@ -137,9 +142,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               size="small"
               onClick={toggleTheme}
               className="flex items-center gap-1.5 px-2 py-1 h-8 rounded-lg shrink-0"
-              icon={themeMode === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+              icon={mounted ? themeMode === 'dark' ? <Sun size={14} /> : <Moon size={14} /> : <Sun size={14} />}
             >
-              {!collapsed && (themeMode === 'dark' ? 'Sáng' : 'Tối')}
+              {mounted && !collapsed && (themeMode === 'dark' ? 'Sáng' : 'Tối')}
             </Button>
           </div>
         </div>

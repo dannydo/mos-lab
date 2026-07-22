@@ -98,6 +98,33 @@ export default function LeadManagerPage() {
   // Drawer state for details & edit
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [newFollowUpText, setNewFollowUpText] = useState('');
+  const [noteInputValue, setNoteInputValue] = useState('');
+
+  // Sync noteInputValue when detailLead changes
+  useEffect(() => {
+    if (detailLead) {
+      setNoteInputValue(detailLead.notes || '');
+    }
+  }, [detailLead?.id]);
+
+  // Inline update notes to Supabase
+  const handleUpdateNotes = async (leadId: string, notes: string) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ notes, updated_at: new Date().toISOString() })
+        .eq('id', leadId);
+
+      if (error) throw error;
+      setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, notes } : l)));
+      if (detailLead && detailLead.id === leadId) {
+        setDetailLead((prev) => (prev ? { ...prev, notes } : null));
+      }
+      message.success('Đã lưu ghi chú tư vấn');
+    } catch (err: any) {
+      message.error('Lỗi khi lưu ghi chú: ' + err.message);
+    }
+  };
 
   // Modal state for Add Lead
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -615,30 +642,18 @@ export default function LeadManagerPage() {
         ]}
       />
 
-      {/* Table list */}
-      <Card className="shadow-sm border border-default" styles={{ body: { padding: 0 } }}>
-        <Table
-          dataSource={getFilteredData()}
-          columns={columns}
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 15, showSizeChanger: true }}
-          className="custom-scrollbar"
-        />
-      </Card>
-
       {/* Drawer: Detailed view & Follow up history */}
       <Drawer
         title={detailLead ? `Chi tiết: ${detailLead.name}` : ''}
         placement="right"
-        width={500}
+        width={540}
         onClose={() => setDetailLead(null)}
         open={!!detailLead}
       >
         {detailLead && (
-          <div className="flex flex-col gap-6 h-full">
+          <div className="flex flex-col gap-5 h-full overflow-y-auto pr-1 custom-scrollbar">
             {/* Status & info tags */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Tag
                 color={STATUS_META[detailLead.status]?.color || 'default'}
                 className="font-semibold text-sm px-3 py-1"
@@ -653,9 +668,14 @@ export default function LeadManagerPage() {
                   {COURSE_MAP[detailLead.course] || detailLead.course}
                 </Tag>
               )}
+              {detailLead.flight_date && (
+                <Tag color="red" className="font-semibold text-sm px-3 py-1">
+                  🛫 Bay ngày {dayjs(detailLead.flight_date).format('DD/MM/YYYY')}
+                </Tag>
+              )}
             </div>
 
-            {/* Editable & display data card */}
+            {/* Contact Info Card */}
             <Card size="small" title="Thông tin liên hệ" className="border-default">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -677,21 +697,13 @@ export default function LeadManagerPage() {
                 {detailLead.schedule_date && (
                   <div>
                     <span className="text-secondary text-xs block">Ngày hẹn test</span>
-                    <span className="font-semibold text-heading">
+                    <span className="font-semibold text-heading text-purple-600">
                       {dayjs(detailLead.schedule_date).format('DD/MM/YYYY')} {detailLead.schedule_time || ''}
                     </span>
                   </div>
                 )}
-                {detailLead.flight_date && (
-                  <div>
-                    <span className="text-secondary text-xs block">Ngày bay</span>
-                    <span className="font-semibold text-heading text-red-500">
-                      {dayjs(detailLead.flight_date).format('DD/MM/YYYY')}
-                    </span>
-                  </div>
-                )}
                 <div>
-                  <span className="text-secondary text-xs block">Tổng cọc đã đóng</span>
+                  <span className="text-secondary text-xs block">Doanh thu cọc</span>
                   <span className="font-semibold text-emerald-500">
                     {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
                       detailLead.revenue || 0
@@ -699,39 +711,97 @@ export default function LeadManagerPage() {
                   </span>
                 </div>
               </div>
-              <div className="mt-4 pt-3 border-t border-dashed border-default">
-                <span className="text-secondary text-xs block">Ghi chú hiện tại</span>
-                <p className="text-heading text-sm bg-hover p-2.5 rounded mt-1 whitespace-pre-wrap">
-                  {detailLead.notes || 'Không có ghi chú.'}
-                </p>
-              </div>
             </Card>
 
-            {/* Quick Consultation Scripts */}
-            {detailLead.status === 'scheduled' && detailLead.no_show && (
-              <Card size="small" title="Mẫu kịch bản bùng hẹn" className="border-red-200 bg-red-50/5">
-                <p className="text-xs text-secondary mb-2">Gửi tin nhắn này để hẹn test lại:</p>
-                <div className="bg-white dark:bg-zinc-800 p-2 border border-default rounded text-xs select-all cursor-pointer font-mono whitespace-pre-wrap">
-                  {`Alo bé ơi chị Trâm bên Wings nè.
-Hôm nay bên chị đợi bé qua test tay nghề mà chưa thấy bé tới. Bé bận việc đột xuất hả? Chị hỗ trợ bé hẹn lịch sang hôm khác nha?`}
-                </div>
-              </Card>
-            )}
+            {/* Enlarged Consultation Notes Box */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-secondary uppercase tracking-wider">Ghi chú tư vấn</label>
+              <Input.TextArea
+                rows={4}
+                value={noteInputValue}
+                onChange={(e) => setNoteInputValue(e.target.value)}
+                onBlur={() => handleUpdateNotes(detailLead.id, noteInputValue)}
+                placeholder="Nhập ghi chú tư vấn chi tiết tại đây (tự động lưu khi bấm ra ngoài)..."
+                style={{ minHeight: 110, fontSize: 13 }}
+                className="rounded-lg border-default"
+              />
+            </div>
+
+            {/* Scrollable Zalo Sales Script Box */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-secondary uppercase tracking-wider flex items-center gap-1">
+                📋 Kịch bản gợi ý chốt sales (Zalo)
+              </label>
+              <div className="max-h-[190px] overflow-y-auto pr-1.5 border border-default rounded-lg p-2.5 bg-hover flex flex-col gap-2.5 custom-scrollbar">
+                {[
+                  ...(detailLead.flight_date
+                    ? [
+                        {
+                          title: '🛫 Kịch bản học viên đi định cư/nước ngoài',
+                          icon: '🛫',
+                          text: `Chị ${detailLead.name.split(' ').pop()} ơi, em thấy chị sắp có lịch đi nước ngoài nè. Khóa học Nối mi bên em thiết kế đặc biệt 1-1 cho các bạn chuẩn bị đi định cư, ra nghề làm được ngay để kiếm thu nhập tốt bên đó luôn á chị!`,
+                        },
+                      ]
+                    : []),
+                  {
+                    title: '📖 Gửi câu chuyện thành công của học viên',
+                    icon: '📖',
+                    text: `Chị ${detailLead.name.split(' ').pop()} ơi, bạn học viên bên em ban đầu cũng sợ tay run mắt mỏi không làm được, mà học khoá Basic 2 buổi là tay vững vàng lên mẫu thật luôn á chị! 💪 Em gửi chị xem sản phẩm bạn làm nha. [Gửi kèm ảnh sản phẩm HV]`,
+                  },
+                  {
+                    title: '📅 Mời qua test tay nghề trực tiếp',
+                    icon: '📅',
+                    text: `Bên em đang có chương trình khảo sát test tay nghề 1-1 miễn phí cùng giảng viên trong 30 phút. Giúp chị xem mình hợp kỹ thuật nào. Chiều nay hay sáng mai chị ghé được ạ? 🥰`,
+                  },
+                  {
+                    title: '⏰ Tạo urgency giữ slot',
+                    icon: '⏰',
+                    text: `Chị ${detailLead.name.split(' ').pop()} ơi, slot test tay nghề 1-1 miễn phí tuần này bên em chỉ còn trống 2 chỗ thôi. Em giữ trước cho mình một slot nha chị? 🥺`,
+                  },
+                ].map((s, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-container border border-default p-2.5 rounded-md flex flex-col gap-1.5 shadow-2xs"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-xs text-heading">{s.title}</span>
+                      <Button
+                        size="small"
+                        type="primary"
+                        icon={<CopyOutlined />}
+                        style={{ backgroundColor: '#b8941f', borderColor: '#b8941f', fontSize: 11, height: 24 }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(s.text);
+                          message.success('Đã copy kịch bản!');
+                        }}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                    <p className="text-xs text-secondary whitespace-pre-wrap leading-relaxed max-h-[120px] overflow-y-auto pr-1">
+                      {s.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* Timeline history logs */}
-            <div className="flex-1 flex flex-col min-h-0">
-              <span className="font-bold text-sm text-heading mb-3">
-                Nhật ký tư vấn ({detailLead.follow_ups.length})
+            <div className="flex-1 flex flex-col min-h-[180px]">
+              <span className="font-bold text-xs uppercase tracking-wider text-secondary mb-2">
+                📝 Lịch sử chăm sóc ({detailLead.follow_ups.length})
               </span>
-              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              <div className="flex-1 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar border border-default p-3 rounded-lg bg-container">
                 {detailLead.follow_ups.length > 0 ? (
                   <Timeline
                     items={detailLead.follow_ups.map((item, idx) => ({
                       color: idx === 0 ? 'blue' : 'gray',
                       children: (
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-xs text-secondary">{dayjs(item.date).format('DD/MM/YYYY')}</span>
-                          <span className="text-sm text-heading">{item.text}</span>
+                          <span className="text-xs text-secondary font-medium">
+                            {dayjs(item.date).format('DD/MM/YYYY')}
+                          </span>
+                          <span className="text-xs text-heading leading-snug">{item.text}</span>
                         </div>
                       ),
                     }))}
@@ -742,9 +812,10 @@ Hôm nay bên chị đợi bé qua test tay nghề mà chưa thấy bé tới. B
               </div>
 
               {/* Add Consultation log input */}
-              <div className="pt-3 border-t border-default flex gap-2">
+              {/* Add Consultation log input */}
+              <div className="pt-3 flex gap-2">
                 <Input
-                  placeholder="Thêm nhanh ghi chú cuộc gọi, tin nhắn..."
+                  placeholder="Nhập ghi chú chăm sóc mới..."
                   value={newFollowUpText}
                   onChange={(e) => setNewFollowUpText(e.target.value)}
                   onPressEnter={handleAddFollowUp}
@@ -754,7 +825,7 @@ Hôm nay bên chị đợi bé qua test tay nghề mà chưa thấy bé tới. B
                   onClick={handleAddFollowUp}
                   style={{ backgroundColor: '#b8941f', borderColor: '#b8941f' }}
                 >
-                  Lưu
+                  + Ghi
                 </Button>
               </div>
             </div>

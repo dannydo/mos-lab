@@ -180,8 +180,9 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[400px]">
-        <Spin size="large" tip="Đang tải dữ liệu dashboard..." />
+      <div className="flex flex-col items-center justify-center gap-3 h-[400px]">
+        <Spin size="large" />
+        <span className="text-sm text-secondary">Đang tải dữ liệu dashboard...</span>
       </div>
     );
   }

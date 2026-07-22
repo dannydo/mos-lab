@@ -15,19 +15,15 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('wings_ads_theme') as ThemeMode;
-      if (saved === 'light' || saved === 'dark') {
-        return saved;
-      }
-    }
-    return 'dark'; // Default to dark premium
-  });
+  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const saved = localStorage.getItem('wings_ads_theme') as ThemeMode;
+    if (saved === 'light' || saved === 'dark') {
+      setThemeMode(saved);
+    }
   }, []);
 
   useEffect(() => {
