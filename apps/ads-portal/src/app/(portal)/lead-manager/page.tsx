@@ -21,6 +21,9 @@ import {
   Timeline,
   Card,
   Space,
+  Avatar,
+  Popover,
+  Checkbox,
 } from 'antd';
 import {
   PlusOutlined,
@@ -33,6 +36,7 @@ import {
   EditOutlined,
   SearchOutlined,
   CheckOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -85,7 +89,36 @@ interface Lead {
   notes: string;
   follow_ups: FollowUp[];
   no_show?: boolean;
+  avatar_url?: string;
   created_at: string;
+}
+
+function renderLeadAvatar(lead: Lead) {
+  const name = (lead.name || 'Lead').trim();
+  const parts = name.split(/\s+/).filter(Boolean);
+  let initials = 'L';
+  if (parts.length === 1) {
+    initials = parts[0].substring(0, 2).toUpperCase();
+  } else if (parts.length > 1) {
+    initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  const bgStyle = `hsl(${hue}, 65%, 45%)`;
+
+  if (lead.avatar_url && lead.avatar_url.trim()) {
+    return <Avatar src={lead.avatar_url.trim()} alt={name} size={34} className="shrink-0 font-bold" />;
+  }
+
+  return (
+    <Avatar size={34} style={{ backgroundColor: bgStyle, color: '#fff' }} className="shrink-0 font-bold text-xs">
+      {initials}
+    </Avatar>
+  );
 }
 
 export default function LeadManagerPage() {
@@ -417,33 +450,35 @@ export default function LeadManagerPage() {
       render: (_: any, __: any, index: number) => index + 1,
     },
     {
-      title: 'Họ & Tên',
+      title: 'Khách hàng / Học viên',
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: Lead) => {
-        // Flight warning tag
         const daysToFlight = record.flight_date ? dayjs(record.flight_date).diff(dayjs(), 'day') : -1;
         const flightWarning = daysToFlight >= 0 && daysToFlight <= 14;
 
         return (
-          <div className="flex flex-col">
-            <span
-              className="font-semibold cursor-pointer text-blue-600 hover:text-blue-800"
-              onClick={() => setDetailLead(record)}
-            >
-              {text}
-            </span>
-            <div className="flex gap-1.5 mt-1">
-              {flightWarning && (
-                <Tag color="red" className="text-[10px] py-0 px-1.5">
-                  🛫 Bay {daysToFlight}d
-                </Tag>
-              )}
-              {record.status === 'scheduled' && record.no_show && (
-                <Tag color="error" className="text-[10px] py-0 px-1.5 font-bold">
-                  ❌ Bùng hẹn
-                </Tag>
-              )}
+          <div className="flex items-center gap-3">
+            {renderLeadAvatar(record)}
+            <div className="flex flex-col">
+              <span
+                className="font-bold text-sm cursor-pointer text-heading hover:text-[#b8941f] transition-colors"
+                onClick={() => setDetailLead(record)}
+              >
+                {text}
+              </span>
+              <div className="flex flex-wrap gap-1 mt-0.5">
+                {flightWarning && (
+                  <Tag color="red" className="text-[10px] py-0 px-1 font-semibold">
+                    🛫 Bay {daysToFlight}d
+                  </Tag>
+                )}
+                {record.status === 'scheduled' && record.no_show && (
+                  <Tag color="error" className="text-[10px] py-0 px-1 font-bold">
+                    ❌ Bùng hẹn
+                  </Tag>
+                )}
+              </div>
             </div>
           </div>
         );
