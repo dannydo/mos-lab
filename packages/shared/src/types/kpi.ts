@@ -141,6 +141,8 @@ export interface CcPaystubRecord {
   minigameBonus: number;
   ccTipBonus: number;
   tippedVisitsCount?: number;
+  diamondBonus?: number;
+  diamondCount?: number;
   totalIncome: number;
 }
 
