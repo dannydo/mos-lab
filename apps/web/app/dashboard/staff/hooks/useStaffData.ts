@@ -34,6 +34,22 @@ export function useStaffData(options?: UseStaffDataOptions) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncLegacyStaff = async () => {
+    setSyncing(true);
+    try {
+      const res = await apiClient.staff.syncLegacy();
+      optionsRef.current?.onSuccess?.(res.message || 'Đồng bộ nhân sự thành công');
+      fetchStaff();
+      fetchLegacyStaff();
+    } catch (err) {
+      console.error('Sync legacy staff error:', err);
+      optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi đồng bộ nhân sự');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // Staff Add/Edit Modal state
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
@@ -140,6 +156,10 @@ export function useStaffData(options?: UseStaffDataOptions) {
         legacyStaffId: staff.legacyStaffId || null,
         omicallAutoInit:
           staff.omicallAutoInit === null || staff.omicallAutoInit === undefined ? 'inherit' : staff.omicallAutoInit,
+        baseSalary: staff.baseSalary || null,
+        hourlyWage: staff.hourlyWage || null,
+        seniorityOffset:
+          staff.seniorityOffset !== undefined && staff.seniorityOffset !== null ? staff.seniorityOffset : 0,
       });
     } else {
       staffForm?.resetFields();
@@ -149,6 +169,9 @@ export function useStaffData(options?: UseStaffDataOptions) {
         gender: 'Other',
         legacyStaffId: null,
         omicallAutoInit: 'inherit',
+        baseSalary: null,
+        hourlyWage: null,
+        seniorityOffset: 0,
       });
     }
     setIsStaffModalOpen(true);
@@ -341,5 +364,7 @@ export function useStaffData(options?: UseStaffDataOptions) {
     openRoleModal,
     handleRoleSubmit,
     handleDeleteRole,
+    syncing,
+    handleSyncLegacyStaff,
   };
 }

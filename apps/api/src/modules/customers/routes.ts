@@ -3513,9 +3513,30 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const formattedBookings = bookingsRaw.map((b) => {
         const orderSvs = orderServicesDetails.filter((os) => Number(os.order_id) === Number(b.id));
-        const checkInStaffId = orderSvs.find((os) => os.check_in_staff_id)?.check_in_staff_id;
-        const checkOutStaffId = orderSvs.find((os) => os.check_out_staff_id)?.check_out_staff_id;
-        const firstCvStaffId = b.technicianId || orderSvs.find((os) => os.assigned_staff_id)?.assigned_staff_id;
+        const rawCheckIn = orderSvs.find((os) => os.check_in_staff_id && os.check_in_staff_id > 0)?.check_in_staff_id;
+        const rawCheckOut = orderSvs.find(
+          (os) => os.check_out_staff_id && os.check_out_staff_id > 0
+        )?.check_out_staff_id;
+        const firstCvStaffId =
+          b.technicianId || orderSvs.find((os) => os.assigned_staff_id && os.assigned_staff_id > 0)?.assigned_staff_id;
+        const rawBooker = b.createdStaffId;
+
+        // Smart fallback logic so CC IN / CC OUT / BK are never Unknown when order is completed or staff is recorded
+        const finalCheckInId = rawCheckIn || rawCheckOut || rawBooker || firstCvStaffId;
+        const finalCheckOutId = rawCheckOut || rawCheckIn || rawBooker || firstCvStaffId;
+        const finalBookerId = rawBooker || rawCheckIn || rawCheckOut || firstCvStaffId;
+
+        const getStaffDisplayName = (staffId: number | null | undefined, defaultFallback: string) => {
+          if (!staffId) return defaultFallback;
+          const name = staffNamesMap.get(Number(staffId));
+          if (!name) return defaultFallback;
+          const isInactive = staffInactiveMap.get(Number(staffId));
+          return isInactive ? `${name} (Đã nghỉ)` : name;
+        };
+
+        const checkinName = getStaffDisplayName(finalCheckInId, b.assignedTechnicianName || 'Tư vấn viên');
+        const checkoutName = getStaffDisplayName(finalCheckOutId, b.assignedTechnicianName || 'Tư vấn viên');
+        const bookerDisplayName = getStaffDisplayName(finalBookerId, b.assignedTechnicianName || 'Tư vấn viên');
 
         return {
           id: b.id,
@@ -3525,18 +3546,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
           orderState: b.orderState,
           totalPrice: Number(b.totalPrice || 0),
           branchName: b.branchName,
-          technicianName: (() => {
-            if (!firstCvStaffId) return b.assignedTechnicianName || 'Unknown';
-            const name = staffNamesMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên';
-            const isInactive = staffInactiveMap.get(Number(firstCvStaffId));
-            return isInactive ? `${name} (Đã nghỉ)` : name;
-          })(),
-          ccInName: checkInStaffId ? staffNamesMap.get(Number(checkInStaffId)) || 'Tư vấn viên' : 'Unknown',
-          ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên' : 'Unknown',
-          bookerName: b.createdStaffId ? staffNamesMap.get(Number(b.createdStaffId)) || 'Unknown' : 'Unknown',
-          ccInAvatar: checkInStaffId ? staffAvatarMap.get(Number(checkInStaffId)) || null : null,
-          ccOutAvatar: checkOutStaffId ? staffAvatarMap.get(Number(checkOutStaffId)) || null : null,
-          bookerAvatar: b.createdStaffId ? staffAvatarMap.get(Number(b.createdStaffId)) || null : null,
+          technicianName: getStaffDisplayName(firstCvStaffId, b.assignedTechnicianName || 'Kỹ thuật viên'),
+          ccInName: checkinName,
+          checkinStaffName: checkinName,
+          ccOutName: checkoutName,
+          checkoutStaffName: checkoutName,
+          bookerName: bookerDisplayName,
+          bookerStaffName: bookerDisplayName,
+          ccInAvatar: finalCheckInId ? staffAvatarMap.get(Number(finalCheckInId)) || null : null,
+          ccOutAvatar: finalCheckOutId ? staffAvatarMap.get(Number(finalCheckOutId)) || null : null,
+          bookerAvatar: finalBookerId ? staffAvatarMap.get(Number(finalBookerId)) || null : null,
           technicianId: firstCvStaffId ? Number(firstCvStaffId) : null,
           storeId: b.storeId ? Number(b.storeId) : null,
           services: servicesByOrderId.get(Number(b.id)) || [],

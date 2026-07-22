@@ -70,7 +70,10 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     if (pathname.includes('/dashboard/calls')) return 'calls';
     if (pathname.includes('/dashboard/omicall')) return 'omicall';
     if (pathname.includes('/dashboard/kpi')) return 'kpi';
+    if (pathname.includes('/dashboard/cc')) return 'cc';
+    if (pathname.includes('/dashboard/cv')) return 'cv';
     if (pathname.includes('/dashboard/staff')) return 'staff';
+
     if (pathname.includes('/dashboard/referrals')) return 'referrals';
     return 'customers-all';
   };
@@ -152,6 +155,18 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
       icon: <BarChartOutlined />,
       label: 'KPI hiệu suất',
       onClick: () => router.push('/dashboard/kpi'),
+    },
+    {
+      key: 'cc',
+      icon: <SolutionOutlined />,
+      label: 'Báo Cáo CC',
+      onClick: () => router.push('/dashboard/cc'),
+    },
+    {
+      key: 'cv',
+      icon: <TeamOutlined />,
+      label: 'Báo Cáo CV',
+      onClick: () => router.push('/dashboard/cv'),
     }
   );
 

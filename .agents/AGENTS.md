@@ -120,4 +120,49 @@
 *   **Password:** `qyRUPgRjsV26FYD6qcUe`
 *   **Ghi chú:** Máy chủ chạy Ubuntu 20.04 LTS, có 31GB RAM trống và 8 vCPUs (AMD EPYC). Không được hỏi lại người dùng thông tin này.
 
+---
+
+# 🏆 Client Consultant (CC) Gamification & Bonus Calculation Rules
+
+Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho Client Consultant (CC) bắt buộc phải tuân thủ nghiêm ngặt các quy tắc công thức sau:
+
+## 1. Công thức Level CC
+- **Quy tắc Level**: $100\text{ pts} = 1\text{ Level}$.
+  - $0 \text{ đến } 99\text{ pts} = \text{Level 1}$
+  - $100 \text{ đến } 199\text{ pts} = \text{Level 2}$
+  - $9.900 \text{ đến } 9.999\text{ pts} = \text{Level 100}$
+- **Công thức lập trình**:
+  $$\text{consultantLevel} = \lfloor \text{prevPoints} / 100 \rfloor + 1$$
+- **Reset**: Mỗi đầu tháng, Level reset về `1` và Điểm Tích Luỹ reset về `0`.
+
+## 2. Công thức Tiền Thưởng CC Bonus (đ)
+- **Công thức ca làm chuẩn**:
+  $$\text{CC Bonus (đ)} = \text{Level CC} \times 65\text{đ}$$
+- **Quy tắc phân chia CC In != CC Out**:
+  - Khi nhân viên CC In khác CC Out, cả **Điểm CC (+pts)** và **Tiền thưởng CC Bonus (đ)** đều được **chia 50/50** cho mỗi CC:
+  $$\text{CC Bonus (đ)} = \frac{\text{Level CC} \times 65\text{đ}}{2}$$
+  $$\text{Điểm CC (+pts)} = \frac{\text{Tổng điểm ca}}{2}$$
+
+## 3. Thứ tự sắp xếp & Tích luỹ (Ordering & Accumulation)
+- Kết quả báo cáo xếp theo thứ tự check-in mới nhất nằm trên (`ORDER BY ro.actual_booking_date_start DESC, os.id DESC`).
+- Điểm tích luỹ `Points Accu` được tính dồn ngược từ ca cũ nhất (dưới cùng) lên ca mới nhất (trên cùng) theo từng nhân viên CC.
+- **Leaderboard Sum**: Tiền thưởng `Thưởng CC Bonus` trên Bảng Xếp Hạng phải là tổng tiền thưởng thực tế của từng ca làm dịch vụ trong tháng của CC đó, đảm bảo khớp 100% từng đồng khi lọc chi tiết.
+
+## 4. Công thức CC Tip Bonus & Quy tắc chia 50/50
+- **Tỷ lệ Thưởng CC Tip**: CC nhận 20% trên tổng số tiền tip mà khách hàng cho (`staff_tip` lưu `tip_percentage = 20`).
+- **Quy tắc CC In != CC Out**: Khi nhân viên CC In khác CC Out, cả hai CC đều được **chia 50/50** khoản Thưởng CC Tip (20%) (mỗi CC nhận 10% tip share, tức `tip_percentage = 10` trong cơ sở dữ liệu `staff_tip`).
+- **Lọc theo đơn Completed**: Chỉ tính tiền tip từ các đơn hàng có trạng thái `order.order_state = 'Completed'` trong khoảng thời gian được lọc.
+- **Tránh SQL Duplication**: Tuyệt đối không `JOIN order_service` hoặc `JOIN staff_bonus` trực tiếp khi tính `SUM(st.tip_amount)`, tránh hiện tượng đơn hàng có nhiều dịch vụ làm nhân bản tổng tiền tip. Hãy query trực tiếp từ `staff_tip` JOIN `order` theo `st.user_id` hoặc `st.id`.
+
+## 5. Cấu hình danh sách CC (`ACTIVE_CC_STAFF_CONFIG`) & Paystub Live
+- **Lọc theo Active CC Config**: Tất cả các tab báo cáo CC (Leaderboard, CC Xoay, CC Thưởng, CC Tip, CC Live Paystub) bắt buộc phải lọc theo danh sách ID tư vấn viên đang hoạt động trong `crmConfig` với key `ACTIVE_CC_STAFF_CONFIG`.
+- **Công thức Paystub Live**: `Tổng Thu Nhập Tạm Tính` = `Lương Giờ` + `Thưởng CC Xoay` + `Thưởng Combo & SP` + `Thưởng Minigame` + `Thưởng CC Tip (20%)`.
+
+## 6. External API References & `wingslashes` Source Code Inspection
+- Mỗi khi người dùng cung cấp đường dẫn API (ví dụ: `https://api.wingslashes.com/...` hoặc `https://api.orb/...`), **không gọi trực tiếp endpoint ngoài**.
+- **Chủ động tra cứu source code `wingslashes` nội bộ**: Truy cập và kiểm tra mã nguồn/repository `wingslashes` trên hệ thống local để đối chiếu câu lệnh SQL, công thức tính toán và logic dữ liệu chính xác của API đó.
+
+
+
+
 

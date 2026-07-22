@@ -125,3 +125,57 @@ export interface SalaryConfig {
   missedBonusTiers: MissedBonusTier[];
   revBonusTiers: RevBonusTier[];
 }
+
+export interface CcPaystubRecord {
+  consultantId: number;
+  displayName: string;
+  store: string;
+  hourlyWage: number;
+  totalWorkHours: number;
+  hourlyRate?: number;
+  ccXoayBonus: number;
+  checkinCount: number;
+  comboProductBonus: number;
+  comboCount: number;
+  productCount: number;
+  minigameBonus: number;
+  ccTipBonus: number;
+  tippedVisitsCount?: number;
+  totalIncome: number;
+}
+
+export interface CcPaystubResponse {
+  data: CcPaystubRecord[];
+  total: number;
+  summary: {
+    totalHourlyWage: number;
+    totalCcXoayBonus: number;
+    totalComboProductBonus: number;
+    totalMinigameBonus: number;
+    totalCcTipBonus: number;
+    grandTotalIncome: number;
+  };
+}
+
+export interface CcWorkLogDetailRecord {
+  work_date: string;
+  first_in: string;
+  last_out: string;
+  total_hours: number;
+  service_count: number;
+  hourly_rate: number;
+  daily_wage: number;
+}
+
+export interface CcWorkLogDetailResponse {
+  consultantId: number;
+  consultantName: string;
+  store: string;
+  data: CcWorkLogDetailRecord[];
+  summary: {
+    totalWorkDays: number;
+    totalWorkHours: number;
+    hourlyRate: number;
+    totalWage: number;
+  };
+}

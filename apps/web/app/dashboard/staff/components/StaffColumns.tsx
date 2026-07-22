@@ -25,6 +25,7 @@ interface StaffColumnsOptions {
   openStaffModal: (record: Staff) => void;
   handleDeleteStaff: (id: number) => void;
   currentUser: SafeAny;
+  onRoleClick?: (roleKey: string) => void;
 }
 
 export const getStaffColumns = ({
@@ -36,8 +37,9 @@ export const getStaffColumns = ({
   openStaffModal,
   handleDeleteStaff,
   currentUser,
+  onRoleClick,
 }: StaffColumnsOptions) => {
-  return [
+  const columns = [
     {
       title: 'Nhân viên',
       key: 'name',
@@ -83,7 +85,11 @@ export const getStaffColumns = ({
       render: (roleKey: string) => {
         const matched = roles.find((r) => r.key === roleKey);
         return (
-          <Tag color={matched?.color || 'default'} style={{ fontWeight: '500', borderRadius: '4px' }}>
+          <Tag
+            color={matched?.color || 'default'}
+            style={{ fontWeight: '500', borderRadius: '4px', cursor: onRoleClick ? 'pointer' : 'default' }}
+            onClick={() => onRoleClick?.(roleKey)}
+          >
             {matched?.name || roleKey}
           </Tag>
         );
@@ -101,7 +107,7 @@ export const getStaffColumns = ({
             </div>
           ) : null}
           {record.email ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: record.phone ? '4px' : '0' }}>
               <MailOutlined style={{ color: '#888' }} />
               <Text type="secondary" style={{ fontSize: '12px' }}>
                 {record.email}
@@ -119,9 +125,28 @@ export const getStaffColumns = ({
       title: 'Ngày vào làm',
       dataIndex: 'joinedAt',
       key: 'joinedAt',
-      render: (date: string) =>
+      render: (date: string, record: Staff) =>
         date ? (
-          dayjs(date).format('DD/MM/YYYY')
+          <div>
+            <Text style={{ display: 'block', color: token.colorText, fontSize: '13px', fontWeight: '500' }}>
+              {dayjs(date).format('DD/MM/YYYY')}
+            </Text>
+            <Text type="secondary" style={{ fontSize: '11px', display: 'block', fontVariantNumeric: 'tabular-nums' }}>
+              {(() => {
+                const offset = record.seniorityOffset || 0;
+                const start = dayjs(date);
+                const now = dayjs();
+                const totalMonths = now.diff(start, 'month') + offset;
+                if (totalMonths <= 0) {
+                  const diffDays = now.diff(start, 'day');
+                  return `${diffDays} ngày`;
+                }
+                const years = Math.floor(totalMonths / 12);
+                const months = totalMonths % 12;
+                return years > 0 ? `${years} năm ${months} th` : `${months} tháng`;
+              })()}
+            </Text>
+          </div>
         ) : (
           <Text type="secondary" italic style={{ fontSize: '12px' }}>
             Chưa thiết lập
@@ -258,6 +283,39 @@ export const getStaffColumns = ({
       },
     },
   ];
+
+  if (currentUser?.role === 'admin') {
+    columns.splice(4, 0, {
+      title: 'Lương & Đãi ngộ',
+      key: 'salary',
+      render: (_: SafeAny, record: Staff) => (
+        <div style={{ fontSize: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Text type="secondary" style={{ fontSize: '11px' }}>
+              Cứng:{' '}
+            </Text>
+            <Text className="tabular-nums" style={{ fontWeight: 500, color: token.colorText }}>
+              {record.baseSalary !== undefined && record.baseSalary !== null
+                ? `${Math.round(record.baseSalary).toLocaleString('vi-VN')} đ`
+                : '—'}
+            </Text>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Text type="secondary" style={{ fontSize: '11px' }}>
+              Giờ:{' '}
+            </Text>
+            <Text className="tabular-nums" style={{ fontWeight: 500, color: token.colorText }}>
+              {record.hourlyWage !== undefined && record.hourlyWage !== null
+                ? `${Math.round(record.hourlyWage).toLocaleString('vi-VN')} đ/h`
+                : '—'}
+            </Text>
+          </div>
+        </div>
+      ),
+    });
+  }
+
+  return columns;
 };
 
 interface RoleColumnsOptions {

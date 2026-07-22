@@ -12,7 +12,6 @@ import {
   CreateCallRequest,
   KPISummary,
   CustomerWeeklyProgress,
-  UserRole,
   ColumnConfig,
   BulkDeleteCustomersResponse,
   CustomerHistoryEntry,
@@ -22,13 +21,33 @@ import {
   ListAppointmentsResponse,
   DetailedCustomerResponse,
   SalaryConfig,
-  TrendDay,
   TrendsResponse,
   LeaderboardEntry,
-  Appointment,
   Promotion,
   Service,
   DailyCallEntry,
+  CcXoayReportResponse,
+  CcLeaderboardResponse,
+  CcQueryParams,
+  CcConfigResponse,
+  CcPaystubResponse,
+  CcWorkLogDetailResponse,
+  CcTipLeaderboardResponse,
+  CcTipResponse,
+  CcTipQueryParams,
+  CcDiamondResponse,
+  CcDiamondDetailsResponse,
+  CvXoayReportResponse,
+  CvTipLeaderboardResponse,
+  CvTipResponse,
+  CvPaystubResponse,
+  CvWorkLogDetailResponse,
+  CvConfigResponse,
+  DailySalesBonusConfig,
+  DailySalesBonusConsultantResponse,
+  DailySalesBonusTransaction,
+  DailySalesBonusQueryParams,
+  DailySalesBonusTransactionsQueryParams,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -281,6 +300,101 @@ export const apiClient = {
       const response = await api.post('/kpi/staff-levels', data);
       return response.data;
     },
+    getCcXoayReport: async (params?: CcQueryParams): Promise<CcXoayReportResponse> => {
+      const response = await api.get('/kpi/cc-xoay', { params });
+      return response.data;
+    },
+    getCcLeaderboard: async (params?: CcQueryParams): Promise<CcLeaderboardResponse> => {
+      const response = await api.get('/kpi/cc-leaderboard', { params });
+      return response.data;
+    },
+    getCcConfig: async (): Promise<CcConfigResponse> => {
+      const response = await api.get('/kpi/cc-config');
+      return response.data;
+    },
+    updateCcConfig: async (activeCcIds: number[]): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/kpi/cc-config', { activeCcIds });
+      return response.data;
+    },
+    getCcPaystub: async (params?: CcQueryParams): Promise<CcPaystubResponse> => {
+      const response = await api.get('/kpi/cc-paystub', { params });
+      return response.data;
+    },
+    getCcWorkLogs: async (params: {
+      consultantId: number;
+      dateFrom?: string;
+      dateTo?: string;
+    }): Promise<CcWorkLogDetailResponse> => {
+      const response = await api.get('/kpi/cc-work-logs', { params });
+      return response.data;
+    },
+    getCcTipLeaderboard: async (params?: CcQueryParams): Promise<CcTipLeaderboardResponse> => {
+      const response = await api.get('/kpi/cc-tip/leaderboard', { params });
+      return response.data;
+    },
+    getCcTipRecords: async (params?: CcTipQueryParams): Promise<CcTipResponse> => {
+      const response = await api.get('/kpi/cc-tip/records', { params });
+      return response.data;
+    },
+    getCcDiamondData: async (params?: {
+      month?: string;
+      date_from?: string;
+      date_to?: string;
+    }): Promise<CcDiamondResponse> => {
+      const response = await api.get('/kpi/export-diamond', { params: { ...params, format: 'json' } });
+      return response.data;
+    },
+    getCcDiamondDetails: async (params: {
+      ccId: number;
+      month?: string;
+      date_from?: string;
+      date_to?: string;
+    }): Promise<CcDiamondDetailsResponse> => {
+      const response = await api.get('/kpi/export-diamond/details', { params });
+      return response.data;
+    },
+    getCvXoayReport: async (params?: Record<string, unknown>): Promise<CvXoayReportResponse> => {
+      const response = await api.get('/kpi/cv-xoay', { params });
+      return response.data;
+    },
+    getCvTipLeaderboard: async (params?: Record<string, unknown>): Promise<CvTipLeaderboardResponse> => {
+      const response = await api.get('/kpi/cv-tip/leaderboard', { params });
+      return response.data;
+    },
+    getCvTipRecords: async (params?: Record<string, unknown>): Promise<CvTipResponse> => {
+      const response = await api.get('/kpi/cv-tip/records', { params });
+      return response.data;
+    },
+    getCvPaystub: async (params?: Record<string, unknown>): Promise<CvPaystubResponse> => {
+      const response = await api.get('/kpi/cv-paystub', { params });
+      return response.data;
+    },
+    getCvWorkLogs: async (params: {
+      staffId: number;
+      dateFrom?: string;
+      dateTo?: string;
+    }): Promise<CvWorkLogDetailResponse> => {
+      const response = await api.get('/kpi/cv-paystub/work-logs', { params });
+      return response.data;
+    },
+    getCvConfig: async (): Promise<CvConfigResponse> => {
+      const response = await api.get('/kpi/cv-config');
+      return response.data;
+    },
+    updateCvConfig: async (activeCvIds: number[]): Promise<{ success: boolean; activeCvIds: number[] }> => {
+      const response = await api.post('/kpi/cv-config', { activeCvIds });
+      return response.data;
+    },
+    getCvSeniorityConfig: async (): Promise<{ minMonths: number; bonusPercent: number }[]> => {
+      const response = await api.get('/kpi/cv-seniority-config');
+      return response.data;
+    },
+    updateCvSeniorityConfig: async (
+      rules: { minMonths: number; bonusPercent: number }[]
+    ): Promise<{ success: boolean; rules: { minMonths: number; bonusPercent: number }[] }> => {
+      const response = await api.post('/kpi/cv-seniority-config', { rules });
+      return response.data;
+    },
   },
 
   nyc: {
@@ -301,6 +415,10 @@ export const apiClient = {
     },
     getLegacy: async (): Promise<unknown[]> => {
       const response = await api.get('/staff/legacy');
+      return response.data;
+    },
+    syncLegacy: async (): Promise<{ success: boolean; count: number; message: string }> => {
+      const response = await api.post('/staff/sync-legacy');
       return response.data;
     },
     create: async (data: Record<string, unknown>): Promise<Staff> => {
@@ -414,6 +532,29 @@ export const apiClient = {
   dashboard: {
     getToday: async (params?: Record<string, unknown>): Promise<unknown> => {
       const response = await api.get('/dashboard/today', { params });
+      return response.data;
+    },
+  },
+
+  gamification: {
+    getDailySalesBonusConsultants: async (
+      params: DailySalesBonusQueryParams
+    ): Promise<DailySalesBonusConsultantResponse> => {
+      const response = await api.get('/gamification/daily-sales-bonus/consultant', { params });
+      return response.data;
+    },
+    getDailySalesBonusConfig: async (): Promise<DailySalesBonusConfig> => {
+      const response = await api.get('/gamification/daily-sales-bonus/config');
+      return response.data;
+    },
+    saveDailySalesBonusConfig: async (data: DailySalesBonusConfig): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/gamification/daily-sales-bonus/config', data);
+      return response.data;
+    },
+    getDailySalesBonusTransactions: async (
+      params: DailySalesBonusTransactionsQueryParams
+    ): Promise<{ data: DailySalesBonusTransaction[]; total: number }> => {
+      const response = await api.get('/gamification/daily-sales-bonus/transactions', { params });
       return response.data;
     },
   },

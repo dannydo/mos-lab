@@ -32,6 +32,9 @@ model CrmStaff {
   lastLoginAt      DateTime? @map("last_login_at") @db.DateTime(0)
   lastActiveAt     DateTime? @map("last_active_at") @db.DateTime(0)
   omicallAutoInit  Boolean?  @map("omicall_auto_init") @db.TinyInt
+  baseSalary       Float?    @map("base_salary")
+  hourlyWage       Float?    @map("hourly_wage")
+  seniorityOffset  Int?      @map("seniority_offset") @default(0)
 
   customerAssignments CrmCustomerAssignment[]
   prevHistory         CrmAssignmentHistory[] @relation("PrevStaffHistory")

@@ -1,7 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Form, Input, Select, DatePicker, Switch, Row, Col, Typography, Space, Tooltip, Divider, Button } from 'antd';
+import {
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  Switch,
+  Row,
+  Col,
+  Typography,
+  Space,
+  Tooltip,
+  Divider,
+  Button,
+  InputNumber,
+} from 'antd';
 import { UserOutlined, InfoCircleOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import { Staff, Role } from '@mos-lab/shared';
 
@@ -17,6 +31,7 @@ export default function StaffTabsContent({
   roles,
   onCancel,
   legacyStaffList,
+  currentUser,
 }: {
   themeMode: string;
   token: SafeAny;
@@ -25,6 +40,7 @@ export default function StaffTabsContent({
   roles: Role[];
   onCancel: () => void;
   legacyStaffList: { id: number; name: string; phone?: string | null; email?: string | null }[];
+  currentUser: SafeAny;
 }) {
   const [activeTab, setActiveTab] = useState('account');
 
@@ -246,6 +262,51 @@ export default function StaffTabsContent({
               </Form.Item>
             </Col>
           </Row>
+
+          {currentUser?.role === 'admin' && (
+            <>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="baseSalary"
+                    label={<Text style={{ color: token.colorText }}>Lương cứng (Base Salary)</Text>}
+                  >
+                    <InputNumber
+                      style={{ width: '100%' }}
+                      placeholder="Ví dụ: 5,500,000"
+                      formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
+                      addonAfter="đ"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="hourlyWage"
+                    label={<Text style={{ color: token.colorText }}>Lương giờ (Hourly Wage)</Text>}
+                  >
+                    <InputNumber
+                      style={{ width: '100%' }}
+                      placeholder="Ví dụ: 30,000"
+                      formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
+                      addonAfter="đ/h"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="seniorityOffset"
+                    label={<Text style={{ color: token.colorText }}>Thâm niên cộng thêm (tháng)</Text>}
+                  >
+                    <InputNumber style={{ width: '100%' }} placeholder="Ví dụ: 12" min={0} addonAfter="tháng" />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </>
+          )}
 
           <Row gutter={16}>
             <Col span={24}>

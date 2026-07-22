@@ -20,6 +20,9 @@ interface CreateStaffInput {
   notes?: string | null;
   legacyStaffId?: string | number | null;
   omicallAutoInit?: boolean | null;
+  baseSalary?: number | null;
+  hourlyWage?: number | null;
+  seniorityOffset?: number | null;
 }
 
 export async function staffRoutes(fastify: FastifyInstance) {
@@ -72,6 +75,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
         selectFields.notes = true;
         selectFields.legacyStaffId = true;
         selectFields.lastLoginAt = true;
+        selectFields.baseSalary = true;
+        selectFields.hourlyWage = true;
+        selectFields.seniorityOffset = true;
       }
 
       const staff = await fastify.prisma.crm.crmStaff.findMany({
@@ -132,6 +138,13 @@ export async function staffRoutes(fastify: FastifyInstance) {
           lastLoginAt: true,
           lastActiveAt: true,
           omicallAutoInit: true,
+          ...(currentUser.role === 'admin'
+            ? {
+                baseSalary: true,
+                hourlyWage: true,
+                seniorityOffset: true,
+              }
+            : {}),
         },
       });
 
@@ -169,6 +182,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
       notes,
       legacyStaffId,
       omicallAutoInit,
+      baseSalary,
+      hourlyWage,
+      seniorityOffset,
     } = request.body as CreateStaffInput;
 
     if (!username || !displayName) {
@@ -219,6 +235,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
               : parseInt(legacyStaffId, 10)
             : null,
           omicallAutoInit: omicallAutoInit !== undefined ? omicallAutoInit : null,
+          baseSalary: baseSalary !== undefined && baseSalary !== null ? Number(baseSalary) : null,
+          hourlyWage: hourlyWage !== undefined && hourlyWage !== null ? Number(hourlyWage) : null,
+          seniorityOffset: seniorityOffset !== undefined && seniorityOffset !== null ? Number(seniorityOffset) : 0,
         },
       });
 
@@ -277,6 +296,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
       notes,
       legacyStaffId,
       omicallAutoInit,
+      baseSalary,
+      hourlyWage,
+      seniorityOffset,
     } = request.body as CreateStaffInput;
 
     try {
@@ -322,6 +344,10 @@ export async function staffRoutes(fastify: FastifyInstance) {
         if (role !== undefined) updateData.role = role;
         if (isActive !== undefined) updateData.isActive = isActive;
         if (joinedAt !== undefined) updateData.joinedAt = joinedAt ? new Date(joinedAt) : null;
+        if (baseSalary !== undefined) updateData.baseSalary = baseSalary !== null ? Number(baseSalary) : null;
+        if (hourlyWage !== undefined) updateData.hourlyWage = hourlyWage !== null ? Number(hourlyWage) : null;
+        if (seniorityOffset !== undefined)
+          updateData.seniorityOffset = seniorityOffset !== null ? Number(seniorityOffset) : 0;
 
         if (username !== undefined && username !== existingStaff.username) {
           // Check for duplicate username
@@ -455,6 +481,163 @@ export async function staffRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi hệ thống khi lấy danh sách tài khoản Wings Lashes',
+      });
+    }
+  });
+
+  // POST /api/staff/sync-legacy - Import active staff from legacy database (Admin only)
+  fastify.post('/staff/sync-legacy', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
+    try {
+      // 1. Fetch active staff from legacy database
+      const legacyStaff = await fastify.prisma.legacy.$queryRawUnsafe<
+        {
+          id: number | bigint;
+          name: string | null;
+          email: string | null;
+          phone: string | null;
+          date_created: string;
+          user_group_id: number | bigint;
+          avatar: string | null;
+          gender: string | null;
+          date_of_birth: string | null;
+          address: string | null;
+          working_hour_rate: number | null;
+          base_salary: number | null;
+        }[]
+      >(
+        `SELECT 
+          up.user_id as id, 
+          up.full_name as name, 
+          u.email as email,
+          (SELECT phone_number FROM user_contact WHERE user_id = up.user_id AND is_disabled = 0 LIMIT 1) as phone,
+          up.date_created,
+          up.user_group_id,
+          up.avatar,
+          u.gender,
+          u.date_of_birth,
+          (SELECT current_address FROM staff_profile WHERE user_id = up.user_id LIMIT 1) as address,
+          (SELECT sp.working_hour_rate 
+           FROM staff_payroll sp 
+           WHERE sp.user_id = up.user_id 
+           ORDER BY sp.date DESC LIMIT 1) as working_hour_rate,
+          (SELECT spl.base_salary 
+           FROM staff_payroll sp 
+           LEFT JOIN staff_payroll_level spl ON sp.staff_payroll_level_id = spl.id 
+           WHERE sp.user_id = up.user_id 
+           ORDER BY sp.date DESC LIMIT 1) as base_salary
+         FROM user_profile up
+         JOIN user u ON up.user_id = u.id
+         WHERE up.provider = 'Staff' AND up.is_disabled = 0 AND up.user_group_id > 1 AND up.full_name NOT LIKE 'Wings -%'
+         ORDER BY up.full_name ASC`
+      );
+
+      let importedCount = 0;
+      const defaultPasswordHash = await bcrypt.hash('WingsLive2026Base', 10);
+
+      // 2. Iterate and upsert into crm_staff
+      for (const row of legacyStaff) {
+        const id = Number(row.id);
+        const name = row.name ? row.name.trim() : 'Unknown Staff';
+        const email = row.email || null;
+        const phone = row.phone || null;
+        const joinedAt = row.date_created ? new Date(row.date_created) : new Date();
+        const groupId = Number(row.user_group_id);
+        const avatarUrl = row.avatar || null;
+        const gender = row.gender === 'Male' ? 'Male' : row.gender === 'Female' ? 'Female' : 'Other';
+        const birthDate = row.date_of_birth ? new Date(row.date_of_birth) : null;
+        const address = row.address || null;
+        const baseSalary = row.base_salary !== null && row.base_salary !== undefined ? Number(row.base_salary) : null;
+        const hourlyWage =
+          row.working_hour_rate !== null && row.working_hour_rate !== undefined ? Number(row.working_hour_rate) : null;
+
+        // Map role
+        let role = 'telesales';
+        if (groupId === 4) {
+          role = 'technician';
+        } else if (groupId === 5) {
+          role = 'cc';
+        } else if ([2, 31, 32, 45].includes(groupId)) {
+          role = 'oc';
+        } else if ([14, 33, 34].includes(groupId)) {
+          role = 'manager';
+        }
+
+        // Generate username (email or prefix of email, or user{id} if not valid)
+        let username = email ? email.trim() : `user${id}@wingslashes.com`;
+        if (username.indexOf('@') === -1) {
+          username = `${username}@wingslashes.com`;
+        }
+
+        // Check if there is already a staff member with this legacyStaffId
+        const existingByLegacyId = await fastify.prisma.crm.crmStaff.findFirst({
+          where: { legacyStaffId: id },
+        });
+
+        if (existingByLegacyId) {
+          // Update details, keeping current role/password, but syncing email/phone/joinedAt/displayName/avatarUrl/gender/birthDate/address/baseSalary/hourlyWage
+          await fastify.prisma.crm.crmStaff.update({
+            where: { id: existingByLegacyId.id },
+            data: {
+              displayName: name,
+              email: email,
+              phone: phone,
+              joinedAt: existingByLegacyId.joinedAt || joinedAt, // keep existing or use legacy date_created
+              avatarUrl: avatarUrl,
+              gender: existingByLegacyId.gender || gender,
+              birthDate: existingByLegacyId.birthDate || birthDate,
+              address: existingByLegacyId.address || address,
+              baseSalary:
+                existingByLegacyId.baseSalary !== null && existingByLegacyId.baseSalary !== undefined
+                  ? existingByLegacyId.baseSalary
+                  : baseSalary,
+              hourlyWage:
+                existingByLegacyId.hourlyWage !== null && existingByLegacyId.hourlyWage !== undefined
+                  ? existingByLegacyId.hourlyWage
+                  : hourlyWage,
+            },
+          });
+        } else {
+          // Check if username is already taken to avoid crash
+          const existingByUsername = await fastify.prisma.crm.crmStaff.findUnique({
+            where: { username },
+          });
+
+          const finalUsername = existingByUsername ? `user${id}_${username}` : username;
+
+          await fastify.prisma.crm.crmStaff.create({
+            data: {
+              username: finalUsername,
+              displayName: name,
+              passwordHash: defaultPasswordHash,
+              role: role,
+              isActive: true,
+              email: email,
+              phone: phone,
+              joinedAt: joinedAt,
+              legacyStaffId: id,
+              seniorityOffset: 0,
+              avatarUrl: avatarUrl,
+              gender: gender,
+              birthDate: birthDate,
+              address: address,
+              baseSalary: baseSalary,
+              hourlyWage: hourlyWage,
+            },
+          });
+          importedCount++;
+        }
+      }
+
+      return {
+        success: true,
+        count: importedCount,
+        message: `Đồng bộ thành công. Đã tạo mới ${importedCount} tài khoản nhân sự từ Wings Lashes.`,
+      };
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Sync legacy staff error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Lỗi hệ thống khi đồng bộ tài khoản Wings Lashes',
       });
     }
   });

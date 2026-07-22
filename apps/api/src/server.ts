@@ -14,6 +14,7 @@ import { staffRoutes } from './modules/staff/routes.js';
 import { rolesRoutes } from './modules/roles/routes.js';
 import { tableConfigRoutes } from './modules/table-config/routes.js';
 import { omicallRoutes } from './modules/omicall/routes.js';
+import { gamificationRoutes } from './modules/gamification/routes.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
 // Load environment variables
@@ -109,6 +110,16 @@ const start = async () => {
             isSystem: true,
             description: 'Nhân viên Telesales',
           },
+          {
+            key: 'technician',
+            name: 'Technician',
+            color: 'green',
+            viewKPI: false,
+            viewTeamKPI: false,
+            manageStaff: false,
+            isSystem: true,
+            description: 'Kỹ thuật viên',
+          },
         ],
       });
       server.log.info('Seeded default roles successfully');
@@ -125,6 +136,7 @@ const start = async () => {
     await server.register(rolesRoutes, { prefix: '/api' });
     await server.register(tableConfigRoutes, { prefix: '/api' });
     await server.register(omicallRoutes, { prefix: '/api' });
+    await server.register(gamificationRoutes, { prefix: '/api' });
 
     // Start background analyzer polling for AI laugh detection
     startRecordingAnalyzer(server);

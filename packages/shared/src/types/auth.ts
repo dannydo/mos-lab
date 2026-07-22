@@ -1,7 +1,7 @@
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type SafeAny = any;
 
-export type UserRole = 'telesales' | 'manager' | 'admin' | 'oc' | 'cc' | 'ls';
+export type UserRole = 'telesales' | 'manager' | 'admin' | 'oc' | 'cc' | 'ls' | 'technician';
 
 export interface Staff {
   id: number;
@@ -25,6 +25,9 @@ export interface Staff {
   lastLoginAt?: string | null;
   lastActiveAt?: string | null;
   omicallAutoInit?: boolean | null;
+  baseSalary?: number | null;
+  hourlyWage?: number | null;
+  seniorityOffset?: number | null;
 }
 
 export interface LoginRequest {

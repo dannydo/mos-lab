@@ -1,0 +1,309 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Card, DatePicker, Select, Radio, Tabs, Button, Typography, Space, theme } from 'antd';
+import {
+  CalendarOutlined,
+  LeftOutlined,
+  RightOutlined,
+  SettingOutlined,
+  ThunderboltOutlined,
+  GiftOutlined,
+  WalletOutlined,
+} from '@ant-design/icons';
+import dayjs, { Dayjs } from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import dynamic from 'next/dynamic';
+import { apiClient } from '../../../lib/api-client';
+import { CvStaffOption } from '@mos-lab/shared';
+
+dayjs.extend(isoWeek);
+
+const CvXoayTab = dynamic(() => import('./components/CvXoayTab'), { ssr: false });
+const CvTipTab = dynamic(() => import('./components/CvTipTab'), { ssr: false });
+const CvThuNhapTab = dynamic(() => import('./components/CvThuNhapTab'), { ssr: false });
+const CvConfigDrawer = dynamic(() => import('./components/CvConfigDrawer'), { ssr: false });
+
+const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
+
+export default function CvReportPage() {
+  const { token } = theme.useToken();
+  const [currentUser, setCurrentUser] = useState<Record<string, unknown> | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        try {
+          setCurrentUser(JSON.parse(stored));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, []);
+
+  // Filters State
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
+  const [referenceDate, setReferenceDate] = useState<Dayjs>(dayjs());
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs().endOf('month')]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const [selectedStore, setSelectedStore] = useState<string>('ALL');
+  const [selectedConsultant, setSelectedConsultant] = useState<string>('ALL');
+  const [activeTab, setActiveTab] = useState<string>('xoay');
+
+  // Staff Config Drawer & Staff Options
+  const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
+  const [staffOptions, setStaffOptions] = useState<CvStaffOption[]>([]);
+
+  // Update date range when viewMode or referenceDate changes
+  useEffect(() => {
+    if (viewMode === 'month') {
+      setDateRange([referenceDate.startOf('month'), referenceDate.endOf('month')]);
+    } else if (viewMode === 'week') {
+      setDateRange([referenceDate.startOf('isoWeek'), referenceDate.endOf('isoWeek')]);
+    } else {
+      setDateRange([referenceDate.startOf('day'), referenceDate.endOf('day')]);
+    }
+  }, [viewMode, referenceDate]);
+
+  const fetchStaffConfig = async () => {
+    try {
+      const res = await apiClient.kpi.getCvConfig();
+      if (res && res.allStaffOptions) {
+        setStaffOptions(res.allStaffOptions);
+      }
+    } catch (err) {
+      console.error('Error fetching CV staff options:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaffConfig();
+  }, []);
+
+  // Navigate date backward / forward
+  const handleNavigate = (direction: number) => {
+    if (viewMode === 'month') {
+      setReferenceDate((prev) => prev.add(direction, 'month'));
+    } else if (viewMode === 'week') {
+      setReferenceDate((prev) => prev.add(direction, 'week'));
+    } else {
+      setReferenceDate((prev) => prev.add(direction, 'day'));
+    }
+  };
+
+  // Format label for period date button
+  const getPeriodLabel = () => {
+    if (viewMode === 'month') {
+      return `Tháng ${referenceDate.format('MM/YYYY')}`;
+    }
+    if (viewMode === 'week') {
+      const weekNum = referenceDate.isoWeek();
+      return `Tuần ${weekNum} (${referenceDate.startOf('isoWeek').format('DD/MM')} - ${referenceDate.endOf('isoWeek').format('DD/MM/YYYY')})`;
+    }
+    return referenceDate.format('DD/MM/YYYY');
+  };
+
+  // Restore active tab from URL param or localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      const savedTab = localStorage.getItem('cv_active_tab');
+      const initialTab = tabParam || savedTab;
+
+      if (initialTab && ['xoay', 'tip', 'thunhap'].includes(initialTab)) {
+        setActiveTab(initialTab);
+      }
+    }
+  }, []);
+
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cv_active_tab', key);
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', key);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  };
+
+  return (
+    <div>
+      {/* Top Header & Filter Navigation */}
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+        <div>
+          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
+            Báo Cáo CV (Chuyên Viên)
+          </Title>
+          <Text style={{ color: token.colorTextDescription }}>
+            Theo dõi dữ liệu CV Xoay, bóc tách điểm thưởng ca, CV Tip và thu nhập live của chuyên viên
+          </Text>
+        </div>
+
+        {/* TOP FILTER CONTROLS BAR (Matching Image Design) */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <Space wrap>
+            {/* View Mode Switcher: Tháng / Tuần / Ngày */}
+            <Radio.Group
+              value={viewMode}
+              onChange={(e) => {
+                setViewMode(e.target.value);
+                setReferenceDate(dayjs());
+              }}
+              optionType="button"
+              buttonStyle="solid"
+            >
+              <Radio.Button value="month">Tháng</Radio.Button>
+              <Radio.Button value="week">Tuần</Radio.Button>
+              <Radio.Button value="day">Ngày</Radio.Button>
+            </Radio.Group>
+
+            {/* Date Navigator: < Tháng 07/2026 > */}
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <Space.Compact>
+                <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
+                <Button
+                  onClick={() => setPickerOpen(true)}
+                  style={{
+                    fontWeight: '600',
+                    minWidth: '190px',
+                    textAlign: 'center',
+                    color: token.colorText,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
+                </Button>
+                <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
+              </Space.Compact>
+
+              <RangePicker
+                value={dateRange}
+                onChange={(dates) => {
+                  if (dates) setDateRange([dates[0]!, dates[1]!]);
+                }}
+                format="DD/MM/YYYY"
+                open={pickerOpen}
+                onOpenChange={(open) => setPickerOpen(open)}
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: '100%',
+                  opacity: 0,
+                  pointerEvents: 'none',
+                  zIndex: -1,
+                }}
+              />
+            </div>
+
+            {/* Store Filter (Chi Nhánh) */}
+            <Select
+              value={selectedStore}
+              onChange={setSelectedStore}
+              style={{ width: 160 }}
+              options={[
+                { value: 'ALL', label: 'Tất cả chi nhánh' },
+                { value: 'PXL', label: 'CN Phan Xích Long' },
+                { value: 'NYC', label: 'CN Nguyễn Thị Thập' },
+              ]}
+              placeholder="Chọn Chi Nhánh"
+            />
+
+            {/* Consultant Filter (Chuyên Viên) */}
+            <Select
+              value={selectedConsultant}
+              onChange={setSelectedConsultant}
+              style={{ width: 170 }}
+              showSearch
+              filterOption={(input, option) => (option?.label as string)?.toLowerCase().includes(input.toLowerCase())}
+              options={[
+                { value: 'ALL', label: 'Tất cả CV' },
+                ...staffOptions.map((s) => ({ value: String(s.staffId), label: s.displayName })),
+              ]}
+              placeholder="Chọn CV"
+            />
+
+            {/* Config Button (Gold Themed) */}
+            <Button
+              type="primary"
+              icon={<SettingOutlined />}
+              onClick={() => setConfigDrawerOpen(true)}
+              style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
+            >
+              Cấu hình CV
+            </Button>
+          </Space>
+        </div>
+      </div>
+
+      {/* 3 MAIN TABS */}
+      <Card
+        variant="outlined"
+        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+        className="shadow-sm rounded-xl"
+      >
+        <Tabs
+          activeKey={activeTab}
+          onChange={handleTabChange}
+          size="large"
+          className="custom-report-tabs"
+          items={[
+            {
+              key: 'xoay',
+              label: (
+                <span className="flex items-center gap-2 font-semibold">
+                  <ThunderboltOutlined /> CV Xoay
+                </span>
+              ),
+              children: (
+                <CvXoayTab
+                  dateRange={dateRange}
+                  selectedStore={selectedStore}
+                  selectedConsultant={selectedConsultant}
+                />
+              ),
+            },
+            {
+              key: 'tip',
+              label: (
+                <span className="flex items-center gap-2 font-semibold">
+                  <GiftOutlined /> CV Tip
+                </span>
+              ),
+              children: (
+                <CvTipTab dateRange={dateRange} selectedStore={selectedStore} selectedConsultant={selectedConsultant} />
+              ),
+            },
+            {
+              key: 'thunhap',
+              label: (
+                <span className="flex items-center gap-2 font-semibold">
+                  <WalletOutlined /> CV Thu Nhập
+                </span>
+              ),
+              children: <CvThuNhapTab dateRange={dateRange} selectedStore={selectedStore} currentUser={currentUser} />,
+            },
+          ]}
+        />
+      </Card>
+
+      {/* Global CV Config Drawer */}
+      <CvConfigDrawer
+        open={configDrawerOpen}
+        onClose={() => setConfigDrawerOpen(false)}
+        onSaveSuccess={() => {
+          fetchStaffConfig();
+        }}
+      />
+    </div>
+  );
+}

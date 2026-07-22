@@ -1,387 +1,262 @@
 import { FastifyInstance } from 'fastify';
-import { getSalaryConfig } from '../services/salary-calculator.js';
-import { formatDateTime, getWeekNumber } from '../services/kpi-helpers.js';
 
-export async function registerExportRoutes(fastify: FastifyInstance) {
-  const parseDateRange = (dateFrom?: string, dateTo?: string, defaultDaysStart = 7) => {
-    const startStr =
-      dateFrom || new Date(Date.now() - defaultDaysStart * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-    const endStr = dateTo || new Date().toLocaleDateString('en-CA');
+/**
+ * Công thức Thưởng Kim Cương lũy tiến (VND):
+ * Khách 1: 5,000đ
+ * Khách 2: 10,000đ
+ * Khách 3: 20,000đ
+ * Khách 4: 30,000đ
+ * Khách 5: 40,000đ
+ * Khách 6+: 50,000đ / khách
+ */
+export function calculateDiamondBonus(referralCount: number): number {
+  if (referralCount <= 0) return 0;
+  let bonus = 0;
+  const rates = [5000, 10000, 20000, 30000, 40000];
+  for (let i = 1; i <= referralCount; i++) {
+    if (i <= 5) {
+      bonus += rates[i - 1];
+    } else {
+      bonus += 50000;
+    }
+  }
+  return bonus;
+}
 
-    const startPart = startStr.includes('T') ? startStr.split('T')[0] : startStr;
-    const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
+export async function fetchDiamondData(fastify: FastifyInstance, dateFromDay: string, dateToDay: string) {
+  const dateFromDt = `${dateFromDay} 00:00:00`;
+  const dateToDt = `${dateToDay} 23:59:59`;
+
+  // Fetch ACTIVE_CC_STAFF_CONFIG if present
+  let activeCcIds: number[] | null = null;
+  try {
+    const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
+      where: { key: 'ACTIVE_CC_STAFF_CONFIG' },
+    });
+    if (configRecord && configRecord.value) {
+      activeCcIds = JSON.parse(configRecord.value);
+    }
+  } catch (err) {
+    fastify.log.error(err as any, 'Error fetching ACTIVE_CC_STAFF_CONFIG');
+  }
+
+  const sql = `
+    SELECT
+        up_cc.user_id                                            AS cc_id,
+        up_cc.full_name                                          AS TEN_CC,
+        ROUND(SUM(rscc.total_check_in + rscc.total_check_out) / 2) AS TONG_KHACH,
+        COALESCE(ref.cnt, 0)                                     AS SO_KH_DIAMOND
+    FROM report_staff_client_consultant rscc
+    JOIN user_profile up_cc
+        ON rscc.user_id              = up_cc.user_id
+       AND up_cc.client_business_id  = 1
+       AND up_cc.is_disabled         = 0
+    LEFT JOIN (
+        SELECT
+            referrer_check_out_staff_id AS cc_id,
+            COUNT(*)                    AS cnt
+        FROM user_profile
+        WHERE client_business_id    = 1
+          AND referrer_date_created BETWEEN ? AND ?
+        GROUP BY referrer_check_out_staff_id
+    ) ref ON ref.cc_id = rscc.user_id
+    WHERE rscc.client_business_id = 1
+      AND rscc.date BETWEEN ? AND ?
+    GROUP BY rscc.user_id
+    HAVING TONG_KHACH > 0
+    ORDER BY SO_KH_DIAMOND DESC, up_cc.full_name ASC
+  `;
+
+  const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(sql, dateFromDt, dateToDt, dateFromDay, dateToDay);
+
+  let filteredRows = rows;
+  if (activeCcIds && activeCcIds.length > 0) {
+    filteredRows = rows.filter((r) => activeCcIds!.includes(Number(r.cc_id)));
+  }
+
+  let rank = 1;
+  let totalReferralGuests = 0;
+  let totalDiamondBonus = 0;
+
+  const data = filteredRows.map((r) => {
+    const ccId = Number(r.cc_id);
+    const tenCc = String(r.TEN_CC || '');
+    const tongKhach = Number(r.TONG_KHACH || 0);
+    const soKhachDiamond = Number(r.SO_KH_DIAMOND || 0);
+    const potentialThuong = calculateDiamondBonus(soKhachDiamond);
+    const tyLeGioiThieu = tongKhach > 0 ? Number(((soKhachDiamond / tongKhach) * 100).toFixed(1)) : 0;
+    const datDieuKien = tyLeGioiThieu >= 3.0;
+    const thuongDiamond = datDieuKien ? potentialThuong : 0;
+
+    totalReferralGuests += soKhachDiamond;
+    totalDiamondBonus += thuongDiamond;
 
     return {
-      startStr: startPart,
-      endStr: endPart,
-      start: new Date(startPart + 'T00:00:00.000Z'),
-      end: new Date(endPart + 'T23:59:59.999Z'),
+      rank: rank++,
+      ccId,
+      tenCc,
+      tongKhach,
+      soKhachDiamond,
+      thuongDiamond,
+      potentialThuong,
+      tyLeGioiThieu,
+      datDieuKien,
     };
-  };
+  });
 
-  // GET /api/kpi/export-booker-salary (Google Sheets / External tool integration)
-  fastify.get('/kpi/export-booker-salary', async (request, reply) => {
-    const { key, booker, date_from, date_to } = request.query as {
+  return {
+    totalReferralGuests,
+    totalDiamondBonus,
+    data,
+  };
+}
+
+export async function registerExportRoutes(fastify: FastifyInstance) {
+  // GET /api/kpi/export-diamond (CSV Export for Google Sheets & JSON for Next.js Web App)
+  fastify.get('/kpi/export-diamond', async (request, reply) => {
+    const { key, month, date_from, date_to, format } = request.query as {
       key?: string;
-      booker?: string;
+      month?: string;
+      date_from?: string;
+      date_to?: string;
+      format?: string;
+    };
+
+    // Verify key when provided or external integration
+    if (key && key !== 'FDC0D0A177694777A') {
+      return reply.status(401).send({ error: 'Unauthorized', message: 'API key không hợp lệ.' });
+    }
+
+    let dateFromDay: string;
+    let dateToDay: string;
+
+    if (date_from && date_to) {
+      dateFromDay = date_from.includes('T') ? date_from.split('T')[0] : date_from;
+      dateToDay = date_to.includes('T') ? date_to.split('T')[0] : date_to;
+    } else {
+      const monthParam = month || new Date().toISOString().substring(0, 7);
+      if (!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(monthParam)) {
+        return reply
+          .status(400)
+          .send({ error: 'Bad Request', message: 'Định dạng tháng không hợp lệ. Sử dụng YYYY-MM.' });
+      }
+      dateFromDay = `${monthParam}-01`;
+      const [y, m] = monthParam.split('-').map(Number);
+      const lastDay = new Date(y, m, 0).getDate();
+      dateToDay = `${monthParam}-${String(lastDay).padStart(2, '0')}`;
+    }
+
+    try {
+      const result = await fetchDiamondData(fastify, dateFromDay, dateToDay);
+
+      // Return CSV if format=csv or key is provided or Accept is text/csv
+      if (format === 'csv' || request.headers.accept?.includes('text/csv') || (key && format !== 'json')) {
+        const lines: string[] = ['TEN_CC,TONG_KHACH,SO_KH_DIAMOND,THUONG_DIAMOND,TY_LE_GIOI_THIEU,DAT_DIEU_KIEN'];
+        for (const row of result.data) {
+          const escapedName = `"${row.tenCc.replace(/"/g, '""')}"`;
+          const datStr = row.datDieuKien ? 'DAT' : 'CHUA_DAT';
+          lines.push(
+            `${escapedName},${row.tongKhach},${row.soKhachDiamond},${row.thuongDiamond},${row.tyLeGioiThieu}%,${datStr}`
+          );
+        }
+        reply.header('Content-Type', 'text/plain; charset=utf-8');
+        reply.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+        return lines.join('\n');
+      }
+
+      return {
+        dateFrom: dateFromDay,
+        dateTo: dateToDay,
+        month: month || dateFromDay.substring(0, 7),
+        ...result,
+      };
+    } catch (err) {
+      fastify.log.error(err as Error, 'Export diamond error');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi xuất dữ liệu Kim Cương.' });
+    }
+  });
+
+  // GET /api/kpi/export-diamond/details (Drill-down referral details for a specific CC)
+  fastify.get('/kpi/export-diamond/details', async (request, reply) => {
+    const { ccId, month, date_from, date_to } = request.query as {
+      ccId?: string;
+      month?: string;
       date_from?: string;
       date_to?: string;
     };
 
-    // Verify system integration API key
-    if (key !== 'FDC0D0A177694777A') {
-      return reply.status(401).send({ error: 'Unauthorized', message: 'API key không hợp lệ.' });
+    if (!ccId) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu ccId.' });
     }
 
-    if (!booker || !date_from || !date_to) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu tham số booker, date_from hoặc date_to.' });
+    const ccIdNum = Number(ccId);
+    let dateFromDay: string;
+    let dateToDay: string;
+
+    if (date_from && date_to) {
+      dateFromDay = date_from.includes('T') ? date_from.split('T')[0] : date_from;
+      dateToDay = date_to.includes('T') ? date_to.split('T')[0] : date_to;
+    } else {
+      const monthParam = month || new Date().toISOString().substring(0, 7);
+      dateFromDay = `${monthParam}-01`;
+      const [y, m] = monthParam.split('-').map(Number);
+      const lastDay = new Date(y, m, 0).getDate();
+      dateToDay = `${monthParam}-${String(lastDay).padStart(2, '0')}`;
     }
 
-    const { start, end } = parseDateRange(date_from, date_to);
+    const dateFromDt = `${dateFromDay} 00:00:00`;
+    const dateToDt = `${dateToDay} 23:59:59`;
 
     try {
-      const config = await getSalaryConfig(fastify);
-
-      // Find legacyUserId for the requested booker
-      const profiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `
-        SELECT up.user_id as userId, up.full_name as fullName
-        FROM \`staff_profile\` sp
-        JOIN \`user_profile\` up ON sp.user_id = up.user_id
-        WHERE up.provider = 'Staff' AND up.is_disabled = 0
-          AND (up.full_name = ? OR up.full_name = ?)
-      `,
-        booker,
-        booker + ' '
+      // Get CC Name
+      const ccProfile = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
+        ccIdNum
       );
+      const tenCc = ccProfile && ccProfile.length > 0 ? ccProfile[0].full_name : `CC #${ccIdNum}`;
 
-      if (profiles.length === 0) {
-        return reply.status(404).send({ error: 'Not Found', message: `Không tìm thấy thông tin booker: ${booker}` });
-      }
+      const sql = `
+        SELECT
+          up_new.user_id                                          AS newUserId,
+          up_new.full_name                                        AS newName,
+          COALESCE(MAX(uc_new.phone_number), '')                  AS newPhone,
+          up_new.referrer_date_created                            AS referralDate,
+          up_ref.user_id                                          AS referrerUserId,
+          COALESCE(up_ref.full_name, 'Khách hàng')               AS referrerName,
+          COALESCE(MAX(uc_ref.phone_number), '')                  AS referrerPhone
+        FROM user_profile up_new
+        LEFT JOIN user_contact uc_new ON up_new.user_id = uc_new.user_id AND uc_new.is_disabled = 0
+        LEFT JOIN user_profile up_ref ON up_new.referrer_user_id = up_ref.user_id
+        LEFT JOIN user_contact uc_ref ON up_ref.user_id = uc_ref.user_id AND uc_ref.is_disabled = 0
+        WHERE up_new.client_business_id = 1
+          AND up_new.referrer_check_out_staff_id = ?
+          AND up_new.referrer_date_created BETWEEN ? AND ?
+        GROUP BY up_new.user_id, up_new.full_name, up_new.referrer_date_created, up_ref.user_id, up_ref.full_name
+        ORDER BY up_new.referrer_date_created DESC
+      `;
 
-      // Sort by userId ascending to let duplicates override
-      profiles.sort((a: SafeAny, b: SafeAny) => Number(a.userId) - Number(b.userId));
-      const legacyUserId = Number(profiles[profiles.length - 1].userId);
+      const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(sql, ccIdNum, dateFromDt, dateToDt);
 
-      // Fetch all orders for this booker in the date range
-      const allOrders = await fastify.prisma.legacy.order.findMany({
-        where: {
-          created_staff_id: legacyUserId,
-          booking_date_start: { gte: start, lte: end },
-          order_state: { not: 'Cancelled' },
-        },
-        orderBy: { booking_date_start: 'asc' },
-      });
+      const data = rows.map((r, idx) => ({
+        referralId: idx + 1,
+        referralDate: r.referralDate ? new Date(r.referralDate).toISOString() : '',
+        referrerUserId: r.referrerUserId ? Number(r.referrerUserId) : undefined,
+        referrerName: String(r.referrerName || 'Khách hàng'),
+        referrerPhone: String(r.referrerPhone || ''),
+        newUserId: Number(r.newUserId),
+        newName: String(r.newName || ''),
+        newPhone: String(r.newPhone || ''),
+      }));
 
-      const rows: SafeAny[][] = [];
-      rows.push([
-        'ID',
-        'CLIENT',
-        'PHONE',
-        'SOURCE',
-        'SERVICE',
-        'PRICE',
-        'DISCOUNT PERCENT',
-        'DISCOUNT VALUE',
-        'AMOUNT PAID',
-        'TIPS',
-        'DEBT',
-        'BOOKER',
-        'BOOKING TYPE',
-        'BOOKING BONUS',
-        'COMBO DEDUCTION',
-        'NET REVENUE',
-        'CHECK-IN VALUE',
-        'DATE BOOKED',
-        'DATE CHECK-IN',
-        'WEEK',
-      ]);
-
-      if (allOrders.length > 0) {
-        const completedOrders = allOrders.filter((o) => o.order_state === 'Completed');
-        const completedOrderIds = completedOrders.map((o) => o.id);
-
-        const orderPaymentMap = new Map<number, { tips: number; debt: number; totalPaid: number }>();
-        if (completedOrderIds.length > 0) {
-          const orderPayments = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-            SELECT order_id as orderId, tip_amount as tipAmount, paid_credit_amount as paidCredit, paid_cash_amount as paidCash, paid_credit_card_amount as paidCard, paid_bank_transfer_amount as paidBank, debt_amount as debt
-            FROM \`order_payment\`
-            WHERE order_id IN (${completedOrderIds.join(',')})
-          `);
-          orderPayments.forEach((op: SafeAny) => {
-            const existing = orderPaymentMap.get(Number(op.orderId)) || { tips: 0, debt: 0, totalPaid: 0 };
-            const paidSum =
-              Number(op.paidCredit || 0) +
-              Number(op.paidCash || 0) +
-              Number(op.paidCard || 0) +
-              Number(op.paidBank || 0);
-            orderPaymentMap.set(Number(op.orderId), {
-              tips: existing.tips + Number(op.tipAmount || 0),
-              debt: existing.debt + Number(op.debt || 0),
-              totalPaid: existing.totalPaid + paidSum,
-            });
-          });
-        }
-
-        const orderServicesMap = new Map<number, any[]>();
-        const serviceNameMap = new Map<number, string>();
-        if (completedOrderIds.length > 0) {
-          const orderServices = await fastify.prisma.legacy.order_service.findMany({
-            where: { order_id: { in: completedOrderIds } },
-          });
-          orderServices.forEach((os) => {
-            const list = orderServicesMap.get(os.order_id) || [];
-            list.push(os);
-            orderServicesMap.set(os.order_id, list);
-          });
-
-          const serviceIds = Array.from(new Set(orderServices.map((os) => os.service_id)));
-          if (serviceIds.length > 0) {
-            const serviceLanguages = await fastify.prisma.legacy.service_language.findMany({
-              where: { service_id: { in: serviceIds } },
-            });
-            serviceLanguages.forEach((sl) => {
-              serviceNameMap.set(sl.service_id, sl.service_name);
-            });
-          }
-        }
-
-        // Fetch client names and phone numbers
-        const customerIds = Array.from(
-          new Set(allOrders.map((o) => o.user_id).filter((id) => id !== null))
-        ) as number[];
-        const userProfiles =
-          customerIds.length > 0
-            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT user_id as userId, full_name as fullName
-          FROM \`user_profile\`
-          WHERE user_id IN (${customerIds.join(',')})
-        `)
-            : [];
-        const userContacts =
-          customerIds.length > 0
-            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT user_id as userId, phone_number as phoneNumber
-          FROM \`user_contact\`
-          WHERE user_id IN (${customerIds.join(',')})
-        `)
-            : [];
-
-        const profileMap = new Map<number, string>();
-        userProfiles.forEach((p) => profileMap.set(Number(p.userId), p.fullName));
-
-        const contactMap = new Map<number, string>();
-        userContacts.forEach((c) => contactMap.set(Number(c.userId), c.phoneNumber));
-
-        // Fetch user balances and transactions for checkHasLiveCombo
-        const userBalances =
-          customerIds.length > 0
-            ? await fastify.prisma.legacy.user_service_balance.findMany({
-                where: { user_id: { in: customerIds } },
-              })
-            : [];
-
-        const balanceIds = userBalances.map((b) => b.id);
-        const userBalanceTransactions =
-          balanceIds.length > 0
-            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
-                 usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
-                 usbt.retain_count, usbt.used_staff_id, usbt.order_id,
-                 o.booking_date_start as o_booking_date_start
-          FROM user_service_balance_transaction usbt
-          LEFT JOIN \`order\` o ON o.id = usbt.order_id
-          WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-        `)
-            : [];
-
-        const txnsByBalanceId = new Map<number, any[]>();
-        for (const t of userBalanceTransactions) {
-          const bid = Number(t.user_service_balance_id);
-          let list = txnsByBalanceId.get(bid);
-          if (!list) {
-            list = [];
-            txnsByBalanceId.set(bid, list);
-          }
-          list.push(t);
-        }
-
-        const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
-          const bTime = bookingDateStart || orderCreatedDate;
-          const userBals = userBalances.filter((b) => b.user_id === userId);
-
-          for (const usb of userBals) {
-            if (new Date(usb.date_created) >= new Date(bTime)) {
-              continue;
-            }
-
-            const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
-              (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
-            );
-
-            txnsBefore.sort((a, b) => {
-              const timeA = new Date(a.o_booking_date_start || a.date_created).getTime();
-              const timeB = new Date(b.o_booking_date_start || b.date_created).getTime();
-              if (timeA !== timeB) return timeB - timeA;
-              return b.id - a.id;
-            });
-
-            const lastTxnBefore = txnsBefore[0];
-
-            const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-            const isNotExpired =
-              !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
-
-            let countLeft = 0;
-            if (
-              lastTxnBefore &&
-              lastTxnBefore.total_normal_count_left !== null &&
-              lastTxnBefore.total_retain_count_left !== null
-            ) {
-              countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
-            } else {
-              const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
-                (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
-              );
-
-              let usedAfter = 0;
-              txnsAfterOrAt.forEach((t) => {
-                if (t.used_staff_id !== null) {
-                  usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
-                }
-              });
-
-              countLeft = (usb.normal_count || 0) + (usb.retain_count || 0) + usedAfter;
-            }
-
-            if (isNotExpired && countLeft > 0) {
-              return true;
-            }
-          }
-          return false;
-        };
-
-        allOrders.forEach((o) => {
-          const clientName = profileMap.get(Number(o.user_id)) || '';
-          const phone = contactMap.get(Number(o.user_id)) || '';
-          const source = o.booking_channels || 'ZALO';
-          const plannedDateStr = o.booking_date_start ? new Date(o.booking_date_start).toLocaleDateString('en-CA') : '';
-          const weekLabel = o.booking_date_start ? `W${getWeekNumber(new Date(o.booking_date_start))}` : '';
-
-          if (o.order_state === 'Completed') {
-            const payInfo = orderPaymentMap.get(o.id) || { tips: 0, debt: 0, totalPaid: 0 };
-            const orderServicesList = orderServicesMap.get(o.id) || [];
-
-            let primaryService = orderServicesList[0];
-            for (const os of orderServicesList) {
-              if (os.service_price > (primaryService?.service_price || 0)) {
-                primaryService = os;
-              }
-            }
-
-            const serviceName = primaryService ? serviceNameMap.get(primaryService.service_id) || 'Unknown' : 'Unknown';
-            const price = primaryService ? primaryService.service_price : 0;
-            const discValue = primaryService ? primaryService.discount_amount : 0;
-            let discPercent = 0;
-            if (primaryService && primaryService.service_price > 0) {
-              discPercent = Math.round((primaryService.discount_amount / primaryService.service_price) * 100);
-            }
-
-            const isRefill = serviceName.toLowerCase().includes('refill');
-            const isCombo = checkHasLiveCombo(o.user_id, o.booking_date_start, o.date_created);
-
-            let bonus = 0;
-            let comboDeduction = 0;
-            let bookingType = 'Single';
-
-            if (isCombo) {
-              bonus = 0;
-              comboDeduction = o.total_price;
-              bookingType = 'Combo';
-            } else if (isRefill) {
-              if (discPercent === 0) bonus = config.clientBonusRefill.discount30;
-              else if (discPercent <= 30) bonus = config.clientBonusRefill.discount30;
-              else if (discPercent <= 50) bonus = config.clientBonusRefill.discount50;
-              else bonus = config.clientBonusRefill.discountMore;
-            } else {
-              if (discPercent === 0) bonus = config.clientBonusFullSet.discount0;
-              else if (discPercent <= 30) bonus = config.clientBonusFullSet.discount30;
-              else if (discPercent <= 50) bonus = config.clientBonusFullSet.discount50;
-              else bonus = config.clientBonusFullSet.discountMore;
-            }
-
-            const checkinDateStr = formatDateTime(new Date(o.date_created));
-
-            rows.push([
-              o.id,
-              clientName,
-              phone,
-              source,
-              serviceName,
-              price,
-              discPercent,
-              discValue,
-              payInfo.totalPaid,
-              payInfo.tips,
-              payInfo.debt,
-              booker,
-              bookingType,
-              bonus,
-              comboDeduction,
-              o.total_price,
-              1, // CHECK-IN VALUE
-              plannedDateStr,
-              checkinDateStr,
-              weekLabel,
-            ]);
-          } else {
-            rows.push([
-              o.id,
-              clientName,
-              phone,
-              source,
-              'Not Checkin',
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              booker,
-              'Single',
-              0,
-              0,
-              0,
-              0,
-              plannedDateStr,
-              '',
-              weekLabel,
-            ]);
-          }
-        });
-      }
-
-      const csvContent = rows
-        .map((r) =>
-          r
-            .map((val) => {
-              if (val === null || val === undefined) return '';
-              const strVal = String(val);
-              if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
-                return `"${strVal.replace(/"/g, '""')}"`;
-              }
-              return strVal;
-            })
-            .join(',')
-        )
-        .join('\n');
-
-      reply.header('Content-Type', 'text/csv; charset=utf-8');
-      reply.header('Content-Disposition', 'attachment; filename=booker-salary.csv');
-      return csvContent;
+      return {
+        ccId: ccIdNum,
+        tenCc,
+        totalCount: data.length,
+        data,
+      };
     } catch (err) {
-      fastify.log.error(err as Error, 'Export booker salary CSV error');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi xuất CSV.' });
+      fastify.log.error(err as Error, 'Export diamond details error');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi xuất chi tiết Kim Cương.' });
     }
   });
 }

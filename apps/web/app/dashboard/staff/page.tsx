@@ -45,6 +45,7 @@ import {
   KeyOutlined,
   BgColorsOutlined,
   SafetyCertificateOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
@@ -117,6 +118,8 @@ export default function StaffPage() {
     openRoleModal,
     handleRoleSubmit,
     handleDeleteRole,
+    syncing,
+    handleSyncLegacyStaff,
   } = useStaffData({
     staffForm,
     roleForm,
@@ -134,6 +137,7 @@ export default function StaffPage() {
     openStaffModal,
     handleDeleteStaff,
     currentUser,
+    onRoleClick: (roleKey) => setFilterRole(roleKey),
   });
 
   // Table columns for Roles Management
@@ -157,20 +161,35 @@ export default function StaffPage() {
         </div>
         <div>
           {activeTab === 'staff' ? (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => openStaffModal(null)}
-              style={{
-                background: '#D4A84B',
-                borderColor: '#D4A84B',
-                color: '#000',
-                fontWeight: '600',
-                borderRadius: '6px',
-              }}
-            >
-              Thêm Nhân Viên
-            </Button>
+            <Space>
+              {currentUser?.role === 'admin' && (
+                <Button
+                  icon={<SyncOutlined />}
+                  onClick={handleSyncLegacyStaff}
+                  loading={syncing}
+                  style={{
+                    borderRadius: '6px',
+                    fontWeight: '500',
+                  }}
+                >
+                  Đồng bộ Wings Lashes
+                </Button>
+              )}
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => openStaffModal(null)}
+                style={{
+                  background: '#D4A84B',
+                  borderColor: '#D4A84B',
+                  color: '#000',
+                  fontWeight: '600',
+                  borderRadius: '6px',
+                }}
+              >
+                Thêm Nhân Viên
+              </Button>
+            </Space>
           ) : (
             <Button
               type="primary"
@@ -229,8 +248,9 @@ export default function StaffPage() {
                       <Select
                         style={{ width: '100%' }}
                         placeholder="Lọc theo vai trò"
-                        value={filterRole}
-                        onChange={(val) => setFilterRole(val)}
+                        value={filterRole === 'all' ? undefined : filterRole}
+                        onChange={(val) => setFilterRole(val || 'all')}
+                        allowClear
                       >
                         <Option value="all">Tất cả vai trò</Option>
                         {roles.map((r) => (
@@ -244,8 +264,9 @@ export default function StaffPage() {
                       <Select
                         style={{ width: '100%' }}
                         placeholder="Lọc theo trạng thái"
-                        value={filterStatus}
-                        onChange={(val) => setFilterStatus(val)}
+                        value={filterStatus === 'all' ? undefined : filterStatus}
+                        onChange={(val) => setFilterStatus(val || 'all')}
+                        allowClear
                       >
                         <Option value="all">Tất cả trạng thái</Option>
                         <Option value="true">Đang hoạt động (Active)</Option>
@@ -266,6 +287,21 @@ export default function StaffPage() {
                     </Col>
                   </Row>
                 </Card>
+
+                {/* Active Filter Indicator */}
+                {filterRole !== 'all' && (
+                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Text type="secondary">Đang lọc theo vai trò:</Text>
+                    <Tag
+                      closable
+                      onClose={() => setFilterRole('all')}
+                      color={roles.find((r) => r.key === filterRole)?.color || 'gold'}
+                      style={{ fontWeight: '500', borderRadius: '4px' }}
+                    >
+                      {roles.find((r) => r.key === filterRole)?.name || filterRole}
+                    </Tag>
+                  </div>
+                )}
 
                 {/* Staff Table */}
                 <Table
@@ -348,6 +384,7 @@ export default function StaffPage() {
             roles={roles}
             onCancel={() => setIsStaffModalOpen(false)}
             legacyStaffList={legacyStaffList}
+            currentUser={currentUser}
           />
         </Form>
       </Modal>
@@ -650,6 +687,64 @@ export default function StaffPage() {
                   </Text>
                 )}
               </Descriptions.Item>
+              <Descriptions.Item label="Thâm niên làm việc">
+                {selectedStaff.joinedAt ? (
+                  <Space direction="vertical" size={0}>
+                    <Text style={{ fontWeight: '500', fontVariantNumeric: 'tabular-nums' }}>
+                      {(() => {
+                        const offset = selectedStaff.seniorityOffset || 0;
+                        const start = dayjs(selectedStaff.joinedAt);
+                        const now = dayjs();
+                        const totalMonths = now.diff(start, 'month') + offset;
+                        if (totalMonths <= 0) {
+                          return `${now.diff(start, 'day')} ngày`;
+                        }
+                        const years = Math.floor(totalMonths / 12);
+                        const months = totalMonths % 12;
+                        return years > 0 ? `${years} năm ${months} tháng` : `${months} tháng`;
+                      })()}
+                    </Text>
+                    {currentUser?.role === 'admin' &&
+                      selectedStaff.seniorityOffset !== undefined &&
+                      selectedStaff.seniorityOffset !== null &&
+                      selectedStaff.seniorityOffset > 0 && (
+                        <Text type="secondary" style={{ fontSize: '11px', fontStyle: 'italic' }}>
+                          (đã cộng thêm {selectedStaff.seniorityOffset} tháng thỏa thuận)
+                        </Text>
+                      )}
+                  </Space>
+                ) : (
+                  <Text type="secondary" italic>
+                    Chưa xác định
+                  </Text>
+                )}
+              </Descriptions.Item>
+              {currentUser?.role === 'admin' && (
+                <>
+                  <Descriptions.Item label="Lương cứng (Base Salary)">
+                    {selectedStaff.baseSalary !== undefined && selectedStaff.baseSalary !== null ? (
+                      <Text style={{ fontWeight: '500', fontVariantNumeric: 'tabular-nums' }}>
+                        {Math.round(selectedStaff.baseSalary).toLocaleString('vi-VN')} đ
+                      </Text>
+                    ) : (
+                      <Text type="secondary" italic>
+                        Chưa thiết lập
+                      </Text>
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Lương giờ (Hourly Wage)">
+                    {selectedStaff.hourlyWage !== undefined && selectedStaff.hourlyWage !== null ? (
+                      <Text style={{ fontWeight: '500', fontVariantNumeric: 'tabular-nums' }}>
+                        {Math.round(selectedStaff.hourlyWage).toLocaleString('vi-VN')} đ/h
+                      </Text>
+                    ) : (
+                      <Text type="secondary" italic>
+                        Chưa thiết lập
+                      </Text>
+                    )}
+                  </Descriptions.Item>
+                </>
+              )}
               <Descriptions.Item label="Ngày sinh">
                 {selectedStaff.birthDate ? (
                   dayjs(selectedStaff.birthDate).format('DD/MM/YYYY')

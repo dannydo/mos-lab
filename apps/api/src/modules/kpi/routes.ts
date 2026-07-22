@@ -1,5 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
+import { registerCcRoutes } from './routes/cc.routes.js';
+import { registerCcPaystubRoutes } from './routes/cc-paystub.routes.js';
+import { registerCcTipRoutes } from './routes/cc-tip.routes.js';
+import { registerExportRoutes } from './routes/export.routes.js';
+import { registerCvRoutes } from './routes/cv.routes.js';
+import { registerCvTipRoutes } from './routes/cv-tip.routes.js';
+import { registerCvPaystubRoutes } from './routes/cv-paystub.routes.js';
 
 // Default configuration parameters for Booker Salary
 const DEFAULT_SALARY_CONFIG = {
@@ -547,6 +554,14 @@ function formatDateTime(d: Date): string {
 }
 
 export async function kpiRoutes(fastify: FastifyInstance) {
+  await registerCcRoutes(fastify);
+  await registerCcPaystubRoutes(fastify);
+  await registerCcTipRoutes(fastify);
+  await registerExportRoutes(fastify);
+  await registerCvRoutes(fastify);
+  await registerCvTipRoutes(fastify);
+  await registerCvPaystubRoutes(fastify);
+
   const parseDateRange = (dateFrom?: string, dateTo?: string, defaultDaysStart = 7) => {
     const startStr =
       dateFrom || new Date(Date.now() - defaultDaysStart * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');

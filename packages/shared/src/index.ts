@@ -5,3 +5,8 @@ export * from './types/call';
 export * from './types/kpi';
 export * from './constants';
 export * from './types/table-config';
+export * from './types/cc-xoay';
+export * from './types/cc-thuong';
+export * from './types/cc-tip';
+export * from './types/cc-diamond';
+export * from './types/cv';
