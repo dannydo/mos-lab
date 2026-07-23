@@ -2126,7 +2126,9 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
           })(),
           ccInName: checkInStaffId ? staffNamesMap.get(Number(checkInStaffId)) || 'Tư vấn viên' : 'Unknown',
           ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên' : 'Unknown',
-          bookerName: b.createdStaffId ? staffNamesMap.get(Number(b.createdStaffId)) || 'Unknown' : 'Unknown',
+          bookerName: b.createdStaffId
+            ? staffNamesMap.get(Number(b.createdStaffId)) || 'Nhiều Booker'
+            : 'Khách tự đặt (GB)',
           ccInAvatar: checkInStaffId ? staffAvatarMap.get(Number(checkInStaffId)) || null : null,
           ccOutAvatar: checkOutStaffId ? staffAvatarMap.get(Number(checkOutStaffId)) || null : null,
           bookerAvatar: b.createdStaffId ? staffAvatarMap.get(Number(b.createdStaffId)) || null : null,

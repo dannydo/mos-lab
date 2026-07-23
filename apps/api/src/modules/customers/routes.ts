@@ -5709,12 +5709,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const promoMap = new Map(promotions.map((p) => [Number(p.id), p.name || p.promotionKey || `PROMO-${p.id}`]));
 
       const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT up.user_id as userId, up.full_name as fullName
-        FROM \`staff_profile\` sp
-        JOIN \`user_profile\` up ON sp.user_id = up.user_id
-        WHERE up.provider = 'Staff' AND up.is_disabled = 0
+        SELECT up.user_id as userId, 
+               TRIM(COALESCE(NULLIF(up.full_name, ''), CONCAT(COALESCE(up.first_name, ''), ' ', COALESCE(up.last_name, '')))) as fullName
+        FROM \`user_profile\` up
       `);
-      const staffMap = new Map(staffProfiles.map((s) => [Number(s.userId), s.fullName]));
+      const staffMap = new Map(staffProfiles.map((s) => [Number(s.userId), s.fullName || `Staff #${s.userId}`]));
 
       // Exact legacy PHP combo active helper function
       const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
@@ -5801,7 +5800,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const userBal = userBalances.filter((b) => b.user_id === o.user_id);
         const group = hasLiveCombo ? 'combo_live' : userBal.length > 0 ? 'combo_dead' : 'single';
 
-        const booker = staffMap.get(Number(o.created_staff_id)) || o.booking_channels || 'System';
+        const booker = o.created_staff_id
+          ? staffMap.get(Number(o.created_staff_id)) || 'Nhiều Booker'
+          : `Khách tự đặt (${o.booking_channels || 'GB'})`;
 
         const orderSvs = allOrderServices.filter((cs) => cs.order_id === o.id);
         const firstPromoSv = orderSvs.find((cs) => cs.promotion_id !== null && cs.promotion_id !== undefined);
@@ -6130,7 +6131,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           cvName = staffMap.get(Number(orderSvs[0].assigned_staff_id)) || 'Kỹ thuật viên';
         }
 
-        const booker = staffMap.get(Number(o.created_staff_id)) || o.booking_channels || 'System';
+        const booker = o.created_staff_id
+          ? staffMap.get(Number(o.created_staff_id)) || 'Nhiều Booker'
+          : `Khách tự đặt (${o.booking_channels || 'GB'})`;
 
         let ccName = 'Chưa nhận';
         const checkInStaffId =
