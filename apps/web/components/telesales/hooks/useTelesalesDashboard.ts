@@ -483,11 +483,11 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
       const fetchStaffList = async () => {
         try {
           const list = (await apiClient.customers.getStaff()) || [];
-          const filtered = list.filter((s: SafeAny) => s.role !== 'technician');
+          const filtered = list.filter((s: SafeAny) => s.role === 'telesales' || s.role === 'booker');
           setSystemStaff(filtered);
 
           if (!saved) {
-            const telesalesIds = filtered.filter((s: SafeAny) => s.role === 'telesales').map((s: SafeAny) => s.id);
+            const telesalesIds = filtered.map((s: SafeAny) => s.id);
             setSelectedStaffIds(telesalesIds);
           }
         } catch (err) {

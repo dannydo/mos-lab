@@ -140,7 +140,7 @@ export function useStaffData(options?: UseStaffDataOptions) {
   }, [fetchRoles]);
 
   useEffect(() => {
-    if (activeTab === 'staff') {
+    if (activeTab !== 'roles') {
       fetchStaff();
     }
   }, [activeTab, fetchStaff]);

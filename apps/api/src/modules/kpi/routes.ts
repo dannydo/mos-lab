@@ -1282,7 +1282,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
       const staffList = await fastify.prisma.crm.crmStaff.findMany({
         where: staffWhere,
-        select: { id: true, displayName: true, username: true },
+        select: { id: true, displayName: true, username: true, legacyStaffId: true },
       });
 
       const salaries = await calculateBookerSalaryStats(fastify, start, end);
@@ -1294,8 +1294,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
               `
         SELECT up.user_id as userId, up.full_name as fullName
-        FROM \`staff_profile\` sp
-        JOIN \`user_profile\` up ON sp.user_id = up.user_id
+        FROM \`user_profile\` up
         WHERE up.provider = 'Staff' AND up.is_disabled = 0
           AND up.full_name IN (${staffNames.map(() => '?').join(',')})
       `,
@@ -1308,7 +1307,10 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
       });
 
-      const legacyUserIds = Array.from(staffNameToLegacyIdMap.values());
+      const legacyUserIds = staffList
+        .map((s) => s.legacyStaffId || staffNameToLegacyIdMap.get(s.displayName.toLowerCase().trim()))
+        .filter((id): id is number => typeof id === 'number' && !isNaN(id));
+
       const crmStaffIds = staffList.map((s) => s.id);
       const callStatsMap = new Map<number, { totalCalled: number; totalAnswered: number; totalHappy: number }>();
 
@@ -1345,7 +1347,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         const bookedOrders = await fastify.prisma.legacy.order.findMany({
           where: {
             created_staff_id: { in: legacyUserIds },
-            date_created: { gte: start, lte: end },
+            OR: [{ date_created: { gte: start, lte: end } }, { booking_date_start: { gte: start, lte: end } }],
             order_state: { not: 'Cancelled' },
           },
           select: {
@@ -1362,7 +1364,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       const leaderboard = [];
 
       for (const staff of staffList) {
-        const legacyUserId = staffNameToLegacyIdMap.get(staff.displayName.toLowerCase().trim());
+        const legacyUserId = staff.legacyStaffId || staffNameToLegacyIdMap.get(staff.displayName.toLowerCase().trim());
         const callStats = callStatsMap.get(staff.id) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
 
         const salary = salaries[staff.id] || {
