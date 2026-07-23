@@ -751,6 +751,7 @@ export default function LocaCampaignPage() {
 
       {/* CUSTOMERS DATA TABLE */}
       <Table
+        size="small"
         columns={activeTab === 'NEW_LOCA' ? newLocaColumns : locaConfigColumns}
         dataSource={customers}
         rowKey="id"
