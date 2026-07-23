@@ -3833,7 +3833,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LEFT JOIN service s ON osc.service_id = s.id
         LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
         LEFT JOIN service_price sp ON osc.service_price_id = sp.id
-        LEFT JOIN user_profile up ON o.created_staff_id = up.user_id
+        LEFT JOIN (
+          SELECT order_id, MAX(check_in_staff_id) as check_in_staff_id, MAX(check_out_staff_id) as check_out_staff_id
+          FROM order_service
+          GROUP BY order_id
+        ) os_cc ON os_cc.order_id = o.id
+        LEFT JOIN user_profile up ON COALESCE(os_cc.check_out_staff_id, os_cc.check_in_staff_id, o.created_staff_id) = up.user_id
         LEFT JOIN user_service_balance usb ON usb.user_id = o.user_id AND usb.service_id = osc.service_id AND usb.service_price_id = osc.service_price_id
         WHERE o.user_id = ? AND o.order_state = 'Completed' AND osc.total_price > 0
           AND (sp.service_price_package_key IS NULL OR (
@@ -3919,7 +3924,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LEFT JOIN service s ON os.service_id = s.id
         LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
         LEFT JOIN service_price sp ON os.service_price_id = sp.id
-        LEFT JOIN user_profile up ON o.created_staff_id = up.user_id
+        LEFT JOIN user_profile up ON COALESCE(os.check_out_staff_id, os.check_in_staff_id, o.created_staff_id) = up.user_id
         LEFT JOIN user_service_balance usb ON usb.user_id = o.user_id AND usb.service_id = os.service_id AND usb.service_price_id = os.service_price_id
         WHERE o.user_id = ? AND o.order_state = 'Completed'
           AND (os.user_service_type = 'combo' OR s.service_group = 'combo')
@@ -3952,7 +3957,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LEFT JOIN service s ON usb.service_id = s.id
         LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
         LEFT JOIN service_price sp ON usb.service_price_id = sp.id
-        LEFT JOIN user_profile up ON usb.created_staff_id = up.user_id
+        LEFT JOIN user_profile up ON COALESCE(usb.updated_staff_id, usb.created_staff_id) = up.user_id
         WHERE usb.user_id = ?
           AND NOT EXISTS (
             SELECT 1 FROM order_service_combo osc2 
