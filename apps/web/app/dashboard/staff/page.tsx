@@ -46,6 +46,9 @@ import {
   BgColorsOutlined,
   SafetyCertificateOutlined,
   SyncOutlined,
+  CheckOutlined,
+  StopOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
@@ -108,6 +111,15 @@ export default function StaffPage() {
     setIsRoleModalOpen,
     editingRole,
     roleSubmitting,
+    // Bulk Selection States & Handlers
+    selectedRowKeys,
+    setSelectedRowKeys,
+    selectedBulkRole,
+    setSelectedBulkRole,
+    bulkSubmitting,
+    handleClearSelection,
+    handleBulkUpdateRole,
+    handleBulkToggleActive,
     // Methods
     openStaffModal,
     handleStaffSubmit,
@@ -309,6 +321,14 @@ export default function StaffPage() {
                   columns={staffColumns}
                   rowKey="id"
                   loading={loading}
+                  rowSelection={
+                    currentUser?.role === 'admin'
+                      ? {
+                          selectedRowKeys,
+                          onChange: (keys) => setSelectedRowKeys(keys),
+                        }
+                      : undefined
+                  }
                   pagination={{
                     current: currentPage,
                     pageSize: pageSize,
@@ -325,6 +345,119 @@ export default function StaffPage() {
                   }}
                   className="antd-custom-table"
                 />
+
+                {/* Floating Action Bar for Bulk Selection */}
+                {currentUser?.role === 'admin' && selectedRowKeys.length > 0 && (
+                  <div
+                    style={{
+                      position: 'fixed',
+                      bottom: '24px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      zIndex: 1000,
+                      background: themeMode === 'dark' ? 'rgba(26, 26, 26, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                      border: `1px solid ${themeMode === 'dark' ? '#333333' : '#e2e8f0'}`,
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3)',
+                      borderRadius: '12px',
+                      padding: '12px 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px',
+                      backdropFilter: 'blur(12px)',
+                      transition: 'all 0.3s ease-in-out',
+                    }}
+                  >
+                    <Space size="middle" align="center">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Badge
+                          count={selectedRowKeys.length}
+                          overflowCount={999}
+                          style={{ backgroundColor: '#D4A84B' }}
+                        />
+                        <Text style={{ color: themeMode === 'dark' ? '#ffffff' : '#0f172a', fontWeight: 600 }}>
+                          Đã chọn {selectedRowKeys.length} nhân viên
+                        </Text>
+                      </div>
+
+                      <Divider
+                        type="vertical"
+                        style={{ height: '24px', borderColor: themeMode === 'dark' ? '#333333' : '#cbd5e1' }}
+                      />
+
+                      <Space size="small">
+                        <Select
+                          placeholder="Chọn vai trò mới..."
+                          value={selectedBulkRole}
+                          onChange={(val) => setSelectedBulkRole(val)}
+                          style={{ width: '210px' }}
+                          allowClear
+                        >
+                          {roles.map((r) => (
+                            <Option key={r.key} value={r.key}>
+                              {r.name}
+                            </Option>
+                          ))}
+                        </Select>
+
+                        <Button
+                          type="primary"
+                          loading={bulkSubmitting}
+                          disabled={!selectedBulkRole}
+                          onClick={() => handleBulkUpdateRole()}
+                          style={{
+                            background: selectedBulkRole ? '#D4A84B' : undefined,
+                            borderColor: selectedBulkRole ? '#D4A84B' : undefined,
+                            color: selectedBulkRole ? '#000' : undefined,
+                            fontWeight: '600',
+                            borderRadius: '6px',
+                          }}
+                        >
+                          Đổi vai trò
+                        </Button>
+                      </Space>
+
+                      <Divider
+                        type="vertical"
+                        style={{ height: '24px', borderColor: themeMode === 'dark' ? '#333333' : '#cbd5e1' }}
+                      />
+
+                      <Space size="small">
+                        <Button
+                          loading={bulkSubmitting}
+                          onClick={() => handleBulkToggleActive(true)}
+                          icon={<CheckOutlined style={{ color: '#52c41a' }} />}
+                          style={{ borderRadius: '6px' }}
+                        >
+                          Kích hoạt
+                        </Button>
+                        <Button
+                          loading={bulkSubmitting}
+                          onClick={() => handleBulkToggleActive(false)}
+                          danger
+                          icon={<StopOutlined />}
+                          style={{ borderRadius: '6px' }}
+                        >
+                          Khóa tài khoản
+                        </Button>
+                      </Space>
+
+                      <Divider
+                        type="vertical"
+                        style={{ height: '24px', borderColor: themeMode === 'dark' ? '#333333' : '#cbd5e1' }}
+                      />
+
+                      <Button
+                        onClick={handleClearSelection}
+                        type="text"
+                        danger
+                        icon={<CloseOutlined />}
+                        style={{ fontWeight: 500 }}
+                      >
+                        Bỏ chọn
+                      </Button>
+                    </Space>
+                  </div>
+                )}
               </>
             ),
           },

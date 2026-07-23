@@ -322,6 +322,72 @@ export function useStaffData(options?: UseStaffDataOptions) {
     }
   };
 
+  // Bulk selection & operation state
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [selectedBulkRole, setSelectedBulkRole] = useState<string | undefined>(undefined);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+
+  const handleClearSelection = () => {
+    setSelectedRowKeys([]);
+    setSelectedBulkRole(undefined);
+  };
+
+  const handleBulkUpdateRole = async (targetRole?: string) => {
+    const roleToApply = targetRole || selectedBulkRole;
+    if (!roleToApply) {
+      optionsRef.current?.onError?.('Vui lòng chọn vai trò mới trước khi áp dụng');
+      return;
+    }
+    if (selectedRowKeys.length === 0) {
+      optionsRef.current?.onError?.('Vui lòng chọn ít nhất 1 nhân viên');
+      return;
+    }
+
+    setBulkSubmitting(true);
+    try {
+      const res = await apiClient.staff.bulkUpdate({
+        ids: selectedRowKeys.map((k) => Number(k)),
+        role: roleToApply,
+      });
+      optionsRef.current?.onSuccess?.(res.message || `Cập nhật vai trò cho ${res.count} nhân viên thành công`);
+      setSelectedRowKeys([]);
+      setSelectedBulkRole(undefined);
+      fetchStaff();
+    } catch (err) {
+      console.error('Bulk update role error:', err);
+      optionsRef.current?.onError?.(
+        (err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi cập nhật vai trò hàng loạt'
+      );
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
+
+  const handleBulkToggleActive = async (status: boolean) => {
+    if (selectedRowKeys.length === 0) {
+      optionsRef.current?.onError?.('Vui lòng chọn ít nhất 1 nhân viên');
+      return;
+    }
+
+    setBulkSubmitting(true);
+    try {
+      const res = await apiClient.staff.bulkUpdate({
+        ids: selectedRowKeys.map((k) => Number(k)),
+        isActive: status,
+      });
+      optionsRef.current?.onSuccess?.(res.message || `Cập nhật trạng thái cho ${res.count} nhân viên thành công`);
+      setSelectedRowKeys([]);
+      fetchStaff();
+    } catch (err) {
+      console.error('Bulk update active error:', err);
+      optionsRef.current?.onError?.(
+        (err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi cập nhật trạng thái hàng loạt'
+      );
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
+
   return {
     activeTab,
     setActiveTab,
@@ -352,6 +418,15 @@ export function useStaffData(options?: UseStaffDataOptions) {
     setIsRoleModalOpen,
     editingRole,
     roleSubmitting,
+    // Bulk Selection States & Handlers
+    selectedRowKeys,
+    setSelectedRowKeys,
+    selectedBulkRole,
+    setSelectedBulkRole,
+    bulkSubmitting,
+    handleClearSelection,
+    handleBulkUpdateRole,
+    handleBulkToggleActive,
     // Methods
     fetchStaff,
     fetchRoles,

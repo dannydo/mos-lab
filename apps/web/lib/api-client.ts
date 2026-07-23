@@ -459,6 +459,14 @@ export const apiClient = {
       const response = await api.delete(`/staff/${id}`);
       return response.data;
     },
+    bulkUpdate: async (data: {
+      ids: number[];
+      role?: string;
+      isActive?: boolean;
+    }): Promise<{ success: boolean; count: number; message: string }> => {
+      const response = await api.post('/staff/bulk-update', data);
+      return response.data;
+    },
   },
 
   roles: {

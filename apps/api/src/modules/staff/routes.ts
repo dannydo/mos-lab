@@ -388,6 +388,69 @@ export async function staffRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // POST /api/staff/bulk-update - Bulk update staff attributes (Admin only)
+  fastify.post('/staff/bulk-update', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
+    const { ids, role, isActive } = request.body as {
+      ids?: number[];
+      role?: string;
+      isActive?: boolean;
+    };
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Danh sách ID nhân viên không hợp lệ hoặc rỗng',
+      });
+    }
+
+    const updateData: Record<string, unknown> = {};
+
+    if (role !== undefined && role !== null && role !== '') {
+      const existingRole = await fastify.prisma.crm.crmRole.findUnique({
+        where: { key: role },
+      });
+      if (!existingRole) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: `Vai trò "${role}" không tồn tại trên hệ thống`,
+        });
+      }
+      updateData.role = role;
+    }
+
+    if (typeof isActive === 'boolean') {
+      updateData.isActive = isActive;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Không có dữ liệu thay đổi hợp lệ',
+      });
+    }
+
+    try {
+      const result = await fastify.prisma.crm.crmStaff.updateMany({
+        where: {
+          id: { in: ids },
+        },
+        data: updateData,
+      });
+
+      return {
+        success: true,
+        count: result.count,
+        message: `Đã cập nhật ${result.count} nhân viên thành công`,
+      };
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Bulk update staff error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Lỗi hệ thống khi cập nhật nhân viên hàng loạt',
+      });
+    }
+  });
+
   // DELETE /api/staff/:id - Delete a staff member (Admin only)
   fastify.delete('/staff/:id', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
     const { id } = request.params as { id: string };
