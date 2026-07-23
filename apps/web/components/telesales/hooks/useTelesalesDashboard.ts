@@ -201,7 +201,7 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
   const [modalSize, setModalSize] = useState<{ width: string; height: string } | null>(null);
   const [currentMemberId, setCurrentMemberId] = useState(initialMemberId);
   const [currentPeriodId, setCurrentPeriodId] = useState('today');
-  const [currentMetricKey, setCurrentMetricKey] = useState('calls');
+  const [currentMetricKey, setCurrentMetricKey] = useState('booked');
   const [isFlipped, setIsFlipped] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [configTab, setConfigTab] = useState<'target' | 'staff'>('target');
