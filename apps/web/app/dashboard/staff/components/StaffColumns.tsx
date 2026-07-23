@@ -10,6 +10,7 @@ import {
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
+  UnlockOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Staff, Role } from '@mos-lab/shared';
@@ -243,6 +244,15 @@ export const getStaffColumns = ({
 
         return (
           <Space size="middle">
+            {!record.isActive && (
+              <Tooltip title={`Mở khóa tài khoản ${record.displayName}`}>
+                <Button
+                  type="text"
+                  icon={<UnlockOutlined style={{ color: '#10b981', fontSize: '16px' }} />}
+                  onClick={() => handleToggleActive(record, true)}
+                />
+              </Tooltip>
+            )}
             {canImpersonate && (
               <Tooltip title={`Đăng nhập dưới quyền ${record.displayName}`}>
                 <Button

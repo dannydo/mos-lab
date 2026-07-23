@@ -86,6 +86,8 @@ export default function StaffPage() {
     activeTab,
     setActiveTab,
     staffList,
+    activeCount,
+    lockedCount,
     currentUser,
     roles,
     loading,
@@ -181,7 +183,7 @@ export default function StaffPage() {
           </Text>
         </div>
         <div>
-          {activeTab === 'staff' ? (
+          {activeTab !== 'roles' ? (
             <Space>
               {currentUser?.role === 'admin' && (
                 <Button
@@ -236,11 +238,12 @@ export default function StaffPage() {
         onChange={(key) => setActiveTab(key)}
         items={[
           {
-            key: 'staff',
+            key: 'staff-active',
             label: (
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <UserOutlined />
-                Danh sách nhân sự
+                <UserOutlined style={{ color: '#10b981' }} />
+                Danh sách nhân sự (Active)
+                <Badge count={activeCount} overflowCount={999} style={{ backgroundColor: '#10b981' }} />
               </span>
             ),
             children: (
@@ -255,7 +258,7 @@ export default function StaffPage() {
                   }}
                 >
                   <Row gutter={16}>
-                    <Col xs={24} sm={8} md={10}>
+                    <Col xs={24} sm={12} md={14}>
                       <Input
                         placeholder="Tìm theo tên hoặc email/username đăng nhập..."
                         prefix={<SearchOutlined style={{ color: '#888' }} />}
@@ -265,7 +268,7 @@ export default function StaffPage() {
                         style={{ width: '100%' }}
                       />
                     </Col>
-                    <Col xs={12} sm={8} md={6}>
+                    <Col xs={16} sm={8} md={8}>
                       <Select
                         style={{ width: '100%' }}
                         placeholder="Lọc theo vai trò"
@@ -281,20 +284,7 @@ export default function StaffPage() {
                         ))}
                       </Select>
                     </Col>
-                    <Col xs={12} sm={8} md={6}>
-                      <Select
-                        style={{ width: '100%' }}
-                        placeholder="Lọc theo trạng thái"
-                        value={filterStatus === 'all' ? undefined : filterStatus}
-                        onChange={(val) => setFilterStatus(val || 'all')}
-                        allowClear
-                      >
-                        <Option value="all">Tất cả trạng thái</Option>
-                        <Option value="true">Đang hoạt động (Active)</Option>
-                        <Option value="false">Đã khóa (Locked)</Option>
-                      </Select>
-                    </Col>
-                    <Col xs={24} sm={24} md={2} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Col xs={8} sm={4} md={2} style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <Button
                         onClick={() => {
                           setSearchQuery('');
@@ -354,175 +344,116 @@ export default function StaffPage() {
                   }}
                   className="antd-custom-table"
                 />
-
-                {/* Floating Action Bar for Bulk Selection */}
-                {currentUser?.role === 'admin' && selectedRowKeys.length > 0 && (
-                  <div
-                    style={{
-                      position: 'fixed',
-                      bottom: '28px',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      zIndex: 1050,
-                      background: themeMode === 'dark' ? 'rgba(20, 20, 20, 0.92)' : 'rgba(255, 255, 255, 0.92)',
-                      backdropFilter: 'blur(16px) saturate(180%)',
-                      border:
-                        themeMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.08)',
-                      boxShadow:
-                        themeMode === 'dark'
-                          ? '0 20px 35px -10px rgba(0,0,0,0.7), 0 0 1px 1px rgba(255,255,255,0.1)'
-                          : '0 20px 35px -10px rgba(0,0,0,0.15), 0 4px 6px -2px rgba(0,0,0,0.05)',
-                      borderRadius: '14px',
-                      padding: '10px 18px',
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: '14px',
-                      whiteSpace: 'nowrap',
-                      maxWidth: '95vw',
-                      overflowX: 'auto',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    }}
-                  >
-                    {/* Cluster 1: Selected Counter */}
-                    <div
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}
-                    >
-                      <Badge
-                        count={selectedRowKeys.length}
-                        overflowCount={999}
-                        style={{ backgroundColor: '#D4A84B', color: '#000', fontWeight: 'bold' }}
+              </>
+            ),
+          },
+          {
+            key: 'staff-locked',
+            label: (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <LockOutlined style={{ color: '#ef4444' }} />
+                Tài khoản đã khóa (Locked)
+                <Badge count={lockedCount} overflowCount={999} style={{ backgroundColor: '#ef4444' }} />
+              </span>
+            ),
+            children: (
+              <>
+                {/* Search & Filters */}
+                <Card
+                  style={{
+                    marginBottom: '20px',
+                    background: themeMode === 'dark' ? '#141414' : token.colorBgContainer,
+                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`,
+                    borderRadius: '8px',
+                  }}
+                >
+                  <Row gutter={16}>
+                    <Col xs={24} sm={12} md={14}>
+                      <Input
+                        placeholder="Tìm theo tên hoặc email/username đăng nhập..."
+                        prefix={<SearchOutlined style={{ color: '#888' }} />}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        allowClear
+                        style={{ width: '100%' }}
                       />
-                      <Text
-                        style={{
-                          color: themeMode === 'dark' ? '#f1f5f9' : '#0f172a',
-                          fontWeight: 600,
-                          fontSize: '14px',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Đã chọn <strong style={{ color: '#D4A84B' }}>{selectedRowKeys.length}</strong> nhân viên
-                      </Text>
-                    </div>
-
-                    <Divider
-                      type="vertical"
-                      style={{
-                        height: '24px',
-                        margin: '0 2px',
-                        flexShrink: 0,
-                        borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : '#cbd5e1',
-                      }}
-                    />
-
-                    {/* Cluster 2: Role Adjustment */}
-                    <div
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}
-                    >
+                    </Col>
+                    <Col xs={16} sm={8} md={8}>
                       <Select
-                        placeholder="Chọn vai trò mới..."
-                        value={selectedBulkRole}
-                        onChange={(val) => setSelectedBulkRole(val)}
-                        style={{ width: '190px' }}
+                        style={{ width: '100%' }}
+                        placeholder="Lọc theo vai trò"
+                        value={filterRole === 'all' ? undefined : filterRole}
+                        onChange={(val) => setFilterRole(val || 'all')}
                         allowClear
                       >
+                        <Option value="all">Tất cả vai trò</Option>
                         {roles.map((r) => (
                           <Option key={r.key} value={r.key}>
                             {r.name}
                           </Option>
                         ))}
                       </Select>
-
+                    </Col>
+                    <Col xs={8} sm={4} md={2} style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <Button
-                        type="primary"
-                        loading={bulkSubmitting}
-                        disabled={!selectedBulkRole}
-                        onClick={() => handleBulkUpdateRole()}
-                        style={{
-                          background: selectedBulkRole ? '#D4A84B' : undefined,
-                          borderColor: selectedBulkRole ? '#D4A84B' : undefined,
-                          color: selectedBulkRole ? '#000' : undefined,
-                          fontWeight: '600',
-                          borderRadius: '6px',
-                          whiteSpace: 'nowrap',
+                        onClick={() => {
+                          setSearchQuery('');
+                          setFilterRole('all');
+                          setFilterStatus('all');
                         }}
+                        style={{ width: '100%' }}
                       >
-                        Đổi vai trò
+                        Clear
                       </Button>
-                    </div>
+                    </Col>
+                  </Row>
+                </Card>
 
-                    <Divider
-                      type="vertical"
-                      style={{
-                        height: '24px',
-                        margin: '0 2px',
-                        flexShrink: 0,
-                        borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : '#cbd5e1',
-                      }}
-                    />
-
-                    {/* Cluster 3: Status & Merge */}
-                    <div
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}
+                {/* Active Filter Indicator */}
+                {filterRole !== 'all' && (
+                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Text type="secondary">Đang lọc theo vai trò:</Text>
+                    <Tag
+                      closable
+                      onClose={() => setFilterRole('all')}
+                      color={roles.find((r) => r.key === filterRole)?.color || 'gold'}
+                      style={{ fontWeight: '500', borderRadius: '4px' }}
                     >
-                      <Button
-                        loading={bulkSubmitting}
-                        onClick={() => handleBulkToggleActive(true)}
-                        icon={<CheckOutlined style={{ color: '#10b981' }} />}
-                        style={{ borderRadius: '6px', whiteSpace: 'nowrap' }}
-                      >
-                        Kích hoạt
-                      </Button>
-                      <Button
-                        loading={bulkSubmitting}
-                        onClick={() => handleBulkToggleActive(false)}
-                        danger
-                        icon={<StopOutlined />}
-                        style={{ borderRadius: '6px', whiteSpace: 'nowrap' }}
-                      >
-                        Khóa tài khoản
-                      </Button>
-                      {selectedRowKeys.length >= 2 && (
-                        <Button
-                          type="primary"
-                          icon={<BranchesOutlined />}
-                          onClick={handleOpenMergeModal}
-                          style={{
-                            background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
-                            borderColor: 'transparent',
-                            color: '#ffffff',
-                            fontWeight: '600',
-                            borderRadius: '6px',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Gộp trùng lặp
-                        </Button>
-                      )}
-                    </div>
-
-                    <Divider
-                      type="vertical"
-                      style={{
-                        height: '24px',
-                        margin: '0 2px',
-                        flexShrink: 0,
-                        borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : '#cbd5e1',
-                      }}
-                    />
-
-                    {/* Cluster 4: Clear Selection */}
-                    <Button
-                      onClick={handleClearSelection}
-                      type="text"
-                      danger
-                      icon={<CloseOutlined />}
-                      style={{ fontWeight: 500, flexShrink: 0, whiteSpace: 'nowrap' }}
-                    >
-                      Bỏ chọn
-                    </Button>
+                      {roles.find((r) => r.key === filterRole)?.name || filterRole}
+                    </Tag>
                   </div>
                 )}
+
+                {/* Staff Table */}
+                <Table
+                  dataSource={staffList}
+                  columns={staffColumns}
+                  rowKey="id"
+                  loading={loading}
+                  rowSelection={
+                    currentUser?.role === 'admin'
+                      ? {
+                          selectedRowKeys,
+                          onChange: (keys) => setSelectedRowKeys(keys),
+                        }
+                      : undefined
+                  }
+                  pagination={{
+                    current: currentPage,
+                    pageSize: pageSize,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    onChange: (page, size) => {
+                      setCurrentPage(page);
+                      setPageSize(size);
+                      localStorage.setItem('mos_staff_pageSize', String(size));
+                    },
+                  }}
+                  style={{
+                    background: themeMode === 'dark' ? '#141414' : '#fff',
+                  }}
+                  className="antd-custom-table"
+                />
               </>
             ),
           },
@@ -550,6 +481,168 @@ export default function StaffPage() {
           },
         ]}
       />
+
+      {/* Floating Action Bar for Bulk Selection */}
+      {currentUser?.role === 'admin' && selectedRowKeys.length > 0 && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '28px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1050,
+            background: themeMode === 'dark' ? 'rgba(20, 20, 20, 0.92)' : 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(16px) saturate(180%)',
+            border: themeMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.08)',
+            boxShadow:
+              themeMode === 'dark'
+                ? '0 20px 35px -10px rgba(0,0,0,0.7), 0 0 1px 1px rgba(255,255,255,0.1)'
+                : '0 20px 35px -10px rgba(0,0,0,0.15), 0 4px 6px -2px rgba(0,0,0,0.05)',
+            borderRadius: '14px',
+            padding: '10px 18px',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: '14px',
+            whiteSpace: 'nowrap',
+            maxWidth: '95vw',
+            overflowX: 'auto',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
+          {/* Cluster 1: Selected Counter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <Badge
+              count={selectedRowKeys.length}
+              overflowCount={999}
+              style={{ backgroundColor: '#D4A84B', color: '#000', fontWeight: 'bold' }}
+            />
+            <Text
+              style={{
+                color: themeMode === 'dark' ? '#f1f5f9' : '#0f172a',
+                fontWeight: 600,
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Đã chọn <strong style={{ color: '#D4A84B' }}>{selectedRowKeys.length}</strong> nhân viên
+            </Text>
+          </div>
+
+          <Divider
+            type="vertical"
+            style={{
+              height: '24px',
+              margin: '0 2px',
+              flexShrink: 0,
+              borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : '#cbd5e1',
+            }}
+          />
+
+          {/* Cluster 2: Role Adjustment */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <Select
+              placeholder="Chọn vai trò mới..."
+              value={selectedBulkRole}
+              onChange={(val) => setSelectedBulkRole(val)}
+              style={{ width: '190px' }}
+              allowClear
+            >
+              {roles.map((r) => (
+                <Option key={r.key} value={r.key}>
+                  {r.name}
+                </Option>
+              ))}
+            </Select>
+
+            <Button
+              type="primary"
+              loading={bulkSubmitting}
+              disabled={!selectedBulkRole}
+              onClick={() => handleBulkUpdateRole()}
+              style={{
+                background: selectedBulkRole ? '#D4A84B' : undefined,
+                borderColor: selectedBulkRole ? '#D4A84B' : undefined,
+                color: selectedBulkRole ? '#000' : undefined,
+                fontWeight: '600',
+                borderRadius: '6px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Đổi vai trò
+            </Button>
+          </div>
+
+          <Divider
+            type="vertical"
+            style={{
+              height: '24px',
+              margin: '0 2px',
+              flexShrink: 0,
+              borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : '#cbd5e1',
+            }}
+          />
+
+          {/* Cluster 3: Status & Merge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <Button
+              loading={bulkSubmitting}
+              onClick={() => handleBulkToggleActive(true)}
+              icon={<CheckOutlined style={{ color: '#10b981' }} />}
+              style={{ borderRadius: '6px', whiteSpace: 'nowrap' }}
+            >
+              Kích hoạt
+            </Button>
+            <Button
+              loading={bulkSubmitting}
+              onClick={() => handleBulkToggleActive(false)}
+              danger
+              icon={<StopOutlined />}
+              style={{ borderRadius: '6px', whiteSpace: 'nowrap' }}
+            >
+              Khóa tài khoản
+            </Button>
+            {selectedRowKeys.length >= 2 && (
+              <Button
+                type="primary"
+                icon={<BranchesOutlined />}
+                onClick={handleOpenMergeModal}
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                  borderColor: 'transparent',
+                  color: '#ffffff',
+                  fontWeight: '600',
+                  borderRadius: '6px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Gộp trùng lặp
+              </Button>
+            )}
+          </div>
+
+          <Divider
+            type="vertical"
+            style={{
+              height: '24px',
+              margin: '0 2px',
+              flexShrink: 0,
+              borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : '#cbd5e1',
+            }}
+          />
+
+          {/* Cluster 4: Clear Selection */}
+          <Button
+            onClick={handleClearSelection}
+            type="text"
+            danger
+            icon={<CloseOutlined />}
+            style={{ fontWeight: 500, flexShrink: 0, whiteSpace: 'nowrap' }}
+          >
+            Bỏ chọn
+          </Button>
+        </div>
+      )}
 
       {/* Staff Add/Edit Modal */}
       <Modal

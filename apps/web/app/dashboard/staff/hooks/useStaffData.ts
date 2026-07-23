@@ -18,8 +18,8 @@ export function useStaffData(options?: UseStaffDataOptions) {
     optionsRef.current = options;
   }, [options]);
 
-  const [activeTab, setActiveTab] = useState<string>('staff');
-  const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('staff-active');
+  const [allStaffList, setAllStaffList] = useState<Staff[]>([]);
   const [currentUser, setCurrentUser] = useState<Staff | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
@@ -116,7 +116,7 @@ export function useStaffData(options?: UseStaffDataOptions) {
       if (filterStatus !== 'all') params.isActive = filterStatus;
 
       const data = await apiClient.staff.list(params);
-      setStaffList(data);
+      setAllStaffList(data);
     } catch (err) {
       console.error('Fetch staff error:', err);
       optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể tải danh sách nhân viên');
@@ -124,6 +124,16 @@ export function useStaffData(options?: UseStaffDataOptions) {
       setLoading(false);
     }
   }, [searchQuery, filterRole, filterStatus]);
+
+  const activeCount = allStaffList.filter((s) => s.isActive).length;
+  const lockedCount = allStaffList.filter((s) => !s.isActive).length;
+
+  const staffList =
+    activeTab === 'staff-active'
+      ? allStaffList.filter((s) => s.isActive)
+      : activeTab === 'staff-locked'
+        ? allStaffList.filter((s) => !s.isActive)
+        : allStaffList;
 
   useEffect(() => {
     fetchRoles();
@@ -441,6 +451,8 @@ export function useStaffData(options?: UseStaffDataOptions) {
     activeTab,
     setActiveTab,
     staffList,
+    activeCount,
+    lockedCount,
     currentUser,
     roles,
     loading,
