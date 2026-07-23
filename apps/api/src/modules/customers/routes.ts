@@ -78,9 +78,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const offsetNum = (pageNum - 1) * limitNum;
     const adminUser = request.user as { id: number; role: string };
 
-    // Force telesales to only query their own customers
+    // Force telesales to only query their own customers (except for LoCa campaign)
     let effectiveAssignedStaffId = assignedStaffId;
-    if (adminUser.role !== 'admin') {
+    if (adminUser.role !== 'admin' && bucket !== 'NEW_LOCA' && bucket !== 'COMBO_LIVE') {
       effectiveAssignedStaffId = 'me';
     }
 
@@ -294,9 +294,28 @@ export async function customerRoutes(fastify: FastifyInstance) {
                   AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
                   AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
                 ))
+            ) OR EXISTS (
+              SELECT 1 FROM \`order\` o_nl
+              JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
+              LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
+              LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
+              LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+              WHERE o_nl.user_id = u.id 
+                AND o_nl.date_created >= ? AND o_nl.date_created <= ?
+                AND osc_nl.total_price > 0
+                AND (sp_nl.service_price_package_key IS NULL OR (
+                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+                ))
+                AND (sl_nl.service_name IS NULL OR (
+                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+                ))
             )
           )`);
-          innerParams.push(dFromStr, dToStr, dFromStr, dToStr);
+          innerParams.push(dFromStr, dToStr, dFromStr, dToStr, dFromStr, dToStr);
         }
       }
 
@@ -420,13 +439,34 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (
         sortParam === 'purchaseDate_desc' ||
         sortParam === 'comboPurchaseDate_desc' ||
-        (bStr === 'NEW_LOCA' && (sortParam === 'daysSinceLastVisit_desc' || !sortParam))
+        (bStr === 'NEW_LOCA' &&
+          (sortParam === 'daysSinceLastVisit_desc' || sortParam === 'daysSinceLastVisit' || !sortParam))
       ) {
-        innerOrderBy = 'ORDER BY COALESCE(usb_agg.max_date_created, u.date_created) DESC';
-        outerOrderBy = 'ORDER BY COALESCE(usb_agg.max_date_created, u.date_created) DESC';
+        innerOrderBy = `ORDER BY COALESCE(
+          (SELECT MAX(o_osc.date_created) FROM \`order\` o_osc JOIN order_service_combo osc_osc ON osc_osc.order_id = o_osc.id WHERE o_osc.user_id = u.id AND osc_osc.total_price > 0),
+          (SELECT MAX(usb_sub.date_created) FROM user_service_balance usb_sub WHERE usb_sub.user_id = u.id AND (usb_sub.total_normal_balance_amount + usb_sub.total_retain_balance_amount) > 0),
+          (SELECT MAX(o.date_created) FROM \`order\` o JOIN order_service os ON os.order_id = o.id WHERE o.user_id = u.id AND (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0),
+          u.date_created
+        ) DESC`;
+        outerOrderBy = `ORDER BY COALESCE(
+          (SELECT MAX(o_osc.date_created) FROM \`order\` o_osc JOIN order_service_combo osc_osc ON osc_osc.order_id = o_osc.id WHERE o_osc.user_id = u.id AND osc_osc.total_price > 0),
+          (SELECT MAX(usb_sub.date_created) FROM user_service_balance usb_sub WHERE usb_sub.user_id = u.id AND (usb_sub.total_normal_balance_amount + usb_sub.total_retain_balance_amount) > 0),
+          (SELECT MAX(o.date_created) FROM \`order\` o JOIN order_service os ON os.order_id = o.id WHERE o.user_id = u.id AND (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0),
+          u.date_created
+        ) DESC`;
       } else if (sortParam === 'purchaseDate_asc' || sortParam === 'comboPurchaseDate_asc') {
-        innerOrderBy = 'ORDER BY COALESCE(usb_agg.max_date_created, u.date_created) ASC';
-        outerOrderBy = 'ORDER BY COALESCE(usb_agg.max_date_created, u.date_created) ASC';
+        innerOrderBy = `ORDER BY COALESCE(
+          (SELECT MAX(o_osc.date_created) FROM \`order\` o_osc JOIN order_service_combo osc_osc ON osc_osc.order_id = o_osc.id WHERE o_osc.user_id = u.id AND osc_osc.total_price > 0),
+          (SELECT MAX(usb_sub.date_created) FROM user_service_balance usb_sub WHERE usb_sub.user_id = u.id AND (usb_sub.total_normal_balance_amount + usb_sub.total_retain_balance_amount) > 0),
+          (SELECT MAX(o.date_created) FROM \`order\` o JOIN order_service os ON os.order_id = o.id WHERE o.user_id = u.id AND (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0),
+          u.date_created
+        ) ASC`;
+        outerOrderBy = `ORDER BY COALESCE(
+          (SELECT MAX(o_osc.date_created) FROM \`order\` o_osc JOIN order_service_combo osc_osc ON osc_osc.order_id = o_osc.id WHERE o_osc.user_id = u.id AND osc_osc.total_price > 0),
+          (SELECT MAX(usb_sub.date_created) FROM user_service_balance usb_sub WHERE usb_sub.user_id = u.id AND (usb_sub.total_normal_balance_amount + usb_sub.total_retain_balance_amount) > 0),
+          (SELECT MAX(o.date_created) FROM \`order\` o JOIN order_service os ON os.order_id = o.id WHERE o.user_id = u.id AND (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0),
+          u.date_created
+        ) ASC`;
       } else if (
         hasFutureBooking === 'true' &&
         (sortParam === 'daysSinceLastVisit_asc' || sortParam === 'daysSinceLastVisit_desc')
@@ -695,9 +735,51 @@ export async function customerRoutes(fastify: FastifyInstance) {
           dToStr
         );
 
-        // 2. Fetch combo orders per customer in date range (direct combo sales in order_service)
+        // 2. Fetch combo orders per customer in date range (direct combo sales in order_service_combo and order_service)
         const comboOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `
+          SELECT 
+            o.id as orderId,
+            o.user_id as userId,
+            o.date_created as dateCreated,
+            o.created_staff_id as createdStaffId,
+            up_created.full_name as createdStaffName,
+            COALESCE(NULLIF(osc.total_price, 0), sp.service_price, 0) as comboPrice,
+            CONCAT(
+              COALESCE(sl.service_name, s.service_key, osc.service_group, 'Combo Mới Mua'),
+              IF(sp.service_price_package_key IS NOT NULL AND sp.service_price_package_key != '', CONCAT(' (', sp.service_price_package_key, ')'), '')
+            ) as comboName,
+            COALESCE(up_in_osc.full_name, up_in_os.full_name) as checkInName,
+            COALESCE(up_out_osc.full_name, up_out_os.full_name) as checkOutName,
+            up_cv.full_name as cvName
+          FROM \`order\` o
+          JOIN order_service_combo osc ON osc.order_id = o.id
+          LEFT JOIN service s ON osc.service_id = s.id
+          LEFT JOIN service_language sl ON osc.service_id = sl.service_id AND sl.language_id = 1
+          LEFT JOIN service_price sp ON osc.service_price_id = sp.id
+          LEFT JOIN user_profile up_created ON o.created_staff_id = up_created.user_id
+          LEFT JOIN user_profile up_in_osc ON osc.check_in_staff_id = up_in_osc.user_id
+          LEFT JOIN user_profile up_out_osc ON osc.check_out_staff_id = up_out_osc.user_id
+          LEFT JOIN order_service os ON os.order_id = o.id
+          LEFT JOIN user_profile up_in_os ON os.check_in_staff_id = up_in_os.user_id
+          LEFT JOIN user_profile up_out_os ON os.check_out_staff_id = up_out_os.user_id
+          LEFT JOIN user_profile up_cv ON os.assigned_staff_id = up_cv.user_id
+          WHERE o.user_id IN (${customerIds.join(',')})
+            AND o.date_created >= ? AND o.date_created <= ?
+            AND COALESCE(NULLIF(osc.total_price, 0), sp.service_price, 0) > 0
+            AND (sp.service_price_package_key IS NULL OR (
+              LOWER(sp.service_price_package_key) NOT LIKE '%single%'
+              AND LOWER(sp.service_price_package_key) NOT LIKE '%refill%'
+              AND LOWER(sp.service_price_package_key) NOT LIKE '%balance%'
+            ))
+            AND (sl.service_name IS NULL OR (
+              LOWER(sl.service_name) NOT LIKE '%single%'
+              AND LOWER(sl.service_name) NOT LIKE '%refill%'
+              AND LOWER(sl.service_name) NOT LIKE '%balance%'
+            ))
+
+          UNION
+
           SELECT 
             o.id as orderId,
             o.user_id as userId,
@@ -735,8 +817,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
               AND LOWER(sl.service_name) NOT LIKE '%refill%'
               AND LOWER(sl.service_name) NOT LIKE '%balance%'
             ))
-          ORDER BY o.date_created DESC
-        `,
+          ORDER BY dateCreated DESC
+          `,
+          dFromStr,
+          dToStr,
           dFromStr,
           dToStr
         );
@@ -916,9 +1000,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     const adminUser = request.user as { id: number; role: string };
 
-    // Force telesales to only query stats for their own customers
+    // Force telesales to only query stats for their own customers (except for LoCa campaign)
     let effectiveAssignedStaffId = assignedStaffId;
-    if (adminUser.role !== 'admin') {
+    if (adminUser.role !== 'admin' && bucket !== 'NEW_LOCA' && bucket !== 'COMBO_LIVE') {
       effectiveAssignedStaffId = 'me';
     }
 
@@ -1110,9 +1194,28 @@ export async function customerRoutes(fastify: FastifyInstance) {
                   AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
                   AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
                 ))
+            ) OR EXISTS (
+              SELECT 1 FROM \`order\` o_nl
+              JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
+              LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
+              LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
+              LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+              WHERE o_nl.user_id = u.id 
+                AND o_nl.date_created >= ? AND o_nl.date_created <= ?
+                AND osc_nl.total_price > 0
+                AND (sp_nl.service_price_package_key IS NULL OR (
+                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+                ))
+                AND (sl_nl.service_name IS NULL OR (
+                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+                ))
             )
           )`);
-          innerParams.push(dFromStr, dToStr, dFromStr, dToStr);
+          innerParams.push(dFromStr, dToStr, dFromStr, dToStr, dFromStr, dToStr);
         }
       }
 

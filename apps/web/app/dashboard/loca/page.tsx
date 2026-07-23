@@ -27,6 +27,7 @@ import {
   message,
   Segmented,
   DatePicker,
+  ConfigProvider,
 } from 'antd';
 import {
   SearchOutlined,
@@ -473,167 +474,172 @@ export default function LocaCampaignPage() {
         }))}
       />
 
-      {/* FILTER & PIPELINE SECTION */}
-      <Card
-        style={{
-          background: themeMode === 'dark' ? '#141414' : '#ffffff',
-          border: `1px solid ${token.colorBorderSecondary}`,
-          marginBottom: '24px',
-          borderRadius: '8px',
-        }}
-      >
-        <div className="flex flex-col gap-6">
-          {/* PIPELINE FOR LOCA_ALL TAB */}
-          {activeTab === 'LOCA_ALL' && (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <Text style={{ fontWeight: '600', color: token.colorText }}>QUY TRÌNH CHĂM SÓC THEO CHẠM</Text>
-                {activeTouchpointKey !== 'ALL' && (
-                  <Button type="link" size="small" onClick={() => setActiveTouchpointKey('ALL')}>
-                    Xem tất cả khách hàng
-                  </Button>
-                )}
-              </div>
+      {/* FILTER & PIPELINE SECTION (MINIMALIST SINGLE ROW FILTER) */}
+      <div className="flex flex-col gap-4 mb-6">
+        {/* PIPELINE FOR LOCA_ALL TAB */}
+        {activeTab === 'LOCA_ALL' && (
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <Text
+                style={{ fontWeight: '700', color: token.colorText, fontSize: '12px', letterSpacing: '0.05em' }}
+                className="uppercase"
+              >
+                QUY TRÌNH CHĂM SÓC THEO CHẠM
+              </Text>
+              {activeTouchpointKey !== 'ALL' && (
+                <Button type="link" size="small" onClick={() => setActiveTouchpointKey('ALL')} style={{ padding: 0 }}>
+                  Xem tất cả khách hàng
+                </Button>
+              )}
+            </div>
 
+            <div
+              className={`p-2.5 rounded-xl flex items-center justify-between gap-1.5 overflow-x-auto min-h-[68px] border ${
+                themeMode === 'dark' ? 'bg-[#1a1a1a] border-white/5' : 'bg-slate-50/50 border-slate-100'
+              }`}
+            >
+              {/* All touchpoints capsule */}
               <div
-                className={`p-2.5 rounded-xl flex items-center justify-between gap-1.5 overflow-x-auto min-h-[68px] border ${
-                  themeMode === 'dark' ? 'bg-[#1a1a1a] border-white/5' : 'bg-slate-50/50 border-slate-100'
+                onClick={() => setActiveTouchpointKey('ALL')}
+                className={`flex-1 min-w-[72px] px-2.5 py-1.5 rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
+                  activeTouchpointKey === 'ALL'
+                    ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
+                    : themeMode === 'dark'
+                      ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
+                      : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
                 }`}
               >
-                {/* All touchpoints capsule */}
                 <div
-                  onClick={() => setActiveTouchpointKey('ALL')}
-                  className={`flex-1 min-w-[72px] px-2.5 py-1.5 rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
-                    activeTouchpointKey === 'ALL'
-                      ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
-                      : themeMode === 'dark'
-                        ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
-                        : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
-                  }`}
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    color: '#888',
+                    textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
+                  }}
                 >
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      color: '#888',
-                      textTransform: 'uppercase',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    Tất cả chạm
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '15px',
-                      fontWeight: '900',
-                      marginTop: '1px',
-                      fontVariantNumeric: 'tabular-nums',
-                      fontFeatureSettings: '"tnum"',
-                      color:
-                        activeTouchpointKey === 'ALL'
-                          ? themeMode === 'dark'
-                            ? '#D4A84B'
-                            : '#87640a'
-                          : token.colorText,
-                    }}
-                  >
-                    {tabCounts['LOCA_ALL'] || 0}
-                  </div>
+                  Tất cả chạm
                 </div>
-
-                {/* Individual touchpoints */}
-                {activeTouchpointsList.map((tp, idx) => {
-                  const isSelected = activeTouchpointKey === tp.key;
-                  const count = touchpointCounts[tp.key] || 0;
-                  return (
-                    <React.Fragment key={tp.key}>
-                      {idx > 0 && (
-                        <div
-                          style={{
-                            width: '6px',
-                            height: '2px',
-                            backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                            flexShrink: 0,
-                          }}
-                        />
-                      )}
-                      <div
-                        onClick={() => setActiveTouchpointKey(tp.key)}
-                        className={`flex-1 min-w-[68px] px-2 py-1.5 rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
-                          isSelected
-                            ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
-                            : themeMode === 'dark'
-                              ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
-                              : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
-                        }`}
-                      >
-                        <div
-                          style={{
-                            fontSize: '10px',
-                            fontWeight: '800',
-                            whiteSpace: 'nowrap',
-                            color:
-                              tp.color === 'red'
-                                ? themeMode === 'dark'
-                                  ? '#ff4d4f'
-                                  : '#d9363e'
-                                : tp.color === 'orange'
-                                  ? themeMode === 'dark'
-                                    ? '#fa8c16'
-                                    : '#d46b08'
-                                  : tp.color === 'green'
-                                    ? themeMode === 'dark'
-                                      ? '#52c41a'
-                                      : '#389e0d'
-                                    : themeMode === 'dark'
-                                      ? '#1890ff'
-                                      : '#096dd9',
-                            textTransform: 'uppercase',
-                          }}
-                        >
-                          {tp.label}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '15px',
-                            fontWeight: '900',
-                            marginTop: '1px',
-                            fontVariantNumeric: 'tabular-nums',
-                            fontFeatureSettings: '"tnum"',
-                            color: isSelected ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
-                          }}
-                        >
-                          {count}
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
+                <div
+                  style={{
+                    fontSize: '15px',
+                    fontWeight: '900',
+                    marginTop: '1px',
+                    fontVariantNumeric: 'tabular-nums',
+                    fontFeatureSettings: '"tnum"',
+                    color:
+                      activeTouchpointKey === 'ALL' ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
+                  }}
+                >
+                  {tabCounts['LOCA_ALL'] || 0}
+                </div>
               </div>
+
+              {/* Individual touchpoints */}
+              {activeTouchpointsList.map((tp, idx) => {
+                const isSelected = activeTouchpointKey === tp.key;
+                const count = touchpointCounts[tp.key] || 0;
+                return (
+                  <React.Fragment key={tp.key}>
+                    {idx > 0 && (
+                      <div
+                        style={{
+                          width: '6px',
+                          height: '2px',
+                          backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
+                    <div
+                      onClick={() => setActiveTouchpointKey(tp.key)}
+                      className={`flex-1 min-w-[68px] px-2 py-1.5 rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
+                        isSelected
+                          ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
+                          : themeMode === 'dark'
+                            ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
+                            : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
+                      }`}
+                    >
+                      <div
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: '800',
+                          whiteSpace: 'nowrap',
+                          color:
+                            tp.color === 'red'
+                              ? themeMode === 'dark'
+                                ? '#ff4d4f'
+                                : '#d9363e'
+                              : tp.color === 'orange'
+                                ? themeMode === 'dark'
+                                  ? '#fa8c16'
+                                  : '#d46b08'
+                                : tp.color === 'green'
+                                  ? themeMode === 'dark'
+                                    ? '#52c41a'
+                                    : '#389e0d'
+                                  : themeMode === 'dark'
+                                    ? '#1890ff'
+                                    : '#096dd9',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {tp.label}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '15px',
+                          fontWeight: '900',
+                          marginTop: '1px',
+                          fontVariantNumeric: 'tabular-nums',
+                          fontFeatureSettings: '"tnum"',
+                          color: isSelected ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
+                        }}
+                      >
+                        {count}
+                      </div>
+                    </div>
+                  </React.Fragment>
+                );
+              })}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* CONTACTED SUB-TAB SELECTOR */}
-          {activeTab === 'CONTACTED' && (
-            <div className="flex items-center gap-3">
-              <Text style={{ fontWeight: '600' }}>Hình thức liên hệ:</Text>
-              <Segmented
-                value={contactSubTab}
-                onChange={(val) => setContactSubTab(val as 'ALL' | 'CALL' | 'TEXT')}
-                options={[
-                  { value: 'ALL', label: 'Tất cả' },
-                  { value: 'CALL', label: 'Cuộc gọi (Call)', icon: <PhoneOutlined /> },
-                  { value: 'TEXT', label: 'Tin nhắn (Zalo/Msg/SMS)', icon: <MessageOutlined /> },
-                ]}
-              />
-            </div>
-          )}
+        {/* CONTACTED SUB-TAB SELECTOR */}
+        {activeTab === 'CONTACTED' && (
+          <div className="flex items-center gap-3 py-1">
+            <Text style={{ fontWeight: '600', fontSize: '13px' }}>Hình thức liên hệ:</Text>
+            <Segmented
+              value={contactSubTab}
+              onChange={(val) => setContactSubTab(val as 'ALL' | 'CALL' | 'TEXT')}
+              options={[
+                { value: 'ALL', label: 'Tất cả' },
+                { value: 'CALL', label: 'Cuộc gọi', icon: <PhoneOutlined /> },
+                { value: 'TEXT', label: 'Tin nhắn', icon: <MessageOutlined /> },
+              ]}
+              style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5' }}
+            />
+          </div>
+        )}
 
-          {activeTab === 'LOCA_ALL' && <Divider style={{ margin: 0, opacity: 0.5 }} />}
-
-          {/* DATE FILTER BAR FOR NEW LOCA TAB */}
+        {/* MINIMALIST FILTER BAR (SINGLE ROW - RIGHT ALIGNED) */}
+        <div className="flex flex-wrap items-center justify-end gap-2.5 py-2 border-b border-slate-100 dark:border-slate-800/60 w-full">
+          {/* Segmented Preset (NEW_LOCA only) */}
           {activeTab === 'NEW_LOCA' && (
-            <div className="flex flex-wrap items-center gap-3">
+            <ConfigProvider
+              theme={{
+                components: {
+                  Segmented: {
+                    itemSelectedBg: '#D4A84B',
+                    itemSelectedColor: '#000000',
+                    trackBg: themeMode === 'dark' ? '#141414' : '#f5f5f5',
+                    itemColor: themeMode === 'dark' ? '#aaa' : '#555',
+                  },
+                },
+              }}
+            >
               <Segmented
                 value={datePreset}
                 onChange={(val) => setDatePreset(val as 'today' | 'week' | 'month')}
@@ -642,58 +648,106 @@ export default function LocaCampaignPage() {
                   { value: 'week', label: 'Tuần' },
                   { value: 'today', label: 'Ngày' },
                 ]}
+                style={{
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontWeight: '600',
+                }}
               />
-              <Space.Compact style={{ display: 'flex', alignItems: 'center' }}>
-                <Button icon={<LeftOutlined />} onClick={handlePrevDate} />
-                <DatePicker
-                  value={selectedDate}
-                  onChange={(date) => {
-                    if (date) setSelectedDate(date);
-                  }}
-                  picker={datePreset === 'month' ? 'month' : datePreset === 'week' ? 'week' : 'date'}
-                  format={
-                    datePreset === 'month' ? '[Tháng] MM/YYYY' : datePreset === 'week' ? '[Tuần] ww/YYYY' : 'DD/MM/YYYY'
-                  }
-                  allowClear={false}
-                  style={{ width: 145 }}
-                />
-                <Button icon={<RightOutlined />} onClick={handleNextDate} />
-              </Space.Compact>
+            </ConfigProvider>
+          )}
+
+          {/* DatePicker with minimalist arrows (NEW_LOCA only) */}
+          {activeTab === 'NEW_LOCA' && (
+            <div className="flex items-center border border-slate-200 dark:border-slate-800/60 bg-slate-500/5 h-8 rounded-lg overflow-hidden transition-colors hover:border-slate-300 dark:hover:border-slate-700">
+              <Button
+                type="text"
+                size="small"
+                icon={<LeftOutlined style={{ fontSize: '10px', color: '#888' }} />}
+                onClick={handlePrevDate}
+                style={{
+                  width: 28,
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 0,
+                }}
+                className="hover:bg-slate-500/10"
+              />
+              <DatePicker
+                value={selectedDate}
+                onChange={(date) => {
+                  if (date) setSelectedDate(date);
+                }}
+                picker={datePreset === 'month' ? 'month' : datePreset === 'week' ? 'week' : 'date'}
+                format={
+                  datePreset === 'month' ? '[Tháng] MM/YYYY' : datePreset === 'week' ? '[Tuần] ww/YYYY' : 'DD/MM/YYYY'
+                }
+                allowClear={false}
+                variant="borderless"
+                suffixIcon={<CalendarOutlined style={{ color: '#D4A84B', fontSize: '13px' }} />}
+                style={{
+                  width: 150,
+                  padding: '0 8px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                }}
+                className="text-center font-semibold"
+              />
+              <Button
+                type="text"
+                size="small"
+                icon={<RightOutlined style={{ fontSize: '10px', color: '#888' }} />}
+                onClick={handleNextDate}
+                style={{
+                  width: 28,
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 0,
+                }}
+                className="hover:bg-slate-500/10"
+              />
             </div>
           )}
 
-          {/* SEARCH & FILTERS BAR */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <Space wrap className="w-full md:w-auto">
-              <Input
-                placeholder="Tìm khách hàng (Tên, SĐT, ID)..."
-                prefix={<SearchOutlined style={{ color: '#aaa' }} />}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                allowClear
-                style={{ width: 280 }}
-              />
-              <Select
-                value={sortField}
-                onChange={(val) => setSortField(val)}
-                style={{ width: 220 }}
-                options={[
-                  { value: 'daysSinceLastVisit_asc', label: 'Chưa ghé tăng dần' },
-                  { value: 'daysSinceLastVisit_desc', label: 'Chưa ghé giảm dần' },
-                  { value: 'totalSpent_desc', label: 'Doanh thu LTV lớn nhất' },
-                  { value: 'lastCallDate_desc', label: 'Gọi gần nhất' },
-                  { value: 'lastCallDate_asc', label: 'Gọi lâu nhất' },
-                ]}
-              />
-            </Space>
-            <Space>
-              <Tooltip title="Cấu hình cột bảng">
-                <Button icon={<SettingOutlined />} onClick={openLocaConfig} />
-              </Tooltip>
-            </Space>
+          {/* Borderless Search Input */}
+          <div className="flex items-center border border-slate-200 dark:border-slate-800/60 bg-slate-500/5 px-2.5 h-8 rounded-lg max-w-[280px] focus-within:border-slate-300 dark:focus-within:border-slate-700 transition-colors">
+            <SearchOutlined style={{ color: '#aaa', marginRight: '6px' }} />
+            <Input
+              placeholder="Tìm khách hàng..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              allowClear
+              variant="borderless"
+              style={{ padding: 0, fontSize: '13px', width: 180 }}
+            />
           </div>
+
+          {/* Action buttons (Settings) */}
+          <Tooltip title="Cấu hình cột bảng">
+            <Button
+              type="primary"
+              icon={<SettingOutlined style={{ color: '#000000', fontSize: '14px' }} />}
+              onClick={openLocaConfig}
+              style={{
+                backgroundColor: '#D4A84B',
+                borderColor: '#D4A84B',
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '8px',
+                padding: 0,
+              }}
+            />
+          </Tooltip>
         </div>
-      </Card>
+      </div>
 
       {/* CUSTOMERS DATA TABLE */}
       <Table
