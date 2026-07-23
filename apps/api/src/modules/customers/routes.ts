@@ -3768,13 +3768,25 @@ export async function customerRoutes(fastify: FastifyInstance) {
               SELECT o3.date_created, osc3.service_id, o3.user_id 
               FROM order_service_combo osc3 
               JOIN \`order\` o3 ON osc3.order_id = o3.id 
+              LEFT JOIN service_price sp3 ON osc3.service_price_id = sp3.id
               WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
+                AND (sp3.service_price_package_key IS NULL OR (
+                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
+                ))
               UNION ALL
               SELECT o3.date_created, os3.service_id, o3.user_id 
               FROM order_service os3 
               JOIN \`order\` o3 ON os3.order_id = o3.id 
+              LEFT JOIN service_price sp3 ON os3.service_price_id = sp3.id
               WHERE o3.order_state = 'Completed' AND os3.total_price > 0
                 AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
+                AND (sp3.service_price_package_key IS NULL OR (
+                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
+                ))
             ) o2 
             WHERE o2.user_id = o.user_id AND o2.service_id = osc.service_id
           ) THEN COALESCE(usb.normal_count, 0) ELSE 0 END as normalCount,
@@ -3784,13 +3796,25 @@ export async function customerRoutes(fastify: FastifyInstance) {
               SELECT o3.date_created, osc3.service_id, o3.user_id 
               FROM order_service_combo osc3 
               JOIN \`order\` o3 ON osc3.order_id = o3.id 
+              LEFT JOIN service_price sp3 ON osc3.service_price_id = sp3.id
               WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
+                AND (sp3.service_price_package_key IS NULL OR (
+                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
+                ))
               UNION ALL
               SELECT o3.date_created, os3.service_id, o3.user_id 
               FROM order_service os3 
               JOIN \`order\` o3 ON os3.order_id = o3.id 
+              LEFT JOIN service_price sp3 ON os3.service_price_id = sp3.id
               WHERE o3.order_state = 'Completed' AND os3.total_price > 0
                 AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
+                AND (sp3.service_price_package_key IS NULL OR (
+                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
+                ))
             ) o2 
             WHERE o2.user_id = o.user_id AND o2.service_id = osc.service_id
           ) THEN COALESCE(usb.retain_count, 0) ELSE 0 END as retainCount,
@@ -3812,6 +3836,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_profile up ON o.created_staff_id = up.user_id
         LEFT JOIN user_service_balance usb ON usb.user_id = o.user_id AND usb.service_id = osc.service_id AND usb.service_price_id = osc.service_price_id
         WHERE o.user_id = ? AND o.order_state = 'Completed' AND osc.total_price > 0
+          AND (sp.service_price_package_key IS NULL OR (
+            LOWER(sp.service_price_package_key) NOT LIKE '%single%'
+            AND LOWER(sp.service_price_package_key) NOT LIKE '%refill%'
+            AND LOWER(sp.service_price_package_key) NOT LIKE '%balance%'
+          ))
 
         UNION ALL
 
@@ -3825,13 +3854,25 @@ export async function customerRoutes(fastify: FastifyInstance) {
               SELECT o3.date_created, osc3.service_id, o3.user_id 
               FROM order_service_combo osc3 
               JOIN \`order\` o3 ON osc3.order_id = o3.id 
+              LEFT JOIN service_price sp3 ON osc3.service_price_id = sp3.id
               WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
+                AND (sp3.service_price_package_key IS NULL OR (
+                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
+                ))
               UNION ALL
               SELECT o3.date_created, os3.service_id, o3.user_id 
               FROM order_service os3 
               JOIN \`order\` o3 ON os3.order_id = o3.id 
+              LEFT JOIN service_price sp3 ON os3.service_price_id = sp3.id
               WHERE o3.order_state = 'Completed' AND os3.total_price > 0
                 AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
+                AND (sp3.service_price_package_key IS NULL OR (
+                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
+                ))
             ) o2 
             WHERE o2.user_id = o.user_id AND o2.service_id = os.service_id
           ) THEN COALESCE(usb.normal_count, 0) ELSE 0 END as normalCount,
@@ -3841,13 +3882,25 @@ export async function customerRoutes(fastify: FastifyInstance) {
               SELECT o3.date_created, osc3.service_id, o3.user_id 
               FROM order_service_combo osc3 
               JOIN \`order\` o3 ON osc3.order_id = o3.id 
+              LEFT JOIN service_price sp3 ON osc3.service_price_id = sp3.id
               WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
+                AND (sp3.service_price_package_key IS NULL OR (
+                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
+                ))
               UNION ALL
               SELECT o3.date_created, os3.service_id, o3.user_id 
               FROM order_service os3 
               JOIN \`order\` o3 ON os3.order_id = o3.id 
+              LEFT JOIN service_price sp3 ON os3.service_price_id = sp3.id
               WHERE o3.order_state = 'Completed' AND os3.total_price > 0
                 AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
+                AND (sp3.service_price_package_key IS NULL OR (
+                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
+                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
+                ))
             ) o2 
             WHERE o2.user_id = o.user_id AND o2.service_id = os.service_id
           ) THEN COALESCE(usb.retain_count, 0) ELSE 0 END as retainCount,
@@ -3871,6 +3924,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE o.user_id = ? AND o.order_state = 'Completed'
           AND (os.user_service_type = 'combo' OR s.service_group = 'combo')
           AND os.total_price > 0
+          AND (sp.service_price_package_key IS NULL OR (
+            LOWER(sp.service_price_package_key) NOT LIKE '%single%'
+            AND LOWER(sp.service_price_package_key) NOT LIKE '%refill%'
+            AND LOWER(sp.service_price_package_key) NOT LIKE '%balance%'
+          ))
 
         UNION ALL
 
@@ -3899,13 +3957,25 @@ export async function customerRoutes(fastify: FastifyInstance) {
           AND NOT EXISTS (
             SELECT 1 FROM order_service_combo osc2 
             JOIN \`order\` o2 ON osc2.order_id = o2.id 
+            LEFT JOIN service_price sp2 ON osc2.service_price_id = sp2.id
             WHERE o2.user_id = usb.user_id AND osc2.service_id = usb.service_id AND osc2.service_price_id = usb.service_price_id AND o2.order_state = 'Completed' AND osc2.total_price > 0
+              AND (sp2.service_price_package_key IS NULL OR (
+                LOWER(sp2.service_price_package_key) NOT LIKE '%single%'
+                AND LOWER(sp2.service_price_package_key) NOT LIKE '%refill%'
+                AND LOWER(sp2.service_price_package_key) NOT LIKE '%balance%'
+              ))
           )
           AND NOT EXISTS (
             SELECT 1 FROM order_service os2 
             JOIN \`order\` o2 ON os2.order_id = o2.id 
+            LEFT JOIN service_price sp2 ON os2.service_price_id = sp2.id
             WHERE o2.user_id = usb.user_id AND os2.service_id = usb.service_id AND os2.service_price_id = usb.service_price_id AND o2.order_state = 'Completed' AND os2.total_price > 0
               AND (os2.user_service_type = 'combo' OR os2.service_group = 'combo')
+              AND (sp2.service_price_package_key IS NULL OR (
+                LOWER(sp2.service_price_package_key) NOT LIKE '%single%'
+                AND LOWER(sp2.service_price_package_key) NOT LIKE '%refill%'
+                AND LOWER(sp2.service_price_package_key) NOT LIKE '%balance%'
+              ))
           )
         ORDER BY dateCreated DESC
       `;
@@ -4333,7 +4403,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           avgTip: avgTip,
         },
         comboBalances: comboBalances.map((cb) => ({
-          id: Number(cb.id),
+          id: String(cb.id),
           serviceId: cb.serviceId,
           serviceGroup: cb.serviceGroup,
           normalCount: Number(cb.normalCount),
