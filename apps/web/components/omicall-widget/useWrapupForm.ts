@@ -35,8 +35,33 @@ export const useWrapupForm = (
         customerName: currentCall.name,
         legacyUserId: currentCall.legacyUserId || 0,
         callUuid: currentCall.callUuid || 'simulated-' + Date.now(),
+        analysisStatus: 'PROCESSING',
       });
-      return;
+
+      const simTimer = setTimeout(() => {
+        setResolvedLog({
+          id: 0,
+          customerName: currentCall.name,
+          legacyUserId: currentCall.legacyUserId || 0,
+          callUuid: currentCall.callUuid || 'simulated-' + Date.now(),
+          analysisStatus: 'DONE',
+          customerSatisfactionScore: 5,
+          customerSentiment: 'HAPPY',
+          satisfactionAnalysis:
+            'Khách hàng rất hài lòng với thái độ tư vấn nhẹ nhàng và thông tin rõ ràng của nhân viên.',
+          laughCount: 3,
+          laughCountAgent: 2,
+          laughCountCustomer: 1,
+          laughTimestamps: [
+            { start: 4, end: 6, speaker: 'agent', confidence: 0.95 },
+            { start: 12, end: 15, speaker: 'customer', confidence: 0.98 },
+            { start: 22, end: 24, speaker: 'agent', confidence: 0.93 },
+          ],
+          recordingUrl: 'https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.wav',
+        });
+      }, 2500);
+
+      return () => clearTimeout(simTimer);
     }
 
     let intervalId: SafeAny = null;
@@ -54,29 +79,37 @@ export const useWrapupForm = (
           setResolvedLog(data);
 
           // Update current call with resolved customer name and ID
-          setCurrentCall({
-            ...currentCall,
-            legacyUserId: data.legacyUserId,
-            name: data.customerName || currentCall.name,
-            callUuid: data.callUuid,
-          });
+          setCurrentCall((prev: SafeAny) =>
+            prev
+              ? {
+                  ...prev,
+                  legacyUserId: data.legacyUserId || prev.legacyUserId,
+                  name: data.customerName || prev.name,
+                  callUuid: data.callUuid || prev.callUuid,
+                }
+              : null
+          );
 
-          clearInterval(intervalId);
-          return;
+          if (['DONE', 'FAILED', 'SKIPPED'].includes(data.analysisStatus)) {
+            if (intervalId) clearInterval(intervalId);
+            return;
+          }
         }
       } catch (err) {
         // Log not ready yet
       }
 
-      if (attempts >= 20) {
+      if (attempts >= 30) {
         console.warn('[OmiCallWidget] AI analysis polling timed out');
-        clearInterval(intervalId);
+        if (intervalId) clearInterval(intervalId);
       }
     };
 
     intervalId = setInterval(pollLog, 3000);
     pollLog();
-    return () => clearInterval(intervalId);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [callState, currentCall, isSimulated, setCurrentCall]);
 
   const handleSaveWrapup = useCallback(async () => {
@@ -92,6 +125,7 @@ export const useWrapupForm = (
         callResult: callDuration > 0 ? ('ANSWERED' as const) : ('NO_ANSWER' as const),
         note: values.note || '',
         outcome: selectedTags.join(', '),
+        durationSec: callDuration > 0 ? callDuration : resolvedLog?.duration || 0,
         callbackDate: values.callbackDate ? values.callbackDate.toISOString() : null,
         omicallLogId: resolvedLog?.id || null,
         callUuid: currentCall.callUuid || null,

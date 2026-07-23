@@ -230,13 +230,40 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (isSimulated) {
+      // Step 1: Initial state (processing)
       setResolvedLog({
         id: 0,
         customerName: currentCall.name,
         legacyUserId: currentCall.legacyUserId || 0,
         callUuid: currentCall.callUuid || 'simulated-' + Date.now(),
+        analysisStatus: 'PROCESSING',
       });
-      return;
+
+      // Step 2: Transition to DONE after 2.5 seconds with mock AI insights
+      const simTimer = setTimeout(() => {
+        setResolvedLog({
+          id: 0,
+          customerName: currentCall.name,
+          legacyUserId: currentCall.legacyUserId || 0,
+          callUuid: currentCall.callUuid || 'simulated-' + Date.now(),
+          analysisStatus: 'DONE',
+          customerSatisfactionScore: 5,
+          customerSentiment: 'HAPPY',
+          satisfactionAnalysis:
+            'Khách hàng rất hài lòng với thái độ tư vấn nhẹ nhàng và thông tin rõ ràng của nhân viên.',
+          laughCount: 3,
+          laughCountAgent: 2,
+          laughCountCustomer: 1,
+          laughTimestamps: [
+            { start: 4, end: 6, speaker: 'agent', confidence: 0.95 },
+            { start: 12, end: 15, speaker: 'customer', confidence: 0.98 },
+            { start: 22, end: 24, speaker: 'agent', confidence: 0.93 },
+          ],
+          recordingUrl: 'https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.wav',
+        });
+      }, 2500);
+
+      return () => clearTimeout(simTimer);
     }
 
     let intervalId: SafeAny = null;
@@ -254,29 +281,38 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
           setResolvedLog(data);
 
           // Update current call with resolved customer name and ID
-          setCurrentCall({
-            ...currentCall,
-            legacyUserId: data.legacyUserId,
-            name: data.customerName || currentCall.name,
-            callUuid: data.callUuid,
-          });
+          setCurrentCall((prev: SafeAny) =>
+            prev
+              ? {
+                  ...prev,
+                  legacyUserId: data.legacyUserId || prev.legacyUserId,
+                  name: data.customerName || prev.name,
+                  callUuid: data.callUuid || prev.callUuid,
+                }
+              : null
+          );
 
-          clearInterval(intervalId);
-          return;
+          // Only stop polling when analysis is finalized or skipped
+          if (['DONE', 'FAILED', 'SKIPPED'].includes(data.analysisStatus)) {
+            if (intervalId) clearInterval(intervalId);
+            return;
+          }
         }
       } catch (err) {
         // Log not ready yet
       }
 
-      if (attempts >= 20) {
+      if (attempts >= 30) {
         console.warn('[OmiCallWidget] AI analysis polling timed out');
-        clearInterval(intervalId);
+        if (intervalId) clearInterval(intervalId);
       }
     };
 
     intervalId = setInterval(pollLog, 3000);
     pollLog();
-    return () => clearInterval(intervalId);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [callState, currentCall, isSimulated, setCurrentCall]);
 
   // 4. SDK Initialise and SIP Device registration

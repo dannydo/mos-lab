@@ -5,95 +5,122 @@ import { BucketType } from '@mos-lab/shared';
 export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
   // GET /api/customers
   // Query legs DB, compute buckets, handle pagination, search, sorting
-  fastify.get('/customers', { preHandler: [requireAuth] }, async (request, reply) => {
-    const {
-      bucket,
-      search,
-      page = '1',
-      limit = '20',
-      sort = 'id_desc',
-      daysSinceLastVisitMin,
-      daysSinceLastVisitMax,
-      totalSpentMin,
-      totalSpentMax,
-      totalVisitsMin,
-      totalVisitsMax,
-      promoUsed,
-      promoCountMin,
-      promoCountMax,
-      referralUsed,
-      referralCountMin,
-      referralCountMax,
-      assignedStaffId,
-      trash,
-      ids,
-    } = request.query as {
-      bucket?: BucketType | 'ALL';
-      search?: string;
-      page?: string;
-      limit?: string;
-      sort?: string;
-      daysSinceLastVisitMin?: string;
-      daysSinceLastVisitMax?: string;
-      totalSpentMin?: string;
-      totalSpentMax?: string;
-      totalVisitsMin?: string;
-      totalVisitsMax?: string;
-      promoUsed?: 'yes' | 'no' | 'all';
-      promoCountMin?: string;
-      promoCountMax?: string;
-      referralUsed?: 'yes' | 'no' | 'all';
-      referralCountMin?: string;
-      referralCountMax?: string;
-      assignedStaffId?: string;
-      trash?: string;
-      ids?: string;
-    };
+  fastify.get(
+    '/customers',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        tags: ['Customers'],
+        summary: 'Get paginated customers list with bucket filters',
+        security: [{ bearerAuth: [] }],
+        querystring: {
+          type: 'object',
+          properties: {
+            bucket: { type: 'string' },
+            search: { type: 'string' },
+            page: { type: 'string' },
+            limit: { type: 'string' },
+            sort: { type: 'string' },
+            daysSinceLastVisitMin: { type: 'string' },
+            daysSinceLastVisitMax: { type: 'string' },
+            totalSpentMin: { type: 'string' },
+            totalSpentMax: { type: 'string' },
+            assignedStaffId: { type: 'string' },
+            trash: { type: 'string' },
+            ids: { type: 'string' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const {
+        bucket,
+        search,
+        page = '1',
+        limit = '20',
+        sort = 'id_desc',
+        daysSinceLastVisitMin,
+        daysSinceLastVisitMax,
+        totalSpentMin,
+        totalSpentMax,
+        totalVisitsMin,
+        totalVisitsMax,
+        promoUsed,
+        promoCountMin,
+        promoCountMax,
+        referralUsed,
+        referralCountMin,
+        referralCountMax,
+        assignedStaffId,
+        trash,
+        ids,
+      } = request.query as {
+        bucket?: BucketType | 'ALL';
+        search?: string;
+        page?: string;
+        limit?: string;
+        sort?: string;
+        daysSinceLastVisitMin?: string;
+        daysSinceLastVisitMax?: string;
+        totalSpentMin?: string;
+        totalSpentMax?: string;
+        totalVisitsMin?: string;
+        totalVisitsMax?: string;
+        promoUsed?: 'yes' | 'no' | 'all';
+        promoCountMin?: string;
+        promoCountMax?: string;
+        referralUsed?: 'yes' | 'no' | 'all';
+        referralCountMin?: string;
+        referralCountMax?: string;
+        assignedStaffId?: string;
+        trash?: string;
+        ids?: string;
+      };
 
-    let limitNum = parseInt(limit, 10) || 20;
-    if (ids && ids.trim() !== '') {
-      limitNum = ids.split(',').length;
-    }
-    const pageNum = parseInt(page, 10) || 1;
-    const offsetNum = (pageNum - 1) * limitNum;
-    const adminUser = request.user as { id: number; role: string };
+      let limitNum = parseInt(limit, 10) || 20;
+      if (ids && ids.trim() !== '') {
+        limitNum = ids.split(',').length;
+      }
+      const pageNum = parseInt(page, 10) || 1;
+      const offsetNum = (pageNum - 1) * limitNum;
+      const adminUser = request.user as { id: number; role: string };
 
-    // Force telesales to only query their own customers
-    let effectiveAssignedStaffId = assignedStaffId;
-    if (adminUser.role !== 'admin') {
-      effectiveAssignedStaffId = 'me';
-    }
+      // Force telesales to only query their own customers
+      let effectiveAssignedStaffId = assignedStaffId;
+      if (adminUser.role !== 'admin') {
+        effectiveAssignedStaffId = 'me';
+      }
 
-    try {
-      // Determine what joins and select fields we need in the inner query to optimize performance
-      const needContact = search && search.trim() !== '';
-      const needServiceBalance = bucket && bucket !== 'ALL';
+      try {
+        // Determine what joins and select fields we need in the inner query to optimize performance
+        const needContact = search && search.trim() !== '';
+        const needServiceBalance = bucket && bucket !== 'ALL';
 
-      const needSpent =
-        (totalSpentMin !== undefined && totalSpentMin !== '') ||
-        (totalSpentMax !== undefined && totalSpentMax !== '') ||
-        sort === 'totalSpent_desc' ||
-        sort === 'totalSpent_asc';
+        const needSpent =
+          (totalSpentMin !== undefined && totalSpentMin !== '') ||
+          (totalSpentMax !== undefined && totalSpentMax !== '') ||
+          sort === 'totalSpent_desc' ||
+          sort === 'totalSpent_asc';
 
-      const needVisits =
-        (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
-        (totalVisitsMax !== undefined && totalVisitsMax !== '');
+        const needVisits =
+          (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
+          (totalVisitsMax !== undefined && totalVisitsMax !== '');
 
-      const needPromo =
-        (promoUsed !== undefined && promoUsed !== 'all') ||
-        (promoCountMin !== undefined && promoCountMin !== '') ||
-        (promoCountMax !== undefined && promoCountMax !== '');
+        const needPromo =
+          (promoUsed !== undefined && promoUsed !== 'all') ||
+          (promoCountMin !== undefined && promoCountMin !== '') ||
+          (promoCountMax !== undefined && promoCountMax !== '');
 
-      const needReferrals =
-        (referralUsed !== undefined && referralUsed !== 'all') ||
-        (referralCountMin !== undefined && referralCountMin !== '') ||
-        (referralCountMax !== undefined && referralCountMax !== '');
+        const needReferrals =
+          (referralUsed !== undefined && referralUsed !== 'all') ||
+          (referralCountMin !== undefined && referralCountMin !== '') ||
+          (referralCountMax !== undefined && referralCountMax !== '');
 
-      const needOrderCounts = needSpent || needVisits;
+        const needOrderCounts = needSpent || needVisits;
 
-      let innerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
-      if (needServiceBalance) {
-        innerJoins += ` LEFT JOIN (
+        let innerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
+        if (needServiceBalance) {
+          innerJoins += ` LEFT JOIN (
           SELECT 
             user_id,
             SUM(
@@ -108,9 +135,9 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
           FROM user_service_balance
           GROUP BY user_id
         ) as usb_agg ON u.id = usb_agg.user_id`;
-      }
-      if (needOrderCounts) {
-        innerJoins += ` LEFT JOIN (
+        }
+        if (needOrderCounts) {
+          innerJoins += ` LEFT JOIN (
           SELECT 
             user_id, 
             COALESCE(SUM(total_price), 0) as totalSpent, 
@@ -119,191 +146,191 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
           WHERE order_state = 'Completed'
           GROUP BY user_id
         ) as order_counts ON u.id = order_counts.user_id`;
-      }
-      if (needPromo) {
-        innerJoins += ` LEFT JOIN (
+        }
+        if (needPromo) {
+          innerJoins += ` LEFT JOIN (
           SELECT user_id, COUNT(*) as totalPromotionsUsed
           FROM \`order\`
           WHERE order_state = 'Completed' AND (promotion_id IS NOT NULL OR selected_promotion_id IS NOT NULL)
           GROUP BY user_id
         ) as promo_counts ON u.id = promo_counts.user_id`;
-      }
-      if (needReferrals) {
-        innerJoins += ` LEFT JOIN (
+        }
+        if (needReferrals) {
+          innerJoins += ` LEFT JOIN (
           SELECT referrer_user_id, COUNT(*) as totalReferrals
           FROM user_profile
           WHERE referrer_user_id IS NOT NULL
           GROUP BY referrer_user_id
         ) as ref_counts ON u.id = ref_counts.referrer_user_id`;
-      }
+        }
 
-      let allowedUserIds: number[] | null = null;
-      let excludedUserIds: number[] | null = null;
+        let allowedUserIds: number[] | null = null;
+        let excludedUserIds: number[] | null = null;
 
-      if (ids && ids.trim() !== '') {
-        allowedUserIds = ids
-          .split(',')
-          .map(Number)
-          .filter((n) => !isNaN(n));
-      } else if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') {
-        if (effectiveAssignedStaffId === 'unassigned') {
-          const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-            select: { legacyUserId: true },
-          });
-          excludedUserIds = allAssignments.map((a) => a.legacyUserId);
-        } else {
-          let targetStaffId = adminUser.id;
-          if (effectiveAssignedStaffId !== 'me') {
-            targetStaffId = parseInt(effectiveAssignedStaffId, 10);
-          }
-          if (!isNaN(targetStaffId)) {
-            const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-              where: { staffId: targetStaffId },
+        if (ids && ids.trim() !== '') {
+          allowedUserIds = ids
+            .split(',')
+            .map(Number)
+            .filter((n) => !isNaN(n));
+        } else if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') {
+          if (effectiveAssignedStaffId === 'unassigned') {
+            const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
               select: { legacyUserId: true },
             });
-            allowedUserIds = assignments.map((a) => a.legacyUserId);
-            if (allowedUserIds.length === 0) {
-              return {
-                data: [],
-                pagination: {
-                  total: 0,
-                  page: pageNum,
-                  limit: limitNum,
-                  pages: 0,
-                },
-              };
+            excludedUserIds = allAssignments.map((a) => a.legacyUserId);
+          } else {
+            let targetStaffId = adminUser.id;
+            if (effectiveAssignedStaffId !== 'me') {
+              targetStaffId = parseInt(effectiveAssignedStaffId, 10);
+            }
+            if (!isNaN(targetStaffId)) {
+              const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+                where: { staffId: targetStaffId },
+                select: { legacyUserId: true },
+              });
+              allowedUserIds = assignments.map((a) => a.legacyUserId);
+              if (allowedUserIds.length === 0) {
+                return {
+                  data: [],
+                  pagination: {
+                    total: 0,
+                    page: pageNum,
+                    limit: limitNum,
+                    pages: 0,
+                  },
+                };
+              }
             }
           }
         }
-      }
 
-      const innerWhereClauses: string[] = [];
-      const innerParams: SafeAny[] = [];
+        const innerWhereClauses: string[] = [];
+        const innerParams: SafeAny[] = [];
 
-      // Filter out or in deleted users based on trash flag
-      if (trash === 'true') {
-        innerWhereClauses.push('up.is_deleted = 1');
-      } else {
-        innerWhereClauses.push('COALESCE(up.is_deleted, 0) = 0');
-      }
+        // Filter out or in deleted users based on trash flag
+        if (trash === 'true') {
+          innerWhereClauses.push('up.is_deleted = 1');
+        } else {
+          innerWhereClauses.push('COALESCE(up.is_deleted, 0) = 0');
+        }
 
-      if (allowedUserIds !== null) {
-        innerWhereClauses.push(`u.id IN (${allowedUserIds.join(',')})`);
-      }
-      if (excludedUserIds !== null && excludedUserIds.length > 0) {
-        innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
-      }
+        if (allowedUserIds !== null) {
+          innerWhereClauses.push(`u.id IN (${allowedUserIds.join(',')})`);
+        }
+        if (excludedUserIds !== null && excludedUserIds.length > 0) {
+          innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
+        }
 
-      // 1. Filter by Search (Name or Phone using EXISTS for contact to avoid GROUP BY)
-      if (search && search.trim() !== '') {
-        const searchLike = `%${search.trim()}%`;
-        innerWhereClauses.push(`(
+        // 1. Filter by Search (Name or Phone using EXISTS for contact to avoid GROUP BY)
+        if (search && search.trim() !== '') {
+          const searchLike = `%${search.trim()}%`;
+          innerWhereClauses.push(`(
           up.full_name LIKE ? OR EXISTS (
             SELECT 1 
             FROM user_contact uc 
             WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND uc.phone_number LIKE ?
           )
         )`);
-        innerParams.push(searchLike, searchLike);
-      }
-
-      // 2. Filter by Bucket (Optimized using usb_agg joins)
-      if (bucket && bucket !== 'ALL') {
-        if (bucket === 'SINGLE') {
-          innerWhereClauses.push('usb_agg.user_id IS NULL');
-        } else if (bucket === 'COMBO_LIVE') {
-          innerWhereClauses.push('usb_agg.live_count > 0');
-        } else if (bucket === 'COMBO_DEAD') {
-          innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
-        } else if (bucket === 'NOT_COMBO_LIVE') {
-          innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          innerParams.push(searchLike, searchLike);
         }
-      }
 
-      // 3. daysSinceLastVisit Filters
-      if (daysSinceLastVisitMin !== undefined && daysSinceLastVisitMin !== '') {
-        innerWhereClauses.push('up.last_order_booking IS NOT NULL AND DATEDIFF(NOW(), up.last_order_booking) >= ?');
-        innerParams.push(parseInt(daysSinceLastVisitMin, 10));
-      }
-      if (daysSinceLastVisitMax !== undefined && daysSinceLastVisitMax !== '') {
-        innerWhereClauses.push('up.last_order_booking IS NOT NULL AND DATEDIFF(NOW(), up.last_order_booking) <= ?');
-        innerParams.push(parseInt(daysSinceLastVisitMax, 10));
-      }
+        // 2. Filter by Bucket (Optimized using usb_agg joins)
+        if (bucket && bucket !== 'ALL') {
+          if (bucket === 'SINGLE') {
+            innerWhereClauses.push('usb_agg.user_id IS NULL');
+          } else if (bucket === 'COMBO_LIVE') {
+            innerWhereClauses.push('usb_agg.live_count > 0');
+          } else if (bucket === 'COMBO_DEAD') {
+            innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
+          } else if (bucket === 'NOT_COMBO_LIVE') {
+            innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          }
+        }
 
-      // 4. totalSpent & totalVisits Filters (using pre-aggregated joins)
-      if (totalSpentMin !== undefined && totalSpentMin !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalSpent, 0) >= ?');
-        innerParams.push(parseFloat(totalSpentMin));
-      }
-      if (totalSpentMax !== undefined && totalSpentMax !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalSpent, 0) <= ?');
-        innerParams.push(parseFloat(totalSpentMax));
-      }
+        // 3. daysSinceLastVisit Filters
+        if (daysSinceLastVisitMin !== undefined && daysSinceLastVisitMin !== '') {
+          innerWhereClauses.push('up.last_order_booking IS NOT NULL AND DATEDIFF(NOW(), up.last_order_booking) >= ?');
+          innerParams.push(parseInt(daysSinceLastVisitMin, 10));
+        }
+        if (daysSinceLastVisitMax !== undefined && daysSinceLastVisitMax !== '') {
+          innerWhereClauses.push('up.last_order_booking IS NOT NULL AND DATEDIFF(NOW(), up.last_order_booking) <= ?');
+          innerParams.push(parseInt(daysSinceLastVisitMax, 10));
+        }
 
-      if (totalVisitsMin !== undefined && totalVisitsMin !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) >= ?');
-        innerParams.push(parseInt(totalVisitsMin, 10));
-      }
-      if (totalVisitsMax !== undefined && totalVisitsMax !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) <= ?');
-        innerParams.push(parseInt(totalVisitsMax, 10));
-      }
+        // 4. totalSpent & totalVisits Filters (using pre-aggregated joins)
+        if (totalSpentMin !== undefined && totalSpentMin !== '') {
+          innerWhereClauses.push('COALESCE(order_counts.totalSpent, 0) >= ?');
+          innerParams.push(parseFloat(totalSpentMin));
+        }
+        if (totalSpentMax !== undefined && totalSpentMax !== '') {
+          innerWhereClauses.push('COALESCE(order_counts.totalSpent, 0) <= ?');
+          innerParams.push(parseFloat(totalSpentMax));
+        }
 
-      // 5. Promotions and Referrals Filters (using pre-aggregated joins)
-      if (promoUsed === 'yes') {
-        innerWhereClauses.push('COALESCE(promo_counts.totalPromotionsUsed, 0) >= 1');
-      } else if (promoUsed === 'no') {
-        innerWhereClauses.push('COALESCE(promo_counts.totalPromotionsUsed, 0) = 0');
-      }
-      if (promoCountMin !== undefined && promoCountMin !== '') {
-        innerWhereClauses.push('COALESCE(promo_counts.totalPromotionsUsed, 0) >= ?');
-        innerParams.push(parseInt(promoCountMin, 10));
-      }
-      if (promoCountMax !== undefined && promoCountMax !== '') {
-        innerWhereClauses.push('COALESCE(promo_counts.totalPromotionsUsed, 0) <= ?');
-        innerParams.push(parseInt(promoCountMax, 10));
-      }
+        if (totalVisitsMin !== undefined && totalVisitsMin !== '') {
+          innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) >= ?');
+          innerParams.push(parseInt(totalVisitsMin, 10));
+        }
+        if (totalVisitsMax !== undefined && totalVisitsMax !== '') {
+          innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) <= ?');
+          innerParams.push(parseInt(totalVisitsMax, 10));
+        }
 
-      if (referralUsed === 'yes') {
-        innerWhereClauses.push('COALESCE(ref_counts.totalReferrals, 0) >= 1');
-      } else if (referralUsed === 'no') {
-        innerWhereClauses.push('COALESCE(ref_counts.totalReferrals, 0) = 0');
-      }
-      if (referralCountMin !== undefined && referralCountMin !== '') {
-        innerWhereClauses.push('COALESCE(ref_counts.totalReferrals, 0) >= ?');
-        innerParams.push(parseInt(referralCountMin, 10));
-      }
-      if (referralCountMax !== undefined && referralCountMax !== '') {
-        innerWhereClauses.push('COALESCE(ref_counts.totalReferrals, 0) <= ?');
-        innerParams.push(parseInt(referralCountMax, 10));
-      }
+        // 5. Promotions and Referrals Filters (using pre-aggregated joins)
+        if (promoUsed === 'yes') {
+          innerWhereClauses.push('COALESCE(promo_counts.totalPromotionsUsed, 0) >= 1');
+        } else if (promoUsed === 'no') {
+          innerWhereClauses.push('COALESCE(promo_counts.totalPromotionsUsed, 0) = 0');
+        }
+        if (promoCountMin !== undefined && promoCountMin !== '') {
+          innerWhereClauses.push('COALESCE(promo_counts.totalPromotionsUsed, 0) >= ?');
+          innerParams.push(parseInt(promoCountMin, 10));
+        }
+        if (promoCountMax !== undefined && promoCountMax !== '') {
+          innerWhereClauses.push('COALESCE(promo_counts.totalPromotionsUsed, 0) <= ?');
+          innerParams.push(parseInt(promoCountMax, 10));
+        }
 
-      const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
+        if (referralUsed === 'yes') {
+          innerWhereClauses.push('COALESCE(ref_counts.totalReferrals, 0) >= 1');
+        } else if (referralUsed === 'no') {
+          innerWhereClauses.push('COALESCE(ref_counts.totalReferrals, 0) = 0');
+        }
+        if (referralCountMin !== undefined && referralCountMin !== '') {
+          innerWhereClauses.push('COALESCE(ref_counts.totalReferrals, 0) >= ?');
+          innerParams.push(parseInt(referralCountMin, 10));
+        }
+        if (referralCountMax !== undefined && referralCountMax !== '') {
+          innerWhereClauses.push('COALESCE(ref_counts.totalReferrals, 0) <= ?');
+          innerParams.push(parseInt(referralCountMax, 10));
+        }
 
-      // Sorting
-      let innerOrderBy = 'ORDER BY u.id DESC';
-      let outerOrderBy = 'ORDER BY id DESC';
-      if (sort === 'daysSinceLastVisit_desc') {
-        innerOrderBy = 'ORDER BY up.last_order_booking ASC';
-        outerOrderBy = 'ORDER BY daysSinceLastVisit DESC';
-      } else if (sort === 'daysSinceLastVisit_asc') {
-        innerOrderBy = 'ORDER BY up.last_order_booking DESC';
-        outerOrderBy = 'ORDER BY daysSinceLastVisit ASC';
-      } else if (sort === 'totalSpent_desc') {
-        innerOrderBy = 'ORDER BY COALESCE(order_counts.totalSpent, 0) DESC';
-        outerOrderBy = 'ORDER BY totalSpent DESC';
-      } else if (sort === 'totalSpent_asc') {
-        innerOrderBy = 'ORDER BY COALESCE(order_counts.totalSpent, 0) ASC';
-        outerOrderBy = 'ORDER BY totalSpent ASC';
-      } else if (sort === 'name_asc') {
-        innerOrderBy = 'ORDER BY up.full_name ASC';
-        outerOrderBy = 'ORDER BY name ASC';
-      } else if (sort === 'name_desc') {
-        innerOrderBy = 'ORDER BY up.full_name DESC';
-        outerOrderBy = 'ORDER BY name DESC';
-      }
+        const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
 
-      const innerQuerySql = `
+        // Sorting
+        let innerOrderBy = 'ORDER BY u.id DESC';
+        let outerOrderBy = 'ORDER BY id DESC';
+        if (sort === 'daysSinceLastVisit_desc') {
+          innerOrderBy = 'ORDER BY up.last_order_booking ASC';
+          outerOrderBy = 'ORDER BY daysSinceLastVisit DESC';
+        } else if (sort === 'daysSinceLastVisit_asc') {
+          innerOrderBy = 'ORDER BY up.last_order_booking DESC';
+          outerOrderBy = 'ORDER BY daysSinceLastVisit ASC';
+        } else if (sort === 'totalSpent_desc') {
+          innerOrderBy = 'ORDER BY COALESCE(order_counts.totalSpent, 0) DESC';
+          outerOrderBy = 'ORDER BY totalSpent DESC';
+        } else if (sort === 'totalSpent_asc') {
+          innerOrderBy = 'ORDER BY COALESCE(order_counts.totalSpent, 0) ASC';
+          outerOrderBy = 'ORDER BY totalSpent ASC';
+        } else if (sort === 'name_asc') {
+          innerOrderBy = 'ORDER BY up.full_name ASC';
+          outerOrderBy = 'ORDER BY name ASC';
+        } else if (sort === 'name_desc') {
+          innerOrderBy = 'ORDER BY up.full_name DESC';
+          outerOrderBy = 'ORDER BY name DESC';
+        }
+
+        const innerQuerySql = `
         SELECT u.id
         FROM user u
         ${innerJoins}
@@ -311,8 +338,8 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
         ${innerOrderBy}
       `;
 
-      // 4. Main Query (Optimized raw query using dynamic Deferred Join pagination & usb_agg)
-      const querySql = `
+        // 4. Main Query (Optimized raw query using dynamic Deferred Join pagination & usb_agg)
+        const querySql = `
         SELECT 
           u.id, 
           COALESCE(up.full_name, 'No Name') as name, 
@@ -384,48 +411,48 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
         ${outerOrderBy}
       `;
 
-      // Count Query for Pagination using subquery
-      const countSql = `
+        // Count Query for Pagination using subquery
+        const countSql = `
         SELECT COUNT(*) as total FROM (
           ${innerQuerySql}
         ) as p
       `;
 
-      // Add LIMIT and OFFSET parameters
-      const dataParams = [...innerParams, limitNum, offsetNum];
-      const countParams = [...innerParams];
+        // Add LIMIT and OFFSET parameters
+        const dataParams = [...innerParams, limitNum, offsetNum];
+        const countParams = [...innerParams];
 
-      const [dataResult, countResult] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(querySql, ...dataParams),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams),
-      ]);
+        const [dataResult, countResult] = await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(querySql, ...dataParams),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams),
+        ]);
 
-      const total = Number(countResult[0]?.total || 0);
+        const total = Number(countResult[0]?.total || 0);
 
-      // Fetch assignments for the returned customers
-      const customerIds = dataResult.map((row: SafeAny) => Number(row.id));
-      const assignments =
-        customerIds.length > 0
-          ? await fastify.prisma.crm.crmCustomerAssignment.findMany({
-              where: { legacyUserId: { in: customerIds } },
-              include: { staff: true },
-            })
-          : [];
+        // Fetch assignments for the returned customers
+        const customerIds = dataResult.map((row: SafeAny) => Number(row.id));
+        const assignments =
+          customerIds.length > 0
+            ? await fastify.prisma.crm.crmCustomerAssignment.findMany({
+                where: { legacyUserId: { in: customerIds } },
+                include: { staff: true },
+              })
+            : [];
 
-      const assignmentMap = new Map();
-      assignments.forEach((a) => {
-        assignmentMap.set(a.legacyUserId, {
-          id: a.staff.id,
-          displayName: a.staff.displayName,
-          username: a.staff.username,
+        const assignmentMap = new Map();
+        assignments.forEach((a) => {
+          assignmentMap.set(a.legacyUserId, {
+            id: a.staff.id,
+            displayName: a.staff.displayName,
+            username: a.staff.username,
+          });
         });
-      });
 
-      // Fetch latest bookings for the returned customers
-      const latestBookings =
-        customerIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-              `SELECT o.user_id as userId, o.booking_date_start as bookingDate, o.order_state as orderState
+        // Fetch latest bookings for the returned customers
+        const latestBookings =
+          customerIds.length > 0
+            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+                `SELECT o.user_id as userId, o.booking_date_start as bookingDate, o.order_state as orderState
          FROM \`order\` o
          WHERE o.id IN (
            SELECT MAX(id)
@@ -434,114 +461,115 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
            GROUP BY user_id
            )
          )`
-            )
-          : [];
+              )
+            : [];
 
-      const bookingMap = new Map();
-      latestBookings.forEach((b) => {
-        bookingMap.set(Number(b.userId), {
-          bookingDate: b.bookingDate,
-          orderState: b.orderState,
-        });
-      });
-
-      // Fetch latest call logs with callbacks for the returned customers
-      const latestCallbacks =
-        customerIds.length > 0
-          ? await fastify.prisma.crm.crmCallLog.findMany({
-              where: {
-                legacyUserId: { in: customerIds },
-                callbackDate: { not: null },
-              },
-              orderBy: { createdAt: 'desc' },
-            })
-          : [];
-
-      const callbackMap = new Map();
-      latestCallbacks.forEach((c) => {
-        if (!callbackMap.has(c.legacyUserId)) {
-          callbackMap.set(c.legacyUserId, c.callbackDate);
-        }
-      });
-
-      // Fetch latest call logs for the returned customers
-      const latestCalls =
-        customerIds.length > 0
-          ? await fastify.prisma.crm.crmCallLog.findMany({
-              where: {
-                legacyUserId: { in: customerIds },
-              },
-              orderBy: { createdAt: 'desc' },
-            })
-          : [];
-
-      const latestCallMap = new Map();
-      latestCalls.forEach((c) => {
-        if (!latestCallMap.has(c.legacyUserId)) {
-          latestCallMap.set(c.legacyUserId, {
-            createdAt: c.createdAt.toISOString(),
-            durationSec: c.durationSec,
-            callResult: c.callResult,
-            note: c.note,
+        const bookingMap = new Map();
+        latestBookings.forEach((b) => {
+          bookingMap.set(Number(b.userId), {
+            bookingDate: b.bookingDate,
+            orderState: b.orderState,
           });
-        }
-      });
+        });
 
-      // Map raw SQL outputs to clean Customer interface types
-      const customers = dataResult.map((row: SafeAny) => {
-        const assigned = assignmentMap.get(Number(row.id)) || null;
-        const booking = bookingMap.get(Number(row.id)) || null;
-        const callbackDateVal = callbackMap.get(Number(row.id)) || null;
-        const lastCallVal = latestCallMap.get(Number(row.id)) || null;
+        // Fetch latest call logs with callbacks for the returned customers
+        const latestCallbacks =
+          customerIds.length > 0
+            ? await fastify.prisma.crm.crmCallLog.findMany({
+                where: {
+                  legacyUserId: { in: customerIds },
+                  callbackDate: { not: null },
+                },
+                orderBy: { createdAt: 'desc' },
+              })
+            : [];
+
+        const callbackMap = new Map();
+        latestCallbacks.forEach((c) => {
+          if (!callbackMap.has(c.legacyUserId)) {
+            callbackMap.set(c.legacyUserId, c.callbackDate);
+          }
+        });
+
+        // Fetch latest call logs for the returned customers
+        const latestCalls =
+          customerIds.length > 0
+            ? await fastify.prisma.crm.crmCallLog.findMany({
+                where: {
+                  legacyUserId: { in: customerIds },
+                },
+                orderBy: { createdAt: 'desc' },
+              })
+            : [];
+
+        const latestCallMap = new Map();
+        latestCalls.forEach((c) => {
+          if (!latestCallMap.has(c.legacyUserId)) {
+            latestCallMap.set(c.legacyUserId, {
+              createdAt: c.createdAt.toISOString(),
+              durationSec: c.durationSec,
+              callResult: c.callResult,
+              note: c.note,
+            });
+          }
+        });
+
+        // Map raw SQL outputs to clean Customer interface types
+        const customers = dataResult.map((row: SafeAny) => {
+          const assigned = assignmentMap.get(Number(row.id)) || null;
+          const booking = bookingMap.get(Number(row.id)) || null;
+          const callbackDateVal = callbackMap.get(Number(row.id)) || null;
+          const lastCallVal = latestCallMap.get(Number(row.id)) || null;
+
+          return {
+            id: Number(row.id),
+            name: row.name,
+            phone: row.phone,
+            email: row.email,
+            gender: row.gender,
+            dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
+            lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
+            daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
+            totalSpent: Number(row.totalSpent || 0),
+            totalVisits: Number(row.totalVisits || 0),
+            totalPromotionsUsed: Number(row.totalPromotionsUsed || 0),
+            totalReferrals: Number(row.totalReferrals || 0),
+            bucket: row.bucket as BucketType,
+            comboBalance:
+              row.bucket !== 'SINGLE'
+                ? {
+                    normalCount: Number(row.normalCount || 0),
+                    retainCount: Number(row.retainCount || 0),
+                    expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null,
+                  }
+                : null,
+            assignedStaff: assigned,
+            avatar: row.avatar,
+            lastBookingState: booking ? booking.orderState : null,
+            lastBookingDate: booking && booking.bookingDate ? new Date(booking.bookingDate).toISOString() : null,
+            callbackDate: callbackDateVal ? new Date(callbackDateVal).toISOString().split('T')[0] : null,
+            lastCall: lastCallVal,
+          };
+        });
 
         return {
-          id: Number(row.id),
-          name: row.name,
-          phone: row.phone,
-          email: row.email,
-          gender: row.gender,
-          dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
-          lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
-          daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
-          totalSpent: Number(row.totalSpent || 0),
-          totalVisits: Number(row.totalVisits || 0),
-          totalPromotionsUsed: Number(row.totalPromotionsUsed || 0),
-          totalReferrals: Number(row.totalReferrals || 0),
-          bucket: row.bucket as BucketType,
-          comboBalance:
-            row.bucket !== 'SINGLE'
-              ? {
-                  normalCount: Number(row.normalCount || 0),
-                  retainCount: Number(row.retainCount || 0),
-                  expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null,
-                }
-              : null,
-          assignedStaff: assigned,
-          avatar: row.avatar,
-          lastBookingState: booking ? booking.orderState : null,
-          lastBookingDate: booking && booking.bookingDate ? new Date(booking.bookingDate).toISOString() : null,
-          callbackDate: callbackDateVal ? new Date(callbackDateVal).toISOString().split('T')[0] : null,
-          lastCall: lastCallVal,
+          data: customers,
+          pagination: {
+            total,
+            page: pageNum,
+            limit: limitNum,
+            pages: Math.ceil(total / limitNum),
+          },
         };
-      });
-
-      return {
-        data: customers,
-        pagination: {
-          total,
-          page: pageNum,
-          limit: limitNum,
-          pages: Math.ceil(total / limitNum),
-        },
-      };
-    } catch (error) {
-      fastify.log.error(error as Error, 'Get customers list error:');
-      return reply.status(500).send({
-        error: 'Internal Server Error',
-        message: 'Failed to retrieve customers',
-      });
+      } catch (error) {
+        fastify.log.error(error as Error, 'Get customers list error:');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to retrieve customers',
+        });
+      }
     }
-  });
+  );
 
   // GET /api/customers/stats
   // Return count per bucket (COMBO_LIVE, COMBO_DEAD, SINGLE)

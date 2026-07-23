@@ -84,6 +84,11 @@ export default function CcThuongTab({
   const [selectedTxConsultantId, setSelectedTxConsultantId] = useState<number | undefined>(undefined);
   const [selectedTxConsultantName, setSelectedTxConsultantName] = useState<string | undefined>(undefined);
 
+  const [summary, setSummary] = useState<{
+    totalComboSales: number;
+    totalProductSales: number;
+    totalCcBonus: number;
+  } | null>(null);
   const [activeStaff, setActiveStaff] = useState<{ userId: number; displayName: string; avatar?: string | null }[]>([]);
 
   // Sync external consultant filter if passed
@@ -108,11 +113,15 @@ export default function CcThuongTab({
 
       if (res && res.data) {
         setData(res.data);
+        if (res.summary) {
+          setSummary(res.summary);
+        }
         if (res.activeStaff) {
           setActiveStaff(res.activeStaff);
         }
       } else {
         setData([]);
+        setSummary(null);
       }
     } catch (err) {
       console.error('Lỗi tải dữ liệu thưởng CC:', err);
@@ -125,18 +134,21 @@ export default function CcThuongTab({
     fetchData();
   }, [dateRange, selectedStore]);
 
-  // Aggregate Top KPI Cards
-  const totalComboBonus = useMemo(() => {
-    return data.reduce((acc, curr) => acc + (curr.combo_count || 0) * 200000, 0);
-  }, [data]);
+  // Aggregate Top KPI Cards (Prioritize Fastify backend summary calculation)
+  const totalComboSales = useMemo(() => {
+    return summary?.totalComboSales ?? data.reduce((acc, curr) => acc + (curr.combo_sales || 0), 0);
+  }, [summary, data]);
 
-  const totalProductBonus = useMemo(() => {
-    return data.reduce((acc, curr) => acc + (curr.product_count || 0) * 50000, 0);
-  }, [data]);
+  const totalProductSales = useMemo(() => {
+    return (
+      summary?.totalProductSales ??
+      data.reduce((acc, curr) => acc + (curr.product_sales || 0) + (curr.single_sales || 0), 0)
+    );
+  }, [summary, data]);
 
   const totalCcBonus = useMemo(() => {
-    return data.reduce((acc, curr) => acc + (curr.daily_bonus || 0), 0);
-  }, [data]);
+    return summary?.totalCcBonus ?? data.reduce((acc, curr) => acc + (curr.daily_bonus || 0), 0);
+  }, [summary, data]);
 
   // Level 1: Aggregated Leaderboard
   const leaderboardData = useMemo<DailySalesBonusLeaderboardEntry[]>(() => {
@@ -286,9 +298,15 @@ export default function CcThuongTab({
                 >
                   {name}
                 </span>
-                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">· {formatStoreCode(record.store)}</span>
+                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
+                  · {formatStoreCode(record.store)}
+                </span>
                 {isSelected && (
-                  <Tag color="gold" icon={<CheckCircleOutlined />} className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap">
+                  <Tag
+                    color="gold"
+                    icon={<CheckCircleOutlined />}
+                    className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap"
+                  >
                     Đang lọc
                   </Tag>
                 )}
@@ -384,7 +402,9 @@ export default function CcThuongTab({
       key: 'totalSales',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-amber-400 text-xs">{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
+        <span className="tabular-nums font-bold text-amber-400 text-xs">
+          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+        </span>
       ),
     },
     {
@@ -434,7 +454,9 @@ export default function CcThuongTab({
           <div className="flex items-center gap-1 whitespace-nowrap">
             <span className="font-medium text-xs whitespace-nowrap">{val}</span>
             {record.store_code && (
-              <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">· {formatStoreCode(record.store_code)}</span>
+              <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
+                · {formatStoreCode(record.store_code)}
+              </span>
             )}
           </div>
         </Space>
@@ -487,9 +509,7 @@ export default function CcThuongTab({
       key: 'debt_collected',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums text-xs text-slate-400">
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
-        </span>
+        <span className="tabular-nums text-xs text-slate-400">{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
       ),
     },
     {
@@ -507,7 +527,9 @@ export default function CcThuongTab({
       key: 'debt',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums text-xs text-orange-400/80">-{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
+        <span className="tabular-nums text-xs text-orange-400/80">
+          -{Math.round(val || 0).toLocaleString('vi-VN')} đ
+        </span>
       ),
     },
     {
@@ -528,7 +550,10 @@ export default function CcThuongTab({
       align: 'right' as const,
       width: 110,
       render: (val: number) => (
-        <Tag color={val >= 2 ? 'green' : val >= 1 ? 'gold' : 'blue'} className="tabular-nums font-bold text-xs py-0 px-1.5 m-0">
+        <Tag
+          color={val >= 2 ? 'green' : val >= 1 ? 'gold' : 'blue'}
+          className="tabular-nums font-bold text-xs py-0 px-1.5 m-0"
+        >
           {val.toFixed(1)}%
         </Tag>
       ),
@@ -557,8 +582,8 @@ export default function CcThuongTab({
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Thưởng Combo"
-              value={totalComboBonus}
+              title="Doanh Thu Combo"
+              value={totalComboSales}
               suffix="đ"
               precision={0}
               valueStyle={{ color: '#1890ff', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
@@ -573,8 +598,8 @@ export default function CcThuongTab({
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Thưởng Bán Sản Phẩm"
-              value={totalProductBonus}
+              title="Doanh Thu SP & DV Lẻ"
+              value={totalProductSales}
               suffix="đ"
               precision={0}
               valueStyle={{ color: '#722ed1', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
@@ -590,7 +615,7 @@ export default function CcThuongTab({
           >
             <div className="flex justify-between items-start">
               <Statistic
-                title="Tổng Thưởng CC Tháng/Tuần"
+                title="Tổng Thưởng CC Bonus"
                 value={totalCcBonus}
                 suffix="đ"
                 precision={0}

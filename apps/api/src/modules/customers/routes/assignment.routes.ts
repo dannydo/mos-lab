@@ -4,56 +4,75 @@ import { requireAuth } from '../../../middlewares/auth.js';
 export async function registerAssignmentRoutes(fastify: FastifyInstance) {
   // POST /api/customers/assign
   // Assign multiple customers to a staff member
-  fastify.post('/customers/assign', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { customerIds, staffId } = request.body as { customerIds: number[]; staffId: number };
-    const adminUser = request.user as { id: number; role: string };
+  fastify.post(
+    '/customers/assign',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        tags: ['Customers'],
+        summary: 'Assign customers to staff member (Admin only)',
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: 'object',
+          required: ['customerIds', 'staffId'],
+          properties: {
+            customerIds: { type: 'array', items: { type: 'integer' } },
+            staffId: { type: 'integer' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { customerIds, staffId } = request.body as { customerIds: number[]; staffId: number };
+      const adminUser = request.user as { id: number; role: string };
 
-    if (adminUser.role !== 'admin') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền phân bổ khách hàng.' });
+      if (adminUser.role !== 'admin') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền phân bổ khách hàng.' });
+      }
+
+      if (!customerIds || !Array.isArray(customerIds) || customerIds.length === 0 || !staffId) {
+        return reply.status(400).send({ error: 'Bad Request', message: 'customerIds and staffId are required' });
+      }
+
+      try {
+        // 1. Get current assignments for all selected customerIds to know prevStaffId
+        const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+          where: { legacyUserId: { in: customerIds } },
+        });
+        const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
+
+        // 2. Generate a unique batch ID
+        const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+        // 3. Perform upserts and create history entries in a transaction
+        await fastify.prisma.crm.$transaction([
+          ...customerIds.map((cid) =>
+            fastify.prisma.crm.crmCustomerAssignment.upsert({
+              where: { legacyUserId: cid },
+              update: { staffId, assignedBy: adminUser.id },
+              create: { legacyUserId: cid, staffId, assignedBy: adminUser.id },
+            })
+          ),
+          ...customerIds.map((cid) =>
+            fastify.prisma.crm.crmAssignmentHistory.create({
+              data: {
+                batchId,
+                legacyUserId: cid,
+                prevStaffId: assignmentMap.get(cid) ?? null,
+                newStaffId: staffId,
+                assignedBy: adminUser.id,
+              },
+            })
+          ),
+        ]);
+
+        return { success: true, count: customerIds.length, batchId };
+      } catch (error) {
+        fastify.log.error({ err: error }, 'Assign customers error');
+        return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to assign customers' });
+      }
     }
-
-    if (!customerIds || !Array.isArray(customerIds) || customerIds.length === 0 || !staffId) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'customerIds and staffId are required' });
-    }
-
-    try {
-      // 1. Get current assignments for all selected customerIds to know prevStaffId
-      const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-        where: { legacyUserId: { in: customerIds } },
-      });
-      const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
-
-      // 2. Generate a unique batch ID
-      const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-
-      // 3. Perform upserts and create history entries in a transaction
-      await fastify.prisma.crm.$transaction([
-        ...customerIds.map((cid) =>
-          fastify.prisma.crm.crmCustomerAssignment.upsert({
-            where: { legacyUserId: cid },
-            update: { staffId, assignedBy: adminUser.id },
-            create: { legacyUserId: cid, staffId, assignedBy: adminUser.id },
-          })
-        ),
-        ...customerIds.map((cid) =>
-          fastify.prisma.crm.crmAssignmentHistory.create({
-            data: {
-              batchId,
-              legacyUserId: cid,
-              prevStaffId: assignmentMap.get(cid) ?? null,
-              newStaffId: staffId,
-              assignedBy: adminUser.id,
-            },
-          })
-        ),
-      ]);
-
-      return { success: true, count: customerIds.length, batchId };
-    } catch (error) {
-      fastify.log.error({ err: error }, 'Assign customers error');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to assign customers' });
-    }
-  });
+  );
 
   // POST /api/customers/unassign
   // Unassign multiple customers (remove their assignments)

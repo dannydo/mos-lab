@@ -1745,97 +1745,116 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/kpi/trends
-  fastify.get('/kpi/trends', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { startDate, endDate, staffId } = request.query as {
-      startDate?: string;
-      endDate?: string;
-      staffId?: string;
-    };
-
-    const user = request.user as { id: number; role: string };
-    let targetStaffId: number | undefined = undefined;
-    if (user.role === 'admin') {
-      if (staffId) targetStaffId = parseInt(staffId, 10);
-    } else {
-      targetStaffId = user.id;
-    }
-
-    const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 7);
-
-    try {
-      const logs = await fastify.prisma.crm.crmCallLog.findMany({
-        where: {
-          createdAt: { gte: start, lte: new Date(end.getTime() + 24 * 60 * 60 * 1000) },
-          ...(targetStaffId !== undefined ? { staffId: targetStaffId } : {}),
+  fastify.get(
+    '/kpi/trends',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        tags: ['KPI'],
+        summary: 'Get KPI call breakdown and daily trends',
+        security: [{ bearerAuth: [] }],
+        querystring: {
+          type: 'object',
+          properties: {
+            startDate: { type: 'string' },
+            endDate: { type: 'string' },
+            staffId: { type: 'string' },
+          },
         },
-        select: {
-          callResult: true,
-          outcome: true,
-        },
-      });
-
-      const breakdown = {
-        BOOKED: 0,
-        CALL_BACK: 0,
-        NO_ANSWER: 0,
-        BUSY: 0,
-        WRONG_NUMBER: 0,
-        OTHERS: 0,
+      },
+    },
+    async (request, reply) => {
+      const { startDate, endDate, staffId } = request.query as {
+        startDate?: string;
+        endDate?: string;
+        staffId?: string;
       };
 
-      logs.forEach((l) => {
-        if (l.callResult === 'NO_ANSWER') {
-          breakdown.NO_ANSWER++;
-        } else if (l.callResult === 'BUSY') {
-          breakdown.BUSY++;
-        } else if (l.callResult === 'WRONG_NUMBER') {
-          breakdown.WRONG_NUMBER++;
-        } else if (l.outcome === 'BOOKED') {
-          breakdown.BOOKED++;
-        } else if (l.outcome === 'CALL_BACK') {
-          breakdown.CALL_BACK++;
-        } else {
-          breakdown.OTHERS++;
-        }
-      });
-
-      const dailyKpis = await fastify.prisma.crm.crmStaffKpi.findMany({
-        where: {
-          kpiDate: { gte: start, lte: end },
-          ...(targetStaffId !== undefined ? { staffId: targetStaffId } : {}),
-        },
-        orderBy: { kpiDate: 'asc' },
-      });
-
-      const dailyTrendsMap = new Map<string, { date: string; planned: number; called: number }>();
-
-      const current = new Date(start);
-      while (current <= end) {
-        const dStr = current.toLocaleDateString('en-CA');
-        dailyTrendsMap.set(dStr, { date: dStr, planned: 0, called: 0 });
-        current.setDate(current.getDate() + 1);
+      const user = request.user as { id: number; role: string };
+      let targetStaffId: number | undefined = undefined;
+      if (user.role === 'admin') {
+        if (staffId) targetStaffId = parseInt(staffId, 10);
+      } else {
+        targetStaffId = user.id;
       }
 
-      dailyKpis.forEach((k) => {
-        const dStr = k.kpiDate.toLocaleDateString('en-CA');
-        const existing = dailyTrendsMap.get(dStr) || { date: dStr, planned: 0, called: 0 };
-        existing.planned += k.totalPlanned;
-        existing.called += k.totalCalled;
-        dailyTrendsMap.set(dStr, existing);
-      });
+      const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 7);
 
-      const dailyTrends = Array.from(dailyTrendsMap.values());
+      try {
+        const logs = await fastify.prisma.crm.crmCallLog.findMany({
+          where: {
+            createdAt: { gte: start, lte: new Date(end.getTime() + 24 * 60 * 60 * 1000) },
+            ...(targetStaffId !== undefined ? { staffId: targetStaffId } : {}),
+          },
+          select: {
+            callResult: true,
+            outcome: true,
+          },
+        });
 
-      return {
-        breakdown,
-        dailyTrends,
-      };
-    } catch (err: SafeAny) {
-      fastify.log.error(err as SafeAny, 'KPI trends error');
-      return reply.status(500).send({
-        error: 'Internal Server Error',
-        message: 'Failed to retrieve KPI trend statistics',
-      });
+        const breakdown = {
+          BOOKED: 0,
+          CALL_BACK: 0,
+          NO_ANSWER: 0,
+          BUSY: 0,
+          WRONG_NUMBER: 0,
+          OTHERS: 0,
+        };
+
+        logs.forEach((l) => {
+          if (l.callResult === 'NO_ANSWER') {
+            breakdown.NO_ANSWER++;
+          } else if (l.callResult === 'BUSY') {
+            breakdown.BUSY++;
+          } else if (l.callResult === 'WRONG_NUMBER') {
+            breakdown.WRONG_NUMBER++;
+          } else if (l.outcome === 'BOOKED') {
+            breakdown.BOOKED++;
+          } else if (l.outcome === 'CALL_BACK') {
+            breakdown.CALL_BACK++;
+          } else {
+            breakdown.OTHERS++;
+          }
+        });
+
+        const dailyKpis = await fastify.prisma.crm.crmStaffKpi.findMany({
+          where: {
+            kpiDate: { gte: start, lte: end },
+            ...(targetStaffId !== undefined ? { staffId: targetStaffId } : {}),
+          },
+          orderBy: { kpiDate: 'asc' },
+        });
+
+        const dailyTrendsMap = new Map<string, { date: string; planned: number; called: number }>();
+
+        const current = new Date(start);
+        while (current <= end) {
+          const dStr = current.toLocaleDateString('en-CA');
+          dailyTrendsMap.set(dStr, { date: dStr, planned: 0, called: 0 });
+          current.setDate(current.getDate() + 1);
+        }
+
+        dailyKpis.forEach((k) => {
+          const dStr = k.kpiDate.toLocaleDateString('en-CA');
+          const existing = dailyTrendsMap.get(dStr) || { date: dStr, planned: 0, called: 0 };
+          existing.planned += k.totalPlanned;
+          existing.called += k.totalCalled;
+          dailyTrendsMap.set(dStr, existing);
+        });
+
+        const dailyTrends = Array.from(dailyTrendsMap.values());
+
+        return {
+          breakdown,
+          dailyTrends,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error(err as SafeAny, 'KPI trends error');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to retrieve KPI trend statistics',
+        });
+      }
     }
-  });
+  );
 }

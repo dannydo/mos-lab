@@ -167,6 +167,37 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
 - **Mục đích đo lường**: Đơn đếm `Booked` đại diện cho **hiệu suất lao động (năng suất công việc)** của Booker tạo ra trong ca/ngày/tuần/tháng đó.
 - **Không dùng OR với booking_date_start**: Tuyệt đối không dùng câu lệnh `OR` hợp nhất với `booking_date_start` (ngày khách hẹn đến) khi đếm số lượng đặt lịch của Booker.
 
+## 8. Unified Business Logic & Fastify Backend Model Rule (Single Source of Truth)
+- **Khi có từ 2 vị trí trở lên cần xử lý/tính toán cùng một loại thông tin/chỉ số (Business Logic)**:
+  - **Không duplicate logic**: Tuyệt đối không tính toán hay tự `reduce` rải rác ở Frontend hay viết nhiều câu SQL inline lệch nhau.
+  - **Tập trung tại Fastify Backend Model / Service**: Bắt buộc xây dựng Model/Service tập trung tại Fastify Backend (`apps/api`), định nghĩa kiểu dữ liệu chuẩn tại `@mos-lab/shared`.
+  - **Mục đích**: Đảm bảo tất cả các trang, tab báo cáo, Leaderboard và API xuất file nhận kết quả tính toán đồng bộ 100% từng đồng từ một Nguồn dữ liệu chuẩn duy nhất (Single Source of Truth).
+
+## 9. CC Bonus DB Synchronization & Order Regeneration Rules
+1. **Nguồn Dữ liệu Thưởng CC Chuẩn**:
+   - Khi hiển thị thưởng CC Bonus trên tất cả các tab báo cáo (CC Leaderboard, CC Xoay, CC Thu nhập), query trực tiếp từ `staff_bonus` với `bonus_type = 'Cash'` và `staff_bonus_rule_id = 248`.
+   - Dữ liệu này phản ánh chính xác số tiền kế toán đã chi trả, giữ nguyên mức Level chốt tại thời điểm hoàn thành ca (Post-shift Level) và các khoản thưởng lẻ $0,5\text{đ}$ từ các ca chia 50/50 sau khi chạy script `regenerate order batch` (`OrderRegenerationService.php`).
+
+2. **Quy tắc Reset Điểm Đầu Tháng**:
+   - Điểm lũy kế tính Level CC được tính dồn theo tháng bắt đầu từ `YYYY-MM-01 00:00:00`.
+   - Level CC = $\lfloor \text{monthly\_pts} / 100 \rfloor + 1$.
+
+3. **Cơ chế Dự phòng Khi DB Thiếu Dữ liệu**:
+   - Trường hợp DB legacy chưa kịp chạy regenerate hoặc bị thiếu log `Cash`, `CcKpiService` tự động dùng công thức $\text{Level} \times 65\text{đ}$ (chia 50/50 nếu CC In != CC Out) để dự phòng.
+
+## 10. FAL (Fix, Adjust, Log) & Midnight Regeneration Rules
+1. **Quy tắc Nghiệp vụ FAL (Fix, Adjust, Log)**:
+   - **Fix**: Sửa mi hỏng $\le 25$ phút $\rightarrow$ KTV sửa mi được điểm Banana, CC được thưởng thêm; KTV cũ làm hỏng mi bị trừ thưởng (`_punishBonus`).
+   - **Adjust**: Chỉnh dáng mi $\rightarrow$ KTV cũ bị trừ điểm/thưởng đền bù.
+   - **Log**: Ghi nhận log mi $\rightarrow$ Luôn được cộng điểm Banana.
+   - **Bóc tách SQL**: Truy vấn SQL của KTV Xoay & CC Xoay bắt buộc bóc tách cột `falRule` từ `next_fix_order_service_id`, `next_adjust_order_service_id`, `s.service_type IN ('Fix', 'Adjust', 'Log')` và `tracking_key`.
+
+2. **Quy tắc Cronjob Regenerate Nửa Đêm (02:00 AM ICT)**:
+   - Cronjob batch regenerate trên Prod đặt vào **02:00 AM, 02:10 AM, 02:20 AM giờ Việt Nam (`Asia/Ho_Chi_Minh`)** quét 3 ngày lùi (`1 day ago`, `2 days ago`, `3 days ago`) để làm sạch 100% rủi ro race condition cuối ngày.
+
+
+
+
 ---
 
 # 📞 OmiCall Switchboard Diagnostic & Testing Rules

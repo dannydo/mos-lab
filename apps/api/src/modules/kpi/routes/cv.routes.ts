@@ -85,38 +85,23 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
           COALESCE(checkin_p.full_name, '') AS ccInName,
           COALESCE(checkout_p.full_name, '') AS ccOutName,
 
-          COALESCE(SUM(CASE 
-              WHEN sb.bonus_type = 'Cash' AND sb.user_id = os.assigned_staff_id
-              THEN sb.bonus_amount ELSE 0 
-          END), 0) AS techBonus,
-          
-          COALESCE(MAX(CASE 
-              WHEN sb.bonus_type = 'Cash' AND sb.user_id = os.assigned_staff_id 
-              THEN sb.bonus_amount ELSE 0 
-          END), 0) / 1000 AS techLevel,
+          COALESCE(sb_agg.techBonus, 0) AS techBonus,
+          COALESCE(sb_agg.techLevel, 0) AS techLevel,
+          COALESCE(sb_agg.techPoints, 0) AS techPoints,
+          COALESCE(sb_agg.classPts, 0) AS classPts,
+          COALESCE(sb_agg.fanPts, 0) AS fanPts,
+          COALESCE(sb_agg.typePts, 0) AS typePts,
+          COALESCE(sb_agg.lashPts, 0) AS lashPts,
+          COALESCE(sb_agg.designPts, 0) AS designPts,
+          COALESCE(sb_agg.colorPts, 0) AS colorPts,
 
-          COALESCE(SUM(CASE 
-              WHEN sb.bonus_type = 'BonusPoint' AND sb.user_id = os.assigned_staff_id
-              THEN sb.bonus_amount ELSE 0 
-          END), 0) AS techPoints,
-
-          COALESCE(SUM(CASE WHEN sbr.type = 'OrderServiceClass' AND sb.bonus_type = 'BonusPoint' AND sb.user_id = os.assigned_staff_id THEN sb.bonus_amount ELSE 0 END), 0) AS classPts,
-          COALESCE(SUM(CASE WHEN sbr.type = 'OrderServiceAttributeFan' AND sb.bonus_type = 'BonusPoint' AND sb.user_id = os.assigned_staff_id THEN sb.bonus_amount ELSE 0 END), 0) AS fanPts,
-          COALESCE(SUM(CASE WHEN sbr.type = 'OrderServiceType' AND sb.bonus_type = 'BonusPoint' AND sb.user_id = os.assigned_staff_id THEN sb.bonus_amount ELSE 0 END), 0) AS typePts,
-          COALESCE(SUM(CASE WHEN sbr.type = 'OrderServiceAttributeLashes' AND sb.bonus_type = 'BonusPoint' AND sb.user_id = os.assigned_staff_id THEN sb.bonus_amount ELSE 0 END), 0) AS lashPts,
-          COALESCE(SUM(CASE WHEN sbr.type = 'OrderServiceAttributeDesign' AND sb.bonus_type = 'BonusPoint' AND sb.user_id = os.assigned_staff_id THEN sb.bonus_amount ELSE 0 END), 0) AS designPts,
-          COALESCE(SUM(CASE WHEN sbr.type = 'OrderServiceAttributeColor' AND sb.bonus_type = 'BonusPoint' AND sb.user_id = os.assigned_staff_id THEN sb.bonus_amount ELSE 0 END), 0) AS colorPts,
-
-          MAX(CASE 
+          CASE 
               WHEN os.next_fix_order_service_id > 0 THEN 'Fix'
               WHEN os.next_adjust_order_service_id > 0 THEN 'Adjust'
               WHEN s.service_type IN ('Fix', 'Adjust', 'Log') THEN s.service_type
-              WHEN sbr.type IN ('OrderServiceType', 'OrderServicePrice') AND sbr.value_required IN ('Log', 'Fix', 'Adjust') THEN sbr.value_required
-              WHEN sb.tracking_key LIKE '%"next_service_type":"Fix"%' THEN 'Fix'
-              WHEN sb.tracking_key LIKE '%"next_service_type":"Adjust"%' THEN 'Adjust'
-              WHEN sb.tracking_key LIKE '%"next_service_type":"Log"%' THEN 'Log'
+              WHEN sb_agg.falRule IS NOT NULL AND sb_agg.falRule != '' THEN sb_agg.falRule
               ELSE '' 
-          END) AS falRule
+          END AS falRule
 
         FROM order_service os
         JOIN \`order\` o ON os.order_id = o.id
@@ -128,11 +113,33 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_profile client_p ON o.user_id = client_p.user_id
         LEFT JOIN user_profile checkin_p ON os.check_in_staff_id = checkin_p.user_id
         LEFT JOIN user_profile checkout_p ON os.check_out_staff_id = checkout_p.user_id
-        LEFT JOIN staff_bonus sb ON os.id = sb.order_service_id
-        LEFT JOIN staff_bonus_rule sbr ON sb.staff_bonus_rule_id = sbr.id
+        LEFT JOIN (
+          SELECT 
+            sb.order_service_id,
+            sb.user_id,
+            SUM(CASE WHEN sb.bonus_type = 'Cash' THEN sb.bonus_amount ELSE 0 END) AS techBonus,
+            MAX(CASE WHEN sb.bonus_type = 'Cash' THEN sb.bonus_amount ELSE 0 END) / 1000 AS techLevel,
+            SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS techPoints,
+            SUM(CASE WHEN sbr.type = 'OrderServiceClass' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS classPts,
+            SUM(CASE WHEN sbr.type = 'OrderServiceAttributeFan' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS fanPts,
+            SUM(CASE WHEN sbr.type = 'OrderServiceType' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS typePts,
+            SUM(CASE WHEN sbr.type = 'OrderServiceAttributeLashes' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS lashPts,
+            SUM(CASE WHEN sbr.type = 'OrderServiceAttributeDesign' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS designPts,
+            SUM(CASE WHEN sbr.type = 'OrderServiceAttributeColor' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS colorPts,
+            MAX(CASE 
+                WHEN sbr.type IN ('OrderServiceType', 'OrderServicePrice') AND sbr.value_required IN ('Log', 'Fix', 'Adjust') THEN sbr.value_required
+                WHEN sb.tracking_key LIKE '%"next_service_type":"Fix"%' THEN 'Fix'
+                WHEN sb.tracking_key LIKE '%"next_service_type":"Adjust"%' THEN 'Adjust'
+                WHEN sb.tracking_key LIKE '%"next_service_type":"Log"%' THEN 'Log'
+                ELSE ''
+            END) AS falRule
+          FROM staff_bonus sb
+          JOIN staff_bonus_rule sbr ON sb.staff_bonus_rule_id = sbr.id
+          WHERE sb.order_service_id > 0
+          GROUP BY sb.order_service_id, sb.user_id
+        ) sb_agg ON os.id = sb_agg.order_service_id AND os.assigned_staff_id = sb_agg.user_id
 
         WHERE ${whereCond}
-        GROUP BY os.id, ro.actual_booking_date_start
         ORDER BY ro.actual_booking_date_start ASC, os.id ASC
       `;
 

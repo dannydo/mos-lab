@@ -1,6 +1,8 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import dotenv from 'dotenv';
 import path from 'path';
 import prismaPlugin from './plugins/prisma.js';
@@ -40,6 +42,30 @@ const start = async () => {
     // Register JWT
     await server.register(jwt, {
       secret: process.env.JWT_SECRET || 'super_secret_mos_lab_jwt_key_development_only',
+    });
+
+    // Register Swagger Documentation
+    await server.register(swagger, {
+      openapi: {
+        info: {
+          title: 'mos-lab CRM API',
+          description: 'Fastify Backend API for mos-lab CRM & KPI Gamification Platform',
+          version: '1.0.0',
+        },
+        components: {
+          securitySchemes: {
+            bearerAuth: {
+              type: 'http',
+              scheme: 'bearer',
+              bearerFormat: 'JWT',
+            },
+          },
+        },
+      },
+    });
+
+    await server.register(swaggerUi, {
+      routePrefix: '/documentation',
     });
 
     // Register Prisma plugin

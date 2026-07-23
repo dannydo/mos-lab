@@ -6,6 +6,7 @@ import {
   DailySalesBonusConsultantRecord,
   DailySalesBonusTransaction,
 } from '@mos-lab/shared';
+import { CcKpiService } from '../kpi/services/cc-kpi.service.js';
 
 type SafeAny = any;
 
@@ -113,6 +114,14 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
                 },
               },
               total: { type: 'number' },
+              summary: {
+                type: 'object',
+                properties: {
+                  totalComboSales: { type: 'number' },
+                  totalProductSales: { type: 'number' },
+                  totalCcBonus: { type: 'number' },
+                },
+              },
               activeStaff: {
                 type: 'array',
                 items: {
@@ -137,42 +146,42 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-    const { dateFrom, dateTo, consultantId, storeId } = request.query as {
-      dateFrom?: string;
-      dateTo?: string;
-      consultantId?: string;
-      storeId?: string;
-    };
+      const { dateFrom, dateTo, consultantId, storeId } = request.query as {
+        dateFrom?: string;
+        dateTo?: string;
+        consultantId?: string;
+        storeId?: string;
+      };
 
-    const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-    const endStr = dateTo || new Date().toLocaleDateString('en-CA');
+      const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
+      const endStr = dateTo || new Date().toLocaleDateString('en-CA');
 
-    const config = await getBonusConfig(fastify);
-    const activeCcIds = await getActiveCcIds(fastify);
+      const config = await getBonusConfig(fastify);
+      const activeCcIds = await getActiveCcIds(fastify);
 
-    try {
-      // Fetch CC staff profiles (filtered strictly by Global CC Config if configured)
-      let staffFilterClause = `up.provider = 'Staff' AND up.is_disabled = 0 AND (
+      try {
+        // Fetch CC staff profiles (filtered strictly by Global CC Config if configured)
+        let staffFilterClause = `up.provider = 'Staff' AND up.is_disabled = 0 AND (
         ugl.user_group_name LIKE '%Client Consultant%'
         OR up.user_id IN (SELECT DISTINCT user_id FROM staff_payroll_client_consultant)
         OR up.full_name LIKE '%CC%'
         OR up.user_id IN (SELECT DISTINCT check_in_staff_id FROM order_service WHERE check_in_staff_id IS NOT NULL)
       )`;
 
-      if (activeCcIds && activeCcIds.length > 0) {
-        staffFilterClause += ` AND up.user_id IN (${activeCcIds.join(',')})`;
-      }
-
-      if (consultantId && consultantId !== 'ALL') {
-        if (!isNaN(Number(consultantId))) {
-          staffFilterClause += ` AND up.user_id = ${Number(consultantId)}`;
-        } else {
-          const escapedName = consultantId.replace(/'/g, "''");
-          staffFilterClause += ` AND up.full_name LIKE '%${escapedName}%'`;
+        if (activeCcIds && activeCcIds.length > 0) {
+          staffFilterClause += ` AND up.user_id IN (${activeCcIds.join(',')})`;
         }
-      }
 
-      const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        if (consultantId && consultantId !== 'ALL') {
+          if (!isNaN(Number(consultantId))) {
+            staffFilterClause += ` AND up.user_id = ${Number(consultantId)}`;
+          } else {
+            const escapedName = consultantId.replace(/'/g, "''");
+            staffFilterClause += ` AND up.full_name LIKE '%${escapedName}%'`;
+          }
+        }
+
+        const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT DISTINCT up.user_id as userId, up.full_name as displayName, up.avatar as avatar
         FROM \`user_profile\` up
         JOIN \`staff_profile\` sp ON sp.user_id = up.user_id
@@ -181,30 +190,30 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         ORDER BY up.full_name ASC
       `);
 
-      if (staffProfiles.length === 0) {
-        return { data: [], total: 0, activeStaff: [] };
-      }
+        if (staffProfiles.length === 0) {
+          return { data: [], total: 0, activeStaff: [] };
+        }
 
-      const staffMap = new Map<number, { name: string; avatar: string | null; store: string }>();
-      staffProfiles.forEach((s) => {
-        staffMap.set(Number(s.userId), {
-          name: s.displayName,
-          avatar: s.avatar ? String(s.avatar) : null,
-          store: s.displayName.includes('PXL') ? 'PXL' : 'De Tham',
+        const staffMap = new Map<number, { name: string; avatar: string | null; store: string }>();
+        staffProfiles.forEach((s) => {
+          staffMap.set(Number(s.userId), {
+            name: s.displayName,
+            avatar: s.avatar ? String(s.avatar) : null,
+            store: s.displayName.includes('PXL') ? 'PXL' : 'De Tham',
+          });
         });
-      });
 
-      const staffIds = Array.from(staffMap.keys());
-      const staffIdsListStr = staffIds.join(',');
+        const staffIds = Array.from(staffMap.keys());
+        const staffIdsListStr = staffIds.join(',');
 
-      let storeFilterClause = '';
-      if (storeId && storeId !== 'ALL') {
-        const escapedStore = storeId.toLowerCase().replace(/'/g, "''");
-        storeFilterClause = ` AND LOWER(cs.client_store_key) LIKE '%${escapedStore}%'`;
-      }
+        let storeFilterClause = '';
+        if (storeId && storeId !== 'ALL') {
+          const escapedStore = storeId.toLowerCase().replace(/'/g, "''");
+          storeFilterClause = ` AND LOWER(cs.client_store_key) LIKE '%${escapedStore}%'`;
+        }
 
-      // 1. Query Single Services (order_service)
-      const singleSqlQuery = `
+        // 1. Query Single Services (order_service)
+        const singleSqlQuery = `
         SELECT 
           DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
           COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
@@ -228,8 +237,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         ORDER BY sale_date DESC, staff_id ASC
       `;
 
-      // 2. Query Combo Packages (order_service_combo)
-      const comboSqlQuery = `
+        // 2. Query Combo Packages (order_service_combo)
+        const comboSqlQuery = `
         SELECT 
           DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
           COALESCE(
@@ -263,8 +272,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           ${storeFilterClause}
       `;
 
-      // 3. Query Physical Products (order_product)
-      const productSqlQuery = `
+        // 3. Query Physical Products (order_product)
+        const productSqlQuery = `
         SELECT 
           DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
           COALESCE(
@@ -292,8 +301,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           ${storeFilterClause}
       `;
 
-      // 4. Query Debt Payments (user_debt_payment)
-      const debtPaymentSqlQuery = `
+        // 4. Query Debt Payments (user_debt_payment)
+        const debtPaymentSqlQuery = `
         SELECT 
           DATE_FORMAT(udp.date_created, '%Y-%m-%d') as sale_date,
           COALESCE(udp.created_staff_id, ud.user_debt_payment_staff_id, ud.created_staff_id) as staff_id,
@@ -306,8 +315,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         GROUP BY sale_date, staff_id
       `;
 
-      // 5. Query New Debts (user_debt)
-      const newDebtSqlQuery = `
+        // 5. Query New Debts (user_debt)
+        const newDebtSqlQuery = `
         SELECT 
           DATE_FORMAT(ud.date_created, '%Y-%m-%d') as sale_date,
           ud.created_staff_id as staff_id,
@@ -319,8 +328,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         GROUP BY sale_date, staff_id
       `;
 
-      // 6. Query Green Circle Visits (Lượt khách đi lẻ hoặc còn 1 combo cuối)
-      const greenVisitSqlQuery = `
+        // 6. Query Green Circle Visits (Lượt khách đi lẻ hoặc còn 1 combo cuối)
+        const greenVisitSqlQuery = `
         SELECT 
           DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
           COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
@@ -336,8 +345,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         GROUP BY sale_date, staff_id
       `;
 
-      // 7. Query Total Visits (Tổng lượt khách đã tiếp)
-      const totalVisitSqlQuery = `
+        // 7. Query Total Visits (Tổng lượt khách đã tiếp)
+        const totalVisitSqlQuery = `
         SELECT 
           DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
           COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
@@ -352,157 +361,167 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         GROUP BY sale_date, staff_id
       `;
 
-      const [singleRows, comboRows, productRows, debtPaymentRows, newDebtRows, greenVisitRows, totalVisitRows] =
-        await Promise.all([
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(singleSqlQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSqlQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productSqlQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(debtPaymentSqlQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(newDebtSqlQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(greenVisitSqlQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(totalVisitSqlQuery),
-        ]);
+        const [singleRows, comboRows, productRows, debtPaymentRows, newDebtRows, greenVisitRows, totalVisitRows] =
+          await Promise.all([
+            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(singleSqlQuery),
+            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSqlQuery),
+            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productSqlQuery),
+            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(debtPaymentSqlQuery),
+            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(newDebtSqlQuery),
+            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(greenVisitSqlQuery),
+            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(totalVisitSqlQuery),
+          ]);
 
-      // Group by Date + Staff
-      const mapKey = (d: string, uid: number) => `${d}_${uid}`;
-      const grouped = new Map<string, DailySalesBonusConsultantRecord>();
+        // Group by Date + Staff
+        const mapKey = (d: string, uid: number) => `${d}_${uid}`;
+        const grouped = new Map<string, DailySalesBonusConsultantRecord>();
 
-      const getOrCreateRecord = (d: string, uid: number, store_code?: string) => {
-        const k = mapKey(d, uid);
-        if (!grouped.has(k)) {
-          const sInfo = staffMap.get(uid) || { name: `Staff #${uid}`, avatar: null, store: 'PXL' };
-          grouped.set(k, {
-            id: k,
-            date: d,
-            user_id: uid,
-            consultant_name: sInfo.name,
-            avatar: sInfo.avatar,
-            store_code: store_code || sInfo.store,
-            single_sales: 0,
-            combo_sales: 0,
-            combo_count: 0,
-            product_sales: 0,
-            product_count: 0,
-            debt_collected: 0,
-            vat: 0,
-            debt: 0,
-            total_sales: 0,
-            commission_rate_percent: 0,
-            daily_bonus: 0,
-            green_visits: 0,
-            total_visits: 0,
-          });
-        }
-        return grouped.get(k)!;
-      };
+        const getOrCreateRecord = (d: string, uid: number, store_code?: string) => {
+          const k = mapKey(d, uid);
+          if (!grouped.has(k)) {
+            const sInfo = staffMap.get(uid) || { name: `Staff #${uid}`, avatar: null, store: 'PXL' };
+            grouped.set(k, {
+              id: k,
+              date: d,
+              user_id: uid,
+              consultant_name: sInfo.name,
+              avatar: sInfo.avatar,
+              store_code: store_code || sInfo.store,
+              single_sales: 0,
+              combo_sales: 0,
+              combo_count: 0,
+              product_sales: 0,
+              product_count: 0,
+              debt_collected: 0,
+              vat: 0,
+              debt: 0,
+              total_sales: 0,
+              commission_rate_percent: 0,
+              daily_bonus: 0,
+              green_visits: 0,
+              total_visits: 0,
+            });
+          }
+          return grouped.get(k)!;
+        };
 
-      // Accumulate Single Services
-      singleRows.forEach((row) => {
-        const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id), row.store_code);
-        const price = Number(row.total_price || 0);
-        const tax = Number(row.tax_amount || 0);
+        // Accumulate Single Services
+        singleRows.forEach((row) => {
+          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id), row.store_code);
+          const price = Number(row.total_price || 0);
+          const tax = Number(row.tax_amount || 0);
 
-        rec.single_sales += price;
-        rec.vat += tax;
-      });
+          rec.single_sales += price;
+          rec.vat += tax;
+        });
 
-      // Accumulate Combos
-      comboRows.forEach((row) => {
-        const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id), row.store_code);
-        const price = Number(row.total_price || 0);
-        const qty = Number(row.quantity || 1);
-        const tax = Number(row.tax_amount || 0);
+        // Accumulate Combos
+        comboRows.forEach((row) => {
+          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id), row.store_code);
+          const price = Number(row.total_price || 0);
+          const qty = Number(row.quantity || 1);
+          const tax = Number(row.tax_amount || 0);
 
-        rec.combo_sales += price;
-        rec.combo_count! += qty;
-        rec.vat += tax;
-      });
+          rec.combo_sales += price;
+          rec.combo_count! += qty;
+          rec.vat += tax;
+        });
 
-      // Accumulate Products
-      productRows.forEach((row) => {
-        const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id), row.store_code);
-        const price = Number(row.total_price || 0);
-        const qty = Number(row.quantity || 1);
-        const tax = Number(row.tax_amount || 0);
+        // Accumulate Products
+        productRows.forEach((row) => {
+          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id), row.store_code);
+          const price = Number(row.total_price || 0);
+          const qty = Number(row.quantity || 1);
+          const tax = Number(row.tax_amount || 0);
 
-        rec.product_sales += price;
-        rec.product_count! += qty;
-        rec.vat += tax;
-      });
+          rec.product_sales += price;
+          rec.product_count! += qty;
+          rec.vat += tax;
+        });
 
-      // Accumulate Debt Payments (Thu Nợ)
-      debtPaymentRows.forEach((row) => {
-        const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
-        rec.debt_collected += Number(row.debt_collected || 0);
-      });
+        // Accumulate Debt Payments (Thu Nợ)
+        debtPaymentRows.forEach((row) => {
+          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
+          rec.debt_collected += Number(row.debt_collected || 0);
+        });
 
-      // Accumulate New Debts (Nợ Mới)
-      newDebtRows.forEach((row) => {
-        const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
-        rec.debt += Number(row.debt_amount || 0);
-      });
+        // Accumulate New Debts (Nợ Mới)
+        newDebtRows.forEach((row) => {
+          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
+          rec.debt += Number(row.debt_amount || 0);
+        });
 
-      // Accumulate Green Circle Visits
-      greenVisitRows.forEach((row) => {
-        const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
-        rec.green_visits = (rec.green_visits || 0) + Number(row.green_visits || 0);
-      });
+        // Accumulate Green Circle Visits
+        greenVisitRows.forEach((row) => {
+          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
+          rec.green_visits = (rec.green_visits || 0) + Number(row.green_visits || 0);
+        });
 
-      // Accumulate Total Visits
-      totalVisitRows.forEach((row) => {
-        const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
-        rec.total_visits = (rec.total_visits || 0) + Number(row.total_visits || 0);
-      });
+        // Accumulate Total Visits
+        totalVisitRows.forEach((row) => {
+          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
+          rec.total_visits = (rec.total_visits || 0) + Number(row.total_visits || 0);
+        });
 
-      // Calculate totals, matching commission rate percent, and daily bonus
-      const result: DailySalesBonusConsultantRecord[] = Array.from(grouped.values()).map((rec) => {
-        rec.single_sales = Math.round(rec.single_sales);
-        rec.combo_sales = Math.round(rec.combo_sales);
-        rec.product_sales = Math.round(rec.product_sales);
-        rec.debt_collected = Math.round(rec.debt_collected);
-        rec.vat = Math.round(rec.vat);
-        rec.debt = Math.round(rec.debt);
+        // Calculate totals, matching commission rate percent, and daily bonus
+        const result: DailySalesBonusConsultantRecord[] = Array.from(grouped.values()).map((rec) => {
+          rec.single_sales = Math.round(rec.single_sales);
+          rec.combo_sales = Math.round(rec.combo_sales);
+          rec.product_sales = Math.round(rec.product_sales);
+          rec.debt_collected = Math.round(rec.debt_collected);
+          rec.vat = Math.round(rec.vat);
+          rec.debt = Math.round(rec.debt);
 
-        // Total Sales for Bonus: Combo Sales + Product Sales + Debt Collected
-        const qualifyingSales = rec.combo_sales + rec.product_sales + rec.debt_collected;
-        const total_sales = Math.round(Math.max(0, qualifyingSales));
-        rec.total_sales = total_sales;
+          // Total Sales for Bonus: Combo Sales + Product Sales + Debt Collected
+          const qualifyingSales = rec.combo_sales + rec.product_sales + rec.debt_collected;
+          const total_sales = Math.round(Math.max(0, qualifyingSales));
+          rec.total_sales = total_sales;
 
-        // Match tier based on Total Sales before VAT
-        let matchedTierRate = 0.5;
-        if (total_sales >= 20000000) {
-          matchedTierRate = 2.5;
-        } else if (total_sales >= 15000000) {
-          matchedTierRate = 2.0;
-        } else if (total_sales >= 10000000) {
-          matchedTierRate = 1.5;
-        } else if (total_sales >= 5000000) {
-          matchedTierRate = 1.0;
-        } else {
-          matchedTierRate = 0.5;
-        }
-        rec.commission_rate_percent = matchedTierRate;
+          // Match tier based on Total Sales before VAT
+          let matchedTierRate = 0.5;
+          if (total_sales >= 20000000) {
+            matchedTierRate = 2.5;
+          } else if (total_sales >= 15000000) {
+            matchedTierRate = 2.0;
+          } else if (total_sales >= 10000000) {
+            matchedTierRate = 1.5;
+          } else if (total_sales >= 5000000) {
+            matchedTierRate = 1.0;
+          } else {
+            matchedTierRate = 0.5;
+          }
+          rec.commission_rate_percent = matchedTierRate;
 
-        // Daily Bonus: % Bonus on Total Sales
-        rec.daily_bonus = Math.round((total_sales * matchedTierRate) / 100);
+          // Daily Bonus: % Bonus on Total Sales
+          rec.daily_bonus = Math.round((total_sales * matchedTierRate) / 100);
 
-        return rec;
-      });
+          return rec;
+        });
 
-      return {
-        data: result,
-        total: result.length,
-        activeStaff: staffProfiles.map((s) => ({
-          userId: Number(s.userId),
-          displayName: s.displayName,
-          avatar: s.avatar ? String(s.avatar) : null,
-        })),
-      };
-    } catch (err) {
-      fastify.log.error(err as Error, 'Get daily sales bonus consultant error');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tải báo cáo thưởng CC.' });
+        const summary = {
+          totalComboSales: Math.round(result.reduce((sum, r) => sum + (r.combo_sales || 0), 0)),
+          totalProductSales: Math.round(
+            result.reduce((sum, r) => sum + (r.product_sales || 0) + (r.single_sales || 0), 0)
+          ),
+          totalCcBonus: Math.round(result.reduce((sum, r) => sum + (r.daily_bonus || 0), 0)),
+        };
+
+        return {
+          data: result,
+          total: result.length,
+          summary,
+          activeStaff: staffProfiles.map((s) => ({
+            userId: Number(s.userId),
+            displayName: s.displayName,
+            avatar: s.avatar ? String(s.avatar) : null,
+          })),
+        };
+      } catch (err) {
+        fastify.log.error(err as Error, 'Get daily sales bonus consultant error');
+        return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tải báo cáo thưởng CC.' });
+      }
     }
-  });
+  );
 
   // 2. GET /api/gamification/daily-sales-bonus/config
   fastify.get('/gamification/daily-sales-bonus/config', async (request, reply) => {

@@ -37,6 +37,11 @@ export interface DailySalesBonusConsultantRecord {
 export interface DailySalesBonusConsultantResponse {
   data: DailySalesBonusConsultantRecord[];
   total: number;
+  summary?: {
+    totalComboSales: number;
+    totalProductSales: number;
+    totalCcBonus: number;
+  };
   activeStaff?: { userId: number; displayName: string }[];
 }
 

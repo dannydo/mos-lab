@@ -227,7 +227,7 @@ export default function OmiCallWidget() {
         top: position ? `${position.y}px` : undefined,
         right: position ? undefined : '24px',
         bottom: position ? undefined : '24px',
-        zIndex: 9999,
+        zIndex: 10040,
         boxShadow: isDark
           ? '0 20px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
           : '0 20px 40px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
@@ -342,7 +342,7 @@ export default function OmiCallWidget() {
           width: '12px',
           height: '12px',
           cursor: 'se-resize',
-          zIndex: 10000,
+          zIndex: 10040,
         }}
         onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
       />
@@ -355,7 +355,7 @@ export default function OmiCallWidget() {
           width: '12px',
           height: '12px',
           cursor: 'sw-resize',
-          zIndex: 10000,
+          zIndex: 10040,
         }}
         onMouseDown={(e) => handleResizeStart(e, 'bottom-left')}
       />
@@ -368,7 +368,7 @@ export default function OmiCallWidget() {
           bottom: 0,
           height: '6px',
           cursor: 's-resize',
-          zIndex: 10000,
+          zIndex: 10040,
         }}
         onMouseDown={(e) => handleResizeStart(e, 'bottom')}
       />

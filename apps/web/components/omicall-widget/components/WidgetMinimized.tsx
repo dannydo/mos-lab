@@ -28,7 +28,7 @@ export const WidgetMinimized: React.FC<WidgetMinimizedProps> = ({
         top: position ? `${position.y}px` : undefined,
         right: position ? undefined : '24px',
         bottom: position ? undefined : '24px',
-        zIndex: 9999,
+        zIndex: 10040,
       }}
     >
       {callState === 'connected' ? (

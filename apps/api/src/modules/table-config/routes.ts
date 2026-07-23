@@ -15,43 +15,61 @@ import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
  */
 export async function tableConfigRoutes(fastify: FastifyInstance) {
   // GET /api/table-config/:tableId - Get table configurations (user-specific & default)
-  fastify.get('/table-config/:tableId', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { tableId } = request.params as { tableId: string };
-    const user = request.user as JwtUserPayload;
+  fastify.get(
+    '/table-config/:tableId',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        tags: ['TableConfig'],
+        summary: 'Get user and default table column preferences',
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: 'object',
+          required: ['tableId'],
+          properties: {
+            tableId: { type: 'string' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { tableId } = request.params as { tableId: string };
+      const user = request.user as JwtUserPayload;
 
-    if (!tableId) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Mã bảng (tableId) là bắt buộc',
-      });
+      if (!tableId) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Mã bảng (tableId) là bắt buộc',
+        });
+      }
+
+      try {
+        const userKey = `table_config:user:${user.id}:${tableId}`;
+        const defaultKey = `table_config:default:${tableId}`;
+
+        // Fetch user-specific config
+        const userRecord = await fastify.prisma.crm.crmConfig.findUnique({
+          where: { key: userKey },
+        });
+
+        // Fetch default template config
+        const defaultRecord = await fastify.prisma.crm.crmConfig.findUnique({
+          where: { key: defaultKey },
+        });
+
+        return {
+          userConfig: userRecord ? JSON.parse(userRecord.value) : null,
+          defaultConfig: defaultRecord ? JSON.parse(defaultRecord.value) : null,
+        };
+      } catch (error: SafeAny) {
+        fastify.log.error(`Fetch table-config error for table ${tableId}:`, error);
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Không thể lấy cấu hình bảng',
+        });
+      }
     }
-
-    try {
-      const userKey = `table_config:user:${user.id}:${tableId}`;
-      const defaultKey = `table_config:default:${tableId}`;
-
-      // Fetch user-specific config
-      const userRecord = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: userKey },
-      });
-
-      // Fetch default template config
-      const defaultRecord = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: defaultKey },
-      });
-
-      return {
-        userConfig: userRecord ? JSON.parse(userRecord.value) : null,
-        defaultConfig: defaultRecord ? JSON.parse(defaultRecord.value) : null,
-      };
-    } catch (error: SafeAny) {
-      fastify.log.error(`Fetch table-config error for table ${tableId}:`, error);
-      return reply.status(500).send({
-        error: 'Internal Server Error',
-        message: 'Không thể lấy cấu hình bảng',
-      });
-    }
-  });
+  );
 
   // POST /api/table-config/:tableId - Save table configuration (user-specific or default template)
   fastify.post('/table-config/:tableId', { preHandler: [requireAuth] }, async (request, reply) => {
