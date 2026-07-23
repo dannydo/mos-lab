@@ -631,31 +631,52 @@ export async function staffRoutes(fastify: FastifyInstance) {
           username = `${username}@wingslashes.com`;
         }
 
-        // Check if there is already a staff member with this legacyStaffId
-        const existingByLegacyId = await fastify.prisma.crm.crmStaff.findFirst({
+        // Multi-level anti-duplicate check before creating new staff
+        let matchedStaff = await fastify.prisma.crm.crmStaff.findFirst({
           where: { legacyStaffId: id },
         });
 
-        if (existingByLegacyId) {
-          // Update details, keeping current role/password, but syncing email/phone/joinedAt/displayName/avatarUrl/gender/birthDate/address/baseSalary/hourlyWage
+        if (!matchedStaff && email) {
+          matchedStaff = await fastify.prisma.crm.crmStaff.findFirst({
+            where: {
+              OR: [{ email: email }, { username: email }, { username: username }],
+            },
+          });
+        }
+
+        if (!matchedStaff && phone) {
+          matchedStaff = await fastify.prisma.crm.crmStaff.findFirst({
+            where: { phone: phone },
+          });
+        }
+
+        if (!matchedStaff && name) {
+          matchedStaff = await fastify.prisma.crm.crmStaff.findFirst({
+            where: { displayName: name },
+          });
+        }
+
+        if (matchedStaff) {
+          // Update details, keeping current role/password, but syncing legacyStaffId/email/phone/joinedAt/displayName/avatarUrl/gender/birthDate/address/baseSalary/hourlyWage
           await fastify.prisma.crm.crmStaff.update({
-            where: { id: existingByLegacyId.id },
+            where: { id: matchedStaff.id },
             data: {
+              legacyStaffId: matchedStaff.legacyStaffId || id,
               displayName: name,
-              email: email,
-              phone: phone,
-              joinedAt: existingByLegacyId.joinedAt || joinedAt, // keep existing or use legacy date_created
-              avatarUrl: avatarUrl,
-              gender: existingByLegacyId.gender || gender,
-              birthDate: existingByLegacyId.birthDate || birthDate,
-              address: existingByLegacyId.address || address,
+              email: matchedStaff.email || email,
+              phone: matchedStaff.phone || phone,
+              joinedAt: matchedStaff.joinedAt || joinedAt,
+              avatarUrl: matchedStaff.avatarUrl || avatarUrl,
+              gender: matchedStaff.gender || gender,
+              birthDate: matchedStaff.birthDate || birthDate,
+              address: matchedStaff.address || address,
               baseSalary:
-                existingByLegacyId.baseSalary !== null && existingByLegacyId.baseSalary !== undefined
-                  ? existingByLegacyId.baseSalary
+                matchedStaff.baseSalary !== null && matchedStaff.baseSalary !== undefined
+                  ? matchedStaff.baseSalary
                   : baseSalary,
               hourlyWage:
-                existingByLegacyId.hourlyWage !== null && existingByLegacyId.hourlyWage !== undefined
-                  ? existingByLegacyId.hourlyWage
+                matchedStaff.hourlyWage !== null && matchedStaff.hourlyWage !== undefined
+                  ? matchedStaff.hourlyWage
                   : hourlyWage,
             },
           });
@@ -701,6 +722,166 @@ export async function staffRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Lỗi hệ thống khi đồng bộ tài khoản Wings Lashes',
+      });
+    }
+  });
+
+  // POST /api/staff/merge - Merge duplicate staff members into a target staff member (Admin only)
+  fastify.post('/staff/merge', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
+    const { targetStaffId, sourceStaffIds } = request.body as {
+      targetStaffId?: number;
+      sourceStaffIds?: number[];
+    };
+
+    if (!targetStaffId || !Array.isArray(sourceStaffIds) || sourceStaffIds.length === 0) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Vui lòng chọn tài khoản chính và ít nhất 1 tài khoản phụ để gộp',
+      });
+    }
+
+    const filteredSources = sourceStaffIds.filter((id) => id !== targetStaffId);
+    if (filteredSources.length === 0) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Tài khoản phụ bị trùng với tài khoản chính',
+      });
+    }
+
+    try {
+      const targetStaff = await fastify.prisma.crm.crmStaff.findUnique({
+        where: { id: targetStaffId },
+      });
+
+      if (!targetStaff) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Không tìm thấy tài khoản chính',
+        });
+      }
+
+      const sourceStaffs = await fastify.prisma.crm.crmStaff.findMany({
+        where: { id: { in: filteredSources } },
+      });
+
+      if (sourceStaffs.length === 0) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Không tìm thấy tài khoản phụ nào hợp lệ',
+        });
+      }
+
+      // Execute merge inside Prisma transaction
+      await fastify.prisma.crm.$transaction(async (tx) => {
+        for (const srcId of filteredSources) {
+          // 1. Reassign Customer Assignments
+          await tx.crmCustomerAssignment.updateMany({
+            where: { staffId: srcId },
+            data: { staffId: targetStaffId },
+          });
+
+          // 2. Reassign Call Logs
+          await tx.crmCallLog.updateMany({
+            where: { staffId: srcId },
+            data: { staffId: targetStaffId },
+          });
+
+          // 3. Reassign Daily Plans (Handling unique constraint legacyUserId + plannedDate)
+          const sourcePlans = await tx.crmDailyPlan.findMany({
+            where: { staffId: srcId },
+          });
+
+          for (const plan of sourcePlans) {
+            const existingPlan = await tx.crmDailyPlan.findFirst({
+              where: {
+                legacyUserId: plan.legacyUserId,
+                plannedDate: plan.plannedDate,
+              },
+            });
+            if (!existingPlan) {
+              await tx.crmDailyPlan.update({
+                where: { id: plan.id },
+                data: { staffId: targetStaffId },
+              });
+            } else {
+              await tx.crmDailyPlan.delete({
+                where: { id: plan.id },
+              });
+            }
+          }
+
+          // 4. Reassign KPI records (Handling unique constraint staffId + kpiDate)
+          const sourceKpis = await tx.crmStaffKpi.findMany({
+            where: { staffId: srcId },
+          });
+
+          for (const kpi of sourceKpis) {
+            const existingKpi = await tx.crmStaffKpi.findFirst({
+              where: {
+                staffId: targetStaffId,
+                kpiDate: kpi.kpiDate,
+              },
+            });
+            if (!existingKpi) {
+              await tx.crmStaffKpi.update({
+                where: { id: kpi.id },
+                data: { staffId: targetStaffId },
+              });
+            } else {
+              await tx.crmStaffKpi.delete({
+                where: { id: kpi.id },
+              });
+            }
+          }
+
+          // 5. Reassign Assignment Histories
+          await tx.crmAssignmentHistory.updateMany({
+            where: { prevStaffId: srcId },
+            data: { prevStaffId: targetStaffId },
+          });
+          await tx.crmAssignmentHistory.updateMany({
+            where: { newStaffId: srcId },
+            data: { newStaffId: targetStaffId },
+          });
+          await tx.crmAssignmentHistory.updateMany({
+            where: { assignedBy: srcId },
+            data: { assignedBy: targetStaffId },
+          });
+
+          // 6. Delete source staff
+          await tx.crmStaff.delete({
+            where: { id: srcId },
+          });
+        }
+
+        // 7. Consolidate missing fields on target staff from source staffs
+        const hrUpdates: Record<string, unknown> = {};
+        for (const src of sourceStaffs) {
+          if (!targetStaff.email && src.email) hrUpdates.email = src.email;
+          if (!targetStaff.phone && src.phone) hrUpdates.phone = src.phone;
+          if (!targetStaff.legacyStaffId && src.legacyStaffId) hrUpdates.legacyStaffId = src.legacyStaffId;
+          if (!targetStaff.birthDate && src.birthDate) hrUpdates.birthDate = src.birthDate;
+          if (!targetStaff.address && src.address) hrUpdates.address = src.address;
+          if (!targetStaff.avatarUrl && src.avatarUrl) hrUpdates.avatarUrl = src.avatarUrl;
+        }
+
+        if (Object.keys(hrUpdates).length > 0) {
+          await tx.crmStaff.update({
+            where: { id: targetStaffId },
+            data: hrUpdates,
+          });
+        }
+      });
+
+      return {
+        success: true,
+        message: `Gộp thành công ${sourceStaffs.length} tài khoản phụ vào tài khoản "${targetStaff.displayName}".`,
+      };
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Merge staff error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Lỗi hệ thống khi gộp nhân viên trùng lặp',
       });
     }
   });

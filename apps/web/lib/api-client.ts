@@ -467,6 +467,13 @@ export const apiClient = {
       const response = await api.post('/staff/bulk-update', data);
       return response.data;
     },
+    merge: async (data: {
+      targetStaffId: number;
+      sourceStaffIds: number[];
+    }): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/staff/merge', data);
+      return response.data;
+    },
   },
 
   roles: {

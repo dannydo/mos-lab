@@ -49,6 +49,7 @@ import {
   CheckOutlined,
   StopOutlined,
   CloseOutlined,
+  BranchesOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
@@ -120,6 +121,14 @@ export default function StaffPage() {
     handleClearSelection,
     handleBulkUpdateRole,
     handleBulkToggleActive,
+    // Merge Staff Modal States & Handlers
+    isMergeModalOpen,
+    setIsMergeModalOpen,
+    targetMergeStaffId,
+    setTargetMergeStaffId,
+    mergeSubmitting,
+    handleOpenMergeModal,
+    handleConfirmMerge,
     // Methods
     openStaffModal,
     handleStaffSubmit,
@@ -440,6 +449,29 @@ export default function StaffPage() {
                           Khóa tài khoản
                         </Button>
                       </Space>
+
+                      {selectedRowKeys.length >= 2 && (
+                        <>
+                          <Divider
+                            type="vertical"
+                            style={{ height: '24px', borderColor: themeMode === 'dark' ? '#333333' : '#cbd5e1' }}
+                          />
+                          <Button
+                            type="primary"
+                            icon={<BranchesOutlined />}
+                            onClick={handleOpenMergeModal}
+                            style={{
+                              background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                              borderColor: 'transparent',
+                              color: '#ffffff',
+                              fontWeight: '600',
+                              borderRadius: '6px',
+                            }}
+                          >
+                            Gộp trùng lặp
+                          </Button>
+                        </>
+                      )}
 
                       <Divider
                         type="vertical"
@@ -947,6 +979,104 @@ export default function StaffPage() {
           </div>
         )}
       </Drawer>
+
+      {/* Merge Staff Modal */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#8b5cf6' }}>
+            <BranchesOutlined style={{ fontSize: '20px' }} />
+            <span style={{ fontSize: '18px', fontWeight: 'bold' }}>Gộp Nhân Viên Trùng Lặp</span>
+          </div>
+        }
+        open={isMergeModalOpen}
+        onCancel={() => setIsMergeModalOpen(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setIsMergeModalOpen(false)}>
+            Hủy bỏ
+          </Button>,
+          <Popconfirm
+            key="confirm"
+            title="Xác nhận gộp tài khoản nhân viên?"
+            description="Tất cả lịch sử cuộc gọi, KPI và phân công khách hàng từ tài khoản phụ sẽ chuyển sang tài khoản chính. Các tài khoản phụ trùng lặp sẽ bị XÓA VĨNH VIỄN."
+            onConfirm={handleConfirmMerge}
+            okText="Đồng ý Gộp"
+            cancelText="Hủy"
+            okButtonProps={{ danger: true, loading: mergeSubmitting }}
+          >
+            <Button
+              type="primary"
+              loading={mergeSubmitting}
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                borderColor: 'transparent',
+                fontWeight: '600',
+              }}
+            >
+              Xác Nhận Gộp ({selectedRowKeys.length} tài khoản)
+            </Button>
+          </Popconfirm>,
+        ]}
+        width={650}
+      >
+        <div style={{ marginTop: '16px' }}>
+          <Paragraph type="secondary">
+            Bạn đang chọn <strong>{selectedRowKeys.length} nhân viên</strong> để gộp dữ liệu. Vui lòng chọn 1 nhân viên
+            làm <strong style={{ color: '#8b5cf6' }}>Tài khoản chính (Target)</strong> để giữ lại:
+          </Paragraph>
+
+          <Card
+            size="small"
+            style={{
+              background: themeMode === 'dark' ? '#1f1f1f' : '#f8fafc',
+              border: `1px solid ${themeMode === 'dark' ? '#333333' : '#e2e8f0'}`,
+              marginBottom: '16px',
+            }}
+          >
+            <Select
+              style={{ width: '100%' }}
+              placeholder="Chọn tài khoản chính giữ lại..."
+              value={targetMergeStaffId}
+              onChange={(val) => setTargetMergeStaffId(val)}
+            >
+              {staffList
+                .filter((s) => selectedRowKeys.includes(s.id))
+                .map((s) => (
+                  <Option key={s.id} value={s.id}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>
+                        <strong>{s.displayName}</strong> ({s.username})
+                      </span>
+                      <Tag color="purple">ID: {s.id}</Tag>
+                    </div>
+                  </Option>
+                ))}
+            </Select>
+          </Card>
+
+          {targetMergeStaffId && (
+            <div
+              style={{
+                padding: '12px 16px',
+                borderRadius: '8px',
+                background: themeMode === 'dark' ? '#1c1917' : '#f0fdf4',
+                border: `1px solid ${themeMode === 'dark' ? '#44403c' : '#bbf7d0'}`,
+              }}
+            >
+              <Text style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', color: '#10b981' }}>
+                ✓ Tài khoản chính giữ lại: {staffList.find((s) => s.id === targetMergeStaffId)?.displayName} (ID:{' '}
+                {targetMergeStaffId})
+              </Text>
+              <Text type="secondary" style={{ fontSize: '13px', display: 'block' }}>
+                ✕ Tài khoản phụ bị gộp & xóa:{' '}
+                {staffList
+                  .filter((s) => selectedRowKeys.includes(s.id) && s.id !== targetMergeStaffId)
+                  .map((s) => s.displayName)
+                  .join(', ')}
+              </Text>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

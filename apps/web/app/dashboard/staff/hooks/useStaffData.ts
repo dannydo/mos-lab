@@ -388,6 +388,55 @@ export function useStaffData(options?: UseStaffDataOptions) {
     }
   };
 
+  // Merge Staff Modal state & handlers
+  const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
+  const [targetMergeStaffId, setTargetMergeStaffId] = useState<number | null>(null);
+  const [mergeSubmitting, setMergeSubmitting] = useState(false);
+
+  const handleOpenMergeModal = () => {
+    if (selectedRowKeys.length < 2) {
+      optionsRef.current?.onError?.('Vui lòng chọn từ 2 nhân viên trở lên để thực hiện gộp trùng lặp');
+      return;
+    }
+    setTargetMergeStaffId(Number(selectedRowKeys[0]));
+    setIsMergeModalOpen(true);
+  };
+
+  const handleConfirmMerge = async () => {
+    if (!targetMergeStaffId) {
+      optionsRef.current?.onError?.('Vui lòng chọn 1 tài khoản làm Tài khoản chính (Target)');
+      return;
+    }
+
+    const selectedIds = selectedRowKeys.map((k) => Number(k));
+    const sourceStaffIds = selectedIds.filter((id) => id !== targetMergeStaffId);
+
+    if (sourceStaffIds.length === 0) {
+      optionsRef.current?.onError?.('Không tìm thấy tài khoản phụ để gộp');
+      return;
+    }
+
+    setMergeSubmitting(true);
+    try {
+      const res = await apiClient.staff.merge({
+        targetStaffId: targetMergeStaffId,
+        sourceStaffIds,
+      });
+      optionsRef.current?.onSuccess?.(res.message || 'Gộp nhân viên trùng lặp thành công');
+      setIsMergeModalOpen(false);
+      setSelectedRowKeys([]);
+      setTargetMergeStaffId(null);
+      fetchStaff();
+    } catch (err) {
+      console.error('Confirm merge error:', err);
+      optionsRef.current?.onError?.(
+        (err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi gộp nhân viên trùng lặp'
+      );
+    } finally {
+      setMergeSubmitting(false);
+    }
+  };
+
   return {
     activeTab,
     setActiveTab,
@@ -427,6 +476,14 @@ export function useStaffData(options?: UseStaffDataOptions) {
     handleClearSelection,
     handleBulkUpdateRole,
     handleBulkToggleActive,
+    // Merge Staff Modal States & Handlers
+    isMergeModalOpen,
+    setIsMergeModalOpen,
+    targetMergeStaffId,
+    setTargetMergeStaffId,
+    mergeSubmitting,
+    handleOpenMergeModal,
+    handleConfirmMerge,
     // Methods
     fetchStaff,
     fetchRoles,
