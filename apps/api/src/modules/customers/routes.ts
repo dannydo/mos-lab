@@ -3756,10 +3756,126 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const tipRate = totalVisits > 0 ? Number(((tipCount / totalVisits) * 100).toFixed(1)) : 0;
       const avgTip = tipCount > 0 ? Math.round(totalTips / tipCount) : 0;
 
-      // 5. Fetch Combo Balances
+      // 5. Fetch Combo Balances & Real Purchase Transactions
       const balanceSql = `
         SELECT 
-          usb.id,
+          CONCAT('osc_', osc.id) as id,
+          osc.service_id as serviceId,
+          osc.service_group as serviceGroup,
+          CASE WHEN o.date_created = (
+            SELECT MAX(o2.date_created) 
+            FROM (
+              SELECT o3.date_created, osc3.service_id, o3.user_id 
+              FROM order_service_combo osc3 
+              JOIN \`order\` o3 ON osc3.order_id = o3.id 
+              WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
+              UNION ALL
+              SELECT o3.date_created, os3.service_id, o3.user_id 
+              FROM order_service os3 
+              JOIN \`order\` o3 ON os3.order_id = o3.id 
+              WHERE o3.order_state = 'Completed' AND os3.total_price > 0
+                AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
+            ) o2 
+            WHERE o2.user_id = o.user_id AND o2.service_id = osc.service_id
+          ) THEN COALESCE(usb.normal_count, 0) ELSE 0 END as normalCount,
+          CASE WHEN o.date_created = (
+            SELECT MAX(o2.date_created) 
+            FROM (
+              SELECT o3.date_created, osc3.service_id, o3.user_id 
+              FROM order_service_combo osc3 
+              JOIN \`order\` o3 ON osc3.order_id = o3.id 
+              WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
+              UNION ALL
+              SELECT o3.date_created, os3.service_id, o3.user_id 
+              FROM order_service os3 
+              JOIN \`order\` o3 ON os3.order_id = o3.id 
+              WHERE o3.order_state = 'Completed' AND os3.total_price > 0
+                AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
+            ) o2 
+            WHERE o2.user_id = o.user_id AND o2.service_id = osc.service_id
+          ) THEN COALESCE(usb.retain_count, 0) ELSE 0 END as retainCount,
+          usb.date_expired as dateExpired,
+          o.date_created as dateCreated,
+          s.service_key as serviceKey,
+          COALESCE(sl.service_name, s.service_key) as serviceName,
+          sp.normal_count as packageNormalCount,
+          sp.service_price_package_key as packageKey,
+          usb.total_normal_balance_amount as totalNormalBalanceAmount,
+          usb.total_retain_balance_amount as totalRetainBalanceAmount,
+          osc.total_price as packagePrice,
+          up.full_name as creatorStaffName
+        FROM order_service_combo osc
+        JOIN \`order\` o ON osc.order_id = o.id
+        LEFT JOIN service s ON osc.service_id = s.id
+        LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
+        LEFT JOIN service_price sp ON osc.service_price_id = sp.id
+        LEFT JOIN user_profile up ON o.created_staff_id = up.user_id
+        LEFT JOIN user_service_balance usb ON usb.user_id = o.user_id AND usb.service_id = osc.service_id AND usb.service_price_id = osc.service_price_id
+        WHERE o.user_id = ? AND o.order_state = 'Completed' AND osc.total_price > 0
+
+        UNION ALL
+
+        SELECT 
+          CONCAT('os_', os.id) as id,
+          os.service_id as serviceId,
+          os.service_group as serviceGroup,
+          CASE WHEN o.date_created = (
+            SELECT MAX(o2.date_created) 
+            FROM (
+              SELECT o3.date_created, osc3.service_id, o3.user_id 
+              FROM order_service_combo osc3 
+              JOIN \`order\` o3 ON osc3.order_id = o3.id 
+              WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
+              UNION ALL
+              SELECT o3.date_created, os3.service_id, o3.user_id 
+              FROM order_service os3 
+              JOIN \`order\` o3 ON os3.order_id = o3.id 
+              WHERE o3.order_state = 'Completed' AND os3.total_price > 0
+                AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
+            ) o2 
+            WHERE o2.user_id = o.user_id AND o2.service_id = os.service_id
+          ) THEN COALESCE(usb.normal_count, 0) ELSE 0 END as normalCount,
+          CASE WHEN o.date_created = (
+            SELECT MAX(o2.date_created) 
+            FROM (
+              SELECT o3.date_created, osc3.service_id, o3.user_id 
+              FROM order_service_combo osc3 
+              JOIN \`order\` o3 ON osc3.order_id = o3.id 
+              WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
+              UNION ALL
+              SELECT o3.date_created, os3.service_id, o3.user_id 
+              FROM order_service os3 
+              JOIN \`order\` o3 ON os3.order_id = o3.id 
+              WHERE o3.order_state = 'Completed' AND os3.total_price > 0
+                AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
+            ) o2 
+            WHERE o2.user_id = o.user_id AND o2.service_id = os.service_id
+          ) THEN COALESCE(usb.retain_count, 0) ELSE 0 END as retainCount,
+          usb.date_expired as dateExpired,
+          o.date_created as dateCreated,
+          s.service_key as serviceKey,
+          COALESCE(sl.service_name, s.service_key) as serviceName,
+          sp.normal_count as packageNormalCount,
+          sp.service_price_package_key as packageKey,
+          usb.total_normal_balance_amount as totalNormalBalanceAmount,
+          usb.total_retain_balance_amount as totalRetainBalanceAmount,
+          os.total_price as packagePrice,
+          up.full_name as creatorStaffName
+        FROM order_service os
+        JOIN \`order\` o ON os.order_id = o.id
+        LEFT JOIN service s ON os.service_id = s.id
+        LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
+        LEFT JOIN service_price sp ON os.service_price_id = sp.id
+        LEFT JOIN user_profile up ON o.created_staff_id = up.user_id
+        LEFT JOIN user_service_balance usb ON usb.user_id = o.user_id AND usb.service_id = os.service_id AND usb.service_price_id = os.service_price_id
+        WHERE o.user_id = ? AND o.order_state = 'Completed'
+          AND (os.user_service_type = 'combo' OR s.service_group = 'combo')
+          AND os.total_price > 0
+
+        UNION ALL
+
+        SELECT 
+          CONCAT('usb_', usb.id) as id,
           usb.service_id as serviceId,
           usb.service_group as serviceGroup,
           usb.normal_count as normalCount,
@@ -3780,9 +3896,25 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LEFT JOIN service_price sp ON usb.service_price_id = sp.id
         LEFT JOIN user_profile up ON usb.created_staff_id = up.user_id
         WHERE usb.user_id = ?
-        ORDER BY usb.date_created DESC
+          AND NOT EXISTS (
+            SELECT 1 FROM order_service_combo osc2 
+            JOIN \`order\` o2 ON osc2.order_id = o2.id 
+            WHERE o2.user_id = usb.user_id AND osc2.service_id = usb.service_id AND osc2.service_price_id = usb.service_price_id AND o2.order_state = 'Completed' AND osc2.total_price > 0
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM order_service os2 
+            JOIN \`order\` o2 ON os2.order_id = o2.id 
+            WHERE o2.user_id = usb.user_id AND os2.service_id = usb.service_id AND os2.service_price_id = usb.service_price_id AND o2.order_state = 'Completed' AND os2.total_price > 0
+              AND (os2.user_service_type = 'combo' OR os2.service_group = 'combo')
+          )
+        ORDER BY dateCreated DESC
       `;
-      const comboBalances = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(balanceSql, customerId);
+      const comboBalances = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        balanceSql,
+        customerId,
+        customerId,
+        customerId
+      );
 
       // Fetch Gem Balance and transactions
       const gemBalanceRow = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
