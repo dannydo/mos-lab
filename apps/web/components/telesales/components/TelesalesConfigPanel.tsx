@@ -184,7 +184,7 @@ export default function TelesalesConfigPanel({
         <>
           <div className="flex-1 flex flex-col min-h-0 p-3">
             <p className={`text-[10px] ${themeMode === 'dark' ? 'text-gray-400' : 'text-gray-500'} mb-2 shrink-0`}>
-              Chọn nhân viên hiển thị trên bảng xếp hạng (Mặc định lọc theo vai trò Telesales):
+              Chọn nhân viên hiển thị trên bảng xếp hạng (Telesales Executive, Quản lý & Admin):
             </p>
             <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 custom-scrollbar min-h-0">
               {systemStaff.map((staff: SafeAny) => {

@@ -483,7 +483,8 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
       const fetchStaffList = async () => {
         try {
           const list = (await apiClient.customers.getStaff()) || [];
-          const filtered = list.filter((s: SafeAny) => s.role === 'telesales' || s.role === 'booker');
+          const ALLOWED_ROLES = ['telesales', 'manager', 'admin'];
+          const filtered = list.filter((s: SafeAny) => s.role && ALLOWED_ROLES.includes(String(s.role).toLowerCase()));
           setSystemStaff(filtered);
 
           if (!saved) {
