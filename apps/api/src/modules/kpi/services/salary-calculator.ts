@@ -135,11 +135,11 @@ export async function calculateBookerSalaryStats(
     const activeLegacyUserIds = Array.from(staffNameToLegacyIdMap.values());
 
     if (activeLegacyUserIds.length > 0) {
-      // Query all orders where created_staff_id is in activeLegacyUserIds and booking_date_start is in the range, and order_state !== 'Cancelled'
+      // Query all orders where created_staff_id is in activeLegacyUserIds and date_created is in the range (Rule #10: Booker productivity by creation date)
       const allOrders = await fastify.prisma.legacy.order.findMany({
         where: {
           created_staff_id: { in: activeLegacyUserIds },
-          booking_date_start: { gte: start, lte: end },
+          date_created: { gte: start, lte: end },
           order_state: { not: 'Cancelled' },
         },
         select: {
@@ -212,9 +212,10 @@ export async function calculateBookerSalaryStats(
           SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                  usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                  usbt.retain_count, usbt.used_staff_id, usbt.order_id,
-                 o.booking_date_start as o_booking_date_start
+                 COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
           FROM user_service_balance_transaction usbt
           LEFT JOIN \`order\` o ON o.id = usbt.order_id
+          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
           WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
         `)
             : [];

@@ -242,3 +242,11 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
      - Nhãn: `Thực tế chốt tháng:`
      - Màu sắc: Xám mờ (`text-slate-400`, `opacity-70`), không có dấu `~`.
      - Tooltip: `Dữ liệu tháng đã chốt (100% thời gian)`
+
+6. **Quy tắc Ghi nhận Doanh thu & Combo (`actual_booking_date_start` + `order_state = 'Completed'`)**:
+   - **Thời điểm Check-in Thực tế (`actual_booking_date_start`)**: Khi truy vấn ngày/giờ khách hàng thực tế đến làm dịch vụ tại tiệm, **bắt buộc phải lấy từ cột `report_order.actual_booking_date_start`** (thông qua `LEFT JOIN report_order ro ON o.id = ro.order_id`). Chuỗi ưu tiên thời gian: `COALESCE(ro.actual_booking_date_start, o.booking_date_start)` (2 cấp, đồng bộ WingsLashes `StaffBonusLevelState.php`).
+   - Tất cả các báo cáo tài chính, doanh số bán Combo (`$ Combo`), bán lẻ (`$ Single`), sản phẩm (`$ Product`), điểm thưởng CC và thu nhập CC **bắt buộc phải tính theo thời điểm check-in/hoàn thành thực tế và trạng thái đơn hàng đã hoàn tất (`order_state = 'Completed'`)**.
+   - **Tuyệt đối không dùng date_created cho Doanh thu/Combo**: Tuyệt đối không sử dụng ngày tạo đơn (`order.date_created`) để công nhận hay ghi nhận doanh số / combo đã bán cho các báo cáo doanh thu và KPI của CC.
+   - **Phân biệt với chỉ số Booker (Rule #7/Rule #10)**: Chỉ số đếm "Tạo lịch" của Booker dùng `date_created` (đo năng suất telesales tạo hẹn), còn chỉ số "Doanh thu & Combo" dùng `actual_booking_date_start` + `order_state = 'Completed'` (đo thực thu & nghiệm thu dịch vụ tại cửa hàng).
+   - **Đồng bộ cặp Query Listing & Stats (Dual-Query Alignment)**: Khi chỉnh sửa điều kiện lọc bucket/đơn hàng trong `apps/api/src/modules/customers/routes.ts`, **bắt buộc phải cập nhật đồng thời cả Listing Query (`bStr`) và Stats Query (`bStrStats`)** để đảm bảo số liệu trên bảng và số đếm trên thẻ tab khớp 100%, tránh lỗi syntax hoặc lệch data.
+

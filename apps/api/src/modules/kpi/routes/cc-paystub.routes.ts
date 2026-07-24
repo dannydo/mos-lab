@@ -126,18 +126,17 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       const workDaysQuery = `
         SELECT 
           ${staffExprOs} as staff_id,
-          COUNT(DISTINCT DATE(o.booking_date_start)) as active_days
+          COUNT(DISTINCT DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))) as active_days
         FROM \`order\` o
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         JOIN \`order_service\` os ON os.order_id = o.id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startPart} 00:00:00'
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND ${staffExprOs} IN (${validStaffListStr})
           ${storeFilterClause}
         GROUP BY staff_id
       `;
-
-
 
       // 5. Query Daily Sales Bonus (Combo & Product rewards)
       const staffExprOsc = `COALESCE(
@@ -152,15 +151,16 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
 
       const comboSalesQuery = `
         SELECT 
-          DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
           ${staffExprOsc} as staff_id,
           SUM(osc.service_price - osc.discount_amount) as combo_sales,
           SUM(osc.quantity) as combo_count
         FROM \`order\` o
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         JOIN \`order_service_combo\` osc ON osc.order_id = o.id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startPart} 00:00:00'
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND ${staffExprOsc} IN (${validStaffListStr})
           ${storeFilterClause}
         GROUP BY sale_date, staff_id
@@ -175,15 +175,16 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
 
       const productSalesQuery = `
         SELECT 
-          DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
           ${staffExprOp} as staff_id,
           SUM(op.total_price) as product_sales,
           SUM(op.quantity) as product_count
         FROM \`order\` o
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         JOIN \`order_product\` op ON op.order_id = o.id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startPart} 00:00:00'
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND ${staffExprOp} IN (${validStaffListStr})
           ${storeFilterClause}
         GROUP BY sale_date, staff_id
@@ -192,14 +193,15 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       // 6. Query Debt Payments collected
       const debtPaymentSalesQuery = `
         SELECT 
-          DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
           ${staffExprOp} as staff_id,
           SUM(o.total_price) as debt_collected
         FROM \`order\` o
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         JOIN \`order_product\` op ON op.order_id = o.id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startPart} 00:00:00'
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND ${staffExprOp} IN (${validStaffListStr})
           ${storeFilterClause}
         GROUP BY sale_date, staff_id
@@ -213,9 +215,10 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           COUNT(DISTINCT st.id) as tipped_visits_count
         FROM \`staff_tip\` st
         JOIN \`order\` o ON o.id = st.order_id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startPart} 00:00:00'
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND st.user_id IN (${validStaffListStr})
         GROUP BY st.user_id
       `;
@@ -263,7 +266,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       workDaysRows.forEach((r) => workDaysMap.set(Number(r.staff_id), Number(r.active_days || 0)));
 
       const xoayMap = new Map<number, { count: number; bonus: number }>();
-      
+
       if (xoayReportResult && Array.isArray(xoayReportResult.data)) {
         xoayReportResult.data.forEach((r: SafeAny) => {
           const uid = Number(r.consultantId || r.check_in_staff_id || r.check_out_staff_id);
@@ -487,9 +490,10 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         FROM \`report_staff\` rs
         LEFT JOIN (
           SELECT 
-            DATE(o.booking_date_start) as work_date,
+            DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start)) as work_date,
             COUNT(os.id) as service_count
           FROM \`order\` o
+          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
           JOIN \`order_service\` os ON os.order_id = o.id
           WHERE o.order_state = 'Completed'
             AND ${staffExprOs} = ${uid}
@@ -508,16 +512,17 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       if (!rows || rows.length === 0) {
         const fallbackQuery = `
           SELECT 
-            DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as work_date,
-            MIN(DATE_FORMAT(o.booking_date_start, '%H:%i:%s')) as first_in,
-            MAX(DATE_FORMAT(COALESCE(o.booking_date_end, o.booking_date_start), '%H:%i:%s')) as last_out,
+            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as work_date,
+            MIN(DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s')) as first_in,
+            MAX(DATE_FORMAT(COALESCE(o.booking_date_end, COALESCE(ro.actual_booking_date_start, o.booking_date_start)), '%H:%i:%s')) as last_out,
             8.00 as total_hours,
             COUNT(os.id) as service_count
           FROM \`order\` o
+          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
           JOIN \`order_service\` os ON os.order_id = o.id
           WHERE o.order_state = 'Completed'
-            AND o.booking_date_start >= '${startPart} 00:00:00'
-            AND o.booking_date_start <= '${endPart} 23:59:59'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
             AND ${staffExprOs} = ${uid}
           GROUP BY work_date
           ORDER BY work_date DESC

@@ -306,11 +306,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
             ) OR EXISTS (
               SELECT 1 FROM \`order\` o_nl
               JOIN order_service os_nl ON os_nl.order_id = o_nl.id
+              LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
               LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
               LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
               LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
               WHERE o_nl.user_id = u.id 
-                AND o_nl.date_created >= ? AND o_nl.date_created <= ? 
+                AND o_nl.order_state = 'Completed'
+                AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ? 
                 AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
                 AND COALESCE(NULLIF(os_nl.total_price, 0), sp_nl.service_price, 0) > 0
                 AND (sp_nl.service_price_package_key IS NULL OR (
@@ -326,11 +328,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
             ) OR EXISTS (
               SELECT 1 FROM \`order\` o_nl
               JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
+              LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
               LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
               LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
               LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
               WHERE o_nl.user_id = u.id 
-                AND o_nl.date_created >= ? AND o_nl.date_created <= ?
+                AND o_nl.order_state = 'Completed'
+                AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
                 AND osc_nl.total_price > 0
                 AND (sp_nl.service_price_package_key IS NULL OR (
                   LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
@@ -799,7 +803,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           SELECT 
             o.id as orderId,
             o.user_id as userId,
-            o.date_created as dateCreated,
+            COALESCE(osc.date_created, ro.actual_booking_date_start, o.booking_date_start) as dateCreated,
             o.created_staff_id as createdStaffId,
             up_created.full_name as createdStaffName,
             COALESCE(NULLIF(osc.total_price, 0), sp.service_price, 0) as comboPrice,
@@ -812,6 +816,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             up_cv.full_name as cvName
           FROM \`order\` o
           JOIN order_service_combo osc ON osc.order_id = o.id
+          LEFT JOIN report_order ro ON o.id = ro.order_id
           LEFT JOIN service s ON osc.service_id = s.id
           LEFT JOIN service_language sl ON osc.service_id = sl.service_id AND sl.language_id = 1
           LEFT JOIN service_price sp ON osc.service_price_id = sp.id
@@ -823,7 +828,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           LEFT JOIN user_profile up_out_os ON os.check_out_staff_id = up_out_os.user_id
           LEFT JOIN user_profile up_cv ON os.assigned_staff_id = up_cv.user_id
           WHERE o.user_id IN (${customerIds.join(',')})
-            AND o.date_created >= ? AND o.date_created <= ?
+            AND o.order_state = 'Completed'
+            AND COALESCE(osc.date_created, ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(osc.date_created, ro.actual_booking_date_start, o.booking_date_start) <= ?
             AND COALESCE(NULLIF(osc.total_price, 0), sp.service_price, 0) > 0
             AND (sp.service_price_package_key IS NULL OR (
               LOWER(sp.service_price_package_key) NOT LIKE '%single%'
@@ -841,7 +847,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           SELECT 
             o.id as orderId,
             o.user_id as userId,
-            o.date_created as dateCreated,
+            COALESCE(os.date_created, ro.actual_booking_date_start, o.booking_date_start) as dateCreated,
             o.created_staff_id as createdStaffId,
             up_created.full_name as createdStaffName,
             COALESCE(NULLIF(os.total_price, 0), sp.service_price, 0) as comboPrice,
@@ -854,6 +860,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             up_cv.full_name as cvName
           FROM \`order\` o
           JOIN order_service os ON os.order_id = o.id
+          LEFT JOIN report_order ro ON o.id = ro.order_id
           LEFT JOIN service s ON os.service_id = s.id
           LEFT JOIN service_language sl ON os.service_id = sl.service_id AND sl.language_id = 1
           LEFT JOIN service_price sp ON os.service_price_id = sp.id
@@ -862,7 +869,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           LEFT JOIN user_profile up_out ON os.check_out_staff_id = up_out.user_id
           LEFT JOIN user_profile up_cv ON os.assigned_staff_id = up_cv.user_id
           WHERE o.user_id IN (${customerIds.join(',')})
-            AND o.date_created >= ? AND o.date_created <= ?
+            AND o.order_state = 'Completed'
+            AND COALESCE(os.date_created, ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(os.date_created, ro.actual_booking_date_start, o.booking_date_start) <= ?
             AND (os.user_service_type = 'combo' OR s.service_group = 'combo')
             AND COALESCE(NULLIF(os.total_price, 0), sp.service_price, 0) > 0
             AND (sp.service_price_package_key IS NULL OR (
@@ -1272,44 +1280,48 @@ export async function customerRoutes(fastify: FastifyInstance) {
                   AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
                 ))
             ) OR EXISTS (
-              SELECT 1 FROM \`order\` o_nl
-              JOIN order_service os_nl ON os_nl.order_id = o_nl.id
-              LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
-              LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
-              LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-              WHERE o_nl.user_id = u.id 
-                AND o_nl.date_created >= ? AND o_nl.date_created <= ? 
-                AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
-                AND COALESCE(NULLIF(os_nl.total_price, 0), sp_nl.service_price, 0) > 0
-                AND (sp_nl.service_price_package_key IS NULL OR (
-                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-                ))
-                AND (sl_nl.service_name IS NULL OR (
-                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-                ))
+               SELECT 1 FROM \`order\` o_nl
+               JOIN order_service os_nl ON os_nl.order_id = o_nl.id
+               LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
+               LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
+               LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
+               LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+               WHERE o_nl.user_id = u.id 
+                 AND o_nl.order_state = 'Completed'
+                 AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ? 
+                 AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
+                 AND COALESCE(NULLIF(os_nl.total_price, 0), sp_nl.service_price, 0) > 0
+                 AND (sp_nl.service_price_package_key IS NULL OR (
+                   LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+                   AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+                   AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+                 ))
+                 AND (sl_nl.service_name IS NULL OR (
+                   LOWER(sl_nl.service_name) NOT LIKE '%single%'
+                   AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+                   AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+                 ))
             ) OR EXISTS (
-              SELECT 1 FROM \`order\` o_nl
-              JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
-              LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
-              LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
-              LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-              WHERE o_nl.user_id = u.id 
-                AND o_nl.date_created >= ? AND o_nl.date_created <= ?
-                AND osc_nl.total_price > 0
-                AND (sp_nl.service_price_package_key IS NULL OR (
-                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-                ))
-                AND (sl_nl.service_name IS NULL OR (
-                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-                ))
+               SELECT 1 FROM \`order\` o_nl
+               JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
+               LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
+               LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
+               LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
+               LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+               WHERE o_nl.user_id = u.id 
+                 AND o_nl.order_state = 'Completed'
+                 AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
+                 AND osc_nl.total_price > 0
+                 AND (sp_nl.service_price_package_key IS NULL OR (
+                   LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+                   AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+                   AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+                 ))
+                 AND (sl_nl.service_name IS NULL OR (
+                   LOWER(sl_nl.service_name) NOT LIKE '%single%'
+                   AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+                   AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+                 ))
             )
           )`);
           innerParams.push(dFromStr, dToStr, dFromStr, dToStr, dFromStr, dToStr);
@@ -3458,7 +3470,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       };
     } catch (error: SafeAny) {
       fastify.log.error({ err: error }, 'Get retain quota error');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi khi lấy thông tin Quota giữ data' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: 'Lỗi khi lấy thông tin Quota giữ data' });
     }
   });
 
@@ -3794,7 +3808,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return { data };
     } catch (error: SafeAny) {
       fastify.log.error({ err: error }, 'Get customer assignment timeline error');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve assignment timeline' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: 'Failed to retrieve assignment timeline' });
     }
   });
 
@@ -3920,13 +3936,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
         SELECT 
           o.id,
           o.order_key as orderKey,
-          o.date_created as dateCreated,
+          COALESCE(ro.actual_booking_date_start, o.booking_date_start) as dateCreated,
           o.total_price as totalPrice,
           o.order_state as orderState,
           o.booking_channels as bookingChannel
         FROM \`order\` o
+        LEFT JOIN report_order ro ON o.id = ro.order_id
         WHERE o.user_id = ? AND o.order_state = 'Completed'
-        ORDER BY o.date_created DESC
+        ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC
         LIMIT 50
       `;
 
@@ -5094,7 +5111,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       let countSql = `
         SELECT COUNT(*) as total
         FROM \`order\` o
-        WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
       `;
       const countParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
 
@@ -5130,7 +5148,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         SELECT 
           o.id,
           o.order_key as orderKey,
-          o.booking_date_start as bookingDateStart,
+          COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDateStart,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i') as actualBookingTime,
           o.booking_date_end as bookingDateEnd,
           o.booking_note as bookingNote,
           o.booking_channels as bookingChannel,
@@ -5148,8 +5167,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
             WHERE uc.user_id = o.user_id AND uc.is_disabled = 0
           ) as customerPhone
         FROM \`order\` o
+        LEFT JOIN report_order ro ON o.id = ro.order_id
         LEFT JOIN user_profile up ON o.user_id = up.user_id
-        WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
       `;
 
       const params: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
@@ -5178,7 +5198,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         sql += ` AND o.order_state NOT IN ('Completed', 'Cancelled')`;
       }
 
-      sql += ` ORDER BY o.booking_date_start ASC LIMIT ? OFFSET ?`;
+      sql += ` ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) ASC LIMIT ? OFFSET ?`;
       params.push(limitNum, offsetNum);
 
       const result = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, ...params);
@@ -5254,11 +5274,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
           o.id,
           o.order_state as orderState,
           o.total_price as totalPrice,
-          o.booking_date_start as bookingDateStart,
+          COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDateStart,
           o.user_id as userId,
           o.date_created as dateCreated
         FROM \`order\` o
-        WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
           AND o.order_state != 'Cancelled'
       `;
       const allOrdersParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
@@ -5293,9 +5314,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                usbt.retain_count, usbt.used_staff_id, usbt.order_id,
-               o.booking_date_start as o_booking_date_start
+               COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
         FROM user_service_balance_transaction usbt
         LEFT JOIN \`order\` o ON o.id = usbt.order_id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
       `)
           : [];
@@ -6096,9 +6118,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                usbt.retain_count, usbt.used_staff_id, usbt.order_id,
-               o.booking_date_start as o_booking_date_start
+               COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
         FROM user_service_balance_transaction usbt
         LEFT JOIN \`order\` o ON o.id = usbt.order_id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
       `)
           : [];

@@ -224,9 +224,7 @@ export class CcKpiService {
     const parsedId = consultantId && consultantId !== 'ALL' ? Number(consultantId) : 0;
     const filterStaffId = !isNaN(parsedId) && parsedId > 0 ? parsedId : 0;
     const filterStaffName =
-      consultantId && consultantId !== 'ALL' && isNaN(parsedId)
-        ? String(consultantId).toLowerCase().trim()
-        : '';
+      consultantId && consultantId !== 'ALL' && isNaN(parsedId) ? String(consultantId).toLowerCase().trim() : '';
 
     // Query from beginning of the month (monthStartStr) to endStr to build accurate MTD points & Level
     const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -336,13 +334,21 @@ export class CcKpiService {
           });
         }
       } else if (filterStaffName) {
-        if (String(row.ccInName || '').toLowerCase().includes(filterStaffName)) {
+        if (
+          String(row.ccInName || '')
+            .toLowerCase()
+            .includes(filterStaffName)
+        ) {
           staffTargets.push({
             staffId: checkInId || checkOutId,
             staffName: String(row.ccInName || row.ccOutName || 'N/A'),
             avatar: String(row.checkinAvatar || row.checkoutAvatar || ''),
           });
-        } else if (String(row.ccOutName || '').toLowerCase().includes(filterStaffName)) {
+        } else if (
+          String(row.ccOutName || '')
+            .toLowerCase()
+            .includes(filterStaffName)
+        ) {
           staffTargets.push({
             staffId: checkOutId || checkInId,
             staffName: String(row.ccOutName || row.ccInName || 'N/A'),
@@ -500,9 +506,10 @@ export class CcKpiService {
           SUM(COALESCE(osc.quantity, 1)) as combo_count
         FROM \`order\` o
         JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startStr} 00:00:00'
-          AND o.booking_date_start <= '${endStr} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
         GROUP BY staff_id
       ) combo ON combo.staff_id = sb.user_id
       WHERE sb.date_created >= ? AND sb.date_created <= ? ${activeCcFilter}
@@ -611,17 +618,18 @@ export class CcKpiService {
 
     const comboSalesQuery = `
       SELECT 
-        DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
+        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
         ${staffExprOsc} as staff_id,
         SUM(COALESCE(NULLIF(osc.total_price - osc.tax_amount, 0), osc.service_price - osc.discount_amount - osc.tax_amount, 0)) as combo_sales,
         SUM(COALESCE(osc.quantity, 1)) as combo_count,
         UPPER(cs.client_store_key) as store_code
       FROM \`order\` o
       JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
       LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
       WHERE o.order_state = 'Completed'
-        AND o.booking_date_start >= '${startStr} 00:00:00'
-        AND o.booking_date_start <= '${endStr} 23:59:59'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
         AND ${staffExprOsc} IN (${staffIdsListStr})
         ${storeFilterClause}
       GROUP BY sale_date, staff_id, store_code
@@ -636,17 +644,18 @@ export class CcKpiService {
 
     const productSalesQuery = `
       SELECT 
-        DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
+        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
         ${staffExprOp} as staff_id,
         SUM(op.total_price) as product_sales,
         SUM(op.quantity) as product_count,
         UPPER(cs.client_store_key) as store_code
       FROM \`order\` o
       JOIN \`order_product\` op ON op.order_id = o.id
+      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
       LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
       WHERE o.order_state = 'Completed'
-        AND o.booking_date_start >= '${startStr} 00:00:00'
-        AND o.booking_date_start <= '${endStr} 23:59:59'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
         AND ${staffExprOp} IN (${staffIdsListStr})
         ${storeFilterClause}
       GROUP BY sale_date, staff_id, store_code
@@ -662,16 +671,17 @@ export class CcKpiService {
 
     const singleSalesQuery = `
       SELECT 
-        DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
+        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
         ${staffExprOsSingle} as staff_id,
         SUM(os.total_price) as single_sales,
         UPPER(cs.client_store_key) as store_code
       FROM \`order\` o
       JOIN \`order_service\` os ON os.order_id = o.id
+      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
       LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
       WHERE o.order_state = 'Completed'
-        AND o.booking_date_start >= '${startStr} 00:00:00'
-        AND o.booking_date_start <= '${endStr} 23:59:59'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
         AND ${staffExprOsSingle} IN (${staffIdsListStr})
         AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
         AND LOWER(COALESCE(os.service_type, '')) NOT LIKE '%combo%'
@@ -845,10 +855,11 @@ export class CcKpiService {
         SUM(st.tip_amount * (st.tip_percentage / 100)) as totalCcTipBonus
       FROM \`staff_tip\` st
       JOIN \`order\` o ON st.order_id = o.id
+      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
       JOIN \`user_profile\` up ON up.user_id = st.user_id
       WHERE o.order_state = 'Completed'
-        AND o.booking_date_start >= '${startStr}'
-        AND o.booking_date_start <= '${endStr}'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr}'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr}'
         ${activeCcFilter}
         ${storeFilterClause}
       GROUP BY st.user_id, up.full_name, up.avatar

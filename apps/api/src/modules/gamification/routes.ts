@@ -221,7 +221,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         // 1. Query Single Services (order_service)
         const singleSqlQuery = `
         SELECT 
-          DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
           COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
           os.id as order_service_id,
           os.quantity,
@@ -232,9 +232,10 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         FROM \`order\` o
         JOIN \`order_service\` os ON os.order_id = o.id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startStr} 00:00:00'
-          AND o.booking_date_start <= '${endStr} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
           AND COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) IN (${staffIdsListStr})
           ${storeFilterClause}
           AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
@@ -246,7 +247,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         // 2. Query Combo Packages (order_service_combo)
         const comboSqlQuery = `
         SELECT 
-          DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
           COALESCE(
             osc.check_in_staff_id,
             osc.check_out_staff_id,
@@ -263,9 +264,10 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         FROM \`order\` o
         JOIN \`order_service_combo\` osc ON osc.order_id = o.id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startStr} 00:00:00'
-          AND o.booking_date_start <= '${endStr} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
           AND COALESCE(
             osc.check_in_staff_id,
             osc.check_out_staff_id,
@@ -281,7 +283,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         // 3. Query Physical Products (order_product)
         const productSqlQuery = `
         SELECT 
-          DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
           COALESCE(
             op.created_staff_id,
             (SELECT os.check_in_staff_id FROM \`order_service\` os WHERE os.order_id = op.order_id AND os.check_in_staff_id IS NOT NULL LIMIT 1),
@@ -295,9 +297,10 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         FROM \`order\` o
         JOIN \`order_product\` op ON op.order_id = o.id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startStr} 00:00:00'
-          AND o.booking_date_start <= '${endStr} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
           AND COALESCE(
             op.created_staff_id,
             (SELECT os.check_in_staff_id FROM \`order_service\` os WHERE os.order_id = op.order_id AND os.check_in_staff_id IS NOT NULL LIMIT 1),
@@ -337,14 +340,15 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         // 6. Query Green Circle Visits (Lượt khách đi lẻ hoặc còn 1 combo cuối)
         const greenVisitSqlQuery = `
         SELECT 
-          DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
           COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
           COUNT(os.id) as green_visits
         FROM \`order\` o
         JOIN \`order_service\` os ON os.order_id = o.id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startStr} 00:00:00'
-          AND o.booking_date_start <= '${endStr} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
           AND COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) IN (${staffIdsListStr})
           ${storeFilterClause}
           AND (os.user_service_type != 'combo' OR os.user_service_type = 'combo_last')
@@ -354,14 +358,15 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         // 7. Query Total Visits (Tổng lượt khách đã tiếp)
         const totalVisitSqlQuery = `
         SELECT 
-          DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as sale_date,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
           COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
           COUNT(os.id) as total_visits
         FROM \`order\` o
         JOIN \`order_service\` os ON os.order_id = o.id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startStr} 00:00:00'
-          AND o.booking_date_start <= '${endStr} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
           AND COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) IN (${staffIdsListStr})
           ${storeFilterClause}
         GROUP BY sale_date, staff_id
@@ -520,7 +525,10 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         const endDate = new Date(endStr);
         const todayDate = new Date(now.toISOString().slice(0, 10));
 
-        const totalDays = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        const totalDays = Math.max(
+          1,
+          Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+        );
 
         let elapsedRatio = 1.0;
         if (todayDate < startDate) {
@@ -528,7 +536,10 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         } else if (todayDate > endDate) {
           elapsedRatio = 1.0;
         } else {
-          const daysPassedBeforeToday = Math.max(0, Math.round((todayDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+          const daysPassedBeforeToday = Math.max(
+            0,
+            Math.round((todayDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+          );
           const totalElapsedDays = daysPassedBeforeToday + fractionToday;
           elapsedRatio = Math.min(1.0, Math.max(0.001, totalElapsedDays / totalDays));
         }
@@ -688,7 +699,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         SELECT 
           osc.id as order_service_id,
           o.id as order_id,
-          DATE_FORMAT(o.booking_date_start, '%H:%i:%s') as order_time,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
           up_cust.full_name as customer_name,
           UPPER(cs.client_store_key) as store_code,
           CONCAT('Combo #', osc.service_id, ' - ', COALESCE(osc.service_group, 'Gói Combo')) as item_title,
@@ -699,9 +710,10 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         JOIN \`order_service_combo\` osc ON osc.order_id = o.id
         LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${date} 00:00:00'
-          AND o.booking_date_start <= '${date} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
           ${staffFilterOsc}
       `;
 
@@ -710,7 +722,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         SELECT 
           op.id as order_service_id,
           o.id as order_id,
-          DATE_FORMAT(o.booking_date_start, '%H:%i:%s') as order_time,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
           up_cust.full_name as customer_name,
           UPPER(cs.client_store_key) as store_code,
           CONCAT('Sản Phẩm #', op.product_id) as item_title,
@@ -721,9 +733,10 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         JOIN \`order_product\` op ON op.order_id = o.id
         LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${date} 00:00:00'
-          AND o.booking_date_start <= '${date} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
           ${staffFilterOp}
       `;
 
@@ -732,7 +745,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         SELECT 
           os.id as order_service_id,
           o.id as order_id,
-          DATE_FORMAT(o.booking_date_start, '%H:%i:%s') as order_time,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
           up_cust.full_name as customer_name,
           UPPER(cs.client_store_key) as store_code,
           CONCAT('DV #', os.service_id, ' - ', COALESCE(os.service_group, 'Mi/SP')) as item_title,
@@ -743,9 +756,10 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         JOIN \`order_service\` os ON os.order_id = o.id
         LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${date} 00:00:00'
-          AND o.booking_date_start <= '${date} 23:59:59'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
           ${staffFilterOs}
           AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
           AND LOWER(COALESCE(os.service_type, '')) NOT LIKE '%combo%'

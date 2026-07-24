@@ -850,11 +850,12 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           o.id,
           o.order_state as orderState,
           o.total_price as totalPrice,
-          o.booking_date_start as bookingDateStart,
+          COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDateStart,
           o.user_id as userId,
           o.date_created as dateCreated
         FROM \`order\` o
-        WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
           AND o.order_state != 'Cancelled'
       `;
       const allOrdersParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
@@ -889,9 +890,10 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                usbt.retain_count, usbt.used_staff_id, usbt.order_id,
-               o.booking_date_start as o_booking_date_start
+               COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
         FROM user_service_balance_transaction usbt
         LEFT JOIN \`order\` o ON o.id = usbt.order_id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
       `)
           : [];

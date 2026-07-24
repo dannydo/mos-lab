@@ -60,8 +60,9 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           FROM staff_tip
           GROUP BY order_id
         ) st ON st.order_id = o.id
-        WHERE o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${storeFilterClause}
       `;
@@ -84,8 +85,9 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
         JOIN \`order\` o ON o.id = tech.order_id
         JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
         LEFT JOIN staff_tip st ON st.order_id = o.id AND st.user_id = tech.assigned_staff_id
-        WHERE o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${storeFilterClause}
         GROUP BY tech.assigned_staff_id, up.full_name, up.avatar, store

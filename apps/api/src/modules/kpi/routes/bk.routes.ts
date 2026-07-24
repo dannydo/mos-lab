@@ -142,11 +142,19 @@ function calculateCheckinBonus(
     if (discountRate <= 0) {
       return { bonus: config.clientBonusFullSet?.discount0 ?? 35000, checkinCategory: 'Nối Mới (0%)', discountRate };
     } else if (discountRate <= 30) {
-      return { bonus: config.clientBonusFullSet?.discount30 ?? 12000, checkinCategory: 'Nối Mới (<=30%)', discountRate };
+      return {
+        bonus: config.clientBonusFullSet?.discount30 ?? 12000,
+        checkinCategory: 'Nối Mới (<=30%)',
+        discountRate,
+      };
     } else if (discountRate <= 50) {
       return { bonus: config.clientBonusFullSet?.discount50 ?? 6000, checkinCategory: 'Nối Mới (<=50%)', discountRate };
     } else {
-      return { bonus: config.clientBonusFullSet?.discountMore ?? 1000, checkinCategory: 'Nối Mới (>50%)', discountRate };
+      return {
+        bonus: config.clientBonusFullSet?.discountMore ?? 1000,
+        checkinCategory: 'Nối Mới (>50%)',
+        discountRate,
+      };
     }
   }
 }
@@ -175,7 +183,6 @@ async function computeBkOrderCheckins(
           discountPercent?: number;
         }
       >(),
-
     };
   }
 
@@ -186,13 +193,14 @@ async function computeBkOrderCheckins(
       o.id as orderId,
       o.created_staff_id as bookerId,
       o.user_id as userId,
-      o.booking_date_start as bookingDateStart,
+      COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDateStart,
       o.date_created as dateCreated,
       COALESCE(o.total_price, 0) as totalPrice
     FROM \`order\` o
     LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-    WHERE o.booking_date_start >= '${startPart} 00:00:00' 
-      AND o.booking_date_start <= '${endPart} 23:59:59'
+    LEFT JOIN report_order ro ON o.id = ro.order_id
+    WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
+      AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
       AND o.order_state = 'Completed'
       AND o.created_staff_id IN (${bkIdsStr})
       ${storeFilter}
@@ -215,7 +223,6 @@ async function computeBkOrderCheckins(
       discountPercent?: number;
     }
   >();
-
 
   if (orderIds.length === 0) {
     return { clientBonusMap, orderCheckinMap };
@@ -242,15 +249,17 @@ async function computeBkOrderCheckins(
   }
 
   // Fetch user_service_balance for checkHasLiveCombo
-  const userBalances = userIds.length > 0
-    ? await fastify.prisma.legacy.user_service_balance.findMany({
-        where: { user_id: { in: userIds } },
-      })
-    : [];
+  const userBalances =
+    userIds.length > 0
+      ? await fastify.prisma.legacy.user_service_balance.findMany({
+          where: { user_id: { in: userIds } },
+        })
+      : [];
 
   const balanceIds = userBalances.map((b) => b.id);
-  const userBalanceTransactions = balanceIds.length > 0
-    ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+  const userBalanceTransactions =
+    balanceIds.length > 0
+      ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                usbt.retain_count, usbt.used_staff_id, usbt.order_id,
@@ -259,7 +268,7 @@ async function computeBkOrderCheckins(
         LEFT JOIN \`order\` o ON o.id = usbt.order_id
         WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
       `)
-    : [];
+      : [];
 
   const txnsByBalanceId = new Map<number, any[]>();
   for (const t of userBalanceTransactions) {
@@ -292,10 +301,15 @@ async function computeBkOrderCheckins(
 
       const lastTxnBefore = txnsBefore[0];
       const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-      const isNotExpired = !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
+      const isNotExpired =
+        !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
       let countLeft = 0;
-      if (lastTxnBefore && lastTxnBefore.total_normal_count_left !== null && lastTxnBefore.total_retain_count_left !== null) {
+      if (
+        lastTxnBefore &&
+        lastTxnBefore.total_normal_count_left !== null &&
+        lastTxnBefore.total_retain_count_left !== null
+      ) {
         countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
       } else {
         const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
@@ -365,7 +379,6 @@ async function computeBkOrderCheckins(
   return { clientBonusMap, orderCheckinMap };
 }
 
-
 export async function registerBkRoutes(fastify: FastifyInstance) {
   // 1. Booking Leaderboard
   fastify.get('/kpi/bk/booking/leaderboard', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -383,7 +396,10 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     try {
       const activeBkIds = await getActiveBkIds(fastify);
       if (activeBkIds.length === 0) {
-        return reply.send({ leaderboard: [], summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0 } });
+        return reply.send({
+          leaderboard: [],
+          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0 },
+        });
       }
 
       const bkIdsStr = activeBkIds.join(',');
@@ -427,7 +443,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         grandTotalBookings += totalCreatedBookings;
         grandDoneBookings += doneBookings;
 
-        const conversionRate = totalCreatedBookings > 0 ? Number(((doneBookings / totalCreatedBookings) * 100).toFixed(1)) : 0;
+        const conversionRate =
+          totalCreatedBookings > 0 ? Number(((doneBookings / totalCreatedBookings) * 100).toFixed(1)) : 0;
 
         return {
           rank: rank++,
@@ -443,7 +460,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         };
       });
 
-      const avgConversionRate = grandTotalBookings > 0 ? Number(((grandDoneBookings / grandTotalBookings) * 100).toFixed(1)) : 0;
+      const avgConversionRate =
+        grandTotalBookings > 0 ? Number(((grandDoneBookings / grandTotalBookings) * 100).toFixed(1)) : 0;
 
       return {
         leaderboard,
@@ -545,7 +563,6 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         };
       });
 
-
       const conversionRate = totalBookings > 0 ? Number(((doneBookings / totalBookings) * 100).toFixed(1)) : 0;
 
       return {
@@ -628,7 +645,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
         const basicBonus = clientBonusMap.get(bookerId) || 0;
         const promoBonus = 0;
-        
+
         const milestoneBonus = getMilestoneBonus(doneCount, config.doneBonusTiers);
         const penaltyBonus = getMissedRateBonus(missedRatePercent, config.missedBonusTiers);
 
@@ -654,9 +671,10 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         };
       });
 
-      const avgDoneRate = leaderboard.length > 0
-        ? Number((leaderboard.reduce((acc, l) => acc + l.doneRatePercent, 0) / leaderboard.length).toFixed(1))
-        : 0;
+      const avgDoneRate =
+        leaderboard.length > 0
+          ? Number((leaderboard.reduce((acc, l) => acc + l.doneRatePercent, 0) / leaderboard.length).toFixed(1))
+          : 0;
 
       return {
         leaderboard,
@@ -711,7 +729,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           o.id as orderId,
           o.order_key as orderKey,
           o.user_id as customerId,
-          o.booking_date_start as orderDate,
+          COALESCE(ro.actual_booking_date_start, o.booking_date_start) as orderDate,
           COALESCE(up_c.full_name, 'Khách hàng') as clientName,
           COALESCE(uc_c.phone_number, '') as clientPhone,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
@@ -725,12 +743,13 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
         LEFT JOIN \`staff_tip\` st ON st.order_id = o.id AND st.tip_percentage = 20
-        WHERE o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${bookerFilter}
           ${storeFilter}
-        ORDER BY o.booking_date_start DESC
+        ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC
         LIMIT 500
       `;
 
@@ -786,7 +805,6 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         };
       });
 
-
       return {
         data,
         total: data.length,
@@ -819,7 +837,10 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       const config = await getBkSalaryConfig(fastify);
       const activeBkIds = config.activeBkIds;
       if (activeBkIds.length === 0) {
-        return reply.send({ leaderboard: [], summary: { totalBookingsCount: 0, tippedBookingsCount: 0, totalCustomerTip: 0, totalBkTipBonus: 0 } });
+        return reply.send({
+          leaderboard: [],
+          summary: { totalBookingsCount: 0, tippedBookingsCount: 0, totalCustomerTip: 0, totalBkTipBonus: 0 },
+        });
       }
 
       const bkIdsStr = activeBkIds.join(',');
@@ -840,9 +861,13 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           COALESCE(SUM(st.customer_tip_100), 0) as totalCustomerTip
         FROM \`user_profile\` up
         LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
-        LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
-          AND o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+        LEFT JOIN (
+          SELECT o2.*, COALESCE(ro.actual_booking_date_start, o2.booking_date_start) as final_date
+          FROM \`order\` o2
+          LEFT JOIN report_order ro ON o2.id = ro.order_id
+        ) o ON o.created_staff_id = up.user_id 
+          AND o.final_date >= '${startPart} 00:00:00' 
+          AND o.final_date <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${storeFilter}
         LEFT JOIN (
@@ -938,7 +963,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       const sql = `
         SELECT 
           o.id as orderId,
-          o.booking_date_start as checkinTime,
+          COALESCE(ro.actual_booking_date_start, o.booking_date_start) as checkinTime,
           COALESCE(up_c.full_name, 'Khách hàng') as clientName,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COALESCE(up_b.full_name, 'Booker') as bookerName,
@@ -956,12 +981,13 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           WHERE tip_amount > 0
           GROUP BY order_id
         ) st ON st.order_id = o.id
-        WHERE o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${bookerFilter}
           ${storeFilter}
-        ORDER BY o.booking_date_start DESC
+        ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC
         LIMIT 500
       `;
 
@@ -1023,7 +1049,10 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       const config = await getBkSalaryConfig(fastify);
       const activeBkIds = config.activeBkIds;
       if (activeBkIds.length === 0) {
-        return reply.send({ leaderboard: [], summary: { completedOrdersCount: 0, totalRevenue: 0, totalCommissionBonus: 0 } });
+        return reply.send({
+          leaderboard: [],
+          summary: { completedOrdersCount: 0, totalRevenue: 0, totalCommissionBonus: 0 },
+        });
       }
 
       const bkIdsStr = activeBkIds.join(',');
@@ -1043,9 +1072,13 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           COALESCE(SUM(o.total_price), 0) as totalRevenue
         FROM \`user_profile\` up
         LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
-        LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
-          AND o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+        LEFT JOIN (
+          SELECT o2.*, COALESCE(ro.actual_booking_date_start, o2.booking_date_start) as final_date
+          FROM \`order\` o2
+          LEFT JOIN report_order ro ON o2.id = ro.order_id
+        ) o ON o.created_staff_id = up.user_id 
+          AND o.final_date >= '${startPart} 00:00:00' 
+          AND o.final_date <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${storeFilter}
         WHERE up.user_id IN (${bkIdsStr})
@@ -1131,19 +1164,20 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         SELECT 
           o.id as orderId,
           o.order_key as orderKey,
-          o.booking_date_start as orderDate,
+          COALESCE(ro.actual_booking_date_start, o.booking_date_start) as orderDate,
           COALESCE(up_c.full_name, 'Khách hàng') as clientName,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COALESCE(o.total_price, 0) as totalOrderPrice
         FROM \`order\` o
         LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        WHERE o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${bookerFilter}
           ${storeFilter}
-        ORDER BY o.booking_date_start DESC
+        ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC
         LIMIT 500
       `;
 
@@ -1312,7 +1346,6 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         };
       });
 
-
       return {
         data,
         total: data.length,
@@ -1334,7 +1367,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
   fastify.get('/kpi/bk/config', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
       const config = await getBkSalaryConfig(fastify);
-      
+
       const allStaffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT 
           up.user_id as staffId,

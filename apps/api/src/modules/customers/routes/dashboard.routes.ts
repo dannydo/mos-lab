@@ -299,9 +299,10 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
                usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
                usbt.retain_count, usbt.used_staff_id, usbt.order_id,
-               o.booking_date_start as o_booking_date_start
+               COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
         FROM user_service_balance_transaction usbt
         LEFT JOIN \`order\` o ON o.id = usbt.order_id
+        LEFT JOIN \`report_order\` ro ON ro.order_id = o.id
         WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
       `)
           : [];

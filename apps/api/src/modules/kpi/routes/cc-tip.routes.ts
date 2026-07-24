@@ -51,6 +51,7 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
           COUNT(DISTINCT CASE WHEN st.tip_amount > 0 THEN o.id END) as totalTippedVisits,
           COALESCE(SUM(st.customer_tip_100), 0) as totalCustomerTip
         FROM \`order\` o
+        LEFT JOIN report_order ro ON o.id = ro.order_id
         JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
         LEFT JOIN (
           SELECT 
@@ -60,8 +61,8 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
           FROM staff_tip
           GROUP BY order_id
         ) st ON st.order_id = o.id
-        WHERE o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${storeFilterClause}
       `;
@@ -84,10 +85,11 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
         JOIN user_profile up ON up.user_id = cc.user_id
         LEFT JOIN client_store cs ON cs.id = up.client_store_id
         JOIN \`order\` o ON o.id = cc.order_id
+        LEFT JOIN report_order ro ON o.id = ro.order_id
         JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
         LEFT JOIN staff_tip st ON st.order_id = o.id AND st.user_id = cc.user_id
-        WHERE o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${storeFilterClause}
         GROUP BY cc.user_id, up.full_name, up.avatar, store

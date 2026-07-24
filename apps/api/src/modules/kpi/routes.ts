@@ -135,11 +135,11 @@ async function calculateBookerSalaryStats(fastify: FastifyInstance, start: Date,
     const activeLegacyUserIds = Array.from(staffNameToLegacyIdMap.values());
 
     if (activeLegacyUserIds.length > 0) {
-      // Query all orders where created_staff_id is in activeLegacyUserIds and booking_date_start is in the range, and order_state !== 'Cancelled'
+      // Query all orders where created_staff_id is in activeLegacyUserIds and date_created is in the range (Rule #10: Booker productivity by creation date)
       const allOrders = await fastify.prisma.legacy.order.findMany({
         where: {
           created_staff_id: { in: activeLegacyUserIds },
-          booking_date_start: { gte: start, lte: end },
+          date_created: { gte: start, lte: end },
           order_state: { not: 'Cancelled' },
         },
         select: {
@@ -624,14 +624,14 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       profiles.sort((a: SafeAny, b: SafeAny) => Number(a.userId) - Number(b.userId));
       const legacyUserId = Number(profiles[profiles.length - 1].userId);
 
-      // Fetch all orders for this booker in the date range
+      // Fetch all orders for this booker in the date range (Rule #10: Booker productivity by creation date)
       const allOrders = await fastify.prisma.legacy.order.findMany({
         where: {
           created_staff_id: legacyUserId,
-          booking_date_start: { gte: start, lte: end },
+          date_created: { gte: start, lte: end },
           order_state: { not: 'Cancelled' },
         },
-        orderBy: { booking_date_start: 'asc' },
+        orderBy: { date_created: 'asc' },
       });
 
       const rows: SafeAny[][] = [];
@@ -1484,14 +1484,14 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       profiles.sort((a: SafeAny, b: SafeAny) => Number(a.userId) - Number(b.userId));
       const legacyUserId = Number(profiles[profiles.length - 1].userId);
 
-      // Fetch all orders for this booker in the date range
+      // Fetch all orders for this booker in the date range (Rule #10: Booker productivity by creation date)
       const allOrders = await fastify.prisma.legacy.order.findMany({
         where: {
           created_staff_id: legacyUserId,
-          booking_date_start: { gte: start, lte: end },
+          date_created: { gte: start, lte: end },
           order_state: { not: 'Cancelled' },
         },
-        orderBy: { booking_date_start: 'desc' },
+        orderBy: { date_created: 'desc' },
       });
 
       const list: SafeAny[] = [];
