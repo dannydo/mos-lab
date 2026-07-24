@@ -3,6 +3,7 @@ import withBundleAnalyzer from '@next/bundle-analyzer';
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@mos-lab/shared'],
+  turbopack: {},
   experimental: {
     optimizePackageImports: ['lucide-react', 'antd', '@ant-design/icons', 'dayjs'],
   },

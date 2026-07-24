@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@mos-lab/shared'],
+  turbopack: {},
   experimental: {
     optimizePackageImports: ['lucide-react', 'antd', '@ant-design/icons', 'dayjs'],
   },
