@@ -211,3 +211,34 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 2. **Cung cấp Chế độ Gọi Mô phỏng (Simulation Mode)**:
    - Tất cả các widget cuộc gọi OmiCall trên CRM phải cung cấp tùy chọn chuyển đổi linh hoạt giữa `SIP Thực tế` và `Mô phỏng (Test)`.
    - Khi SIP thực tế bị ngắt do lỗi cước OmiCall, tự động chuyển sang Chế độ Mô phỏng để bảo đảm trải nghiệm test mượt mà cho Booker và Khách hàng.
+
+---
+
+# 📈 End-of-Month (EOM) Run-rate Forecast & Shift Tracking Rules
+
+1. **Khung giờ hoạt động (09:00 - 21:00 + 2h Buffer)**:
+   - Ca phục vụ đón khách thực tế từ **09:00 AM – 21:00 PM** (12 tiếng).
+   - Do khách checkout/thanh toán trễ khoảng **2 tiếng**, khung giờ tính toán tiến độ dòng tiền thực tế được delay thành **11:00 AM – 23:00 PM**.
+
+2. **Công thức Tiến độ Ngày (Real-time Fraction Today)**:
+   $$\text{fractionToday} = \begin{cases} 
+   0 & \text{khi giờ } < 11 \\ 
+   1 & \text{khi giờ } > 22 \\ 
+   \frac{\text{HOUR(NOW())} - 11 + 1}{12} & \text{khi } 11 \le \text{giờ } \le 22 
+   \end{cases}$$
+
+3. **Công thức Tỷ lệ Trôi qua Tháng (Elapsed Ratio)**:
+   $$E = \min\left(1.0, \max\left(0.001, \frac{\text{Số ngày đã qua trước hôm nay} + \text{fractionToday}}{\text{Tổng số ngày trong kỳ}}\right)\right)$$
+
+4. **Công thức Số liệu Dự báo Cuối tháng (Projected EOM Metric)**:
+   $$\text{Projected Metric} = \frac{\text{Actual Metric}}{E}$$
+
+5. **Quy tắc Hiển thị Giao diện (Active Month vs. Past Month)**:
+   - **Tháng hiện tại đang chạy ($E < 1.0$)**:
+     - Nhãn: `Dự kiến cuối tháng:`
+     - Màu sắc: Xanh lá nổi bật (`text-emerald-400`), số tiền tiền tố `~` (ví dụ `~581.117.263 đ`).
+     - Tooltip: `Đã trôi qua X% thời gian tháng (Ca 09:00 - 21:00 + 2h buffer checkout)`
+   - **Tháng quá khứ đã chốt ($E \ge 1.0$)**:
+     - Nhãn: `Thực tế chốt tháng:`
+     - Màu sắc: Xám mờ (`text-slate-400`, `opacity-70`), không có dấu `~`.
+     - Tooltip: `Dữ liệu tháng đã chốt (100% thời gian)`

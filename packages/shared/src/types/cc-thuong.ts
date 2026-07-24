@@ -40,7 +40,13 @@ export interface DailySalesBonusConsultantResponse {
   summary?: {
     totalComboSales: number;
     totalProductSales: number;
+    totalSales: number;
     totalCcBonus: number;
+    projectedComboSales?: number;
+    projectedProductSales?: number;
+    projectedTotalSales?: number;
+    projectedCcBonus?: number;
+    elapsedRatioPercent?: number;
   };
   activeStaff?: { userId: number; displayName: string }[];
 }

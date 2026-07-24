@@ -17,6 +17,7 @@ import {
   CustomerHistoryEntry,
   AssignmentHistoryResponse,
   AssignmentHistoryDetailsResponse,
+  CustomerAssignmentTimelineItem,
   Referral,
   ListAppointmentsResponse,
   DetailedCustomerResponse,
@@ -112,12 +113,38 @@ export const apiClient = {
       const response = await api.get('/customers/random-ids', { params });
       return response.data;
     },
-    assign: async (data: { customerIds: number[]; staffId: number }): Promise<{ success: boolean; count: number }> => {
+    assign: async (data: {
+      customerIds: number[];
+      staffId: number;
+      durationDays?: number;
+      sourceType?: string;
+      sourceFilterSummary?: string;
+      sourceFilterJson?: string;
+    }): Promise<{ success: boolean; count: number; batchId?: string }> => {
       const response = await api.post('/customers/assign', data);
       return response.data;
     },
-    unassign: async (data: { customerIds: number[] }): Promise<{ success: boolean; count: number }> => {
+    revoke: async (data: {
+      customerIds: number[];
+      reason: string;
+      targetStaffId?: number | null;
+    }): Promise<{ success: boolean; count: number; batchId?: string }> => {
+      const response = await api.post('/customers/revoke', data);
+      return response.data;
+    },
+    unassign: async (data: { customerIds: number[]; reason?: string }): Promise<{ success: boolean; count: number }> => {
       const response = await api.post('/customers/unassign', data);
+      return response.data;
+    },
+    retain: async (data: {
+      customerIds: number[];
+      isRetained?: boolean;
+    }): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/customers/retain', data);
+      return response.data;
+    },
+    getRetainQuota: async (): Promise<{ retainedCount: number; quotaLimit: number; remainingQuota: number }> => {
+      const response = await api.get('/customers/booker-retain-quota');
       return response.data;
     },
     getStaff: async (params?: Record<string, unknown>): Promise<Staff[]> => {
@@ -133,14 +160,19 @@ export const apiClient = {
       return response.data;
     },
     undoAssignment: async (
-      batchId: string
+      batchId: string,
+      reason: string
     ): Promise<{
       success: boolean;
       revertedCount: number;
       totalCount: number;
       skippedCount: number;
     }> => {
-      const response = await api.post('/customers/assignment-history/undo', { batchId });
+      const response = await api.post('/customers/assignment-history/undo', { batchId, reason });
+      return response.data;
+    },
+    getTimeline: async (customerId: number): Promise<{ data: CustomerAssignmentTimelineItem[] }> => {
+      const response = await api.get(`/customers/${customerId}/assignment-timeline`);
       return response.data;
     },
     getReferrals: async (): Promise<Referral[]> => {
@@ -336,9 +368,11 @@ export const apiClient = {
       return response.data;
     },
     getCcWorkLogs: async (params: {
-      consultantId: number;
+      consultantId?: number;
+      userId?: number;
       dateFrom?: string;
       dateTo?: string;
+      storeId?: string;
     }): Promise<CcWorkLogDetailResponse> => {
       const response = await api.get('/kpi/cc-work-logs', { params });
       return response.data;

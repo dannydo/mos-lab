@@ -103,12 +103,16 @@ model CrmConfig {
 }
 
 model CrmCustomerAssignment {
-  id           Int      @id @default(autoincrement())
-  legacyUserId Int      @unique @map("legacy_user_id")
-  staffId      Int      @map("staff_id")
-  assignedAt   DateTime @default(now()) @map("assigned_at") @db.DateTime(0)
-  assignedBy   Int?     @map("assigned_by")
-  staff        CrmStaff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  id                   Int       @id @default(autoincrement())
+  legacyUserId         Int       @unique @map("legacy_user_id")
+  staffId              Int?      @map("staff_id")
+  assignedAt           DateTime  @default(now()) @map("assigned_at") @db.DateTime(0)
+  assignedBy           Int?      @map("assigned_by")
+  expiresAt            DateTime? @map("expires_at") @db.DateTime(0)
+  assignedDurationDays Int?      @map("assigned_duration_days")
+  isRetained           Boolean   @default(false) @map("is_retained") @db.TinyInt
+  retainedAt           DateTime? @map("retained_at") @db.DateTime(0)
+  staff                CrmStaff? @relation(fields: [staffId], references: [id], onDelete: SetNull)
 
   @@map("crm_customer_assignments")
 }
@@ -129,19 +133,25 @@ model CrmRole {
 }
 
 model CrmAssignmentHistory {
-  id           Int       @id @default(autoincrement())
-  batchId      String    @map("batch_id") @db.VarChar(50)
-  legacyUserId Int       @map("legacy_user_id")
-  prevStaffId  Int?      @map("prev_staff_id")
-  newStaffId   Int?      @map("new_staff_id")
-  assignedBy   Int       @map("assigned_by")
-  assignedAt   DateTime  @default(now()) @map("assigned_at") @db.DateTime(0)
-  isUndone     Boolean   @default(false) @map("is_undone") @db.TinyInt
-  undoneAt     DateTime? @map("undone_at") @db.DateTime(0)
+  id                  Int       @id @default(autoincrement())
+  batchId             String    @map("batch_id") @db.VarChar(50)
+  legacyUserId        Int       @map("legacy_user_id")
+  prevStaffId         Int?      @map("prev_staff_id")
+  newStaffId          Int?      @map("new_staff_id")
+  assignedBy          Int       @map("assigned_by")
+  assignedAt          DateTime  @default(now()) @map("assigned_at") @db.DateTime(0)
+  expiresAt           DateTime? @map("expires_at") @db.DateTime(0)
+  sourceType          String    @default("MANUAL") @map("source_type") @db.VarChar(20)
+  sourceFilterJson    String?   @map("source_filter_json") @db.Text
+  sourceFilterSummary String?   @map("source_filter_summary") @db.Text
+  actionType          String    @default("ASSIGN") @map("action_type") @db.VarChar(20)
+  reason              String?   @map("reason") @db.Text
+  isUndone            Boolean   @default(false) @map("is_undone") @db.TinyInt
+  undoneAt            DateTime? @map("undone_at") @db.DateTime(0)
 
-  prevStaff    CrmStaff? @relation("PrevStaffHistory", fields: [prevStaffId], references: [id], onDelete: SetNull)
-  newStaff     CrmStaff? @relation("NewStaffHistory", fields: [newStaffId], references: [id], onDelete: SetNull)
-  assigner     CrmStaff  @relation("AssignerHistory", fields: [assignedBy], references: [id], onDelete: Cascade)
+  prevStaff           CrmStaff? @relation("PrevStaffHistory", fields: [prevStaffId], references: [id], onDelete: SetNull)
+  newStaff            CrmStaff? @relation("NewStaffHistory", fields: [newStaffId], references: [id], onDelete: SetNull)
+  assigner            CrmStaff  @relation("AssignerHistory", fields: [assignedBy], references: [id], onDelete: Cascade)
 
   @@index([batchId])
   @@index([legacyUserId])

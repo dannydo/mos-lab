@@ -128,6 +128,7 @@ export interface SalaryConfig {
 
 export interface CcPaystubRecord {
   consultantId: number;
+  userId?: number;
   displayName: string;
   avatar?: string | null;
   store: string;

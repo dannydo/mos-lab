@@ -6,21 +6,16 @@ import {
   Tabs,
   Input,
   Button,
-  Card,
-  Space,
-  Modal,
-  Tag,
   Typography,
-  Divider,
   Select,
   theme,
-  Drawer,
-  Spin,
+  Tooltip,
+  Space,
+  Modal,
   Checkbox,
-  Table,
-  message,
+  Spin,
 } from 'antd';
-import { SearchOutlined, CalendarOutlined, HistoryOutlined, UndoOutlined } from '@ant-design/icons';
+import { SearchOutlined, CalendarOutlined, HistoryOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 
@@ -30,7 +25,10 @@ import { useCustomerData } from './hooks/useCustomerData';
 import CustomerFilters from './components/CustomerFilters';
 import CustomerBulkActions from './components/CustomerBulkActions';
 import CustomerTable from './components/CustomerTable';
-import { formatVND } from '../../../lib/format-utils';
+import { RetainDataButton } from './components/RetainDataButton';
+import { UndoReasonModal } from './components/UndoReasonModal';
+import { RevokeAssignmentModal } from './components/RevokeAssignmentModal';
+import { AssignmentHistoryDrawer } from './components/AssignmentHistoryDrawer';
 
 const { Title, Text } = Typography;
 
@@ -67,7 +65,7 @@ const PRESET_FILTERS = [
   },
 ];
 
-export default function CustomersPage() {
+function CustomersPageContent() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const [modal, contextHolder] = Modal.useModal();
@@ -197,16 +195,47 @@ export default function CustomersPage() {
     );
   };
 
+  const [undoModalState, setUndoModalState] = React.useState<{ visible: boolean; batchId: string | null; customerCount?: number }>({
+    visible: false,
+    batchId: null,
+  });
+
+  const [revokeBatchModalState, setRevokeBatchModalState] = React.useState<{ visible: boolean; customerIds: number[] }>({
+    visible: false,
+    customerIds: [],
+  });
+
   return (
     <div>
       {contextHolder}
-      <div className="flex justify-between items-center mb-6" style={{ marginBottom: '24px' }}>
+      <UndoReasonModal
+        visible={undoModalState.visible}
+        batchId={undoModalState.batchId}
+        customerCount={undoModalState.customerCount}
+        onClose={() => setUndoModalState({ visible: false, batchId: null })}
+        onSuccess={() => {
+          data.fetchAssignmentHistory(data.historyPage);
+          data.refreshListAndStats();
+        }}
+      />
+
+      <RevokeAssignmentModal
+        visible={revokeBatchModalState.visible}
+        onClose={() => setRevokeBatchModalState({ visible: false, customerIds: [] })}
+        onSuccess={() => {
+          data.fetchAssignmentHistory(data.historyPage);
+          data.refreshListAndStats();
+        }}
+        customerIds={revokeBatchModalState.customerIds}
+        staffList={data.staffList}
+      />
+      <div className="flex justify-between items-center mb-4" style={{ marginBottom: '16px' }}>
         <div>
-          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
+          <Title level={3} style={{ color: token.colorPrimary, margin: 0, fontWeight: 700 }}>
             Danh Sách Khách Hàng
           </Title>
-          <Text style={{ color: token.colorTextDescription }}>
-            Xem danh sách khách hàng và quản lý phân loại buckets real-time
+          <Text style={{ color: token.colorTextDescription, fontSize: '13px' }}>
+            Quản lý phân loại & phân bổ data real-time
           </Text>
         </div>
         <Button
@@ -215,9 +244,10 @@ export default function CustomersPage() {
           style={{
             backgroundColor: '#D4A84B',
             borderColor: '#D4A84B',
-            height: '38px',
-            borderRadius: '6px',
-            fontWeight: 'bold',
+            height: '36px',
+            borderRadius: '8px',
+            fontWeight: 600,
+            boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
           }}
           onClick={() => data.setBookingWizardVisible(true)}
         >
@@ -225,59 +255,29 @@ export default function CustomersPage() {
         </Button>
       </div>
 
-      <Card
+      {/* MINIMALIST CONTROL BAR */}
+      <div
         style={{
           background: token.colorBgContainer,
           border: `1px solid ${token.colorBorderSecondary}`,
-          marginBottom: '24px',
+          borderRadius: '12px',
+          padding: '12px 16px',
+          marginBottom: '16px',
+          boxShadow: themeMode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.03)',
         }}
       >
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap gap-4 items-center justify-between">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* LEFT: SEARCH & ADVANCED FILTERS */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', flex: 1, minWidth: 280 }}>
             <Input.Search
-              placeholder="Tìm theo tên hoặc số điện thoại..."
+              placeholder="Tìm tên hoặc SĐT..."
               allowClear
               enterButton={<SearchOutlined />}
-              size="large"
+              size="middle"
               onSearch={data.handleSearch}
-              style={{ maxWidth: 400 }}
+              style={{ maxWidth: 280 }}
             />
 
-            <div className="flex items-center gap-2">
-              {data.currentUser?.role === 'admin' && (
-                <Checkbox
-                  checked={data.showTrash}
-                  onChange={(e) => {
-                    data.setShowTrash(e.target.checked);
-                    data.setCurrentPage(1);
-                  }}
-                  style={{ color: token.colorText, marginRight: '16px', fontWeight: 'bold' }}
-                >
-                  🗑️ Xem thùng rác
-                </Checkbox>
-              )}
-              <Text style={{ color: token.colorTextDescription }}>Sắp xếp theo:</Text>
-              <Select
-                defaultValue="id_desc"
-                style={{ width: 220 }}
-                onChange={(val) => {
-                  data.setSortField(val);
-                  data.setCurrentPage(1);
-                }}
-                options={[
-                  { value: 'id_desc', label: 'Khách hàng mới nhất' },
-                  { value: 'name_asc', label: 'Tên A -> Z' },
-                  { value: 'daysSinceLastVisit_desc', label: 'Lâu nhất chưa ghé tiệm' },
-                  { value: 'daysSinceLastVisit_asc', label: 'Gần đây mới ghé tiệm' },
-                  { value: 'totalSpent_desc', label: 'Tổng chi tiêu giảm dần' },
-                ]}
-              />
-            </div>
-          </div>
-
-          <Divider style={{ margin: '8px 0' }} />
-
-          <div className="flex flex-wrap gap-4 items-center justify-between">
             <CustomerFilters
               themeMode={themeMode}
               token={token}
@@ -316,6 +316,8 @@ export default function CustomersPage() {
               setReferralCountMax={data.setReferralCountMax}
               assignedStaffId={data.assignedStaffId}
               setAssignedStaffId={data.setAssignedStaffId}
+              retainedOnly={data.retainedOnly}
+              setRetainedOnly={data.setRetainedOnly}
               setActiveFilterId={data.setActiveFilterId}
               staffList={data.staffList}
               saveFilterModalVisible={data.saveFilterModalVisible}
@@ -325,10 +327,72 @@ export default function CustomersPage() {
               handleSaveFilter={data.handleSaveFilter}
               activeFilterId={data.activeFilterId}
               PRESET_FILTERS={PRESET_FILTERS}
+              onOpenRandomModal={() => data.setRandomModalVisible(true)}
+            />
+          </div>
+
+          {/* RIGHT: RETAIN BADGE, ACTION ICONS & SORT */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <RetainDataButton
+              mode="quota-badge"
+              retainedOnly={data.retainedOnly}
+              onToggleRetainedFilter={() => data.setRetainedOnly(!data.retainedOnly)}
+            />
+
+            {data.currentUser?.role === 'admin' && (
+              <Tooltip title="Lịch sử phân bổ data">
+                <Button
+                  icon={<HistoryOutlined />}
+                  onClick={() => data.setHistoryDrawerVisible(true)}
+                  style={{ borderColor: '#D4A84B', color: '#D4A84B', borderRadius: '6px' }}
+                />
+              </Tooltip>
+            )}
+
+            {data.currentUser?.role === 'admin' && (
+              <Tooltip title={data.showTrash ? 'Đang xem thùng rác (Bấm để xem tất cả)' : 'Xem thùng rác khách hàng'}>
+                <Button
+                  icon={<DeleteOutlined />}
+                  danger={data.showTrash}
+                  onClick={() => {
+                    data.setShowTrash(!data.showTrash);
+                    data.setCurrentPage(1);
+                  }}
+                  style={{
+                    borderRadius: '6px',
+                    borderColor: data.showTrash ? '#ff4d4f' : undefined,
+                    background: data.showTrash ? (themeMode === 'dark' ? '#2c1515' : '#fff2f0') : undefined,
+                  }}
+                />
+              </Tooltip>
+            )}
+
+            <Tooltip title="Cấu hình hiển thị cột">
+              <Button
+                icon={<SettingOutlined />}
+                onClick={() => tableRef.current?.openConfig()}
+                style={{ borderRadius: '6px' }}
+              />
+            </Tooltip>
+
+            <Select
+              defaultValue="id_desc"
+              style={{ width: 170 }}
+              onChange={(val) => {
+                data.setSortField(val);
+                data.setCurrentPage(1);
+              }}
+              options={[
+                { value: 'id_desc', label: 'Mới nhất' },
+                { value: 'name_asc', label: 'Tên A -> Z' },
+                { value: 'daysSinceLastVisit_desc', label: 'Chưa ghé lâu nhất' },
+                { value: 'daysSinceLastVisit_asc', label: 'Chưa ghé gần đây' },
+                { value: 'totalSpent_desc', label: 'Chi tiêu giảm dần' },
+              ]}
             />
           </div>
         </div>
-      </Card>
+      </div>
 
       <CustomerBulkActions
         themeMode={themeMode}
@@ -337,18 +401,21 @@ export default function CustomersPage() {
         selectedRowKeys={data.selectedRowKeys}
         setSelectedRowKeys={data.setSelectedRowKeys}
         setAssignModalVisible={data.setAssignModalVisible}
-        setRandomModalVisible={data.setRandomModalVisible}
-        setHistoryDrawerVisible={data.setHistoryDrawerVisible}
         bulkDeleteLoading={data.bulkDeleteLoading}
         handleBulkDeleteCustomers={data.handleBulkDeleteCustomers}
         assignModalVisible={data.assignModalVisible}
         targetStaffId={data.targetStaffId}
         setTargetStaffId={data.setTargetStaffId}
+        durationDays={data.durationDays}
+        setDurationDays={data.setDurationDays}
         staffList={data.staffList}
         assigning={data.assigning}
         unassigning={data.unassigning}
         handleAssignCustomers={data.handleAssignCustomers}
         handleUnassignCustomers={data.handleUnassignCustomers}
+        onRefresh={data.refreshListAndStats}
+        retainedOnly={data.retainedOnly}
+        onToggleRetainedFilter={() => data.setRetainedOnly(!data.retainedOnly)}
       />
 
       <Tabs
@@ -494,195 +561,41 @@ export default function CustomersPage() {
       />
 
       {/* ALLOCATION HISTORY DRAWER */}
-      <Drawer
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '28px',
-                height: '28px',
-                borderRadius: '6px',
-                background: 'rgba(212, 168, 75, 0.1)',
-                color: '#D4A84B',
-              }}
-            >
-              <HistoryOutlined style={{ fontSize: '15px' }} />
-            </span>
-            <span style={{ color: '#D4A84B', fontWeight: 'bold', fontSize: '16px' }}>Lịch Sử Phân Bổ</span>
-          </div>
-        }
-        placement="right"
-        onClose={() => {
-          data.setHistoryDrawerVisible(false);
-          data.setExpandedBatchId(null);
-          data.setBatchDetails([]);
-        }}
+      <AssignmentHistoryDrawer
+        themeMode={themeMode}
+        token={token}
         open={data.historyDrawerVisible}
-        width={650}
-        styles={{
-          header: {
-            borderBottom: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`,
-            padding: '16px 24px',
-          },
-          body: {
-            padding: '20px 24px',
-            background: themeMode === 'dark' ? '#141414' : '#fff',
-          },
+        onClose={() => data.setHistoryDrawerVisible(false)}
+        historyLoading={data.historyLoading}
+        historyData={data.historyData}
+        historyTotal={data.historyTotal}
+        historyPage={data.historyPage}
+        expandedBatchId={data.expandedBatchId}
+        batchDetailsLoading={data.batchDetailsLoading}
+        batchDetails={data.batchDetails}
+        undoingBatchId={data.undoingBatchId}
+        revokingBatchId={data.revokingBatchId}
+        fetchAssignmentHistory={data.fetchAssignmentHistory}
+        fetchBatchDetails={data.fetchBatchDetails}
+        setExpandedBatchId={data.setExpandedBatchId}
+        setBatchDetails={data.setBatchDetails}
+        applyFilterFromJson={data.applyFilterFromJson}
+        onOpenUndoModal={(batchId, customerCount) => {
+          setUndoModalState({
+            visible: true,
+            batchId,
+            customerCount,
+          });
         }}
-      >
-        <Spin spinning={data.historyLoading && data.historyData.length === 0}>
-          {data.historyData.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: token.colorTextDescription }}>
-              Không có dữ liệu phân bổ trước đây.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {data.historyData.map((batch) => {
-                const isExpanded = data.expandedBatchId === batch.batchId;
-                const formattedDate = new Date(batch.assignedAt).toLocaleString('vi-VN');
-                const isUndone = batch.isUndone;
-
-                return (
-                  <Card
-                    key={batch.batchId}
-                    size="small"
-                    style={{
-                      background: themeMode === 'dark' ? '#1f1f1f' : '#fafafa',
-                      border: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
-                      borderRadius: '8px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: 'bold', fontSize: '14px', color: token.colorText }}>
-                            {batch.newStaffName ? `Phân bổ cho ${batch.newStaffName}` : 'Gỡ Booker'}
-                          </span>
-                          <Tag color={isUndone ? 'default' : batch.newStaffName ? 'blue' : 'warning'}>
-                            {isUndone ? 'Đã hoàn tác' : batch.newStaffName ? 'Phân bổ' : 'Hủy phân bổ'}
-                          </Tag>
-                        </div>
-                        <div style={{ marginTop: '6px', fontSize: '12px', color: token.colorTextDescription }}>
-                          <span style={{ marginRight: '16px' }}>Thời gian: {formattedDate}</span>
-                          <span>Người thực hiện: {batch.assignedBy}</span>
-                        </div>
-                        <div style={{ marginTop: '4px', fontSize: '13px', color: token.colorText }}>
-                          Số khách hàng:{' '}
-                          <span style={{ fontWeight: 'bold', color: '#D4A84B' }}>{batch.customerCount}</span>
-                        </div>
-                      </div>
-
-                      <Space>
-                        <Button
-                          size="small"
-                          onClick={() => {
-                            if (isExpanded) {
-                              data.setExpandedBatchId(null);
-                              data.setBatchDetails([]);
-                            } else {
-                              data.fetchBatchDetails(batch.batchId);
-                            }
-                          }}
-                        >
-                          {isExpanded ? 'Thu gọn' : 'Chi tiết'}
-                        </Button>
-
-                        {!isUndone && (
-                          <Button
-                            danger
-                            size="small"
-                            type="primary"
-                            icon={<UndoOutlined />}
-                            loading={data.undoingBatchId === batch.batchId}
-                            onClick={() => {
-                              modal.confirm({
-                                title: 'Xác nhận hoàn tác',
-                                content: `Bạn có chắc chắn muốn hoàn tác đợt phân bổ này không? Toàn bộ ${batch.customerCount} khách hàng trong đợt này sẽ được hoàn tác về Booker cũ (nếu Booker chưa được phân bổ mới).`,
-                                okText: 'Đồng ý',
-                                cancelText: 'Hủy',
-                                okButtonProps: { danger: true },
-                                onOk: () => data.handleUndoAssignment(batch.batchId),
-                              });
-                            }}
-                          >
-                            Hoàn tác
-                          </Button>
-                        )}
-                      </Space>
-                    </div>
-
-                    {isExpanded && (
-                      <div
-                        style={{
-                          marginTop: '12px',
-                          borderTop: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
-                          paddingTop: '12px',
-                        }}
-                      >
-                        <Spin spinning={data.batchDetailsLoading}>
-                          <div className="antd-custom-table">
-                            <Table
-                              size="small"
-                              pagination={false}
-                              dataSource={data.batchDetails}
-                              rowKey="id"
-                              columns={[
-                                {
-                                  title: 'Họ và tên',
-                                  dataIndex: 'fullName',
-                                  key: 'fullName',
-                                  render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>,
-                                },
-                                { title: 'Số điện thoại', dataIndex: 'phone', key: 'phone' },
-                                {
-                                  title: 'Booker cũ',
-                                  dataIndex: 'prevStaffName',
-                                  key: 'prevStaffName',
-                                  render: (text) => <Tag>{text}</Tag>,
-                                },
-                                {
-                                  title: 'Booker mới',
-                                  dataIndex: 'newStaffName',
-                                  key: 'newStaffName',
-                                  render: (text) => <Tag color="blue">{text}</Tag>,
-                                },
-                              ]}
-                            />
-                          </div>
-                        </Spin>
-                      </div>
-                    )}
-                  </Card>
-                );
-              })}
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px', alignItems: 'center' }}>
-                <Button
-                  disabled={data.historyPage === 1 || data.historyLoading}
-                  onClick={() => data.fetchAssignmentHistory(data.historyPage - 1)}
-                  style={{ marginRight: '8px' }}
-                >
-                  Trang trước
-                </Button>
-                <span
-                  style={{ display: 'flex', alignItems: 'center', margin: '0 8px', color: token.colorTextDescription }}
-                >
-                  Trang {data.historyPage} / {Math.ceil(data.historyTotal / 10) || 1}
-                </span>
-                <Button
-                  disabled={data.historyPage >= Math.ceil(data.historyTotal / 10) || data.historyLoading}
-                  onClick={() => data.fetchAssignmentHistory(data.historyPage + 1)}
-                >
-                  Trang sau
-                </Button>
-              </div>
-            </div>
-          )}
-        </Spin>
-      </Drawer>
+        onOpenRevokeBatchModal={(batchId) => {
+          data.handleOpenRevokeBatchModal(batchId, (customerIds) => {
+            setRevokeBatchModalState({
+              visible: true,
+              customerIds,
+            });
+          });
+        }}
+      />
 
       <style jsx global>{`
         /* Custom styles for Ant Design Table under Dark Mode */
@@ -761,5 +674,19 @@ export default function CustomersPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function CustomersPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+          <Spin size="large" />
+        </div>
+      }
+    >
+      <CustomersPageContent />
+    </React.Suspense>
   );
 }

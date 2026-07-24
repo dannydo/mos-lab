@@ -66,15 +66,22 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
   const { refreshListAndStats, setCustomers, total } = listHook;
 
   // Customer Assignment hook
-  const assignmentHook = useCustomerAssignment(optionsRef, refreshListAndStats, () => {
-    randomSelectorHook.setRandomSelectedIds(null);
-    setActiveRandomIds(null);
-  });
+  const assignmentHook = useCustomerAssignment(
+    optionsRef,
+    refreshListAndStats,
+    () => {
+      randomSelectorHook.setRandomSelectedIds(null);
+      setActiveRandomIds(null);
+    },
+    filtersHook.getCurrentFilterCriteria,
+    filtersHook.buildFilterSummary
+  );
 
   // Random Selector hook
   const randomSelectorHook = useRandomSelector(filterParams, optionsRef, (selectedIds) => {
     setActiveRandomIds(selectedIds);
     assignmentHook.setSelectedRowKeys(selectedIds);
+    assignmentHook.setLastSourceType('RANDOM');
     listHook.setCurrentPage(1);
   });
 
@@ -171,10 +178,13 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     referralCountMax: filtersHook.referralCountMax,
     currentUser,
     assignedStaffId: filtersHook.assignedStaffId,
+    retainedOnly: filtersHook.retainedOnly,
     staffList,
     selectedRowKeys: assignmentHook.selectedRowKeys,
     assignModalVisible: assignmentHook.assignModalVisible,
     targetStaffId: assignmentHook.targetStaffId,
+    durationDays: assignmentHook.durationDays,
+    setDurationDays: assignmentHook.setDurationDays,
     assigning: assignmentHook.assigning,
     unassigning: assignmentHook.unassigning,
     randomModalVisible: randomSelectorHook.randomModalVisible,
@@ -202,6 +212,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     batchDetailsLoading: historyHook.batchDetailsLoading,
     batchDetails: historyHook.batchDetails,
     undoingBatchId: historyHook.undoingBatchId,
+    revokingBatchId: historyHook.revokingBatchId,
     hasActiveFilters,
 
     // State setters
@@ -225,6 +236,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     setReferralCountMin: filtersHook.setReferralCountMin,
     setReferralCountMax: filtersHook.setReferralCountMax,
     setAssignedStaffId: filtersHook.setAssignedStaffId,
+    setRetainedOnly: filtersHook.setRetainedOnly,
     setSelectedRowKeys: assignmentHook.setSelectedRowKeys,
     setAssignModalVisible: assignmentHook.setAssignModalVisible,
     setTargetStaffId: assignmentHook.setTargetStaffId,
@@ -252,6 +264,9 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     fetchSavedFilters: filtersHook.fetchSavedFilters,
     handleSearch: filtersHook.handleSearch,
     applyFilter: filtersHook.applyFilter,
+    applyFilterFromJson: filtersHook.applyFilterFromJson,
+    getCurrentFilterCriteria: filtersHook.getCurrentFilterCriteria,
+    buildFilterSummary: filtersHook.buildFilterSummary,
     clearFilters: filtersHook.clearFilters,
     handleSaveFilter: filtersHook.handleSaveFilter,
     handleDeleteFilter: filtersHook.handleDeleteFilter,
@@ -261,6 +276,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     fetchAssignmentHistory: historyHook.fetchAssignmentHistory,
     fetchBatchDetails: historyHook.fetchBatchDetails,
     handleUndoAssignment: historyHook.handleUndoAssignment,
+    handleOpenRevokeBatchModal: historyHook.handleOpenRevokeBatchModal,
     handleRandomSelect: randomSelectorHook.handleRandomSelect,
     openDetailModal,
   };

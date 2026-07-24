@@ -1,8 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
 import { BucketType } from '@mos-lab/shared';
+import { registerAllocationCron } from './services/allocation-cron.service.js';
 
 export async function customerRoutes(fastify: FastifyInstance) {
+  // Start automated allocation expiration cronjob
+  registerAllocationCron(fastify);
   // GET /api/customers
   // Query legs DB, compute buckets, handle pagination, search, sorting
   fastify.get('/customers', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -37,6 +40,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       hasFutureBooking,
       dateFrom,
       dateTo,
+      retainedOnly,
     } = request.query as {
       bucket?: BucketType | 'ALL' | 'NEW_LOCA';
       search?: string;
@@ -68,6 +72,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       hasFutureBooking?: string;
       dateFrom?: string;
       dateTo?: string;
+      retainedOnly?: string;
     };
 
     let limitNum = parseInt(limit, 10) || 20;
@@ -205,6 +210,30 @@ export async function customerRoutes(fastify: FastifyInstance) {
               };
             }
           }
+        }
+      }
+
+      if (retainedOnly === 'true') {
+        const retainedAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+          where: { isRetained: true },
+          select: { legacyUserId: true },
+        });
+        const retainedUserIds = retainedAssignments.map((a) => a.legacyUserId);
+        if (allowedUserIds !== null) {
+          allowedUserIds = allowedUserIds.filter((id) => retainedUserIds.includes(id));
+        } else {
+          allowedUserIds = retainedUserIds;
+        }
+        if (allowedUserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
         }
       }
 
@@ -614,13 +643,42 @@ export async function customerRoutes(fastify: FastifyInstance) {
             })
           : [];
 
+      // Fetch latest allocation history for these customers
+      const assignmentHistories =
+        customerIds.length > 0
+          ? await fastify.prisma.crm.crmAssignmentHistory.findMany({
+              where: {
+                legacyUserId: { in: customerIds },
+                isUndone: false,
+                newStaffId: { not: null },
+              },
+              include: { newStaff: true },
+              orderBy: { assignedAt: 'desc' },
+            })
+          : [];
+
+      const historyMap = new Map<number, { assignedAt: Date; staffName: string | null }>();
+      assignmentHistories.forEach((h) => {
+        if (!historyMap.has(h.legacyUserId)) {
+          historyMap.set(h.legacyUserId, {
+            assignedAt: h.assignedAt,
+            staffName: h.newStaff ? h.newStaff.displayName : null,
+          });
+        }
+      });
+
       const assignmentMap = new Map();
       assignments.forEach((a) => {
-        assignmentMap.set(a.legacyUserId, {
-          id: a.staff.id,
-          displayName: a.staff.displayName,
-          username: a.staff.username,
-        });
+        const historyInfo = historyMap.get(a.legacyUserId);
+        const assignedAtDate = historyInfo ? historyInfo.assignedAt : a.assignedAt || null;
+        if (a.staff) {
+          assignmentMap.set(a.legacyUserId, {
+            id: a.staff.id,
+            displayName: a.staff.displayName,
+            username: a.staff.username,
+            assignedAt: assignedAtDate ? assignedAtDate.toISOString() : null,
+          });
+        }
       });
 
       // Fetch latest bookings for the returned customers
@@ -889,6 +947,19 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const lastCallVal = latestCallMap.get(Number(row.id)) || null;
         const newComboDetails = newComboMap.get(Number(row.id)) || null;
 
+        const historyInfo = historyMap.get(Number(row.id)) || null;
+        const lastAllocation = historyInfo
+          ? {
+              assignedAt: historyInfo.assignedAt.toISOString(),
+              staffName: historyInfo.staffName,
+            }
+          : assigned
+            ? {
+                assignedAt: assigned.assignedAt,
+                staffName: assigned.displayName,
+              }
+            : null;
+
         return {
           id: Number(row.id),
           name: row.name,
@@ -912,6 +983,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 }
               : null,
           assignedStaff: assigned,
+          assignedAt: assigned?.assignedAt || lastAllocation?.assignedAt || null,
+          lastAllocation,
           avatar: row.avatar,
           lastBookingState: booking ? booking.orderState : null,
           lastBookingDate: booking && booking.bookingDate ? new Date(booking.bookingDate).toISOString() : null,
@@ -969,6 +1042,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       hasFutureBooking,
       dateFrom,
       dateTo,
+      retainedOnly,
     } = request.query as {
       bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE' | 'NEW_LOCA';
       search?: string;
@@ -996,6 +1070,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       hasFutureBooking?: string;
       dateFrom?: string;
       dateTo?: string;
+      retainedOnly?: string;
     };
 
     const adminUser = request.user as { id: number; role: string };
@@ -1105,6 +1180,28 @@ export async function customerRoutes(fastify: FastifyInstance) {
               };
             }
           }
+        }
+      }
+
+      if (retainedOnly === 'true') {
+        const retainedAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+          where: { isRetained: true },
+          select: { legacyUserId: true },
+        });
+        const retainedUserIds = retainedAssignments.map((a) => a.legacyUserId);
+        if (allowedUserIds !== null) {
+          allowedUserIds = allowedUserIds.filter((id) => retainedUserIds.includes(id));
+        } else {
+          allowedUserIds = retainedUserIds;
+        }
+        if (allowedUserIds.length === 0) {
+          return {
+            total: 0,
+            comboLive: 0,
+            comboDead: 0,
+            single: 0,
+            notComboLive: 0,
+          };
         }
       }
 
@@ -1886,6 +1983,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
             offDays: getKTVOffDays(Number(ktv.user_id)),
           };
         });
+      }
+
+      if (!date) {
+        return crmStaffList.filter((s) =>
+          ['telesales', 'executive', 'manager', 'admin'].includes(s.role?.toLowerCase() || '')
+        );
       }
 
       return [...crmStaffList, ...mappedKTVs];
@@ -2989,9 +3092,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
   });
 
   // POST /api/customers/assign
-  // Assign multiple customers to a staff member
+  // Assign multiple customers to a staff member with expiration & source tracking
   fastify.post('/customers/assign', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { customerIds, staffId } = request.body as { customerIds: number[]; staffId: number };
+    const {
+      customerIds,
+      staffId,
+      durationDays,
+      sourceType = 'MANUAL',
+      sourceFilterSummary,
+      sourceFilterJson,
+    } = request.body as {
+      customerIds: number[];
+      staffId: number;
+      durationDays?: number;
+      sourceType?: string;
+      sourceFilterSummary?: string;
+      sourceFilterJson?: string;
+    };
     const adminUser = request.user as { id: number; role: string };
 
     if (adminUser.role !== 'admin') {
@@ -3009,16 +3126,37 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
       const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
 
-      // 2. Generate a unique batch ID
+      // 2. Calculate expiration date if durationDays provided
+      const now = new Date();
+      const durationNum = durationDays && durationDays > 0 ? Number(durationDays) : null;
+      const expiresAt = durationNum ? new Date(now.getTime() + durationNum * 24 * 60 * 60 * 1000) : null;
+
+      // 3. Generate a unique batch ID
       const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-      // 3. Perform upserts and create history entries in a transaction
+      // 4. Perform upserts and create history entries in a transaction
       await fastify.prisma.crm.$transaction([
         ...customerIds.map((cid) =>
           fastify.prisma.crm.crmCustomerAssignment.upsert({
             where: { legacyUserId: cid },
-            update: { staffId, assignedBy: adminUser.id },
-            create: { legacyUserId: cid, staffId, assignedBy: adminUser.id },
+            update: {
+              staffId,
+              assignedBy: adminUser.id,
+              assignedAt: now,
+              expiresAt,
+              assignedDurationDays: durationNum,
+              isRetained: false,
+              retainedAt: null,
+            },
+            create: {
+              legacyUserId: cid,
+              staffId,
+              assignedBy: adminUser.id,
+              assignedAt: now,
+              expiresAt,
+              assignedDurationDays: durationNum,
+              isRetained: false,
+            },
           })
         ),
         ...customerIds.map((cid) =>
@@ -3029,6 +3167,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
               prevStaffId: assignmentMap.get(cid) ?? null,
               newStaffId: staffId,
               assignedBy: adminUser.id,
+              assignedAt: now,
+              expiresAt,
+              sourceType: sourceType || 'MANUAL',
+              sourceFilterSummary: sourceFilterSummary || null,
+              sourceFilterJson: sourceFilterJson || null,
+              actionType: 'ASSIGN',
             },
           })
         ),
@@ -3041,10 +3185,123 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // POST /api/customers/revoke
+  // Revoke assignments before expiration (to pool or re-assign to targetStaffId) with MANDATORY reason
+  fastify.post('/customers/revoke', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { customerIds, targetStaffId, reason } = request.body as {
+      customerIds: number[];
+      targetStaffId?: number | null;
+      reason: string;
+    };
+    const adminUser = request.user as { id: number; role: string };
+
+    if (adminUser.role !== 'admin') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền thu hồi phân bổ.' });
+    }
+
+    if (!customerIds || !Array.isArray(customerIds) || customerIds.length === 0) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'customerIds is required' });
+    }
+
+    if (!reason || typeof reason !== 'string' || !reason.trim()) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Vui lòng cung cấp lý do thu hồi data.' });
+    }
+
+    const cleanReason = reason.trim();
+
+    try {
+      const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+        where: { legacyUserId: { in: customerIds } },
+      });
+      const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
+      const batchId = `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const now = new Date();
+
+      if (targetStaffId) {
+        // Direct transfer to new Booker
+        await fastify.prisma.crm.$transaction([
+          ...customerIds.map((cid) =>
+            fastify.prisma.crm.crmCustomerAssignment.upsert({
+              where: { legacyUserId: cid },
+              update: {
+                staffId: targetStaffId,
+                assignedBy: adminUser.id,
+                assignedAt: now,
+                isRetained: false,
+                retainedAt: null,
+              },
+              create: {
+                legacyUserId: cid,
+                staffId: targetStaffId,
+                assignedBy: adminUser.id,
+                assignedAt: now,
+                isRetained: false,
+              },
+            })
+          ),
+          ...customerIds.map((cid) =>
+            fastify.prisma.crm.crmAssignmentHistory.create({
+              data: {
+                batchId,
+                legacyUserId: cid,
+                prevStaffId: assignmentMap.get(cid) ?? null,
+                newStaffId: targetStaffId,
+                assignedBy: adminUser.id,
+                assignedAt: now,
+                actionType: 'TRANSFER',
+                reason: cleanReason,
+              },
+            })
+          ),
+        ]);
+      } else {
+        // Revoke back to pool
+        await fastify.prisma.crm.$transaction(async (tx) => {
+          for (const cid of customerIds) {
+            const existing = await tx.crmCustomerAssignment.findUnique({
+              where: { legacyUserId: cid },
+            });
+            if (existing && existing.isRetained) {
+              await tx.crmCustomerAssignment.update({
+                where: { legacyUserId: cid },
+                data: {
+                  staffId: null,
+                  expiresAt: null,
+                  assignedDurationDays: null,
+                },
+              });
+            } else {
+              await tx.crmCustomerAssignment.deleteMany({
+                where: { legacyUserId: cid },
+              });
+            }
+
+            await tx.crmAssignmentHistory.create({
+              data: {
+                batchId,
+                legacyUserId: cid,
+                prevStaffId: assignmentMap.get(cid) ?? null,
+                newStaffId: null,
+                assignedBy: adminUser.id,
+                assignedAt: now,
+                actionType: 'REVOKE',
+                reason: cleanReason,
+              },
+            });
+          }
+        });
+      }
+
+      return { success: true, count: customerIds.length, batchId };
+    } catch (error: SafeAny) {
+      fastify.log.error({ err: error }, 'Revoke customers error');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to revoke customers' });
+    }
+  });
+
   // POST /api/customers/unassign
-  // Unassign multiple customers (remove their assignments)
   fastify.post('/customers/unassign', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { customerIds } = request.body as { customerIds: number[] };
+    const { customerIds, reason = 'Hủy phân bổ thủ công' } = request.body as { customerIds: number[]; reason?: string };
     const adminUser = request.user as { id: number; role: string };
 
     if (adminUser.role !== 'admin') {
@@ -3058,16 +3315,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      // 1. Get current assignments for all selected customerIds
       const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
         where: { legacyUserId: { in: customerIds } },
       });
       const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
-
-      // 2. Generate a unique batch ID
       const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const now = new Date();
 
-      // 3. Perform deletes and create history entries in a transaction
       await fastify.prisma.crm.$transaction([
         fastify.prisma.crm.crmCustomerAssignment.deleteMany({
           where: { legacyUserId: { in: customerIds } },
@@ -3080,6 +3334,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
               prevStaffId: assignmentMap.get(cid) ?? null,
               newStaffId: null,
               assignedBy: adminUser.id,
+              assignedAt: now,
+              actionType: 'REVOKE',
+              reason,
             },
           })
         ),
@@ -3089,6 +3346,119 @@ export async function customerRoutes(fastify: FastifyInstance) {
     } catch (error: SafeAny) {
       fastify.log.error({ err: error }, 'Unassign customers error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to unassign customers' });
+    }
+  });
+
+  // POST /api/customers/retain
+  // Booker toggles retained data within their quota limit
+  fastify.post('/customers/retain', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { customerIds, isRetained = true } = request.body as { customerIds: number[]; isRetained?: boolean };
+    const user = request.user as { id: number; role: string };
+
+    if (!customerIds || !Array.isArray(customerIds) || customerIds.length === 0) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'customerIds is required' });
+    }
+
+    try {
+      // Fetch staff quota configuration
+      const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'BOOKER_RETAIN_QUOTA_CONFIG' },
+      });
+
+      let quotaLimit = 50; // Default limit per booker
+      if (configRecord?.value) {
+        try {
+          const quotaMap = JSON.parse(configRecord.value);
+          if (quotaMap[user.id] !== undefined) {
+            quotaLimit = Number(quotaMap[user.id]);
+          } else if (quotaMap.default !== undefined) {
+            quotaLimit = Number(quotaMap.default);
+          }
+        } catch (e) {
+          // ignore parse error
+        }
+      }
+
+      if (isRetained) {
+        // Count existing retained customers for this staff (excluding ones being toggled)
+        const currentRetainedCount = await fastify.prisma.crm.crmCustomerAssignment.count({
+          where: {
+            staffId: user.id,
+            isRetained: true,
+            legacyUserId: { notIn: customerIds },
+          },
+        });
+
+        if (currentRetainedCount + customerIds.length > quotaLimit) {
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: `Vượt quá hạn ngạch giữ data! Bạn đang giữ ${currentRetainedCount}/${quotaLimit} data. Không thể chọn giữ thêm ${customerIds.length} data nữa.`,
+          });
+        }
+      }
+
+      // Update retention status
+      await fastify.prisma.crm.crmCustomerAssignment.updateMany({
+        where: {
+          legacyUserId: { in: customerIds },
+          ...(user.role !== 'admin' ? { staffId: user.id } : {}),
+        },
+        data: {
+          isRetained,
+          retainedAt: isRetained ? new Date() : null,
+        },
+      });
+
+      return reply.send({
+        success: true,
+        message: isRetained
+          ? `Đã lưu ${customerIds.length} khách hàng vào danh sách giữ lại.`
+          : `Đã bỏ giữ ${customerIds.length} khách hàng.`,
+      });
+    } catch (error: SafeAny) {
+      fastify.log.error({ err: error }, 'Retain customers error');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi khi cập nhật giữ data' });
+    }
+  });
+
+  // GET /api/customers/booker-retain-quota
+  fastify.get('/customers/booker-retain-quota', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { id: number; role: string };
+
+    try {
+      const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'BOOKER_RETAIN_QUOTA_CONFIG' },
+      });
+
+      let quotaLimit = 50;
+      if (configRecord?.value) {
+        try {
+          const quotaMap = JSON.parse(configRecord.value);
+          if (quotaMap[user.id] !== undefined) {
+            quotaLimit = Number(quotaMap[user.id]);
+          } else if (quotaMap.default !== undefined) {
+            quotaLimit = Number(quotaMap.default);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      const retainedCount = await fastify.prisma.crm.crmCustomerAssignment.count({
+        where: {
+          staffId: user.id,
+          isRetained: true,
+        },
+      });
+
+      return {
+        retainedCount,
+        quotaLimit,
+        remainingQuota: Math.max(0, quotaLimit - retainedCount),
+      };
+    } catch (error: SafeAny) {
+      fastify.log.error({ err: error }, 'Get retain quota error');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi khi lấy thông tin Quota giữ data' });
     }
   });
 
@@ -3106,7 +3476,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const skip = (pageNum - 1) * limitNum;
 
     try {
-      // 1. Get unique batchIds with pagination (ordered by assignedAt desc)
       const distinctHistory = await fastify.prisma.crm.crmAssignmentHistory.findMany({
         distinct: ['batchId'],
         orderBy: { assignedAt: 'desc' },
@@ -3114,11 +3483,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         take: limitNum,
         include: {
           newStaff: { select: { displayName: true } },
+          prevStaff: { select: { displayName: true } },
           assigner: { select: { displayName: true } },
         },
       });
 
-      // 2. Fetch total count of distinct batches
       const allBatches = await fastify.prisma.crm.crmAssignmentHistory.groupBy({
         by: ['batchId'],
       });
@@ -3136,7 +3505,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
         };
       }
 
-      // 3. For each distinct batch, fetch the total count of customers and if the batch is undone
       const batchIds = distinctHistory.map((h) => h.batchId);
       const batchStats = await fastify.prisma.crm.crmAssignmentHistory.groupBy({
         by: ['batchId', 'isUndone'],
@@ -3144,7 +3512,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
         _count: { id: true },
       });
 
-      // Group stats by batchId
       const statsMap = new Map<string, { count: number; isUndone: boolean }>();
       batchStats.forEach((stat) => {
         const existing = statsMap.get(stat.batchId);
@@ -3166,9 +3533,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
           assignedAt: h.assignedAt,
           assignedBy: h.assigner?.displayName || 'Hệ thống',
           newStaffName: h.newStaff?.displayName || null,
+          prevStaffName: h.prevStaff?.displayName || null,
           customerCount: stat.count,
           isUndone: !!h.isUndone || stat.isUndone,
           undoneAt: h.undoneAt,
+          expiresAt: h.expiresAt,
+          sourceType: h.sourceType,
+          sourceFilterSummary: h.sourceFilterSummary,
+          sourceFilterJson: h.sourceFilterJson,
+          actionType: h.actionType,
+          reason: h.reason,
         };
       });
 
@@ -3190,7 +3564,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/customers/assignment-history/:batchId/details
-  // Get detailed list of customers assigned in a batch
   fastify.get(
     '/customers/assignment-history/:batchId/details',
     { preHandler: [requireAuth] },
@@ -3223,7 +3596,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
         const customerIds = historyRecords.map((r) => r.legacyUserId);
 
-        // Fetch customer names and phones from legacy database using queryRawUnsafe
         const legacyCustomers = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT 
           u.id,
@@ -3255,6 +3627,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
             newStaffName: r.newStaff?.displayName || 'Gỡ Booker',
             isUndone: r.isUndone === true || (r.isUndone as SafeAny) === 1,
             undoneAt: r.undoneAt,
+            actionType: r.actionType,
+            reason: r.reason,
+            sourceFilterSummary: r.sourceFilterSummary,
           };
         });
 
@@ -3269,20 +3644,25 @@ export async function customerRoutes(fastify: FastifyInstance) {
   );
 
   // POST /api/customers/assignment-history/undo
-  // Undo a batch of assignments
+  // Undo a batch of assignments with MANDATORY reason
   fastify.post('/customers/assignment-history/undo', { preHandler: [requireAuth] }, async (request, reply) => {
     const adminUser = request.user as { id: number; role: string };
     if (adminUser.role !== 'admin') {
       return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền hoàn tác phân bổ.' });
     }
 
-    const { batchId } = request.body as { batchId: string };
+    const { batchId, reason } = request.body as { batchId: string; reason?: string };
     if (!batchId) {
       return reply.status(400).send({ error: 'Bad Request', message: 'batchId is required' });
     }
 
+    if (!reason || typeof reason !== 'string' || !reason.trim()) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Vui lòng nhập lý do hoàn tác đợt phân bổ.' });
+    }
+
+    const cleanReason = reason.trim();
+
     try {
-      // 1. Find all history records for this batch that are not undone
       const historyRecords = await fastify.prisma.crm.crmAssignmentHistory.findMany({
         where: { batchId, isUndone: false },
       });
@@ -3296,13 +3676,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const customerIds = historyRecords.map((r) => r.legacyUserId);
       const newStaffId = historyRecords[0].newStaffId;
 
-      // 2. Fetch current assignments of these customers to check if they've changed
       const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
         where: { legacyUserId: { in: customerIds } },
       });
       const currentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
 
-      // 3. Determine which assignments can be safely reverted (where current staff matches newStaffId of the batch)
       const assignmentsToRevert: typeof historyRecords = [];
       for (const record of historyRecords) {
         const currentStaffId = currentMap.get(record.legacyUserId);
@@ -3316,28 +3694,43 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // 4. Run the reversion in a transaction
       await fastify.prisma.crm.$transaction(async (tx) => {
         for (const record of assignmentsToRevert) {
+          const existing = await tx.crmCustomerAssignment.findUnique({
+            where: { legacyUserId: record.legacyUserId },
+          });
+
           if (record.prevStaffId === null) {
-            await tx.crmCustomerAssignment.deleteMany({
-              where: { legacyUserId: record.legacyUserId },
-            });
+            if (existing && existing.isRetained) {
+              await tx.crmCustomerAssignment.update({
+                where: { legacyUserId: record.legacyUserId },
+                data: {
+                  staffId: null,
+                  expiresAt: null,
+                  assignedDurationDays: null,
+                },
+              });
+            } else {
+              await tx.crmCustomerAssignment.deleteMany({
+                where: { legacyUserId: record.legacyUserId },
+              });
+            }
           } else {
             await tx.crmCustomerAssignment.upsert({
               where: { legacyUserId: record.legacyUserId },
-              update: { staffId: record.prevStaffId, assignedBy: adminUser.id },
+              update: { staffId: record.prevStaffId, assignedBy: adminUser.id, assignedAt: new Date() },
               create: { legacyUserId: record.legacyUserId, staffId: record.prevStaffId, assignedBy: adminUser.id },
             });
           }
         }
 
-        // Mark the entire batch in history as undone
+        // Mark the entire batch in history as undone with undo reason
         await tx.crmAssignmentHistory.updateMany({
           where: { batchId },
           data: {
             isUndone: true,
             undoneAt: new Date(),
+            reason: cleanReason,
           },
         });
       });
@@ -3351,6 +3744,57 @@ export async function customerRoutes(fastify: FastifyInstance) {
     } catch (error: SafeAny) {
       fastify.log.error({ err: error }, 'Undo assignment error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to undo assignments' });
+    }
+  });
+
+  // GET /api/customers/:id/assignment-timeline
+  // Get complete allocation audit trail timeline for a single customer
+  fastify.get('/customers/:id/assignment-timeline', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const customerId = parseInt(id, 10);
+    if (isNaN(customerId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
+    }
+
+    try {
+      const historyRecords = await fastify.prisma.crm.crmAssignmentHistory.findMany({
+        where: { legacyUserId: customerId },
+        include: {
+          prevStaff: { select: { displayName: true } },
+          newStaff: { select: { displayName: true } },
+          assigner: { select: { displayName: true } },
+        },
+        orderBy: { assignedAt: 'desc' },
+      });
+
+      // Get current active assignment details if any
+      const activeAssignment = await fastify.prisma.crm.crmCustomerAssignment.findUnique({
+        where: { legacyUserId: customerId },
+      });
+
+      const data = historyRecords.map((r) => ({
+        id: r.id,
+        batchId: r.batchId,
+        assignedAt: r.assignedAt,
+        actionType: r.actionType || (r.isUndone ? 'UNDO' : r.newStaffId ? 'ASSIGN' : 'REVOKE'),
+        staffId: r.newStaffId,
+        staffName: r.newStaff?.displayName || null,
+        prevStaffId: r.prevStaffId,
+        prevStaffName: r.prevStaff?.displayName || null,
+        assignedBy: r.assigner?.displayName || 'Hệ thống',
+        expiresAt: r.expiresAt,
+        isRetained: activeAssignment ? activeAssignment.isRetained && activeAssignment.staffId === r.newStaffId : false,
+        sourceType: r.sourceType || 'MANUAL',
+        sourceFilterSummary: r.sourceFilterSummary,
+        reason: r.reason,
+        isUndone: r.isUndone,
+        undoneAt: r.undoneAt,
+      }));
+
+      return { data };
+    } catch (error: SafeAny) {
+      fastify.log.error({ err: error }, 'Get customer assignment timeline error');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve assignment timeline' });
     }
   });
 

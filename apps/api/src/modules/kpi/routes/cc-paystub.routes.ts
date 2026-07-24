@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { CcPaystubRecord, CcPaystubResponse } from '@mos-lab/shared';
+import { CcKpiService } from '../services/cc-kpi.service.js';
 
 // SafeAny helper
 type SafeAny = any;
@@ -107,17 +108,18 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         WHERE rn = 1
       `;
 
-      // 3. Query Shift Hours from staff_working_shift
+      // 3. Query Shift Hours from report_staff (real attendance data)
       const shiftsQuery = `
         SELECT 
-          ws.user_id as staff_id,
-          COUNT(ws.id) as active_days,
-          SUM(TIME_TO_SEC(TIMEDIFF(ws.end_time, ws.start_time))) / 3600 as total_work_hours
-        FROM \`staff_working_shift\` ws
-        WHERE ws.user_id IN (${validStaffListStr})
-          AND ws.date >= '${startPart}'
-          AND ws.date <= '${endPart}'
-        GROUP BY ws.user_id
+          rs.user_id as staff_id,
+          COUNT(DISTINCT DATE(rs.date)) as active_days,
+          ROUND(SUM(rs.working_minute) / 60, 2) as total_work_hours
+        FROM \`report_staff\` rs
+        WHERE rs.user_id IN (${validStaffListStr})
+          AND rs.date >= '${startPart}'
+          AND rs.date <= '${endPart}'
+          AND rs.working_minute > 0
+        GROUP BY rs.user_id
       `;
 
       // Fallback: Active Work Days from orders
@@ -135,23 +137,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         GROUP BY staff_id
       `;
 
-      // 4. Query Checkins & CC Xoay Bonus (Chronological Progressive Level)
-      const xoayOrdersQuery = `
-        SELECT 
-          o.id as order_id,
-          o.date_created,
-          ${staffExprOs} as staff_id,
-          sl.service_name
-        FROM \`order\` o
-        JOIN \`order_service\` os ON os.order_id = o.id
-        LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id
-        WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= '${startPart} 00:00:00'
-          AND o.booking_date_start <= '${endPart} 23:59:59'
-          AND ${staffExprOs} IN (${validStaffListStr})
-          ${storeFilterClause}
-        ORDER BY o.date_created ASC
-      `;
+
 
       // 5. Query Daily Sales Bonus (Combo & Product rewards)
       const staffExprOsc = `COALESCE(
@@ -238,7 +224,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         hourlyRatesRows,
         shiftsRows,
         workDaysRows,
-        xoayOrdersRows,
+        xoayReportResult,
         comboSalesRows,
         productSalesRows,
         debtPaymentRows,
@@ -247,7 +233,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(shiftsQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(workDaysQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(xoayOrdersQuery),
+        CcKpiService.getCcXoayReport(fastify, { dateFrom: startPart, dateTo: endPart, storeId }),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSalesQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productSalesQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(debtPaymentSalesQuery),
@@ -276,42 +262,21 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       const workDaysMap = new Map<number, number>();
       workDaysRows.forEach((r) => workDaysMap.set(Number(r.staff_id), Number(r.active_days || 0)));
 
-      const parseServiceSpecs = (serviceName?: string) => {
-        let classPts = 3,
-          fanPts = 2,
-          typePts = 7,
-          lashPts = 20,
-          designPts = 5,
-          colorPts = 0;
-        const name = String(serviceName || '').toLowerCase();
-        if (name.includes('classic')) classPts = 0;
-        else if (name.includes('volume')) classPts = 2;
-        else if (name.includes('flawless')) classPts = 5;
-
-        if (name.includes('damp') || name.includes('refill') || name.includes('retain')) typePts = 3;
-        if (name.includes('katun') || name.includes('design') || name.includes('eyeliner')) designPts = 8;
-        return classPts + fanPts + typePts + lashPts + designPts + colorPts;
-      };
-
       const xoayMap = new Map<number, { count: number; bonus: number }>();
-      const staffProgressivePoints = new Map<number, number>();
-
-      xoayOrdersRows.forEach((r) => {
-        const uid = Number(r.staff_id);
-        if (!xoayMap.has(uid)) {
-          xoayMap.set(uid, { count: 0, bonus: 0 });
-        }
-        const stat = xoayMap.get(uid)!;
-        stat.count += 1;
-
-        const pts = parseServiceSpecs(r.service_name);
-        const prevPts = staffProgressivePoints.get(uid) || 0;
-        const level = Math.floor(prevPts / 100) + 1;
-        const bonus = level * 65;
-
-        stat.bonus += bonus;
-        staffProgressivePoints.set(uid, prevPts + pts);
-      });
+      
+      if (xoayReportResult && Array.isArray(xoayReportResult.data)) {
+        xoayReportResult.data.forEach((r: SafeAny) => {
+          const uid = Number(r.consultantId || r.check_in_staff_id || r.check_out_staff_id);
+          if (uid > 0) {
+            if (!xoayMap.has(uid)) {
+              xoayMap.set(uid, { count: 0, bonus: 0 });
+            }
+            const stat = xoayMap.get(uid)!;
+            stat.count += 1;
+            stat.bonus += Number(r.consultantBonus || 0);
+          }
+        });
+      }
 
       // Compute Daily Sales Bonus per staff per day
       const dailySalesMap = new Map<
@@ -511,15 +476,15 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
 
       const staffExprOs = `COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id)`;
 
-      // 2. Query daily shift work logs from staff_working_shift
+      // 2. Query daily shift work logs from report_staff (real check-in/out & exact working minutes)
       const shiftWorkLogsQuery = `
         SELECT 
-          DATE_FORMAT(ws.date, '%Y-%m-%d') as work_date,
-          TIME_FORMAT(ws.start_time, '%H:%i:%s') as first_in,
-          TIME_FORMAT(ws.end_time, '%H:%i:%s') as last_out,
-          ROUND(TIME_TO_SEC(TIMEDIFF(ws.end_time, ws.start_time)) / 3600, 2) as total_hours,
+          DATE_FORMAT(rs.date, '%Y-%m-%d') as work_date,
+          TIME_FORMAT(rs.check_in_date, '%H:%i:%s') as first_in,
+          TIME_FORMAT(rs.check_out_date, '%H:%i:%s') as last_out,
+          ROUND(rs.working_minute / 60, 2) as total_hours,
           COALESCE(srv.service_count, 0) as service_count
-        FROM \`staff_working_shift\` ws
+        FROM \`report_staff\` rs
         LEFT JOIN (
           SELECT 
             DATE(o.booking_date_start) as work_date,
@@ -529,11 +494,12 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           WHERE o.order_state = 'Completed'
             AND ${staffExprOs} = ${uid}
           GROUP BY work_date
-        ) srv ON srv.work_date = ws.date
-        WHERE ws.user_id = ${uid}
-          AND ws.date >= '${startPart}'
-          AND ws.date <= '${endPart}'
-        ORDER BY ws.date DESC
+        ) srv ON srv.work_date = rs.date
+        WHERE rs.user_id = ${uid}
+          AND rs.date >= '${startPart}'
+          AND rs.date <= '${endPart}'
+          AND rs.working_minute > 0
+        ORDER BY rs.date DESC
       `;
 
       let rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(shiftWorkLogsQuery);

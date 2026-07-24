@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Card,
   Table,
@@ -91,6 +91,40 @@ export default function CcTipTab({
       setSelectedCcName(parentSelectedConsultant);
     }
   }, [parentSelectedConsultant]);
+
+  // Realtime shift Run-rate Elapsed Ratio & Forecasts for Tip Tab
+  const elapsedRatioPercent = useMemo(() => {
+    const now = dayjs();
+    const currentHour = now.hour();
+    let fractionToday = 0;
+    if (currentHour < 11) fractionToday = 0;
+    else if (currentHour > 22) fractionToday = 1;
+    else fractionToday = (currentHour - 11 + 1) / 12;
+
+    const start = dateRange ? dateRange[0] : dayjs().startOf('month');
+    const end = dateRange ? dateRange[1] : dayjs().endOf('month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const ratio = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(ratio * 1000) / 10;
+  }, [dateRange]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+
+  const projectedTotalCcTipBonus = useMemo(() => {
+    const ratio = (elapsedRatioPercent || 100) / 100;
+    return Math.round((summary.totalCcTipBonus || 0) / (ratio || 1));
+  }, [summary.totalCcTipBonus, elapsedRatioPercent]);
+
+  const projectedTotalCustomerTip = useMemo(() => {
+    const ratio = (elapsedRatioPercent || 100) / 100;
+    return Math.round((summary.totalCustomerTip || 0) / (ratio || 1));
+  }, [summary.totalCustomerTip, elapsedRatioPercent]);
 
   const fetchTipData = async () => {
     setLoading(true);
@@ -383,49 +417,81 @@ export default function CcTipTab({
     },
   ];
 
+  const renderForecastSubtext = (projectedVal: number) => {
+    if (isPastPeriod) {
+      return (
+        <Tooltip title="Dữ liệu tháng đã chốt (100% thời gian)">
+          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
+            <span>Thực tế chốt tháng:</span>
+            <span className="tabular-nums font-medium text-slate-400">
+              {Math.round(projectedVal).toLocaleString('vi-VN')} đ
+            </span>
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Tooltip title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian tháng (Ca 09:00 - 21:00 + 2h buffer checkout)`}>
+        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
+          <span>Dự kiến cuối tháng:</span>
+          <span className="tabular-nums font-semibold text-emerald-400">
+            ~{Math.round(projectedVal).toLocaleString('vi-VN')} đ
+          </span>
+        </div>
+      </Tooltip>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {/* Top 4 KPI Metric Cards */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={6}>
-          <Card className="shadow-lg border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-transparent">
-            <Statistic
-              title={
-                <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
-                  Tổng Thưởng CC Tip (20%)
-                </span>
-              }
-              value={summary.totalCcTipBonus}
-              prefix={<GiftOutlined className="text-amber-500 mr-2" />}
-              suffix="đ"
-              formatter={(val) => (
-                <span className="tabular-nums font-bold text-2xl text-amber-400">
-                  {Number(val).toLocaleString('vi-VN')}
-                </span>
-              )}
-            />
-            <div className="text-[11px] text-gray-400 mt-2">Thực nhận 20% tiền tip từ khách cho</div>
+          <Card className="shadow-lg border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-transparent flex flex-col justify-between">
+            <div>
+              <Statistic
+                title={
+                  <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
+                    Tổng Thưởng CC Tip (20%)
+                  </span>
+                }
+                value={summary.totalCcTipBonus}
+                prefix={<GiftOutlined className="text-amber-500 mr-2" />}
+                suffix="đ"
+                formatter={(val) => (
+                  <span className="tabular-nums font-bold text-2xl text-amber-400">
+                    {Number(val).toLocaleString('vi-VN')}
+                  </span>
+                )}
+              />
+              <div className="text-[11px] text-gray-400 mt-2">Thực nhận 20% tiền tip từ khách cho</div>
+            </div>
+            {renderForecastSubtext(projectedTotalCcTipBonus)}
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card className="shadow-lg border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-transparent">
-            <Statistic
-              title={
-                <span className="text-xs font-semibold uppercase tracking-wider text-purple-400">
-                  Tổng Tiền Tip Khách Cho (100%)
-                </span>
-              }
-              value={summary.totalCustomerTip}
-              prefix={<DollarOutlined className="text-purple-500 mr-2" />}
-              suffix="đ"
-              formatter={(val) => (
-                <span className="tabular-nums font-bold text-2xl text-purple-400">
-                  {Number(val).toLocaleString('vi-VN')}
-                </span>
-              )}
-            />
-            <div className="text-[11px] text-gray-400 mt-2">Tổng số tiền tip khách hàng để lại</div>
+          <Card className="shadow-lg border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-transparent flex flex-col justify-between">
+            <div>
+              <Statistic
+                title={
+                  <span className="text-xs font-semibold uppercase tracking-wider text-purple-400">
+                    Tổng Tiền Tip Khách Cho (100%)
+                  </span>
+                }
+                value={summary.totalCustomerTip}
+                prefix={<DollarOutlined className="text-purple-500 mr-2" />}
+                suffix="đ"
+                formatter={(val) => (
+                  <span className="tabular-nums font-bold text-2xl text-purple-400">
+                    {Number(val).toLocaleString('vi-VN')}
+                  </span>
+                )}
+              />
+              <div className="text-[11px] text-gray-400 mt-2">Tổng số tiền tip khách hàng để lại</div>
+            </div>
+            {renderForecastSubtext(projectedTotalCustomerTip)}
           </Card>
         </Col>
 

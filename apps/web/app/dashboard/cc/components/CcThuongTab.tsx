@@ -21,6 +21,7 @@ import {
   GiftOutlined,
   ShoppingCartOutlined,
   DollarOutlined,
+  RiseOutlined,
   TrophyOutlined,
   FilterOutlined,
   CheckCircleOutlined,
@@ -87,7 +88,13 @@ export default function CcThuongTab({
   const [summary, setSummary] = useState<{
     totalComboSales: number;
     totalProductSales: number;
+    totalSales?: number;
     totalCcBonus: number;
+    projectedComboSales?: number;
+    projectedProductSales?: number;
+    projectedTotalSales?: number;
+    projectedCcBonus?: number;
+    elapsedRatioPercent?: number;
   } | null>(null);
   const [activeStaff, setActiveStaff] = useState<{ userId: number; displayName: string; avatar?: string | null }[]>([]);
 
@@ -146,9 +153,59 @@ export default function CcThuongTab({
     );
   }, [summary, data]);
 
+  const totalSales = useMemo(() => {
+    return summary?.totalSales ?? totalComboSales + totalProductSales;
+  }, [summary, totalComboSales, totalProductSales]);
+
   const totalCcBonus = useMemo(() => {
     return summary?.totalCcBonus ?? data.reduce((acc, curr) => acc + (curr.daily_bonus || 0), 0);
   }, [summary, data]);
+
+  // Realtime shift Run-rate Elapsed Ratio & Forecasts
+  const elapsedRatioPercent = useMemo(() => {
+    if (summary?.elapsedRatioPercent !== undefined) return summary.elapsedRatioPercent;
+    const now = dayjs();
+    const currentHour = now.hour();
+    let fractionToday = 0;
+    if (currentHour < 11) fractionToday = 0;
+    else if (currentHour > 22) fractionToday = 1;
+    else fractionToday = (currentHour - 11 + 1) / 12;
+
+    const start = dateRange ? dateRange[0] : dayjs().startOf('month');
+    const end = dateRange ? dateRange[1] : dayjs().endOf('month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const ratio = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(ratio * 1000) / 10;
+  }, [summary, dateRange]);
+
+  const projectedComboSales = useMemo(() => {
+    if (summary?.projectedComboSales !== undefined) return summary.projectedComboSales;
+    const ratio = (elapsedRatioPercent || 100) / 100;
+    return Math.round(totalComboSales / (ratio || 1));
+  }, [summary, totalComboSales, elapsedRatioPercent]);
+
+  const projectedProductSales = useMemo(() => {
+    if (summary?.projectedProductSales !== undefined) return summary.projectedProductSales;
+    const ratio = (elapsedRatioPercent || 100) / 100;
+    return Math.round(totalProductSales / (ratio || 1));
+  }, [summary, totalProductSales, elapsedRatioPercent]);
+
+  const projectedTotalSales = useMemo(() => {
+    if (summary?.projectedTotalSales !== undefined) return summary.projectedTotalSales;
+    return projectedComboSales + projectedProductSales;
+  }, [summary, projectedComboSales, projectedProductSales]);
+
+  const projectedCcBonus = useMemo(() => {
+    if (summary?.projectedCcBonus !== undefined) return summary.projectedCcBonus;
+    const ratio = (elapsedRatioPercent || 100) / 100;
+    return Math.round(totalCcBonus / (ratio || 1));
+  }, [summary, totalCcBonus, elapsedRatioPercent]);
 
   // Level 1: Aggregated Leaderboard
   const leaderboardData = useMemo<DailySalesBonusLeaderboardEntry[]>(() => {
@@ -571,15 +628,43 @@ export default function CcThuongTab({
     },
   ];
 
+  const isPastPeriod = elapsedRatioPercent >= 100;
+
+  const renderForecastSubtext = (projectedVal: number) => {
+    if (isPastPeriod) {
+      return (
+        <Tooltip title="Dữ liệu tháng đã chốt (100% thời gian)">
+          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
+            <span>Thực tế chốt tháng:</span>
+            <span className="tabular-nums font-medium text-slate-400">
+              {Math.round(projectedVal).toLocaleString('vi-VN')} đ
+            </span>
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Tooltip title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian tháng (Ca 09:00 - 21:00 + 2h buffer checkout)`}>
+        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
+          <span>Dự kiến cuối tháng:</span>
+          <span className="tabular-nums font-semibold text-emerald-400">
+            ~{Math.round(projectedVal).toLocaleString('vi-VN')} đ
+          </span>
+        </div>
+      </Tooltip>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4">
-      {/* 3 TOP KPI SUMMARY CARDS */}
+      {/* 4 TOP KPI SUMMARY CARDS */}
       <Row gutter={[16, 16]} className="mb-4">
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={12} md={6}>
           <Card
             variant="outlined"
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-            className="shadow-sm rounded-xl"
+            className="shadow-sm rounded-xl flex flex-col justify-between"
           >
             <Statistic
               title="Doanh Thu Combo"
@@ -589,13 +674,14 @@ export default function CcThuongTab({
               valueStyle={{ color: '#1890ff', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<GiftOutlined />}
             />
+            {renderForecastSubtext(projectedComboSales)}
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={12} md={6}>
           <Card
             variant="outlined"
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-            className="shadow-sm rounded-xl"
+            className="shadow-sm rounded-xl flex flex-col justify-between"
           >
             <Statistic
               title="Doanh Thu SP & DV Lẻ"
@@ -605,33 +691,54 @@ export default function CcThuongTab({
               valueStyle={{ color: '#722ed1', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<ShoppingCartOutlined />}
             />
+            {renderForecastSubtext(projectedProductSales)}
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            variant="outlined"
+            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+            className="shadow-sm rounded-xl flex flex-col justify-between"
+          >
+            <Statistic
+              title="Tổng Doanh Thu"
+              value={totalSales}
+              suffix="đ"
+              precision={0}
+              valueStyle={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
+              prefix={<RiseOutlined />}
+            />
+            {renderForecastSubtext(projectedTotalSales)}
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
           <Card
             variant="outlined"
             style={{ background: token.colorBgContainer, borderColor: '#d4a84b' }}
-            className="shadow-sm rounded-xl relative"
+            className="shadow-sm rounded-xl relative flex flex-col justify-between"
           >
-            <div className="flex justify-between items-start">
-              <Statistic
-                title="Tổng Thưởng CC Bonus"
-                value={totalCcBonus}
-                suffix="đ"
-                precision={0}
-                valueStyle={{ color: '#d4a84b', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
-                prefix={<DollarOutlined />}
-              />
-              <Tooltip title="Cấu hình CC">
-                <Button
-                  type="primary"
-                  icon={<SettingOutlined />}
-                  size="small"
-                  onClick={() => setConfigModalOpen(true)}
-                  style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000', fontWeight: '600' }}
+            <div>
+              <div className="flex justify-between items-start">
+                <Statistic
+                  title="Tổng Thưởng CC Bonus"
+                  value={totalCcBonus}
+                  suffix="đ"
+                  precision={0}
+                  valueStyle={{ color: '#d4a84b', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
+                  prefix={<DollarOutlined />}
                 />
-              </Tooltip>
+                <Tooltip title="Cấu hình CC">
+                  <Button
+                    type="primary"
+                    icon={<SettingOutlined />}
+                    size="small"
+                    onClick={() => setConfigModalOpen(true)}
+                    style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000', fontWeight: '600' }}
+                  />
+                </Tooltip>
+              </div>
             </div>
+            {renderForecastSubtext(projectedCcBonus)}
           </Card>
         </Col>
       </Row>

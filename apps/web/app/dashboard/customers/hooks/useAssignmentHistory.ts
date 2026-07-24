@@ -48,10 +48,10 @@ export const useAssignmentHistory = (optionsRef: React.MutableRefObject<SafeAny>
   );
 
   const handleUndoAssignment = useCallback(
-    async (batchId: string) => {
+    async (batchId: string, reason: string) => {
       setUndoingBatchId(batchId);
       try {
-        const data = await apiClient.customers.undoAssignment(batchId);
+        const data = await apiClient.customers.undoAssignment(batchId, reason);
         const { revertedCount, totalCount, skippedCount } = data;
 
         let msg = `Đã hoàn tác thành công ${revertedCount}/${totalCount} khách hàng!`;
@@ -77,6 +77,31 @@ export const useAssignmentHistory = (optionsRef: React.MutableRefObject<SafeAny>
     [expandedBatchId, fetchBatchDetails, fetchAssignmentHistory, historyPage, onRefresh, optionsRef]
   );
 
+  const [revokingBatchId, setRevokingBatchId] = useState<string | null>(null);
+
+  const handleOpenRevokeBatchModal = useCallback(
+    async (batchId: string, onOpenModal: (customerIds: number[]) => void) => {
+      setRevokingBatchId(batchId);
+      try {
+        const details = await apiClient.customers.getAssignmentHistoryDetails(batchId);
+        const customerIds = (details.data || [])
+          .map((item: SafeAny) => Number(item.legacyUserId || item.id))
+          .filter((id: number) => !isNaN(id) && id > 0);
+        if (customerIds.length === 0) {
+          optionsRef.current?.onWarning?.('Không tìm thấy danh sách khách hàng của đợt phân bổ này.');
+          return;
+        }
+        onOpenModal(customerIds);
+      } catch (err) {
+        console.error('Fetch batch details for revoke error:', err);
+        optionsRef.current?.onError?.('Không thể tải danh sách khách hàng để thu hồi.');
+      } finally {
+        setRevokingBatchId(null);
+      }
+    },
+    [optionsRef]
+  );
+
   useEffect(() => {
     if (historyDrawerVisible) {
       fetchAssignmentHistory(1);
@@ -97,9 +122,11 @@ export const useAssignmentHistory = (optionsRef: React.MutableRefObject<SafeAny>
     batchDetails,
     setBatchDetails,
     undoingBatchId,
+    revokingBatchId,
     fetchAssignmentHistory,
     fetchBatchDetails,
     handleUndoAssignment,
+    handleOpenRevokeBatchModal,
   };
 };
 export default useAssignmentHistory;

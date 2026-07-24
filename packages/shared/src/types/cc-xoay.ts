@@ -1,4 +1,5 @@
 export interface CcXoayRecord {
+  consultantId?: number;
   serviceId: number;
   checkin: string; // YYYY-MM-DD HH:mm:ss
   checkinTime: string; // HH:mm:ss
@@ -64,7 +65,7 @@ export interface CcQueryParams {
   dateFrom?: string;
   dateTo?: string;
   storeId?: string;
-  consultantId?: string;
+  consultantId?: string | number;
   page?: number;
   limit?: number;
 }

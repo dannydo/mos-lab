@@ -28,6 +28,20 @@ export interface Customer {
     id: number;
     displayName: string;
     username: string;
+    assignedAt?: string | null;
+  } | null;
+  assignedAt?: string | null;
+  expiresAt?: string | null;
+  assignedDurationDays?: number | null;
+  isRetained?: boolean;
+  retainedAt?: string | null;
+  lastAllocation?: {
+    assignedAt: string;
+    staffName?: string | null;
+    expiresAt?: string | null;
+    sourceType?: string;
+    sourceFilterSummary?: string | null;
+    reason?: string | null;
   } | null;
   lastBookingState?: string | null;
   lastBookingDate?: string | null;
@@ -168,12 +182,40 @@ export interface CustomerHistoryEntry {
 }
 
 export interface AssignmentHistoryBatch {
-  id: string;
-  createdAt: string;
-  staffName: string;
-  staffId: number;
+  batchId: string;
+  assignedAt: string;
+  assignedBy: string;
+  newStaffName: string | null;
+  newStaffId: number | null;
+  prevStaffName?: string | null;
   customerCount: number;
-  undone: boolean;
+  isUndone: boolean;
+  undoneAt?: string | null;
+  durationDays?: number | null;
+  expiresAt?: string | null;
+  sourceType?: string;
+  sourceFilterJson?: string | null;
+  sourceFilterSummary?: string | null;
+  actionType?: string;
+  reason?: string | null;
+}
+
+export interface CustomerAssignmentTimelineItem {
+  id: number;
+  batchId: string;
+  assignedAt: string;
+  actionType: 'ASSIGN' | 'REVOKE' | 'EXPIRE' | 'UNDO' | 'TRANSFER' | string;
+  staffId: number | null;
+  staffName: string | null;
+  prevStaffId: number | null;
+  prevStaffName: string | null;
+  assignedBy: string;
+  expiresAt: string | null;
+  durationDays: number | null;
+  isRetained: boolean;
+  sourceType: string;
+  sourceFilterSummary: string | null;
+  reason: string | null;
 }
 
 export interface AssignmentHistoryResponse {

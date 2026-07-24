@@ -33,6 +33,7 @@ import { BookingsTab } from './customer-detail/components/BookingsTab';
 import { NotesTab } from './customer-detail/components/NotesTab';
 import { CallsTab } from './customer-detail/components/CallsTab';
 import { TimelineViewTab } from './customer-detail/components/TimelineViewTab';
+import { CustomerAssignmentTimeline } from './customer-detail/components/CustomerAssignmentTimeline';
 
 const GemHistoryModal = dynamic(
   () => import('./customer-detail/components/GemHistoryModal').then((m) => m.GemHistoryModal),
@@ -662,6 +663,11 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                       key: 'calls',
                       label: `Lịch sử cuộc gọi (${calls.length})`,
                       children: <CallsTab calls={calls} themeMode={themeMode} />,
+                    },
+                    {
+                      key: 'assignment-timeline',
+                      label: `Lịch sử Phân bổ`,
+                      children: <CustomerAssignmentTimeline customerId={customer.id} />,
                     },
                   ]}
                 />

@@ -13,8 +13,6 @@ export const useCustomerList = (
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(20);
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
   const [stats, setStats] = useState({
     total: 0,
     comboLive: 0,
@@ -58,6 +56,9 @@ export const useCustomerList = (
         if (filterParams.assignedStaffId && filterParams.assignedStaffId !== 'all') {
           params.assignedStaffId = filterParams.assignedStaffId;
         }
+        if (filterParams.retainedOnly) {
+          params.retainedOnly = filterParams.retainedOnly;
+        }
 
         const data = await apiClient.customers.getStats(params);
         setStats(data);
@@ -68,8 +69,19 @@ export const useCustomerList = (
     [filterParams, randomSelectedIds]
   );
 
+  const loadingRef = useRef(loading);
+  const hasMoreRef = useRef(false);
+
+  useEffect(() => {
+    loadingRef.current = loading;
+    hasMoreRef.current = customers.length < total && total > 0;
+  }, [loading, customers.length, total]);
+
+  const fetchIdRef = useRef(0);
+
   const fetchCustomers = useCallback(
     async (page: number, limit: number, overrideIds?: number[]) => {
+      const currentFetchId = ++fetchIdRef.current;
       setLoading(true);
       try {
         const params: SafeAny = {
@@ -116,8 +128,14 @@ export const useCustomerList = (
         if (filterParams.assignedStaffId && filterParams.assignedStaffId !== 'all') {
           params.assignedStaffId = filterParams.assignedStaffId;
         }
+        if (filterParams.retainedOnly) {
+          params.retainedOnly = filterParams.retainedOnly;
+        }
 
         const data = await apiClient.customers.list(params);
+
+        // Ignore stale response if a newer fetch was initiated
+        if (currentFetchId !== fetchIdRef.current) return;
 
         if (page === 1) {
           setCustomers(data.data);
@@ -135,12 +153,15 @@ export const useCustomerList = (
           setTotal(data.pagination.total);
         }
       } catch (error) {
+        if (currentFetchId !== fetchIdRef.current) return;
         console.error('Fetch customers error:', error);
         optionsRef.current?.onError?.(
           (error as SafeAny).response?.data?.message || 'Không thể tải danh sách khách hàng'
         );
       } finally {
-        setLoading(false);
+        if (currentFetchId === fetchIdRef.current) {
+          setLoading(false);
+        }
       }
     },
     [filterParams, randomSelectedIds, optionsRef]
@@ -153,38 +174,39 @@ export const useCustomerList = (
     const filtersChanged = prevFilterRef.current !== filterParams;
     prevFilterRef.current = filterParams;
 
-    if (filtersChanged && currentPage !== 1) {
-      setCurrentPage(1);
-      return; // Let the next render handle the fetch with page=1
+    if (filtersChanged) {
+      setCustomers([]);
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+        return;
+      }
     }
 
     fetchCustomers(currentPage, pageSize);
     fetchStats();
   }, [currentPage, pageSize, filterParams, fetchCustomers, fetchStats]);
 
-  // Infinite Scroll / Lazy Loading Observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loading && customers.length < total) {
-          setCurrentPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 1.0 }
-    );
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-    const currentSentinel = sentinelRef.current;
-    if (currentSentinel) {
-      observer.observe(currentSentinel);
+  // Infinite Scroll / Lazy Loading Observer using callback ref & rootMargin
+  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
     }
 
-    return () => {
-      if (currentSentinel) {
-        observer.unobserve(currentSentinel);
-      }
-      observer.disconnect();
-    };
-  }, [loading, customers.length, total]);
+    if (node) {
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && !loadingRef.current && hasMoreRef.current) {
+            setCurrentPage((prev) => prev + 1);
+          }
+        },
+        { rootMargin: '300px', threshold: 0 }
+      );
+      observerRef.current.observe(node);
+    }
+  }, []);
 
   const refreshListAndStats = useCallback(() => {
     fetchCustomers(1, pageSize);

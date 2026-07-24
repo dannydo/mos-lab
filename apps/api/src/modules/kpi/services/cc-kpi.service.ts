@@ -193,6 +193,7 @@ export class CcKpiService {
   public static async getCcXoayReport(fastify: FastifyInstance, filters: CcKpiFilters) {
     const { dateFrom, dateTo, storeId, consultantId, page = 1, limit = 3000 } = filters;
     const { startStr, endStr } = parseDateRange(dateFrom, dateTo);
+    const monthStartStr = `${startStr.substring(0, 7)}-01`;
     const activeCcIds = await this.getActiveCcStaffIds(fastify);
 
     let activeCcFilter = '';
@@ -219,9 +220,19 @@ export class CcKpiService {
       }
     }
 
+    // Determine filter staff ID and filter staff Name if specified
+    const parsedId = consultantId && consultantId !== 'ALL' ? Number(consultantId) : 0;
+    const filterStaffId = !isNaN(parsedId) && parsedId > 0 ? parsedId : 0;
+    const filterStaffName =
+      consultantId && consultantId !== 'ALL' && isNaN(parsedId)
+        ? String(consultantId).toLowerCase().trim()
+        : '';
+
+    // Query from beginning of the month (monthStartStr) to endStr to build accurate MTD points & Level
     const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
       SELECT 
         os.id AS order_service_id,
+        CAST(ro.date AS CHAR) AS dateOnlyStr,
         CAST(ro.actual_booking_date_start AS CHAR) AS checkinStr,
         TIME_FORMAT(ro.actual_booking_date_start, '%H:%i') AS checkinTimeStr,
         COALESCE(client_p.full_name, '') AS clientName,
@@ -232,21 +243,13 @@ export class CcKpiService {
         os.check_out_staff_id,
         checkin_p.full_name AS ccInName,
         checkout_p.full_name AS ccOutName,
-        checkout_p.avatar AS avatar,
+        checkin_p.avatar AS checkinAvatar,
+        checkout_p.avatar AS checkoutAvatar,
         os.quantity AS lashCount,
-        COALESCE(sb_agg.consultantPoints, 0) AS consultantPoints,
-        COALESCE(sb_agg.dbCashBonus, 0) AS dbCashBonus,
-        COALESCE(sb_agg.classPts, 0) AS classPts,
-        COALESCE(sb_agg.fanPts, 0) AS fanPts,
-        COALESCE(sb_agg.typePts, 0) AS typePts,
-        COALESCE(sb_agg.lashPts, 0) AS lashPts,
-        COALESCE(sb_agg.designPts, 0) AS designPts,
-        COALESCE(sb_agg.colorPts, 0) AS colorPts,
         CASE 
             WHEN os.next_fix_order_service_id > 0 THEN 'Fix'
             WHEN os.next_adjust_order_service_id > 0 THEN 'Adjust'
             WHEN s.service_type IN ('Fix', 'Adjust', 'Log') THEN s.service_type
-            WHEN sb_agg.falRule IS NOT NULL AND sb_agg.falRule != '' THEN sb_agg.falRule
             ELSE '' 
         END AS falRule
       FROM order_service os
@@ -258,104 +261,186 @@ export class CcKpiService {
       LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
       LEFT JOIN user_profile checkin_p ON os.check_in_staff_id = checkin_p.user_id
       LEFT JOIN user_profile checkout_p ON os.check_out_staff_id = checkout_p.user_id
-      LEFT JOIN (
-        SELECT 
-          sb.order_service_id,
-          SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS consultantPoints,
-          SUM(CASE WHEN sb.bonus_type = 'Cash' THEN sb.bonus_amount ELSE 0 END) AS dbCashBonus,
-          SUM(CASE WHEN sbr.type = 'OrderServiceClass' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS classPts,
-          SUM(CASE WHEN sbr.type = 'OrderServiceAttributeFan' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS fanPts,
-          SUM(CASE WHEN sbr.type = 'OrderServiceType' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS typePts,
-          SUM(CASE WHEN sbr.type = 'OrderServiceAttributeLashes' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS lashPts,
-          SUM(CASE WHEN sbr.type = 'OrderServiceAttributeDesign' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS designPts,
-          SUM(CASE WHEN sbr.type = 'OrderServiceAttributeColor' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS colorPts,
-          MAX(CASE 
-              WHEN sbr.type IN ('OrderServiceType', 'OrderServicePrice') AND sbr.value_required IN ('Log', 'Fix', 'Adjust') THEN sbr.value_required
-              WHEN sb.tracking_key LIKE '%"next_service_type":"Fix"%' THEN 'Fix'
-              WHEN sb.tracking_key LIKE '%"next_service_type":"Adjust"%' THEN 'Adjust'
-              WHEN sb.tracking_key LIKE '%"next_service_type":"Log"%' THEN 'Log'
-              ELSE ''
-          END) AS falRule
-        FROM staff_bonus sb
-        JOIN staff_bonus_rule sbr ON sb.staff_bonus_rule_id = sbr.id
-        WHERE sb.order_service_id > 0
-        GROUP BY sb.order_service_id
-      ) sb_agg ON os.id = sb_agg.order_service_id
-      WHERE ro.date BETWEEN '${startStr}' AND '${endStr}' 
+      WHERE ro.date BETWEEN '${monthStartStr}' AND '${endStr}' 
         AND o.order_state = 'Completed'
         ${activeCcFilter}
         ${consultantFilter}
         ${storeFilter}
-      ORDER BY ro.actual_booking_date_start DESC, os.id DESC
+      ORDER BY ro.actual_booking_date_start ASC, os.id ASC
     `);
 
-    // Accumulate points per staff from oldest to newest
-    const staffPointsAccu: Record<string, number> = {};
-    const rawRecords: any[] = new Array(rows.length);
-
-    for (let i = rows.length - 1; i >= 0; i--) {
-      const row = rows[i];
-      const activeConsultantName = row.ccOutName || row.ccInName || 'N/A';
-      const staffKey = activeConsultantName;
-
-      const consultantPoints = Number(row.consultantPoints) || 0;
-      const prevPoints = staffPointsAccu[staffKey] || 0;
-      const newTotal = prevPoints + consultantPoints;
-      staffPointsAccu[staffKey] = newTotal;
-
-      const specs = parseServiceSpecs(row.serviceName || '');
-      const calculatedLevel = this.calculateCcLevel(prevPoints);
-
-      const ccInName = String(row.ccInName || '');
-      const ccOutName = String(row.ccOutName || '');
-      const isSplit = Boolean(ccInName && ccOutName && ccInName !== ccOutName);
-
-      const dbCash = Number(row.dbCashBonus || 0);
-      const consultantBonus = dbCash > 0 ? dbCash : this.calculateCcBonus(calculatedLevel, isSplit);
-
-      rawRecords[i] = {
-        serviceId: Number(row.order_service_id),
-        checkin: String(row.checkinStr || ''),
-        checkinTime: String(row.checkinTimeStr || ''),
-        clientName: String(row.clientName || ''),
-        store: formatStoreCode(row.store),
-        serviceName: String(row.serviceName || ''),
-        serviceType: String(row.serviceType || 'Normal'),
-        consultantName: activeConsultantName,
-        avatar: String(row.avatar || '') || null,
-        consultantLevel: calculatedLevel,
-        consultantBonus,
-        pointsAccu: Math.round(newTotal * 10) / 10,
-        consultantPoints,
-        ccInName,
-        ccOutName,
-        class: specs.className,
-        classPts: Number(row.classPts) || specs.classPts,
-        fan:
-          Number(row.fanPts) === 3
-            ? '5D'
-            : Number(row.fanPts) === 2
-              ? '4D'
-              : Number(row.fanPts) === 1
-                ? '3D'
-                : specs.fan,
-        fanPts: Number(row.fanPts) || specs.fanPts,
-        type: specs.serviceType,
-        typePts: Number(row.typePts) || specs.typePts,
-        lashCount: specs.lashCount,
-        lashPts: Number(row.lashPts) || specs.lashPts,
-        design: specs.design,
-        designPts: Number(row.designPts) || specs.designPts,
-        color: specs.color,
-        colorPts: Number(row.colorPts) || specs.colorPts,
-        falRule: String(row.falRule || ''),
+    if (!rows || rows.length === 0) {
+      return {
+        data: [],
+        total: 0,
+        summary: { totalCheckins: 0, totalBonus: 0, totalPoints: 0 },
       };
     }
 
-    const total = rawRecords.length;
-    const paginatedRecords = rawRecords.slice((page - 1) * limit, page * limit);
-    const totalBonus = rawRecords.reduce((sum, r) => sum + r.consultantBonus, 0);
-    const totalPoints = rawRecords.reduce((sum, r) => sum + r.consultantPoints, 0);
+    // Query staff_bonus grouped by order_service_id and user_id for fast lookup
+    const osIds = rows.map((r) => r.order_service_id);
+    const bonusRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      SELECT 
+        sb.order_service_id,
+        sb.user_id,
+        SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS consultantPoints,
+        SUM(CASE WHEN sb.bonus_type = 'Cash' THEN sb.bonus_amount ELSE 0 END) AS dbCashBonus,
+        SUM(CASE WHEN sbr.type = 'OrderServiceClass' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS classPts,
+        SUM(CASE WHEN sbr.type = 'OrderServiceAttributeFan' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS fanPts,
+        SUM(CASE WHEN sbr.type = 'OrderServiceType' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS typePts,
+        SUM(CASE WHEN sbr.type = 'OrderServiceAttributeLashes' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS lashPts,
+        SUM(CASE WHEN sbr.type = 'OrderServiceAttributeDesign' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS designPts,
+        SUM(CASE WHEN sbr.type = 'OrderServiceAttributeColor' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS colorPts,
+        MAX(CASE 
+            WHEN sbr.type IN ('OrderServiceType', 'OrderServicePrice') AND sbr.value_required IN ('Log', 'Fix', 'Adjust') THEN sbr.value_required
+            WHEN sb.tracking_key LIKE '%"next_service_type":"Fix"%' THEN 'Fix'
+            WHEN sb.tracking_key LIKE '%"next_service_type":"Adjust"%' THEN 'Adjust'
+            WHEN sb.tracking_key LIKE '%"next_service_type":"Log"%' THEN 'Log'
+            ELSE ''
+        END) AS falRule
+      FROM staff_bonus sb
+      JOIN staff_bonus_rule sbr ON sb.staff_bonus_rule_id = sbr.id
+      WHERE sb.order_service_id IN (${osIds.join(',')})
+      GROUP BY sb.order_service_id, sb.user_id
+    `);
+
+    const bonusMap = new Map<string, any>();
+    for (const b of bonusRows) {
+      bonusMap.set(`${b.order_service_id}_${b.user_id}`, b);
+    }
+
+    // Accumulate points per staff chronologically ASC from 1st of the month
+    const staffPointsAccu: Record<string, number> = {};
+    const filteredRecords: any[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+
+      // Determine staff targets for this row
+      const staffTargets: Array<{ staffId: number; staffName: string; avatar: string }> = [];
+      const checkInId = Number(row.check_in_staff_id || 0);
+      const checkOutId = Number(row.check_out_staff_id || 0);
+
+      if (filterStaffId > 0) {
+        if (checkInId === filterStaffId) {
+          staffTargets.push({
+            staffId: checkInId,
+            staffName: String(row.ccInName || row.ccOutName || 'N/A'),
+            avatar: String(row.checkinAvatar || row.checkoutAvatar || ''),
+          });
+        } else if (checkOutId === filterStaffId) {
+          staffTargets.push({
+            staffId: checkOutId,
+            staffName: String(row.ccOutName || row.ccInName || 'N/A'),
+            avatar: String(row.checkoutAvatar || row.checkinAvatar || ''),
+          });
+        }
+      } else if (filterStaffName) {
+        if (String(row.ccInName || '').toLowerCase().includes(filterStaffName)) {
+          staffTargets.push({
+            staffId: checkInId || checkOutId,
+            staffName: String(row.ccInName || row.ccOutName || 'N/A'),
+            avatar: String(row.checkinAvatar || row.checkoutAvatar || ''),
+          });
+        } else if (String(row.ccOutName || '').toLowerCase().includes(filterStaffName)) {
+          staffTargets.push({
+            staffId: checkOutId || checkInId,
+            staffName: String(row.ccOutName || row.ccInName || 'N/A'),
+            avatar: String(row.checkoutAvatar || row.checkinAvatar || ''),
+          });
+        }
+      } else {
+        if (checkInId > 0) {
+          staffTargets.push({
+            staffId: checkInId,
+            staffName: String(row.ccInName || 'N/A'),
+            avatar: String(row.checkinAvatar || ''),
+          });
+        }
+        if (checkOutId > 0 && checkOutId !== checkInId) {
+          staffTargets.push({
+            staffId: checkOutId,
+            staffName: String(row.ccOutName || 'N/A'),
+            avatar: String(row.checkoutAvatar || ''),
+          });
+        }
+      }
+
+      for (const target of staffTargets) {
+        const targetStaffId = target.staffId;
+        const targetStaffName = target.staffName;
+        const targetAvatar = target.avatar;
+
+        const bKey = `${row.order_service_id}_${targetStaffId}`;
+        const sbData = bonusMap.get(bKey) || {};
+
+        const consultantPoints = Number(sbData.consultantPoints) || 0;
+        const staffKey = String(targetStaffId);
+        const prevPoints = staffPointsAccu[staffKey] || 0;
+        const newTotal = prevPoints + consultantPoints;
+        staffPointsAccu[staffKey] = newTotal;
+
+        const specs = parseServiceSpecs(row.serviceName || '');
+        const calculatedLevel = this.calculateCcLevel(prevPoints);
+
+        const ccInName = String(row.ccInName || '');
+        const ccOutName = String(row.ccOutName || '');
+        const isSplit = Boolean(ccInName && ccOutName && ccInName !== ccOutName);
+
+        const dbCash = Number(sbData.dbCashBonus || 0);
+        const consultantBonus = dbCash > 0 ? dbCash : this.calculateCcBonus(calculatedLevel, isSplit);
+
+        const dateOnly = String(row.dateOnlyStr || '').substring(0, 10);
+        if (dateOnly >= startStr && dateOnly <= endStr) {
+          filteredRecords.push({
+            consultantId: targetStaffId,
+            serviceId: Number(row.order_service_id),
+            checkin: String(row.checkinStr || ''),
+            checkinTime: String(row.checkinTimeStr || ''),
+            clientName: String(row.clientName || ''),
+            store: formatStoreCode(row.store),
+            serviceName: String(row.serviceName || ''),
+            serviceType: String(row.serviceType || 'Normal'),
+            consultantName: targetStaffName,
+            avatar: targetAvatar || null,
+            consultantLevel: calculatedLevel,
+            consultantBonus,
+            pointsAccu: Math.round(newTotal * 10) / 10,
+            consultantPoints,
+            ccInName,
+            ccOutName,
+            class: specs.className,
+            classPts: Number(sbData.classPts) || specs.classPts,
+            fan:
+              Number(sbData.fanPts) === 3
+                ? '5D'
+                : Number(sbData.fanPts) === 2
+                  ? '4D'
+                  : Number(sbData.fanPts) === 1
+                    ? '3D'
+                    : specs.fan,
+            fanPts: Number(sbData.fanPts) || specs.fanPts,
+            type: specs.serviceType,
+            typePts: Number(sbData.typePts) || specs.typePts,
+            lashCount: specs.lashCount,
+            lashPts: Number(sbData.lashPts) || specs.lashPts,
+            design: specs.design,
+            designPts: Number(sbData.designPts) || specs.designPts,
+            color: specs.color,
+            colorPts: Number(sbData.colorPts) || specs.colorPts,
+            falRule: String(row.falRule || sbData.falRule || ''),
+          });
+        }
+      }
+    }
+
+    // Sort final records DESC (newest checkin at top) for UI presentation
+    filteredRecords.reverse();
+
+    const total = filteredRecords.length;
+    const paginatedRecords = filteredRecords.slice((page - 1) * limit, page * limit);
+    const totalBonus = filteredRecords.reduce((sum, r) => sum + r.consultantBonus, 0);
+    const totalPoints = filteredRecords.reduce((sum, r) => sum + r.consultantPoints, 0);
 
     return {
       data: paginatedRecords,

@@ -441,11 +441,13 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
 
         const assignmentMap = new Map();
         assignments.forEach((a) => {
-          assignmentMap.set(a.legacyUserId, {
-            id: a.staff.id,
-            displayName: a.staff.displayName,
-            username: a.staff.username,
-          });
+          if (a.staff) {
+            assignmentMap.set(a.legacyUserId, {
+              id: a.staff.id,
+              displayName: a.staff.displayName,
+              username: a.staff.username,
+            });
+          }
         });
 
         // Fetch latest bookings for the returned customers

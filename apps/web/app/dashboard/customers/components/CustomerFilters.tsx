@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Drawer, Form, Select, Button, Space, Badge, theme } from 'antd';
+import { Drawer, Form, Select, Button, Space, Badge, Tooltip } from 'antd';
 import {
   FilterOutlined,
   CalendarOutlined,
@@ -11,7 +11,7 @@ import {
   TeamOutlined,
   ClearOutlined,
   SaveOutlined,
-  SettingOutlined,
+  PushpinFilled,
 } from '@ant-design/icons';
 
 // Shared and custom sub-components
@@ -58,6 +58,8 @@ interface CustomerFiltersProps {
   setReferralCountMax: (val: number | undefined) => void;
   assignedStaffId: string;
   setAssignedStaffId: (val: string) => void;
+  retainedOnly?: boolean;
+  setRetainedOnly?: (val: boolean) => void;
   setActiveFilterId: (id: string | null) => void;
   staffList: SafeAny[];
   saveFilterModalVisible: boolean;
@@ -65,9 +67,8 @@ interface CustomerFiltersProps {
   newFilterName: string;
   setNewFilterName: (val: string) => void;
   handleSaveFilter: () => Promise<void>;
-  activeFilterId: string | null;
   PRESET_FILTERS: SafeAny[];
-  openConfig?: () => void;
+  onOpenRandomModal?: () => void;
 }
 
 const CustomerFilters = React.memo(function CustomerFilters({
@@ -106,6 +107,8 @@ const CustomerFilters = React.memo(function CustomerFilters({
   setReferralCountMax,
   assignedStaffId,
   setAssignedStaffId,
+  retainedOnly,
+  setRetainedOnly,
   setActiveFilterId,
   staffList,
   saveFilterModalVisible,
@@ -113,12 +116,9 @@ const CustomerFilters = React.memo(function CustomerFilters({
   newFilterName,
   setNewFilterName,
   handleSaveFilter,
-  activeFilterId,
   PRESET_FILTERS,
-  openConfig,
+  onOpenRandomModal,
 }: CustomerFiltersProps) {
-  const { token } = theme.useToken();
-
   const filterParams = {
     daysSinceLastVisitMin,
     daysSinceLastVisitMax,
@@ -187,30 +187,38 @@ const CustomerFilters = React.memo(function CustomerFilters({
           applyFilter={applyFilter}
         />
 
-        <Badge dot={hasActiveFilters}>
-          <Button icon={<FilterOutlined />} onClick={() => setFilterDrawerVisible(true)}>
-            Bộ lọc nâng cao
-          </Button>
-        </Badge>
+        <Tooltip title="Bộ lọc nâng cao">
+          <Badge dot={hasActiveFilters} offset={[-2, 2]}>
+            <Button
+              icon={<FilterOutlined />}
+              onClick={() => setFilterDrawerVisible(true)}
+              style={{
+                borderColor: hasActiveFilters ? '#1677ff' : undefined,
+                color: hasActiveFilters ? '#1677ff' : undefined,
+                borderRadius: '6px',
+              }}
+            />
+          </Badge>
+        </Tooltip>
 
-        {openConfig && (
-          <Button icon={<SettingOutlined />} onClick={openConfig}>
-            Cấu hình cột
-          </Button>
+        {onOpenRandomModal && (
+          <Tooltip title="Chọn ngẫu nhiên Booker">
+            <Button icon={<TeamOutlined />} onClick={onOpenRandomModal} style={{ borderRadius: '6px' }} />
+          </Tooltip>
         )}
 
         {hasActiveFilters && (
           <>
-            <Button icon={<ClearOutlined />} danger onClick={clearFilters}>
-              Xóa bộ lọc
-            </Button>
-            <Button
-              icon={<SaveOutlined />}
-              onClick={() => setSaveFilterModalVisible(true)}
-              style={{ borderColor: '#D4A84B', color: '#D4A84B' }}
-            >
-              Lưu bộ lọc
-            </Button>
+            <Tooltip title="Xóa tất cả bộ lọc">
+              <Button icon={<ClearOutlined />} danger onClick={clearFilters} style={{ borderRadius: '6px' }} />
+            </Tooltip>
+            <Tooltip title="Lưu bộ lọc hiện tại">
+              <Button
+                icon={<SaveOutlined />}
+                onClick={() => setSaveFilterModalVisible(true)}
+                style={{ borderColor: '#D4A84B', color: '#D4A84B', borderRadius: '6px' }}
+              />
+            </Tooltip>
           </>
         )}
       </Space>
@@ -494,15 +502,46 @@ const CustomerFilters = React.memo(function CustomerFilters({
                     { value: 'all', label: 'Tất cả' },
                     { value: 'unassigned', label: 'Chưa phân bổ' },
                     { value: 'me', label: 'Khách hàng của tôi' },
-                    ...staffList.map((s) => ({
-                      value: s.id.toString(),
-                      label: `Booker: ${s.displayName}`,
-                    })),
+                    ...staffList
+                      .filter((s) => ['telesales', 'executive', 'manager', 'admin'].includes(s.role?.toLowerCase() || ''))
+                      .map((s) => ({
+                        value: s.id.toString(),
+                        label: `Booker: ${s.displayName}`,
+                      })),
                   ]}
                 />
               </Form.Item>
             </div>
           )}
+
+          {/* SECTION 7: TRẠNG THÁI GIỮ DATA */}
+          <div style={{ marginBottom: '16px' }}>
+            <FilterSectionHeader
+              icon={<PushpinFilled style={{ fontSize: '14px', color: '#faad14' }} />}
+              title="Trạng thái Giữ Data"
+              themeMode={themeMode}
+            />
+            <Form.Item
+              label={
+                <span style={{ fontSize: '12px', color: themeMode === 'dark' ? '#aaa' : '#555' }}>
+                  Lọc Khách hàng đã chọn giữ
+                </span>
+              }
+            >
+              <Select
+                value={retainedOnly ? 'yes' : 'all'}
+                style={{ width: '100%' }}
+                onChange={(val) => {
+                  if (setRetainedOnly) setRetainedOnly(val === 'yes');
+                  setActiveFilterId(null);
+                }}
+                options={[
+                  { value: 'all', label: 'Tất cả (Không lọc giữ data)' },
+                  { value: 'yes', label: '📌 Chỉ hiển thị Data đã giữ lại' },
+                ]}
+              />
+            </Form.Item>
+          </div>
         </Form>
       </Drawer>
 

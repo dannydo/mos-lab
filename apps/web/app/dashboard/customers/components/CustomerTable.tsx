@@ -22,12 +22,12 @@ interface CustomerTableProps {
   setSelectedRowKeys: (keys: React.Key[]) => void;
   currentUser: SafeAny;
   openDetailModal: (customer: Customer) => void;
-  sentinelRef: React.RefObject<HTMLDivElement | null>;
+  sentinelRef: SafeAny;
 }
 
 const CustomerTable = React.memo(
   React.forwardRef<{ openConfig: () => void }, CustomerTableProps>(function CustomerTable(
-    { customers, loading, selectedRowKeys, setSelectedRowKeys, currentUser, openDetailModal, sentinelRef },
+    { customers, loading, total, selectedRowKeys, setSelectedRowKeys, currentUser, openDetailModal, sentinelRef },
     ref
   ) {
     const { themeMode } = useTheme();
@@ -222,6 +222,49 @@ const CustomerTable = React.memo(
             count > 0 ? <Tag color="purple">{count} người</Tag> : <Text type="secondary">-</Text>,
         },
         {
+          title: 'Đã phân bổ',
+          key: 'allocatedDays',
+          width: 120,
+          render: (_: SafeAny, record: Customer) => {
+            const assignedAt =
+              record.assignedStaff?.assignedAt || record.assignedAt || record.lastAllocation?.assignedAt;
+
+            if (!assignedAt) {
+              return (
+                <Text type="secondary" style={{ fontStyle: 'italic' }}>
+                  Chưa từng phân bổ
+                </Text>
+              );
+            }
+
+            const assignedDate = dayjs(assignedAt);
+            const today = dayjs();
+            const diffDays = Math.max(0, today.diff(assignedDate, 'day'));
+            const formattedDate = assignedDate.format('DD/MM/YYYY HH:mm');
+
+            const isCurrentlyAssigned = !!record.assignedStaff;
+            const staffName = record.assignedStaff?.displayName || record.lastAllocation?.staffName;
+
+            const tooltipTitle = isCurrentlyAssigned
+              ? `Đang phân bổ cho: ${staffName || 'Booker'} (từ ${formattedDate})`
+              : `Lần cuối phân bổ: ${formattedDate}${staffName ? ` (Booker trước: ${staffName})` : ''}`;
+
+            return (
+              <Tooltip title={tooltipTitle}>
+                <span
+                  className="tabular-nums font-semibold"
+                  style={{
+                    color: isCurrentlyAssigned ? token.colorText : token.colorTextDescription,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {diffDays} ngày
+                </span>
+              </Tooltip>
+            );
+          },
+        },
+        {
           title: 'Booker phụ trách',
           dataIndex: 'assignedStaff',
           key: 'assignedStaff',
@@ -310,9 +353,20 @@ const CustomerTable = React.memo(
 
         <div
           ref={sentinelRef as SafeAny}
-          style={{ height: '30px', margin: '20px 0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+          style={{ height: '40px', margin: '16px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
         >
-          {loading && <Spin size="small" />}
+          {loading ? (
+            <Space size="small">
+              <Spin size="small" />
+              <Typography.Text type="secondary" style={{ fontSize: '13px' }}>
+                Đang tự động tải thêm dữ liệu...
+              </Typography.Text>
+            </Space>
+          ) : customers.length >= total && total > 0 ? (
+            <Typography.Text type="secondary" style={{ fontSize: '13px', fontStyle: 'italic' }}>
+              Đã tải toàn bộ {total.toLocaleString('vi-VN')} khách hàng
+            </Typography.Text>
+          ) : null}
         </div>
 
         <TableConfigDrawer

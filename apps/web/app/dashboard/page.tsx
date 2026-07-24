@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-export default function HomePage() {
+export default function DashboardPage() {
   useEffect(() => {
     window.location.href = '/dashboard/customers';
   }, []);
@@ -11,18 +11,16 @@ export default function HomePage() {
     <div
       style={{
         display: 'flex',
-        height: '100vh',
-        width: '100vw',
+        height: '100%',
+        width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#000000',
-        color: '#ffffff',
+        padding: '50px 0',
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
       <div style={{ textAlign: 'center' }}>
-        <h2 style={{ color: '#D4A84B', margin: '0 0 8px 0', fontSize: '20px' }}>WINGS LASHES CRM</h2>
-        <p style={{ color: '#888888', margin: 0, fontSize: '14px' }}>Đang chuyển hướng đến Dashboard Khách Hàng...</p>
+        <p style={{ color: '#888888', margin: 0, fontSize: '14px' }}>Đang chuyển hướng sang Danh Sách Khách Hàng...</p>
       </div>
     </div>
   );

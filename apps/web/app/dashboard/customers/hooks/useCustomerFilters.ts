@@ -37,24 +37,20 @@ export const useCustomerFilters = (
   const [referralCountMin, setReferralCountMin] = useState<number | undefined>(undefined);
   const [referralCountMax, setReferralCountMax] = useState<number | undefined>(undefined);
 
-  const [assignedStaffId, setAssignedStaffId] = useState<string>('all');
+  const [retainedOnly, setRetainedOnly] = useState<boolean>(false);
 
-  // Initialize assignedStaffId based on currentUser & scopeParam
-  useEffect(() => {
-    if (currentUser) {
-      if (scopeParam) {
-        setAssignedStaffId(scopeParam);
-      } else if (currentUser.role === 'telesales') {
-        setAssignedStaffId('me');
-      }
-    }
-  }, [currentUser, scopeParam]);
+  const [assignedStaffId, setAssignedStaffId] = useState<string>(() => {
+    return scopeParam || (currentUser?.role === 'telesales' ? 'me' : 'all');
+  });
 
+  // Keep assignedStaffId in sync with searchParams scopeParam & currentUser role
   useEffect(() => {
-    if (scopeParam) {
+    if (scopeParam && scopeParam !== assignedStaffId) {
       setAssignedStaffId(scopeParam);
+    } else if (!scopeParam && currentUser?.role === 'telesales' && assignedStaffId !== 'me') {
+      setAssignedStaffId('me');
     }
-  }, [scopeParam]);
+  }, [currentUser, scopeParam, assignedStaffId]);
 
   // Saved Filters preset state
   const [savedFilters, setSavedFilters] = useState<SafeAny[]>([]);
@@ -113,6 +109,118 @@ export const useCustomerFilters = (
     [currentUser]
   );
 
+  const applyFilterFromJson = useCallback(
+    (filterJsonStr: string) => {
+      try {
+        const criteria = JSON.parse(filterJsonStr);
+        if (criteria.activeTab || criteria.bucket) {
+          const tab = criteria.activeTab || criteria.bucket;
+          setActiveTab(tab);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('mos_customers_active_tab', tab);
+          }
+        }
+        if (criteria.searchQuery !== undefined) setSearchQuery(criteria.searchQuery);
+        setDaysSinceLastVisitMin(criteria.daysSinceLastVisitMin);
+        setDaysSinceLastVisitMax(criteria.daysSinceLastVisitMax);
+        setTotalSpentMin(criteria.totalSpentMin);
+        setTotalSpentMax(criteria.totalSpentMax);
+        setTotalVisitsMin(criteria.totalVisitsMin);
+        setTotalVisitsMax(criteria.totalVisitsMax);
+        setPromoUsed(criteria.promoUsed || 'all');
+        setPromoCountMin(criteria.promoCountMin);
+        setPromoCountMax(criteria.promoCountMax);
+        setReferralUsed(criteria.referralUsed || 'all');
+        setReferralCountMin(criteria.referralCountMin);
+        setReferralCountMax(criteria.referralCountMax);
+        setAssignedStaffId(criteria.assignedStaffId || 'all');
+
+        optionsRef.current?.onSuccess?.('Đã tải lại bộ lọc đợt phân bổ thành công!');
+      } catch (e) {
+        console.error('Failed to parse filter JSON:', e);
+        optionsRef.current?.onError?.('Không thể tải bộ lọc từ đợt phân bổ');
+      }
+    },
+    [optionsRef]
+  );
+
+  const getCurrentFilterCriteria = useCallback(() => {
+    return {
+      activeTab,
+      searchQuery,
+      daysSinceLastVisitMin,
+      daysSinceLastVisitMax,
+      totalSpentMin,
+      totalSpentMax,
+      totalVisitsMin,
+      totalVisitsMax,
+      promoUsed,
+      promoCountMin,
+      promoCountMax,
+      referralUsed,
+      referralCountMin,
+      referralCountMax,
+      assignedStaffId,
+    };
+  }, [
+    activeTab,
+    searchQuery,
+    daysSinceLastVisitMin,
+    daysSinceLastVisitMax,
+    totalSpentMin,
+    totalSpentMax,
+    totalVisitsMin,
+    totalVisitsMax,
+    promoUsed,
+    promoCountMin,
+    promoCountMax,
+    referralUsed,
+    referralCountMin,
+    referralCountMax,
+    assignedStaffId,
+  ]);
+
+  const buildFilterSummary = useCallback(
+    (sourceType: 'MANUAL' | 'RANDOM', count: number) => {
+      const parts: string[] = [];
+      if (sourceType === 'RANDOM') {
+        parts.push(`🎲 Ngẫu nhiên ${count} KH`);
+      } else {
+        parts.push(`Chọn thủ công ${count} KH`);
+      }
+
+      if (activeTab && activeTab !== 'ALL') {
+        parts.push(`Nhóm: ${activeTab}`);
+      }
+      if (daysSinceLastVisitMax !== undefined) {
+        if (daysSinceLastVisitMin !== undefined) {
+          parts.push(`Chưa tới: ${daysSinceLastVisitMin}-${daysSinceLastVisitMax} ngày`);
+        } else {
+          parts.push(`Chưa tới: <= ${daysSinceLastVisitMax} ngày`);
+        }
+      } else if (daysSinceLastVisitMin !== undefined) {
+        parts.push(`Chưa tới: >= ${daysSinceLastVisitMin} ngày`);
+      }
+
+      if (assignedStaffId === 'unassigned') {
+        parts.push(`Chưa phân bổ`);
+      } else if (assignedStaffId !== 'all') {
+        parts.push(`Đã phân bổ`);
+      }
+
+      if (retainedOnly) {
+        parts.push('📌 Chỉ Data đã giữ');
+      }
+
+      if (totalSpentMin !== undefined || totalSpentMax !== undefined) {
+        parts.push(`Chi tiêu`);
+      }
+
+      return parts.join(' | ');
+    },
+    [activeTab, daysSinceLastVisitMin, daysSinceLastVisitMax, assignedStaffId, totalSpentMin, totalSpentMax, retainedOnly]
+  );
+
   const clearFilters = useCallback(() => {
     setActiveFilterId(null);
     setActiveTab('ALL');
@@ -132,6 +240,7 @@ export const useCustomerFilters = (
     setReferralCountMin(undefined);
     setReferralCountMax(undefined);
     setAssignedStaffId(currentUser?.role === 'telesales' ? 'me' : 'all');
+    setRetainedOnly(false);
 
     if (onFiltersReset) {
       onFiltersReset();
@@ -232,6 +341,7 @@ export const useCustomerFilters = (
       referralCountMin,
       referralCountMax,
       assignedStaffId,
+      retainedOnly: retainedOnly ? 'true' : undefined,
     }),
     [
       activeTab,
@@ -251,6 +361,7 @@ export const useCustomerFilters = (
       referralCountMin,
       referralCountMax,
       assignedStaffId,
+      retainedOnly,
     ]
   );
 
@@ -290,6 +401,8 @@ export const useCustomerFilters = (
     setReferralCountMax,
     assignedStaffId,
     setAssignedStaffId,
+    retainedOnly,
+    setRetainedOnly,
 
     // UI Drawer state
     filterDrawerVisible,
@@ -306,6 +419,9 @@ export const useCustomerFilters = (
     fetchSavedFilters,
     handleSearch,
     applyFilter,
+    applyFilterFromJson,
+    getCurrentFilterCriteria,
+    buildFilterSummary,
     clearFilters,
     handleSaveFilter,
     handleDeleteFilter,

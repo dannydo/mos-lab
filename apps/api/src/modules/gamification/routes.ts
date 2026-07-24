@@ -119,7 +119,13 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
                 properties: {
                   totalComboSales: { type: 'number' },
                   totalProductSales: { type: 'number' },
+                  totalSales: { type: 'number' },
                   totalCcBonus: { type: 'number' },
+                  projectedComboSales: { type: 'number' },
+                  projectedProductSales: { type: 'number' },
+                  projectedTotalSales: { type: 'number' },
+                  projectedCcBonus: { type: 'number' },
+                  elapsedRatioPercent: { type: 'number' },
                 },
               },
               activeStaff: {
@@ -498,12 +504,54 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           return rec;
         });
 
+        // Calculate Real-time Run-rate Elapsed Ratio (11:00 AM - 23:00 PM shift formula)
+        const now = new Date();
+        const currentHour = now.getHours();
+        let fractionToday = 0;
+        if (currentHour < 11) {
+          fractionToday = 0;
+        } else if (currentHour > 22) {
+          fractionToday = 1;
+        } else {
+          fractionToday = (currentHour - 11 + 1) / 12;
+        }
+
+        const startDate = new Date(startStr);
+        const endDate = new Date(endStr);
+        const todayDate = new Date(now.toISOString().slice(0, 10));
+
+        const totalDays = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+        let elapsedRatio = 1.0;
+        if (todayDate < startDate) {
+          elapsedRatio = 0.001;
+        } else if (todayDate > endDate) {
+          elapsedRatio = 1.0;
+        } else {
+          const daysPassedBeforeToday = Math.max(0, Math.round((todayDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+          const totalElapsedDays = daysPassedBeforeToday + fractionToday;
+          elapsedRatio = Math.min(1.0, Math.max(0.001, totalElapsedDays / totalDays));
+        }
+
+        const totalComboSales = Math.round(result.reduce((sum, r) => sum + (r.combo_sales || 0), 0));
+        const totalProductSales = Math.round(
+          result.reduce((sum, r) => sum + (r.product_sales || 0) + (r.single_sales || 0), 0)
+        );
+        const totalSales = Math.round(
+          result.reduce((sum, r) => sum + (r.combo_sales || 0) + (r.product_sales || 0) + (r.single_sales || 0), 0)
+        );
+        const totalCcBonus = Math.round(result.reduce((sum, r) => sum + (r.daily_bonus || 0), 0));
+
         const summary = {
-          totalComboSales: Math.round(result.reduce((sum, r) => sum + (r.combo_sales || 0), 0)),
-          totalProductSales: Math.round(
-            result.reduce((sum, r) => sum + (r.product_sales || 0) + (r.single_sales || 0), 0)
-          ),
-          totalCcBonus: Math.round(result.reduce((sum, r) => sum + (r.daily_bonus || 0), 0)),
+          totalComboSales,
+          totalProductSales,
+          totalSales,
+          totalCcBonus,
+          projectedComboSales: Math.round(totalComboSales / elapsedRatio),
+          projectedProductSales: Math.round(totalProductSales / elapsedRatio),
+          projectedTotalSales: Math.round(totalSales / elapsedRatio),
+          projectedCcBonus: Math.round(totalCcBonus / elapsedRatio),
+          elapsedRatioPercent: Math.round(elapsedRatio * 1000) / 10,
         };
 
         return {

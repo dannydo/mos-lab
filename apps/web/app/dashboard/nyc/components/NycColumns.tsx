@@ -182,6 +182,40 @@ export const getNycColumns = ({
       render: (val: number) => formatVND(val),
     },
     {
+      title: 'Đã phân bổ',
+      key: 'allocatedDays',
+      width: 120,
+      render: (_: SafeAny, record: Customer) => {
+        const assignedAt =
+          record.assignedStaff?.assignedAt || record.assignedAt || record.lastAllocation?.assignedAt;
+        if (!assignedAt) {
+          return <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)' }}>Chưa từng phân bổ</span>;
+        }
+        const assignedDate = dayjs(assignedAt);
+        const today = dayjs();
+        const diffDays = Math.max(0, today.diff(assignedDate, 'day'));
+        const formattedDate = assignedDate.format('DD/MM/YYYY HH:mm');
+        const isCurrentlyAssigned = !!record.assignedStaff;
+        const staffName = record.assignedStaff?.displayName || record.lastAllocation?.staffName;
+        const tooltipTitle = isCurrentlyAssigned
+          ? `Đang phân bổ cho: ${staffName || 'Booker'} (từ ${formattedDate})`
+          : `Lần cuối phân bổ: ${formattedDate}${staffName ? ` (Booker trước: ${staffName})` : ''}`;
+        return (
+          <Tooltip title={tooltipTitle}>
+            <span
+              className="tabular-nums font-semibold"
+              style={{
+                opacity: isCurrentlyAssigned ? 1 : 0.7,
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {diffDays} ngày
+            </span>
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: 'Booker phụ trách',
       dataIndex: 'assignedStaff',
       key: 'assignedStaff',

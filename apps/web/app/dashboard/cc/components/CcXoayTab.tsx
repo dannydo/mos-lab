@@ -316,7 +316,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
       <Table
         dataSource={filteredData}
         columns={configuredColumns}
-        rowKey={(record) => `${record.serviceId}-${record.checkin}`}
+        rowKey={(record) => `${record.serviceId}-${record.consultantId || ''}-${record.checkin}`}
         loading={loading || configLoading}
         size="small"
         bordered
