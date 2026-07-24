@@ -413,8 +413,6 @@ function CustomersPageContent() {
         handleAssignCustomers={data.handleAssignCustomers}
         handleUnassignCustomers={data.handleUnassignCustomers}
         onRefresh={data.refreshListAndStats}
-        retainedOnly={data.retainedOnly}
-        onToggleRetainedFilter={() => data.setRetainedOnly(!data.retainedOnly)}
       />
 
       <Tabs
