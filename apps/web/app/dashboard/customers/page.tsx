@@ -325,7 +325,6 @@ function CustomersPageContent() {
               newFilterName={data.newFilterName}
               setNewFilterName={data.setNewFilterName}
               handleSaveFilter={data.handleSaveFilter}
-              activeFilterId={data.activeFilterId}
               PRESET_FILTERS={PRESET_FILTERS}
               onOpenRandomModal={() => data.setRandomModalVisible(true)}
             />
