@@ -14,6 +14,7 @@ import {
   Modal,
   Checkbox,
   Spin,
+  message,
 } from 'antd';
 import { SearchOutlined, CalendarOutlined, HistoryOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
