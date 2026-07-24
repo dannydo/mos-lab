@@ -283,7 +283,6 @@ function CustomersPageContent() {
               themeMode={themeMode}
               token={token}
               currentUser={data.currentUser}
-              openConfig={() => tableRef.current?.openConfig()}
               hasActiveFilters={data.hasActiveFilters}
               clearFilters={data.clearFilters}
               applyFilter={data.applyFilter}
