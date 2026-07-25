@@ -18,11 +18,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
     try {
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
         `SELECT DISTINCT user_id FROM (
-          SELECT usb_nl.user_id FROM user_service_balance usb_nl
-          LEFT JOIN service_price sp_nl ON usb_nl.service_price_id = sp_nl.id
-          LEFT JOIN service_language sl_nl ON usb_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-          WHERE usb_nl.date_created >= ? AND usb_nl.date_created <= ?
-            AND (COALESCE(sp_nl.service_price, 0) > 0 OR (usb_nl.total_normal_balance_amount + usb_nl.total_retain_balance_amount) > 0)
+          SELECT o_nl.user_id FROM \`order\` o_nl
+          JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
+          LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
+          LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
+          LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
+          LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+          WHERE o_nl.order_state = 'Completed'
+            AND osc_nl.total_price > 0
+            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) >= ? 
+            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) <= ?
             AND (sp_nl.service_price_package_key IS NULL OR (
               LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
               AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
@@ -41,29 +46,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
           LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
           LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
           WHERE o_nl.order_state = 'Completed'
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ? 
+            AND os_nl.total_price > 0
             AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
-            AND COALESCE(NULLIF(os_nl.total_price, 0), sp_nl.service_price, 0) > 0
-            AND (sp_nl.service_price_package_key IS NULL OR (
-              LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-            ))
-            AND (sl_nl.service_name IS NULL OR (
-              LOWER(sl_nl.service_name) NOT LIKE '%single%'
-              AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-              AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-            ))
-          UNION
-          SELECT o_nl.user_id FROM \`order\` o_nl
-          JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
-          LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
-          LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
-          LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
-          LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-          WHERE o_nl.order_state = 'Completed'
-            AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
-            AND osc_nl.total_price > 0
+            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) >= ? 
+            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) <= ?
             AND (sp_nl.service_price_package_key IS NULL OR (
               LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
               AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
@@ -75,8 +61,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
               AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
             ))
         ) t`,
-        dFromStr,
-        dToStr,
         dFromStr,
         dToStr,
         dFromStr,
