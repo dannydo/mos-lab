@@ -375,7 +375,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
           totalSalary: 5500000,
         };
 
-        const totalBooked = salary ? (salary.doneCount + salary.missedCount) : 0;
+        const totalBooked = legacyUserId ? (bookedCountMap.get(Number(legacyUserId)) ?? 0) : 0;
         const totalPlanned = totalBooked;
         const totalCalled = callStats.totalCalled;
         const totalAnswered = callStats.totalAnswered;
