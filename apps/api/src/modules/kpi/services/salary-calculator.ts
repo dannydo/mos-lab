@@ -162,7 +162,7 @@ export async function calculateBookerSalaryStats(
     const activeLegacyUserIds = Array.from(
       new Set(
         staffList
-          .map((s) => s.legacyStaffId || staffNameToLegacyIdMap.get(s.displayName.toLowerCase().trim()))
+          .map((s) => (s.legacyStaffId ? Number(s.legacyStaffId) : Number(staffNameToLegacyIdMap.get(s.displayName.toLowerCase().trim()))))
           .filter((id): id is number => typeof id === 'number' && !isNaN(id))
       )
     );
