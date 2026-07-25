@@ -326,9 +326,12 @@ export const apiClient = {
       return response.data;
     },
     getLeaderboard: async (params: {
-      date_from: string;
-      date_to: string;
+      date_from?: string;
+      date_to?: string;
+      startDate?: string;
+      endDate?: string;
       role?: string;
+      staffIds?: string;
     }): Promise<LeaderboardEntry[]> => {
       const response = await api.get('/kpi/leaderboard', { params });
       return response.data;

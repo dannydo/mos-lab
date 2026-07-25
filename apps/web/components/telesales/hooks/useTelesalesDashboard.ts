@@ -396,6 +396,8 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
             const params: SafeAny = {
               startDate: p.start.format('YYYY-MM-DD'),
               endDate: p.end.format('YYYY-MM-DD'),
+              date_from: p.start.format('YYYY-MM-DD'),
+              date_to: p.end.format('YYYY-MM-DD'),
             };
 
             if (savedIds.length > 0) {
