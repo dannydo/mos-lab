@@ -1,7 +1,7 @@
 'use client';
 
 import '../../suppress-warnings';
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   Table,
   Tabs,
@@ -10,8 +10,6 @@ import {
   Space,
   Radio,
   DatePicker,
-  Avatar,
-  Tag,
   Typography,
   Select,
   theme,
@@ -22,20 +20,9 @@ import {
   Row,
   Col,
   Spin,
-  Tooltip,
-  Popconfirm,
   message,
 } from 'antd';
-import {
-  CalendarOutlined,
-  LeftOutlined,
-  RightOutlined,
-  UserOutlined,
-  PhoneOutlined,
-  EyeOutlined,
-  CloseCircleOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
+import { CalendarOutlined, LeftOutlined, RightOutlined, SettingOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
@@ -53,10 +40,9 @@ import { getPendingColumns, getCompletedColumns } from './components/Appointment
 
 dayjs.extend(isoWeek);
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
-import { Appointment } from '@mos-lab/shared';
 import { formatVND } from '../../../lib/format-utils';
 
 const defaultColumnConfig = {
@@ -84,9 +70,7 @@ export default function AppointmentsPage() {
     saveColumnConfig,
     viewMode,
     setViewMode,
-    referenceDate,
     setReferenceDate,
-    customRange,
     setCustomRange,
     dateRange,
     pickerOpen,
@@ -98,18 +82,12 @@ export default function AppointmentsPage() {
     staffList,
     appointments,
     loading,
-    currentPage,
-    setCurrentPage,
-    pageSize,
-    setPageSize,
     total,
     summary,
     sentinelRef,
     selectedCustomer,
     detailModalVisible,
     setDetailModalVisible,
-    detailModalLoading,
-    customerHistory,
     bookingWizardVisible,
     setBookingWizardVisible,
     bookingInitialCustomer,

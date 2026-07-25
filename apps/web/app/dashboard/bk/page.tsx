@@ -2,7 +2,7 @@
 
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, theme, DatePicker, Select, Radio, Space, Button, Tabs, Spin, message } from 'antd';
+import { Typography, Card, theme, DatePicker, Select, Radio, Space, Button, Tabs } from 'antd';
 import {
   CalendarOutlined,
   LeftOutlined,
@@ -16,7 +16,6 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
-import { useTheme } from '../../../context/ThemeContext';
 
 import BkBookingTab from './components/BkBookingTab';
 import BkDoneTab from './components/BkDoneTab';
@@ -32,7 +31,6 @@ const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 export default function BkDashboardPage() {
-  const { themeMode } = useTheme();
   const { token } = theme.useToken();
 
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
@@ -40,7 +38,7 @@ export default function BkDashboardPage() {
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs().endOf('month')]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedStore, setSelectedStore] = useState<string>('ALL');
-  const [selectedBooker, setSelectedBooker] = useState<string>('ALL');
+  const [selectedBooker] = useState<string>('ALL');
 
   const [activeTab, setActiveTab] = useState<string>('booking');
   const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
