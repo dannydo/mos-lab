@@ -74,7 +74,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
               AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
               AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
             ))
-        } t`,
+        ) t`,
         dFromStr,
         dToStr,
         dFromStr,
