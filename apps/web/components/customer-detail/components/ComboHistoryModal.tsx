@@ -55,7 +55,7 @@ export const ComboHistoryModal: React.FC<ComboHistoryModalProps> = ({
         if (val === 0) {
           return 'Miễn phí';
         }
-        return `${val.toLocaleString('vi-VN')} đ`;
+        return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{val.toLocaleString('vi-VN')} đ</span>;
       },
       width: '120px',
     },
@@ -63,7 +63,7 @@ export const ComboHistoryModal: React.FC<ComboHistoryModalProps> = ({
       title: 'Số buổi',
       key: 'sessions',
       render: (_: SafeAny, record: SafeAny) => (
-        <span>
+        <span style={{ fontVariantNumeric: 'tabular-nums' }}>
           Mới: <strong>{record.normalCount}</strong> / Dặm: <strong>{record.retainCount}</strong>
         </span>
       ),

@@ -688,12 +688,16 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
             >
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#888' }}>Giá gốc dịch vụ:</span>
-                <span>{priceInfo.original.toLocaleString('vi-VN')}đ</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {priceInfo.original.toLocaleString('vi-VN')}đ
+                </span>
               </div>
               {priceInfo.discount > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fa8c16' }}>
                   <span>Giảm giá ({selectedPromotion?.name}):</span>
-                  <span>-{priceInfo.discount.toLocaleString('vi-VN')}đ</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    -{priceInfo.discount.toLocaleString('vi-VN')}đ
+                  </span>
                 </div>
               )}
               <div
@@ -708,7 +712,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
                 }}
               >
                 <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>Giá thanh toán tạm tính:</span>
-                <span style={{ color: '#52c41a' }}>{priceInfo.final.toLocaleString('vi-VN')}đ</span>
+                <span style={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums' }}>
+                  {priceInfo.final.toLocaleString('vi-VN')}đ
+                </span>
               </div>
             </div>
           )}
@@ -831,7 +837,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
               {selectedService && selectedService.id !== 0 && (
                 <div>
                   <span style={{ color: '#888' }}>Giá thanh toán:</span>{' '}
-                  <strong style={{ color: '#52c41a', fontSize: '14.5px' }}>
+                  <strong style={{ color: '#52c41a', fontSize: '14.5px', fontVariantNumeric: 'tabular-nums' }}>
                     {priceInfo.final.toLocaleString('vi-VN')}đ
                   </strong>
                 </div>
