@@ -26,20 +26,29 @@ export default function ReferralsPage() {
   const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
-    const saved = localStorage.getItem('mos_referrals_pageSize');
-    if (saved) {
-      setPageSize(Number(saved));
-    }
-    const savedFilter = localStorage.getItem('mos_referrals_timeFilter');
-    if (savedFilter) {
-      setTimeFilter(savedFilter as SafeAny);
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mos_referrals_pageSize');
+      if (saved) {
+        setPageSize(Number(saved));
+      }
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlFilter = urlParams.get('timeFilter') || urlParams.get('tab');
+      const savedFilter = urlFilter || localStorage.getItem('mos_referrals_timeFilter');
+      if (savedFilter && ['this_month', 'last_month', 'this_year', 'last_year', 'all_time'].includes(savedFilter)) {
+        setTimeFilter(savedFilter as SafeAny);
+      }
     }
   }, []);
 
   const handleTimeFilterChange = (key: string) => {
     setTimeFilter(key as SafeAny);
     setCurrentPage(1);
-    localStorage.setItem('mos_referrals_timeFilter', key);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mos_referrals_timeFilter', key);
+      const url = new URL(window.location.href);
+      url.searchParams.set('timeFilter', key);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
   };
 
   const handlePageSizeChange = (page: number, size: number) => {
@@ -198,7 +207,7 @@ export default function ReferralsPage() {
         key: 'totalReferred',
         sorter: (a: SafeAny, b: SafeAny) => a.totalReferred - b.totalReferred,
         render: (val: number) => (
-          <Tag color="blue" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
+          <Tag color="blue" className="tabular-nums font-mono" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
             {val} người bạn
           </Tag>
         ),
@@ -209,7 +218,7 @@ export default function ReferralsPage() {
         key: 'totalRewardDiamonds',
         sorter: (a: SafeAny, b: SafeAny) => a.totalRewardDiamonds - b.totalRewardDiamonds,
         render: (val: number) => (
-          <Tag color="warning" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
+          <Tag color="warning" className="tabular-nums font-mono" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
             💎 {val} KC
           </Tag>
         ),
@@ -232,8 +241,8 @@ export default function ReferralsPage() {
     [token, showCustomerDetails]
   );
 
-  const expandedRowRender = (record: SafeAny) => {
-    const subColumns = [
+  const subColumns = React.useMemo(
+    () => [
       {
         title: 'Bạn bè được giới thiệu',
         key: 'name',
@@ -267,26 +276,32 @@ export default function ReferralsPage() {
         dataIndex: 'rewardDiamonds',
         key: 'rewardDiamonds',
         render: (val: number) => (
-          <span style={{ fontWeight: 'bold', color: val > 0 ? '#52c41a' : '#888' }}>
+          <span className="tabular-nums font-mono" style={{ fontWeight: 'bold', color: val > 0 ? '#52c41a' : '#888' }}>
             {val > 0 ? `+${val} 💎` : '0 💎'}
           </span>
         ),
       },
-    ];
+    ],
+    [token.colorPrimary, showCustomerDetails]
+  );
 
-    return (
-      <Table
-        columns={subColumns}
-        dataSource={record.referredUsers || []}
-        pagination={false}
-        rowKey="id"
-        size="small"
-        bordered
-        locale={{ emptyText: 'Chưa có thông tin bạn bè.' }}
-        style={{ margin: '8px 0' }}
-      />
-    );
-  };
+  const expandedRowRender = React.useCallback(
+    (record: SafeAny) => {
+      return (
+        <Table
+          columns={subColumns}
+          dataSource={record.referredUsers || []}
+          pagination={false}
+          rowKey="id"
+          size="small"
+          bordered
+          locale={{ emptyText: 'Chưa có thông tin bạn bè.' }}
+          style={{ margin: '8px 0' }}
+        />
+      );
+    },
+    [subColumns]
+  );
 
   return (
     <div style={{ padding: '24px', minHeight: '100vh', background: themeMode === 'dark' ? '#0f172a' : '#f8fafc' }}>

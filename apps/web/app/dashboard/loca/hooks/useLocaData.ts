@@ -134,6 +134,12 @@ export function useLocaData(options?: UseLocaDataOptions) {
       if (savedPageSize) {
         setPageSize(Number(savedPageSize));
       }
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTab = urlParams.get('tab') || urlParams.get('activeTab');
+      const savedTab = urlTab || localStorage.getItem('mos_loca_activeTab');
+      if (savedTab && TAB_KEYS.some((t) => t.id === savedTab)) {
+        setActiveTab(savedTab);
+      }
     }
   }, []);
 
@@ -461,7 +467,18 @@ export function useLocaData(options?: UseLocaDataOptions) {
     return '';
   };
 
+  const changeActiveTab = useCallback((tab: string) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mos_loca_activeTab', tab);
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
   return {
+    // states
     currentUser,
     activeTab,
     activeTouchpointKey,
@@ -489,7 +506,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
     datePreset,
     selectedDate,
     // setters
-    setActiveTab,
+    setActiveTab: changeActiveTab,
     setActiveTouchpointKey,
     setContactSubTab,
     setSearchQuery,

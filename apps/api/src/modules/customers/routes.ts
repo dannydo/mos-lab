@@ -1748,6 +1748,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
               SUM(retain_count) as retainCount,
               MAX(date_expired) as expiryDate
             FROM user_service_balance
+            WHERE (normal_count + retain_count) > 0
             GROUP BY user_id
           ) as usb_agg ON u.id = usb_agg.user_id
           ${innerWhereString}
@@ -2557,14 +2558,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       );
 
       // 3. Fetch all referral transactions at once for active referrers only
-      const referrerIds = referrers.map((r) => Number(r.referrerId));
-      const referralTxs =
-        referrerIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-              `SELECT user_id as referrerId, amount, tracking_key FROM user_balance_transaction 
-         WHERE template_id = 7 AND currency_id = 3 AND user_id IN (${referrerIds.join(',')})`
-            )
-          : [];
+      // 3. Fetch all referral transactions at once using indexed template_id and currency_id
+      const referralTxs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT user_id as referrerId, amount, tracking_key FROM user_balance_transaction 
+         WHERE template_id = 7 AND currency_id = 3`
+      );
 
       // Map of referrerId -> Map of referredId -> rewardAmount
       const referrerRewardMaps = new Map<number, Map<number, number>>();

@@ -455,6 +455,7 @@ export default function LocaCampaignPage() {
           setActiveTouchpointKey('ALL');
         }}
         type="card"
+        destroyOnHidden
         style={{ marginBottom: '16px' }}
         items={TAB_KEYS.map((tab) => ({
           key: tab.id,
