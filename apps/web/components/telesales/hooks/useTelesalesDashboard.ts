@@ -406,10 +406,9 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
               date_to: p.end.format('YYYY-MM-DD'),
             };
 
+            params.role = 'telesales';
             if (savedIds.length > 0) {
               params.staffIds = savedIds.join(',');
-            } else {
-              params.role = 'telesales';
             }
 
             const list = (await apiClient.kpi.getLeaderboard(params)) || [];
