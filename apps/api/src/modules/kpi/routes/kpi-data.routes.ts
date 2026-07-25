@@ -198,12 +198,18 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
     const user = request.user as { id: number; role: string };
 
     const queryParams = (request.query || {}) as SafeAny;
-    const startDateParam = queryParams.startDate || queryParams.dateFrom || queryParams.date_from;
-    const endDateParam = queryParams.endDate || queryParams.dateTo || queryParams.date_to;
     const role = queryParams.role;
     const staffIds = queryParams.staffIds;
-    const { startStr, endStr, start, end } = parseDateRange(startDateParam, endDateParam, 30);
-    console.log('LEADERBOARD START/END:', { startDateParam, endDateParam, startStr, endStr });
+
+    const startDateParam = (queryParams.startDate || queryParams.dateFrom || queryParams.date_from || '').toString().trim();
+    const endDateParam = (queryParams.endDate || queryParams.dateTo || queryParams.date_to || '').toString().trim();
+    
+    const todayStr = new Date().toISOString().split('T')[0];
+    const startStr = startDateParam ? (startDateParam.includes('T') ? startDateParam.split('T')[0] : startDateParam.split(' ')[0]) : todayStr;
+    const endStr = endDateParam ? (endDateParam.includes('T') ? endDateParam.split('T')[0] : endDateParam.split(' ')[0]) : todayStr;
+    
+    const start = new Date(startStr + 'T00:00:00.000Z');
+    const end = new Date(endStr + 'T23:59:59.999Z');
 
     try {
       if (role === 'oc' || role === 'consultant') {
