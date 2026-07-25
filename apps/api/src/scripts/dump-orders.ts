@@ -5,9 +5,9 @@ const prisma = new PrismaClient();
 async function run() {
   try {
     const targetDateStr = '2026-07-16';
-    const startOfDay = new Date(targetDateStr + 'T00:00:00.000Z');
-    const endOfDay = new Date(targetDateStr + 'T23:59:59.999Z');
-    const bookingDateOnlyDate = new Date(targetDateStr + 'T00:00:00.000Z');
+    const _startOfDay = new Date(targetDateStr + 'T00:00:00.000Z');
+    const _endOfDay = new Date(targetDateStr + 'T23:59:59.999Z');
+    const _bookingDateOnlyDate = new Date(targetDateStr + 'T00:00:00.000Z');
 
     console.log(`Querying ALL orders in database for ${targetDateStr}...`);
 

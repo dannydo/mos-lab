@@ -143,7 +143,7 @@ export async function callRoutes(fastify: FastifyInstance) {
               where: { callUuid },
               data: { callLogId: callLog.id },
             })
-            .catch((err) => {
+            .catch((_err) => {
               fastify.log.warn(
                 `OmiCall log not yet found for UUID ${callUuid}. It will be linked when webhook arrives.`
               );

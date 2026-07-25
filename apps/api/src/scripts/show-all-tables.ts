@@ -9,16 +9,16 @@ const prisma = new LegacyPrismaClient();
 async function run() {
   try {
     console.log('=== SHOWING ALL TABLES IN LEGACY DATABASE ===');
-    const tables = await prisma.$queryRawUnsafe<any[]>('SHOW TABLES');
+    const tables = await prisma.$queryRawUnsafe<Record<string, unknown>[]>('SHOW TABLES');
     console.log(tables);
 
     // Let's also check the structure of order_service table in more detail
     console.log('\n=== DESCRIBE ORDER_SERVICE ===');
-    const descOS = await prisma.$queryRawUnsafe<any[]>('DESCRIBE `order_service`');
+    const descOS = await prisma.$queryRawUnsafe<Record<string, unknown>[]>('DESCRIBE `order_service`');
     console.log(descOS.map((c) => `${c.Field} (${c.Type})`).join(', '));
 
     console.log('\n=== DESCRIBE ORDER ===');
-    const descO = await prisma.$queryRawUnsafe<any[]>('DESCRIBE `order`');
+    const descO = await prisma.$queryRawUnsafe<Record<string, unknown>[]>('DESCRIBE `order`');
     console.log(descO.map((c) => `${c.Field} (${c.Type})`).join(', '));
   } catch (err) {
     console.error('Error:', err);

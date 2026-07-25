@@ -1,10 +1,11 @@
 import { FastifyInstance } from 'fastify';
+import { SafeAny } from '@mos-lab/shared';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { getSalaryConfig, setCachedSalaryConfig } from '../services/salary-calculator.js';
 
 export async function registerSalaryConfigRoutes(fastify: FastifyInstance) {
   // GET /api/kpi/salary-config
-  fastify.get('/kpi/salary-config', { preHandler: [requireAuth] }, async (request, reply) => {
+  fastify.get('/kpi/salary-config', { preHandler: [requireAuth] }, async (_request, _reply) => {
     const config = await getSalaryConfig(fastify);
     return config;
   });
@@ -51,7 +52,7 @@ export async function registerSalaryConfigRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/kpi/staff-levels
-  fastify.get('/kpi/staff-levels', { preHandler: [requireAuth] }, async (request, reply) => {
+  fastify.get('/kpi/staff-levels', { preHandler: [requireAuth] }, async (_request, reply) => {
     try {
       const config = await fastify.prisma.crm.crmConfig.findUnique({
         where: { key: 'STAFF_TARGET_LEVELS' },

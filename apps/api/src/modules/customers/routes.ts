@@ -1087,7 +1087,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           dToStr
         );
 
-        const customerUsbMap = new Map<number, any>();
+        const customerUsbMap = new Map<number, SafeAny>();
         usbRecords.forEach((u) => {
           const uid = Number(u.userId);
           if (!customerUsbMap.has(uid)) {
@@ -1095,7 +1095,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
         });
 
-        const customerOrderMap = new Map<number, any>();
+        const customerOrderMap = new Map<number, SafeAny>();
         comboOrders.forEach((co) => {
           const uid = Number(co.userId);
           if (!customerOrderMap.has(uid)) {
@@ -2275,7 +2275,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
   // GET /api/saved-filters
   // Retrieve saved customer filters
-  fastify.get('/saved-filters', { preHandler: [requireAuth] }, async (request, reply) => {
+  fastify.get('/saved-filters', { preHandler: [requireAuth] }, async (_request, _reply) => {
     try {
       const config = await fastify.prisma.crm.crmConfig.findUnique({
         where: { key: 'CUSTOMER_SAVED_FILTERS' },
@@ -2677,13 +2677,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
               referrerTotalRewards.set(refId, (referrerTotalRewards.get(refId) || 0) + amt);
             }
           }
-        } catch (e) {
+        } catch {
           // ignore parsing error
         }
       }
 
       // Map of referrerId -> Map of referredId -> friend_info (to collapse duplicate contacts)
-      const friendsGrouped = new Map<number, Map<number, any>>();
+      const friendsGrouped = new Map<number, Map<number, SafeAny>>();
 
       for (const rf of referredFriends) {
         const refId = Number(rf.referrerId);
@@ -2691,7 +2691,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (!refId || !friendId) continue;
 
         if (!friendsGrouped.has(refId)) {
-          friendsGrouped.set(refId, new Map<number, any>());
+          friendsGrouped.set(refId, new Map<number, SafeAny>());
         }
 
         const refMap = friendsGrouped.get(refId)!;
@@ -2714,7 +2714,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const friendsMap = new Map<number, any[]>();
+      const friendsMap = new Map<number, SafeAny[]>();
       for (const [refId, refMap] of friendsGrouped.entries()) {
         friendsMap.set(refId, Array.from(refMap.values()));
       }
@@ -2751,11 +2751,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       newCustomerName,
       newCustomerPhone,
       storeId,
-      storeName,
+      storeName: _storeName,
       serviceId,
-      serviceName,
+      serviceName: _serviceName,
       technicianId,
-      technicianName,
+      technicianName: _technicianName,
       bookingDate,
       bookingTime,
       bookingChannel,
@@ -2949,14 +2949,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const mysqlEnd = formatLocalMySQL(endDate);
 
       // 5. Determine booker name and format final booking note to render correctly on legacy client
-      let bookerName = user.displayName || '';
+      let _bookerName = user.displayName || '';
       if (validStaffId) {
         const staffProfile = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
           validStaffId
         );
         if (staffProfile.length > 0 && staffProfile[0].full_name) {
-          bookerName = staffProfile[0].full_name;
+          _bookerName = staffProfile[0].full_name;
         }
       }
 
@@ -3970,7 +3970,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           } else if (quotaMap.default !== undefined) {
             quotaLimit = Number(quotaMap.default);
           }
-        } catch (e) {
+        } catch {
           // ignore parse error
         }
       }
@@ -4035,7 +4035,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           } else if (quotaMap.default !== undefined) {
             quotaLimit = Number(quotaMap.default);
           }
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -5125,13 +5125,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
               rewardMap.set(referredId, Number(tx.amount));
             }
           }
-        } catch (e) {
+        } catch {
           // ignore parsing error
         }
       }
 
       // Collapse duplicate contacts by user ID
-      const friendsGrouped = new Map<number, any>();
+      const friendsGrouped = new Map<number, SafeAny>();
       for (const ru of referredUsers) {
         const friendId = Number(ru.id);
         if (!friendId) continue;
@@ -5810,7 +5810,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const orderServicesMap = new Map<number, any[]>();
+      const orderServicesMap = new Map<number, SafeAny[]>();
       const serviceNameMap = new Map<number, string>();
       if (orderIds.length > 0) {
         const orderServices = await fastify.prisma.legacy.order_service.findMany({
@@ -5849,7 +5849,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (conf) {
         try {
           config = JSON.parse(conf.value);
-        } catch (e) {}
+        } catch {
+          /* ignore */
+        }
       }
 
       // 3.5. Query all orders in range to calculate summary KPIs (without pagination)
@@ -5906,7 +5908,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       `)
           : [];
 
-      const txnsByBalanceId = new Map<number, any[]>();
+      const txnsByBalanceId = new Map<number, SafeAny[]>();
       for (const t of userBalanceTransactions) {
         const bid = Number(t.user_service_balance_id);
         let list = txnsByBalanceId.get(bid);
@@ -5943,7 +5945,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           const isNotExpired =
             !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
-          let countLeft = 0;
+          let countLeft: number;
           if (
             lastTxnBefore &&
             lastTxnBefore.total_normal_count_left !== null &&
@@ -6004,7 +6006,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           });
         }
 
-        const summaryServicesMap = new Map<number, any[]>();
+        const summaryServicesMap = new Map<number, SafeAny[]>();
         summaryServices.forEach((os) => {
           const list = summaryServicesMap.get(os.order_id) || [];
           list.push(os);
@@ -6034,7 +6036,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
               o.dateCreated ? new Date(o.dateCreated) : new Date()
             );
 
-            let bonus = 0;
+            let bonus: number;
             if (isCombo) {
               bonus = 0;
             } else if (isRefill) {
@@ -6467,7 +6469,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const configs = request.body as Record<string, any[]>;
+    const configs = request.body as Record<string, SafeAny[]>;
     if (typeof configs !== 'object' || configs === null) {
       return reply.status(400).send({
         error: 'Bad Request',
@@ -6562,7 +6564,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const configs = request.body as Record<string, any[]>;
+    const configs = request.body as Record<string, SafeAny[]>;
     if (typeof configs !== 'object' || configs === null) {
       return reply.status(400).send({
         error: 'Bad Request',
@@ -6711,7 +6713,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           : [];
 
       // Index transactions by balance ID for O(1) lookups
-      const txnsByBalanceId = new Map<number, any[]>();
+      const txnsByBalanceId = new Map<number, SafeAny[]>();
       for (const t of userBalanceTransactions) {
         const bid = Number(t.user_service_balance_id);
         let list = txnsByBalanceId.get(bid);
@@ -6819,7 +6821,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
           // Condition 3: count left at that time > 0
-          let countLeft = 0;
+          let countLeft: number;
           if (
             lastTxnBefore &&
             lastTxnBefore.total_normal_count_left !== null &&
@@ -7137,7 +7139,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const dayOfWeek = new Date(targetDateStr).getDay();
       const weekdayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
 
-      const branchDetailMap: Record<string, any> = {
+      const branchDetailMap: Record<string, SafeAny> = {
         detham: {
           revLe: 0,
           revCombo: 0,
@@ -7377,7 +7379,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         targetDateStr
       );
 
-      const shiftMap = new Map<number, any>();
+      const shiftMap = new Map<number, SafeAny>();
       workingShifts.forEach((ws) => {
         shiftMap.set(Number(ws.user_id), ws);
       });

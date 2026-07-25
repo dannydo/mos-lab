@@ -93,7 +93,7 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
 
       try {
         // Determine what joins and select fields we need in the inner query to optimize performance
-        const needContact = search && search.trim() !== '';
+        const _needContact = search && search.trim() !== '';
         const needServiceBalance = bucket && bucket !== 'ALL';
 
         const needSpent =
@@ -893,7 +893,7 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
     const limitNum = parseInt(limit, 10) || 20;
 
     try {
-      const needContact = search && search.trim() !== '';
+      const _needContact = search && search.trim() !== '';
       const needServiceBalance = bucket && bucket !== 'ALL';
       const needSpent =
         (totalSpentMin !== undefined && totalSpentMin !== '') || (totalSpentMax !== undefined && totalSpentMax !== '');
@@ -1364,13 +1364,13 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
               referrerTotalRewards.set(refId, (referrerTotalRewards.get(refId) || 0) + amt);
             }
           }
-        } catch (e) {
+        } catch {
           // ignore parsing error
         }
       }
 
       // Map of referrerId -> Map of referredId -> friend_info (to collapse duplicate contacts)
-      const friendsGrouped = new Map<number, Map<number, any>>();
+      const friendsGrouped = new Map<number, Map<number, SafeAny>>();
 
       for (const rf of referredFriends) {
         const refId = Number(rf.referrerId);
@@ -1378,7 +1378,7 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
         if (!refId || !friendId) continue;
 
         if (!friendsGrouped.has(refId)) {
-          friendsGrouped.set(refId, new Map<number, any>());
+          friendsGrouped.set(refId, new Map<number, SafeAny>());
         }
 
         const refMap = friendsGrouped.get(refId)!;
@@ -1401,7 +1401,7 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const friendsMap = new Map<number, any[]>();
+      const friendsMap = new Map<number, SafeAny[]>();
       for (const [refId, refMap] of friendsGrouped.entries()) {
         friendsMap.set(refId, Array.from(refMap.values()));
       }
@@ -1944,13 +1944,13 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
               rewardMap.set(referredId, Number(tx.amount));
             }
           }
-        } catch (e) {
+        } catch {
           // ignore parsing error
         }
       }
 
       // Collapse duplicate contacts by user ID
-      const friendsGrouped = new Map<number, any>();
+      const friendsGrouped = new Map<number, SafeAny>();
       for (const ru of referredUsers) {
         const friendId = Number(ru.id);
         if (!friendId) continue;

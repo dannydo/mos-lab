@@ -1,8 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth, requireRole } from '../../../middlewares/auth.js';
-import { CvPaystubRecord, CvPaystubResponse, CvWorkLogDetailRecord, CvWorkLogDetailResponse } from '@mos-lab/shared';
-
-type SafeAny = any;
+import {
+  CvPaystubRecord,
+  CvPaystubResponse,
+  CvWorkLogDetailRecord,
+  CvWorkLogDetailResponse,
+  SafeAny,
+} from '@mos-lab/shared';
 
 const getLocalDate = (dStr: string) => {
   const p = dStr.split('-');
@@ -104,7 +108,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
             activeCvIds = parsed.map((id: SafeAny) => Number(id)).filter((id: number) => !isNaN(id));
           }
         }
-      } catch (err) {
+      } catch {
         fastify.log.warn('Could not load ACTIVE_CV_STAFF_CONFIG, using default list.');
       }
 
@@ -198,7 +202,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
             seniorityBonusConfig = parsed;
           }
         }
-      } catch (err) {
+      } catch {
         fastify.log.warn('Could not load CV_SENIORITY_BONUS_CONFIG, using default list.');
       }
 
@@ -610,7 +614,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
 
       // Find the off-day work dates
       const offDayWorkDates = new Set<string>();
-      for (const [monStr, datesSet] of weekDaysMap.entries()) {
+      for (const [_monStr, datesSet] of weekDaysMap.entries()) {
         if (datesSet.size === 7) {
           datesSet.forEach((dateStr) => {
             const d = getLocalDate(dateStr);

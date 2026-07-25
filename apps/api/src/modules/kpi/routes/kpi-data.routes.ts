@@ -117,7 +117,9 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
       const legacyUserIds = Array.from(
         new Set(
           staffList
-            .map((s) => (s.legacyStaffId ? Number(s.legacyStaffId) : staffNameToLegacyIdMap.get(s.displayName.toLowerCase().trim())))
+            .map((s) =>
+              s.legacyStaffId ? Number(s.legacyStaffId) : staffNameToLegacyIdMap.get(s.displayName.toLowerCase().trim())
+            )
             .filter((id): id is number => typeof id === 'number' && !isNaN(id))
         )
       );
@@ -201,13 +203,23 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
     const role = queryParams.role;
     const staffIds = queryParams.staffIds;
 
-    const startDateParam = (queryParams.startDate || queryParams.dateFrom || queryParams.date_from || '').toString().trim();
+    const startDateParam = (queryParams.startDate || queryParams.dateFrom || queryParams.date_from || '')
+      .toString()
+      .trim();
     const endDateParam = (queryParams.endDate || queryParams.dateTo || queryParams.date_to || '').toString().trim();
-    
+
     const todayStr = new Date().toISOString().split('T')[0];
-    const startStr = startDateParam ? (startDateParam.includes('T') ? startDateParam.split('T')[0] : startDateParam.split(' ')[0]) : todayStr;
-    const endStr = endDateParam ? (endDateParam.includes('T') ? endDateParam.split('T')[0] : endDateParam.split(' ')[0]) : todayStr;
-    
+    const startStr = startDateParam
+      ? startDateParam.includes('T')
+        ? startDateParam.split('T')[0]
+        : startDateParam.split(' ')[0]
+      : todayStr;
+    const endStr = endDateParam
+      ? endDateParam.includes('T')
+        ? endDateParam.split('T')[0]
+        : endDateParam.split(' ')[0]
+      : todayStr;
+
     const start = new Date(startStr + 'T00:00:00.000Z');
     const end = new Date(endStr + 'T23:59:59.999Z');
 
@@ -225,7 +237,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
         `)) as SafeAny[])
             : [];
 
-        const profileMap = new Map<number, any>();
+        const profileMap = new Map<number, SafeAny>();
         profiles.forEach((p: SafeAny) => {
           profileMap.set(Number(p.user_id), p);
         });
@@ -312,7 +324,11 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
       const legacyUserIds = Array.from(
         new Set(
           staffList
-            .map((s) => (s.legacyStaffId ? Number(s.legacyStaffId) : Number(staffNameToProfileMap.get(s.displayName.toLowerCase().trim())?.userId)))
+            .map((s) =>
+              s.legacyStaffId
+                ? Number(s.legacyStaffId)
+                : Number(staffNameToProfileMap.get(s.displayName.toLowerCase().trim())?.userId)
+            )
             .filter((id): id is number => typeof id === 'number' && !isNaN(id))
         )
       );
@@ -362,21 +378,22 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
           GROUP BY o.created_staff_id
         `;
 
-        console.log('LEADERBOARD QUERY RANGE:', { startStr, endStr, legacyUserIds });
         const bookedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sqlBooked);
-        console.log('LEADERBOARD BOOKED ROWS:', bookedRows);
         fastify.log.info({ staffList, legacyUserIds, bookedRows }, 'DEBUG LEADERBOARD STAFF LIST AND BOOKED ROWS');
         bookedRows.forEach((r: SafeAny) => {
           bookedCountMap.set(Number(r.staffId), Number(r.totalBooked || 0));
         });
-        console.log('DEBUG LEADERBOARD FINAL MAP:', { startStr, endStr, legacyUserIds, bookedMap: Array.from(bookedCountMap.entries()) });
       }
 
       const leaderboard = [];
 
       for (const staff of staffList) {
         const profile = staffNameToProfileMap.get(staff.displayName.toLowerCase().trim());
-        const legacyUserId = staff.legacyStaffId ? Number(staff.legacyStaffId) : (profile?.userId ? Number(profile.userId) : undefined);
+        const legacyUserId = staff.legacyStaffId
+          ? Number(staff.legacyStaffId)
+          : profile?.userId
+            ? Number(profile.userId)
+            : undefined;
         const callStats = callStatsMap.get(staff.id) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
 
         const rawAvatar = staff.avatarUrl || profile?.avatar || null;
@@ -404,9 +421,6 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
           totalSalary: 5500000,
         };
 
-        if (staff.id === 18 || staff.displayName.includes('Điệp')) {
-          console.log('DEBUG CHECK FOR NGOC DIEP:', { staffId: staff.id, legacyStaffId: staff.legacyStaffId, legacyUserId, bookedVal: bookedCountMap.get(Number(legacyUserId)), raw32268: bookedCountMap.get(32268), mapKeys: Array.from(bookedCountMap.keys()) });
-        }
         const totalBooked = legacyUserId ? (bookedCountMap.get(Number(legacyUserId)) ?? 0) : 0;
         const totalPlanned = totalBooked;
         const totalCalled = callStats.totalCalled;
@@ -418,7 +432,17 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
 
         const totalHappy = callStats.totalHappy;
 
-        fastify.log.info({ staffId: staff.id, name: staff.displayName, legacyStaffId: staff.legacyStaffId, legacyUserId, bookedCountMap: Array.from(bookedCountMap.entries()), totalBooked }, 'DEBUG STAFF BOOKED');
+        fastify.log.info(
+          {
+            staffId: staff.id,
+            name: staff.displayName,
+            legacyStaffId: staff.legacyStaffId,
+            legacyUserId,
+            bookedCountMap: Array.from(bookedCountMap.entries()),
+            totalBooked,
+          },
+          'DEBUG STAFF BOOKED'
+        );
         leaderboard.push({
           staffId: staff.id,
           displayName: staff.displayName,
@@ -486,7 +510,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
 
     const bookerName = staff.displayName;
 
-    const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 30);
+    const { start, end } = parseDateRange(startDate, endDate, 30);
 
     try {
       const config = await getSalaryConfig(fastify);
@@ -550,7 +574,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
           });
         }
 
-        const orderServicesMap = new Map<number, any[]>();
+        const orderServicesMap = new Map<number, SafeAny[]>();
         const serviceNameMap = new Map<number, string>();
         if (completedOrderIds.length > 0) {
           const orderServices = await fastify.prisma.legacy.order_service.findMany({
@@ -622,7 +646,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
         `)
             : [];
 
-        const txnsByBalanceId = new Map<number, any[]>();
+        const txnsByBalanceId = new Map<number, SafeAny[]>();
         for (const t of userBalanceTransactions) {
           const bid = Number(t.user_service_balance_id);
           let list = txnsByBalanceId.get(bid);
@@ -659,7 +683,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
             const isNotExpired =
               !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
-            let countLeft = 0;
+            let countLeft: number;
             if (
               lastTxnBefore &&
               lastTxnBefore.total_normal_count_left !== null &&
@@ -788,7 +812,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
       targetStaffId = user.id;
     }
 
-    const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 7);
+    const { start, end } = parseDateRange(startDate, endDate, 7);
 
     try {
       const logs = await fastify.prisma.crm.crmCallLog.findMany({

@@ -1,8 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { CcTipLeaderboardEntry, CcTipLeaderboardResponse, CcTipRecord, CcTipResponse } from '@mos-lab/shared';
-
-type SafeAny = any;
+import { CcTipLeaderboardEntry, CcTipLeaderboardResponse, CcTipRecord, CcTipResponse, SafeAny } from '@mos-lab/shared';
 
 async function getActiveCcIds(fastify: FastifyInstance): Promise<number[] | null> {
   try {

@@ -90,8 +90,8 @@ async function backfill() {
         );
         matchedCount++;
       }
-    } catch (err: any) {
-      console.error(`Error processing CallLog ID ${log.id}:`, err.message);
+    } catch (err: unknown) {
+      console.error(`Error processing CallLog ID ${log.id}:`, (err as Error).message);
     }
   }
 

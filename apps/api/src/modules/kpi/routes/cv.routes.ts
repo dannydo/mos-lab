@@ -1,8 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { CvConfigResponse, CvStaffOption, CvXoayRecord, CvXoayReportResponse } from '@mos-lab/shared';
-
-type SafeAny = any;
+import { CvConfigResponse, CvStaffOption, CvXoayRecord, CvXoayReportResponse, SafeAny } from '@mos-lab/shared';
 
 async function getActiveCvIds(fastify: FastifyInstance): Promise<number[] | null> {
   try {

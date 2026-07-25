@@ -2,13 +2,10 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
 import {
   DailySalesBonusConfig,
-  DailySalesBonusConfigTier,
   DailySalesBonusConsultantRecord,
   DailySalesBonusTransaction,
+  SafeAny,
 } from '@mos-lab/shared';
-import { CcKpiService } from '../kpi/services/cc-kpi.service.js';
-
-type SafeAny = any;
 
 const DEFAULT_CONFIG: DailySalesBonusConfig = {
   combo_unit_bonus: 200000,
@@ -162,7 +159,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
       const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
       const endStr = dateTo || new Date().toLocaleDateString('en-CA');
 
-      const config = await getBonusConfig(fastify);
+      const _config = await getBonusConfig(fastify);
       const activeCcIds = await getActiveCcIds(fastify);
 
       try {
@@ -489,7 +486,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           rec.total_sales = total_sales;
 
           // Match tier based on Total Sales before VAT
-          let matchedTierRate = 0.5;
+          let matchedTierRate: number;
           if (total_sales >= 20000000) {
             matchedTierRate = 2.5;
           } else if (total_sales >= 15000000) {
@@ -583,7 +580,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
   );
 
   // 2. GET /api/gamification/daily-sales-bonus/config
-  fastify.get('/gamification/daily-sales-bonus/config', async (request, reply) => {
+  fastify.get('/gamification/daily-sales-bonus/config', async (_request, _reply) => {
     const config = await getBonusConfig(fastify);
     return config;
   });

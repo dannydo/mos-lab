@@ -9,6 +9,7 @@ import { omicallRoutes } from '../modules/omicall/routes.js';
 import { planRoutes } from '../modules/plans/routes.js';
 import { tableConfigRoutes } from '../modules/table-config/routes.js';
 import jwt from '@fastify/jwt';
+import { SafeAny } from '@mos-lab/shared';
 
 async function runComparisonSuite() {
   console.log('\n===============================================================');
@@ -71,7 +72,7 @@ async function runComparisonSuite() {
         details: `Unexpected status code: Staff=${resStaff.statusCode}, Roles=${resRoles.statusCode}`,
       });
     }
-  } catch (err: any) {
+  } catch (err: SafeAny) {
     results.push({
       module: 'Module 1: Auth & Staff',
       test: 'Staff & System Roles API Retrieval',
@@ -93,7 +94,7 @@ async function runComparisonSuite() {
 
     if (resBk.statusCode === 200 && bkData.leaderboard) {
       // Cross-check with raw legacy DB query for date_created
-      const rawCountRows = await server.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const rawCountRows = await server.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT COUNT(*) as cnt
         FROM \`order\` o
         WHERE o.date_created >= '${dateFrom} 00:00:00'
@@ -116,7 +117,7 @@ async function runComparisonSuite() {
         details: `API returned status ${resBk.statusCode}: ${resBk.payload}`,
       });
     }
-  } catch (err: any) {
+  } catch (err: SafeAny) {
     results.push({
       module: 'Module 2: KPI & BK',
       test: 'Booker Productivity Metric (date_created Rule #10)',
@@ -162,7 +163,7 @@ async function runComparisonSuite() {
         details: `API returned status ${resCc.statusCode}: ${resCc.payload}`,
       });
     }
-  } catch (err: any) {
+  } catch (err: SafeAny) {
     results.push({
       module: 'Module 2: KPI & CC',
       test: 'CC Level Formula & Points Accu (Rule #6 & #12)',
@@ -175,7 +176,7 @@ async function runComparisonSuite() {
   // TEST 4: Module 2 - Internal Booker Salary Export API (Rule #5)
   // -------------------------------------------------------------
   try {
-    const staffProfiles = await server.prisma.legacy.$queryRawUnsafe<any[]>(`
+    const staffProfiles = await server.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
       SELECT up.full_name as fullName
       FROM \`staff_profile\` sp
       JOIN \`user_profile\` up ON sp.user_id = up.user_id
@@ -206,7 +207,7 @@ async function runComparisonSuite() {
         details: `Export API returned status ${resExport.statusCode}: ${resExport.payload}`,
       });
     }
-  } catch (err: any) {
+  } catch (err: SafeAny) {
     results.push({
       module: 'Module 2: KPI Export',
       test: 'Booker Salary Export API (Key Security Rule #5)',
@@ -237,7 +238,7 @@ async function runComparisonSuite() {
         details: `Stats API returned status ${resStats.statusCode}`,
       });
     }
-  } catch (err: any) {
+  } catch (err: SafeAny) {
     results.push({
       module: 'Module 3: Customers',
       test: 'Customer Stats & Bucket Breakdown',
@@ -268,7 +269,7 @@ async function runComparisonSuite() {
         details: `Table Config API returned status ${resTable.statusCode}`,
       });
     }
-  } catch (err: any) {
+  } catch (err: SafeAny) {
     results.push({
       module: 'Module 5: Table Config',
       test: 'Dynamic Table Column Configuration',

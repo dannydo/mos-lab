@@ -64,7 +64,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const configs = request.body as Record<string, any[]>;
+    const configs = request.body as Record<string, SafeAny[]>;
     if (typeof configs !== 'object' || configs === null) {
       return reply.status(400).send({
         error: 'Bad Request',
@@ -159,7 +159,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const configs = request.body as Record<string, any[]>;
+    const configs = request.body as Record<string, SafeAny[]>;
     if (typeof configs !== 'object' || configs === null) {
       return reply.status(400).send({
         error: 'Bad Request',
@@ -308,7 +308,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           : [];
 
       // Index transactions by balance ID for O(1) lookups
-      const txnsByBalanceId = new Map<number, any[]>();
+      const txnsByBalanceId = new Map<number, SafeAny[]>();
       for (const t of userBalanceTransactions) {
         const bid = Number(t.user_service_balance_id);
         const list = txnsByBalanceId.get(bid) || [];
@@ -392,7 +392,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
             !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
           // Condition 3: count left at that time > 0
-          let countLeft = 0;
+          let countLeft: number;
           if (
             lastTxnBefore &&
             lastTxnBefore.total_normal_count_left !== null &&
@@ -712,7 +712,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       const dayOfWeek = new Date(targetDateStr).getDay();
       const weekdayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
 
-      const branchDetailMap: Record<string, any> = {
+      const branchDetailMap: Record<string, SafeAny> = {
         detham: {
           revLe: 0,
           revCombo: 0,
@@ -952,7 +952,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         targetDateStr
       );
 
-      const shiftMap = new Map<number, any>();
+      const shiftMap = new Map<number, SafeAny>();
       workingShifts.forEach((ws) => {
         shiftMap.set(Number(ws.user_id), ws);
       });

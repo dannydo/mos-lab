@@ -110,7 +110,7 @@ async function calculateConsultantSalaryStats(
   }
   const payrolls = (await fastify.prisma.legacy.$queryRawUnsafe(query, ...params)) as SafeAny[];
 
-  const stats: Record<number, any> = {};
+  const stats: Record<number, SafeAny> = {};
 
   payrolls.forEach((p: SafeAny) => {
     const uid = Number(p.user_id);
@@ -128,22 +128,30 @@ async function calculateConsultantSalaryStats(
       growthReward = growth.total_reward_amount || 0;
       checkins = growth.total_order_check_in || 0;
       checkinLateMin = growth.total_check_in_late_minute || 0;
-    } catch (e) {}
+    } catch {
+      /* ignore */
+    }
 
     try {
       const sales = JSON.parse(p.final_staff_sales);
       salesReward = sales.total_reward_amount || 0;
-    } catch (e) {}
+    } catch {
+      /* ignore */
+    }
 
     try {
       const serv = JSON.parse(p.final_staff_servicing);
       servicingReward = serv.total_reward_amount || 0;
-    } catch (e) {}
+    } catch {
+      /* ignore */
+    }
 
     try {
       const store = JSON.parse(p.final_client_store_servicing);
       storeServicingReward = store.total_reward_amount || 0;
-    } catch (e) {}
+    } catch {
+      /* ignore */
+    }
 
     const totalSalary = baseSalary + salesReward + servicingReward + growthReward + storeServicingReward;
 
@@ -328,7 +336,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           });
         }
 
-        const orderServicesMap = new Map<number, any[]>();
+        const orderServicesMap = new Map<number, SafeAny[]>();
         const serviceNameMap = new Map<number, string>();
         if (completedOrderIds.length > 0) {
           const orderServices = await fastify.prisma.legacy.order_service.findMany({
@@ -400,7 +408,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         `)
             : [];
 
-        const txnsByBalanceId = new Map<number, any[]>();
+        const txnsByBalanceId = new Map<number, SafeAny[]>();
         for (const t of userBalanceTransactions) {
           const bid = Number(t.user_service_balance_id);
           let list = txnsByBalanceId.get(bid);
@@ -437,7 +445,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             const isNotExpired =
               !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
-            let countLeft = 0;
+            let countLeft: number;
             if (
               lastTxnBefore &&
               lastTxnBefore.total_normal_count_left !== null &&
@@ -495,7 +503,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             const isRefill = serviceName.toLowerCase().includes('refill');
             const isCombo = checkHasLiveCombo(o.user_id, o.booking_date_start, o.date_created);
 
-            let bonus = 0;
+            let bonus: number;
             let comboDeduction = 0;
             let bookingType = 'Single';
 
@@ -591,7 +599,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/kpi/salary-config (Accessible to all authenticated staff to display on dashboard, but edit is restricted to admin)
-  fastify.get('/kpi/salary-config', { preHandler: [requireAuth] }, async (request, reply) => {
+  fastify.get('/kpi/salary-config', { preHandler: [requireAuth] }, async (_request, _reply) => {
     const config = await getSalaryConfig(fastify);
     return config;
   });
@@ -878,7 +886,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         `)) as SafeAny[])
             : [];
 
-        const profileMap = new Map<number, any>();
+        const profileMap = new Map<number, SafeAny>();
         profiles.forEach((p: SafeAny) => {
           profileMap.set(Number(p.user_id), p);
         });
@@ -965,7 +973,11 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       const legacyUserIds = Array.from(
         new Set(
           staffList
-            .map((s) => (s.legacyStaffId ? Number(s.legacyStaffId) : Number(staffNameToProfileMap.get(s.displayName.toLowerCase().trim())?.userId)))
+            .map((s) =>
+              s.legacyStaffId
+                ? Number(s.legacyStaffId)
+                : Number(staffNameToProfileMap.get(s.displayName.toLowerCase().trim())?.userId)
+            )
             .filter((id): id is number => typeof id === 'number' && !isNaN(id))
         )
       );
@@ -1026,7 +1038,11 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
       for (const staff of staffList) {
         const profile = staffNameToProfileMap.get(staff.displayName.toLowerCase().trim());
-        const legacyUserId = staff.legacyStaffId ? Number(staff.legacyStaffId) : (profile?.userId ? Number(profile.userId) : undefined);
+        const legacyUserId = staff.legacyStaffId
+          ? Number(staff.legacyStaffId)
+          : profile?.userId
+            ? Number(profile.userId)
+            : undefined;
         const callStats = callStatsMap.get(staff.id) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
 
         const rawAvatar = staff.avatarUrl || profile?.avatar || null;
@@ -1131,7 +1147,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
     const bookerName = staff.displayName;
 
-    const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 30);
+    const { start, end } = parseDateRange(startDate, endDate, 30);
 
     try {
       const config = await getSalaryConfig(fastify);
@@ -1195,7 +1211,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           });
         }
 
-        const orderServicesMap = new Map<number, any[]>();
+        const orderServicesMap = new Map<number, SafeAny[]>();
         const serviceNameMap = new Map<number, string>();
         if (completedOrderIds.length > 0) {
           const orderServices = await fastify.prisma.legacy.order_service.findMany({
@@ -1267,7 +1283,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         `)
             : [];
 
-        const txnsByBalanceId = new Map<number, any[]>();
+        const txnsByBalanceId = new Map<number, SafeAny[]>();
         for (const t of userBalanceTransactions) {
           const bid = Number(t.user_service_balance_id);
           let list = txnsByBalanceId.get(bid);
@@ -1304,7 +1320,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             const isNotExpired =
               !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
-            let countLeft = 0;
+            let countLeft: number;
             if (
               lastTxnBefore &&
               lastTxnBefore.total_normal_count_left !== null &&
@@ -1451,7 +1467,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         targetStaffId = user.id;
       }
 
-      const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 7);
+      const { start, end } = parseDateRange(startDate, endDate, 7);
 
       try {
         const logs = await fastify.prisma.crm.crmCallLog.findMany({

@@ -27,7 +27,7 @@ if (fs.existsSync(logPath)) {
       if (obj.level === 50) {
         console.log('ERROR LOG:', obj.msg, obj.err);
       }
-    } catch (err) {
+    } catch {
       // Ignored
     }
   }

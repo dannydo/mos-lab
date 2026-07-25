@@ -1,9 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { CcStaffOption } from '@mos-lab/shared';
+import { CcStaffOption, SafeAny } from '@mos-lab/shared';
 import { CcKpiService } from '../services/cc-kpi.service.js';
-
-type SafeAny = any;
 
 async function getActiveCcIds(fastify: FastifyInstance): Promise<number[] | null> {
   try {
@@ -13,7 +11,7 @@ async function getActiveCcIds(fastify: FastifyInstance): Promise<number[] | null
     if (configRecord && configRecord.value) {
       const parsed = JSON.parse(configRecord.value);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((id: SafeAny) => Number(id)).filter((id: number) => !isNaN(id));
+        return parsed.map((id) => Number(id)).filter((id) => !isNaN(id));
       }
     }
   } catch (err) {
@@ -43,7 +41,7 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
             )
           ORDER BY up.full_name ASC
         `);
-      } catch (e) {
+      } catch {
         staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username
           FROM \`user_profile\` up

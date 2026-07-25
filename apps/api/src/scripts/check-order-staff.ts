@@ -1,6 +1,7 @@
 import { PrismaClient as LegacyPrismaClient } from '../generated/legacy-client/index.js';
 import dotenv from 'dotenv';
 import path from 'path';
+import { SafeAny } from '@mos-lab/shared';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
@@ -11,14 +12,14 @@ async function run() {
     const orderIds = [309634, 332929];
     for (const orderId of orderIds) {
       console.log(`\n=== CHECKING ORDER ID ${orderId} ===`);
-      const [order] = await prisma.$queryRawUnsafe<any[]>('SELECT * FROM `order` WHERE id = ?', orderId);
+      const [order] = await prisma.$queryRawUnsafe<SafeAny[]>('SELECT * FROM `order` WHERE id = ?', orderId);
       if (!order) {
         console.log(`Order ${orderId} not found`);
         continue;
       }
       console.log(`Order ${orderId} creator_staff_id:`, order.created_staff_id);
 
-      const orderServices = await prisma.$queryRawUnsafe<any[]>(
+      const orderServices = await prisma.$queryRawUnsafe<SafeAny[]>(
         'SELECT * FROM order_service WHERE order_id = ?',
         orderId
       );
@@ -29,20 +30,20 @@ async function run() {
         );
       }
 
-      const creator = await prisma.$queryRawUnsafe<any[]>(
+      const creator = await prisma.$queryRawUnsafe<SafeAny[]>(
         'SELECT full_name FROM user_profile WHERE user_id = ?',
         order.created_staff_id
       );
       console.log('Creator name:', creator[0]?.full_name);
 
       if (orderServices.length > 0) {
-        const checkinStaff = await prisma.$queryRawUnsafe<any[]>(
+        const checkinStaff = await prisma.$queryRawUnsafe<SafeAny[]>(
           'SELECT full_name FROM user_profile WHERE user_id = ?',
           orderServices[0].check_in_staff_id
         );
         console.log('Check-in Staff name:', checkinStaff[0]?.full_name);
 
-        const checkoutStaff = await prisma.$queryRawUnsafe<any[]>(
+        const checkoutStaff = await prisma.$queryRawUnsafe<SafeAny[]>(
           'SELECT full_name FROM user_profile WHERE user_id = ?',
           orderServices[0].check_out_staff_id
         );
@@ -51,9 +52,9 @@ async function run() {
     }
 
     console.log(`\n=== CHECKING USER SERVICE BALANCE 82418 (Classic 440) ===`);
-    const [usb] = await prisma.$queryRawUnsafe<any[]>('SELECT * FROM user_service_balance WHERE id = 82418');
+    const [usb] = await prisma.$queryRawUnsafe<SafeAny[]>('SELECT * FROM user_service_balance WHERE id = 82418');
     console.log('USB 82418 created_staff_id:', usb.created_staff_id);
-    const usbCreator = await prisma.$queryRawUnsafe<any[]>(
+    const usbCreator = await prisma.$queryRawUnsafe<SafeAny[]>(
       'SELECT full_name FROM user_profile WHERE user_id = ?',
       usb.created_staff_id
     );

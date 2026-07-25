@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { SafeAny } from '@mos-lab/shared';
 
 export interface CcKpiFilters {
   dateFrom?: string;
@@ -146,7 +147,7 @@ export class CcKpiService {
 
     // Query legacy DB for staff members with Client Consultant role or payroll
     try {
-      const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT DISTINCT up.user_id
         FROM \`user_profile\` up
         LEFT JOIN \`user_group\` ug ON ug.id = up.user_group_id
@@ -227,7 +228,7 @@ export class CcKpiService {
       consultantId && consultantId !== 'ALL' && isNaN(parsedId) ? String(consultantId).toLowerCase().trim() : '';
 
     // Query from beginning of the month (monthStartStr) to endStr to build accurate MTD points & Level
-    const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+    const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
       SELECT 
         os.id AS order_service_id,
         CAST(ro.date AS CHAR) AS dateOnlyStr,
@@ -276,7 +277,7 @@ export class CcKpiService {
     }
 
     // Query staff_bonus grouped by order_service_id and user_id for fast lookup via direct JOIN
-    const bonusRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+    const bonusRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
       SELECT 
         sb.order_service_id,
         sb.user_id,
@@ -307,14 +308,14 @@ export class CcKpiService {
       GROUP BY sb.order_service_id, sb.user_id
     `);
 
-    const bonusMap = new Map<string, any>();
+    const bonusMap = new Map<string, SafeAny>();
     for (const b of bonusRows) {
       bonusMap.set(`${b.order_service_id}_${b.user_id}`, b);
     }
 
     // Accumulate points per staff chronologically ASC from 1st of the month
     const staffPointsAccu: Record<string, number> = {};
-    const filteredRecords: any[] = [];
+    const filteredRecords: SafeAny[] = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -481,7 +482,7 @@ export class CcKpiService {
       activeCcFilter = ` AND sb.user_id IN (${activeCcIds.join(',')})`;
     }
 
-    const staffStats = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+    const staffStats = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
       `
       SELECT 
         sb.user_id as staffId,
@@ -594,7 +595,7 @@ export class CcKpiService {
       }
     }
 
-    const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+    const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
       SELECT 
         u.id as userId,
         up.full_name as displayName,
@@ -696,12 +697,12 @@ export class CcKpiService {
     `;
 
     const [comboRows, productRows, singleRows] = await Promise.all([
-      fastify.prisma.legacy.$queryRawUnsafe<any[]>(comboSalesQuery),
-      fastify.prisma.legacy.$queryRawUnsafe<any[]>(productSalesQuery),
-      fastify.prisma.legacy.$queryRawUnsafe<any[]>(singleSalesQuery),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSalesQuery),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productSalesQuery),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(singleSalesQuery),
     ]);
 
-    const salesMap = new Map<string, any>();
+    const salesMap = new Map<string, SafeAny>();
     const getMapKey = (dateStr: string, sId: number) => `${dateStr}_${sId}`;
 
     comboRows.forEach((r) => {
@@ -850,7 +851,7 @@ export class CcKpiService {
       }
     }
 
-    const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+    const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
       SELECT 
         st.user_id as staffId,
         up.full_name as displayName,

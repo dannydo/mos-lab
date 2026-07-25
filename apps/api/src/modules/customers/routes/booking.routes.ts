@@ -15,11 +15,11 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       newCustomerName,
       newCustomerPhone,
       storeId,
-      storeName,
+      storeName: _storeName,
       serviceId,
-      serviceName,
+      serviceName: _serviceName,
       technicianId,
-      technicianName,
+      technicianName: _technicianName,
       bookingDate,
       bookingTime,
       bookingChannel,
@@ -213,14 +213,14 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       const mysqlEnd = formatLocalMySQL(endDate);
 
       // 5. Determine booker name and format final booking note to render correctly on legacy client
-      let bookerName = user.displayName || '';
+      let _bookerName = user.displayName || '';
       if (validStaffId) {
         const staffProfile = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
           validStaffId
         );
         if (staffProfile.length > 0 && staffProfile[0].full_name) {
-          bookerName = staffProfile[0].full_name;
+          _bookerName = staffProfile[0].full_name;
         }
       }
 
@@ -380,17 +380,25 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'ID lịch hẹn không hợp lệ' });
     }
 
-    const { storeId, storeName, technicianId, technicianName, bookingDate, bookingTime, bookingNote, serviceId } =
-      request.body as {
-        storeId: number;
-        storeName: string;
-        technicianId: number | null;
-        technicianName?: string;
-        bookingDate: string; // YYYY-MM-DD
-        bookingTime: string; // HH:mm
-        bookingNote?: string | null;
-        serviceId?: number | null;
-      };
+    const {
+      storeId,
+      storeName: _storeName,
+      technicianId,
+      technicianName: _technicianName,
+      bookingDate,
+      bookingTime,
+      bookingNote,
+      serviceId,
+    } = request.body as {
+      storeId: number;
+      storeName: string;
+      technicianId: number | null;
+      technicianName?: string;
+      bookingDate: string; // YYYY-MM-DD
+      bookingTime: string; // HH:mm
+      bookingNote?: string | null;
+      serviceId?: number | null;
+    };
 
     if (!storeId || !bookingDate || !bookingTime) {
       return reply.status(400).send({
@@ -802,7 +810,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const orderServicesMap = new Map<number, any[]>();
+      const orderServicesMap = new Map<number, SafeAny[]>();
       const serviceNameMap = new Map<number, string>();
       if (orderIds.length > 0) {
         const orderServices = await fastify.prisma.legacy.order_service.findMany({
@@ -841,7 +849,9 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       if (conf) {
         try {
           config = JSON.parse(conf.value);
-        } catch (e) {}
+        } catch {
+          /* ignore */
+        }
       }
 
       // 3.5. Query all orders in range to calculate summary KPIs (without pagination)
@@ -898,7 +908,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       `)
           : [];
 
-      const txnsByBalanceId = new Map<number, any[]>();
+      const txnsByBalanceId = new Map<number, SafeAny[]>();
       for (const t of userBalanceTransactions) {
         const bid = Number(t.user_service_balance_id);
         let list = txnsByBalanceId.get(bid);
@@ -935,7 +945,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           const isNotExpired =
             !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
-          let countLeft = 0;
+          let countLeft: number;
           if (
             lastTxnBefore &&
             lastTxnBefore.total_normal_count_left !== null &&
@@ -996,7 +1006,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           });
         }
 
-        const summaryServicesMap = new Map<number, any[]>();
+        const summaryServicesMap = new Map<number, SafeAny[]>();
         summaryServices.forEach((os) => {
           const list = summaryServicesMap.get(os.order_id) || [];
           list.push(os);
@@ -1026,7 +1036,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
               o.dateCreated ? new Date(o.dateCreated) : new Date()
             );
 
-            let bonus = 0;
+            let bonus: number;
             if (isCombo) {
               bonus = 0;
             } else if (isRefill) {

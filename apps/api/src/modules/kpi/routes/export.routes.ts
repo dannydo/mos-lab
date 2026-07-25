@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { SafeAny } from '@mos-lab/shared';
 
 /**
  * Công thức Thưởng Kim Cương lũy tiến (VND):
@@ -37,7 +38,7 @@ export async function fetchDiamondData(fastify: FastifyInstance, dateFromDay: st
       activeCcIds = JSON.parse(configRecord.value);
     }
   } catch (err) {
-    fastify.log.error(err as any, 'Error fetching ACTIVE_CC_STAFF_CONFIG');
+    fastify.log.error(err as SafeAny, 'Error fetching ACTIVE_CC_STAFF_CONFIG');
   }
 
   const sql = `
@@ -68,7 +69,13 @@ export async function fetchDiamondData(fastify: FastifyInstance, dateFromDay: st
     ORDER BY SO_KH_DIAMOND DESC, up_cc.full_name ASC
   `;
 
-  const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(sql, dateFromDt, dateToDt, dateFromDay, dateToDay);
+  const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+    sql,
+    dateFromDt,
+    dateToDt,
+    dateFromDay,
+    dateToDay
+  );
 
   let filteredRows = rows;
   if (activeCcIds && activeCcIds.length > 0) {
@@ -211,7 +218,7 @@ export async function registerExportRoutes(fastify: FastifyInstance) {
 
     try {
       // Get CC Name
-      const ccProfile = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      const ccProfile = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
         ccIdNum
       );
@@ -237,7 +244,7 @@ export async function registerExportRoutes(fastify: FastifyInstance) {
         ORDER BY up_new.referrer_date_created DESC
       `;
 
-      const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(sql, ccIdNum, dateFromDt, dateToDt);
+      const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, ccIdNum, dateFromDt, dateToDt);
 
       const data = rows.map((r, idx) => ({
         referralId: idx + 1,

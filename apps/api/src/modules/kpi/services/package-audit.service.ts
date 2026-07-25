@@ -4,6 +4,7 @@ import {
   PackageAuditListResponse,
   PackageAuditRecord,
   ReviewPackageAuditParams,
+  SafeAny,
 } from '@mos-lab/shared';
 
 export class PackageAuditService {
@@ -28,7 +29,7 @@ export class PackageAuditService {
       whereClause += ` AND (up_cust.full_name LIKE '%${cleanSearch}%' OR uc.phone_number LIKE '%${cleanSearch}%' OR usbt.note LIKE '%${cleanSearch}%')`;
     }
 
-    const rows: any[] = await this.fastify.prisma.legacy.$queryRawUnsafe(`
+    const rows: SafeAny[] = await this.fastify.prisma.legacy.$queryRawUnsafe(`
       SELECT 
         MIN(usbt.id) as id,
         usbt.user_service_balance_id as balanceId,
@@ -120,7 +121,7 @@ export class PackageAuditService {
   ): Promise<{ success: boolean; message: string; reviewStatus: string }> {
     const { transactionId, action, reviewNote } = params;
 
-    const txns: any[] = await this.fastify.prisma.legacy.$queryRawUnsafe(`
+    const txns: SafeAny[] = await this.fastify.prisma.legacy.$queryRawUnsafe(`
       SELECT usbt.*, usb.id as balanceId
       FROM user_service_balance_transaction usbt
       LEFT JOIN user_service_balance usb ON usb.id = usbt.user_service_balance_id
@@ -134,7 +135,7 @@ export class PackageAuditService {
     const txn = txns[0];
 
     // Find all batch rows matching this exact timestamp operation
-    const batchTxns: any[] = await this.fastify.prisma.legacy.$queryRawUnsafe(`
+    const batchTxns: SafeAny[] = await this.fastify.prisma.legacy.$queryRawUnsafe(`
       SELECT SUM(normal_count) as totalNormal, SUM(retain_count) as totalRetain, COUNT(*) as batchSize
       FROM user_service_balance_transaction
       WHERE user_service_balance_id = ${Number(txn.user_service_balance_id)}

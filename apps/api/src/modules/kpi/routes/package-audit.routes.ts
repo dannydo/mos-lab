@@ -18,11 +18,11 @@ export async function registerPackageAuditRoutes(fastify: FastifyInstance) {
 
       const result = await auditService.listManualAdjustments(params);
       return result;
-    } catch (error: any) {
+    } catch (error: SafeAny) {
       request.log.error(error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: error.message || 'Lỗi khi lấy danh sách kiểm toán gói.',
+        message: (error as Error).message || 'Lỗi khi lấy danh sách kiểm toán gói.',
       });
     }
   });
@@ -30,7 +30,7 @@ export async function registerPackageAuditRoutes(fastify: FastifyInstance) {
   fastify.post('/kpi/package-audit/review', async (request, reply) => {
     try {
       const body = request.body as ReviewPackageAuditParams;
-      const staffId = (request as any).user?.id || 1; // Default to staff ID from auth token
+      const staffId = (request as SafeAny).user?.id || 1; // Default to staff ID from auth token
 
       if (!body || !body.transactionId || !body.action) {
         return reply.status(400).send({
@@ -41,11 +41,11 @@ export async function registerPackageAuditRoutes(fastify: FastifyInstance) {
 
       const result = await auditService.reviewAdjustment(staffId, body);
       return result;
-    } catch (error: any) {
+    } catch (error: SafeAny) {
       request.log.error(error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: error.message || 'Lỗi khi xử lý kiểm duyệt lượt cộng thủ công.',
+        message: (error as Error).message || 'Lỗi khi xử lý kiểm duyệt lượt cộng thủ công.',
       });
     }
   });

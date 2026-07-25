@@ -1,10 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { CcPaystubRecord, CcPaystubResponse } from '@mos-lab/shared';
+import { CcPaystubRecord, CcPaystubResponse, SafeAny } from '@mos-lab/shared';
 import { CcKpiService } from '../services/cc-kpi.service.js';
-
-// SafeAny helper
-type SafeAny = any;
 
 export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
   // GET /api/kpi/cc-paystub
@@ -35,7 +32,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
             activeCcIds = parsed.map((id) => Number(id)).filter((id) => !isNaN(id));
           }
         }
-      } catch (err) {
+      } catch {
         fastify.log.warn('Could not load ACTIVE_CC_STAFF_CONFIG, using default list.');
       }
 
@@ -337,7 +334,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       });
 
       // Minigame bonus scaling map
-      const minigameBaseMap = new Map<number, number>([
+      const _minigameBaseMap = new Map<number, number>([
         [37790, 1500000], // Diễm Hương
         [34295, 1200000], // Thục Nghi
         [46092, 1000000], // Quang Khải CC
@@ -359,7 +356,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         const rate = hourlyRatesMap.get(uid) || 25000;
 
         // Exact work hours from staff_working_shift
-        let totalWorkHours = 0;
+        let totalWorkHours: number;
         const shiftData = shiftHoursMap.get(uid);
         if (shiftData && shiftData.hours > 0) {
           totalWorkHours = Math.round(shiftData.hours * 100) / 100;

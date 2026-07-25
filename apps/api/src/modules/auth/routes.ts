@@ -152,7 +152,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           try {
             const tokenRes = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
             tokenInfo = tokenRes.data;
-          } catch (error) {
+          } catch {
             return reply.status(401).send({
               error: 'Unauthorized',
               message: 'Invalid Google credential',

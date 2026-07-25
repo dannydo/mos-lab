@@ -31,6 +31,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/scripts/**/*', 'src/test_manual_process.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     ignores: ['dist/**', 'src/generated/**', 'node_modules/**'],
   }
 );

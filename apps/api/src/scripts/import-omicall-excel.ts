@@ -50,14 +50,15 @@ async function main() {
     const values = line.split(',').map((v) => v.trim().replace(/^["']|["']$/g, ''));
     if (values.length < headers.length) continue;
 
-    const row: any = {};
+    const row: Record<string, string> = {};
     headers.forEach((header, index) => {
       row[header] = values[index];
     });
 
     rows.push({
       call_uuid: row.call_uuid || row.callUuid || '',
-      direction: (row.direction || 'outbound').toLowerCase() as any,
+      direction: ((row.direction || 'outbound').toLowerCase() === 'inbound' ? 'inbound' : 'outbound') as
+        'outbound' | 'inbound',
       source_number: row.source_number || row.sourceNumber || '',
       destination_number: row.destination_number || row.destinationNumber || '',
       duration: Number(row.duration || row.bill_sec || 0),

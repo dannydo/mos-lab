@@ -1,7 +1,6 @@
 import { FastifyInstance } from 'fastify';
+import { SafeAny } from '@mos-lab/shared';
 import { requireAuth } from '../../../middlewares/auth.js';
-
-type SafeAny = any;
 
 export async function registerFilterRoutes(fastify: FastifyInstance) {
   // GET /api/saved-filters

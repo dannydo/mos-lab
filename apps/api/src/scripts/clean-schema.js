@@ -90,8 +90,8 @@ for (const line of lines) {
           // Let's parse the type (second word)
           const parts = mTrimmed.split(/\s+/);
           if (parts.length >= 2) {
-            const fieldName = parts[0];
-            let fieldType = parts[1];
+            const _fieldName = parts[0];
+            const fieldType = parts[1];
 
             // Strip ? and [] to get base type
             const baseType = fieldType.replace('?', '').replace('[]', '');

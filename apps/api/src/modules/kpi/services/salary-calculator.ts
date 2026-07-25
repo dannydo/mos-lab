@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { SafeAny } from '@mos-lab/shared';
 
 const formatDateStr = (d: Date) => {
   return d.toISOString().replace('T', ' ').substring(0, 19);
@@ -126,7 +127,7 @@ export async function calculateBookerSalaryStats(
     profiles.sort((a: SafeAny, b: SafeAny) => Number(a.userId) - Number(b.userId));
 
     const staffNameToLegacyIdMap = new Map<string, number>();
-    const legacyIdToStaffMap = new Map<number, any>();
+    const legacyIdToStaffMap = new Map<number, SafeAny>();
 
     // Prioritize explicit legacyStaffId from crmStaff (Rule #11 Single Source of Truth)
     staffList.forEach((s) => {
@@ -148,7 +149,11 @@ export async function calculateBookerSalaryStats(
     const activeLegacyUserIds = Array.from(
       new Set(
         staffList
-          .map((s) => (s.legacyStaffId ? Number(s.legacyStaffId) : Number(staffNameToLegacyIdMap.get(s.displayName.toLowerCase().trim()))))
+          .map((s) =>
+            s.legacyStaffId
+              ? Number(s.legacyStaffId)
+              : Number(staffNameToLegacyIdMap.get(s.displayName.toLowerCase().trim()))
+          )
           .filter((id): id is number => typeof id === 'number' && !isNaN(id))
       )
     );
@@ -205,7 +210,7 @@ export async function calculateBookerSalaryStats(
         }
 
         // Fetch order services for booking bonus
-        const orderServicesMap = new Map<number, any[]>();
+        const orderServicesMap = new Map<number, SafeAny[]>();
         const serviceNameMap = new Map<number, string>();
         if (completedOrderIds.length > 0) {
           const orderServices = await fastify.prisma.legacy.order_service.findMany({
@@ -255,7 +260,7 @@ export async function calculateBookerSalaryStats(
         `)
             : [];
 
-        const txnsByBalanceId = new Map<number, any[]>();
+        const txnsByBalanceId = new Map<number, SafeAny[]>();
         for (const t of userBalanceTransactions) {
           const bid = Number(t.user_service_balance_id);
           let list = txnsByBalanceId.get(bid);
@@ -292,7 +297,7 @@ export async function calculateBookerSalaryStats(
             const isNotExpired =
               !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
-            let countLeft = 0;
+            let countLeft: number;
             if (
               lastTxnBefore &&
               lastTxnBefore.total_normal_count_left !== null &&
@@ -355,7 +360,7 @@ export async function calculateBookerSalaryStats(
               o.date_created
             );
 
-            let bonus = 0;
+            let bonus: number;
             if (isCombo) {
               bonus = 0;
             } else if (isRefill) {
@@ -504,7 +509,7 @@ export async function calculateConsultantSalaryStats(
   }
   const payrolls = (await fastify.prisma.legacy.$queryRawUnsafe(query, ...params)) as SafeAny[];
 
-  const stats: Record<number, any> = {};
+  const stats: Record<number, SafeAny> = {};
 
   payrolls.forEach((p: SafeAny) => {
     const uid = Number(p.user_id);
@@ -522,22 +527,30 @@ export async function calculateConsultantSalaryStats(
       growthReward = growth.total_reward_amount || 0;
       checkins = growth.total_order_check_in || 0;
       checkinLateMin = growth.total_check_in_late_minute || 0;
-    } catch (e) {}
+    } catch {
+      // ignore JSON parse error
+    }
 
     try {
       const sales = JSON.parse(p.final_staff_sales);
       salesReward = sales.total_reward_amount || 0;
-    } catch (e) {}
+    } catch {
+      // ignore JSON parse error
+    }
 
     try {
       const serv = JSON.parse(p.final_staff_servicing);
       servicingReward = serv.total_reward_amount || 0;
-    } catch (e) {}
+    } catch {
+      // ignore JSON parse error
+    }
 
     try {
       const store = JSON.parse(p.final_client_store_servicing);
       storeServicingReward = store.total_reward_amount || 0;
-    } catch (e) {}
+    } catch {
+      // ignore JSON parse error
+    }
 
     const totalSalary = baseSalary + salesReward + servicingReward + growthReward + storeServicingReward;
 

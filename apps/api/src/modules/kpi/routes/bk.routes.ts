@@ -3,22 +3,16 @@ import { requireAuth } from '../../../middlewares/auth.js';
 import {
   BkBookingLeaderboardEntry,
   BkBookingRecord,
-  BkBookingResponse,
   BkDoneLeaderboardEntry,
   BkDoneRecord,
-  BkDoneResponse,
   BkTipLeaderboardEntry,
   BkTipRecord,
-  BkTipResponse,
   BkRevenueLeaderboardEntry,
   BkRevenueRecord,
-  BkRevenueResponse,
   BkPaystubRecord,
-  BkPaystubResponse,
   BkSalaryConfig,
+  SafeAny,
 } from '@mos-lab/shared';
-
-type SafeAny = any;
 
 const DEFAULT_BK_CONFIG: BkSalaryConfig = {
   activeBkIds: [43554, 50670, 52316, 32268, 49126, 50585],
@@ -228,8 +222,7 @@ async function computeBkOrderCheckins(
     return { clientBonusMap, orderCheckinMap };
   }
 
-  // Fetch order_service
-  const orderServicesMap = new Map<number, any[]>();
+  const orderServicesMap = new Map<number, SafeAny[]>();
   const orderServices = await fastify.prisma.legacy.order_service.findMany({
     where: { order_id: { in: orderIds } },
   });
@@ -245,10 +238,11 @@ async function computeBkOrderCheckins(
     const serviceLanguages = await fastify.prisma.legacy.service_language.findMany({
       where: { service_id: { in: serviceIds } },
     });
-    serviceLanguages.forEach((sl) => serviceNameMap.set(sl.service_id, sl.service_name));
+    serviceLanguages.forEach((sl) => {
+      serviceNameMap.set(sl.service_id, sl.service_name);
+    });
   }
 
-  // Fetch user_service_balance for checkHasLiveCombo
   const userBalances =
     userIds.length > 0
       ? await fastify.prisma.legacy.user_service_balance.findMany({
@@ -260,17 +254,18 @@ async function computeBkOrderCheckins(
   const userBalanceTransactions =
     balanceIds.length > 0
       ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
-               usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
-               usbt.retain_count, usbt.used_staff_id, usbt.order_id,
-               o.booking_date_start as o_booking_date_start
-        FROM user_service_balance_transaction usbt
-        LEFT JOIN \`order\` o ON o.id = usbt.order_id
-        WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-      `)
+    SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
+           usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
+           usbt.retain_count, usbt.used_staff_id, usbt.order_id,
+           COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
+    FROM user_service_balance_transaction usbt
+    LEFT JOIN \`order\` o ON o.id = usbt.order_id
+    LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+    WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
+  `)
       : [];
 
-  const txnsByBalanceId = new Map<number, any[]>();
+  const txnsByBalanceId = new Map<number, SafeAny[]>();
   for (const t of userBalanceTransactions) {
     const bid = Number(t.user_service_balance_id);
     let list = txnsByBalanceId.get(bid);
@@ -304,7 +299,7 @@ async function computeBkOrderCheckins(
       const isNotExpired =
         !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
 
-      let countLeft = 0;
+      let countLeft: number;
       if (
         lastTxnBefore &&
         lastTxnBefore.total_normal_count_left !== null &&
@@ -348,8 +343,8 @@ async function computeBkOrderCheckins(
 
     const isCombo = checkHasLiveCombo(Number(o.userId), o.bookingDateStart, o.dateCreated);
 
-    let bonus = 0;
-    let checkinCategory = 'Single (0đ)';
+    let bonus: number;
+    let checkinCategory: string;
     let discountRate = 0;
 
     if (isCombo) {
