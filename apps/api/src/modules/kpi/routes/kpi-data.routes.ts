@@ -139,17 +139,15 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
 
       let totalBooked = 0;
       if (legacyUserIds.length > 0) {
-        const bookedOrders = await fastify.prisma.legacy.order.findMany({
-          where: {
-            created_staff_id: { in: legacyUserIds },
-            date_created: { gte: start, lte: end },
-            order_state: { not: 'Cancelled' },
-          },
-          select: {
-            id: true,
-          },
-        });
-        totalBooked = bookedOrders.length;
+        const bookedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT COUNT(DISTINCT o.id) as totalBooked
+          FROM \`order\` o
+          WHERE o.created_staff_id IN (${legacyUserIds.join(',')})
+            AND o.date_created >= '${startStr} 00:00:00'
+            AND o.date_created <= '${endStr} 23:59:59'
+            AND o.order_state != 'Cancelled'
+        `);
+        totalBooked = Number(bookedRows[0]?.totalBooked || 0);
       }
 
       let totalCheckin = 0;
