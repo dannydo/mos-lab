@@ -5,7 +5,6 @@ import type { TableColumnType } from 'antd';
 import { ColumnConfig } from '@mos-lab/shared';
 import { apiClient } from '../lib/api-client';
 import { message } from 'antd';
-import { useTheme } from '../context/ThemeContext';
 import {
   AVAILABLE_ICONS,
   getDefaultIcon,
@@ -17,7 +16,6 @@ import {
 export { AVAILABLE_ICONS, getDefaultIcon, renderIconHelper, getDynamicLucideIcon, getCustomIconComponent };
 
 export function useTableConfig<T = Record<string, unknown>>(tableId: string, staticColumns: TableColumnType<T>[]) {
-  const { themeMode } = useTheme();
   const [loading, setLoading] = useState(true);
   const [configVisible, setConfigVisible] = useState(false);
   const [rawConfig, setRawConfig] = useState<ColumnConfig[]>([]);
@@ -180,7 +178,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
       .sort((a, b) => (a.orderIndex ?? 9999) - (b.orderIndex ?? 9999));
 
     return merged as TableColumnType<T>[];
-  }, [rawConfig, staticColumns, handleColumnResize, themeMode]);
+  }, [rawConfig, staticColumns, handleColumnResize]);
 
   return {
     loading,
