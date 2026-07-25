@@ -201,7 +201,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
         const profiles =
           uids.length > 0
             ? ((await fastify.prisma.legacy.$queryRawUnsafe(`
-          SELECT user_id, full_name, username 
+          SELECT user_id, full_name, username, avatar 
           FROM \`user_profile\` 
           WHERE user_id IN (${uids.join(',')})
         `)) as SafeAny[])
@@ -216,10 +216,18 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
           const sal = salaries[uid];
           const prof = profileMap.get(uid) || {};
 
+          const rawAvatar = prof.avatar || null;
+          const avatarUrl = rawAvatar
+            ? rawAvatar.startsWith('http') || rawAvatar.startsWith('data:')
+              ? rawAvatar
+              : `https://api.wingslashes.com${rawAvatar.startsWith('/') ? '' : '/'}${rawAvatar}`
+            : null;
+
           return {
             staffId: uid,
             displayName: prof.full_name || `CC - ${uid}`,
             username: prof.username || `cc_${uid}`,
+            avatarUrl,
             totalPlanned: 0,
             totalCalled: 0,
             totalAnswered: 0,
@@ -255,7 +263,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
 
       const staffList = await fastify.prisma.crm.crmStaff.findMany({
         where: staffWhere,
-        select: { id: true, displayName: true, username: true, legacyStaffId: true },
+        select: { id: true, displayName: true, username: true, legacyStaffId: true, avatarUrl: true },
       });
 
       const salaries = await calculateBookerSalaryStats(fastify, start, end);
@@ -266,7 +274,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
         staffNames.length > 0
           ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
               `
-        SELECT up.user_id as userId, up.full_name as fullName
+        SELECT up.user_id as userId, up.full_name as fullName, up.avatar
         FROM \`user_profile\` up
         WHERE up.provider = 'Staff' AND up.is_disabled = 0
           AND up.full_name IN (${staffNames.map(() => '?').join(',')})
@@ -275,13 +283,13 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
             )
           : [];
 
-      const staffNameToLegacyIdMap = new Map<string, number>();
+      const staffNameToProfileMap = new Map<string, SafeAny>();
       profiles.forEach((p: SafeAny) => {
-        staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
+        staffNameToProfileMap.set(p.fullName.toLowerCase().trim(), p);
       });
 
       const legacyUserIds = staffList
-        .map((s) => s.legacyStaffId || staffNameToLegacyIdMap.get(s.displayName.toLowerCase().trim()))
+        .map((s) => s.legacyStaffId || staffNameToProfileMap.get(s.displayName.toLowerCase().trim())?.userId)
         .filter((id): id is number => typeof id === 'number' && !isNaN(id));
 
       const crmStaffIds = staffList.map((s) => s.id);
@@ -337,8 +345,16 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
       const leaderboard = [];
 
       for (const staff of staffList) {
-        const legacyUserId = staff.legacyStaffId || staffNameToLegacyIdMap.get(staff.displayName.toLowerCase().trim());
+        const profile = staffNameToProfileMap.get(staff.displayName.toLowerCase().trim());
+        const legacyUserId = staff.legacyStaffId || (profile?.userId ? Number(profile.userId) : undefined);
         const callStats = callStatsMap.get(staff.id) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
+
+        const rawAvatar = staff.avatarUrl || profile?.avatar || null;
+        const avatarUrl = rawAvatar
+          ? rawAvatar.startsWith('http') || rawAvatar.startsWith('data:')
+            ? rawAvatar
+            : `https://api.wingslashes.com${rawAvatar.startsWith('/') ? '' : '/'}${rawAvatar}`
+          : null;
 
         const salary = salaries[staff.id] || {
           baseSalary: 5500000,
@@ -370,6 +386,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
           staffId: staff.id,
           displayName: staff.displayName,
           username: staff.username,
+          avatarUrl,
           totalPlanned,
           totalCalled,
           totalAnswered,

@@ -5,6 +5,7 @@ import { Button, Spin } from 'antd';
 import { SyncOutlined, SettingOutlined, CloseOutlined, LoadingOutlined, TrophyOutlined } from '@ant-design/icons';
 import { LEVEL_PRESETS } from '../hooks/useTelesalesDashboard';
 import { metricConfigs, periods, radialCoords, periodPositions } from './TelesalesConstants';
+import TelesalesAvatar from './TelesalesAvatar';
 
 interface TelesalesFrontFaceProps {
   themeMode: 'light' | 'dark';
@@ -93,12 +94,7 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
         }`}
       >
         <div className="flex items-center gap-3">
-          <div
-            className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-black/10"
-            style={{ background: activeMember?.gradient }}
-          >
-            {activeMember?.initials}
-          </div>
+          <TelesalesAvatar member={activeMember} size="lg" className="shadow-lg shadow-black/10" />
           <div>
             <div className="flex items-center gap-2">
               <span
@@ -572,18 +568,17 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
                 >
                   <div className="flex flex-col items-center mb-1.5 text-center w-full relative z-10">
                     <span className="text-xs mb-0.5">{rank === 1 ? '👑' : rankEmoji}</span>
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white mb-1 border-2 ${
+                    <TelesalesAvatar
+                      member={member}
+                      size="md"
+                      className={`mb-1 border-2 ${
                         isSelected
                           ? 'border-gold shadow-lg shadow-gold/30 scale-105'
                           : themeMode === 'dark'
                             ? 'border-slate-800'
                             : 'border-white'
                       }`}
-                      style={{ background: member.gradient }}
-                    >
-                      {member.initials}
-                    </div>
+                    />
                     <div
                       className={`text-[10px] font-black truncate w-full px-1 ${
                         themeMode === 'dark' ? 'text-gray-300' : 'text-slate-700'
@@ -649,12 +644,7 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
                   >
                     #{i + 4}
                   </span>
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm"
-                    style={{ background: m.gradient }}
-                  >
-                    {m.initials}
-                  </div>
+                  <TelesalesAvatar member={m} size="sm" />
                   <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
                     <span
                       className={`text-xs font-bold truncate ${
