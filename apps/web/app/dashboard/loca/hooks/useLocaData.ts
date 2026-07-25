@@ -36,11 +36,44 @@ export interface UseLocaDataOptions {
   onWarning?: (msg: string) => void;
 }
 
+const DEFAULT_LOCA_CONFIGS: TabConfigs = {
+  LOCA_ALL: [
+    { key: 'now', label: 'Hôm nay / Hôm qua', daysMin: 0, daysMax: 1, color: '#10B981' },
+    { key: '17', label: '17 ngày', daysMin: 17, daysMax: 17, color: '#3B82F6' },
+    { key: '19', label: '19 ngày', daysMin: 19, daysMax: 19, color: '#6366F1' },
+    { key: '21', label: '21 ngày', daysMin: 21, daysMax: 21, color: '#8B5CF6' },
+    { key: '23', label: '23 ngày', daysMin: 23, daysMax: 23, color: '#EC4899' },
+    { key: '25', label: '25 ngày', daysMin: 25, daysMax: 25, color: '#F43F5E' },
+    { key: '30', label: '30 ngày', daysMin: 30, daysMax: 30, color: '#EF4444' },
+    { key: '35', label: '35 ngày', daysMin: 35, daysMax: 35, color: '#D97706' },
+    { key: '40', label: '40 ngày', daysMin: 40, daysMax: 40, color: '#B45309' },
+    { key: '45', label: '45 ngày', daysMin: 45, daysMax: 45, color: '#78350F' },
+    { key: '50', label: '50 ngày', daysMin: 50, daysMax: 50, color: '#451A03' },
+    { key: '55', label: '55 ngày', daysMin: 55, daysMax: 55, color: '#312E81' },
+    { key: '60', label: '60+ ngày', daysMin: 60, daysMax: 60, color: '#1E1B4B' },
+  ],
+};
+
 export function useLocaData(options?: UseLocaDataOptions) {
   const optionsRef = useRef(options);
   useEffect(() => {
     optionsRef.current = options;
   }, [options]);
+
+  // Current User initialized synchronously from localStorage
+  const [currentUser, setCurrentUser] = useState<Staff | null>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          console.error('Failed to parse user from localStorage', e);
+        }
+      }
+    }
+    return null;
+  });
 
   // Main UI States
   const [activeTab, setActiveTab] = useState<string>('NEW_LOCA');
@@ -54,14 +87,20 @@ export function useLocaData(options?: UseLocaDataOptions) {
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState('daysSinceLastVisit');
-  const [assignedStaffId, setAssignedStaffId] = useState<string | number>('ALL');
+  const [assignedStaffId, setAssignedStaffId] = useState<string | number>(() => {
+    if (currentUser?.role === 'telesales') return 'me';
+    return 'ALL';
+  });
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-
-  // Current User
-  const [currentUser, setCurrentUser] = useState<Staff | null>(null);
+  const [pageSize, setPageSize] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedPageSize = localStorage.getItem('mos_loca_pageSize');
+      if (savedPageSize) return Number(savedPageSize);
+    }
+    return 20;
+  });
 
   // Data States
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -81,7 +120,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
 
   // Dropdown lists
   const [staffList, setStaffList] = useState<Staff[]>([]);
-  const [configs, setConfigs] = useState<TabConfigs>({});
+  const [configs, setConfigs] = useState<TabConfigs>(DEFAULT_LOCA_CONFIGS);
 
   // Modals Controls
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
@@ -118,22 +157,6 @@ export function useLocaData(options?: UseLocaDataOptions) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('mos_user');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setCurrentUser(parsed);
-          if (parsed.role === 'telesales') {
-            setAssignedStaffId('me');
-          }
-        } catch (e) {
-          console.error('Failed to parse user from localStorage', e);
-        }
-      }
-      const savedPageSize = localStorage.getItem('mos_loca_pageSize');
-      if (savedPageSize) {
-        setPageSize(Number(savedPageSize));
-      }
       const urlParams = new URLSearchParams(window.location.search);
       const urlTab = urlParams.get('tab') || urlParams.get('activeTab');
       const savedTab = urlTab || localStorage.getItem('mos_loca_activeTab');
