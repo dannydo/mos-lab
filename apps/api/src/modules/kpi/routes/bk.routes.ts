@@ -622,15 +622,16 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           up.full_name as displayName,
           up.avatar as avatar,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
-          COUNT(DISTINCT CASE WHEN o.order_state = 'Completed' THEN o.id END) as doneCount,
-          COUNT(DISTINCT CASE WHEN o.order_state IN ('Cancelled', 'Missed') THEN o.id END) as missedCount,
-          COUNT(DISTINCT o.id) as totalCount
+          COUNT(DISTINCT CASE WHEN o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0 THEN o.id END) as doneCount,
+          COUNT(DISTINCT CASE WHEN o.booking_date_start <= NOW() AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') THEN o.id END) as missedCount,
+          COUNT(DISTINCT CASE WHEN o.booking_date_start <= NOW() OR o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0 THEN o.id END) as totalCount
         FROM \`user_profile\` up
         LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
         LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
           AND o.booking_date_start >= '${startPart} 00:00:00' 
           AND o.booking_date_start <= '${endPart} 23:59:59'
           ${storeFilter}
+        LEFT JOIN report_order ro ON ro.order_id = o.id
         WHERE up.user_id IN (${activeBkIds.join(',')})
         GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key
         ORDER BY doneCount DESC
@@ -640,6 +641,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
       let rank = 1;
       let grandTotalDone = 0;
+      let grandTotalMissed = 0;
       let grandTotalDoneBonus = 0;
 
       const leaderboard: BkDoneLeaderboardEntry[] = rows.map((r) => {
@@ -659,6 +661,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         const totalDoneBonus = basicBonus + promoBonus + milestoneBonus + penaltyBonus;
 
         grandTotalDone += doneCount;
+        grandTotalMissed += missedCount;
         grandTotalDoneBonus += totalDoneBonus;
 
         return {
@@ -670,6 +673,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           doneCount,
           missedCount,
           doneRatePercent,
+          missedRatePercent,
           basicBonus,
           promoBonus,
           milestoneBonus,
@@ -683,11 +687,18 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           ? Number((leaderboard.reduce((acc, l) => acc + l.doneRatePercent, 0) / leaderboard.length).toFixed(1))
           : 0;
 
+      const avgMissedRate =
+        leaderboard.length > 0
+          ? Number((leaderboard.reduce((acc, l) => acc + l.missedRatePercent, 0) / leaderboard.length).toFixed(1))
+          : 0;
+
       return {
         leaderboard,
         summary: {
           totalDone: grandTotalDone,
+          totalMissed: grandTotalMissed,
           avgDoneRate,
+          avgMissedRate,
           totalDoneBonus: grandTotalDoneBonus,
         },
       };
@@ -699,11 +710,12 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
   // 2.2 Done Details
   fastify.get('/kpi/bk/done/details', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { bookerId, dateFrom, dateTo, storeId } = request.query as {
+    const { bookerId, dateFrom, dateTo, storeId, status } = request.query as {
       bookerId?: string;
       dateFrom?: string;
       dateTo?: string;
       storeId?: string;
+      status?: string;
     };
 
     const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
@@ -728,6 +740,17 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
       }
 
+      const statusParam = (status || 'ALL').toUpperCase();
+      let stateCondition = '';
+      let dateField = 'COALESCE(ro.actual_booking_date_start, o.booking_date_start)';
+
+      if (statusParam === 'COMPLETED') {
+        stateCondition = `AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
+      } else if (statusParam === 'MISSED') {
+        stateCondition = `AND o.booking_date_start <= NOW() AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
+        dateField = 'o.booking_date_start';
+      }
+
       // Compute Check-in bonuses per Order
       const { orderCheckinMap } = await computeBkOrderCheckins(fastify, startPart, endPart, targetBkIds, storeFilter);
 
@@ -743,7 +766,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           COALESCE(o.total_price, 0) as totalPrice,
           up_b.full_name as bookerName,
           COALESCE(st.tip_amount, 0) as tipAmount,
-          o.order_state as orderState
+          o.order_state as orderState,
+          COALESCE(s.service_name, 'Đặt lịch dịch vụ') as serviceName
         FROM \`order\` o
         LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
         LEFT JOIN (
@@ -753,15 +777,21 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           GROUP BY user_id
         ) uc_c ON uc_c.user_id = o.user_id
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
-        LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+        LEFT JOIN \`client_store\` cs ON cs.id = COALESCE(o.client_store_id, up_b.client_store_id)
         LEFT JOIN \`staff_tip\` st ON st.order_id = o.id AND st.tip_percentage = 20
         LEFT JOIN report_order ro ON o.id = ro.order_id
-        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
-          AND o.order_state = 'Completed'
+        LEFT JOIN (
+          SELECT os_sub.order_id, MAX(sl.service_name) as service_name
+          FROM order_service os_sub
+          JOIN service_language sl ON sl.service_id = os_sub.service_id AND sl.language_id = 1
+          GROUP BY os_sub.order_id
+        ) s ON s.order_id = o.id
+        WHERE ${dateField} >= '${startPart} 00:00:00' 
+          AND ${dateField} <= '${endPart} 23:59:59'
+          ${stateCondition}
           ${bookerFilter}
           ${storeFilter}
-        ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC
+        ORDER BY ${dateField} DESC
         LIMIT 500
       `;
 
@@ -778,7 +808,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           checkinCategory: 'Single (0đ)',
           discountRate: 0,
           isCombo: false,
-          serviceName: 'Không có thông tin',
+          serviceName: String(r.serviceName || 'Đặt lịch dịch vụ'),
           servicePrice: 0,
           discountPercent: 0,
         };
@@ -792,6 +822,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
         totalDoneBonusSum += totalDoneBonus;
 
+        const isCompletedOrder = String(r.orderState) === 'Completed';
+        const netRev = isCompletedOrder ? totalPrice : 0;
+
         return {
           orderId,
           orderKey: String(r.orderKey || `#${r.orderId}`),
@@ -800,12 +833,12 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           clientPhone: String(r.clientPhone || ''),
           bookerName: r.bookerName ? String(r.bookerName) : undefined,
           store: String(r.store),
-          serviceName: checkinInfo.serviceName || 'Không có thông tin',
+          serviceName: checkinInfo.serviceName || String(r.serviceName || 'Đặt lịch dịch vụ'),
           servicePrice: checkinInfo.servicePrice || 0,
           discountPercent: Math.round(checkinInfo.discountPercent || 0),
-          netRevenue: totalPrice,
+          netRevenue: netRev,
           tipAmount: Number(r.tipAmount || 0),
-          totalPrice,
+          totalPrice: netRev,
           basicDoneBonus,
           promoBonus,
           promoLevel,
