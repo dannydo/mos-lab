@@ -217,11 +217,14 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
           const prof = profileMap.get(uid) || {};
 
           const rawAvatar = prof.avatar || null;
-          const avatarUrl = rawAvatar
+          let avatarUrl = rawAvatar
             ? rawAvatar.startsWith('http') || rawAvatar.startsWith('data:')
               ? rawAvatar
-              : `https://api.wingslashes.com${rawAvatar.startsWith('/') ? '' : '/'}${rawAvatar}`
+              : `https://cdn.wingslashes.com${rawAvatar.startsWith('/') ? '' : '/'}${rawAvatar}`
             : null;
+          if (avatarUrl) {
+            avatarUrl = avatarUrl.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com');
+          }
 
           return {
             staffId: uid,
@@ -350,11 +353,14 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
         const callStats = callStatsMap.get(staff.id) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
 
         const rawAvatar = staff.avatarUrl || profile?.avatar || null;
-        const avatarUrl = rawAvatar
+        let avatarUrl = rawAvatar
           ? rawAvatar.startsWith('http') || rawAvatar.startsWith('data:')
             ? rawAvatar
-            : `https://api.wingslashes.com${rawAvatar.startsWith('/') ? '' : '/'}${rawAvatar}`
+            : `https://cdn.wingslashes.com${rawAvatar.startsWith('/') ? '' : '/'}${rawAvatar}`
           : null;
+        if (avatarUrl) {
+          avatarUrl = avatarUrl.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com');
+        }
 
         const salary = salaries[staff.id] || {
           baseSalary: 5500000,

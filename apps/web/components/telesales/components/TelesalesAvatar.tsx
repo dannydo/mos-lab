@@ -9,6 +9,16 @@ interface TelesalesAvatarProps {
   className?: string;
 }
 
+export function formatAvatarUrl(url?: string | null): string | undefined {
+  if (!url || !url.trim()) return undefined;
+  let clean = url.trim();
+  clean = clean.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com');
+  if (!clean.startsWith('http://') && !clean.startsWith('https://') && !clean.startsWith('data:')) {
+    clean = `https://cdn.wingslashes.com${clean.startsWith('/') ? '' : '/'}${clean}`;
+  }
+  return clean;
+}
+
 export const TelesalesAvatar: React.FC<TelesalesAvatarProps> = ({ member, size = 'md', className = '' }) => {
   if (!member) return null;
 
@@ -16,12 +26,7 @@ export const TelesalesAvatar: React.FC<TelesalesAvatarProps> = ({ member, size =
   if (size === 'lg') sizeClass = 'w-12 h-12 text-lg';
   if (size === 'sm') sizeClass = 'w-7 h-7 text-xs';
 
-  const rawUrl = member.avatarUrl || member.avatar;
-  const avatarSrc = rawUrl
-    ? rawUrl.startsWith('http') || rawUrl.startsWith('data:')
-      ? rawUrl
-      : `https://api.wingslashes.com${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`
-    : undefined;
+  const avatarSrc = formatAvatarUrl(member.avatarUrl || member.avatar);
 
   return (
     <div
