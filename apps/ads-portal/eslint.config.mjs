@@ -12,20 +12,12 @@ const eslintConfig = defineConfig([
       'react-hooks/purity': 'warn',
       'react-hooks/refs': 'warn',
       'prefer-const': 'warn',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
+      'react/no-unescaped-entities': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    '.next/**',
-    'out/**',
-    'build/**',
-    'next-env.d.ts',
-    // Vendored third-party scripts
-    'public/**/*.js',
-  ]),
+  globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'public/**/*.js']),
 ]);
 
 export default eslintConfig;

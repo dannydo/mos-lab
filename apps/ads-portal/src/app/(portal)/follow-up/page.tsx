@@ -191,6 +191,7 @@ export default function FollowUpPage() {
       key={item.id}
       actions={[
         <Button
+          key="edit"
           size="small"
           type="link"
           onClick={() => {
@@ -208,6 +209,7 @@ export default function FollowUpPage() {
           Sửa
         </Button>,
         <Button
+          key="delete"
           size="small"
           type="link"
           danger
