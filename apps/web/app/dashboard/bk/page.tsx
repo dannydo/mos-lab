@@ -109,31 +109,46 @@ export default function BkDashboardPage() {
       key: 'booking',
       icon: <CalendarOutlined />,
       label: 'BK Booking',
-      children: <BkBookingTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />,
+      children:
+        activeTab === 'booking' ? (
+          <BkBookingTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
+        ) : null,
     },
     {
       key: 'done',
       icon: <CheckCircleOutlined />,
       label: 'BK Done',
-      children: <BkDoneTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />,
+      children:
+        activeTab === 'done' ? (
+          <BkDoneTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
+        ) : null,
     },
     {
       key: 'tip',
       icon: <GiftOutlined />,
       label: 'BK Tip',
-      children: <BkTipTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />,
+      children:
+        activeTab === 'tip' ? (
+          <BkTipTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
+        ) : null,
     },
     {
       key: 'revenue',
       icon: <DollarOutlined />,
       label: 'BK Doanh Thu',
-      children: <BkRevenueTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />,
+      children:
+        activeTab === 'revenue' ? (
+          <BkRevenueTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
+        ) : null,
     },
     {
       key: 'thunhap',
       icon: <WalletOutlined />,
       label: 'BK Thu Nhập',
-      children: <BkThuNhapTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />,
+      children:
+        activeTab === 'thunhap' ? (
+          <BkThuNhapTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
+        ) : null,
     },
   ];
 
@@ -225,14 +240,12 @@ export default function BkDashboardPage() {
           items={tabItems}
           size="large"
           className="custom-tabs"
+          destroyOnHidden
         />
       </Card>
 
       {/* Config Drawer */}
-      <BkConfigDrawer
-        open={configDrawerOpen}
-        onClose={() => setConfigDrawerOpen(false)}
-      />
+      <BkConfigDrawer open={configDrawerOpen} onClose={() => setConfigDrawerOpen(false)} />
     </div>
   );
 }

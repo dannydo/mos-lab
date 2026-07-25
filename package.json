@@ -12,7 +12,11 @@
     "clean": "turbo clean && rm -rf node_modules",
     "deploy": "bash scripts/deploy.sh",
     "hotfix": "bash scripts/hotfix.sh",
-    "db:sync": "bash scripts/refresh_db.sh",
+    "db:refresh": "bash scripts/refresh_db.sh --fast",
+    "db:refresh:fast": "bash scripts/refresh_db.sh --fast",
+    "db:refresh:standard": "bash scripts/refresh_db.sh --standard",
+    "db:refresh:full": "bash scripts/refresh_db.sh --full",
+    "db:sync": "bash scripts/refresh_db.sh --fast",
     "prepare": "husky"
   },
   "devDependencies": {

@@ -178,6 +178,39 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ) as fb_agg ON u.id = fb_agg.user_id`;
       }
 
+      const needComboPurchaseDate =
+        sortParam === 'purchaseDate_desc' ||
+        sortParam === 'purchaseDate_asc' ||
+        sortParam === 'comboPurchaseDate_desc' ||
+        sortParam === 'comboPurchaseDate_asc' ||
+        (bucket === 'NEW_LOCA' &&
+          (sortParam === 'daysSinceLastVisit_desc' || sortParam === 'daysSinceLastVisit' || !sortParam));
+
+      if (needComboPurchaseDate) {
+        innerJoins += ` LEFT JOIN (
+          SELECT user_id, MAX(max_created) as latest_combo_date
+          FROM (
+            SELECT o.user_id, MAX(o.date_created) as max_created
+            FROM \`order\` o
+            JOIN order_service_combo osc ON osc.order_id = o.id
+            WHERE osc.total_price > 0
+            GROUP BY o.user_id
+            UNION ALL
+            SELECT user_id, MAX(date_created) as max_created
+            FROM user_service_balance
+            WHERE (total_normal_balance_amount + total_retain_balance_amount) > 0
+            GROUP BY user_id
+            UNION ALL
+            SELECT o.user_id, MAX(o.date_created) as max_created
+            FROM \`order\` o
+            JOIN order_service os ON os.order_id = o.id
+            WHERE (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0
+            GROUP BY o.user_id
+          ) t
+          GROUP BY user_id
+        ) as combo_dates ON u.id = combo_dates.user_id`;
+      }
+
       let allowedUserIds: number[] | null = null;
       let excludedUserIds: number[] | null = null;
 
@@ -435,15 +468,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         )`);
       }
       if (hasCallback === 'true') {
-        const callbackLogs = await fastify.prisma.crm.crmCallLog.findMany({
-          where: { callbackDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
-          select: { legacyUserId: true },
-        });
-        const cbUserIds = [...new Set(callbackLogs.map((l) => l.legacyUserId))];
-        if (cbUserIds.length === 0) {
-          return { data: [], pagination: { total: 0, page: pageNum, limit: limitNum, pages: 0 } };
-        }
-        innerWhereClauses.push(`u.id IN (${cbUserIds.join(',')})`);
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM mos_lab.crm_call_logs ccl 
+          WHERE ccl.legacy_user_id = u.id AND ccl.callback_date >= CURDATE()
+        )`);
       }
       if (hasFutureBooking === 'true') {
         innerWhereClauses.push(`EXISTS (
@@ -452,21 +480,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
         )`);
       }
       if (contacted === 'true') {
-        let callTypeFilter: SafeAny = undefined;
         if (contactType === 'TEXT') {
-          callTypeFilter = { in: ['TEXT', 'ZALO', 'MESSENGER', 'SMS'] };
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl 
+            WHERE ccl.legacy_user_id = u.id AND ccl.call_type IN ('TEXT', 'ZALO', 'MESSENGER', 'SMS')
+          )`);
         } else if (contactType === 'CALL') {
-          callTypeFilter = { in: ['CALL', 'OUTBOUND', 'INBOUND'] };
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl 
+            WHERE ccl.legacy_user_id = u.id AND ccl.call_type IN ('CALL', 'OUTBOUND', 'INBOUND')
+          )`);
+        } else {
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl 
+            WHERE ccl.legacy_user_id = u.id
+          )`);
         }
-        const contactedLogs = await fastify.prisma.crm.crmCallLog.findMany({
-          where: callTypeFilter ? { callType: callTypeFilter } : undefined,
-          select: { legacyUserId: true },
-        });
-        const contactedUserIds = [...new Set(contactedLogs.map((l) => l.legacyUserId))];
-        if (contactedUserIds.length === 0) {
-          return { data: [], pagination: { total: 0, page: pageNum, limit: limitNum, pages: 0 } };
-        }
-        innerWhereClauses.push(`u.id IN (${contactedUserIds.join(',')})`);
       }
 
       const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
@@ -477,34 +506,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (
         sortParam === 'purchaseDate_desc' ||
         sortParam === 'comboPurchaseDate_desc' ||
-        (bStr === 'NEW_LOCA' &&
+        (bucket === 'NEW_LOCA' &&
           (sortParam === 'daysSinceLastVisit_desc' || sortParam === 'daysSinceLastVisit' || !sortParam))
       ) {
-        innerOrderBy = `ORDER BY COALESCE(
-          (SELECT MAX(o_osc.date_created) FROM \`order\` o_osc JOIN order_service_combo osc_osc ON osc_osc.order_id = o_osc.id WHERE o_osc.user_id = u.id AND osc_osc.total_price > 0),
-          (SELECT MAX(usb_sub.date_created) FROM user_service_balance usb_sub WHERE usb_sub.user_id = u.id AND (usb_sub.total_normal_balance_amount + usb_sub.total_retain_balance_amount) > 0),
-          (SELECT MAX(o.date_created) FROM \`order\` o JOIN order_service os ON os.order_id = o.id WHERE o.user_id = u.id AND (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0),
-          u.date_created
-        ) DESC`;
-        outerOrderBy = `ORDER BY COALESCE(
-          (SELECT MAX(o_osc.date_created) FROM \`order\` o_osc JOIN order_service_combo osc_osc ON osc_osc.order_id = o_osc.id WHERE o_osc.user_id = u.id AND osc_osc.total_price > 0),
-          (SELECT MAX(usb_sub.date_created) FROM user_service_balance usb_sub WHERE usb_sub.user_id = u.id AND (usb_sub.total_normal_balance_amount + usb_sub.total_retain_balance_amount) > 0),
-          (SELECT MAX(o.date_created) FROM \`order\` o JOIN order_service os ON os.order_id = o.id WHERE o.user_id = u.id AND (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0),
-          u.date_created
-        ) DESC`;
+        innerOrderBy = 'ORDER BY COALESCE(combo_dates.latest_combo_date, u.date_created) DESC';
+        outerOrderBy = '';
       } else if (sortParam === 'purchaseDate_asc' || sortParam === 'comboPurchaseDate_asc') {
-        innerOrderBy = `ORDER BY COALESCE(
-          (SELECT MAX(o_osc.date_created) FROM \`order\` o_osc JOIN order_service_combo osc_osc ON osc_osc.order_id = o_osc.id WHERE o_osc.user_id = u.id AND osc_osc.total_price > 0),
-          (SELECT MAX(usb_sub.date_created) FROM user_service_balance usb_sub WHERE usb_sub.user_id = u.id AND (usb_sub.total_normal_balance_amount + usb_sub.total_retain_balance_amount) > 0),
-          (SELECT MAX(o.date_created) FROM \`order\` o JOIN order_service os ON os.order_id = o.id WHERE o.user_id = u.id AND (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0),
-          u.date_created
-        ) ASC`;
-        outerOrderBy = `ORDER BY COALESCE(
-          (SELECT MAX(o_osc.date_created) FROM \`order\` o_osc JOIN order_service_combo osc_osc ON osc_osc.order_id = o_osc.id WHERE o_osc.user_id = u.id AND osc_osc.total_price > 0),
-          (SELECT MAX(usb_sub.date_created) FROM user_service_balance usb_sub WHERE usb_sub.user_id = u.id AND (usb_sub.total_normal_balance_amount + usb_sub.total_retain_balance_amount) > 0),
-          (SELECT MAX(o.date_created) FROM \`order\` o JOIN order_service os ON os.order_id = o.id WHERE o.user_id = u.id AND (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0),
-          u.date_created
-        ) ASC`;
+        innerOrderBy = 'ORDER BY COALESCE(combo_dates.latest_combo_date, u.date_created) ASC';
+        outerOrderBy = '';
       } else if (
         hasFutureBooking === 'true' &&
         (sortParam === 'daysSinceLastVisit_asc' || sortParam === 'daysSinceLastVisit_desc')
@@ -1416,15 +1425,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         )`);
       }
       if (hasCallback === 'true') {
-        const callbackLogs = await fastify.prisma.crm.crmCallLog.findMany({
-          where: { callbackDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
-          select: { legacyUserId: true },
-        });
-        const cbUserIds = [...new Set(callbackLogs.map((l) => l.legacyUserId))];
-        if (cbUserIds.length === 0) {
-          return { total: 0, comboLive: 0, comboDead: 0, single: 0, notComboLive: 0, hsd30: 0, lsd1: 0 };
-        }
-        innerWhereClauses.push(`u.id IN (${cbUserIds.join(',')})`);
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM mos_lab.crm_call_logs ccl 
+          WHERE ccl.legacy_user_id = u.id AND ccl.callback_date >= CURDATE()
+        )`);
       }
       if (hasFutureBooking === 'true') {
         innerWhereClauses.push(`EXISTS (
@@ -1433,21 +1437,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
         )`);
       }
       if (contacted === 'true') {
-        let callTypeFilter: SafeAny = undefined;
         if (contactType === 'TEXT') {
-          callTypeFilter = { in: ['TEXT', 'ZALO', 'MESSENGER', 'SMS'] };
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl 
+            WHERE ccl.legacy_user_id = u.id AND ccl.call_type IN ('TEXT', 'ZALO', 'MESSENGER', 'SMS')
+          )`);
         } else if (contactType === 'CALL') {
-          callTypeFilter = { in: ['CALL', 'OUTBOUND', 'INBOUND'] };
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl 
+            WHERE ccl.legacy_user_id = u.id AND ccl.call_type IN ('CALL', 'OUTBOUND', 'INBOUND')
+          )`);
+        } else {
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl 
+            WHERE ccl.legacy_user_id = u.id
+          )`);
         }
-        const contactedLogs = await fastify.prisma.crm.crmCallLog.findMany({
-          where: callTypeFilter ? { callType: callTypeFilter } : undefined,
-          select: { legacyUserId: true },
-        });
-        const contactedUserIds = [...new Set(contactedLogs.map((l) => l.legacyUserId))];
-        if (contactedUserIds.length === 0) {
-          return { total: 0, comboLive: 0, comboDead: 0, single: 0, notComboLive: 0, hsd30: 0, lsd1: 0 };
-        }
-        innerWhereClauses.push(`u.id IN (${contactedUserIds.join(',')})`);
       }
 
       const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
@@ -1500,6 +1505,478 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve stats',
+      });
+    }
+  });
+
+  // GET /api/customers/loca-stats
+  // Batch stats endpoint for LoCa campaign: returns all tab counts and touchpoint counts in 1 SQL query
+  fastify.get('/customers/loca-stats', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const { search, assignedStaffId, dateFrom, dateTo } = request.query as SafeAny;
+
+      const adminUser = request.user;
+      let effectiveAssignedStaffId = assignedStaffId;
+
+      if (adminUser.role === 'telesales') {
+        if (!effectiveAssignedStaffId) {
+          effectiveAssignedStaffId = 'me';
+        }
+      }
+
+      let allowedUserIds: number[] | null = null;
+      let excludedUserIds: number[] | null = null;
+
+      if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all' && effectiveAssignedStaffId !== 'ALL') {
+        if (effectiveAssignedStaffId === 'unassigned') {
+          const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+            select: { legacyUserId: true },
+          });
+          excludedUserIds = allAssignments.map((a) => a.legacyUserId);
+        } else {
+          let targetStaffId = adminUser.id;
+          if (effectiveAssignedStaffId !== 'me') {
+            targetStaffId = parseInt(effectiveAssignedStaffId, 10);
+          }
+          if (!isNaN(targetStaffId)) {
+            const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+              where: { staffId: targetStaffId },
+              select: { legacyUserId: true },
+            });
+            allowedUserIds = assignments.map((a) => a.legacyUserId);
+            if (allowedUserIds.length === 0) {
+              return {
+                tabs: {
+                  NEW_LOCA: 0,
+                  LOCA_ALL: 0,
+                  HSD_30: 0,
+                  LSD_1: 0,
+                  SP: 0,
+                  CALLBACK: 0,
+                  BOOKED: 0,
+                  CONTACTED: 0,
+                },
+                touchpoints: {},
+              };
+            }
+          }
+        }
+      }
+
+      const innerWhereClauses: string[] = ['COALESCE(up.is_deleted, 0) = 0'];
+      const innerParams: SafeAny[] = [];
+
+      if (allowedUserIds !== null) {
+        innerWhereClauses.push(`u.id IN (${allowedUserIds.join(',')})`);
+      }
+      if (excludedUserIds !== null && excludedUserIds.length > 0) {
+        innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
+      }
+
+      if (search && search.trim() !== '') {
+        const searchLike = `%${search.trim()}%`;
+        innerWhereClauses.push(`(
+          up.full_name LIKE ? OR EXISTS (
+            SELECT 1 FROM user_contact uc 
+            WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND uc.phone_number LIKE ?
+          )
+        )`);
+        innerParams.push(searchLike, searchLike);
+      }
+
+      const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
+
+      // Get touchpoints config
+      const config = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'LOCA_TOUCHPOINTS_CONFIG' },
+      });
+      const defaultTouchpoints = [
+        { key: 'now', daysMin: 0, daysMax: 1 },
+        { key: '17', daysMin: 17, daysMax: 17 },
+        { key: '19', daysMin: 19, daysMax: 19 },
+        { key: '21', daysMin: 21, daysMax: 21 },
+        { key: '23', daysMin: 23, daysMax: 23 },
+        { key: '25', daysMin: 25, daysMax: 25 },
+        { key: '30', daysMin: 30, daysMax: 30 },
+        { key: '35', daysMin: 35, daysMax: 35 },
+        { key: '40', daysMin: 40, daysMax: 40 },
+        { key: '45', daysMin: 45, daysMax: 45 },
+        { key: '50', daysMin: 50, daysMax: 50 },
+        { key: '55', daysMin: 55, daysMax: 55 },
+        { key: '60', daysMin: 60, daysMax: 60 },
+      ];
+      const activeTouchpoints = config ? JSON.parse(config.value)?.LOCA_ALL || defaultTouchpoints : defaultTouchpoints;
+
+      const dFromStr = dateFrom
+        ? dateFrom.slice(0, 19).replace('T', ' ')
+        : new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
+      const dToStr = dateTo
+        ? dateTo.slice(0, 19).replace('T', ' ')
+        : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
+
+      // Build dynamic SELECT for touchpoints
+      const tpSelects = activeTouchpoints
+        .map((tp: SafeAny) => {
+          const min = tp.daysMin !== undefined ? Number(tp.daysMin) : 0;
+          const max = tp.daysMax !== undefined ? Number(tp.daysMax) : min;
+          if (min === max) {
+            return `SUM(CASE WHEN is_combo_live = 1 AND daysSinceLastVisit = ${min} THEN 1 ELSE 0 END) as tp_${tp.key}`;
+          }
+          return `SUM(CASE WHEN is_combo_live = 1 AND daysSinceLastVisit BETWEEN ${min} AND ${max} THEN 1 ELSE 0 END) as tp_${tp.key}`;
+        })
+        .join(',\n          ');
+
+      const batchSql = `
+        SELECT
+          SUM(CASE WHEN is_new_loca = 1 THEN 1 ELSE 0 END) as count_NEW_LOCA,
+          SUM(CASE WHEN is_combo_live = 1 THEN 1 ELSE 0 END) as count_LOCA_ALL,
+          SUM(CASE WHEN is_combo_live = 1 AND is_hsd30 = 1 THEN 1 ELSE 0 END) as count_HSD_30,
+          SUM(CASE WHEN is_combo_live = 1 AND is_lsd1 = 1 THEN 1 ELSE 0 END) as count_LSD_1,
+          SUM(CASE WHEN is_combo_live = 1 AND has_product = 1 THEN 1 ELSE 0 END) as count_SP,
+          SUM(CASE WHEN is_combo_live = 1 AND has_callback = 1 THEN 1 ELSE 0 END) as count_CALLBACK,
+          SUM(CASE WHEN is_combo_live = 1 AND has_future_booking = 1 THEN 1 ELSE 0 END) as count_BOOKED,
+          SUM(CASE WHEN is_combo_live = 1 AND has_contacted = 1 THEN 1 ELSE 0 END) as count_CONTACTED,
+          ${tpSelects ? tpSelects : '1 as dummy'}
+        FROM (
+          SELECT
+            u.id,
+            (usb_agg.live_count IS NOT NULL AND usb_agg.live_count > 0) as is_combo_live,
+            CASE 
+              WHEN usb_agg.expiryDate IS NOT NULL AND DATEDIFF(usb_agg.expiryDate, NOW()) BETWEEN 0 AND 30 THEN 1 
+              ELSE 0 
+            END as is_hsd30,
+            CASE 
+              WHEN (COALESCE(usb_agg.normalCount, 0) + COALESCE(usb_agg.retainCount, 0)) = 1 THEN 1 
+              ELSE 0 
+            END as is_lsd1,
+            DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
+            EXISTS (
+              SELECT 1 FROM order_service os_p 
+              WHERE os_p.user_id = u.id AND (
+                LOWER(COALESCE(os_p.service_group, '')) LIKE '%product%' OR 
+                LOWER(COALESCE(os_p.service_type, '')) LIKE '%product%' OR 
+                LOWER(COALESCE(os_p.user_service_type, '')) LIKE '%product%'
+              )
+            ) as has_product,
+            EXISTS (
+              SELECT 1 FROM mos_lab.crm_call_logs ccl
+              WHERE ccl.legacy_user_id = u.id AND ccl.callback_date >= CURDATE()
+            ) as has_callback,
+            EXISTS (
+              SELECT 1 FROM \`order\` o_bk 
+              WHERE o_bk.user_id = u.id AND o_bk.booking_date_start > NOW() AND o_bk.order_state IN ('New', 'Confirmed')
+            ) as has_future_booking,
+            EXISTS (
+              SELECT 1 FROM mos_lab.crm_call_logs ccl
+              WHERE ccl.legacy_user_id = u.id
+            ) as has_contacted,
+            (
+              EXISTS (
+                SELECT 1 FROM user_service_balance usb_nl
+                LEFT JOIN service_price sp_nl ON usb_nl.service_price_id = sp_nl.id
+                LEFT JOIN service_language sl_nl ON usb_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+                WHERE usb_nl.user_id = u.id 
+                  AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
+                  AND (COALESCE(sp_nl.service_price, 0) > 0 OR (usb_nl.total_normal_balance_amount + usb_nl.total_retain_balance_amount) > 0)
+                  AND (sp_nl.service_price_package_key IS NULL OR (
+                    LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+                  ))
+                  AND (sl_nl.service_name IS NULL OR (
+                    LOWER(sl_nl.service_name) NOT LIKE '%single%'
+                    AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+                    AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+                  ))
+              ) OR EXISTS (
+                SELECT 1 FROM \`order\` o_nl
+                JOIN order_service os_nl ON os_nl.order_id = o_nl.id
+                LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
+                LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
+                LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
+                LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+                WHERE o_nl.user_id = u.id 
+                  AND o_nl.order_state = 'Completed'
+                  AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ? 
+                  AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
+                  AND COALESCE(NULLIF(os_nl.total_price, 0), sp_nl.service_price, 0) > 0
+                  AND (sp_nl.service_price_package_key IS NULL OR (
+                    LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+                  ))
+                  AND (sl_nl.service_name IS NULL OR (
+                    LOWER(sl_nl.service_name) NOT LIKE '%single%'
+                    AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+                    AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+                  ))
+              ) OR EXISTS (
+                SELECT 1 FROM \`order\` o_nl
+                JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
+                LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
+                LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
+                LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
+                LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+                WHERE o_nl.user_id = u.id 
+                  AND o_nl.order_state = 'Completed'
+                  AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
+                  AND osc_nl.total_price > 0
+                  AND (sp_nl.service_price_package_key IS NULL OR (
+                    LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+                  ))
+                  AND (sl_nl.service_name IS NULL OR (
+                    LOWER(sl_nl.service_name) NOT LIKE '%single%'
+                    AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+                    AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+                  ))
+              )
+            ) as is_new_loca
+          FROM user u
+          LEFT JOIN user_profile up ON u.id = up.user_id
+          LEFT JOIN (
+            SELECT 
+              user_id,
+              SUM(
+                CASE 
+                  WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
+                  ELSE 0 
+                END
+              ) as live_count,
+              SUM(normal_count) as normalCount,
+              SUM(retain_count) as retainCount,
+              MAX(date_expired) as expiryDate
+            FROM user_service_balance
+            GROUP BY user_id
+          ) as usb_agg ON u.id = usb_agg.user_id
+          ${innerWhereString}
+        ) as loca_base
+      `;
+
+      const sqlParams = [dFromStr, dToStr, dFromStr, dToStr, dFromStr, dToStr, ...innerParams];
+      const result = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(batchSql, ...sqlParams);
+
+      const row = result && result[0] ? result[0] : {};
+
+      const tabs: Record<string, number> = {
+        NEW_LOCA: Number(row.count_NEW_LOCA || 0),
+        LOCA_ALL: Number(row.count_LOCA_ALL || 0),
+        HSD_30: Number(row.count_HSD_30 || 0),
+        LSD_1: Number(row.count_LSD_1 || 0),
+        SP: Number(row.count_SP || 0),
+        CALLBACK: Number(row.count_CALLBACK || 0),
+        BOOKED: Number(row.count_BOOKED || 0),
+        CONTACTED: Number(row.count_CONTACTED || 0),
+      };
+
+      const touchpoints: Record<string, number> = {
+        ALL: Number(row.count_LOCA_ALL || 0),
+      };
+      activeTouchpoints.forEach((tp: SafeAny) => {
+        touchpoints[tp.key] = Number(row[`tp_${tp.key}`] || 0);
+      });
+
+      return { tabs, touchpoints };
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get LoCa stats error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve LoCa stats',
+      });
+    }
+  });
+
+  // GET /api/customers/nyc-stats
+  // Batch stats endpoint for NYC campaign: returns all 6 NYC tab counts and all touchpoint counts in 1 SQL query
+  fastify.get('/customers/nyc-stats', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const { search, assignedStaffId } = request.query as SafeAny;
+
+      const adminUser = request.user;
+      let effectiveAssignedStaffId = assignedStaffId;
+
+      if (adminUser.role === 'telesales') {
+        if (!effectiveAssignedStaffId) {
+          effectiveAssignedStaffId = 'me';
+        }
+      }
+
+      let allowedUserIds: number[] | null = null;
+      let excludedUserIds: number[] | null = null;
+
+      if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all' && effectiveAssignedStaffId !== 'ALL') {
+        if (effectiveAssignedStaffId === 'unassigned') {
+          const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+            select: { legacyUserId: true },
+          });
+          excludedUserIds = allAssignments.map((a) => a.legacyUserId);
+        } else {
+          let targetStaffId = adminUser.id;
+          if (effectiveAssignedStaffId !== 'me') {
+            targetStaffId = parseInt(effectiveAssignedStaffId, 10);
+          }
+          if (!isNaN(targetStaffId)) {
+            const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+              where: { staffId: targetStaffId },
+              select: { legacyUserId: true },
+            });
+            allowedUserIds = assignments.map((a) => a.legacyUserId);
+            if (allowedUserIds.length === 0) {
+              return {
+                tabs: {
+                  NYC_30: 0,
+                  NYC_60: 0,
+                  NYC_90: 0,
+                  NYC_180: 0,
+                  NYC_365: 0,
+                  NYC_365plus: 0,
+                },
+                touchpoints: {},
+              };
+            }
+          }
+        }
+      }
+
+      const innerWhereClauses: string[] = [
+        'COALESCE(up.is_deleted, 0) = 0',
+        '(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)',
+        'up.last_order_booking IS NOT NULL',
+      ];
+      const innerParams: SafeAny[] = [];
+
+      if (allowedUserIds !== null) {
+        innerWhereClauses.push(`u.id IN (${allowedUserIds.join(',')})`);
+      }
+      if (excludedUserIds !== null && excludedUserIds.length > 0) {
+        innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
+      }
+
+      if (search && search.trim() !== '') {
+        const searchLike = `%${search.trim()}%`;
+        innerWhereClauses.push(`(
+          up.full_name LIKE ? OR EXISTS (
+            SELECT 1 FROM user_contact uc 
+            WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND uc.phone_number LIKE ?
+          )
+        )`);
+        innerParams.push(searchLike, searchLike);
+      }
+
+      const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
+
+      // Get NYC touchpoints config
+      const config = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'NYC_TOUCHPOINTS_CONFIG' },
+      });
+      const defaultConfigs: Record<string, SafeAny[]> = {
+        NYC_30: [
+          { key: 'now', daysMin: 0, daysMax: 1 },
+          { key: '3', daysMin: 3, daysMax: 3 },
+          { key: '7', daysMin: 7, daysMax: 7 },
+          { key: '17', daysMin: 17, daysMax: 17 },
+          { key: '21', daysMin: 21, daysMax: 21 },
+        ],
+        NYC_60: [
+          { key: '35', daysMin: 31, daysMax: 35 },
+          { key: '45', daysMin: 41, daysMax: 45 },
+          { key: '55', daysMin: 51, daysMax: 55 },
+        ],
+        NYC_90: [
+          { key: '70', daysMin: 65, daysMax: 70 },
+          { key: '80', daysMin: 75, daysMax: 80 },
+        ],
+        NYC_180: [
+          { key: '100', daysMin: 95, daysMax: 100 },
+          { key: '150', daysMin: 145, daysMax: 150 },
+        ],
+        NYC_365: [
+          { key: '200', daysMin: 195, daysMax: 200 },
+          { key: '300', daysMin: 295, daysMax: 300 },
+        ],
+        NYC_365plus: [
+          { key: '400', daysMin: 395, daysMax: 400 },
+          { key: '500', daysMin: 495, daysMax: 500 },
+        ],
+      };
+
+      const activeConfigs: Record<string, SafeAny[]> = config ? JSON.parse(config.value) : defaultConfigs;
+
+      // Extract all touchpoints across all NYC tabs
+      const allTouchpoints: SafeAny[] = [];
+      Object.values(activeConfigs).forEach((tps) => {
+        if (Array.isArray(tps)) {
+          allTouchpoints.push(...tps);
+        }
+      });
+
+      const tpSelects = allTouchpoints
+        .map((tp: SafeAny) => {
+          const min = tp.daysMin !== undefined ? Number(tp.daysMin) : 0;
+          const max = tp.daysMax !== undefined ? Number(tp.daysMax) : min;
+          if (min === max) {
+            return `SUM(CASE WHEN daysSinceLastVisit = ${min} THEN 1 ELSE 0 END) as tp_${tp.key}`;
+          }
+          return `SUM(CASE WHEN daysSinceLastVisit BETWEEN ${min} AND ${max} THEN 1 ELSE 0 END) as tp_${tp.key}`;
+        })
+        .join(',\n          ');
+
+      const batchSql = `
+        SELECT
+          SUM(CASE WHEN daysSinceLastVisit BETWEEN 0 AND 30 THEN 1 ELSE 0 END) as count_NYC_30,
+          SUM(CASE WHEN daysSinceLastVisit BETWEEN 31 AND 60 THEN 1 ELSE 0 END) as count_NYC_60,
+          SUM(CASE WHEN daysSinceLastVisit BETWEEN 61 AND 90 THEN 1 ELSE 0 END) as count_NYC_90,
+          SUM(CASE WHEN daysSinceLastVisit BETWEEN 91 AND 180 THEN 1 ELSE 0 END) as count_NYC_180,
+          SUM(CASE WHEN daysSinceLastVisit BETWEEN 181 AND 365 THEN 1 ELSE 0 END) as count_NYC_365,
+          SUM(CASE WHEN daysSinceLastVisit > 365 THEN 1 ELSE 0 END) as count_NYC_365plus,
+          ${tpSelects ? tpSelects : '1 as dummy'}
+        FROM (
+          SELECT
+            u.id,
+            DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit
+          FROM user u
+          LEFT JOIN user_profile up ON u.id = up.user_id
+          LEFT JOIN (
+            SELECT 
+              user_id,
+              SUM(
+                CASE 
+                  WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
+                  ELSE 0 
+                END
+              ) as live_count
+            FROM user_service_balance
+            GROUP BY user_id
+          ) as usb_agg ON u.id = usb_agg.user_id
+          ${innerWhereString}
+        ) as nyc_base
+      `;
+
+      const result = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(batchSql, ...innerParams);
+
+      const row = result && result[0] ? result[0] : {};
+
+      const tabs: Record<string, number> = {
+        NYC_30: Number(row.count_NYC_30 || 0),
+        NYC_60: Number(row.count_NYC_60 || 0),
+        NYC_90: Number(row.count_NYC_90 || 0),
+        NYC_180: Number(row.count_NYC_180 || 0),
+        NYC_365: Number(row.count_NYC_365 || 0),
+        NYC_365plus: Number(row.count_NYC_365plus || 0),
+      };
+
+      const touchpoints: Record<string, number> = {};
+      allTouchpoints.forEach((tp: SafeAny) => {
+        touchpoints[tp.key] = Number(row[`tp_${tp.key}`] || 0);
+      });
+
+      return { tabs, touchpoints };
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get NYC stats error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve NYC stats',
       });
     }
   });
@@ -6185,11 +6662,32 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const promoMap = new Map(promotions.map((p) => [Number(p.id), p.name || p.promotionKey || `PROMO-${p.id}`]));
 
-      const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+      const referencedStaffIds = Array.from(
+        new Set([
+          ...bookingsOrders
+            .map((o) => o.created_staff_id)
+            .filter((id): id is number => id !== null && id !== undefined && Number(id) > 0),
+          ...comingOrders
+            .map((o) => o.created_staff_id)
+            .filter((id): id is number => id !== null && id !== undefined && Number(id) > 0),
+          ...allOrderServices
+            .flatMap((os) => [os.assigned_staff_id, os.check_in_staff_id, os.check_out_staff_id])
+            .filter((id): id is number => id !== null && id !== undefined && Number(id) > 0),
+          ...userBalanceTransactions
+            .map((t) => t.used_staff_id)
+            .filter((id): id is number => id !== null && id !== undefined && Number(id) > 0),
+        ])
+      );
+
+      const staffProfiles =
+        referencedStaffIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT up.user_id as userId, 
                TRIM(COALESCE(NULLIF(up.full_name, ''), CONCAT(COALESCE(up.first_name, ''), ' ', COALESCE(up.last_name, '')))) as fullName
         FROM \`user_profile\` up
-      `);
+        WHERE up.user_id IN (${referencedStaffIds.join(',')})
+      `)
+          : [];
       const staffMap = new Map(staffProfiles.map((s) => [Number(s.userId), s.fullName || `Staff #${s.userId}`]));
 
       // Exact legacy PHP combo active helper function

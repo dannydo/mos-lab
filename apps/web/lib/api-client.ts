@@ -104,6 +104,24 @@ export const apiClient = {
       const response = await api.get('/customers/stats', { params });
       return response.data;
     },
+    getLocaStats: async (
+      params?: Record<string, unknown>
+    ): Promise<{
+      tabs: Record<string, number>;
+      touchpoints: Record<string, number>;
+    }> => {
+      const response = await api.get('/customers/loca-stats', { params });
+      return response.data;
+    },
+    getNycStats: async (
+      params?: Record<string, unknown>
+    ): Promise<{
+      tabs: Record<string, number>;
+      touchpoints: Record<string, number>;
+    }> => {
+      const response = await api.get('/customers/nyc-stats', { params });
+      return response.data;
+    },
     getDetails: async (id: number): Promise<Customer> => {
       const response = await api.get(`/customers/${id}`);
       return response.data;

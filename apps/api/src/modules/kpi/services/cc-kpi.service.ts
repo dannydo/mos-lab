@@ -275,8 +275,7 @@ export class CcKpiService {
       };
     }
 
-    // Query staff_bonus grouped by order_service_id and user_id for fast lookup
-    const osIds = rows.map((r) => r.order_service_id);
+    // Query staff_bonus grouped by order_service_id and user_id for fast lookup via direct JOIN
     const bonusRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
       SELECT 
         sb.order_service_id,
@@ -298,7 +297,13 @@ export class CcKpiService {
         END) AS falRule
       FROM staff_bonus sb
       JOIN staff_bonus_rule sbr ON sb.staff_bonus_rule_id = sbr.id
-      WHERE sb.order_service_id IN (${osIds.join(',')})
+      JOIN order_service os ON sb.order_service_id = os.id
+      JOIN \`order\` o ON os.order_id = o.id
+      JOIN report_order ro ON o.id = ro.order_id
+      WHERE ro.date BETWEEN '${monthStartStr}' AND '${endStr}'
+        AND o.order_state = 'Completed'
+        ${activeCcFilter}
+        ${storeFilter}
       GROUP BY sb.order_service_id, sb.user_id
     `);
 

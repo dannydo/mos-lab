@@ -135,7 +135,11 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
             END) AS falRule
           FROM staff_bonus sb
           JOIN staff_bonus_rule sbr ON sb.staff_bonus_rule_id = sbr.id
-          WHERE sb.order_service_id > 0
+          JOIN order_service os ON sb.order_service_id = os.id
+          JOIN \`order\` o ON os.order_id = o.id
+          JOIN report_order ro ON o.id = ro.order_id
+          WHERE ro.date BETWEEN '${startPart}' AND '${endPart}'
+            AND o.order_state = 'Completed'
           GROUP BY sb.order_service_id, sb.user_id
         ) sb_agg ON os.id = sb_agg.order_service_id AND os.assigned_staff_id = sb_agg.user_id
 

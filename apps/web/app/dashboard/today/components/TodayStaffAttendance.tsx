@@ -15,18 +15,55 @@ interface TodayStaffAttendanceProps {
   cvList: ShopCVData[];
 }
 
-const TodayStaffAttendance = React.memo(function TodayStaffAttendance({
-  token,
-  ccList,
-  cvList,
-}: TodayStaffAttendanceProps) {
-  const renderShiftAndAttendance = (
-    shift: 'sáng' | 'chiều' | 'full' | 'off',
-    attendance: 'none' | 'checked_in' | 'checked_out' | 'late'
-  ) => {
-    if (shift === 'off') {
+const TodayStaffAttendance = React.memo(
+  function TodayStaffAttendance({ token, ccList, cvList }: TodayStaffAttendanceProps) {
+    const renderShiftAndAttendance = (
+      shift: 'sáng' | 'chiều' | 'full' | 'off',
+      attendance: 'none' | 'checked_in' | 'checked_out' | 'late'
+    ) => {
+      if (shift === 'off') {
+        return (
+          <span style={{ cursor: 'help' }}>
+            <Space size={6}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#bfbfbf',
+                  verticalAlign: 'middle',
+                }}
+              />
+              <span style={{ fontSize: '12px', color: '#bfbfbf', fontWeight: 500 }}>Off</span>
+            </Space>
+          </span>
+        );
+      }
+
+      let shiftText = '';
+      if (shift === 'sáng') shiftText = 'Sáng';
+      else if (shift === 'chiều') shiftText = 'Chiều';
+      else if (shift === 'full') shiftText = 'Full';
+
+      let attText = '';
+      let dotColor = '#bfbfbf';
+      if (attendance === 'checked_in') {
+        attText = 'Đã check-in';
+        dotColor = '#52c41a'; // Green
+      } else if (attendance === 'checked_out') {
+        attText = 'Đã check-out';
+        dotColor = '#8c8c8c'; // Gray
+      } else if (attendance === 'late') {
+        attText = 'Đi trễ';
+        dotColor = '#ff4d4f'; // Red
+      } else {
+        attText = 'Chưa check-in';
+        dotColor = '#faad14'; // Orange/Amber
+      }
+
       return (
-        <span style={{ cursor: 'help' }}>
+        <span style={{ cursor: 'help' }} title={attText}>
           <Space size={6}>
             <span
               style={{
@@ -34,222 +71,208 @@ const TodayStaffAttendance = React.memo(function TodayStaffAttendance({
                 width: '6px',
                 height: '6px',
                 borderRadius: '50%',
-                backgroundColor: '#bfbfbf',
+                backgroundColor: dotColor,
                 verticalAlign: 'middle',
               }}
             />
-            <span style={{ fontSize: '12px', color: '#bfbfbf', fontWeight: 500 }}>Off</span>
+            <span style={{ fontSize: '12px', color: '#8c8c8c', fontWeight: 500 }}>{shiftText}</span>
           </Space>
         </span>
       );
-    }
+    };
 
-    let shiftText = '';
-    if (shift === 'sáng') shiftText = 'Sáng';
-    else if (shift === 'chiều') shiftText = 'Chiều';
-    else if (shift === 'full') shiftText = 'Full';
+    const cvColumns = React.useMemo(
+      () => [
+        {
+          title: 'Ca',
+          key: 'shift_attendance',
+          render: (_: SafeAny, rec: ShopCVData) => renderShiftAndAttendance(rec.shift, rec.attendance),
+        },
+        {
+          title: 'Tên CV',
+          dataIndex: 'name',
+          key: 'name',
+          render: (t: string) => <strong>{t}</strong>,
+        },
+        {
+          title: 'Chi nhánh',
+          dataIndex: 'branchName',
+          key: 'branchName',
+          render: (b: string) => <StatusTag status="cyan" label={b} />,
+        },
+        {
+          title: 'Đang làm gì?',
+          dataIndex: 'doing',
+          key: 'doing',
+          render: (doing: string, rec: ShopCVData) => (
+            <Badge status={rec.status === 'busy' ? 'warning' : 'success'} text={doing} />
+          ),
+        },
+        {
+          title: 'Khách hôm nay',
+          dataIndex: 'clients',
+          key: 'clients',
+          align: 'center' as const,
+          render: (n: number) => <strong className="tabular-nums text-xs font-mono">{n} khách</strong>,
+        },
+      ],
+      []
+    );
 
-    let attText = '';
-    let dotColor = '#bfbfbf';
-    if (attendance === 'checked_in') {
-      attText = 'Đã check-in';
-      dotColor = '#52c41a'; // Green
-    } else if (attendance === 'checked_out') {
-      attText = 'Đã check-out';
-      dotColor = '#8c8c8c'; // Gray
-    } else if (attendance === 'late') {
-      attText = 'Đi trễ';
-      dotColor = '#ff4d4f'; // Red
-    } else {
-      attText = 'Chưa check-in';
-      dotColor = '#faad14'; // Orange/Amber
-    }
+    const ccColumns = React.useMemo(
+      () => [
+        {
+          title: 'Ca',
+          key: 'shift_attendance',
+          render: (_: SafeAny, rec: ShopCCData) => renderShiftAndAttendance(rec.shift, rec.attendance),
+        },
+        {
+          title: 'Tên CC',
+          dataIndex: 'name',
+          key: 'name',
+          render: (t: string) => <strong>{t}</strong>,
+        },
+        {
+          title: 'Chi nhánh',
+          dataIndex: 'branchName',
+          key: 'branchName',
+          render: (b: string) => (
+            <Tag color="cyan" style={{ fontWeight: 'bold' }}>
+              {b}
+            </Tag>
+          ),
+        },
+        {
+          title: 'Đang làm gì?',
+          dataIndex: 'doing',
+          key: 'doing',
+          render: (doing: string) => <Text type="secondary">{doing}</Text>,
+        },
+        {
+          title: 'Khách hôm nay',
+          dataIndex: 'clients',
+          key: 'clients',
+          align: 'center' as const,
+          render: (n: number) => <strong className="tabular-nums font-mono">{n} khách</strong>,
+        },
+        {
+          title: 'Combo bán được',
+          dataIndex: 'combos',
+          key: 'combos',
+          align: 'center' as const,
+          render: (n: number) => (
+            <Tag color="success" className="tabular-nums font-mono">
+              {n} Combo
+            </Tag>
+          ),
+        },
+        {
+          title: '$ Combo',
+          dataIndex: 'revCombo',
+          key: 'revCombo',
+          align: 'right' as const,
+          render: (r: number) => (
+            <span className="tabular-nums font-mono" style={{ color: '#D4A84B' }}>
+              {(r || 0).toLocaleString('vi-VN')} đ
+            </span>
+          ),
+        },
+        {
+          title: '$ Single',
+          dataIndex: 'revLe',
+          key: 'revLe',
+          align: 'right' as const,
+          render: (r: number) => (
+            <span className="tabular-nums font-mono" style={{ color: token.colorTextDescription }}>
+              {(r || 0).toLocaleString('vi-VN')} đ
+            </span>
+          ),
+        },
+        {
+          title: '$ Product',
+          dataIndex: 'revProduct',
+          key: 'revProduct',
+          align: 'right' as const,
+          render: (r: number) => (
+            <span className="tabular-nums font-mono" style={{ color: '#52c41a' }}>
+              {(r || 0).toLocaleString('vi-VN')} đ
+            </span>
+          ),
+        },
+        {
+          title: 'Doanh số ngày',
+          dataIndex: 'revenue',
+          key: 'revenue',
+          align: 'right' as const,
+          render: (r: number) => (
+            <strong className="tabular-nums font-mono" style={{ color: '#1890ff' }}>
+              {(r || 0).toLocaleString('vi-VN')} đ
+            </strong>
+          ),
+        },
+      ],
+      [token.colorTextDescription]
+    );
 
     return (
-      <span style={{ cursor: 'help' }} title={attText}>
-        <Space size={6}>
-          <span
-            style={{
-              display: 'inline-block',
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: dotColor,
-              verticalAlign: 'middle',
-            }}
-          />
-          <span style={{ fontSize: '12px', color: '#8c8c8c', fontWeight: 500 }}>{shiftText}</span>
-        </Space>
-      </span>
+      <Row gutter={[24, 24]}>
+        {/* CV list */}
+        <Col xs={24} xl={12}>
+          <SectionCard
+            title={
+              <Space>
+                <UserOutlined style={{ color: '#D4A84B' }} />
+                <span className="text-sm font-bold">[CV] Chuyên viên đang làm gì? Bao nhiêu khách?</span>
+              </Space>
+            }
+            bodyPadding={0}
+          >
+            <Table
+              dataSource={cvList}
+              rowKey="name"
+              rowClassName={(record) =>
+                record.shift === 'off' || record.attendance === 'checked_out' ? 'opacity-40 pointer-events-none' : ''
+              }
+              pagination={false}
+              size="small"
+              scroll={{ x: 'max-content' }}
+              columns={cvColumns}
+              className="antd-custom-table"
+            />
+          </SectionCard>
+        </Col>
+
+        {/* CC list */}
+        <Col xs={24} xl={12}>
+          <SectionCard
+            title={
+              <Space>
+                <TeamOutlined style={{ color: '#D4A84B' }} />
+                <span className="text-sm font-bold">[CC] Client Consultant đang làm gì? Bao nhiêu khách?</span>
+              </Space>
+            }
+            bodyPadding={0}
+          >
+            <Table
+              dataSource={ccList}
+              rowKey="name"
+              rowClassName={(record) =>
+                record.shift === 'off' || record.attendance === 'checked_out' ? 'opacity-40 pointer-events-none' : ''
+              }
+              pagination={false}
+              size="small"
+              scroll={{ x: 'max-content' }}
+              columns={ccColumns}
+              className="antd-custom-table"
+            />
+          </SectionCard>
+        </Col>
+      </Row>
     );
-  };
-
-  return (
-    <Row gutter={[24, 24]}>
-      {/* CV list */}
-      <Col xs={24} xl={12}>
-        <SectionCard
-          title={
-            <Space>
-              <UserOutlined style={{ color: '#D4A84B' }} />
-              <span className="text-sm font-bold">
-                [CV] Chuyên viên đang làm gì? Bao nhiêu khách?
-              </span>
-            </Space>
-          }
-          bodyPadding={0}
-        >
-          <Table
-            dataSource={cvList}
-            rowKey="name"
-            rowClassName={(record) =>
-              record.shift === 'off' || record.attendance === 'checked_out' ? 'opacity-40 pointer-events-none' : ''
-            }
-            pagination={false}
-            size="small"
-            scroll={{ x: 'max-content' }}
-            columns={[
-              {
-                title: 'Ca',
-                key: 'shift_attendance',
-                render: (_, rec) => renderShiftAndAttendance(rec.shift, rec.attendance),
-              },
-              {
-                title: 'Tên CV',
-                dataIndex: 'name',
-                key: 'name',
-                render: (t) => <strong>{t}</strong>,
-              },
-              {
-                title: 'Chi nhánh',
-                dataIndex: 'branchName',
-                key: 'branchName',
-                render: (b: string) => (
-                  <StatusTag status="cyan" label={b} />
-                ),
-              },
-              {
-                title: 'Đang làm gì?',
-                dataIndex: 'doing',
-                key: 'doing',
-                render: (doing, rec) => <Badge status={rec.status === 'busy' ? 'warning' : 'success'} text={doing} />,
-              },
-              {
-                title: 'Khách hôm nay',
-                dataIndex: 'clients',
-                key: 'clients',
-                align: 'center',
-                render: (n) => <strong className="tabular-nums text-xs">{n} khách</strong>,
-              },
-            ]}
-            className="antd-custom-table"
-          />
-        </SectionCard>
-      </Col>
-
-      {/* CC list */}
-      <Col xs={24} xl={12}>
-        <SectionCard
-          title={
-            <Space>
-              <TeamOutlined style={{ color: '#D4A84B' }} />
-              <span className="text-sm font-bold">
-                [CC] Client Consultant đang làm gì? Bao nhiêu khách?
-              </span>
-            </Space>
-          }
-          bodyPadding={0}
-        >
-          <Table
-            dataSource={ccList}
-            rowKey="name"
-            rowClassName={(record) =>
-              record.shift === 'off' || record.attendance === 'checked_out' ? 'opacity-40 pointer-events-none' : ''
-            }
-            pagination={false}
-            size="small"
-            scroll={{ x: 'max-content' }}
-            columns={[
-              {
-                title: 'Ca',
-                key: 'shift_attendance',
-                render: (_, rec) => renderShiftAndAttendance(rec.shift, rec.attendance),
-              },
-              {
-                title: 'Tên CC',
-                dataIndex: 'name',
-                key: 'name',
-                render: (t) => <strong>{t}</strong>,
-              },
-              {
-                title: 'Chi nhánh',
-                dataIndex: 'branchName',
-                key: 'branchName',
-                render: (b: string) => (
-                  <Tag color="cyan" style={{ fontWeight: 'bold' }}>
-                    {b}
-                  </Tag>
-                ),
-              },
-              {
-                title: 'Đang làm gì?',
-                dataIndex: 'doing',
-                key: 'doing',
-                render: (doing) => <Text type="secondary">{doing}</Text>,
-              },
-              {
-                title: 'Khách hôm nay',
-                dataIndex: 'clients',
-                key: 'clients',
-                align: 'center',
-                render: (n) => <strong>{n} khách</strong>,
-              },
-              {
-                title: 'Combo bán được',
-                dataIndex: 'combos',
-                key: 'combos',
-                align: 'center',
-                render: (n) => <Tag color="success">{n} Combo</Tag>,
-              },
-              {
-                title: '$ Combo',
-                dataIndex: 'revCombo',
-                key: 'revCombo',
-                align: 'right',
-                render: (r: number) => <span style={{ color: '#D4A84B' }}>{(r || 0).toLocaleString('vi-VN')} đ</span>,
-              },
-              {
-                title: '$ Single',
-                dataIndex: 'revLe',
-                key: 'revLe',
-                align: 'right',
-                render: (r: number) => (
-                  <span style={{ color: token.colorTextDescription }}>{(r || 0).toLocaleString('vi-VN')} đ</span>
-                ),
-              },
-              {
-                title: '$ Product',
-                dataIndex: 'revProduct',
-                key: 'revProduct',
-                align: 'right',
-                render: (r: number) => <span style={{ color: '#52c41a' }}>{(r || 0).toLocaleString('vi-VN')} đ</span>,
-              },
-              {
-                title: 'Doanh số ngày',
-                dataIndex: 'revenue',
-                key: 'revenue',
-                align: 'right',
-                render: (r: number) => (
-                  <strong style={{ color: '#1890ff' }}>{(r || 0).toLocaleString('vi-VN')} đ</strong>
-                ),
-              },
-            ]}
-            className="antd-custom-table"
-          />
-        </SectionCard>
-      </Col>
-    </Row>
-  );
-});
+  },
+  (prevProps, nextProps) => {
+    return prevProps.ccList === nextProps.ccList && prevProps.cvList === nextProps.cvList;
+  }
+);
 
 export default TodayStaffAttendance;

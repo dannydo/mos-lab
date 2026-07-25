@@ -178,65 +178,29 @@ export function useNycData(options?: UseNycDataOptions) {
     fetchOverallStats();
   }, [fetchOverallStats]);
 
-  // Fetch Touchpoint Counts for tabs
+  // Fetch Touchpoint & Tab Counts via 1 single Batch Stats API call
   const fetchTouchpointCounts = useCallback(async () => {
     try {
-      const activeTabConfig = configs[activeTab] || [];
-      const counts: { [key: string]: number } = {};
-
-      const countPromises = activeTabConfig.map(async (tp) => {
-        const params = {
-          bucket: 'NOT_COMBO_LIVE',
-          daysSinceLastVisitMin: tp.daysMin !== undefined ? tp.daysMin.toString() : undefined,
-          daysSinceLastVisitMax: tp.daysMax !== undefined ? tp.daysMax.toString() : undefined,
-          search: searchQuery || undefined,
-          assignedStaffId:
-            assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
-        };
-        const stats = await apiClient.customers.getStats(params as SafeAny);
-        counts[tp.key] = stats.total;
-      });
-
-      // Total touchpoint count in tab
-      const totalParams = {
-        bucket: 'NOT_COMBO_LIVE',
-        daysSinceLastVisitMin: (activeTab === 'NYC_365plus'
-          ? 366
-          : TAB_KEYS.find((tk) => tk.id === activeTab)?.minDays
-        )?.toString(),
-        daysSinceLastVisitMax: TAB_KEYS.find((tk) => tk.id === activeTab)?.maxDays?.toString(),
+      const params = {
         search: searchQuery || undefined,
         assignedStaffId:
           assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
       };
-      const totalStatsPromise = apiClient.customers.getStats(totalParams as SafeAny);
 
-      await Promise.all([...countPromises, totalStatsPromise]);
-      const totalStats = await totalStatsPromise;
+      const nycStats = await apiClient.customers.getNycStats(params as SafeAny);
 
-      counts['ALL'] = totalStats.total;
-      setTouchpointCounts(counts);
-
-      // Extract all tab counts
-      const allTabsPromises = TAB_KEYS.map(async (tk) => {
-        const tabParams = {
-          bucket: 'NOT_COMBO_LIVE',
-          daysSinceLastVisitMin: tk.minDays !== undefined ? tk.minDays.toString() : undefined,
-          daysSinceLastVisitMax: tk.maxDays !== undefined ? tk.maxDays.toString() : undefined,
-          search: searchQuery || undefined,
-          assignedStaffId:
-            assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
+      if (nycStats) {
+        const activeTabConfig = configs[activeTab] || [];
+        const tpCounts: { [key: string]: number } = {
+          ALL: nycStats.tabs[activeTab] || 0,
         };
-        const stats = await apiClient.customers.getStats(tabParams as SafeAny);
-        return { id: tk.id, total: stats.total };
-      });
+        activeTabConfig.forEach((tp) => {
+          tpCounts[tp.key] = nycStats.touchpoints[tp.key] || 0;
+        });
 
-      const tabsRes = await Promise.all(allTabsPromises);
-      const newTabCounts: { [key: string]: number } = {};
-      tabsRes.forEach((tr) => {
-        newTabCounts[tr.id] = tr.total;
-      });
-      setTabCounts(newTabCounts);
+        setTouchpointCounts(tpCounts);
+        setTabCounts(nycStats.tabs || {});
+      }
     } catch (err) {
       console.error('Failed to load touchpoint counts:', err);
     }

@@ -26,12 +26,54 @@ import { CcLeaderboardEntry, CcXoayRecord } from '@mos-lab/shared';
 import CcLeaderboardCard from './components/CcLeaderboardCard';
 import { PageHeader } from '../../../components/ui';
 
-const CcXoayTab = dynamic(() => import('./components/CcXoayTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
-const CcThuongTab = dynamic(() => import('./components/CcThuongTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
-const CcGameTab = dynamic(() => import('./components/CcGameTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
-const CcTipTab = dynamic(() => import('./components/CcTipTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
-const CcDiamondTab = dynamic(() => import('./components/CcDiamondTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
-const CcThuNhapTab = dynamic(() => import('./components/CcThuNhapTab'), { ssr: false, loading: () => <div className="p-8 text-center"><Spin /></div> });
+const CcXoayTab = dynamic(() => import('./components/CcXoayTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
+const CcThuongTab = dynamic(() => import('./components/CcThuongTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
+const CcGameTab = dynamic(() => import('./components/CcGameTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
+const CcTipTab = dynamic(() => import('./components/CcTipTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
+const CcDiamondTab = dynamic(() => import('./components/CcDiamondTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
+const CcThuNhapTab = dynamic(() => import('./components/CcThuNhapTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
 const CcConfigDrawer = dynamic(() => import('./components/CcConfigDrawer'), { ssr: false });
 
 dayjs.extend(isoWeek);
@@ -164,71 +206,75 @@ export default function CcDashboardPage() {
       key: 'xoay',
       icon: <TableOutlined />,
       label: 'CC Xoay',
-      children: (
-        <div className="flex flex-col gap-4">
-          <CcLeaderboardCard
-            leaderboard={leaderboardData}
-            loading={loading}
-            selectedConsultant={selectedConsultant}
-            onSelectConsultant={(ccName) => {
-              setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
-            }}
-          />
-          <CcXoayTab data={xoayData} total={xoayTotal} loading={loading} onRefresh={fetchCcData} />
-        </div>
-      ),
+      children:
+        activeTab === 'xoay' ? (
+          <div className="flex flex-col gap-4">
+            <CcLeaderboardCard
+              leaderboard={leaderboardData}
+              loading={loading}
+              selectedConsultant={selectedConsultant}
+              onSelectConsultant={(ccName) => {
+                setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
+              }}
+            />
+            <CcXoayTab data={xoayData} total={xoayTotal} loading={loading} onRefresh={fetchCcData} />
+          </div>
+        ) : null,
     },
     {
       key: 'thuong',
       icon: <GiftOutlined />,
       label: 'CC Daily Bonus',
-      children: (
-        <CcThuongTab
-          loading={loading}
-          dateRange={dateRange}
-          selectedStore={selectedStore}
-          selectedConsultant={selectedConsultant}
-          onSelectConsultant={(ccName) => {
-            setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
-          }}
-        />
-      ),
+      children:
+        activeTab === 'thuong' ? (
+          <CcThuongTab
+            loading={loading}
+            dateRange={dateRange}
+            selectedStore={selectedStore}
+            selectedConsultant={selectedConsultant}
+            onSelectConsultant={(ccName) => {
+              setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
+            }}
+          />
+        ) : null,
     },
     {
       key: 'tip',
       icon: <DollarOutlined />,
       label: 'CC Tip',
-      children: (
-        <CcTipTab
-          loading={loading}
-          dateRange={dateRange}
-          selectedStore={selectedStore}
-          selectedConsultant={selectedConsultant}
-          onSelectConsultant={(ccName) => {
-            setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
-          }}
-        />
-      ),
+      children:
+        activeTab === 'tip' ? (
+          <CcTipTab
+            loading={loading}
+            dateRange={dateRange}
+            selectedStore={selectedStore}
+            selectedConsultant={selectedConsultant}
+            onSelectConsultant={(ccName) => {
+              setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
+            }}
+          />
+        ) : null,
     },
     {
       key: 'diamond',
       icon: <SketchOutlined />,
       label: 'Kim Cương',
-      children: (
-        <CcDiamondTab dateRange={dateRange} selectedStore={selectedStore} selectedConsultant={selectedConsultant} />
-      ),
+      children:
+        activeTab === 'diamond' ? (
+          <CcDiamondTab dateRange={dateRange} selectedStore={selectedStore} selectedConsultant={selectedConsultant} />
+        ) : null,
     },
     {
       key: 'game',
       icon: <RocketOutlined />,
       label: 'CC Game',
-      children: <CcGameTab />,
+      children: activeTab === 'game' ? <CcGameTab /> : null,
     },
     {
       key: 'thunhap',
       icon: <WalletOutlined />,
       label: 'CC Thu Nhập',
-      children: <CcThuNhapTab dateRange={dateRange} selectedStore={selectedStore} />,
+      children: activeTab === 'thunhap' ? <CcThuNhapTab dateRange={dateRange} selectedStore={selectedStore} /> : null,
     },
   ];
 
@@ -255,67 +301,46 @@ export default function CcDashboardPage() {
               <Radio.Button value="day">Ngày</Radio.Button>
             </Radio.Group>
 
-            {/* Date Navigator: < Tháng 07/2026 > */}
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <Space.Compact>
-                <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
-                <Button
-                  onClick={() => setPickerOpen(true)}
-                  style={{
-                    fontWeight: '600',
-                    minWidth: '200px',
-                    textAlign: 'center',
-                    color: token.colorText,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
-                </Button>
-                <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
-              </Space.Compact>
+            {/* Date Navigation & Selector */}
+            <Space size={0} className="border border-slate-700 rounded-md overflow-hidden bg-slate-900/50">
+              <Button type="text" icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
+              <Button type="text" icon={<CalendarOutlined />} onClick={() => setPickerOpen(true)}>
+                {getPeriodLabel()}
+              </Button>
+              <Button type="text" icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
+            </Space>
 
-              <RangePicker
-                value={dateRange}
-                onChange={(dates) => {
-                  if (dates) setDateRange([dates[0]!, dates[1]!]);
-                }}
-                format="DD/MM/YYYY"
-                open={pickerOpen}
-                onOpenChange={(open) => setPickerOpen(open)}
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: '100%',
-                  opacity: 0,
-                  pointerEvents: 'none',
-                  zIndex: -1,
-                }}
-              />
-            </div>
-
-            {/* Store Filter (Chi Nhánh) */}
-            <Select
-              value={selectedStore}
-              onChange={setSelectedStore}
-              style={{ width: 140 }}
-              options={[
-                { value: 'ALL', label: 'Tất cả chi nhánh' },
-                { value: 'PXL', label: 'CN Phan Xích Long' },
-                { value: 'De Tham', label: 'CN Đề Thám' },
-              ]}
-              placeholder="Chọn Chi Nhánh"
+            {/* Hidden DatePicker */}
+            <DatePicker
+              open={pickerOpen}
+              onOpenChange={(open) => setPickerOpen(open)}
+              picker={viewMode === 'month' ? 'month' : viewMode === 'week' ? 'week' : 'date'}
+              onChange={(val) => {
+                if (val) {
+                  setReferenceDate(val);
+                }
+              }}
+              style={{ display: 'none' }}
             />
 
-            {/* Consultant Filter (Tư Vấn Viên) */}
+            {/* Store Filter */}
+            <Select
+              value={selectedStore}
+              onChange={(val) => setSelectedStore(val)}
+              style={{ width: 140 }}
+              options={[
+                { value: 'ALL', label: 'Tất cả tiệm' },
+                { value: '1', label: 'Phan Xích Long' },
+                { value: '2', label: 'Estella Place' },
+                { value: '3', label: 'Đề Thám' },
+              ]}
+            />
+
+            {/* Consultant Filter */}
             <Select
               value={selectedConsultant}
-              onChange={setSelectedConsultant}
-              style={{ width: 170 }}
+              onChange={(val) => setSelectedConsultant(val)}
+              style={{ width: 180 }}
               options={[
                 { value: 'ALL', label: 'Tất cả CC' },
                 ...leaderboardData.map((s) => ({ value: s.displayName, label: s.displayName })),
@@ -343,7 +368,7 @@ export default function CcDashboardPage() {
         styles={{ body: { padding: '12px 16px 16px 16px' } }}
         className="shadow-sm rounded-xl dashboard-main-tabs-card"
       >
-        <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} size="large" />
+        <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} size="large" destroyOnHidden />
       </Card>
 
       <CcConfigDrawer

@@ -170,26 +170,49 @@ export function useTodayData(options?: UseTodayDataOptions) {
   // Load persisted states on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const persistedDate = localStorage.getItem('today_selected_date');
+      const urlParams = new URLSearchParams(window.location.search);
+
+      const persistedDate = urlParams.get('date') || localStorage.getItem('today_selected_date');
       setSelectedDate(persistedDate ? dayjs(persistedDate) : dayjs());
 
       const persistedShowTax = localStorage.getItem('today_show_tax');
       if (persistedShowTax !== null) setShowTax(persistedShowTax === 'true');
 
-      const persistedBookingFilter = localStorage.getItem('today_booking_filter');
-      if (persistedBookingFilter !== null) setBookingFilter(persistedBookingFilter as SafeAny);
+      const urlBookingFilter = urlParams.get('bookingFilter') || urlParams.get('tab');
+      const persistedBookingFilter = urlBookingFilter || localStorage.getItem('today_booking_filter');
+      if (persistedBookingFilter && ['all', 'combo', 'oc', 'other'].includes(persistedBookingFilter)) {
+        setBookingFilter(persistedBookingFilter as SafeAny);
+      }
 
-      const persistedBookingBranch = localStorage.getItem('today_booking_branch');
-      if (persistedBookingBranch !== null) setBookingBranch(persistedBookingBranch as SafeAny);
+      const urlBookingBranch = urlParams.get('bookingBranch');
+      const persistedBookingBranch = urlBookingBranch || localStorage.getItem('today_booking_branch');
+      if (persistedBookingBranch && ['all', 'detham', 'pxl', 'estella'].includes(persistedBookingBranch)) {
+        setBookingBranch(persistedBookingBranch as SafeAny);
+      }
 
-      const persistedComingBranch = localStorage.getItem('today_coming_branch');
-      if (persistedComingBranch !== null) setComingBranch(persistedComingBranch as SafeAny);
+      const urlComingBranch = urlParams.get('comingBranch');
+      const persistedComingBranch = urlComingBranch || localStorage.getItem('today_coming_branch');
+      if (persistedComingBranch && ['detham', 'pxl', 'estella', 'all'].includes(persistedComingBranch)) {
+        setComingBranch(persistedComingBranch as SafeAny);
+      }
 
-      const persistedComingCategory = localStorage.getItem('today_coming_category');
-      if (persistedComingCategory !== null) setComingCategory(persistedComingCategory as SafeAny);
+      const urlComingCategory = urlParams.get('comingCategory');
+      const persistedComingCategory = urlComingCategory || localStorage.getItem('today_coming_category');
+      if (persistedComingCategory && ['all', 'combo', 'oc', 'other'].includes(persistedComingCategory)) {
+        setComingCategory(persistedComingCategory as SafeAny);
+      }
 
-      const persistedShopBranch = localStorage.getItem('today_shop_branch');
-      if (persistedShopBranch !== null) setShopBranch(persistedShopBranch as SafeAny);
+      const urlShopBranch = urlParams.get('shopBranch');
+      const persistedShopBranch = urlShopBranch || localStorage.getItem('today_shop_branch');
+      if (persistedShopBranch && ['detham', 'pxl', 'estella', 'all'].includes(persistedShopBranch)) {
+        setShopBranch(persistedShopBranch as SafeAny);
+      }
+
+      const urlBooker = urlParams.get('booker');
+      const persistedBooker = urlBooker || localStorage.getItem('today_selected_booker');
+      if (persistedBooker) {
+        setSelectedBooker(persistedBooker);
+      }
 
       const persistedAutoRefresh = localStorage.getItem('today_auto_refresh');
       if (persistedAutoRefresh !== null) setAutoRefresh(persistedAutoRefresh === 'true');
@@ -256,7 +279,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
       }
       setCountdown((prev) => {
         if (prev <= 1) {
-          window.location.reload();
+          fetchDashboardData(selectedDate, true);
           return refreshInterval;
         }
         return prev - 1;
@@ -267,7 +290,8 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        window.location.reload();
+        fetchDashboardData(selectedDate, true);
+        setCountdown(refreshInterval);
       }
     };
 
@@ -410,6 +434,71 @@ export function useTodayData(options?: UseTodayDataOptions) {
     };
   }, [branchesData, shopBranch, showTax]);
 
+  const changeBookingFilter = useCallback((val: 'all' | 'combo' | 'oc' | 'other') => {
+    setBookingFilter(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('today_booking_filter', val);
+      const url = new URL(window.location.href);
+      url.searchParams.set('bookingFilter', val);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const changeBookingBranch = useCallback((val: 'all' | 'detham' | 'pxl' | 'estella') => {
+    setBookingBranch(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('today_booking_branch', val);
+      const url = new URL(window.location.href);
+      url.searchParams.set('bookingBranch', val);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const changeComingBranch = useCallback((val: 'detham' | 'pxl' | 'estella' | 'all') => {
+    setComingBranch(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('today_coming_branch', val);
+      const url = new URL(window.location.href);
+      url.searchParams.set('comingBranch', val);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const changeComingCategory = useCallback((val: 'all' | 'combo' | 'oc' | 'other') => {
+    setComingCategory(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('today_coming_category', val);
+      const url = new URL(window.location.href);
+      url.searchParams.set('comingCategory', val);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const changeShopBranch = useCallback((val: 'detham' | 'pxl' | 'estella' | 'all') => {
+    setShopBranch(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('today_shop_branch', val);
+      const url = new URL(window.location.href);
+      url.searchParams.set('shopBranch', val);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const changeSelectedBooker = useCallback((val: string | null) => {
+    setSelectedBooker(val);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (val) {
+        localStorage.setItem('today_selected_booker', val);
+        url.searchParams.set('booker', val);
+      } else {
+        localStorage.removeItem('today_selected_booker');
+        url.searchParams.delete('booker');
+      }
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
   return {
     // states
     loading,
@@ -445,12 +534,12 @@ export function useTodayData(options?: UseTodayDataOptions) {
     setAutoRefresh,
     setRefreshInterval,
     setCountdown,
-    setBookingFilter,
-    setBookingBranch,
-    setComingBranch,
-    setComingCategory,
-    setShopBranch,
-    setSelectedBooker,
+    setBookingFilter: changeBookingFilter,
+    setBookingBranch: changeBookingBranch,
+    setComingBranch: changeComingBranch,
+    setComingCategory: changeComingCategory,
+    setShopBranch: changeShopBranch,
+    setSelectedBooker: changeSelectedBooker,
     setDrawerVisible,
     setSelectedCustomer,
     setShowTax,

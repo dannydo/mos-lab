@@ -257,32 +257,42 @@ export default function CvReportPage() {
           onChange={handleTabChange}
           size="large"
           className="custom-report-tabs"
+          destroyOnHidden
           items={[
             {
               key: 'xoay',
               icon: <ThunderboltOutlined />,
               label: 'CV Xoay',
-              children: (
-                <CvXoayTab
-                  dateRange={dateRange}
-                  selectedStore={selectedStore}
-                  selectedConsultant={selectedConsultant}
-                />
-              ),
+              children:
+                activeTab === 'xoay' ? (
+                  <CvXoayTab
+                    dateRange={dateRange}
+                    selectedStore={selectedStore}
+                    selectedConsultant={selectedConsultant}
+                  />
+                ) : null,
             },
             {
               key: 'tip',
               icon: <GiftOutlined />,
               label: 'CV Tip',
-              children: (
-                <CvTipTab dateRange={dateRange} selectedStore={selectedStore} selectedConsultant={selectedConsultant} />
-              ),
+              children:
+                activeTab === 'tip' ? (
+                  <CvTipTab
+                    dateRange={dateRange}
+                    selectedStore={selectedStore}
+                    selectedConsultant={selectedConsultant}
+                  />
+                ) : null,
             },
             {
               key: 'thunhap',
               icon: <WalletOutlined />,
               label: 'CV Thu Nhập',
-              children: <CvThuNhapTab dateRange={dateRange} selectedStore={selectedStore} currentUser={currentUser} />,
+              children:
+                activeTab === 'thunhap' ? (
+                  <CvThuNhapTab dateRange={dateRange} selectedStore={selectedStore} currentUser={currentUser} />
+                ) : null,
             },
           ]}
         />

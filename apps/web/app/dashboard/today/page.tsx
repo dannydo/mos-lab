@@ -2,21 +2,7 @@
 
 import '../../suppress-warnings';
 import React, { useEffect, useState } from 'react';
-import {
-  Card,
-  theme,
-  DatePicker,
-  Radio,
-  Space,
-  Row,
-  Col,
-  Spin,
-  Divider,
-  Button,
-  Switch,
-  Select,
-  message,
-} from 'antd';
+import { Card, theme, DatePicker, Radio, Space, Row, Col, Spin, Divider, Button, Switch, Select, message } from 'antd';
 import { ClockCircleOutlined, SyncOutlined, ShopOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import dynamic from 'next/dynamic';
@@ -332,7 +318,10 @@ export default function TodayDashboard() {
                         <span style={{ fontSize: '11px', color: token.colorTextDescription }}>
                           Doanh Thu Dịch Vụ Lẻ
                         </span>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}>
+                        <div
+                          className="tabular-nums font-mono"
+                          style={{ fontSize: '20px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}
+                        >
                           {data.activeShopData.revLe.toLocaleString('vi-VN')} đ
                         </div>
                       </Card>
@@ -347,7 +336,10 @@ export default function TodayDashboard() {
                         }}
                       >
                         <span style={{ fontSize: '11px', color: '#D4A84B' }}>Doanh Thu Combo (Gói)</span>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#D4A84B', marginTop: '4px' }}>
+                        <div
+                          className="tabular-nums font-mono"
+                          style={{ fontSize: '20px', fontWeight: 'bold', color: '#D4A84B', marginTop: '4px' }}
+                        >
                           {data.activeShopData.revCombo.toLocaleString('vi-VN')} đ
                         </div>
                       </Card>
@@ -362,7 +354,10 @@ export default function TodayDashboard() {
                         }}
                       >
                         <span style={{ fontSize: '11px', color: '#52c41a' }}>Doanh Thu Sản Phẩm</span>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#52c41a', marginTop: '4px' }}>
+                        <div
+                          className="tabular-nums font-mono"
+                          style={{ fontSize: '20px', fontWeight: 'bold', color: '#52c41a', marginTop: '4px' }}
+                        >
                           {data.activeShopData.revProduct.toLocaleString('vi-VN')} đ
                         </div>
                       </Card>
@@ -377,7 +372,10 @@ export default function TodayDashboard() {
                         }}
                       >
                         <span style={{ fontSize: '11px', color: '#1890ff', fontWeight: 'bold' }}>Tổng Doanh Thu</span>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff', marginTop: '4px' }}>
+                        <div
+                          className="tabular-nums font-mono"
+                          style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff', marginTop: '4px' }}
+                        >
                           {activeShopTotalRevenue.toLocaleString('vi-VN')} đ
                         </div>
                       </Card>

@@ -171,16 +171,11 @@ export function useLocaData(options?: UseLocaDataOptions) {
       };
       const kpiData = await apiClient.kpi.getSummary(params);
 
-      // Get COMBO_LIVE stats count
-      const comboLiveStats = await apiClient.customers.getStats({ bucket: 'COMBO_LIVE' } as SafeAny);
-
-      setOverallStats({
-        totalComboLive: comboLiveStats?.comboLive || comboLiveStats?.total || 0,
-        hsd30Count: comboLiveStats?.hsd30 || 0,
-        lsd1Count: comboLiveStats?.lsd1 || 0,
+      setOverallStats((prev) => ({
+        ...prev,
         totalCalledToday: kpiData?.totalCalled || 0,
         totalBookedToday: kpiData?.totalBooked || 0,
-      });
+      }));
     } catch (err) {
       console.error('Failed to fetch overall stats:', err);
     }
@@ -222,73 +217,35 @@ export function useLocaData(options?: UseLocaDataOptions) {
     else setSelectedDate((d) => d.add(1, 'day'));
   }, [datePreset]);
 
-  // Fetch Touchpoint Counts for tabs
+  // Fetch Touchpoint & Tab Counts via 1 single Batch Stats API call
   const fetchTouchpointCounts = useCallback(async () => {
     try {
-      const activeTabConfig = configs['LOCA_ALL'] || [];
-      const counts: { [key: string]: number } = {};
-
-      const countPromises = activeTabConfig.map(async (tp) => {
-        const params = {
-          bucket: 'COMBO_LIVE',
-          daysSinceLastVisitMin: tp.daysMin !== undefined ? tp.daysMin.toString() : undefined,
-          daysSinceLastVisitMax: tp.daysMax !== undefined ? tp.daysMax.toString() : undefined,
-          search: searchQuery || undefined,
-          assignedStaffId:
-            assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
-        };
-        const stats = await apiClient.customers.getStats(params as SafeAny);
-        counts[tp.key] = stats.total;
-      });
-
-      const totalParams = {
-        bucket: 'COMBO_LIVE',
+      const params = {
         search: searchQuery || undefined,
         assignedStaffId:
           assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
+        dateFrom: dateRange.dateFrom,
+        dateTo: dateRange.dateTo,
       };
-      const totalStatsPromise = apiClient.customers.getStats(totalParams as SafeAny);
 
-      await Promise.all([...countPromises, totalStatsPromise]);
-      const totalStats = await totalStatsPromise;
+      const locaStats = await apiClient.customers.getLocaStats(params as SafeAny);
 
-      counts['ALL'] = totalStats.total;
-      setTouchpointCounts(counts);
+      if (locaStats) {
+        setTouchpointCounts(locaStats.touchpoints || {});
+        setTabCounts(locaStats.tabs || {});
 
-      // Extract all main tab counts
-      const allTabsPromises = TAB_KEYS.map(async (tk) => {
-        const tabParams: SafeAny = {
-          bucket: tk.id === 'NEW_LOCA' ? 'NEW_LOCA' : 'COMBO_LIVE',
-          search: searchQuery || undefined,
-          assignedStaffId:
-            assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
-        };
-
-        if (tk.id === 'NEW_LOCA') {
-          tabParams.dateFrom = dateRange.dateFrom;
-          tabParams.dateTo = dateRange.dateTo;
-        }
-        if (tk.id === 'HSD_30') tabParams.hsd30 = 'true';
-        if (tk.id === 'LSD_1') tabParams.lsd1 = 'true';
-        if (tk.id === 'SP') tabParams.hasProduct = 'true';
-        if (tk.id === 'CALLBACK') tabParams.hasCallback = 'true';
-        if (tk.id === 'BOOKED') tabParams.hasFutureBooking = 'true';
-        if (tk.id === 'CONTACTED') tabParams.contacted = 'true';
-
-        const stats = await apiClient.customers.getStats(tabParams);
-        return { id: tk.id, total: stats.total };
-      });
-
-      const tabsRes = await Promise.all(allTabsPromises);
-      const newTabCounts: { [key: string]: number } = {};
-      tabsRes.forEach((tr) => {
-        newTabCounts[tr.id] = tr.total;
-      });
-      setTabCounts(newTabCounts);
+        // Set overall stats summary from batch counts
+        setOverallStats((prev) => ({
+          ...prev,
+          totalComboLive: locaStats.tabs?.LOCA_ALL || 0,
+          hsd30Count: locaStats.tabs?.HSD_30 || 0,
+          lsd1Count: locaStats.tabs?.LSD_1 || 0,
+        }));
+      }
     } catch (err) {
       console.error('Failed to load touchpoint counts:', err);
     }
-  }, [configs, searchQuery, assignedStaffId, currentUser, dateRange]);
+  }, [searchQuery, assignedStaffId, currentUser, dateRange]);
 
   useEffect(() => {
     if (Object.keys(configs).length > 0) {
