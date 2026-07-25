@@ -407,11 +407,12 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
         });
       }
 
-      if (user.role === 'admin') {
-        leaderboard.sort((a, b) => b.totalEarnings - a.totalEarnings);
-      } else {
-        leaderboard.sort((a, b) => b.totalCheckin - a.totalCheckin);
-      }
+      leaderboard.sort((a, b) => {
+        if (b.totalBooked !== a.totalBooked) {
+          return b.totalBooked - a.totalBooked;
+        }
+        return b.totalCheckin - a.totalCheckin;
+      });
       return leaderboard;
     } catch (err) {
       fastify.log.error(err as Error, 'Leaderboard KPI error');

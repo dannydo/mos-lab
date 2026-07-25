@@ -439,7 +439,12 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
               .toLowerCase();
             return mId === searchTarget || mInitials === searchTarget || mName === searchTarget;
           });
-          setCurrentMemberId(found ? found.id : activeList[0].id);
+          const topProductivity = activeList.slice().sort((a: SafeAny, b: SafeAny) => {
+            const valA = a.perf ? (a.perf['booked'] ?? 0) : a.totalBooked || 0;
+            const valB = b.perf ? (b.perf['booked'] ?? 0) : b.totalBooked || 0;
+            return valB - valA;
+          })[0];
+          setCurrentMemberId(found ? found.id : topProductivity ? topProductivity.id : activeList[0].id);
         }
       } catch (err) {
         console.error('Fetch telesales leaderboards error:', err);
@@ -481,7 +486,12 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
           .toLowerCase();
         return mId === searchTarget || mInitials === searchTarget || mName === searchTarget;
       });
-      setCurrentMemberId(found ? found.id : list[0].id);
+      const topProductivity = list.slice().sort((a: SafeAny, b: SafeAny) => {
+        const valA = a.perf ? (a.perf['booked'] ?? 0) : a.totalBooked || 0;
+        const valB = b.perf ? (b.perf['booked'] ?? 0) : b.totalBooked || 0;
+        return valB - valA;
+      })[0];
+      setCurrentMemberId(found ? found.id : topProductivity ? topProductivity.id : list[0].id);
     }
   }, [visible, initialMemberId, currentPeriodId, periodDataMap]);
 
