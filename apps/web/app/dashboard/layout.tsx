@@ -229,6 +229,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loading, setLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState(false);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('telesalesModal') === 'true' || params.get('telesales_modal') === 'true') {
+        setIsDashboardVisible(true);
+      }
+    }
+  }, []);
+
   const fetchDailyCallsCount = useCallback(async () => {
     try {
       const todayStr = dayjs().format('YYYY-MM-DD');
@@ -284,10 +293,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           DD: 'linear-gradient(135deg, #D4A84B, #B8902F)',
         };
 
+        const rawAvatar = m.avatarUrl || m.avatar || null;
+        const formattedAvatar = rawAvatar
+          ? rawAvatar.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com')
+          : null;
+
         return {
-          id: m.id,
+          id: String(m.id),
           initials: initials,
           name: m.displayName || m.username,
+          avatarUrl: formattedAvatar,
           color: memberColorMap[initials] || 'linear-gradient(135deg, #6B7280, #4B5563)',
         };
       });
@@ -540,10 +555,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <div
                       key={m.id}
                       onClick={() => {
-                        setSelectedMemberId(m.initials);
+                        setSelectedMemberId(m.id || m.initials);
                         setIsDashboardVisible(true);
                       }}
-                      className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 cursor-pointer hover:scale-110 hover:z-30 transition-all shadow-sm avatar-breath shrink-0 flex-shrink-0 select-none"
+                      className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 cursor-pointer hover:scale-110 hover:z-30 transition-all shadow-sm avatar-breath shrink-0 flex-shrink-0 select-none overflow-hidden"
                       style={{
                         background: m.color,
                         zIndex: 20 - idx,
@@ -552,9 +567,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       }}
                       title={m.name}
                     >
-                      {m.initials}
+                      {m.avatarUrl ? (
+                        <img src={m.avatarUrl} alt={m.name} className="w-full h-full object-cover rounded-full" />
+                      ) : (
+                        m.initials
+                      )}
                       <span
-                        className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 flex items-center justify-center"
+                        className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 flex items-center justify-center z-10"
                         style={{ borderColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}
                       >
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -603,7 +622,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Dropdown menu={userMenu} placement="bottomRight" arrow>
                 <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                   <Avatar
-                    src={user?.avatarUrl || undefined}
+                    src={
+                      user?.avatarUrl
+                        ? user.avatarUrl.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com')
+                        : undefined
+                    }
                     icon={<UserOutlined />}
                     style={{ backgroundColor: token.colorPrimary, color: '#000' }}
                   />

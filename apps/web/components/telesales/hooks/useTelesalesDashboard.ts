@@ -375,6 +375,14 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
             const list = (await apiClient.kpi.getLeaderboard(params)) || [];
 
             const mappedMembers = list.map((item: SafeAny, idx: number) => {
+              console.log(
+                'useTelesalesDashboard raw item:',
+                item.displayName || item.username,
+                'item.avatarUrl:',
+                item.avatarUrl,
+                'item.avatar:',
+                item.avatar
+              );
               const initials = item.displayName
                 ? item.displayName
                     .split(' ')
@@ -390,6 +398,7 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
                 id: String(item.staffId),
                 name: item.displayName || item.username,
                 initials,
+                avatarUrl: item.avatarUrl || item.avatar || null,
                 ...style,
                 teamRole: item.role === 'admin' ? 'Telesales Manager' : 'Telesales Executive',
                 perf: {
@@ -417,15 +426,20 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
         setDbMembers(activeList);
 
         if (activeList.length > 0) {
-          const found = activeList.find((m: SafeAny) => m.id === currentMemberId || m.initials === currentMemberId);
-          if (!found) {
-            const initialFound = activeList.find(
-              (m: SafeAny) => m.id === initialMemberId || m.initials === initialMemberId
-            );
-            setCurrentMemberId(initialFound ? initialFound.id : activeList[0].id);
-          } else {
-            setCurrentMemberId(found.id);
-          }
+          const searchTarget = (initialMemberId || currentMemberId || '').toString().trim().toLowerCase();
+          const found = activeList.find((m: SafeAny) => {
+            const mId = String(m.id || '')
+              .trim()
+              .toLowerCase();
+            const mInitials = String(m.initials || '')
+              .trim()
+              .toLowerCase();
+            const mName = String(m.name || '')
+              .trim()
+              .toLowerCase();
+            return mId === searchTarget || mInitials === searchTarget || mName === searchTarget;
+          });
+          setCurrentMemberId(found ? found.id : activeList[0].id);
         }
       } catch (err) {
         console.error('Fetch telesales leaderboards error:', err);
@@ -438,18 +452,49 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
     fetchAllLeaderboards();
   }, [visible, refreshCounter]);
 
+  // Sync member selection when visible or initialMemberId changes
+  useEffect(() => {
+    if (!visible) return;
+    const list = periodDataMap[currentPeriodId] || dbMembers || [];
+    if (list.length > 0) {
+      const searchTarget = (initialMemberId || '').toString().trim().toLowerCase();
+      if (!searchTarget) return;
+      const found = list.find((m: SafeAny) => {
+        const mId = String(m.id || '')
+          .trim()
+          .toLowerCase();
+        const mInitials = String(m.initials || '')
+          .trim()
+          .toLowerCase();
+        const mName = String(m.name || '')
+          .trim()
+          .toLowerCase();
+        return mId === searchTarget || mInitials === searchTarget || mName === searchTarget;
+      });
+      // Select found member, or default to top #1 member if not found in list
+      setCurrentMemberId(found ? found.id : list[0].id);
+    }
+  }, [visible, initialMemberId]);
+
   // Sync member selection on period changes
   useEffect(() => {
     const list = periodDataMap[currentPeriodId] || [];
     setDbMembers(list);
     if (list.length > 0) {
-      const found = list.find((m: SafeAny) => m.id === currentMemberId || m.initials === currentMemberId);
-      if (found) {
-        setCurrentMemberId(found.id);
-      } else {
-        const initialFound = list.find((m: SafeAny) => m.id === initialMemberId || m.initials === initialMemberId);
-        setCurrentMemberId(initialFound ? initialFound.id : list[0].id);
-      }
+      const searchTarget = (currentMemberId || initialMemberId || '').toString().trim().toLowerCase();
+      const found = list.find((m: SafeAny) => {
+        const mId = String(m.id || '')
+          .trim()
+          .toLowerCase();
+        const mInitials = String(m.initials || '')
+          .trim()
+          .toLowerCase();
+        const mName = String(m.name || '')
+          .trim()
+          .toLowerCase();
+        return mId === searchTarget || mInitials === searchTarget || mName === searchTarget;
+      });
+      setCurrentMemberId(found ? found.id : list[0].id);
     }
   }, [currentPeriodId, periodDataMap]);
 

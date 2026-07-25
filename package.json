@@ -11,6 +11,7 @@
     "lint": "turbo lint",
     "clean": "turbo clean && rm -rf node_modules",
     "deploy": "bash scripts/deploy.sh",
+    "hotfix": "bash scripts/hotfix.sh",
     "db:sync": "bash scripts/refresh_db.sh",
     "prepare": "husky"
   },
