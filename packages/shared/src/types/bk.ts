@@ -2,6 +2,7 @@ export interface BkBookingRecord {
   orderId: number;
   orderKey: string;
   bookingDate: string;
+  createdDate?: string;
   clientName: string;
   clientPhone: string;
   store: string;
@@ -163,7 +164,6 @@ export interface BkRevenueRecord {
   commissionBonus: number;
   customerId?: number;
 }
-
 
 export interface BkRevenueLeaderboardEntry {
   rank: number;

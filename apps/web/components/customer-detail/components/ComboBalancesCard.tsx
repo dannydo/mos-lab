@@ -85,6 +85,28 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = ({
                   <span style={{ fontSize: '10px', color: '#fa8c16', textDecoration: 'underline' }}>Chi tiết</span>
                 </div>
 
+                {/* Warning Badge for Manual Adjustment / Extra sessions */}
+                {cb.hasManualAdjustment && (
+                  <div
+                    style={{
+                      marginTop: '4px',
+                      marginBottom: '2px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : '#fff2f0',
+                      border: `1px solid ${themeMode === 'dark' ? '#ef4444' : '#ffccc7'}`,
+                      borderRadius: '4px',
+                      padding: '2px 6px',
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      color: '#ff4d4f',
+                    }}
+                  >
+                    <span>⚠️ Có lượt cộng thủ công</span>
+                  </div>
+                )}
+
                 <div
                   style={{
                     display: 'flex',

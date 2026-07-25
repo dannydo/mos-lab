@@ -15,7 +15,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
+  const [themeMode, setThemeMode] = useState<ThemeMode>('light'); // Default to light mode for maximum readability
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -30,11 +30,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted) return;
     const root = document.documentElement;
     if (themeMode === 'light') {
-      root.classList.remove('dark-theme');
-      root.classList.add('light-theme');
+      root.classList.remove('dark', 'dark-theme');
+      root.classList.add('light', 'light-theme');
     } else {
-      root.classList.remove('light-theme');
-      root.classList.add('dark-theme');
+      root.classList.remove('light', 'light-theme');
+      root.classList.add('dark', 'dark-theme');
     }
   }, [themeMode, mounted]);
 
@@ -52,11 +52,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           algorithm: !mounted || themeMode === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
           token: {
             colorPrimary: '#b8941f', // Wings gold
-            colorInfo: '#3b82f6', // Blue info
+            colorInfo: '#2563eb', // Blue info
             borderRadius: 8,
             fontFamily: 'var(--font-sans, "Outfit", -apple-system, BlinkMacSystemFont, sans-serif)',
             colorBgContainer: !mounted || themeMode === 'dark' ? '#0d1222' : '#ffffff', // Navy or White container
             colorBgLayout: !mounted || themeMode === 'dark' ? '#070a13' : '#f8fafc', // Deep navy or Slate app background
+            colorText: !mounted || themeMode === 'dark' ? '#f8fafc' : '#0f172a', // High contrast text token
+            colorTextHeading: !mounted || themeMode === 'dark' ? '#ffffff' : '#020617', // High contrast heading
           },
         }}
       >

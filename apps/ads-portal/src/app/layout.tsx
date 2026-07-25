@@ -24,7 +24,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className={`h-full ${outfit.variable}`}>
+      <head>
+        <meta name="color-scheme" content="light dark" />
+      </head>
       <body className="h-full m-0 p-0 antialiased font-sans">
+        <a href="#main-content" className="visually-hidden">
+          Chuyển sang nội dung chính
+        </a>
         <AntdRegistry>
           <ThemeProvider>{children}</ThemeProvider>
         </AntdRegistry>

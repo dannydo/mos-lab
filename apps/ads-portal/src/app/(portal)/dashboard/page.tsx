@@ -204,86 +204,86 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={6}>
-          <Card className="shadow-sm border border-default">
+          <div className="glass-card rounded-xl p-4 border border-default shadow-sm">
             <Statistic
-              title={<span className="text-secondary font-medium">Dư nợ tài khoản</span>}
+              title={<span className="text-secondary font-medium text-xs">Dư nợ tài khoản</span>}
               value={debt.amount}
-              valueStyle={{ color: isAccountDisabled ? '#ef4444' : '#10b981', fontWeight: 'bold' }}
+              valueStyle={{
+                color: isAccountDisabled ? '#ef4444' : '#10b981',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+              }}
               prefix={<WalletOutlined />}
+              className="tabular-nums"
             />
             <div className="text-xs text-secondary mt-2 truncate">{debt.desc}</div>
-          </Card>
+          </div>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card className="shadow-sm border border-default">
+          <div className="glass-card rounded-xl p-4 border border-default shadow-sm">
             <Statistic
-              title={<span className="text-secondary font-medium">Thành công (Tháng này)</span>}
+              title={<span className="text-secondary font-medium text-xs">Thành công (Tháng này)</span>}
               value={paid.amount}
-              valueStyle={{ color: '#10b981', fontWeight: 'bold' }}
+              valueStyle={{ color: '#10b981', fontWeight: 'bold', fontFamily: 'monospace' }}
               prefix={<CheckCircleOutlined />}
+              className="tabular-nums"
             />
             <div className="text-xs text-secondary mt-2 truncate">{paid.invoice}</div>
-          </Card>
+          </div>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card className="shadow-sm border border-default">
+          <div className="glass-card rounded-xl p-4 border border-default shadow-sm">
             <Statistic
-              title={<span className="text-secondary font-medium">Số Inbox Ads thu về</span>}
+              title={<span className="text-secondary font-medium text-xs">Số Inbox Ads thu về</span>}
               value={inboxCount}
-              valueStyle={{ color: '#3b82f6', fontWeight: 'bold' }}
+              valueStyle={{ color: '#3b82f6', fontWeight: 'bold', fontFamily: 'monospace' }}
               prefix={<MessageOutlined />}
+              className="tabular-nums"
             />
             <div className="text-xs text-secondary mt-2 truncate">{cpaDesc}</div>
-          </Card>
+          </div>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card className="shadow-sm border border-default">
+          <div className="glass-card rounded-xl p-4 border border-default shadow-sm">
             <Statistic
-              title={<span className="text-secondary font-medium">Phương thức thanh toán</span>}
+              title={<span className="text-secondary font-medium text-xs">Phương thức thanh toán</span>}
               value={paymentMethod.method}
               valueStyle={{ color: '#8b5cf6', fontWeight: 'bold' }}
               prefix={<CreditCardOutlined />}
             />
             <div className="text-xs text-secondary mt-2 truncate">{paymentMethod.desc}</div>
-          </Card>
+          </div>
         </Col>
       </Row>
 
       <Row gutter={[16, 16]}>
         {/* Campaign table */}
         <Col xs={24} lg={16}>
-          <Card
-            title={
-              <span className="flex items-center gap-2 text-base font-bold text-heading">
-                <LineChartOutlined /> Hiệu suất Chiến dịch Quảng cáo
+          <div className="glass-card rounded-xl border border-default shadow-sm overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-default flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm font-bold text-heading">
+                <LineChartOutlined className="text-[#b8941f]" /> Hiệu suất Chiến dịch Quảng cáo
               </span>
-            }
-            className="shadow-sm border border-default"
-            styles={{ body: { padding: 0 } }}
-          >
+            </div>
             <Table
               dataSource={campaigns}
               columns={campaignColumns}
               rowKey="id"
               pagination={false}
-              className="custom-scrollbar"
+              className="custom-table w-full"
             />
-          </Card>
+          </div>
         </Col>
 
         {/* Recommendations list */}
         <Col xs={24} lg={8}>
-          <Card
-            title={
-              <span className="flex items-center gap-2 text-base font-bold text-heading">
-                <NotificationOutlined /> Khuyến nghị & Báo động
-              </span>
-            }
-            className="shadow-sm border border-default h-full"
-          >
-            <div className="flex flex-col gap-4">
+          <div className="glass-card rounded-xl border border-default shadow-sm p-4 h-full flex flex-col gap-4">
+            <span className="flex items-center gap-2 text-sm font-bold text-heading border-b border-default pb-3">
+              <NotificationOutlined className="text-[#b8941f]" /> Khuyến nghị & Báo động
+            </span>
+            <div className="flex flex-col gap-3">
               {isAccountDisabled && (
-                <div className="flex gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                <div className="flex gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
                   <span className="text-red-500 font-bold shrink-0">🚨</span>
                   <div className="text-xs text-heading leading-relaxed">
                     <strong>Tạm dừng quảng cáo:</strong> Cần tất toán nợ <strong>1.416.711 ₫</strong> của hóa đơn Meta
@@ -291,14 +291,14 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
-              <div className="flex gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <div className="flex gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                 <span className="text-emerald-500 font-bold shrink-0">🎯</span>
                 <div className="text-xs text-heading leading-relaxed">
                   <strong>Nhân bản định dạng Reels:</strong> Định dạng tuyển sinh qua Reels mang lại CPA tin nhắn cực rẻ
                   (~13k VNĐ/inbox). Nên tiếp tục mở rộng ngân sách dạng này.
                 </div>
               </div>
-              <div className="flex gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <div className="flex gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <span className="text-amber-500 font-bold shrink-0">📍</span>
                 <div className="text-xs text-heading leading-relaxed">
                   <strong>Giới hạn bán kính địa lý:</strong> Học viên có xu hướng ngại di chuyển xa. Hãy tối ưu target
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
         </Col>
       </Row>
     </div>

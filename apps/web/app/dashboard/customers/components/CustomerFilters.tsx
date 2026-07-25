@@ -173,6 +173,12 @@ const CustomerFilters = React.memo(function CustomerFilters({
       case 'referralCountMax':
         setReferralCountMax(undefined);
         break;
+      case 'assignedStaffId':
+        setAssignedStaffId(currentUser?.role === 'telesales' ? 'me' : 'all');
+        break;
+      case 'retainedOnly':
+        if (setRetainedOnly) setRetainedOnly(false);
+        break;
     }
     setActiveFilterId(null);
   };
@@ -223,7 +229,12 @@ const CustomerFilters = React.memo(function CustomerFilters({
         )}
       </Space>
 
-      <ActiveFilterTags filterParams={filterParams} onClearFilter={onClearFilter} hasActiveFilters={hasActiveFilters} />
+      <ActiveFilterTags
+        filterParams={filterParams}
+        onClearFilter={onClearFilter}
+        hasActiveFilters={hasActiveFilters}
+        staffList={staffList}
+      />
 
       {/* FILTER DRAWER */}
       <Drawer
@@ -503,7 +514,9 @@ const CustomerFilters = React.memo(function CustomerFilters({
                     { value: 'unassigned', label: 'Chưa phân bổ' },
                     { value: 'me', label: 'Khách hàng của tôi' },
                     ...staffList
-                      .filter((s) => ['telesales', 'executive', 'manager', 'admin'].includes(s.role?.toLowerCase() || ''))
+                      .filter((s) =>
+                        ['telesales', 'executive', 'manager', 'admin'].includes(s.role?.toLowerCase() || '')
+                      )
                       .map((s) => ({
                         value: s.id.toString(),
                         label: `Booker: ${s.displayName}`,

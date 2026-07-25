@@ -421,8 +421,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         FROM \`user_profile\` up
         LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
         LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
-          AND o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+          AND o.date_created >= '${startPart} 00:00:00' 
+          AND o.date_created <= '${endPart} 23:59:59'
           ${storeFilter}
         WHERE up.user_id IN (${bkIdsStr})
         GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key
@@ -517,6 +517,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           COALESCE(uc_c.phone_number, '') as clientPhone,
           o.booking_channels as bookingChannel,
           o.booking_date_start as bookingDate,
+          o.date_created as createdDate,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           o.order_state as orderState,
           COALESCE(o.total_price, 0) as totalPrice,
@@ -525,14 +526,19 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           up_b.avatar as avatar
         FROM \`order\` o
         LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
-        LEFT JOIN \`user_contact\` uc_c ON uc_c.user_id = o.user_id AND uc_c.is_disabled = 0
+        LEFT JOIN (
+          SELECT user_id, MAX(phone_number) as phone_number
+          FROM user_contact
+          WHERE is_disabled = 0
+          GROUP BY user_id
+        ) uc_c ON uc_c.user_id = o.user_id
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        WHERE o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
+        WHERE o.date_created >= '${startPart} 00:00:00' 
+          AND o.date_created <= '${endPart} 23:59:59'
           ${bookerFilter}
           ${storeFilter}
-        ORDER BY o.booking_date_start DESC
+        ORDER BY o.date_created DESC
         LIMIT 500
       `;
 
@@ -552,6 +558,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           orderId: Number(r.orderId),
           orderKey: String(r.orderKey || `#${r.orderId}`),
           bookingDate: r.bookingDate ? new Date(r.bookingDate).toISOString() : '',
+          createdDate: r.createdDate ? new Date(r.createdDate).toISOString() : '',
           clientName: String(r.clientName),
           clientPhone: String(r.clientPhone || ''),
           store: String(r.store),
@@ -739,7 +746,12 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           o.order_state as orderState
         FROM \`order\` o
         LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
-        LEFT JOIN \`user_contact\` uc_c ON uc_c.user_id = o.user_id AND uc_c.is_disabled = 0
+        LEFT JOIN (
+          SELECT user_id, MAX(phone_number) as phone_number
+          FROM user_contact
+          WHERE is_disabled = 0
+          GROUP BY user_id
+        ) uc_c ON uc_c.user_id = o.user_id
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
         LEFT JOIN \`staff_tip\` st ON st.order_id = o.id AND st.tip_percentage = 20

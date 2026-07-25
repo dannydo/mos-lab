@@ -556,16 +556,17 @@ export default function CRMPage() {
       </Card>
 
       {/* CRM Leads Table */}
-      <Card className="shadow-sm border border-default" styles={{ body: { padding: 0 } }}>
+      <div className="glass-card rounded-xl overflow-hidden border border-default shadow-sm w-full">
         <Table
           dataSource={getFilteredLeads()}
           columns={renderedColumns}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 15, showSizeChanger: true }}
-          className="custom-scrollbar"
+          pagination={{ pageSize: 25, showSizeChanger: true, showTotal: (t) => `Tổng ${t} CRM leads` }}
+          className="custom-table w-full"
+          scroll={{ x: 'max-content' }}
         />
-      </Card>
+      </div>
 
       {/* Detailed Lead Drawer */}
       <Drawer

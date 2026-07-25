@@ -183,3 +183,52 @@ export interface CcWorkLogDetailResponse {
     totalWage: number;
   };
 }
+
+export type PackageAuditReviewStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REVOKED';
+
+export interface PackageAuditRecord {
+  id: number;
+  balanceId: number;
+  userId: number;
+  customerName: string;
+  customerPhone?: string;
+  customerAvatar?: string;
+  serviceName: string;
+  normalCountAdded: number;
+  retainCountAdded: number;
+  note: string;
+  staffId: number;
+  staffName: string;
+  dateCreated: string;
+  reviewStatus: PackageAuditReviewStatus;
+  reviewedByStaffId?: number;
+  reviewedByStaffName?: string;
+  reviewedAt?: string;
+  reviewNote?: string;
+}
+
+export interface PackageAuditListParams {
+  dateFrom?: string;
+  dateTo?: string;
+  staffId?: number;
+  status?: PackageAuditReviewStatus | 'ALL';
+  search?: string;
+}
+
+export interface PackageAuditSummary {
+  totalCount: number;
+  pendingCount: number;
+  approvedCount: number;
+  revokedCount: number;
+}
+
+export interface PackageAuditListResponse {
+  data: PackageAuditRecord[];
+  summary: PackageAuditSummary;
+}
+
+export interface ReviewPackageAuditParams {
+  transactionId: number;
+  action: 'APPROVE' | 'REVOKE';
+  reviewNote?: string;
+}

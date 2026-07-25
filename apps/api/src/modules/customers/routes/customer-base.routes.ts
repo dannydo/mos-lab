@@ -87,7 +87,7 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
 
       // Force telesales to only query their own customers
       let effectiveAssignedStaffId = assignedStaffId;
-      if (adminUser.role !== 'admin') {
+      if (adminUser.role !== 'admin' && assignedStaffId !== 'unassigned') {
         effectiveAssignedStaffId = 'me';
       }
 
@@ -618,7 +618,7 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
 
     // Force telesales to only query stats for their own customers
     let effectiveAssignedStaffId = assignedStaffId;
-    if (adminUser.role !== 'admin') {
+    if (adminUser.role !== 'admin' && assignedStaffId !== 'unassigned') {
       effectiveAssignedStaffId = 'me';
     }
 

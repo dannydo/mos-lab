@@ -64,6 +64,9 @@ import {
   BkPaystubResponse,
   BkConfigResponse,
   BkSalaryConfig,
+  PackageAuditListParams,
+  PackageAuditListResponse,
+  ReviewPackageAuditParams,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -132,7 +135,10 @@ export const apiClient = {
       const response = await api.post('/customers/revoke', data);
       return response.data;
     },
-    unassign: async (data: { customerIds: number[]; reason?: string }): Promise<{ success: boolean; count: number }> => {
+    unassign: async (data: {
+      customerIds: number[];
+      reason?: string;
+    }): Promise<{ success: boolean; count: number }> => {
       const response = await api.post('/customers/unassign', data);
       return response.data;
     },
@@ -333,6 +339,16 @@ export const apiClient = {
     },
     updateSalaryConfig: async (config: SalaryConfig): Promise<{ success: boolean; message: string }> => {
       const response = await api.post('/kpi/salary-config', config);
+      return response.data;
+    },
+    getPackageAudits: async (params?: PackageAuditListParams): Promise<PackageAuditListResponse> => {
+      const response = await api.get('/kpi/package-audit/list', { params });
+      return response.data;
+    },
+    reviewPackageAudit: async (
+      data: ReviewPackageAuditParams
+    ): Promise<{ success: boolean; message: string; reviewStatus: string }> => {
+      const response = await api.post('/kpi/package-audit/review', data);
       return response.data;
     },
     getBookerAppointments: async (params: Record<string, unknown>): Promise<unknown> => {

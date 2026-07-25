@@ -85,7 +85,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     // Force telesales to only query their own customers (except for LoCa campaign)
     let effectiveAssignedStaffId = assignedStaffId;
-    if (adminUser.role !== 'admin' && bucket !== 'NEW_LOCA' && bucket !== 'COMBO_LIVE') {
+    if (
+      adminUser.role !== 'admin' &&
+      bucket !== 'NEW_LOCA' &&
+      bucket !== 'COMBO_LIVE' &&
+      assignedStaffId !== 'unassigned'
+    ) {
       effectiveAssignedStaffId = 'me';
     }
 
@@ -1085,7 +1090,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     // Force telesales to only query stats for their own customers (except for LoCa campaign)
     let effectiveAssignedStaffId = assignedStaffId;
-    if (adminUser.role !== 'admin' && bucket !== 'NEW_LOCA' && bucket !== 'COMBO_LIVE') {
+    if (
+      adminUser.role !== 'admin' &&
+      bucket !== 'NEW_LOCA' &&
+      bucket !== 'COMBO_LIVE' &&
+      assignedStaffId !== 'unassigned'
+    ) {
       effectiveAssignedStaffId = 'me';
     }
 

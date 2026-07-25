@@ -39,7 +39,7 @@ export const formatStoreCode = (store?: string | null): string => {
 };
 
 interface BkBookingTabProps {
-  dateRange: [any, any];
+  dateRange: [SafeAny, SafeAny];
   selectedStore: string;
   selectedBooker: string;
 }
@@ -53,7 +53,6 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
-
 
   const [leaderboard, setLeaderboard] = useState<BkBookingLeaderboardEntry[]>([]);
   const [summary, setSummary] = useState({
@@ -95,7 +94,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
         dateTo: dateRange[1].format('YYYY-MM-DD'),
         storeId: selectedStore,
       });
-      const data = (res.data || []).map((item: any, idx: number) => ({
+      const data = (res.data || []).map((item: SafeAny, idx: number) => ({
         ...item,
         rowKeyId: `${item.orderId || 'bk'}_${idx}`,
       }));
@@ -178,9 +177,15 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
                 >
                   {name}
                 </span>
-                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">· {formatStoreCode(record.store)}</span>
+                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
+                  · {formatStoreCode(record.store)}
+                </span>
                 {isSelected && (
-                  <Tag color="gold" icon={<CheckCircleOutlined />} className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap">
+                  <Tag
+                    color="gold"
+                    icon={<CheckCircleOutlined />}
+                    className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap"
+                  >
                     Đang lọc
                   </Tag>
                 )}
@@ -217,7 +222,10 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       key: 'conversionRate',
       align: 'center' as const,
       render: (val: number) => (
-        <Tag color={val >= 70 ? 'success' : val >= 50 ? 'warning' : 'default'} className="tabular-nums font-semibold px-2 py-0 text-xs rounded-full m-0">
+        <Tag
+          color={val >= 70 ? 'success' : val >= 50 ? 'warning' : 'default'}
+          className="tabular-nums font-semibold px-2 py-0 text-xs rounded-full m-0"
+        >
           {val}%
         </Tag>
       ),
@@ -226,7 +234,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       title: 'Hành động',
       key: 'action',
       align: 'center' as const,
-      render: (_: any, record: BkBookingLeaderboardEntry) => {
+      render: (_: SafeAny, record: BkBookingLeaderboardEntry) => {
         const isSelected = selectedBookerId === String(record.bookerId);
         return (
           <Button
@@ -252,13 +260,17 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       key: 'stt',
       width: 50,
       align: 'center' as const,
-      render: (_: any, __: any, index: number) => <span className="tabular-nums text-xs text-slate-500 font-medium">{index + 1}</span>,
+      render: (_: SafeAny, __: SafeAny, index: number) => (
+        <span className="tabular-nums text-xs text-slate-500 font-medium">{index + 1}</span>
+      ),
     },
     {
       title: 'Mã Đơn',
       dataIndex: 'orderKey',
       key: 'orderKey',
-      render: (val: string) => <span className="font-mono font-semibold text-xs text-sky-400 whitespace-nowrap">{val}</span>,
+      render: (val: string) => (
+        <span className="font-mono font-semibold text-xs text-sky-400 whitespace-nowrap">{val}</span>
+      ),
     },
     {
       title: 'Tên Khách Hàng',
@@ -279,7 +291,9 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
             <span>{name || 'Khách hàng'}</span>
             <UserOutlined className="text-[10px] opacity-0 group-hover:opacity-100 text-amber-400 transition-opacity" />
           </div>
-          {r.clientPhone && <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap">{r.clientPhone}</div>}
+          {r.clientPhone && (
+            <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap">{r.clientPhone}</div>
+          )}
         </div>
       ),
     },
@@ -288,20 +302,40 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       title: 'Booker Tạo',
       dataIndex: 'bookerName',
       key: 'bookerName',
-      render: (bName: string) => <span className="font-medium text-xs text-slate-300 whitespace-nowrap">{bName || '-'}</span>,
+      render: (bName: string) => (
+        <span className="font-medium text-xs text-slate-300 whitespace-nowrap">{bName || '-'}</span>
+      ),
     },
     {
-      title: 'Thời Gian Đặt',
+      title: 'Thời Gian Tạo',
+      dataIndex: 'createdDate',
+      key: 'createdDate',
+      render: (cDate: string) => {
+        return (
+          <span className="tabular-nums text-xs text-amber-400 font-semibold whitespace-nowrap">
+            {cDate ? cDate.replace('T', ' ').substring(0, 16) : '-'}
+          </span>
+        );
+      },
+    },
+    {
+      title: 'Lịch Hẹn Khách',
       dataIndex: 'bookingDate',
       key: 'bookingDate',
-      render: (dateStr: string) => <span className="tabular-nums text-xs text-slate-400 font-medium whitespace-nowrap">{dateStr ? dateStr.replace('T', ' ').substring(0, 16) : '-'}</span>,
+      render: (dateStr: string) => (
+        <span className="tabular-nums text-xs text-slate-400 font-medium whitespace-nowrap">
+          {dateStr ? dateStr.replace('T', ' ').substring(0, 16) : '-'}
+        </span>
+      ),
     },
     {
       title: 'Chi Nhánh',
       dataIndex: 'store',
       key: 'store',
       align: 'center' as const,
-      render: (val: string) => <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(val)}</span>,
+      render: (val: string) => (
+        <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(val)}</span>
+      ),
     },
     {
       title: 'Trạng Thái',
@@ -310,12 +344,24 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       align: 'center' as const,
       render: (status: string) => {
         if (status === 'Completed' || status === 'Done' || status === 'Check-in thành công') {
-          return <Tag color="success" className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap">✓ Done</Tag>;
+          return (
+            <Tag color="success" className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap">
+              ✓ Done
+            </Tag>
+          );
         }
         if (status === 'Cancelled' || status === 'Missed') {
-          return <Tag color="error" className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap">🔴 Đã hủy</Tag>;
+          return (
+            <Tag color="error" className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap">
+              🔴 Đã hủy
+            </Tag>
+          );
         }
-        return <Tag color="default" className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap">⚪ Incoming</Tag>;
+        return (
+          <Tag color="default" className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap">
+            ⚪ Incoming
+          </Tag>
+        );
       },
     },
   ];
@@ -325,7 +371,10 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       {/* Summary Cards */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} md={6}>
-          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl" style={{ background: token.colorBgContainer }}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
             <Statistic
               title={<span className="text-xs font-semibold text-slate-500 uppercase">Tổng Booking Đã Tạo</span>}
               value={summary.totalBookings}
@@ -335,7 +384,10 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl" style={{ background: token.colorBgContainer }}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
             <Statistic
               title={<span className="text-xs font-semibold text-slate-500 uppercase">Booking Done Thành Công</span>}
               value={summary.doneBookings}
@@ -345,7 +397,10 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl" style={{ background: token.colorBgContainer }}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
             <Statistic
               title={<span className="text-xs font-semibold text-slate-500 uppercase">Tỷ Lệ Chuyển Đổi Done</span>}
               value={summary.conversionRate}
@@ -356,7 +411,10 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl" style={{ background: token.colorBgContainer }}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
             <Statistic
               title={<span className="text-xs font-semibold text-slate-500 uppercase">Cuộc Gọi OmiCall</span>}
               value={summary.totalCalls}

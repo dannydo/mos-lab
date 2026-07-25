@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiClient } from '../../../../lib/api-client';
 import { Staff } from '@mos-lab/shared';
@@ -43,14 +43,25 @@ export const useCustomerFilters = (
     return scopeParam || (currentUser?.role === 'telesales' ? 'me' : 'all');
   });
 
-  // Keep assignedStaffId in sync with searchParams scopeParam & currentUser role
+  const prevScopeRef = useRef<string | null>(scopeParam);
+  const prevUserRoleRef = useRef<string | undefined>(currentUser?.role);
+
+  // Keep assignedStaffId in sync with searchParams scopeParam & currentUser role changes
   useEffect(() => {
-    if (scopeParam && scopeParam !== assignedStaffId) {
-      setAssignedStaffId(scopeParam);
-    } else if (!scopeParam && currentUser?.role === 'telesales' && assignedStaffId !== 'me') {
-      setAssignedStaffId('me');
+    const scopeChanged = prevScopeRef.current !== scopeParam;
+    const roleChanged = prevUserRoleRef.current !== currentUser?.role;
+
+    if (scopeChanged || roleChanged) {
+      prevScopeRef.current = scopeParam;
+      prevUserRoleRef.current = currentUser?.role;
+
+      if (scopeParam) {
+        setAssignedStaffId(scopeParam);
+      } else if (currentUser?.role === 'telesales') {
+        setAssignedStaffId('me');
+      }
     }
-  }, [currentUser, scopeParam, assignedStaffId]);
+  }, [currentUser?.role, scopeParam]);
 
   // Saved Filters preset state
   const [savedFilters, setSavedFilters] = useState<SafeAny[]>([]);
@@ -218,7 +229,15 @@ export const useCustomerFilters = (
 
       return parts.join(' | ');
     },
-    [activeTab, daysSinceLastVisitMin, daysSinceLastVisitMax, assignedStaffId, totalSpentMin, totalSpentMax, retainedOnly]
+    [
+      activeTab,
+      daysSinceLastVisitMin,
+      daysSinceLastVisitMax,
+      assignedStaffId,
+      totalSpentMin,
+      totalSpentMax,
+      retainedOnly,
+    ]
   );
 
   const clearFilters = useCallback(() => {

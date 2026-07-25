@@ -81,9 +81,18 @@ export const ComboHistoryModal: React.FC<ComboHistoryModalProps> = ({
       key: 'status',
       render: (_: SafeAny, record: SafeAny) => {
         const isActive = (record.normalCount || 0) + (record.retainCount || 0) > 0;
-        return <Tag color={isActive ? 'success' : 'default'}>{isActive ? 'Đang chạy' : 'Đã dùng hết'}</Tag>;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <Tag color={isActive ? 'success' : 'default'}>{isActive ? 'Đang chạy' : 'Đã dùng hết'}</Tag>
+            {record.hasManualAdjustment && (
+              <Tag color="error" style={{ fontSize: '10px' }}>
+                ⚠️ Có lượt cộng thủ công
+              </Tag>
+            )}
+          </div>
+        );
       },
-      width: '110px',
+      width: '140px',
     },
   ];
 

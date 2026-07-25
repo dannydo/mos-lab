@@ -294,8 +294,9 @@ export default function HotLeadsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[400px]">
-        <Spin size="large" tip="Đang tải dữ liệu Hot Leads..." />
+      <div className="flex flex-col items-center justify-center h-[400px] gap-3">
+        <Spin size="large" />
+        <span className="text-xs font-semibold text-gray-500">Đang tải dữ liệu Hot Leads...</span>
       </div>
     );
   }

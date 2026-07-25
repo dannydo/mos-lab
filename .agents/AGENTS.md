@@ -250,3 +250,16 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
    - **Phân biệt với chỉ số Booker (Rule #7/Rule #10)**: Chỉ số đếm "Tạo lịch" của Booker dùng `date_created` (đo năng suất telesales tạo hẹn), còn chỉ số "Doanh thu & Combo" dùng `actual_booking_date_start` + `order_state = 'Completed'` (đo thực thu & nghiệm thu dịch vụ tại cửa hàng).
    - **Đồng bộ cặp Query Listing & Stats (Dual-Query Alignment)**: Khi chỉnh sửa điều kiện lọc bucket/đơn hàng trong `apps/api/src/modules/customers/routes.ts`, **bắt buộc phải cập nhật đồng thời cả Listing Query (`bStr`) và Stats Query (`bStrStats`)** để đảm bảo số liệu trên bảng và số đếm trên thẻ tab khớp 100%, tránh lỗi syntax hoặc lệch data.
 
+---
+
+# 👁️ Lash Touch-up Expiration Window Business Rules (Quy tắc Thời hạn Dặm mi)
+
+1. **Khách không mua gói (Khách lẻ / Single)**:
+   - Hạn dặm mi tối đa: **21 ngày** kể từ ngày làm mi gần nhất (`COALESCE(ro.actual_booking_date_start, o.booking_date_start)`).
+   - Quá 21 ngày: Tính là dặm trễ, không áp dụng dặm mi mà bắt buộc tư vấn nối mới.
+
+2. **Khách có mua gói Combo (Combo Package)**:
+   - Hạn dặm mi tối đa: **25 ngày** kể từ ngày làm mi gần nhất (`COALESCE(ro.actual_booking_date_start, o.booking_date_start)`).
+   - Quá 25 ngày: Tính là dặm trễ, không được trừ lượt dặm trong gói mà bắt buộc tư vấn làm mới.
+
+

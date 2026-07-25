@@ -46,7 +46,10 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '30px 0' }}>
-        <Spin tip="Đang tải lịch sử phân bổ..." />
+        <Spin />
+        <div style={{ marginTop: 8 }} className="text-xs text-slate-400 font-medium">
+          Đang tải lịch sử phân bổ...
+        </div>
       </div>
     );
   }
@@ -65,15 +68,40 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
   const getActionTag = (item: CustomerAssignmentTimelineItem) => {
     switch (item.actionType) {
       case 'ASSIGN':
-        return <Tag color="green"><UserOutlined style={{ marginRight: 4 }} />Phân bổ mới</Tag>;
+        return (
+          <Tag color="green">
+            <UserOutlined style={{ marginRight: 4 }} />
+            Phân bổ mới
+          </Tag>
+        );
       case 'TRANSFER':
-        return <Tag color="blue"><UserSwitchOutlined style={{ marginRight: 4 }} />Chuyển Booker</Tag>;
+        return (
+          <Tag color="blue">
+            <UserSwitchOutlined style={{ marginRight: 4 }} />
+            Chuyển Booker
+          </Tag>
+        );
       case 'REVOKE':
-        return <Tag color="volcano"><DeleteOutlined style={{ marginRight: 4 }} />Thu hồi về Pool</Tag>;
+        return (
+          <Tag color="volcano">
+            <DeleteOutlined style={{ marginRight: 4 }} />
+            Thu hồi về Pool
+          </Tag>
+        );
       case 'EXPIRE':
-        return <Tag color="red"><ClockCircleOutlined style={{ marginRight: 4 }} />Hết hạn tự động</Tag>;
+        return (
+          <Tag color="red">
+            <ClockCircleOutlined style={{ marginRight: 4 }} />
+            Hết hạn tự động
+          </Tag>
+        );
       case 'UNDO':
-        return <Tag color="warning"><UndoOutlined style={{ marginRight: 4 }} />Đã hoàn tác</Tag>;
+        return (
+          <Tag color="warning">
+            <UndoOutlined style={{ marginRight: 4 }} />
+            Đã hoàn tác
+          </Tag>
+        );
       default:
         return <Tag color="default">{item.actionType}</Tag>;
     }
@@ -93,18 +121,37 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
                 item.actionType === 'ASSIGN'
                   ? 'green'
                   : item.actionType === 'TRANSFER'
-                  ? 'blue'
-                  : item.actionType === 'EXPIRE' || item.actionType === 'REVOKE'
-                  ? 'red'
-                  : 'orange'
+                    ? 'blue'
+                    : item.actionType === 'EXPIRE' || item.actionType === 'REVOKE'
+                      ? 'red'
+                      : 'orange'
               }
             >
-              <div style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#fafafa', padding: '12px 16px', borderRadius: '8px', border: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+              <div
+                style={{
+                  background: themeMode === 'dark' ? '#1f1f1f' : '#fafafa',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                  }}
+                >
                   <Space>
                     {getActionTag(item)}
                     <Text strong style={{ color: themeMode === 'dark' ? '#fff' : '#141414' }}>
-                      {item.staffName ? `Phân bổ cho: ${item.staffName}` : item.prevStaffName ? `Thu hồi từ: ${item.prevStaffName}` : 'Hủy phân bổ'}
+                      {item.staffName
+                        ? `Phân bổ cho: ${item.staffName}`
+                        : item.prevStaffName
+                          ? `Thu hồi từ: ${item.prevStaffName}`
+                          : 'Hủy phân bổ'}
                     </Text>
                     {item.isRetained && (
                       <Tag color="gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -125,7 +172,9 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
 
                   {item.sourceFilterSummary && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <Text type="secondary"><FilterOutlined /> Công thức / Nguồn lọc: </Text>
+                      <Text type="secondary">
+                        <FilterOutlined /> Công thức / Nguồn lọc:{' '}
+                      </Text>
                       <Tag color="cyan">{item.sourceFilterSummary}</Tag>
                     </div>
                   )}
@@ -133,13 +182,25 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
                   {formattedExpire && (
                     <div>
                       <Text type="secondary">Thời hạn: </Text>
-                      <Text type="warning">{item.durationDays ? `${item.durationDays} ngày` : ''} (Hết hạn: {formattedExpire})</Text>
+                      <Text type="warning">
+                        {item.durationDays ? `${item.durationDays} ngày` : ''} (Hết hạn: {formattedExpire})
+                      </Text>
                     </div>
                   )}
 
                   {item.reason && (
-                    <div style={{ marginTop: 4, padding: '6px 10px', background: themeMode === 'dark' ? '#2b2111' : '#fffbe6', borderRadius: '4px', border: '1px solid #ffe58f' }}>
-                      <Text type="danger" strong>Lý do: </Text>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        padding: '6px 10px',
+                        background: themeMode === 'dark' ? '#2b2111' : '#fffbe6',
+                        borderRadius: '4px',
+                        border: '1px solid #ffe58f',
+                      }}
+                    >
+                      <Text type="danger" strong>
+                        Lý do:{' '}
+                      </Text>
                       <Text style={{ fontStyle: 'italic' }}>{item.reason}</Text>
                     </div>
                   )}

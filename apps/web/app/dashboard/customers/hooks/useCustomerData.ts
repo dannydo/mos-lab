@@ -135,6 +135,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     }
   };
 
+  const defaultAssignedStaff = currentUser?.role === 'telesales' ? 'me' : 'all';
   const hasActiveFilters =
     filterParams.daysSinceLastVisitMin !== undefined ||
     filterParams.daysSinceLastVisitMax !== undefined ||
@@ -148,6 +149,8 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     filterParams.referralUsed !== 'all' ||
     filterParams.referralCountMin !== undefined ||
     filterParams.referralCountMax !== undefined ||
+    (filterParams.assignedStaffId && filterParams.assignedStaffId !== defaultAssignedStaff) ||
+    filterParams.retainedOnly === 'true' ||
     filtersHook.activeFilterId !== null;
 
   return {

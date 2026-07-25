@@ -1,10 +1,48 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light dark;
+  --bg: #f5f5f7;
+  --bg-white: #ffffff;
+  --bg-hover: #fafafa;
+  --bg-input: #f0f0f3;
+  --border: #e5e5ea;
+  --border-light: #ececf0;
+
+  --gold: #b8941f;
+  --gold-light: #d4ad2b;
+  --gold-bg: rgba(184, 148, 31, 0.08);
+
+  --text: #1a1a1a;
+  --text-secondary: #4a4a56;
+  --text-muted: #6b6b78;
+
+  --blue: #2563eb;
+  --blue-bg: #eff6ff;
+  --orange: #d97706;
+  --orange-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --pink: #db2777;
+  --pink-bg: #fdf2f8;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --gray: #4b5563;
+  --gray-bg: #f3f4f6;
+
+  --font-sans: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* Accent & Brand Tokens */
+  accent-color: #b8941f;
+
+  /* High Contrast Scrollbar */
+  --scrollbar-thumb: light-dark(#94a3b8, #475569);
+  --scrollbar-track: light-dark(#f1f5f9, #0f172a);
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
 }
 
 @theme inline {
@@ -28,24 +66,86 @@ body {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-sans);
 }
 
-.light-theme {
+.light-theme,
+.light {
   color-scheme: light;
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --bg: #f5f5f7;
+  --bg-white: #ffffff;
+  --bg-hover: #fafafa;
+  --bg-input: #f0f0f3;
+  --border: #e5e5ea;
+  --border-light: #ececf0;
+  --text: #020617;
+  --text-secondary: #1e293b;
+  --text-muted: #475569;
 }
 
-.dark-theme {
+.dark-theme,
+.dark {
   color-scheme: dark;
-  --background: #070a13;
-  --foreground: #f8fafc;
+  --bg: #070a13;
+  --bg-white: #0d1222;
+  --bg-hover: #151c2e;
+  --bg-input: #192238;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-light: rgba(255, 255, 255, 0.08);
+  --text: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
 }
 
-/* Custom scrollbars */
+/* Accessibility: Visually Hidden Utility for Screen Readers */
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+/* Accessibility: Visible Focus Rings */
+:focus-visible {
+  outline: 2px solid #b8941f !important;
+  outline-offset: 2px !important;
+}
+
+/* Glassmorphism Utilities */
+.glass-card {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.light-theme .glass-card,
+.light .glass-card,
+html:not(.dark) .glass-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.dark-theme .glass-card,
+.dark .glass-card {
+  background: #0d1222;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.35);
+}
+
+/* Tabular Numbers */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -56,10 +156,250 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.5);
+  background: rgba(184, 148, 31, 0.7);
+}
+
+/* PROGRESS BAR & TABS STYLING - ABSOLUTE HIGH CONTRAST */
+
+/* Light Mode / Default */
+.progress-track-bg {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.progress-pct-num {
+  color: #92400e !important;
+  font-weight: 800 !important;
+}
+
+.tab-btn-inactive {
+  color: #475569 !important;
+  font-weight: 700 !important;
+  border-color: transparent !important;
+}
+
+.tab-btn-inactive:hover {
+  color: #0f172a !important;
+}
+
+.tab-btn-active {
+  color: #b8941f !important;
+  font-weight: 800 !important;
+  border-color: #b8941f !important;
+}
+
+.tab-badge-inactive {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+  font-weight: 800 !important;
+}
+
+.tab-badge-active {
+  background: rgba(184, 148, 31, 0.12) !important;
+  color: #b8941f !important;
+  border: 1px solid rgba(184, 148, 31, 0.3) !important;
+  font-weight: 800 !important;
+}
+
+/* Dark Mode Overrides */
+.dark-theme .progress-track-bg,
+.dark .progress-track-bg {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+
+.dark-theme .progress-pct-num,
+.dark .progress-pct-num {
+  color: #fbbf24 !important;
+}
+
+.dark-theme .tab-btn-inactive,
+.dark .tab-btn-inactive {
+  color: #94a3b8 !important;
+}
+
+.dark-theme .tab-btn-inactive:hover,
+.dark .tab-btn-inactive:hover {
+  color: #f8fafc !important;
+}
+
+.dark-theme .tab-badge-inactive,
+.dark .tab-badge-inactive {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+  border: 1px solid #334155 !important;
+}
+
+/* Ant Design Table Strict High Contrast Overrides */
+
+/* LIGHT THEME TABLE STYLES - 100% MAXIMUM CONTRAST (BLACK & DARK SLATE TEXT) */
+.light-theme .custom-table .ant-table,
+.light .custom-table .ant-table,
+html:not(.dark) .custom-table .ant-table {
+  background: #ffffff !important;
+  color: #020617 !important;
+}
+
+.light-theme .custom-table .ant-table-thead > tr > th,
+.light .custom-table .ant-table-thead > tr > th,
+html:not(.dark) .custom-table .ant-table-thead > tr > th {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 10px 14px !important;
+}
+
+.light-theme .custom-table .ant-table-tbody > tr > td,
+.light .custom-table .ant-table-tbody > tr > td,
+html:not(.dark) .custom-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 11px 14px !important;
+  color: #020617 !important;
+  font-size: 12px;
+}
+
+.light-theme .custom-table .td-student-name,
+.light .custom-table .td-student-name,
+html:not(.dark) .custom-table .td-student-name {
+  color: #020617 !important;
+  font-weight: 800 !important;
+}
+
+.light-theme .custom-table .td-phone-num,
+.light .custom-table .td-phone-num,
+html:not(.dark) .custom-table .td-phone-num {
+  color: #1d4ed8 !important;
+  font-weight: 800 !important;
+}
+
+.light-theme .custom-table .td-student-goal,
+.light .custom-table .td-student-goal,
+html:not(.dark) .custom-table .td-student-goal {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.light-theme .custom-table .td-student-notes,
+.light .custom-table .td-student-notes,
+html:not(.dark) .custom-table .td-student-notes {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+}
+
+.light-theme .custom-table .ant-table-tbody > tr:hover > td,
+.light .custom-table .ant-table-tbody > tr:hover > td,
+html:not(.dark) .custom-table .ant-table-tbody > tr:hover > td {
+  background: #f8fafc !important;
+}
+
+.light-theme .custom-table .ant-pagination,
+.light .custom-table .ant-pagination,
+html:not(.dark) .custom-table .ant-pagination {
+  background: #ffffff !important;
+  color: #020617 !important;
+  padding: 12px 16px !important;
+  margin: 0 !important;
+  border-top: 2px solid #e2e8f0 !important;
+}
+
+.light-theme .custom-table .ant-pagination .ant-pagination-item-active,
+.light .custom-table .ant-pagination .ant-pagination-item-active,
+html:not(.dark) .custom-table .ant-pagination .ant-pagination-item-active {
+  background: #b8941f !important;
+  border-color: #b8941f !important;
+}
+
+.light-theme .custom-table .ant-pagination .ant-pagination-item-active a,
+.light .custom-table .ant-pagination .ant-pagination-item-active a,
+html:not(.dark) .custom-table .ant-pagination .ant-pagination-item-active a {
+  color: #ffffff !important;
+  font-weight: 800;
+}
+
+/* DARK THEME TABLE STYLES */
+.dark-theme .custom-table .ant-table,
+.dark .custom-table .ant-table {
+  background: transparent !important;
+  color: #f8fafc !important;
+}
+
+.dark-theme .custom-table .ant-table-thead > tr > th,
+.dark .custom-table .ant-table-thead > tr > th {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 10px 14px !important;
+}
+
+.dark-theme .custom-table .ant-table-tbody > tr > td,
+.dark .custom-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 11px 14px !important;
+  color: #f8fafc !important;
+  font-size: 12px;
+}
+
+.dark-theme .custom-table .td-student-name,
+.dark .custom-table .td-student-name {
+  color: #f8fafc !important;
+  font-weight: 800 !important;
+}
+
+.dark-theme .custom-table .td-phone-num,
+.dark .custom-table .td-phone-num {
+  color: #60a5fa !important;
+  font-weight: 800 !important;
+}
+
+.dark-theme .custom-table .td-student-goal,
+.dark .custom-table .td-student-goal {
+  color: #e2e8f0 !important;
+  font-weight: 700 !important;
+}
+
+.dark-theme .custom-table .td-student-notes,
+.dark .custom-table .td-student-notes {
+  color: #cbd5e1 !important;
+  font-weight: 600 !important;
+}
+
+.dark-theme .custom-table .ant-table-tbody > tr:hover > td,
+.dark .custom-table .ant-table-tbody > tr:hover > td {
+  background: #151c2e !important;
+}
+
+.dark-theme .custom-table .ant-pagination,
+.dark .custom-table .ant-pagination {
+  background: #0d1222 !important;
+  color: #e2e8f0 !important;
+  padding: 12px 16px !important;
+  margin: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-theme .custom-table .ant-pagination .ant-pagination-item-active,
+.dark .custom-table .ant-pagination .ant-pagination-item-active {
+  background: #b8941f !important;
+  border-color: #b8941f !important;
+}
+
+.dark-theme .custom-table .ant-pagination .ant-pagination-item-active a,
+.dark .custom-table .ant-pagination .ant-pagination-item-active a {
+  color: #ffffff !important;
+  font-weight: 800;
 }

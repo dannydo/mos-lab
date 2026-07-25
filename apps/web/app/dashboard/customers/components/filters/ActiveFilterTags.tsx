@@ -8,12 +8,14 @@ interface ActiveFilterTagsProps {
   filterParams: SafeAny;
   onClearFilter: (key: string) => void;
   hasActiveFilters: boolean;
+  staffList?: SafeAny[];
 }
 
 export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
   filterParams,
   onClearFilter,
   hasActiveFilters,
+  staffList = [],
 }) => {
   const { token } = theme.useToken();
   const {
@@ -29,14 +31,48 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
     referralUsed,
     referralCountMin,
     referralCountMax,
+    assignedStaffId,
+    retainedOnly,
   } = filterParams;
 
   if (!hasActiveFilters) return null;
+
+  const renderAssignedTag = () => {
+    if (!assignedStaffId || assignedStaffId === 'all') return null;
+    if (assignedStaffId === 'unassigned') {
+      return (
+        <Tag color="orange" closable onClose={() => onClearFilter('assignedStaffId')}>
+          Phụ trách: Chưa phân bổ
+        </Tag>
+      );
+    }
+    if (assignedStaffId === 'me') {
+      return (
+        <Tag color="orange" closable onClose={() => onClearFilter('assignedStaffId')}>
+          Khách hàng của tôi
+        </Tag>
+      );
+    }
+    const staff = staffList.find((s) => s.id?.toString() === assignedStaffId);
+    return (
+      <Tag color="orange" closable onClose={() => onClearFilter('assignedStaffId')}>
+        Booker: {staff?.displayName || assignedStaffId}
+      </Tag>
+    );
+  };
 
   return (
     <div style={{ marginTop: '12px' }}>
       <Space wrap size="small">
         <Text style={{ fontSize: '12px', color: token.colorTextDescription }}>Đang lọc:</Text>
+
+        {renderAssignedTag()}
+
+        {retainedOnly === 'true' && (
+          <Tag color="gold" closable onClose={() => onClearFilter('retainedOnly')}>
+            📌 Chỉ Data đã giữ
+          </Tag>
+        )}
 
         {daysSinceLastVisitMin !== undefined && (
           <Tag color="blue" closable onClose={() => onClearFilter('daysSinceLastVisitMin')}>
