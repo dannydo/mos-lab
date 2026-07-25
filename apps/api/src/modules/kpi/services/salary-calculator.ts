@@ -144,12 +144,28 @@ export async function calculateBookerSalaryStats(
     profiles.forEach((p: SafeAny) => {
       const staff = staffList.find((s) => s.displayName.toLowerCase().trim() === p.fullName.toLowerCase().trim());
       if (staff) {
-        staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
+        if (!staffNameToLegacyIdMap.has(p.fullName.toLowerCase().trim())) {
+          staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
+        }
         legacyIdToStaffMap.set(Number(p.userId), staff);
       }
     });
 
-    const activeLegacyUserIds = Array.from(staffNameToLegacyIdMap.values());
+    // Override with explicit legacyStaffId from crmStaff if specified (Rule #11 Single Source of Truth)
+    staffList.forEach((s) => {
+      if (s.legacyStaffId) {
+        staffNameToLegacyIdMap.set(s.displayName.toLowerCase().trim(), Number(s.legacyStaffId));
+        legacyIdToStaffMap.set(Number(s.legacyStaffId), s);
+      }
+    });
+
+    const activeLegacyUserIds = Array.from(
+      new Set(
+        staffList
+          .map((s) => s.legacyStaffId || staffNameToLegacyIdMap.get(s.displayName.toLowerCase().trim()))
+          .filter((id): id is number => typeof id === 'number' && !isNaN(id))
+      )
+    );
 
     if (activeLegacyUserIds.length > 0) {
       const startStr = formatDateStr(start);
