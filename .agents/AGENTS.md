@@ -268,3 +268,13 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 
 1. **Telesales Ranking Metric**: Mọi câu truy vấn API backend (`/api/kpi/leaderboard`) và logic sắp xếp mảng Leaderboard cho Telesales bắt buộc phải xếp theo **năng suất làm việc thực tế (`totalBooked` / `booked` count, hoặc `totalCheckin` / `done` count)**. Tuyệt đối không sắp xếp theo `totalEarnings` (tổng lương cứng và phụ cấp) vì những nhân sự 0 đơn không bị trừ phạt missed call sẽ bị đẩy lên Top #1 (như Đẫm Ti).
 2. **Default Top Booker Fallback**: Khi mở Popup/Modal Telesales Dashboard mà không có nhân sự được chọn (hoặc nhân sự được chọn không có trong mảng kỳ được lọc), Frontend bắt buộc phải tự động chọn **Top 1 Booker có lượng đơn Booked cao nhất (như Ngọc Điệp)** thay vì chọn phần tử đầu tiên mặc định hay hardcode initials (`'TN'`) dễ gây trùng lặp username.
+
+---
+
+# 🌙 Night Shift Autonomous Optimization Protocol & Safety Rules
+
+1. **Trigger Phrase**: Khi nhận yêu cầu *"Bắt đầu Night Shift"*, *"night shift"*, *"tối ưu xuyên đêm"*, hoặc kích hoạt skill `/night-shift`.
+2. **Git Branch Isolation**: Luôn tự động checkout sang nhánh `night-shift/YYYY-MM-DD`. Tuyệt đối không làm việc trực tiếp trên `main`.
+3. **Strict Verification Loop**: Mỗi thay đổi phải vượt qua script `bash scripts/night-shift-runner.sh` (`pnpm lint`, `pnpm --filter @mos-lab/shared build`, `pnpm build`). Nếu lỗi, tự động rollback bằng `git checkout -- .`.
+4. **Walkthrough Artifact Report**: Xuất file Báo cáo tổng hợp `walkthrough.md` trong Artifacts kèm danh sách commit và lệnh merge cho người dùng khi hoàn tất.
+
