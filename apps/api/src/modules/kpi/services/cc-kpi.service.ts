@@ -71,8 +71,8 @@ export function parseServiceSpecs(serviceName: string) {
     fanPts = 1;
   }
 
-  let serviceType: 'Refill' | 'Retain' | 'New Set' = 'New Set';
-  let typePts = 0;
+  let serviceType: 'Refill' | 'Retain' | 'New Set';
+  let typePts: number;
   if (sLower.includes('refill') || sLower.includes('dặm') || sLower.includes('dam')) {
     serviceType = 'Refill';
     typePts = 0;
@@ -788,7 +788,7 @@ export class CcKpiService {
       const total_sales = rec.combo_sales + rec.product_sales + rec.single_sales;
       rec.total_sales = total_sales;
 
-      let matchedTierRate = 0;
+      let matchedTierRate: number;
       if (total_sales >= 30000000) {
         matchedTierRate = 3.0;
       } else if (total_sales >= 25000000) {
