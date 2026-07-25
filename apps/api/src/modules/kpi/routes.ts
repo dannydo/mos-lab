@@ -856,13 +856,13 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   fastify.get('/kpi/leaderboard', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { id: number; role: string };
 
-    const { startDate, endDate, role, staffIds } = request.query as {
-      startDate?: string;
-      endDate?: string;
-      role?: string;
-      staffIds?: string;
-    };
-    const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 30);
+    const qParams = (request.query || {}) as SafeAny;
+    const startDate = qParams.startDate || qParams.dateFrom || qParams.date_from;
+    const endDate = qParams.endDate || qParams.dateTo || qParams.date_to;
+    const role = qParams.role;
+    const staffIds = qParams.staffIds;
+
+    const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 0);
 
     try {
       if (role === 'oc' || role === 'consultant') {
@@ -929,7 +929,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           in: staffIds
             .split(',')
             .map(Number)
-            .filter((n) => !isNaN(n)),
+            .filter((n: number) => !isNaN(n)),
         };
       } else {
         staffWhere.role = role || 'telesales';
