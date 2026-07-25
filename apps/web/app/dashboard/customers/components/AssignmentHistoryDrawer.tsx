@@ -1,30 +1,13 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import {
-  Drawer,
-  Spin,
-  Card,
-  Tag,
-  Tooltip,
-  Button,
-  Space,
-  Table,
-  Pagination,
-  Input,
-  Radio,
-  Typography,
-  Badge,
-} from 'antd';
+import { Drawer, Spin, Tag, Tooltip, Button, Space, Table, Pagination, Input, Radio, Typography } from 'antd';
 import {
   HistoryOutlined,
   FilterOutlined,
   UndoOutlined,
-  UserOutlined,
   ClockCircleOutlined,
   SearchOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
   DownOutlined,
   UpOutlined,
   ExclamationCircleOutlined,
@@ -35,7 +18,7 @@ import {
 } from '@ant-design/icons';
 import { SafeAny } from '@mos-lab/shared';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 interface AssignmentHistoryDrawerProps {
   themeMode: string;
@@ -97,7 +80,8 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
       // Filter by text search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchStaff = (item.newStaffName || '').toLowerCase().includes(q) || (item.prevStaffName || '').toLowerCase().includes(q);
+        const matchStaff =
+          (item.newStaffName || '').toLowerCase().includes(q) || (item.prevStaffName || '').toLowerCase().includes(q);
         const matchPerformer = (item.assignedBy || '').toLowerCase().includes(q);
         const matchFormula = (item.sourceFilterSummary || '').toLowerCase().includes(q);
         const matchReason = (item.reason || '').toLowerCase().includes(q);
@@ -107,6 +91,8 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
       return true;
     });
   }, [historyData, filterAction, searchQuery]);
+
+  const nowTimestamp = useMemo(() => Date.now(), []);
 
   const getActionBadge = (item: SafeAny) => {
     if (item.isUndone) {
@@ -205,7 +191,9 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
             style={{ borderRadius: '6px' }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}
+          >
             <Radio.Group
               value={filterAction}
               onChange={(e) => setFilterAction(e.target.value)}
@@ -252,7 +240,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
               const badge = getActionBadge(batch);
 
               // Check if expired
-              const isExpired = batch.expiresAt && new Date(batch.expiresAt).getTime() < Date.now();
+              const isExpired = batch.expiresAt && new Date(batch.expiresAt).getTime() < nowTimestamp;
 
               return (
                 <div
@@ -269,7 +257,15 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                   }}
                 >
                   {/* CARD HEADER */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                       <div
                         style={{
@@ -293,17 +289,21 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                             {batch.newStaffName
                               ? `Phân bổ cho ${batch.newStaffName}`
                               : batch.prevStaffName
-                              ? `Thu hồi từ ${batch.prevStaffName}`
-                              : 'Gỡ Booker'}
+                                ? `Thu hồi từ ${batch.prevStaffName}`
+                                : 'Gỡ Booker'}
                           </span>
 
-                          <Tag color={badge.color} style={{ borderRadius: '12px', padding: '1px 10px', fontWeight: 600 }}>
+                          <Tag
+                            color={badge.color}
+                            style={{ borderRadius: '12px', padding: '1px 10px', fontWeight: 600 }}
+                          >
                             {badge.label}
                           </Tag>
                         </div>
 
                         <div style={{ fontSize: '12px', color: token.colorTextDescription, marginTop: 2 }}>
-                          Thực hiện bởi: <strong style={{ color: token.colorText }}>{batch.assignedBy || 'Hệ thống'}</strong>
+                          Thực hiện bởi:{' '}
+                          <strong style={{ color: token.colorText }}>{batch.assignedBy || 'Hệ thống'}</strong>
                         </div>
                       </div>
                     </div>
@@ -320,10 +320,23 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                         gap: 6,
                       }}
                     >
-                      <Text style={{ fontSize: '12px', color: themeMode === 'dark' ? '#d48806' : '#d46b08', fontWeight: 600 }}>
+                      <Text
+                        style={{
+                          fontSize: '12px',
+                          color: themeMode === 'dark' ? '#d48806' : '#d46b08',
+                          fontWeight: 600,
+                        }}
+                      >
                         Số lượng:
                       </Text>
-                      <span style={{ fontWeight: 800, fontSize: '14px', color: '#D4A84B', fontVariantNumeric: 'tabular-nums' }}>
+                      <span
+                        style={{
+                          fontWeight: 800,
+                          fontSize: '14px',
+                          color: '#D4A84B',
+                          fontVariantNumeric: 'tabular-nums',
+                        }}
+                      >
                         {batch.customerCount} KH
                       </span>
                     </div>
@@ -365,7 +378,9 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                           <FilterOutlined style={{ color: '#1677ff' }} />
                           <span>🎯 {batch.sourceFilterSummary}</span>
                           {batch.sourceFilterJson && (
-                            <span style={{ fontSize: '11px', textDecoration: 'underline', opacity: 0.85, marginLeft: 4 }}>
+                            <span
+                              style={{ fontSize: '11px', textDecoration: 'underline', opacity: 0.85, marginLeft: 4 }}
+                            >
                               (Bấm để lọc lại)
                             </span>
                           )}
@@ -530,7 +545,9 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                                 title: 'Họ và tên',
                                 dataIndex: 'fullName',
                                 key: 'fullName',
-                                render: (text) => <span style={{ fontWeight: 600, color: token.colorText }}>{text}</span>,
+                                render: (text) => (
+                                  <span style={{ fontWeight: 600, color: token.colorText }}>{text}</span>
+                                ),
                               },
                               {
                                 title: 'Số điện thoại',
