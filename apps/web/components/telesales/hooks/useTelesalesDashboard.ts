@@ -184,6 +184,38 @@ export const getPentagonPoints = (cx: number, cy: number, radius: number) =>
 export const pointsToString = (points: { x: number; y: number }[]) =>
   points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 
+export const findTargetMemberOrTopBooker = (memberList: SafeAny[], targetId?: string) => {
+  if (!memberList || memberList.length === 0) return null;
+
+  const searchTarget = String(targetId || '')
+    .trim()
+    .toLowerCase();
+
+  if (searchTarget) {
+    const found = memberList.find((m: SafeAny) => {
+      const mId = String(m.id || '')
+        .trim()
+        .toLowerCase();
+      const mInitials = String(m.initials || '')
+        .trim()
+        .toLowerCase();
+      const mName = String(m.name || '')
+        .trim()
+        .toLowerCase();
+      return mId === searchTarget || mInitials === searchTarget || mName === searchTarget;
+    });
+    if (found) return found;
+  }
+
+  const sortedByBooked = memberList.slice().sort((a: SafeAny, b: SafeAny) => {
+    const valA = a.perf ? (a.perf['booked'] ?? 0) : a.totalBooked || 0;
+    const valB = b.perf ? (b.perf['booked'] ?? 0) : b.totalBooked || 0;
+    return valB - valA;
+  });
+
+  return sortedByBooked[0] || memberList[0];
+};
+
 export interface UseTelesalesDashboardProps {
   visible: boolean;
   initialMemberId?: string;
@@ -192,7 +224,7 @@ export interface UseTelesalesDashboardProps {
 }
 
 export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
-  const { visible, initialMemberId = 'TN' } = options;
+  const { visible, initialMemberId = '' } = options;
   const optionsRef = useRef(options);
   useEffect(() => {
     optionsRef.current = options;
@@ -423,28 +455,11 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
         setPeriodDataMap(newMap);
 
         const activeList = newMap[currentPeriodId] || [];
-        setDbMembers(activeList);
-
         if (activeList.length > 0) {
-          const searchTarget = (initialMemberId || currentMemberId || '').toString().trim().toLowerCase();
-          const found = activeList.find((m: SafeAny) => {
-            const mId = String(m.id || '')
-              .trim()
-              .toLowerCase();
-            const mInitials = String(m.initials || '')
-              .trim()
-              .toLowerCase();
-            const mName = String(m.name || '')
-              .trim()
-              .toLowerCase();
-            return mId === searchTarget || mInitials === searchTarget || mName === searchTarget;
-          });
-          const topProductivity = activeList.slice().sort((a: SafeAny, b: SafeAny) => {
-            const valA = a.perf ? (a.perf['booked'] ?? 0) : a.totalBooked || 0;
-            const valB = b.perf ? (b.perf['booked'] ?? 0) : b.totalBooked || 0;
-            return valB - valA;
-          })[0];
-          setCurrentMemberId(found ? found.id : topProductivity ? topProductivity.id : activeList[0].id);
+          const selected = findTargetMemberOrTopBooker(activeList, initialMemberIdRef.current || initialMemberId);
+          if (selected) {
+            setCurrentMemberId(selected.id);
+          }
         }
       } catch (err) {
         console.error('Fetch telesales leaderboards error:', err);
@@ -470,28 +485,10 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
     const list = periodDataMap[currentPeriodId] || [];
     setDbMembers(list);
     if (list.length > 0) {
-      const target = initialMemberIdRef.current || currentMemberId;
-      const searchTarget = String(target || '')
-        .trim()
-        .toLowerCase();
-      const found = list.find((m: SafeAny) => {
-        const mId = String(m.id || '')
-          .trim()
-          .toLowerCase();
-        const mInitials = String(m.initials || '')
-          .trim()
-          .toLowerCase();
-        const mName = String(m.name || '')
-          .trim()
-          .toLowerCase();
-        return mId === searchTarget || mInitials === searchTarget || mName === searchTarget;
-      });
-      const topProductivity = list.slice().sort((a: SafeAny, b: SafeAny) => {
-        const valA = a.perf ? (a.perf['booked'] ?? 0) : a.totalBooked || 0;
-        const valB = b.perf ? (b.perf['booked'] ?? 0) : b.totalBooked || 0;
-        return valB - valA;
-      })[0];
-      setCurrentMemberId(found ? found.id : topProductivity ? topProductivity.id : list[0].id);
+      const selected = findTargetMemberOrTopBooker(list, initialMemberIdRef.current || initialMemberId);
+      if (selected) {
+        setCurrentMemberId(selected.id);
+      }
     }
   }, [visible, initialMemberId, currentPeriodId, periodDataMap]);
 
@@ -551,7 +548,14 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
         }));
 
   const activeMember =
-    currentMembersList.find((m: SafeAny) => m.id === currentMemberId || m.initials === currentMemberId) ||
+    (currentMemberId
+      ? currentMembersList.find(
+          (m: SafeAny) =>
+            String(m.id) === String(currentMemberId) ||
+            String(m.initials || '').toLowerCase() === String(currentMemberId).toLowerCase()
+        )
+      : null) ||
+    findTargetMemberOrTopBooker(currentMembersList) ||
     currentMembersList[0];
 
   const activePerformance = activeMember
