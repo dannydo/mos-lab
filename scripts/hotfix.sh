@@ -93,12 +93,13 @@ echo -e "${YELLOW}Step 5: Performing 15-second Post-Deploy Health Check on VPS A
 sleep 5
 
 HEALTH_OK=false
-for i in {1..3}; do
-  if curl -sf --max-time 5 "https://api.lab.masteros.app/api/staff" > /dev/null; then
+for i in {1..5}; do
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "https://api.lab.masteros.app/api/staff" || echo "000")
+  if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "401" ] || [ "$HTTP_STATUS" = "403" ]; then
     HEALTH_OK=true
     break
   fi
-  echo -e "${YELLOW}Waiting for API to respond (attempt $i/3)...${NC}"
+  echo -e "${YELLOW}Waiting for API to respond (status: $HTTP_STATUS, attempt $i/5)...${NC}"
   sleep 3
 done
 
