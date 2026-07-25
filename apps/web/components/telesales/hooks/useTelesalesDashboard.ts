@@ -452,36 +452,23 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
     fetchAllLeaderboards();
   }, [visible, refreshCounter]);
 
-  // Sync member selection when visible or initialMemberId changes
+  const initialMemberIdRef = useRef(initialMemberId);
+  useEffect(() => {
+    if (initialMemberId) {
+      initialMemberIdRef.current = initialMemberId;
+    }
+  }, [initialMemberId]);
+
+  // Sync member selection on period or periodDataMap changes
   useEffect(() => {
     if (!visible) return;
-    const list = periodDataMap[currentPeriodId] || dbMembers || [];
-    if (list.length > 0) {
-      const searchTarget = (initialMemberId || '').toString().trim().toLowerCase();
-      if (!searchTarget) return;
-      const found = list.find((m: SafeAny) => {
-        const mId = String(m.id || '')
-          .trim()
-          .toLowerCase();
-        const mInitials = String(m.initials || '')
-          .trim()
-          .toLowerCase();
-        const mName = String(m.name || '')
-          .trim()
-          .toLowerCase();
-        return mId === searchTarget || mInitials === searchTarget || mName === searchTarget;
-      });
-      // Select found member, or default to top #1 member if not found in list
-      setCurrentMemberId(found ? found.id : list[0].id);
-    }
-  }, [visible, initialMemberId]);
-
-  // Sync member selection on period changes
-  useEffect(() => {
     const list = periodDataMap[currentPeriodId] || [];
     setDbMembers(list);
     if (list.length > 0) {
-      const searchTarget = (currentMemberId || initialMemberId || '').toString().trim().toLowerCase();
+      const target = initialMemberIdRef.current || currentMemberId;
+      const searchTarget = String(target || '')
+        .trim()
+        .toLowerCase();
       const found = list.find((m: SafeAny) => {
         const mId = String(m.id || '')
           .trim()
@@ -496,7 +483,7 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
       });
       setCurrentMemberId(found ? found.id : list[0].id);
     }
-  }, [currentPeriodId, periodDataMap]);
+  }, [visible, initialMemberId, currentPeriodId, periodDataMap]);
 
   const toggleStaffSelection = (id: number) => {
     setSelectedStaffIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));

@@ -10,11 +10,11 @@ interface TelesalesAvatarProps {
 }
 
 export function formatAvatarUrl(url?: string | null): string | undefined {
-  if (!url || !url.trim()) return undefined;
+  if (!url || typeof url !== 'string' || !url.trim()) return undefined;
   let clean = url.trim();
-  clean = clean.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com');
+  clean = clean.replace(/^(https?:\/\/)?(s|api|cdn)\.wingslashes\.com\/?/, '');
   if (!clean.startsWith('http://') && !clean.startsWith('https://') && !clean.startsWith('data:')) {
-    clean = `https://cdn.wingslashes.com${clean.startsWith('/') ? '' : '/'}${clean}`;
+    clean = `https://cdn.wingslashes.com/${clean.replace(/^\/+/, '')}`;
   }
   return clean;
 }
