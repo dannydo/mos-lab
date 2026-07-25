@@ -164,7 +164,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const sortParam = (sortField || sort || 'id_desc') as string;
 
       // Determine what joins and select fields we need in the inner query to optimize performance
-      const needContact = search && search.trim() !== '';
+      const _needContact = search && search.trim() !== '';
       const needServiceBalance = bucket && bucket !== 'ALL';
 
       const needSpent =
@@ -946,7 +946,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       });
 
-      const newComboMap = new Map<number, any>();
+      const newComboMap = new Map<number, SafeAny>();
       if (customerIds.length > 0 && bucket === 'NEW_LOCA') {
         const dFromStr = dateFrom
           ? dateFrom.slice(0, 19).replace('T', ' ')
@@ -2098,7 +2098,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const limitNum = parseInt(limit, 10) || 20;
 
     try {
-      const needContact = search && search.trim() !== '';
+      const _needContact = search && search.trim() !== '';
       const needServiceBalance = bucket && bucket !== 'ALL';
       const needSpent =
         (totalSpentMin !== undefined && totalSpentMin !== '') || (totalSpentMax !== undefined && totalSpentMax !== '');
@@ -3116,17 +3116,25 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'ID lịch hẹn không hợp lệ' });
     }
 
-    const { storeId, storeName, technicianId, technicianName, bookingDate, bookingTime, bookingNote, serviceId } =
-      request.body as {
-        storeId: number;
-        storeName: string;
-        technicianId: number | null;
-        technicianName?: string;
-        bookingDate: string; // YYYY-MM-DD
-        bookingTime: string; // HH:mm
-        bookingNote?: string | null;
-        serviceId?: number | null;
-      };
+    const {
+      storeId,
+      storeName: _storeName,
+      technicianId,
+      technicianName: _technicianName,
+      bookingDate,
+      bookingTime,
+      bookingNote,
+      serviceId,
+    } = request.body as {
+      storeId: number;
+      storeName: string;
+      technicianId: number | null;
+      technicianName?: string;
+      bookingDate: string; // YYYY-MM-DD
+      bookingTime: string; // HH:mm
+      bookingNote?: string | null;
+      serviceId?: number | null;
+    };
 
     if (!storeId || !bookingDate || !bookingTime) {
       return reply.status(400).send({
