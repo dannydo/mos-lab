@@ -102,11 +102,25 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
           : [];
 
       const staffNameToLegacyIdMap = new Map<string, number>();
+      staffList.forEach((s) => {
+        if (s.legacyStaffId) {
+          staffNameToLegacyIdMap.set(s.displayName.toLowerCase().trim(), Number(s.legacyStaffId));
+        }
+      });
       profiles.forEach((p: SafeAny) => {
-        staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
+        const key = p.fullName.toLowerCase().trim();
+        if (!staffNameToLegacyIdMap.has(key)) {
+          staffNameToLegacyIdMap.set(key, Number(p.userId));
+        }
       });
 
-      const legacyUserIds = Array.from(staffNameToLegacyIdMap.values());
+      const legacyUserIds = Array.from(
+        new Set(
+          staffList
+            .map((s) => (s.legacyStaffId ? Number(s.legacyStaffId) : staffNameToLegacyIdMap.get(s.displayName.toLowerCase().trim())))
+            .filter((id): id is number => typeof id === 'number' && !isNaN(id))
+        )
+      );
 
       const staffIds = staffList.map((s) => s.id);
       let totalCalled = 0;
