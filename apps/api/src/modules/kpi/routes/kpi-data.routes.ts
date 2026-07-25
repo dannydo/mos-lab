@@ -337,7 +337,9 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
           GROUP BY o.created_staff_id
         `;
 
+        console.log('LEADERBOARD QUERY RANGE:', { startStr, endStr, legacyUserIds });
         const bookedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sqlBooked);
+        console.log('LEADERBOARD BOOKED ROWS:', bookedRows);
         bookedRows.forEach((r: SafeAny) => {
           bookedCountMap.set(Number(r.staffId), Number(r.totalBooked || 0));
         });
