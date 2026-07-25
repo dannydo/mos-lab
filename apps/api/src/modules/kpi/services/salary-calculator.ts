@@ -168,15 +168,15 @@ export async function calculateBookerSalaryStats(
           AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr}'
       `);
 
-      // Fetch missed orders by date_created in period (Rule #10)
-      const missedOrders = await fastify.prisma.legacy.order.findMany({
-        where: {
-          created_staff_id: { in: activeLegacyUserIds },
-          date_created: { gte: start, lte: end },
-          order_state: { notIn: ['Completed', 'Cancelled'] },
-        },
-        select: { created_staff_id: true },
-      });
+      // Fetch missed orders by date_created in period using raw string format to prevent timezone offset (Rule #10)
+      const missedOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT o.created_staff_id as created_staff_id
+        FROM \`order\` o
+        WHERE o.created_staff_id IN (${activeLegacyUserIds.join(',')})
+          AND o.date_created >= '${startStr} 00:00:00'
+          AND o.date_created <= '${endStr} 23:59:59'
+          AND o.order_state NOT IN ('Completed', 'Cancelled')
+      `);
 
       missedOrders.forEach((o) => {
         const staff = legacyIdToStaffMap.get(Number(o.created_staff_id));
