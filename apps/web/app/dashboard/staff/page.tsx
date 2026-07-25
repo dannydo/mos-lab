@@ -869,7 +869,14 @@ export default function StaffPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px' }}>
               <Avatar
                 size={80}
-                src={selectedStaff.avatarUrl || undefined}
+                src={
+                  selectedStaff.avatarUrl
+                    ? selectedStaff.avatarUrl.replace(
+                        /^https?:\/\/(s|api)\.wingslashes\.com/,
+                        'https://cdn.wingslashes.com'
+                      )
+                    : undefined
+                }
                 icon={!selectedStaff.avatarUrl ? <UserOutlined /> : undefined}
                 style={{
                   backgroundColor: token.colorPrimary,

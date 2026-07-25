@@ -1,5 +1,22 @@
 import { FastifyInstance } from 'fastify';
 
+const formatDateStr = (d: Date) => {
+  const pad = (n: number) => (n < 10 ? '0' + n : n);
+  return (
+    d.getFullYear() +
+    '-' +
+    pad(d.getMonth() + 1) +
+    '-' +
+    pad(d.getDate()) +
+    ' ' +
+    pad(d.getHours()) +
+    ':' +
+    pad(d.getMinutes()) +
+    ':' +
+    pad(d.getSeconds())
+  );
+};
+
 // Default configuration parameters for Booker Salary
 export const DEFAULT_SALARY_CONFIG = {
   baseSalary: 5500000,
@@ -135,27 +152,41 @@ export async function calculateBookerSalaryStats(
     const activeLegacyUserIds = Array.from(staffNameToLegacyIdMap.values());
 
     if (activeLegacyUserIds.length > 0) {
-      // Query all orders where created_staff_id is in activeLegacyUserIds and date_created is in the range (Rule #10: Booker productivity by creation date)
-      const allOrders = await fastify.prisma.legacy.order.findMany({
+      const startStr = formatDateStr(start);
+      const endStr = formatDateStr(end);
+
+      // Fetch completed orders by actual check-in date (Rule #15 & User Directive: COALESCE(ro.actual_booking_date_start, o.booking_date_start))
+      const completedOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT o.id, o.created_staff_id, o.order_state, o.total_price, o.user_id,
+               o.booking_date_start, o.date_created,
+               COALESCE(ro.actual_booking_date_start, o.booking_date_start) as actual_checkin_date
+        FROM \`order\` o
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+        WHERE o.created_staff_id IN (${activeLegacyUserIds.join(',')})
+          AND o.order_state = 'Completed'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr}'
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr}'
+      `);
+
+      // Fetch missed orders by date_created / booking_date_start in period
+      const missedOrders = await fastify.prisma.legacy.order.findMany({
         where: {
           created_staff_id: { in: activeLegacyUserIds },
-          date_created: { gte: start, lte: end },
-          order_state: { not: 'Cancelled' },
+          OR: [{ date_created: { gte: start, lte: end } }, { booking_date_start: { gte: start, lte: end } }],
+          order_state: { notIn: ['Completed', 'Cancelled'] },
         },
-        select: {
-          id: true,
-          created_staff_id: true,
-          order_state: true,
-          total_price: true,
-          user_id: true,
-          booking_date_start: true,
-          date_created: true,
-        },
+        select: { created_staff_id: true },
       });
 
-      if (allOrders.length > 0) {
-        const completedOrders = allOrders.filter((o) => o.order_state === 'Completed');
-        const completedOrderIds = completedOrders.map((o) => o.id);
+      missedOrders.forEach((o) => {
+        const staff = legacyIdToStaffMap.get(Number(o.created_staff_id));
+        if (staff) {
+          staffStats[staff.id].missedCount++;
+        }
+      });
+
+      if (completedOrders.length > 0) {
+        const completedOrderIds = completedOrders.map((o) => Number(o.id));
 
         // Fetch tips
         const orderTipsMap = new Map<number, number>();
@@ -196,7 +227,9 @@ export async function calculateBookerSalaryStats(
         }
 
         // Fetch user balances and transactions for checkHasLiveCombo
-        const userIds = Array.from(new Set(allOrders.map((o) => o.user_id).filter((id) => id !== null))) as number[];
+        const userIds = Array.from(
+          new Set(completedOrders.map((o) => Number(o.user_id)).filter((id) => !isNaN(id) && id > 0))
+        ) as number[];
 
         const userBalances =
           userIds.length > 0
@@ -286,55 +319,56 @@ export async function calculateBookerSalaryStats(
           return false;
         };
 
-        // Process orders
-        allOrders.forEach((o) => {
+        // Process completed orders
+        completedOrders.forEach((o) => {
           const staff = legacyIdToStaffMap.get(Number(o.created_staff_id));
           if (!staff) return;
 
-          if (o.order_state === 'Completed') {
-            staffStats[staff.id].doneCount++;
-            staffStats[staff.id].totalNetRev += o.total_price;
-            staffStats[staff.id].totalTips += orderTipsMap.get(o.id) || 0;
+          const orderId = Number(o.id);
+          const totalPrice = Number(o.total_price || 0);
 
-            const list = orderServicesMap.get(o.id) || [];
-            if (list.length > 0) {
-              // Find primary service (highest price)
-              let primaryService = list[0];
-              for (const os of list) {
-                if (os.service_price > (primaryService?.service_price || 0)) {
-                  primaryService = os;
-                }
+          staffStats[staff.id].doneCount++;
+          staffStats[staff.id].totalNetRev += totalPrice;
+          staffStats[staff.id].totalTips += orderTipsMap.get(orderId) || 0;
+
+          const list = orderServicesMap.get(orderId) || [];
+          if (list.length > 0) {
+            let primaryService = list[0];
+            for (const os of list) {
+              if (os.service_price > (primaryService?.service_price || 0)) {
+                primaryService = os;
               }
-
-              const serviceName = serviceNameMap.get(primaryService.service_id) || 'Unknown';
-              let discountPercent = 0;
-              if (primaryService.service_price > 0) {
-                discountPercent = Math.round((primaryService.discount_amount / primaryService.service_price) * 100);
-              }
-
-              const isRefill = serviceName.toLowerCase().includes('refill');
-              const isCombo = checkHasLiveCombo(o.user_id, o.booking_date_start, o.date_created);
-
-              let bonus = 0;
-              if (isCombo) {
-                bonus = 0;
-              } else if (isRefill) {
-                if (discountPercent === 0) bonus = config.clientBonusRefill.discount30;
-                else if (discountPercent <= 30) bonus = config.clientBonusRefill.discount30;
-                else if (discountPercent <= 50) bonus = config.clientBonusRefill.discount50;
-                else bonus = config.clientBonusRefill.discountMore;
-              } else {
-                if (discountPercent === 0) bonus = config.clientBonusFullSet.discount0;
-                else if (discountPercent <= 30) bonus = config.clientBonusFullSet.discount30;
-                else if (discountPercent <= 50) bonus = config.clientBonusFullSet.discount50;
-                else bonus = config.clientBonusFullSet.discountMore;
-              }
-
-              staffStats[staff.id].clientBonus += bonus;
             }
-          } else {
-            // Missed
-            staffStats[staff.id].missedCount++;
+
+            const serviceName = serviceNameMap.get(primaryService.service_id) || 'Unknown';
+            let discountPercent = 0;
+            if (primaryService.service_price > 0) {
+              discountPercent = Math.round((primaryService.discount_amount / primaryService.service_price) * 100);
+            }
+
+            const isRefill = serviceName.toLowerCase().includes('refill');
+            const isCombo = checkHasLiveCombo(
+              Number(o.user_id),
+              o.actual_checkin_date || o.booking_date_start,
+              o.date_created
+            );
+
+            let bonus = 0;
+            if (isCombo) {
+              bonus = 0;
+            } else if (isRefill) {
+              if (discountPercent === 0) bonus = config.clientBonusRefill.discount30;
+              else if (discountPercent <= 30) bonus = config.clientBonusRefill.discount30;
+              else if (discountPercent <= 50) bonus = config.clientBonusRefill.discount50;
+              else bonus = config.clientBonusRefill.discountMore;
+            } else {
+              if (discountPercent === 0) bonus = config.clientBonusFullSet.discount0;
+              else if (discountPercent <= 30) bonus = config.clientBonusFullSet.discount30;
+              else if (discountPercent <= 50) bonus = config.clientBonusFullSet.discount50;
+              else bonus = config.clientBonusFullSet.discountMore;
+            }
+
+            staffStats[staff.id].clientBonus += bonus;
           }
         });
       }

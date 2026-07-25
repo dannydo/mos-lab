@@ -58,7 +58,11 @@ export const getStaffColumns = ({
           <Space>
             <Badge dot={isOnline} status="success" offset={[-2, 28]}>
               <Avatar
-                src={record.avatarUrl || undefined}
+                src={
+                  record.avatarUrl
+                    ? record.avatarUrl.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com')
+                    : undefined
+                }
                 icon={!record.avatarUrl ? <UserOutlined /> : undefined}
                 style={{
                   backgroundColor: token.colorPrimary,
