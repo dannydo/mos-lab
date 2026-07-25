@@ -205,94 +205,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const needOrderCounts = needSpent || needVisits;
 
-      let innerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
-      if (needServiceBalance) {
-        innerJoins += ` LEFT JOIN (
-          SELECT 
-            user_id,
-            SUM(
-              CASE 
-                WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
-                ELSE 0 
-              END
-            ) as live_count,
-            SUM(normal_count) as normalCount,
-            SUM(retain_count) as retainCount,
-            MAX(date_expired) as expiryDate,
-            MAX(date_created) as max_date_created
-          FROM user_service_balance
-          GROUP BY user_id
-        ) as usb_agg ON u.id = usb_agg.user_id`;
-      }
-      if (needOrderCounts) {
-        innerJoins += ` LEFT JOIN (
-          SELECT 
-            user_id, 
-            COALESCE(SUM(total_price), 0) as totalSpent, 
-            COUNT(*) as totalVisits
-          FROM \`order\`
-          WHERE order_state = 'Completed'
-          GROUP BY user_id
-        ) as order_counts ON u.id = order_counts.user_id`;
-      }
-      if (needPromo) {
-        innerJoins += ` LEFT JOIN (
-          SELECT user_id, COUNT(*) as totalPromotionsUsed
-          FROM \`order\`
-          WHERE order_state = 'Completed' AND (promotion_id IS NOT NULL OR selected_promotion_id IS NOT NULL)
-          GROUP BY user_id
-        ) as promo_counts ON u.id = promo_counts.user_id`;
-      }
-      if (needReferrals) {
-        innerJoins += ` LEFT JOIN (
-          SELECT referrer_user_id, COUNT(*) as totalReferrals
-          FROM user_profile
-          WHERE referrer_user_id IS NOT NULL
-          GROUP BY referrer_user_id
-        ) as ref_counts ON u.id = ref_counts.referrer_user_id`;
-      }
-      if (hasFutureBooking === 'true') {
-        innerJoins += ` LEFT JOIN (
-          SELECT user_id, MIN(booking_date_start) as nextBookingDate
-          FROM \`order\`
-          WHERE booking_date_start > NOW() AND order_state IN ('New', 'Confirmed')
-          GROUP BY user_id
-        ) as fb_agg ON u.id = fb_agg.user_id`;
-      }
-
-      const needComboPurchaseDate =
-        sortParam === 'purchaseDate_desc' ||
-        sortParam === 'purchaseDate_asc' ||
-        sortParam === 'comboPurchaseDate_desc' ||
-        sortParam === 'comboPurchaseDate_asc' ||
-        (bucket === 'NEW_LOCA' &&
-          (sortParam === 'daysSinceLastVisit_desc' || sortParam === 'daysSinceLastVisit' || !sortParam));
-
-      if (needComboPurchaseDate) {
-        innerJoins += ` LEFT JOIN (
-          SELECT user_id, MAX(max_created) as latest_combo_date
-          FROM (
-            SELECT o.user_id, MAX(o.date_created) as max_created
-            FROM \`order\` o
-            JOIN order_service_combo osc ON osc.order_id = o.id
-            WHERE osc.total_price > 0
-            GROUP BY o.user_id
-            UNION ALL
-            SELECT user_id, MAX(date_created) as max_created
-            FROM user_service_balance
-            WHERE (total_normal_balance_amount + total_retain_balance_amount) > 0
-            GROUP BY user_id
-            UNION ALL
-            SELECT o.user_id, MAX(o.date_created) as max_created
-            FROM \`order\` o
-            JOIN order_service os ON os.order_id = o.id
-            WHERE (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0
-            GROUP BY o.user_id
-          ) t
-          GROUP BY user_id
-        ) as combo_dates ON u.id = combo_dates.user_id`;
-      }
-
+      // Pre-compute allowedUserIds before constructing innerJoins to push down predicates
       let allowedUserIds: number[] | null = null;
       let excludedUserIds: number[] | null = null;
 
@@ -355,6 +268,131 @@ export async function customerRoutes(fastify: FastifyInstance) {
             },
           };
         }
+      }
+
+      if (bucket === 'NEW_LOCA') {
+        const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
+        if (newLocaUserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
+        if (allowedUserIds !== null) {
+          allowedUserIds = allowedUserIds.filter((id) => newLocaUserIds.includes(id));
+          if (allowedUserIds.length === 0) {
+            return {
+              data: [],
+              pagination: {
+                total: 0,
+                page: pageNum,
+                limit: limitNum,
+                pages: 0,
+              },
+            };
+          }
+        } else {
+          allowedUserIds = newLocaUserIds;
+        }
+      }
+
+      const usbUserFilter =
+        allowedUserIds !== null && allowedUserIds.length > 0 ? `WHERE user_id IN (${allowedUserIds.join(',')})` : '';
+      const comboUserFilter =
+        allowedUserIds !== null && allowedUserIds.length > 0 ? `WHERE o.user_id IN (${allowedUserIds.join(',')})` : '';
+
+      let innerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
+      if (needServiceBalance) {
+        innerJoins += ` LEFT JOIN (
+          SELECT 
+            user_id,
+            SUM(
+              CASE 
+                WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
+                ELSE 0 
+              END
+            ) as live_count,
+            SUM(normal_count) as normalCount,
+            SUM(retain_count) as retainCount,
+            MAX(date_expired) as expiryDate,
+            MAX(date_created) as max_date_created
+          FROM user_service_balance
+          ${usbUserFilter}
+          GROUP BY user_id
+        ) as usb_agg ON u.id = usb_agg.user_id`;
+      }
+      if (needOrderCounts) {
+        innerJoins += ` LEFT JOIN (
+          SELECT 
+            user_id, 
+            COALESCE(SUM(total_price), 0) as totalSpent, 
+            COUNT(*) as totalVisits
+          FROM \`order\`
+          WHERE order_state = 'Completed' ${allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : ''}
+          GROUP BY user_id
+        ) as order_counts ON u.id = order_counts.user_id`;
+      }
+      if (needPromo) {
+        innerJoins += ` LEFT JOIN (
+          SELECT user_id, COUNT(*) as totalPromotionsUsed
+          FROM \`order\`
+          WHERE order_state = 'Completed' AND (promotion_id IS NOT NULL OR selected_promotion_id IS NOT NULL) ${allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : ''}
+          GROUP BY user_id
+        ) as promo_counts ON u.id = promo_counts.user_id`;
+      }
+      if (needReferrals) {
+        innerJoins += ` LEFT JOIN (
+          SELECT referrer_user_id, COUNT(*) as totalReferrals
+          FROM user_profile
+          WHERE referrer_user_id IS NOT NULL ${allowedUserIds !== null && allowedUserIds.length > 0 ? `AND referrer_user_id IN (${allowedUserIds.join(',')})` : ''}
+          GROUP BY referrer_user_id
+        ) as ref_counts ON u.id = ref_counts.referrer_user_id`;
+      }
+      if (hasFutureBooking === 'true') {
+        innerJoins += ` LEFT JOIN (
+          SELECT user_id, MIN(booking_date_start) as nextBookingDate
+          FROM \`order\`
+          WHERE booking_date_start > NOW() AND order_state IN ('New', 'Confirmed') ${allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : ''}
+          GROUP BY user_id
+        ) as fb_agg ON u.id = fb_agg.user_id`;
+      }
+
+      const needComboPurchaseDate =
+        sortParam === 'purchaseDate_desc' ||
+        sortParam === 'purchaseDate_asc' ||
+        sortParam === 'comboPurchaseDate_desc' ||
+        sortParam === 'comboPurchaseDate_asc' ||
+        (bucket === 'NEW_LOCA' &&
+          (sortParam === 'daysSinceLastVisit_desc' || sortParam === 'daysSinceLastVisit' || !sortParam));
+
+      if (needComboPurchaseDate) {
+        innerJoins += ` LEFT JOIN (
+          SELECT user_id, MAX(max_created) as latest_combo_date
+          FROM (
+            SELECT o.user_id, MAX(o.date_created) as max_created
+            FROM \`order\` o
+            JOIN order_service_combo osc ON osc.order_id = o.id
+            ${comboUserFilter ? `${comboUserFilter} AND osc.total_price > 0` : 'WHERE osc.total_price > 0'}
+            GROUP BY o.user_id
+            UNION ALL
+            SELECT user_id, MAX(date_created) as max_created
+            FROM user_service_balance
+            ${usbUserFilter ? `${usbUserFilter} AND (total_normal_balance_amount + total_retain_balance_amount) > 0` : 'WHERE (total_normal_balance_amount + total_retain_balance_amount) > 0'}
+            GROUP BY user_id
+            UNION ALL
+            SELECT o.user_id, MAX(o.date_created) as max_created
+            FROM \`order\` o
+            JOIN order_service os ON os.order_id = o.id
+            ${comboUserFilter ? `${comboUserFilter} AND (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0` : `WHERE (os.user_service_type = 'combo' OR os.service_group = 'combo') AND os.total_price > 0`}
+            GROUP BY o.user_id
+          ) t
+          GROUP BY user_id
+        ) as combo_dates ON u.id = combo_dates.user_id`;
       }
 
       const innerWhereClauses: string[] = [];
