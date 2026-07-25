@@ -302,9 +302,13 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
         staffNameToProfileMap.set(p.fullName.toLowerCase().trim(), p);
       });
 
-      const legacyUserIds = staffList
-        .map((s) => s.legacyStaffId || staffNameToProfileMap.get(s.displayName.toLowerCase().trim())?.userId)
-        .filter((id): id is number => typeof id === 'number' && !isNaN(id));
+      const legacyUserIds = Array.from(
+        new Set(
+          staffList
+            .map((s) => (s.legacyStaffId ? Number(s.legacyStaffId) : Number(staffNameToProfileMap.get(s.displayName.toLowerCase().trim())?.userId)))
+            .filter((id): id is number => typeof id === 'number' && !isNaN(id))
+        )
+      );
 
       const crmStaffIds = staffList.map((s) => s.id);
       const callStatsMap = new Map<number, { totalCalled: number; totalAnswered: number; totalHappy: number }>();
