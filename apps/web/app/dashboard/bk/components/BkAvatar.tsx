@@ -27,13 +27,13 @@ export default function BkAvatar({ name, src, size = 36, isSelected = false }: B
     : 'ring-1 ring-slate-200 dark:ring-slate-700';
 
   let formattedSrc: string | undefined = undefined;
-  if (src && src.trim()) {
+  if (src && typeof src === 'string' && src.trim()) {
     let s = src.trim();
-    s = s.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com');
-    if (s.startsWith('http://') || s.startsWith('https://') || s.startsWith('data:')) {
-      formattedSrc = s;
+    s = s.replace(/^(https?:\/\/)?(s|api|cdn)\.wingslashes\.com\/?/, '');
+    if (!s.startsWith('http://') && !s.startsWith('https://') && !s.startsWith('data:')) {
+      formattedSrc = `https://cdn.wingslashes.com/${s.replace(/^\/+/, '')}`;
     } else {
-      formattedSrc = s.startsWith('/') ? `https://cdn.wingslashes.com${s}` : `https://cdn.wingslashes.com/${s}`;
+      formattedSrc = s;
     }
   }
 
