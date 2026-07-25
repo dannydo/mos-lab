@@ -257,7 +257,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
     if (Object.keys(configs).length > 0) {
       fetchTouchpointCounts();
     }
-  }, [configs, activeTab, searchQuery, assignedStaffId, fetchTouchpointCounts]);
+  }, [configs, searchQuery, assignedStaffId, fetchTouchpointCounts]);
 
   const fetchCustomerList = useCallback(async () => {
     setLoading(true);

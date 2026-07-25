@@ -283,6 +283,148 @@ export async function customerRoutes(fastify: FastifyInstance) {
         } else {
           allowedUserIds = newLocaUserIds;
         }
+      } else if (bucket === 'COMBO_LIVE' && allowedUserIds === null) {
+        const comboLiveUserIds = (
+          await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
+            `SELECT DISTINCT user_id
+             FROM user_service_balance
+             WHERE (normal_count + retain_count) > 0
+               AND (date_expired IS NULL OR date_expired > NOW())`
+          )
+        ).map((r) => Number(r.user_id));
+
+        if (comboLiveUserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
+        allowedUserIds = comboLiveUserIds;
+      }
+
+      if (hsd30 === 'true') {
+        const hsd30UserIds = (
+          await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
+            `SELECT DISTINCT user_id
+             FROM user_service_balance
+             WHERE (normal_count + retain_count) > 0
+               AND date_expired IS NOT NULL
+               AND date_expired > NOW()
+               AND date_expired <= DATE_ADD(NOW(), INTERVAL 30 DAY)`
+          )
+        ).map((r) => Number(r.user_id));
+
+        if (hsd30UserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
+        if (allowedUserIds !== null) {
+          allowedUserIds = allowedUserIds.filter((id) => hsd30UserIds.includes(id));
+        } else {
+          allowedUserIds = hsd30UserIds;
+        }
+        if (allowedUserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
+      }
+
+      if (lsd1 === 'true') {
+        const lsd1UserIds = (
+          await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
+            `SELECT user_id
+             FROM user_service_balance
+             WHERE (normal_count + retain_count) > 0
+               AND (date_expired IS NULL OR date_expired > NOW())
+             GROUP BY user_id
+             HAVING SUM(normal_count + retain_count) = 1`
+          )
+        ).map((r) => Number(r.user_id));
+
+        if (lsd1UserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
+        if (allowedUserIds !== null) {
+          allowedUserIds = allowedUserIds.filter((id) => lsd1UserIds.includes(id));
+        } else {
+          allowedUserIds = lsd1UserIds;
+        }
+        if (allowedUserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
+      }
+
+      if (hasFutureBooking === 'true') {
+        const bookedUserIds = (
+          await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
+            `SELECT DISTINCT user_id
+             FROM \`order\`
+             WHERE booking_date_start > NOW() AND order_state IN ('New', 'Confirmed')`
+          )
+        ).map((r) => Number(r.user_id));
+
+        if (bookedUserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
+        if (allowedUserIds !== null) {
+          allowedUserIds = allowedUserIds.filter((id) => bookedUserIds.includes(id));
+        } else {
+          allowedUserIds = bookedUserIds;
+        }
+        if (allowedUserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
       }
 
       const usbUserFilter =
