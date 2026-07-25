@@ -1,10 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 
+type SafeAny = any;
+
 export async function registerFilterRoutes(fastify: FastifyInstance) {
   // GET /api/saved-filters
   // Retrieve saved customer filters
-  fastify.get('/saved-filters', { preHandler: [requireAuth] }, async (request, reply) => {
+  fastify.get('/saved-filters', { preHandler: [requireAuth] }, async () => {
     try {
       const config = await fastify.prisma.crm.crmConfig.findUnique({
         where: { key: 'CUSTOMER_SAVED_FILTERS' },
