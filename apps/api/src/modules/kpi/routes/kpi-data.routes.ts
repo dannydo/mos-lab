@@ -203,7 +203,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
     const role = queryParams.role;
     const staffIds = queryParams.staffIds;
     const { startStr, endStr, start, end } = parseDateRange(startDateParam, endDateParam, 30);
-    fastify.log.error({ startStr, endStr, startDateParam, endDateParam, query: request.query }, 'LEADERBOARD DATE RANGE DEBUG');
+    console.log('LEADERBOARD START/END:', { startDateParam, endDateParam, startStr, endStr });
 
     try {
       if (role === 'oc' || role === 'consultant') {
