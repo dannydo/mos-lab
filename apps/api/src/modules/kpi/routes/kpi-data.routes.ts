@@ -331,7 +331,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
         const bookedOrders = await fastify.prisma.legacy.order.findMany({
           where: {
             created_staff_id: { in: legacyUserIds },
-            OR: [{ date_created: { gte: start, lte: end } }, { booking_date_start: { gte: start, lte: end } }],
+            date_created: { gte: start, lte: end },
             order_state: { not: 'Cancelled' },
           },
           select: {
