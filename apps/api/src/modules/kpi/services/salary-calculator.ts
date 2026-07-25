@@ -168,11 +168,11 @@ export async function calculateBookerSalaryStats(
           AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr}'
       `);
 
-      // Fetch missed orders by date_created / booking_date_start in period
+      // Fetch missed orders by date_created in period (Rule #10)
       const missedOrders = await fastify.prisma.legacy.order.findMany({
         where: {
           created_staff_id: { in: activeLegacyUserIds },
-          OR: [{ date_created: { gte: start, lte: end } }, { booking_date_start: { gte: start, lte: end } }],
+          date_created: { gte: start, lte: end },
           order_state: { notIn: ['Completed', 'Cancelled'] },
         },
         select: { created_staff_id: true },
