@@ -962,15 +962,13 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         staffNameToProfileMap.set(p.fullName.toLowerCase().trim(), p);
       });
 
-      const legacyUserIds = staffList
-        .map(
-          (s) =>
-            s.legacyStaffId ||
-            (staffNameToProfileMap.get(s.displayName.toLowerCase().trim())?.userId
-              ? Number(staffNameToProfileMap.get(s.displayName.toLowerCase().trim()).userId)
-              : undefined)
+      const legacyUserIds = Array.from(
+        new Set(
+          staffList
+            .map((s) => (s.legacyStaffId ? Number(s.legacyStaffId) : Number(staffNameToProfileMap.get(s.displayName.toLowerCase().trim())?.userId)))
+            .filter((id): id is number => typeof id === 'number' && !isNaN(id))
         )
-        .filter((id): id is number => typeof id === 'number' && !isNaN(id));
+      );
 
       const crmStaffIds = staffList.map((s) => s.id);
       const callStatsMap = new Map<number, { totalCalled: number; totalAnswered: number; totalHappy: number }>();
@@ -1005,20 +1003,22 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
       const bookedCountMap = new Map<number, number>();
       if (legacyUserIds.length > 0) {
-        const bookedOrders = await fastify.prisma.legacy.order.findMany({
-          where: {
-            created_staff_id: { in: legacyUserIds },
-            OR: [{ date_created: { gte: start, lte: end } }, { booking_date_start: { gte: start, lte: end } }],
-            order_state: { not: 'Cancelled' },
-          },
-          select: {
-            created_staff_id: true,
-          },
-        });
+        // Strict Rule #10: Booked count MUST be calculated strictly by date_created string range without OR booking_date_start
+        const sqlBooked = `
+          SELECT 
+            o.created_staff_id as staffId,
+            COUNT(DISTINCT o.id) as totalBooked
+          FROM \`order\` o
+          WHERE o.created_staff_id IN (${legacyUserIds.join(',')})
+            AND o.date_created >= '${startStr} 00:00:00'
+            AND o.date_created <= '${endStr} 23:59:59'
+            AND o.order_state != 'Cancelled'
+          GROUP BY o.created_staff_id
+        `;
 
-        bookedOrders.forEach((o: SafeAny) => {
-          const uid = Number(o.created_staff_id);
-          bookedCountMap.set(uid, (bookedCountMap.get(uid) || 0) + 1);
+        const bookedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sqlBooked);
+        bookedRows.forEach((r: SafeAny) => {
+          bookedCountMap.set(Number(r.staffId), Number(r.totalBooked || 0));
         });
       }
 
@@ -1026,7 +1026,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
       for (const staff of staffList) {
         const profile = staffNameToProfileMap.get(staff.displayName.toLowerCase().trim());
-        const legacyUserId = staff.legacyStaffId || (profile?.userId ? Number(profile.userId) : undefined);
+        const legacyUserId = staff.legacyStaffId ? Number(staff.legacyStaffId) : (profile?.userId ? Number(profile.userId) : undefined);
         const callStats = callStatsMap.get(staff.id) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
 
         const rawAvatar = staff.avatarUrl || profile?.avatar || null;
