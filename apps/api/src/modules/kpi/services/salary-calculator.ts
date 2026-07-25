@@ -141,21 +141,20 @@ export async function calculateBookerSalaryStats(
     const staffNameToLegacyIdMap = new Map<string, number>();
     const legacyIdToStaffMap = new Map<number, any>();
 
-    profiles.forEach((p: SafeAny) => {
-      const staff = staffList.find((s) => s.displayName.toLowerCase().trim() === p.fullName.toLowerCase().trim());
-      if (staff) {
-        if (!staffNameToLegacyIdMap.has(p.fullName.toLowerCase().trim())) {
-          staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
-        }
-        legacyIdToStaffMap.set(Number(p.userId), staff);
-      }
-    });
-
-    // Override with explicit legacyStaffId from crmStaff if specified (Rule #11 Single Source of Truth)
+    // Prioritize explicit legacyStaffId from crmStaff (Rule #11 Single Source of Truth)
     staffList.forEach((s) => {
       if (s.legacyStaffId) {
         staffNameToLegacyIdMap.set(s.displayName.toLowerCase().trim(), Number(s.legacyStaffId));
         legacyIdToStaffMap.set(Number(s.legacyStaffId), s);
+      }
+    });
+
+    profiles.forEach((p: SafeAny) => {
+      const key = p.fullName.toLowerCase().trim();
+      const staff = staffList.find((s) => s.displayName.toLowerCase().trim() === key);
+      if (staff && !staff.legacyStaffId && !staffNameToLegacyIdMap.has(key)) {
+        staffNameToLegacyIdMap.set(key, Number(p.userId));
+        legacyIdToStaffMap.set(Number(p.userId), staff);
       }
     });
 
