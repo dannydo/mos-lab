@@ -369,6 +369,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
         bookedRows.forEach((r: SafeAny) => {
           bookedCountMap.set(Number(r.staffId), Number(r.totalBooked || 0));
         });
+        console.log('DEBUG LEADERBOARD FINAL MAP:', { startStr, endStr, legacyUserIds, bookedMap: Array.from(bookedCountMap.entries()) });
       }
 
       const leaderboard = [];
