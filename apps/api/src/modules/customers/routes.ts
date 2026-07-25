@@ -6,6 +6,88 @@ import { registerAllocationCron } from './services/allocation-cron.service.js';
 export async function customerRoutes(fastify: FastifyInstance) {
   // Start automated allocation expiration cronjob
   registerAllocationCron(fastify);
+
+  const getNewLocaUserIds = async (dFrom?: string, dTo?: string): Promise<number[]> => {
+    const dFromStr = dFrom
+      ? dFrom.slice(0, 19).replace('T', ' ')
+      : new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
+    const dToStr = dTo
+      ? dTo.slice(0, 19).replace('T', ' ')
+      : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
+
+    try {
+      const rows = await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
+        `SELECT DISTINCT user_id FROM (
+          SELECT usb_nl.user_id FROM user_service_balance usb_nl
+          LEFT JOIN service_price sp_nl ON usb_nl.service_price_id = sp_nl.id
+          LEFT JOIN service_language sl_nl ON usb_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+          WHERE usb_nl.date_created >= ? AND usb_nl.date_created <= ?
+            AND (COALESCE(sp_nl.service_price, 0) > 0 OR (usb_nl.total_normal_balance_amount + usb_nl.total_retain_balance_amount) > 0)
+            AND (sp_nl.service_price_package_key IS NULL OR (
+              LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+            ))
+            AND (sl_nl.service_name IS NULL OR (
+              LOWER(sl_nl.service_name) NOT LIKE '%single%'
+              AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+              AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+            ))
+          UNION
+          SELECT o_nl.user_id FROM \`order\` o_nl
+          JOIN order_service os_nl ON os_nl.order_id = o_nl.id
+          LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
+          LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
+          LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
+          LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+          WHERE o_nl.order_state = 'Completed'
+            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ? 
+            AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
+            AND COALESCE(NULLIF(os_nl.total_price, 0), sp_nl.service_price, 0) > 0
+            AND (sp_nl.service_price_package_key IS NULL OR (
+              LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+            ))
+            AND (sl_nl.service_name IS NULL OR (
+              LOWER(sl_nl.service_name) NOT LIKE '%single%'
+              AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+              AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+            ))
+          UNION
+          SELECT o_nl.user_id FROM \`order\` o_nl
+          JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
+          LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
+          LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
+          LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
+          LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+          WHERE o_nl.order_state = 'Completed'
+            AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
+            AND osc_nl.total_price > 0
+            AND (sp_nl.service_price_package_key IS NULL OR (
+              LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
+              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
+              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
+            ))
+            AND (sl_nl.service_name IS NULL OR (
+              LOWER(sl_nl.service_name) NOT LIKE '%single%'
+              AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
+              AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
+            ))
+        } t`,
+        dFromStr,
+        dToStr,
+        dFromStr,
+        dToStr,
+        dFromStr,
+        dToStr
+      );
+      return (rows || []).map((r) => Number(r.user_id)).filter((id) => !isNaN(id) && id > 0);
+    } catch (err) {
+      fastify.log.error(err as Error, 'getNewLocaUserIds error');
+      return [];
+    }
+  };
   // GET /api/customers
   // Query legs DB, compute buckets, handle pagination, search, sorting
   fastify.get('/customers', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -317,76 +399,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         } else if (bStr === 'NOT_COMBO_LIVE') {
           innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
         } else if (bStr === 'NEW_LOCA') {
-          const dFromStr = dateFrom
-            ? dateFrom.slice(0, 19).replace('T', ' ')
-            : new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
-          const dToStr = dateTo
-            ? dateTo.slice(0, 19).replace('T', ' ')
-            : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
-          innerWhereClauses.push(`(
-            EXISTS (
-              SELECT 1 FROM user_service_balance usb_nl
-              LEFT JOIN service_price sp_nl ON usb_nl.service_price_id = sp_nl.id
-              LEFT JOIN service_language sl_nl ON usb_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-              WHERE usb_nl.user_id = u.id 
-                AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
-                AND (COALESCE(sp_nl.service_price, 0) > 0 OR (usb_nl.total_normal_balance_amount + usb_nl.total_retain_balance_amount) > 0)
-                AND (sp_nl.service_price_package_key IS NULL OR (
-                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-                ))
-                AND (sl_nl.service_name IS NULL OR (
-                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-                ))
-            ) OR EXISTS (
-              SELECT 1 FROM \`order\` o_nl
-              JOIN order_service os_nl ON os_nl.order_id = o_nl.id
-              LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
-              LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
-              LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
-              LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-              WHERE o_nl.user_id = u.id 
-                AND o_nl.order_state = 'Completed'
-                AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ? 
-                AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
-                AND COALESCE(NULLIF(os_nl.total_price, 0), sp_nl.service_price, 0) > 0
-                AND (sp_nl.service_price_package_key IS NULL OR (
-                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-                ))
-                AND (sl_nl.service_name IS NULL OR (
-                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-                ))
-            ) OR EXISTS (
-              SELECT 1 FROM \`order\` o_nl
-              JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
-              LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
-              LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
-              LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
-              LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-              WHERE o_nl.user_id = u.id 
-                AND o_nl.order_state = 'Completed'
-                AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
-                AND osc_nl.total_price > 0
-                AND (sp_nl.service_price_package_key IS NULL OR (
-                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-                ))
-                AND (sl_nl.service_name IS NULL OR (
-                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-                ))
-            )
-          )`);
-          innerParams.push(dFromStr, dToStr, dFromStr, dToStr, dFromStr, dToStr);
+          const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
+          if (newLocaUserIds.length === 0) {
+            innerWhereClauses.push('1 = 0');
+          } else {
+            innerWhereClauses.push(`u.id IN (${newLocaUserIds.join(',')})`);
+          }
         }
       }
 
@@ -1274,76 +1292,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         } else if (bStrStats === 'NOT_COMBO_LIVE') {
           innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
         } else if (bStrStats === 'NEW_LOCA') {
-          const dFromStr = dateFrom
-            ? dateFrom.slice(0, 19).replace('T', ' ')
-            : new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
-          const dToStr = dateTo
-            ? dateTo.slice(0, 19).replace('T', ' ')
-            : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
-          innerWhereClauses.push(`(
-            EXISTS (
-              SELECT 1 FROM user_service_balance usb_nl
-              LEFT JOIN service_price sp_nl ON usb_nl.service_price_id = sp_nl.id
-              LEFT JOIN service_language sl_nl ON usb_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-              WHERE usb_nl.user_id = u.id 
-                AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
-                AND (COALESCE(sp_nl.service_price, 0) > 0 OR (usb_nl.total_normal_balance_amount + usb_nl.total_retain_balance_amount) > 0)
-                AND (sp_nl.service_price_package_key IS NULL OR (
-                  LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-                ))
-                AND (sl_nl.service_name IS NULL OR (
-                  LOWER(sl_nl.service_name) NOT LIKE '%single%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-                  AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-                ))
-            ) OR EXISTS (
-               SELECT 1 FROM \`order\` o_nl
-               JOIN order_service os_nl ON os_nl.order_id = o_nl.id
-               LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
-               LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
-               LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
-               LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-               WHERE o_nl.user_id = u.id 
-                 AND o_nl.order_state = 'Completed'
-                 AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ? 
-                 AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
-                 AND COALESCE(NULLIF(os_nl.total_price, 0), sp_nl.service_price, 0) > 0
-                 AND (sp_nl.service_price_package_key IS NULL OR (
-                   LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-                   AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-                   AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-                 ))
-                 AND (sl_nl.service_name IS NULL OR (
-                   LOWER(sl_nl.service_name) NOT LIKE '%single%'
-                   AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-                   AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-                 ))
-            ) OR EXISTS (
-               SELECT 1 FROM \`order\` o_nl
-               JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
-               LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
-               LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
-               LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
-               LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-               WHERE o_nl.user_id = u.id 
-                 AND o_nl.order_state = 'Completed'
-                 AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
-                 AND osc_nl.total_price > 0
-                 AND (sp_nl.service_price_package_key IS NULL OR (
-                   LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-                   AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-                   AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-                 ))
-                 AND (sl_nl.service_name IS NULL OR (
-                   LOWER(sl_nl.service_name) NOT LIKE '%single%'
-                   AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-                   AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-                 ))
-            )
-          )`);
-          innerParams.push(dFromStr, dToStr, dFromStr, dToStr, dFromStr, dToStr);
+          const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
+          if (newLocaUserIds.length === 0) {
+            innerWhereClauses.push('1 = 0');
+          } else {
+            innerWhereClauses.push(`u.id IN (${newLocaUserIds.join(',')})`);
+          }
         }
       }
 
@@ -1607,12 +1561,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       ];
       const activeTouchpoints = config ? JSON.parse(config.value)?.LOCA_ALL || defaultTouchpoints : defaultTouchpoints;
 
-      const dFromStr = dateFrom
-        ? dateFrom.slice(0, 19).replace('T', ' ')
-        : new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
-      const dToStr = dateTo
-        ? dateTo.slice(0, 19).replace('T', ' ')
-        : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
+      const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
+      const newLocaExpr =
+        newLocaUserIds.length > 0 ? `CASE WHEN u.id IN (${newLocaUserIds.join(',')}) THEN 1 ELSE 0 END` : '0';
 
       // Build dynamic SELECT for touchpoints
       const tpSelects = activeTouchpoints
@@ -1670,69 +1621,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
               SELECT 1 FROM mos_lab.crm_call_logs ccl
               WHERE ccl.legacy_user_id = u.id
             ) as has_contacted,
-            (
-              EXISTS (
-                SELECT 1 FROM user_service_balance usb_nl
-                LEFT JOIN service_price sp_nl ON usb_nl.service_price_id = sp_nl.id
-                LEFT JOIN service_language sl_nl ON usb_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-                WHERE usb_nl.user_id = u.id 
-                  AND usb_nl.date_created >= ? AND usb_nl.date_created <= ?
-                  AND (COALESCE(sp_nl.service_price, 0) > 0 OR (usb_nl.total_normal_balance_amount + usb_nl.total_retain_balance_amount) > 0)
-                  AND (sp_nl.service_price_package_key IS NULL OR (
-                    LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-                  ))
-                  AND (sl_nl.service_name IS NULL OR (
-                    LOWER(sl_nl.service_name) NOT LIKE '%single%'
-                    AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-                    AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-                  ))
-              ) OR EXISTS (
-                SELECT 1 FROM \`order\` o_nl
-                JOIN order_service os_nl ON os_nl.order_id = o_nl.id
-                LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
-                LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
-                LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
-                LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-                WHERE o_nl.user_id = u.id 
-                  AND o_nl.order_state = 'Completed'
-                  AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ? 
-                  AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
-                  AND COALESCE(NULLIF(os_nl.total_price, 0), sp_nl.service_price, 0) > 0
-                  AND (sp_nl.service_price_package_key IS NULL OR (
-                    LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-                  ))
-                  AND (sl_nl.service_name IS NULL OR (
-                    LOWER(sl_nl.service_name) NOT LIKE '%single%'
-                    AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-                    AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-                  ))
-              ) OR EXISTS (
-                SELECT 1 FROM \`order\` o_nl
-                JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
-                LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
-                LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
-                LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
-                LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-                WHERE o_nl.user_id = u.id 
-                  AND o_nl.order_state = 'Completed'
-                  AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ? AND COALESCE(osc_nl.date_created, ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
-                  AND osc_nl.total_price > 0
-                  AND (sp_nl.service_price_package_key IS NULL OR (
-                    LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-                    AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-                  ))
-                  AND (sl_nl.service_name IS NULL OR (
-                    LOWER(sl_nl.service_name) NOT LIKE '%single%'
-                    AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-                    AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-                  ))
-              )
-            ) as is_new_loca
+            ${newLocaExpr} as is_new_loca
           FROM user u
           LEFT JOIN user_profile up ON u.id = up.user_id
           LEFT JOIN (
@@ -1755,7 +1644,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ) as loca_base
       `;
 
-      const sqlParams = [dFromStr, dToStr, dFromStr, dToStr, dFromStr, dToStr, ...innerParams];
+      const sqlParams = [...innerParams];
       const result = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(batchSql, ...sqlParams);
 
       const row = result && result[0] ? result[0] : {};
