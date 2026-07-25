@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, Spin } from 'antd';
+import { Button } from 'antd';
 import { SyncOutlined, SettingOutlined, CloseOutlined, TrophyOutlined } from '@ant-design/icons';
 import { LEVEL_PRESETS } from '../hooks/useTelesalesDashboard';
 import { metricConfigs, periods, radialCoords, periodPositions } from './TelesalesConstants';
@@ -55,7 +55,7 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
   currentMetricKey,
   activeMember,
   activePerformance,
-  activePercent,
+  activePercent: _activePercent,
   activeLevelIdx,
   activePreset,
   dailyTarget,
@@ -64,7 +64,7 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
   podiumOrderBack,
   remainingBack,
   isRadialOpen,
-  loading,
+  loading: _loading,
   isAdmin,
   onClose,
   setIsFlipped,
@@ -548,7 +548,7 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
                   </span>
                   <div className="flex items-center gap-1.5 leading-none mt-0 select-none">
                     <span
-                      className={`text-2xl font-outfit font-black ${
+                      className={`text-2xl font-outfit font-black tabular-nums ${
                         themeMode === 'dark' ? 'text-white' : 'text-slate-800'
                       }`}
                     >
@@ -559,12 +559,15 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
                       style={{ backgroundColor: `${mc.color}45` }}
                     ></span>
                     <span
-                      className={`text-xs font-extrabold ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}
+                      className={`text-xs font-extrabold tabular-nums ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}
                     >
                       {target}
                     </span>
                   </div>
-                  <span className="text-[9px] font-black uppercase block mt-0.5" style={{ color: mc.color }}>
+                  <span
+                    className="text-[9px] font-black uppercase block mt-0.5 tabular-nums"
+                    style={{ color: mc.color }}
+                  >
                     ĐẠT: {actualPct}%
                   </span>
                 </div>
