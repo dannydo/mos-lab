@@ -221,7 +221,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const [collapsed, setCollapsed] = useState(false);
   const [isDashboardVisible, setIsDashboardVisible] = useState(false);
-  const [selectedMemberId, setSelectedMemberId] = useState('TN');
+  const [selectedMemberId, setSelectedMemberId] = useState('');
   const [onlineMembers, setOnlineMembers] = useState<SafeAny[]>([]);
   const [isDailyCallsOpen, setIsDailyCallsOpen] = useState(false);
   const [dailyCallsCount, setDailyCallsCount] = useState(0);
