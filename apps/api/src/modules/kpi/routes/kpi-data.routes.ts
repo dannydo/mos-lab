@@ -404,6 +404,9 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
           totalSalary: 5500000,
         };
 
+        if (staff.id === 18 || staff.displayName.includes('Điệp')) {
+          console.log('DEBUG CHECK FOR NGOC DIEP:', { staffId: staff.id, legacyStaffId: staff.legacyStaffId, legacyUserId, bookedVal: bookedCountMap.get(Number(legacyUserId)), raw32268: bookedCountMap.get(32268), mapKeys: Array.from(bookedCountMap.keys()) });
+        }
         const totalBooked = legacyUserId ? (bookedCountMap.get(Number(legacyUserId)) ?? 0) : 0;
         const totalPlanned = totalBooked;
         const totalCalled = callStats.totalCalled;
