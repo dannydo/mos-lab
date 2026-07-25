@@ -1681,10 +1681,44 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
+      const comboLiveUserIds = (
+        await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
+          `SELECT DISTINCT user_id
+           FROM user_service_balance
+           WHERE (normal_count + retain_count) > 0
+             AND (date_expired IS NULL OR date_expired > NOW())`
+        )
+      ).map((r) => Number(r.user_id));
+
+      const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
+      const activeLocaUserIds = Array.from(new Set([...comboLiveUserIds, ...newLocaUserIds]));
+
+      if (allowedUserIds !== null) {
+        allowedUserIds = allowedUserIds.filter((id) => activeLocaUserIds.includes(id));
+      } else {
+        allowedUserIds = activeLocaUserIds;
+      }
+
+      if (allowedUserIds.length === 0) {
+        return {
+          tabs: {
+            NEW_LOCA: 0,
+            LOCA_ALL: 0,
+            HSD_30: 0,
+            LSD_1: 0,
+            SP: 0,
+            CALLBACK: 0,
+            BOOKED: 0,
+            CONTACTED: 0,
+          },
+          touchpoints: {},
+        };
+      }
+
       const innerWhereClauses: string[] = ['COALESCE(up.is_deleted, 0) = 0'];
       const innerParams: SafeAny[] = [];
 
-      if (allowedUserIds !== null) {
+      if (allowedUserIds !== null && allowedUserIds.length > 0) {
         innerWhereClauses.push(`u.id IN (${allowedUserIds.join(',')})`);
       }
       if (excludedUserIds !== null && excludedUserIds.length > 0) {
@@ -1725,7 +1759,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
       ];
       const activeTouchpoints = config ? JSON.parse(config.value)?.LOCA_ALL || defaultTouchpoints : defaultTouchpoints;
 
-      const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
       const newLocaExpr =
         newLocaUserIds.length > 0 ? `CASE WHEN u.id IN (${newLocaUserIds.join(',')}) THEN 1 ELSE 0 END` : '0';
 
@@ -1740,6 +1773,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
           return `SUM(CASE WHEN is_combo_live = 1 AND daysSinceLastVisit BETWEEN ${min} AND ${max} THEN 1 ELSE 0 END) as tp_${tp.key}`;
         })
         .join(',\n          ');
+
+      const usbFilterStr =
+        allowedUserIds !== null && allowedUserIds.length > 0
+          ? `WHERE user_id IN (${allowedUserIds.join(',')})`
+          : 'WHERE (normal_count + retain_count) > 0';
 
       const batchSql = `
         SELECT
@@ -1801,7 +1839,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
               SUM(retain_count) as retainCount,
               MAX(date_expired) as expiryDate
             FROM user_service_balance
-            WHERE (normal_count + retain_count) > 0
+            ${usbFilterStr}
             GROUP BY user_id
           ) as usb_agg ON u.id = usb_agg.user_id
           ${innerWhereString}
