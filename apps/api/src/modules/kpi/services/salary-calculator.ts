@@ -1,20 +1,7 @@
 import { FastifyInstance } from 'fastify';
 
 const formatDateStr = (d: Date) => {
-  const pad = (n: number) => (n < 10 ? '0' + n : n);
-  return (
-    d.getFullYear() +
-    '-' +
-    pad(d.getMonth() + 1) +
-    '-' +
-    pad(d.getDate()) +
-    ' ' +
-    pad(d.getHours()) +
-    ':' +
-    pad(d.getMinutes()) +
-    ':' +
-    pad(d.getSeconds())
-  );
+  return d.toISOString().replace('T', ' ').substring(0, 19);
 };
 
 // Default configuration parameters for Booker Salary
