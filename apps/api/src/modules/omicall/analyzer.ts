@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import axios from 'axios';
 
 const MAX_RETRIES = 3;
-const AI_TIMEOUT_MS = 180_000; // 3 minutes
+const _AI_TIMEOUT_MS = 180_000; // 3 minutes
 let isProcessing = false; // Simple poller mutex
 
 async function fetchRecordingUrl(callUuid: string): Promise<string | null> {

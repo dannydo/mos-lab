@@ -295,7 +295,7 @@ export async function omicallRoutes(fastify: FastifyInstance) {
       if (config.sipPassword) {
         try {
           decryptedPassword = decrypt(config.sipPassword);
-        } catch (err: any) {
+        } catch (err: SafeAny) {
           fastify.log.warn(
             err,
             `Failed to decrypt SIP password for staffId ${user.id}. Invalid key or corrupted data.`
