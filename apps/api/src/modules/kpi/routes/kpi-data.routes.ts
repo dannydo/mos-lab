@@ -406,6 +406,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
 
         const totalHappy = callStats.totalHappy;
 
+        console.log('DEBUG STAFF BOOKED:', { staffId: staff.id, name: staff.displayName, legacyStaffId: staff.legacyStaffId, legacyUserId, bookedCount: bookedCountMap.get(Number(legacyUserId)), totalBooked });
         leaderboard.push({
           staffId: staff.id,
           displayName: staff.displayName,
