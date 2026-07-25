@@ -363,7 +363,7 @@ export async function registerKpiDataRoutes(fastify: FastifyInstance) {
 
       for (const staff of staffList) {
         const profile = staffNameToProfileMap.get(staff.displayName.toLowerCase().trim());
-        const legacyUserId = staff.legacyStaffId || (profile?.userId ? Number(profile.userId) : undefined);
+        const legacyUserId = staff.legacyStaffId ? Number(staff.legacyStaffId) : (profile?.userId ? Number(profile.userId) : undefined);
         const callStats = callStatsMap.get(staff.id) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
 
         const rawAvatar = staff.avatarUrl || profile?.avatar || null;
