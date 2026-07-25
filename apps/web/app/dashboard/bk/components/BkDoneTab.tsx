@@ -61,6 +61,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
 
   const [selectedBookerId, setSelectedBookerId] = useState<string | null>(null);
   const [selectedBookerName, setSelectedBookerName] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'COMPLETED' | 'MISSED'>('ALL');
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
   const [detailRecords, setDetailRecords] = useState<BkDoneRecord[]>([]);
@@ -94,6 +95,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
         dateFrom: dateRange[0].format('YYYY-MM-DD'),
         dateTo: dateRange[1].format('YYYY-MM-DD'),
         storeId: selectedStore,
+        status: filterStatus,
       });
       const data = (res.data || []).map((item: any, idx: number) => ({
         ...item,
@@ -113,7 +115,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
 
   useEffect(() => {
     fetchDetails();
-  }, [dateRange, selectedStore, selectedBookerId]);
+  }, [dateRange, selectedStore, selectedBookerId, filterStatus]);
 
   const handleSelectBooker = (bookerId: string, bookerName?: string) => {
     if (selectedBookerId === bookerId) {
@@ -126,6 +128,13 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
     }
   };
 
+  const handleSelectBookerMissed = (bookerId: string, bookerName?: string) => {
+    setSelectedBookerId(bookerId);
+    const found = leaderboard.find((item) => String(item.bookerId) === bookerId);
+    setSelectedBookerName(bookerName || found?.displayName || `BK #${bookerId}`);
+    setFilterStatus('MISSED');
+  };
+
   const filteredDetailRecords = useMemo(() => {
     if (!searchText) return detailRecords;
     const lower = searchText.toLowerCase();
@@ -134,7 +143,8 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
         r.clientName.toLowerCase().includes(lower) ||
         r.orderKey.toLowerCase().includes(lower) ||
         (r.clientPhone && r.clientPhone.toLowerCase().includes(lower)) ||
-        (r.bookerName && r.bookerName.toLowerCase().includes(lower))
+        (r.bookerName && r.bookerName.toLowerCase().includes(lower)) ||
+        (r.serviceName && r.serviceName.toLowerCase().includes(lower))
     );
   }, [detailRecords, searchText]);
 
@@ -196,6 +206,24 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       key: 'doneCount',
       align: 'center' as const,
       render: (val: number) => <span className="tabular-nums font-bold text-xs text-emerald-400">{val}</span>,
+    },
+    {
+      title: 'Lượt Missed',
+      dataIndex: 'missedCount',
+      key: 'missedCount',
+      align: 'center' as const,
+      render: (val: number, record: BkDoneLeaderboardEntry) => (
+        <span
+          className="tabular-nums font-semibold text-xs text-rose-400 cursor-pointer hover:underline hover:text-rose-300 transition-colors"
+          title="Click để lọc ra và xem chi tiết danh sách khách missed của Booker này"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSelectBookerMissed(String(record.bookerId), record.displayName);
+          }}
+        >
+          {val} <span className="text-[11px] font-normal opacity-90">({record.missedRatePercent || 0}%)</span>
+        </span>
+      ),
     },
     {
       title: 'Hoa hồng OC (Thưởng Check-in)',
@@ -358,13 +386,41 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       key: 'status',
       align: 'center' as const,
       render: (_: any, record: BkDoneRecord) => {
-        const isComp = record.status === 'Completed' || record.status === 'Check-in thành công';
+        const isComp =
+          record.status === 'Completed' ||
+          record.status === 'CheckOut' ||
+          (record.netRevenue || 0) > 0 ||
+          (record.totalPrice || 0) > 0 ||
+          record.status === 'Check-in thành công';
+        const isCancelled = record.status === 'Cancelled';
+        const orderTime = record.orderDate
+          ? new Date(String(record.orderDate).replace('T', ' ').replace(/\..*$/, '').replace('Z', '')).getTime()
+          : 0;
+        const isFuture = orderTime > Date.now();
+
+        let color = 'default';
+        let label = record.status || 'Đặt lịch';
+
+        if (isComp) {
+          color = 'success';
+          label = '✓ Done';
+        } else if (isCancelled) {
+          color = 'error';
+          label = '❌ Đã hủy';
+        } else if (isFuture) {
+          color = 'processing';
+          label = '📅 Sắp tới';
+        } else {
+          color = 'volcano';
+          label = '❌ Missed';
+        }
+
         return (
           <Tag
-            color={isComp ? 'success' : 'default'}
+            color={color}
             className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap"
           >
-            {isComp ? '✓ Done' : '⚪ Đặt lịch'}
+            {label}
           </Tag>
         );
       },
@@ -419,7 +475,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
         extraSummary={
           <Text type="secondary" className="text-xs flex items-center gap-1">
             <InfoCircleOutlined className="text-amber-500" />
-            <span>Click vào dòng Booker để xem danh sách Khách hàng & Hoa hồng OC bên dưới</span>
+            <span>Click vào dòng Booker hoặc con số Missed để xem chi tiết danh sách Khách hàng bên dưới</span>
           </Text>
         }
       />
@@ -431,11 +487,11 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base font-bold m-0" style={{ color: token.colorText }}>
                 {selectedBookerName
-                  ? `Danh sách Khách hàng đặt lịch & Hoa hồng OC của Online Consultant: ${selectedBookerName}`
-                  : 'Danh sách Khách hàng đặt lịch & Hoa hồng OC của Online Consultant'}
+                  ? `Danh sách Khách hàng đặt lịch của Online Consultant: ${selectedBookerName}`
+                  : 'Danh sách Khách hàng đặt lịch của Online Consultant'}
               </h3>
               {selectedBookerName && (
                 <Tag
@@ -452,20 +508,58 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
               )}
             </div>
             <Text type="secondary" className="text-xs">
-              {selectedBookerName
-                ? `Hiển thị chi tiết từng đơn hàng và số tiền Hoa hồng OC của ${selectedBookerName}`
-                : 'Hiển thị chi tiết tất cả đơn hàng và số tiền Hoa hồng OC tích luỹ'}
+              {filterStatus === 'MISSED'
+                ? 'Đang hiển thị danh sách tất cả Khách hàng MISSED (đã đặt hẹn nhưng không đến)'
+                : filterStatus === 'COMPLETED'
+                ? 'Đang hiển thị danh sách Khách hàng DONE (đã đến làm dịch vụ thành công)'
+                : 'Hiển thị tất cả đơn hàng đặt lịch của Booker'}
             </Text>
           </div>
 
-          <Space>
+          <Space wrap>
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+              <button
+                type="button"
+                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  filterStatus === 'ALL'
+                    ? 'bg-amber-500 text-white shadow-xs font-semibold'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                onClick={() => setFilterStatus('ALL')}
+              >
+                Tất cả
+              </button>
+              <button
+                type="button"
+                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  filterStatus === 'COMPLETED'
+                    ? 'bg-emerald-600 text-white shadow-xs font-semibold'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                onClick={() => setFilterStatus('COMPLETED')}
+              >
+                ✓ Đơn Done
+              </button>
+              <button
+                type="button"
+                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  filterStatus === 'MISSED'
+                    ? 'bg-rose-600 text-white shadow-xs font-semibold'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                onClick={() => setFilterStatus('MISSED')}
+              >
+                ❌ Đơn Missed
+              </button>
+            </div>
+
             <Input
               prefix={<SearchOutlined className="text-slate-400" />}
-              placeholder="Tìm tên khách, SĐT, mã đơn..."
+              placeholder="Tìm tên khách, SĐT, dịch vụ..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
-              className="w-56"
+              className="w-48"
               size="small"
             />
             <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
@@ -491,7 +585,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
             defaultPageSize: 50,
             pageSizeOptions: ['20', '50', '100', '200'],
             showSizeChanger: true,
-            showTotal: (total) => `Tổng cộng ${total} đơn check-in thành công`,
+            showTotal: (total) => `Tổng cộng ${total} đơn hàng`,
           }}
           size="small"
           scroll={{ x: 'max-content' }}

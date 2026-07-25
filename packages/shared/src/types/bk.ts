@@ -80,6 +80,7 @@ export interface BkDoneLeaderboardEntry {
   doneCount: number;
   missedCount: number;
   doneRatePercent: number;
+  missedRatePercent: number;
   basicBonus: number;
   promoBonus: number;
   milestoneBonus: number;
@@ -91,7 +92,9 @@ export interface BkDoneLeaderboardResponse {
   leaderboard: BkDoneLeaderboardEntry[];
   summary: {
     totalDone: number;
+    totalMissed?: number;
     avgDoneRate: number;
+    avgMissedRate?: number;
     totalDoneBonus: number;
   };
 }
