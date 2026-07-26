@@ -248,8 +248,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
     try {
       const params = {
         search: searchQuery || undefined,
-        assignedStaffId:
-          assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
+        assignedStaffId: assignedStaffId || 'ALL',
         dateFrom: dateRange.dateFrom,
         dateTo: dateRange.dateTo,
       };

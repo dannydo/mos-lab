@@ -88,12 +88,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const offsetNum = (pageNum - 1) * limitNum;
     const adminUser = request.user as { id: number; role: string };
 
-    // Force telesales to only query their own customers (except for LoCa campaign)
+    // Force telesales to only query their own customers (except for LoCa campaign or when explicitly querying ALL)
     let effectiveAssignedStaffId = assignedStaffId;
     if (
       adminUser.role !== 'admin' &&
       bucket !== 'NEW_LOCA' &&
       bucket !== 'COMBO_LIVE' &&
+      assignedStaffId !== 'ALL' &&
+      assignedStaffId !== 'all' &&
       assignedStaffId !== 'unassigned'
     ) {
       effectiveAssignedStaffId = 'me';
@@ -1218,12 +1220,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     const adminUser = request.user as { id: number; role: string };
 
-    // Force telesales to only query stats for their own customers (except for LoCa campaign)
+    // Force telesales to only query stats for their own customers (except for LoCa campaign or when explicitly querying ALL)
     let effectiveAssignedStaffId = assignedStaffId;
     if (
       adminUser.role !== 'admin' &&
       bucket !== 'NEW_LOCA' &&
       bucket !== 'COMBO_LIVE' &&
+      assignedStaffId !== 'ALL' &&
+      assignedStaffId !== 'all' &&
       assignedStaffId !== 'unassigned'
     ) {
       effectiveAssignedStaffId = 'me';
