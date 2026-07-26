@@ -251,7 +251,6 @@ export default function AppointmentsPage() {
                 const val = e.target.value;
                 setViewMode(val);
                 setCustomRange(null);
-                setReferenceDate(dayjs());
                 localStorage.setItem('mos_appointments_viewMode', val);
               }}
               optionType="button"
