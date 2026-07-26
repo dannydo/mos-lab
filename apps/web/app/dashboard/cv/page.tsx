@@ -148,19 +148,17 @@ export default function CvReportPage() {
         <div className="flex items-center gap-3 flex-wrap">
           <Space wrap>
             {/* View Mode Switcher: Tháng / Tuần / Ngày */}
-            <Radio.Group
-              value={viewMode}
-              onChange={(e) => {
-                setViewMode(e.target.value);
-                setReferenceDate(dayjs());
-              }}
-              optionType="button"
-              buttonStyle="solid"
-            >
-              <Radio.Button value="month">Tháng</Radio.Button>
-              <Radio.Button value="week">Tuần</Radio.Button>
-              <Radio.Button value="day">Ngày</Radio.Button>
-            </Radio.Group>
+            <Space.Compact>
+              <Button type={viewMode === 'month' ? 'primary' : 'default'} onClick={() => setViewMode('month')}>
+                Tháng
+              </Button>
+              <Button type={viewMode === 'week' ? 'primary' : 'default'} onClick={() => setViewMode('week')}>
+                Tuần
+              </Button>
+              <Button type={viewMode === 'day' ? 'primary' : 'default'} onClick={() => setViewMode('day')}>
+                Ngày
+              </Button>
+            </Space.Compact>
 
             {/* Date Navigator: < Tháng 07/2026 > */}
             <div style={{ position: 'relative', display: 'inline-block' }}>

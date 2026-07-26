@@ -202,17 +202,17 @@ export default function BkDashboardPage() {
 
         <div className="flex flex-wrap items-center gap-3">
           {/* View Mode Radio */}
-          <Radio.Group
-            value={viewMode}
-            onChange={(e) => setViewMode(e.target.value)}
-            optionType="button"
-            buttonStyle="solid"
-            size="middle"
-          >
-            <Radio.Button value="month">Tháng</Radio.Button>
-            <Radio.Button value="week">Tuần</Radio.Button>
-            <Radio.Button value="day">Ngày</Radio.Button>
-          </Radio.Group>
+          <Space.Compact size="middle">
+            <Button type={viewMode === 'month' ? 'primary' : 'default'} onClick={() => setViewMode('month')}>
+              Tháng
+            </Button>
+            <Button type={viewMode === 'week' ? 'primary' : 'default'} onClick={() => setViewMode('week')}>
+              Tuần
+            </Button>
+            <Button type={viewMode === 'day' ? 'primary' : 'default'} onClick={() => setViewMode('day')}>
+              Ngày
+            </Button>
+          </Space.Compact>
 
           {/* Date Navigation */}
           <Space.Compact size="middle">

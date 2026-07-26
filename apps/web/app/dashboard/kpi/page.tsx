@@ -124,19 +124,17 @@ export default function KPIPage() {
         subtitle="Giám sát tỷ lệ chuyển đổi cuộc gọi thành lịch hẹn và doanh thu thưởng commission"
         extra={
           <Space wrap size={8}>
-            <Radio.Group
-              value={viewMode}
-              onChange={(e) => {
-                setViewMode(e.target.value);
-                setReferenceDate(dayjs());
-              }}
-              optionType="button"
-              buttonStyle="solid"
-            >
-              <Radio.Button value="month">Tháng</Radio.Button>
-              <Radio.Button value="week">Tuần</Radio.Button>
-              <Radio.Button value="day">Ngày</Radio.Button>
-            </Radio.Group>
+            <Space.Compact>
+              <Button type={viewMode === 'month' ? 'primary' : 'default'} onClick={() => setViewMode('month')}>
+                Tháng
+              </Button>
+              <Button type={viewMode === 'week' ? 'primary' : 'default'} onClick={() => setViewMode('week')}>
+                Tuần
+              </Button>
+              <Button type={viewMode === 'day' ? 'primary' : 'default'} onClick={() => setViewMode('day')}>
+                Ngày
+              </Button>
+            </Space.Compact>
 
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <Space.Compact>

@@ -287,19 +287,17 @@ export default function CcDashboardPage() {
         extra={
           <Space wrap size={8}>
             {/* View Mode Switcher: Tháng / Tuần / Ngày */}
-            <Radio.Group
-              value={viewMode}
-              onChange={(e) => {
-                setViewMode(e.target.value);
-                setReferenceDate(dayjs());
-              }}
-              optionType="button"
-              buttonStyle="solid"
-            >
-              <Radio.Button value="month">Tháng</Radio.Button>
-              <Radio.Button value="week">Tuần</Radio.Button>
-              <Radio.Button value="day">Ngày</Radio.Button>
-            </Radio.Group>
+            <Space.Compact>
+              <Button type={viewMode === 'month' ? 'primary' : 'default'} onClick={() => setViewMode('month')}>
+                Tháng
+              </Button>
+              <Button type={viewMode === 'week' ? 'primary' : 'default'} onClick={() => setViewMode('week')}>
+                Tuần
+              </Button>
+              <Button type={viewMode === 'day' ? 'primary' : 'default'} onClick={() => setViewMode('day')}>
+                Ngày
+              </Button>
+            </Space.Compact>
 
             {/* Date Navigation & Selector */}
             <Space size={0} className="border border-slate-700 rounded-md overflow-hidden bg-slate-900/50">
