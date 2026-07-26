@@ -300,7 +300,7 @@ export default function LocaCampaignPage() {
               letterSpacing: '0.5px',
             }}
           >
-            <HeartOutlined style={{ color: '#ff4d4f' }} /> CHIẾN DỊCH KHÁCH HÀNG LoCa (Love Care)
+            <HeartOutlined style={{ color: '#ff4d4f' }} /> CHIẾN DỊCH KHÁCH HÀNG LoCa (Lớp Care)
           </Title>
           <Text style={{ color: themeMode === 'dark' ? token.colorTextDescription : '#555555' }}>
             Hệ thống chăm sóc đặc biệt dành cho khách hàng Combo Live (còn hạn, còn lần sử dụng).
