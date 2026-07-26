@@ -5713,11 +5713,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       if (type === 'completed') {
-        countSql += ` AND o.order_state = 'Completed'`;
+        countSql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
       } else if (type === 'missed') {
-        countSql += ` AND (o.order_state IN ('Cancelled', 'Missed') OR (o.order_state != 'Completed' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < NOW()))`;
+        countSql += ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))`;
       } else {
-        countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled', 'Missed') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
+        countSql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
       }
 
       const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams);
@@ -5770,11 +5770,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       if (type === 'completed') {
-        sql += ` AND o.order_state = 'Completed'`;
+        sql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
       } else if (type === 'missed') {
-        sql += ` AND (o.order_state IN ('Cancelled', 'Missed') OR (o.order_state != 'Completed' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < NOW()))`;
+        sql += ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))`;
       } else {
-        sql += ` AND o.order_state NOT IN ('Completed', 'Cancelled', 'Missed') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
+        sql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
       }
 
       sql += ` ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) ASC LIMIT ? OFFSET ?`;
