@@ -1270,7 +1270,23 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
         });
       }
 
-      return [...crmStaffList, ...mappedKTVs];
+      // Deduplicate CRM staff by displayName
+      const uniqueStaffMap = new Map<string, SafeAny>();
+      crmStaffList.forEach((s) => {
+        const key = (s.displayName || '').trim().toLowerCase();
+        if (key && !uniqueStaffMap.has(key)) {
+          uniqueStaffMap.set(key, s);
+        }
+      });
+      const dedupedCrmStaffList = Array.from(uniqueStaffMap.values());
+
+      if (!date) {
+        return dedupedCrmStaffList.filter((s) =>
+          ['telesales', 'executive', 'manager', 'admin'].includes(s.role?.toLowerCase() || '')
+        );
+      }
+
+      return [...dedupedCrmStaffList, ...mappedKTVs];
     } catch (error) {
       fastify.log.error(error as Error, 'Get staff list error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve staff list' });
@@ -2145,16 +2161,15 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
           totalPrice: Number(b.totalPrice || 0),
           branchName: b.branchName,
           technicianName: (() => {
-            if (!firstCvStaffId) return b.assignedTechnicianName || 'Unknown';
-            const name = staffNamesMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên';
+            if (!firstCvStaffId) return null;
+            const name = staffNamesMap.get(Number(firstCvStaffId));
+            if (!name) return null;
             const isInactive = staffInactiveMap.get(Number(firstCvStaffId));
             return isInactive ? `${name} (Đã nghỉ)` : name;
           })(),
-          ccInName: checkInStaffId ? staffNamesMap.get(Number(checkInStaffId)) || 'Tư vấn viên' : 'Unknown',
-          ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên' : 'Unknown',
-          bookerName: b.createdStaffId
-            ? staffNamesMap.get(Number(b.createdStaffId)) || 'Nhiều Booker'
-            : 'Khách tự đặt (GB)',
+          ccInName: checkInStaffId ? staffNamesMap.get(Number(checkInStaffId)) || null : null,
+          ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || null : null,
+          bookerName: b.createdStaffId ? staffNamesMap.get(Number(b.createdStaffId)) || null : null,
           ccInAvatar: checkInStaffId ? staffAvatarMap.get(Number(checkInStaffId)) || null : null,
           ccOutAvatar: checkOutStaffId ? staffAvatarMap.get(Number(checkOutStaffId)) || null : null,
           bookerAvatar: b.createdStaffId ? staffAvatarMap.get(Number(b.createdStaffId)) || null : null,
@@ -2364,12 +2379,13 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
             totalPrice: Number(o.totalPrice || 0),
             tipAmount: payInfo ? payInfo.tips : 0,
             technicianName: (() => {
-              if (!firstCvStaffId) return 'Unknown';
-              const name = staffNamesMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên';
+              if (!firstCvStaffId) return null;
+              const name = staffNamesMap.get(Number(firstCvStaffId));
+              if (!name) return null;
               const isInactive = staffInactiveMap.get(Number(firstCvStaffId));
               return isInactive ? `${name} (Đã nghỉ)` : name;
             })(),
-            ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên' : 'Unknown',
+            ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || null : null,
           };
         }),
         revenueTransactions: completedOrders.map((o) => {
@@ -2386,12 +2402,13 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
             tipAmount: payInfo ? payInfo.tips : 0,
             debtAmount: payInfo ? payInfo.debt : 0,
             technicianName: (() => {
-              if (!firstCvStaffId) return 'Unknown';
-              const name = staffNamesMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên';
+              if (!firstCvStaffId) return null;
+              const name = staffNamesMap.get(Number(firstCvStaffId));
+              if (!name) return null;
               const isInactive = staffInactiveMap.get(Number(firstCvStaffId));
               return isInactive ? `${name} (Đã nghỉ)` : name;
             })(),
-            ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên' : 'Unknown',
+            ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || null : null,
             services: servicesByOrderIdDetail.get(Number(o.id)) || [],
             combos: combosByOrderIdDetail.get(Number(o.id)) || [],
             products: productsByOrderIdDetail.get(Number(o.id)) || [],

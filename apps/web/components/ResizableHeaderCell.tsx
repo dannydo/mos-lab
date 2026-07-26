@@ -2,83 +2,91 @@
 
 import React, { useState, useRef } from 'react';
 
-interface ResizableHeaderCellProps extends React.HTMLAttributes<HTMLTableHeaderCellElement> {
-  width?: number;
+interface ResizableHeaderCellProps extends React.HTMLAttributes<HTMLTableCellElement> {
   onResize?: (width: number) => void;
+  width?: number;
+  minWidth?: number;
+  maxWidth?: number;
 }
 
-export const ResizableHeaderCell: React.FC<ResizableHeaderCellProps> = ({
-  width,
-  onResize,
-  style,
-  children,
-  ...restProps
-}) => {
-  const [resizing, setResizing] = useState(false);
-  const cellRef = useRef<HTMLTableHeaderCellElement>(null);
+export function ResizableHeaderCell(props: ResizableHeaderCellProps) {
+  const { onResize, width, minWidth = 70, maxWidth = 800, children, style, className, ...restProps } = props;
+  const [isResizing, setIsResizing] = useState(false);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(0);
 
-  // If onResize callback is not present, fallback to standard th
-  if (!onResize) {
+  if (!onResize || !width) {
     return (
-      <th style={style} {...restProps}>
+      <th style={style} className={className} {...restProps}>
         {children}
       </th>
     );
   }
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLSpanElement>) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setResizing(true);
 
-    const startX = e.clientX;
-    // Resolve start width: prioritise set width prop, fallback to actual offset width
-    const startWidth = width || (cellRef.current ? cellRef.current.offsetWidth : 120);
+    setIsResizing(true);
+    startXRef.current = e.clientX;
+    startWidthRef.current = Number(width);
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = moveEvent.clientX - startX;
-      // Prevent reducing column width to less than 50px
-      const newWidth = Math.max(50, startWidth + deltaX);
+      const deltaX = moveEvent.clientX - startXRef.current;
+      const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidthRef.current + deltaX));
       onResize(newWidth);
     };
 
     const handleMouseUp = () => {
-      setResizing(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      setIsResizing(false);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
   };
 
   return (
     <th
-      ref={cellRef}
       style={{
         ...style,
         position: 'relative',
-        userSelect: resizing ? 'none' : 'auto',
+        userSelect: isResizing ? 'none' : undefined,
       }}
+      className={`${className || ''} ${isResizing ? 'select-none' : ''}`}
       {...restProps}
     >
-      <div style={{ display: 'inline-block', width: '100%' }}>{children}</div>
-      <span
+      <div style={{ paddingRight: '8px' }}>{children}</div>
+      <div
+        onMouseDown={handleMouseDown}
+        onClick={(e) => e.stopPropagation()}
         style={{
           position: 'absolute',
-          right: 0,
           top: 0,
-          bottom: 0,
-          width: '8px',
+          right: 0,
+          width: '12px',
+          height: '100%',
           cursor: 'col-resize',
           zIndex: 10,
-          userSelect: 'none',
-          background: resizing ? 'rgba(212, 168, 75, 0.4)' : 'transparent',
-          transition: 'background 0.2s',
+          touchAction: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
-        onMouseDown={handleMouseDown}
-        className="table-column-resize-handle"
-      />
+        className="group"
+        title="Kéo để thay đổi độ rộng cột (Tự động lưu F5)"
+      >
+        <div
+          style={{
+            width: isResizing ? '3px' : '2px',
+            height: '100%',
+            backgroundColor: isResizing ? '#D4A84B' : 'transparent',
+            transition: 'background-color 0.15s ease-in-out',
+          }}
+          className="group-hover:bg-[#D4A84B]/70"
+        />
+      </div>
     </th>
   );
-};
+}

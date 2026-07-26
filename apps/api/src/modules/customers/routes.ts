@@ -2576,13 +2576,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
       }
 
+      // Deduplicate CRM staff by displayName
+      const uniqueStaffMap = new Map<string, SafeAny>();
+      crmStaffList.forEach((s) => {
+        const key = (s.displayName || '').trim().toLowerCase();
+        if (key && !uniqueStaffMap.has(key)) {
+          uniqueStaffMap.set(key, s);
+        }
+      });
+      const dedupedCrmStaffList = Array.from(uniqueStaffMap.values());
+
       if (!date) {
-        return crmStaffList.filter((s) =>
+        return dedupedCrmStaffList.filter((s) =>
           ['telesales', 'executive', 'manager', 'admin'].includes(s.role?.toLowerCase() || '')
         );
       }
 
-      return [...crmStaffList, ...mappedKTVs];
+      return [...dedupedCrmStaffList, ...mappedKTVs];
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get staff list error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve staff list' });
@@ -5321,22 +5331,38 @@ export async function customerRoutes(fastify: FastifyInstance) {
           b.technicianId || orderSvs.find((os) => os.assigned_staff_id && os.assigned_staff_id > 0)?.assigned_staff_id;
         const rawBooker = b.createdStaffId;
 
-        // Smart fallback logic so CC IN / CC OUT / BK are never Unknown when order is completed or staff is recorded
-        const finalCheckInId = rawCheckIn || rawCheckOut || rawBooker || firstCvStaffId;
-        const finalCheckOutId = rawCheckOut || rawCheckIn || rawBooker || firstCvStaffId;
-        const finalBookerId = rawBooker || rawCheckIn || rawCheckOut || firstCvStaffId;
+        const isCheckedIn = [
+          'CheckIn',
+          'Consultation',
+          'Preparation',
+          'ServiceStart',
+          'ServiceCleaned',
+          'ServiceEnd',
+          'ServiceCompleted',
+          'CheckOut',
+          'Parking',
+          'Completed',
+        ].includes(b.orderState);
+        const isCheckedOut = ['CheckOut', 'Completed'].includes(b.orderState);
 
-        const getStaffDisplayName = (staffId: number | null | undefined, defaultFallback: string) => {
-          if (!staffId) return defaultFallback;
+        const finalCheckInId = isCheckedIn ? rawCheckIn || rawCheckOut || null : null;
+        const finalCheckOutId = isCheckedOut ? rawCheckOut || rawCheckIn || null : null;
+        const finalBookerId = rawBooker || null;
+
+        const getStaffDisplayName = (staffId: number | null | undefined) => {
+          if (!staffId) return null;
           const name = staffNamesMap.get(Number(staffId));
-          if (!name) return defaultFallback;
+          if (!name) return null;
           const isInactive = staffInactiveMap.get(Number(staffId));
           return isInactive ? `${name} (Đã nghỉ)` : name;
         };
 
-        const checkinName = getStaffDisplayName(finalCheckInId, b.assignedTechnicianName || 'Tư vấn viên');
-        const checkoutName = getStaffDisplayName(finalCheckOutId, b.assignedTechnicianName || 'Tư vấn viên');
-        const bookerDisplayName = getStaffDisplayName(finalBookerId, b.assignedTechnicianName || 'Tư vấn viên');
+        const checkinName = getStaffDisplayName(finalCheckInId);
+        const checkoutName = getStaffDisplayName(finalCheckOutId);
+        const bookerDisplayName = getStaffDisplayName(finalBookerId);
+        const technicianName =
+          getStaffDisplayName(firstCvStaffId) ||
+          (b.assignedTechnicianName && b.assignedTechnicianName !== 'Kỹ thuật viên' ? b.assignedTechnicianName : null);
 
         return {
           id: b.id,
@@ -5346,7 +5372,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           orderState: b.orderState,
           totalPrice: Number(b.totalPrice || 0),
           branchName: b.branchName,
-          technicianName: getStaffDisplayName(firstCvStaffId, b.assignedTechnicianName || 'Kỹ thuật viên'),
+          technicianName,
           ccInName: checkinName,
           checkinStaffName: checkinName,
           ccOutName: checkoutName,
@@ -5562,12 +5588,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
             totalPrice: Number(o.totalPrice || 0),
             tipAmount: payInfo ? payInfo.tips : 0,
             technicianName: (() => {
-              if (!firstCvStaffId) return 'Unknown';
-              const name = staffNamesMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên';
+              if (!firstCvStaffId) return null;
+              const name = staffNamesMap.get(Number(firstCvStaffId));
+              if (!name) return null;
               const isInactive = staffInactiveMap.get(Number(firstCvStaffId));
               return isInactive ? `${name} (Đã nghỉ)` : name;
             })(),
-            ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên' : 'Unknown',
+            ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || null : null,
           };
         }),
         revenueTransactions: completedOrders.map((o) => {
@@ -5584,12 +5611,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
             tipAmount: payInfo ? payInfo.tips : 0,
             debtAmount: payInfo ? payInfo.debt : 0,
             technicianName: (() => {
-              if (!firstCvStaffId) return 'Unknown';
-              const name = staffNamesMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên';
+              if (!firstCvStaffId) return null;
+              const name = staffNamesMap.get(Number(firstCvStaffId));
+              if (!name) return null;
               const isInactive = staffInactiveMap.get(Number(firstCvStaffId));
               return isInactive ? `${name} (Đã nghỉ)` : name;
             })(),
-            ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || 'Tư vấn viên' : 'Unknown',
+            ccOutName: checkOutStaffId ? staffNamesMap.get(Number(checkOutStaffId)) || null : null,
             services: servicesByOrderIdDetail.get(Number(o.id)) || [],
             combos: combosByOrderIdDetail.get(Number(o.id)) || [],
             products: productsByOrderIdDetail.get(Number(o.id)) || [],
@@ -5613,7 +5641,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const { dateFrom, dateTo, type, staffId, page, limit } = request.query as {
       dateFrom?: string;
       dateTo?: string;
-      type?: 'pending' | 'completed';
+      type?: 'pending' | 'missed' | 'completed';
       staffId?: string;
       page?: string;
       limit?: string;
@@ -5720,8 +5748,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       if (type === 'completed') {
         countSql += ` AND o.order_state = 'Completed'`;
+      } else if (type === 'missed') {
+        countSql += ` AND (o.order_state = 'Cancelled' OR (o.order_state != 'Completed' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < NOW()))`;
       } else {
-        countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled')`;
+        countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
       }
 
       const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams);
@@ -5732,6 +5762,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         SELECT 
           o.id,
           o.order_key as orderKey,
+          o.promotion_id as promotionId,
+          o.selected_promotion_id as selectedPromotionId,
           COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDateStart,
           DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i') as actualBookingTime,
           o.booking_date_end as bookingDateEnd,
@@ -5778,8 +5810,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       if (type === 'completed') {
         sql += ` AND o.order_state = 'Completed'`;
+      } else if (type === 'missed') {
+        sql += ` AND (o.order_state = 'Cancelled' OR (o.order_state != 'Completed' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < NOW()))`;
       } else {
-        sql += ` AND o.order_state NOT IN ('Completed', 'Cancelled')`;
+        sql += ` AND o.order_state NOT IN ('Completed', 'Cancelled') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
       }
 
       sql += ` ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) ASC LIMIT ? OFFSET ?`;
@@ -5833,6 +5867,35 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
+      // Query promotions for all appointments in current page
+      const promoDetailsMap = new Map<number, { name: string; discountPercentage: number; discountAmount: number }>();
+      const promoIds = Array.from(
+        new Set([
+          ...result.map((o) => Number(o.promotionId)).filter((id) => id > 0),
+          ...result.map((o) => Number(o.selectedPromotionId)).filter((id) => id > 0),
+          ...Array.from(orderServicesMap.values())
+            .flat()
+            .map((os: SafeAny) => Number(os.promotion_id))
+            .filter((id) => id > 0),
+        ])
+      );
+
+      if (promoIds.length > 0) {
+        const promotionRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT p.id, p.promotion_key as promotionKey, p.discount_percentage as discountPercentage, p.discount_amount as discountAmount, pl.promotion_name as name
+          FROM promotion p
+          LEFT JOIN promotion_language pl ON p.id = pl.promotion_id AND pl.language_id = 1
+          WHERE p.id IN (${promoIds.join(',')})
+        `);
+        promotionRows.forEach((p) => {
+          promoDetailsMap.set(Number(p.id), {
+            name: p.name || p.promotionKey || `KM #${p.id}`,
+            discountPercentage: Number(p.discountPercentage || 0),
+            discountAmount: Number(p.discountAmount || 0),
+          });
+        });
+      }
+
       // Fetch config
       const conf = await fastify.prisma.crm.crmConfig.findUnique({
         where: { key: 'BOOKER_SALARY_CONFIG' },
@@ -5853,7 +5916,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
           /* ignore */
         }
       }
-
       // 3.5. Query all orders in range to calculate summary KPIs (without pagination)
       let allOrdersSql = `
         SELECT 
@@ -5866,7 +5928,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
         FROM \`order\` o
         LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
-          AND o.order_state != 'Cancelled'
       `;
       const allOrdersParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
 
@@ -5880,6 +5941,30 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       const allOrdersInRange = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(allOrdersSql, ...allOrdersParams);
+
+      const now = new Date();
+      let totalPending = 0;
+      let totalMissed = 0;
+      let totalCompleted = 0;
+      let pendingValue = 0;
+      let completedRevenue = 0;
+
+      allOrdersInRange.forEach((o) => {
+        const bDate = o.bookingDateStart ? new Date(o.bookingDateStart) : null;
+        const isCompleted = o.orderState === 'Completed';
+        const isCancelled = o.orderState === 'Cancelled';
+        const isPast = bDate ? bDate < now : false;
+
+        if (isCompleted) {
+          totalCompleted++;
+          completedRevenue += Number(o.totalPrice || 0);
+        } else if (isCancelled || isPast) {
+          totalMissed++;
+        } else {
+          totalPending++;
+          pendingValue += Number(o.totalPrice || 0);
+        }
+      });
 
       // Collect all customer IDs from both allOrdersInRange and the paginated result
       const allRangeUserIds = allOrdersInRange.map((o) => Number(o.userId)).filter((id) => !isNaN(id));
@@ -6056,23 +6141,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const now = new Date();
-      // Filter for past or present bookings (up to today/now) to calculate rates
-      const pastOrPresentOrders = allOrdersInRange.filter((o) =>
-        o.bookingDateStart ? new Date(o.bookingDateStart) <= now : true
-      );
-      const totalPlanned = pastOrPresentOrders.length;
-      const totalCheckin = pastOrPresentOrders.filter((o) => o.orderState === 'Completed').length;
+      const totalPlanned = totalCompleted + totalMissed;
+      const totalCheckin = totalCompleted;
       const checkInRate = totalPlanned > 0 ? (totalCheckin / totalPlanned) * 100 : 0;
+      const missedRatePct = totalPlanned > 0 ? (totalMissed / totalPlanned) * 100 : 0;
       const baseSalary = config.baseSalary || 0;
 
       let doneBonus = 0;
       let doneLevelCount = 0;
       const sortedDoneTiers = [...(config.doneBonusTiers || [])].sort((a, b) => b.minCount - a.minCount);
-      // Wait: doneCount should still be based on overall completed orders in the range or only past/present?
-      // Since it's done count, completed orders in the future (if any) are already done, so we can use overall completed count in the range or just completed.
-      // Usually, it's completed count in the selected period, so using summaryCompletedOrders.length (which is overall completed count) is correct.
-      // Let's use overall completed orders for Done bonus tiers.
       const overallCompletedCount = summaryCompletedOrders.length;
       const matchedDone = sortedDoneTiers.find((t) => overallCompletedCount >= t.minCount);
       if (matchedDone) {
@@ -6082,8 +6159,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       let missedBonus = 0;
       let missedLevelRate = 0;
-      const missedCount = totalPlanned - totalCheckin;
-      const missedRatePct = totalPlanned > 0 ? (missedCount / totalPlanned) * 100 : 0;
       const sortedMissedTiers = [...(config.missedBonusTiers || [])].sort((a, b) => a.maxRate - b.maxRate);
       if (totalPlanned > 0) {
         const matchedMissed = sortedMissedTiers.find((t) => missedRatePct <= t.maxRate);
@@ -6163,6 +6238,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
         }
 
+        const firstPromoSv = orderServicesList.find((os) => os.promotion_id !== null && os.promotion_id !== undefined);
+        const pId = Number(firstPromoSv?.promotion_id || row.promotionId || row.selectedPromotionId || 0);
+        const promoInfo = pId > 0 ? promoDetailsMap.get(pId) : null;
+        const promotionName = promoInfo ? promoInfo.name : null;
+        const promotionDiscountPercent = promoInfo ? promoInfo.discountPercentage : null;
+        const promotionDiscountAmount = promoInfo ? promoInfo.discountAmount : null;
+
         return {
           id: Number(row.id),
           orderKey: row.orderKey,
@@ -6181,6 +6263,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           serviceName,
           servicePrice: Number(price || 0),
           discountPercent: Number(discountPercent || 0),
+          promotionName,
+          promotionDiscountPercent,
+          promotionDiscountAmount,
           netRevenue: Number(netRevenue || 0),
           tipAmount: Number(tipAmount || 0),
           bookingBonus: Number(bookingBonus || 0),
@@ -6193,6 +6278,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         data: appointments,
         total,
         summary: {
+          totalPending,
+          totalMissed,
+          totalCompleted,
+          pendingValue,
+          completedRevenue: summaryTotalNetRev || completedRevenue,
           totalPlanned,
           totalCheckin,
           checkInRate: Math.round(checkInRate * 10) / 10,

@@ -131,33 +131,18 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                   }}
                 >
                   <div>
-                    CN: <strong>{b.branchName}</strong> | CV: <strong>{b.technicianName}</strong>
+                    CN: <strong>{b.branchName || '-'}</strong> | CV:{' '}
+                    <strong>{b.technicianName && b.technicianName !== 'Kỹ thuật viên' ? b.technicianName : '-'}</strong>
                   </div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', opacity: 0.85 }}>
                     <span>
-                      CC IN: <strong>{b.checkinStaffName || b.ccInName || b.technicianName || 'N/A'}</strong>
+                      CC IN: <strong>{b.checkinStaffName || b.ccInName || '-'}</strong>
                     </span>
                     <span>
-                      CC OUT:{' '}
-                      <strong>
-                        {b.checkoutStaffName ||
-                          b.ccOutName ||
-                          b.checkinStaffName ||
-                          b.ccInName ||
-                          b.technicianName ||
-                          'N/A'}
-                      </strong>
+                      CC OUT: <strong>{b.checkoutStaffName || b.ccOutName || '-'}</strong>
                     </span>
                     <span>
-                      BK:{' '}
-                      <strong>
-                        {b.bookerStaffName ||
-                          b.bookerName ||
-                          b.checkinStaffName ||
-                          b.ccInName ||
-                          b.technicianName ||
-                          'N/A'}
-                      </strong>
+                      BK: <strong>{b.bookerStaffName || b.bookerName || '-'}</strong>
                     </span>
                   </div>
                 </div>

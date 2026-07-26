@@ -616,7 +616,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
     const { dateFrom, dateTo, type, staffId, page, limit } = request.query as {
       dateFrom?: string;
       dateTo?: string;
-      type?: 'pending' | 'completed';
+      type?: 'pending' | 'missed' | 'completed';
       staffId?: string;
       page?: string;
       limit?: string;
@@ -722,8 +722,10 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
 
       if (type === 'completed') {
         countSql += ` AND o.order_state = 'Completed'`;
+      } else if (type === 'missed') {
+        countSql += ` AND (o.order_state = 'Cancelled' OR (o.order_state != 'Completed' AND o.booking_date_start < NOW()))`;
       } else {
-        countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled')`;
+        countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled') AND o.booking_date_start >= NOW()`;
       }
 
       const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams);

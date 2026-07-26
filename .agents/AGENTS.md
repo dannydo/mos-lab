@@ -278,3 +278,25 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 3. **Strict Verification Loop**: Mỗi thay đổi phải vượt qua script `bash scripts/night-shift-runner.sh` (`pnpm lint`, `pnpm --filter @mos-lab/shared build`, `pnpm build`). Nếu lỗi, tự động rollback bằng `git checkout -- .`.
 4. **Walkthrough Artifact Report**: Xuất file Báo cáo tổng hợp `walkthrough.md` trong Artifacts kèm danh sách commit và lệnh merge cho người dùng khi hoàn tất.
 
+---
+
+# 🛑 Strict CC IN / CC OUT / CV Staff Recognition & Fallback Prohibition Rules
+
+1. **Định nghĩa chuẩn**:
+   - `CC IN`: Tư vấn viên thực hiện Check-in cho khách tại cửa hàng.
+   - `CC OUT`: Tư vấn viên thực hiện Checkout / Thanh toán cho khách.
+   - `BK`: Nhân sự Booker / Telesales tạo đơn hẹn.
+   - `CV`: Chuyên viên / Kỹ thuật viên làm dịch vụ mi.
+2. **Quy tắc hiển thị & API**:
+   - Đơn hàng chưa Check-in hoặc bị lỡ (`New`, `Pending`, `Missed`, `Cancelled`): `ccInName` và `ccOutName` bắt buộc phải trả về `null` (hiển thị `-` trên UI).
+   - Khách hàng không chọn trước KTV chỉ định (`assigned_staff_id = null`): `technicianName` bắt buộc phải trả về `null` (hiển thị `-` trên UI), **tuyệt đối KHÔNG** fallback hiển thị chuỗi mặc định `"Kỹ thuật viên"`.
+   - **Cấm giả lập fallback**: Tuyệt đối KHÔNG viết logic fallback gán tên Booker hay KTV làm CC IN/OUT (`rawCheckIn || rawBooker || firstCvStaffId`).
+
+---
+
+# 🔄 Staff Dropdown Deduplication & Infinite Scroll Fetch Safety Rules
+
+1. **De-duplicate Nhân Sự**: Tất cả các API trả về danh sách nhân viên (`/api/customers/staff`) bắt buộc phải lọc de-duplicate theo `displayName` (trimmed & case-insensitive) trước khi trả về cho Frontend, đảm bảo các ô chọn Select không bao giờ xuất hiện tên trùng lặp.
+2. **An Toàn Cuộn Trang Infinite Scroll**: Tất cả các hook/component dùng `IntersectionObserver` để cuộn tải thêm dữ liệu bắt buộc phải duy trì cờ `hasMore` (đặt thành `false` khi số item < `pageSize` hoặc đã tải hết `total`) và ref `isFetchingRef` ngăn chặn vòng lặp gọi API vô hạn gây giật lắc giao diện.
+
+

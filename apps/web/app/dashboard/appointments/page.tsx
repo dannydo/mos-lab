@@ -36,7 +36,7 @@ const RescheduleBookingModal = dynamic(
   { ssr: false }
 );
 import { useAppointmentsData } from './hooks/useAppointmentsData';
-import { getPendingColumns, getCompletedColumns } from './components/AppointmentColumns';
+import { getPendingColumns, getCompletedColumns, getMissedColumns } from './components/AppointmentColumns';
 
 dayjs.extend(isoWeek);
 
@@ -44,6 +44,7 @@ const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 import { formatVND } from '../../../lib/format-utils';
+import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
 
 const defaultColumnConfig = {
   customerName: { visible: true, width: 220, label: 'Khách hàng' },
@@ -55,6 +56,7 @@ const defaultColumnConfig = {
   tipAmount: { visible: true, width: 120, label: 'Tiền tips' },
   bookingBonus: { visible: true, width: 130, label: 'Hoa hồng OC' },
   bookingChannel: { visible: true, width: 120, label: 'Kênh đặt lịch' },
+  promotion: { visible: true, width: 150, label: 'Khuyến mãi' },
   bookingNote: { visible: true, width: 220, label: 'Ghi chú đặt lịch' },
   orderState: { visible: true, width: 120, label: 'Trạng thái' },
 };
@@ -82,6 +84,7 @@ export default function AppointmentsPage() {
     staffList,
     appointments,
     loading,
+    hasMore,
     total,
     summary,
     sentinelRef,
@@ -129,6 +132,20 @@ export default function AppointmentsPage() {
     ]
   );
 
+  const missedColumns = React.useMemo(
+    () =>
+      getMissedColumns({
+        themeMode,
+        token,
+        formatVND,
+        openDetailModal,
+        makeCall,
+        setBookingInitialCustomer,
+        setBookingWizardVisible,
+      }),
+    [themeMode, token, openDetailModal, makeCall, setBookingInitialCustomer, setBookingWizardVisible]
+  );
+
   const completedColumns = React.useMemo(
     () =>
       getCompletedColumns({
@@ -140,7 +157,8 @@ export default function AppointmentsPage() {
     [themeMode, token, openDetailModal]
   );
 
-  const baseColumns = activeTab === 'completed' ? completedColumns : pendingColumns;
+  const baseColumns =
+    activeTab === 'completed' ? completedColumns : activeTab === 'missed' ? missedColumns : pendingColumns;
 
   const columns = React.useMemo(
     () =>
@@ -151,16 +169,29 @@ export default function AppointmentsPage() {
           return config ? config.visible : true;
         })
         .map((col) => {
-          const config = columnConfig[col.key as string];
-          if (config) {
-            return {
-              ...col,
-              width: config.width,
-            };
-          }
-          return col;
+          const colKey = col.key as string;
+          const config = columnConfig[colKey];
+          const colWidth = config?.width || col.width || 150;
+          return {
+            ...col,
+            width: colWidth,
+            onHeaderCell: (column: SafeAny) => ({
+              width: column.width,
+              onResize: (newWidth: number) => {
+                if (colKey && columnConfig[colKey]) {
+                  saveColumnConfig({
+                    ...columnConfig,
+                    [colKey]: {
+                      ...columnConfig[colKey],
+                      width: Math.round(newWidth),
+                    },
+                  });
+                }
+              },
+            }),
+          };
         }),
-    [baseColumns, columnConfig]
+    [baseColumns, columnConfig, saveColumnConfig]
   );
 
   const totalWidth = React.useMemo(() => columns.reduce((sum, col) => sum + (Number(col.width) || 120), 0), [columns]);
@@ -352,6 +383,192 @@ export default function AppointmentsPage() {
         </div>
       </div>
 
+      {/* 3 INTERACTIVE SUMMARY KPI CARDS */}
+      <div style={{ marginBottom: '20px' }}>
+        <Row gutter={[16, 16]}>
+          {/* Card 1: Lịch Hẹn */}
+          <Col xs={24} sm={8}>
+            <div
+              onClick={() => {
+                setActiveTab('pending');
+                localStorage.setItem('mos_appointments_activeTab', 'pending');
+              }}
+              style={{
+                cursor: 'pointer',
+                background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
+                border:
+                  activeTab === 'pending'
+                    ? '2px solid #D4A84B'
+                    : `1px solid ${themeMode === 'dark' ? '#303030' : '#e8e8e8'}`,
+                boxShadow: activeTab === 'pending' ? '0 0 12px rgba(212, 168, 75, 0.3)' : '0 2px 6px rgba(0,0,0,0.04)',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                transition: 'all 0.25s ease-in-out',
+                position: 'relative',
+              }}
+              className="hover:scale-[1.01]"
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: '#D4A84B',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    📅 LỊCH HẸN (ĐANG CHỜ)
+                  </div>
+                  <div
+                    style={{ fontSize: '24px', fontWeight: '800', color: token.colorText, marginTop: '4px' }}
+                    className="tabular-nums"
+                  >
+                    {summary?.totalPending ?? (activeTab === 'pending' ? total : 0)}{' '}
+                    <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
+                      lượt
+                    </span>
+                  </div>
+                  <div
+                    style={{ fontSize: '12px', color: token.colorTextDescription, marginTop: '2px' }}
+                    className="tabular-nums"
+                  >
+                    Ước tính:{' '}
+                    <span style={{ fontWeight: '600', color: '#D4A84B' }}>{formatVND(summary?.pendingValue || 0)}</span>
+                  </div>
+                </div>
+                {activeTab === 'pending' && (
+                  <Badge count="Đang xem" style={{ backgroundColor: '#D4A84B', fontWeight: 'bold' }} />
+                )}
+              </div>
+            </div>
+          </Col>
+
+          {/* Card 2: Lịch Missed */}
+          <Col xs={24} sm={8}>
+            <div
+              onClick={() => {
+                setActiveTab('missed');
+                localStorage.setItem('mos_appointments_activeTab', 'missed');
+              }}
+              style={{
+                cursor: 'pointer',
+                background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
+                border:
+                  activeTab === 'missed'
+                    ? '2px solid #FF4D4F'
+                    : `1px solid ${themeMode === 'dark' ? '#303030' : '#e8e8e8'}`,
+                boxShadow: activeTab === 'missed' ? '0 0 12px rgba(255, 77, 79, 0.3)' : '0 2px 6px rgba(0,0,0,0.04)',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                transition: 'all 0.25s ease-in-out',
+                position: 'relative',
+              }}
+              className="hover:scale-[1.01]"
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: '#FF4D4F',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    ⚠️ LỊCH MISSED (LỠ / HỦY)
+                  </div>
+                  <div
+                    style={{ fontSize: '24px', fontWeight: '800', color: token.colorText, marginTop: '4px' }}
+                    className="tabular-nums"
+                  >
+                    {summary?.totalMissed ?? (activeTab === 'missed' ? total : 0)}{' '}
+                    <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
+                      lượt
+                    </span>
+                  </div>
+                  <div
+                    style={{ fontSize: '12px', color: token.colorTextDescription, marginTop: '2px' }}
+                    className="tabular-nums"
+                  >
+                    Tỷ lệ Missed:{' '}
+                    <span style={{ fontWeight: '600', color: '#FF4D4F' }}>
+                      {summary?.missedRate ?? summary?.missedRatePct ?? 0}%
+                    </span>
+                  </div>
+                </div>
+                {activeTab === 'missed' && (
+                  <Badge count="Đang xem" style={{ backgroundColor: '#FF4D4F', fontWeight: 'bold' }} />
+                )}
+              </div>
+            </div>
+          </Col>
+
+          {/* Card 3: Lịch Done */}
+          <Col xs={24} sm={8}>
+            <div
+              onClick={() => {
+                setActiveTab('completed');
+                localStorage.setItem('mos_appointments_activeTab', 'completed');
+              }}
+              style={{
+                cursor: 'pointer',
+                background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
+                border:
+                  activeTab === 'completed'
+                    ? '2px solid #52C41A'
+                    : `1px solid ${themeMode === 'dark' ? '#303030' : '#e8e8e8'}`,
+                boxShadow: activeTab === 'completed' ? '0 0 12px rgba(82, 196, 26, 0.3)' : '0 2px 6px rgba(0,0,0,0.04)',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                transition: 'all 0.25s ease-in-out',
+                position: 'relative',
+              }}
+              className="hover:scale-[1.01]"
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: '#52C41A',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    ✅ LỊCH DONE (ĐÃ ĐẾN)
+                  </div>
+                  <div
+                    style={{ fontSize: '24px', fontWeight: '800', color: token.colorText, marginTop: '4px' }}
+                    className="tabular-nums"
+                  >
+                    {summary?.totalCompleted ?? (activeTab === 'completed' ? total : 0)}{' '}
+                    <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
+                      lượt
+                    </span>
+                  </div>
+                  <div
+                    style={{ fontSize: '12px', color: token.colorTextDescription, marginTop: '2px' }}
+                    className="tabular-nums"
+                  >
+                    Doanh thu Net:{' '}
+                    <span style={{ fontWeight: '600', color: '#52C41A' }}>
+                      {formatVND(summary?.completedRevenue || summary?.totalNetRev || 0)}
+                    </span>
+                  </div>
+                </div>
+                {activeTab === 'completed' && (
+                  <Badge count="Đang xem" style={{ backgroundColor: '#52C41A', fontWeight: 'bold' }} />
+                )}
+              </div>
+            </div>
+          </Col>
+        </Row>
+      </div>
+
       <Card style={{ background: token.colorBgContainer, borderRadius: '8px' }}>
         <Tabs
           activeKey={activeTab}
@@ -365,10 +582,22 @@ export default function AppointmentsPage() {
               key: 'pending',
               label: (
                 <span style={{ fontSize: '15px', fontWeight: '500' }}>
-                  Lịch hẹn / Chưa đến
+                  Lịch hẹn / Đang chờ
                   <Badge
-                    count={activeTab === 'pending' ? total : 0}
+                    count={summary?.totalPending ?? (activeTab === 'pending' ? total : 0)}
                     style={{ marginLeft: 8, backgroundColor: '#D4A84B' }}
+                  />
+                </span>
+              ),
+            },
+            {
+              key: 'missed',
+              label: (
+                <span style={{ fontSize: '15px', fontWeight: '500' }}>
+                  Lịch Missed (Không đến)
+                  <Badge
+                    count={summary?.totalMissed ?? (activeTab === 'missed' ? total : 0)}
+                    style={{ marginLeft: 8, backgroundColor: '#FF4D4F' }}
                   />
                 </span>
               ),
@@ -377,9 +606,9 @@ export default function AppointmentsPage() {
               key: 'completed',
               label: (
                 <span style={{ fontSize: '15px', fontWeight: '500' }}>
-                  Khách hàng đã đến
+                  Lịch Done (Đã đến)
                   <Badge
-                    count={activeTab === 'completed' ? total : 0}
+                    count={summary?.totalCompleted ?? (activeTab === 'completed' ? total : 0)}
                     style={{ marginLeft: 8, backgroundColor: '#52C41A' }}
                   />
                 </span>
@@ -670,6 +899,11 @@ export default function AppointmentsPage() {
         )}
 
         <Table
+          components={{
+            header: {
+              cell: ResizableHeaderCell,
+            },
+          }}
           dataSource={appointments}
           columns={columns}
           rowKey="id"
@@ -727,8 +961,10 @@ export default function AppointmentsPage() {
               <span>Đang tải thêm dữ liệu...</span>
             </>
           )}
-          {!loading && appointments.length >= total && total > 0 && (
-            <span style={{ fontStyle: 'italic', opacity: 0.8 }}>Đã hiển thị tất cả {total} lịch hẹn</span>
+          {!loading && !hasMore && appointments.length > 0 && (
+            <span style={{ fontStyle: 'italic', opacity: 0.8 }}>
+              Đã hiển thị tất cả {appointments.length} / {total} lịch hẹn
+            </span>
           )}
         </div>
       </Card>

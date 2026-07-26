@@ -157,6 +157,9 @@ export interface Appointment {
   serviceName?: string;
   servicePrice?: number;
   discountPercent?: number;
+  promotionName?: string | null;
+  promotionDiscountPercent?: number | null;
+  promotionDiscountAmount?: number | null;
   netRevenue?: number;
   tipAmount?: number;
   bookingBonus?: number;
@@ -254,18 +257,25 @@ export interface Referral {
   referredPhone: string;
 }
 
+export interface AppointmentSummary {
+  totalPending: number;
+  totalMissed: number;
+  totalCompleted: number;
+  totalPlanned: number;
+  totalCheckin: number;
+  checkInRate: number;
+  missedRate: number;
+  pendingValue: number;
+  completedRevenue: number;
+  totalTips: number;
+  totalBonus: number;
+  baseSalary?: number;
+}
+
 export interface ListAppointmentsResponse {
   data: Appointment[];
   total: number;
-  summary?: {
-    totalPlanned: number;
-    totalCheckin: number;
-    totalCompleted: number;
-    totalCancelled: number;
-    totalRevenue: number;
-    totalTips: number;
-    totalBonus: number;
-  } | null;
+  summary?: AppointmentSummary | null;
 }
 
 export interface CustomerNote {

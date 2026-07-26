@@ -19,6 +19,7 @@ const defaultColumnConfig = {
   tipAmount: { visible: true, width: 120, label: 'Tiền tips' },
   bookingBonus: { visible: true, width: 130, label: 'Hoa hồng OC' },
   bookingChannel: { visible: true, width: 120, label: 'Kênh đặt lịch' },
+  promotion: { visible: true, width: 150, label: 'Khuyến mãi' },
   bookingNote: { visible: true, width: 220, label: 'Ghi chú đặt lịch' },
   orderState: { visible: true, width: 120, label: 'Trạng thái' },
 };
@@ -63,7 +64,7 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
   }, [viewMode, referenceDate, customRange]);
 
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'missed' | 'completed'>('pending');
   const [selectedStaffId, setSelectedStaffId] = useState<string>('all');
   const [staffList, setStaffList] = useState<SafeAny[]>([]);
 
@@ -114,8 +115,8 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
         setViewMode(savedViewMode as 'month' | 'week' | 'day');
       }
       const savedActiveTab = localStorage.getItem('mos_appointments_activeTab');
-      if (savedActiveTab) {
-        setActiveTab(savedActiveTab as 'pending' | 'completed');
+      if (savedActiveTab && ['pending', 'missed', 'completed'].includes(savedActiveTab)) {
+        setActiveTab(savedActiveTab as 'pending' | 'missed' | 'completed');
       }
       const savedStaffId = localStorage.getItem('mos_appointments_selectedStaffId');
       if (savedStaffId) {
@@ -144,17 +145,22 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     localStorage.setItem('appointment_columns_config_v2', JSON.stringify(newConfig));
   };
 
+  const [hasMore, setHasMore] = useState(true);
+  const isFetchingRef = useRef(false);
+
   // Reset currentPage to 1 and clear data when filters change
   useEffect(() => {
     setCurrentPage(1);
     setAppointments([]);
     setTotal(0);
+    setHasMore(true);
   }, [viewMode, referenceDate, dateRange, activeTab, selectedStaffId]);
 
   // Fetch appointments data
   const fetchAppointments = useCallback(async () => {
-    if (!dateRange[0] || !dateRange[1]) return;
+    if (!dateRange[0] || !dateRange[1] || isFetchingRef.current) return;
 
+    isFetchingRef.current = true;
     setLoading(true);
     try {
       const params: SafeAny = {
@@ -170,24 +176,32 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
       }
 
       const data = await apiClient.customers.getAppointments(params);
+      const fetchedItems = data.data || [];
 
       if (currentPage === 1) {
-        setAppointments(data.data);
+        setAppointments(fetchedItems);
       } else {
         setAppointments((prev) => {
           const existingIds = new Set(prev.map((item) => item.id));
-          const newItems = data.data.filter((item: SafeAny) => !existingIds.has(item.id));
+          const newItems = fetchedItems.filter((item: SafeAny) => !existingIds.has(item.id));
           return [...prev, ...newItems];
         });
       }
 
       setTotal(data.total);
       setSummary(data.summary || null);
+
+      if (fetchedItems.length < pageSize || currentPage * pageSize >= data.total) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
     } catch (err) {
       console.error('Fetch appointments error:', err);
       optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể tải lịch hẹn');
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   }, [dateRange, activeTab, selectedStaffId, currentUser, currentPage, pageSize]);
 
@@ -197,6 +211,7 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
       optionsRef.current?.onSuccess?.('Hủy lịch hẹn thành công!');
       setAppointments([]);
       setCurrentPage(1);
+      setHasMore(true);
       fetchAppointments();
     } catch (err) {
       console.error('[Cancel] Failed to cancel booking:', err);
@@ -212,16 +227,16 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
 
   // Intersection Observer for Infinite Scroll (Lazy Loading)
   useEffect(() => {
-    if (loading || appointments.length >= total || total === 0) return;
+    if (loading || !hasMore || appointments.length === 0) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
+        if (entries[0].isIntersecting && !isFetchingRef.current && hasMore) {
           setCurrentPage((prev) => prev + 1);
         }
       },
       {
-        rootMargin: '150px',
+        rootMargin: '100px',
       }
     );
 
@@ -235,7 +250,7 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
         observer.unobserve(currentSentinel);
       }
     };
-  }, [loading, appointments.length, total]);
+  }, [loading, hasMore, appointments.length]);
 
   const handleNavigate = (direction: number) => {
     setCustomRange(null);
@@ -331,6 +346,7 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     staffList,
     appointments,
     loading,
+    hasMore,
     currentPage,
     setCurrentPage,
     pageSize,

@@ -175,14 +175,14 @@ export const TipHistoryModal: React.FC<TipHistoryModalProps> = ({
       title: 'Chuyên viên (CV)',
       dataIndex: 'technicianName',
       key: 'technicianName',
-      render: (text: string) => text || 'N/A',
+      render: (text: string) => (text && text !== 'Kỹ thuật viên' && text !== 'Unknown' ? text : '-'),
       width: colWidths.technicianName,
     },
     {
       title: 'Tư vấn viên (CC Out)',
       dataIndex: 'ccOutName',
       key: 'ccOutName',
-      render: (text: string) => text || 'N/A',
+      render: (text: string) => (text && text !== 'Tư vấn viên' && text !== 'Unknown' ? text : '-'),
       width: colWidths.ccOutName,
     },
     {
