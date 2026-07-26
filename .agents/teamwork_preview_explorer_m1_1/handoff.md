@@ -3,7 +3,7 @@
 **Agent:** `teamwork_preview_explorer_m1_1` (Frontend Performance Benchmarker)  
 **Target Project:** `mos-lab` (`http://localhost:4000` Web & `http://localhost:4001` Fastify API)  
 **Report File:** `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/frontend_benchmark.md`  
-**Handoff File:** `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/handoff.md`  
+**Handoff File:** `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/handoff.md`
 
 ---
 
@@ -52,6 +52,7 @@
 ## 4. Conclusion
 
 The post-optimization performance sweep confirms dramatic system-wide performance gains across all 26 route combinations on `mos-lab`:
+
 - Initial page load duration dropped by **>99.4%** across cold routes (from 37.7s - 90.0s down to 170ms - 232ms).
 - TTI accelerated by **83.0% - 97.5%**, rendering all pages in **1.6s - 2.4s**.
 - Critical payload spikes were eliminated (Referrals payload dropped by **98.8%** from 3.93 MB to 45.80 kB).

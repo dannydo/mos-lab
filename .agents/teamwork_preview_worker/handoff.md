@@ -3,7 +3,7 @@
 **Role:** Performance Report Generator (`teamwork_preview_worker`)  
 **Task:** Create final comparative performance report `performance_report_comparison.md`  
 **Target Path:** `/Users/dannydo/projects/mos-lab/performance_report_comparison.md`  
-**Date:** July 26, 2026  
+**Date:** July 26, 2026
 
 ---
 
@@ -69,6 +69,7 @@ The comparative performance report file `/Users/dannydo/projects/mos-lab/perform
 ## 5. Verification Method
 
 To verify the generated comparative performance report:
+
 1. Inspect the file:
    ```bash
    cat /Users/dannydo/projects/mos-lab/performance_report_comparison.md

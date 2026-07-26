@@ -11,21 +11,22 @@
 
 A comprehensive read-only audit of the `apps/web/` Next.js frontend codebase, React components, Ant Design Theme configurations, and CSS styling was conducted to evaluate post-optimization numerical formatting (`tabular-nums`) and Web Content Accessibility Guidelines (WCAG AA) compliance.
 
-| Audit Metric | Target | Verified Value | Compliance Status |
-| :--- | :---: | :---: | :---: |
-| **Missing `tabular-nums` Count** | 0 | **0** | PASSED (100% Covered) |
-| **Top-Level `<h1>` Landmark** | Required | Present (`sr-only` in `layout.tsx`) | PASSED |
-| **Sidebar Navigation `<nav>`** | `<nav aria-label="Main Navigation">` | Present | PASSED |
-| **Icon Button `aria-label`** | Required | Present on Theme Toggle & Sidebar Collapse | PASSED |
-| **Keyboard Focus Outline** | WCAG AA `:focus-visible` | `2px solid var(--color-gold); outline-offset: 2px;` | PASSED |
-| **Light Theme Gold Contrast** | $\ge 4.5:1$ | `#9e7118` (**4.58:1 to 4.77:1**) | PASSED |
-| **Dark Theme Gold Contrast** | $\ge 4.5:1$ | `#d4a84b` (**7.35:1 to 8.15:1**) | PASSED |
+| Audit Metric                     |                Target                |                   Verified Value                    |   Compliance Status   |
+| :------------------------------- | :----------------------------------: | :-------------------------------------------------: | :-------------------: |
+| **Missing `tabular-nums` Count** |                  0                   |                        **0**                        | PASSED (100% Covered) |
+| **Top-Level `<h1>` Landmark**    |               Required               |         Present (`sr-only` in `layout.tsx`)         |        PASSED         |
+| **Sidebar Navigation `<nav>`**   | `<nav aria-label="Main Navigation">` |                       Present                       |        PASSED         |
+| **Icon Button `aria-label`**     |               Required               |     Present on Theme Toggle & Sidebar Collapse      |        PASSED         |
+| **Keyboard Focus Outline**       |       WCAG AA `:focus-visible`       | `2px solid var(--color-gold); outline-offset: 2px;` |        PASSED         |
+| **Light Theme Gold Contrast**    |             $\ge 4.5:1$              |          `#9e7118` (**4.58:1 to 4.77:1**)           |        PASSED         |
+| **Dark Theme Gold Contrast**     |             $\ge 4.5:1$              |          `#d4a84b` (**7.35:1 to 8.15:1**)           |        PASSED         |
 
 ---
 
 ## 1. Tabular-Nums Formatting Audit
 
 ### Baseline vs. Post-Optimization State
+
 - **Baseline Error Count**: 475+ missing `tabular-nums` formatting errors across KPI Leaderboard, CC/CV tables, Appointments, Today stats, Call timers, and Audio timeline.
 - **Current Verified Error Count**: **0 missing `tabular-nums` errors**.
 
@@ -60,6 +61,7 @@ A comprehensive read-only audit of the `apps/web/` Next.js frontend codebase, Re
 ## 2. Semantic Landmarks & Heading Hierarchy Audit
 
 ### Heading 1 (`<h1>`) Top-Level Page Title
+
 - **Location**: `apps/web/app/dashboard/layout.tsx` (Line 401).
 - **Implementation**:
   ```tsx
@@ -68,6 +70,7 @@ A comprehensive read-only audit of the `apps/web/` Next.js frontend codebase, Re
 - **Verification**: Guarantees an explicit top-level `<h1>` heading for screen readers across all dashboard routes, establishing a clean document outline. Page-level titles use `<h2>` via `<PageHeader>` (`<Title level={2}>`).
 
 ### Sidebar Navigation Landmark (`<nav>`)
+
 - **Location**: `apps/web/app/dashboard/layout.tsx` (Lines 143–158).
 - **Implementation**:
   ```tsx
@@ -78,6 +81,7 @@ A comprehensive read-only audit of the `apps/web/` Next.js frontend codebase, Re
 - **Verification**: Wraps the Ant Design sidebar `<Menu>` inside an HTML `<nav>` element with an explicit `aria-label="Main Navigation"`, allowing screen reader users to quickly locate the primary navigation region.
 
 ### Interactive Icon Button ARIA Labels
+
 - **Theme Toggle Button** (`layout.tsx`, Lines 553–555):
   ```tsx
   aria-label={themeMode === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
@@ -95,6 +99,7 @@ A comprehensive read-only audit of the `apps/web/` Next.js frontend codebase, Re
 ## 3. Keyboard Navigation & Focus Styling Audit
 
 ### Focus Visible Styling
+
 - **Location**: `apps/web/app/globals.css` (Lines 55–59).
 - **Implementation**:
   ```css
@@ -107,6 +112,7 @@ A comprehensive read-only audit of the `apps/web/` Next.js frontend codebase, Re
 - **Verification**: When navigating using keyboard (`Tab` / `Shift+Tab`), all focused interactive elements (buttons, inputs, links, menu items) render a high-contrast 2px gold outline with a 2px offset.
 
 ### Interactive Controls Keyboard Operability
+
 - **Buttons & Links**: Native `<button>`, `<a href>`, and Ant Design `<Button>` components are natively focusable in the DOM tab order.
 - **Drawers & Modals**: Ant Design `Modal` and `Drawer` components trap keyboard focus inside the active dialog, respond to `Escape` key for closing, and restore focus to the triggering element upon dismissal.
 - **Form Controls**: Select dropdowns, DatePickers, Radio groups, and Input fields support standard keyboard arrow navigation, `Enter`, and `Space` activation.
@@ -130,6 +136,7 @@ A comprehensive read-only audit of the `apps/web/` Next.js frontend codebase, Re
    - **Contrast Ratio against `#111827`**: **7.35:1** (Exceeds WCAG AAA threshold of 7:1).
 
 ### Text & Semantic Status Token Contrast
+
 - **Light Theme Primary Text** (`#0f172a` on `#ffffff`): **16.2:1** (Passes WCAG AAA).
 - **Dark Theme Primary Text** (`#f8fafc` on `#111827`): **15.4:1** (Passes WCAG AAA).
 - **Light Theme Secondary Text** (`#64748b` on `#ffffff`): **4.62:1** (Passes WCAG AA).

@@ -3,7 +3,7 @@
 **Milestone:** Milestone 5: Report Verification & Layout Audit  
 **Target Artifact:** `/Users/dannydo/projects/mos-lab/performance_report.md`  
 **Reviewer:** `reviewer_m5_1` (Roles: reviewer, critic)  
-**Date:** July 26, 2026  
+**Date:** July 26, 2026
 
 ---
 
@@ -18,6 +18,7 @@ The performance report `performance_report.md` is an exceptionally detailed, acc
 ## Findings
 
 ### [Minor] Finding 1: B-Tree Index Utilization on `COALESCE` Expressions
+
 - **What:** Section 3.2 Index #1 proposes a composite index on `report_order(actual_booking_date_start, order_id)` to optimize queries matching User Rule #15 (`COALESCE(ro.actual_booking_date_start, o.booking_date_start)`).
 - **Where:** `apps/api/src/modules/kpi/services/cc-kpi.service.ts:517-518` & Section 3.2 Table.
 - **Why:** While adding `(actual_booking_date_start, order_id)` speeds up joins on `order_id` and range scans when querying `report_order` directly, wrapping `COALESCE(ro.actual_booking_date_start, o.booking_date_start)` inside a SQL `WHERE` clause still prevents standard MySQL B-Tree index seeks on `ro.actual_booking_date_start`.
@@ -76,4 +77,4 @@ The performance report `performance_report.md` is an exceptionally detailed, acc
 
 ## Unverified Items
 
-- *None.* All 26 page/sub-tab routes, 6 high-latency endpoints, 10 missing indexes, 8 tabular-nums component files, and 4 accessibility violations were 100% verified against codebase source files.
+- _None._ All 26 page/sub-tab routes, 6 high-latency endpoints, 10 missing indexes, 8 tabular-nums component files, and 4 accessibility violations were 100% verified against codebase source files.

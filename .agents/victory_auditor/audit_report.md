@@ -41,6 +41,7 @@ All **5 checklist criteria** specified in the audit scope were verified against 
 ## Detailed Verification Checklist Results
 
 ### 1. 26 Route Benchmark Comparison Matrix Table
+
 - **Requirement:** Complete side-by-side comparison matrix table (Before vs After) across all 26 route/tab combinations in `performance_report_comparison.md`.
 - **Status:** **VERIFIED (PASS)**
 - **Findings:**
@@ -49,6 +50,7 @@ All **5 checklist criteria** specified in the audit scope were verified against 
   - TTI reductions range from **83.0% to 97.5%**, accelerating route load from 12.2s–70.5s down to 1.6s–2.4s.
 
 ### 2. API Payload Size Reduction Verification
+
 - **Requirement:** Verify API payload size reduction (e.g. `GET /api/customers/referrals` from 3.93 MB to ~12 kB / ~45 kB paginated, sub-tab payloads <30 kB).
 - **Status:** **VERIFIED (PASS)**
 - **Findings:**
@@ -58,6 +60,7 @@ All **5 checklist criteria** specified in the audit scope were verified against 
   - Sub-tab endpoints under `/dashboard/cc` (Thưởng, Minigame, Diamond, Thu nhập) return pre-aggregated summary objects, reducing payload sizes from **2.84 MB – 3.69 MB** down to **28.50 kB** (**-99.0% to -99.2% payload reduction**).
 
 ### 3. Tabular-Nums Formatting (0 Missing Errors)
+
 - **Requirement:** 0 missing tabular-nums formatting errors across numeric/timer elements.
 - **Status:** **VERIFIED (PASS)**
 - **Findings:**
@@ -66,6 +69,7 @@ All **5 checklist criteria** specified in the audit scope were verified against 
   - 0 missing `tabular-nums` formatting errors remain monorepo-wide.
 
 ### 4. WCAG AA Accessibility & Contrast Compliance
+
 - **Requirement:** WCAG AA accessibility & contrast compliance (semantic landmarks, aria-labels, focus-visible styling, contrast ratios).
 - **Status:** **VERIFIED (PASS)**
 - **Findings:**
@@ -78,6 +82,7 @@ All **5 checklist criteria** specified in the audit scope were verified against 
     - Dark Theme gold token `--color-gold: #d4a84b` achieves **7.35:1 – 8.15:1** against dark layout backgrounds (Exceeds WCAG AAA threshold of 7.0:1).
 
 ### 5. 10 Composite Database Indexes & SQL Optimizations
+
 - **Requirement:** 10 composite database indexes and Fastify SQL query optimizations verified in code/database scripts.
 - **Status:** **VERIFIED (PASS)**
 - **Findings:**
@@ -102,15 +107,18 @@ All **5 checklist criteria** specified in the audit scope were verified against 
 ## Phase Execution Details
 
 ### Phase A: Timeline & Provenance Audit
+
 - Reconstructed commit history (`git log`). Changes were committed progressively with clear Conventional Commit messages (`feat`, `refactor`, `style`, `fix`).
 - File timestamps, modification patterns, and git status show genuine, authentic software engineering work without pre-populated result cheating or timestamp clustering.
 
 ### Phase B: Forensic Integrity & Metric Sanity Audit
+
 - Checked for hardcoded test outputs or facade functions: NONE found. All endpoints perform real SQL queries and return authentic data.
 - Checked payload calculations: Confirmed real reduction in byte length through pagination and DTO selection.
 - Tabular-nums and WCAG AA CSS definitions verified in codebase.
 
 ### Phase C: Independent Test Execution
+
 - Executed `pnpm lint` across the monorepo: Passed with **0 warnings / 0 errors** across all 4 packages.
 - Executed `pnpm build` across the monorepo: All 4 packages (`@mos-lab/shared`, `@mos-lab/api`, `@mos-lab/ads-portal`, `@mos-lab/web`) compiled and generated static/dynamic bundles successfully in Turbo.
 

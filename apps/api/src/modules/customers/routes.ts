@@ -2,75 +2,14 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
 import { BucketType } from '@mos-lab/shared';
 import { registerAllocationCron } from './services/allocation-cron.service.js';
+import { ComboRecognitionService } from './services/combo-recognition.service.js';
 
 export async function customerRoutes(fastify: FastifyInstance) {
   // Start automated allocation expiration cronjob
   registerAllocationCron(fastify);
 
   const getNewLocaUserIds = async (dFrom?: string, dTo?: string): Promise<number[]> => {
-    const dFromStr = dFrom
-      ? dFrom.slice(0, 19).replace('T', ' ')
-      : new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
-    const dToStr = dTo
-      ? dTo.slice(0, 19).replace('T', ' ')
-      : new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0, 19).replace('T', ' ');
-
-    try {
-      const rows = await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
-        `SELECT DISTINCT user_id FROM (
-          SELECT o_nl.user_id FROM \`order\` o_nl
-          JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
-          LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
-          LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
-          LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
-          LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-          WHERE o_nl.order_state = 'Completed'
-            AND osc_nl.total_price > 0
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) >= ? 
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) <= ?
-            AND (sp_nl.service_price_package_key IS NULL OR (
-              LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-            ))
-            AND (sl_nl.service_name IS NULL OR (
-              LOWER(sl_nl.service_name) NOT LIKE '%single%'
-              AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-              AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-            ))
-          UNION
-          SELECT o_nl.user_id FROM \`order\` o_nl
-          JOIN order_service os_nl ON os_nl.order_id = o_nl.id
-          LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
-          LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
-          LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
-          LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-          WHERE o_nl.order_state = 'Completed'
-            AND os_nl.total_price > 0
-            AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) >= ? 
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) <= ?
-            AND (sp_nl.service_price_package_key IS NULL OR (
-              LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
-              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
-              AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%balance%'
-            ))
-            AND (sl_nl.service_name IS NULL OR (
-              LOWER(sl_nl.service_name) NOT LIKE '%single%'
-              AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
-              AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
-            ))
-        ) t`,
-        dFromStr,
-        dToStr,
-        dFromStr,
-        dToStr
-      );
-      return (rows || []).map((r) => Number(r.user_id)).filter((id) => !isNaN(id) && id > 0);
-    } catch (err) {
-      fastify.log.error(err as Error, 'getNewLocaUserIds error');
-      return [];
-    }
+    return ComboRecognitionService.getNewLoCaCustomerIds(fastify, dFrom, dTo);
   };
   // GET /api/customers
   // Query legs DB, compute buckets, handle pagination, search, sorting

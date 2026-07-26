@@ -1,4 +1,5 @@
 ## 2026-07-26T11:00:11Z
+
 You are teamwork_preview_worker (Role: Performance Report Generator).
 Working directory: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker
 
@@ -6,12 +7,14 @@ Your task:
 Create the final comparative performance report file `performance_report_comparison.md` at `/Users/dannydo/projects/mos-lab/performance_report_comparison.md`.
 
 Read and aggregate data from the following source files:
+
 - Pre-optimization baseline: `/Users/dannydo/projects/mos-lab/performance_report.md`
 - Post-optimization frontend sweep: `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/frontend_benchmark.md`
 - Backend API & DB verification: `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m2_1/backend_verification.md`
 - Tabular-Nums & A11y verification: `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m3_1/a11y_verification.md`
 
 Requirements for `performance_report_comparison.md`:
+
 1. Executive Summary & Key Achievements:
    - Cold compilation / initial page load reduction (>99.4% across cold routes).
    - TTI acceleration (83.0% - 97.5% speedup, all 26 routes rendering in 1.6s - 2.4s).

@@ -59,6 +59,7 @@
 ## 4. Conclusion
 
 The Next.js 15 web frontend (`apps/web/`) passes all tabular number formatting and accessibility (A11y) verification criteria:
+
 1. Missing `tabular-nums` errors: **0** (Baseline 475+ resolved).
 2. Top-level `<h1>` page title present on all pages (`sr-only` landmark in `layout.tsx`).
 3. Sidebar navigation wrapped in `<nav aria-label="Main Navigation">`.

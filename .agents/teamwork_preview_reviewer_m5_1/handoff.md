@@ -2,7 +2,7 @@
 
 **Agent:** `reviewer_m5_1`  
 **Working Directory:** `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_reviewer_m5_1`  
-**Target File:** `/Users/dannydo/projects/mos-lab/performance_report.md`  
+**Target File:** `/Users/dannydo/projects/mos-lab/performance_report.md`
 
 ---
 
@@ -67,6 +67,7 @@
 To independently verify this review:
 
 1. **Verify Line Numbers & SQL Bottlenecks**:
+
    ```bash
    grep -n "monthStartStr" apps/api/src/modules/kpi/services/cc-kpi.service.ts
    grep -n "DATEDIFF" apps/api/src/modules/plans/routes.ts
@@ -74,6 +75,7 @@ To independently verify this review:
    ```
 
 2. **Verify Theme Variable & Contrast**:
+
    ```bash
    grep -n "\-\-color-gold" apps/web/app/globals.css
    ```
