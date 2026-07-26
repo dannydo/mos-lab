@@ -245,21 +245,38 @@ export default function AppointmentsPage() {
           )}
 
           <Space wrap>
-            <Radio.Group
-              value={viewMode}
-              onChange={(e) => {
-                const val = e.target.value;
-                setViewMode(val);
-                setCustomRange(null);
-                localStorage.setItem('mos_appointments_viewMode', val);
-              }}
-              optionType="button"
-              buttonStyle="solid"
-            >
-              <Radio.Button value="month">Tháng</Radio.Button>
-              <Radio.Button value="week">Tuần</Radio.Button>
-              <Radio.Button value="day">Ngày</Radio.Button>
-            </Radio.Group>
+            <Space.Compact>
+              <Button
+                type={viewMode === 'month' ? 'primary' : 'default'}
+                onClick={() => {
+                  setViewMode('month');
+                  setCustomRange(null);
+                  localStorage.setItem('mos_appointments_viewMode', 'month');
+                }}
+              >
+                Tháng
+              </Button>
+              <Button
+                type={viewMode === 'week' ? 'primary' : 'default'}
+                onClick={() => {
+                  setViewMode('week');
+                  setCustomRange(null);
+                  localStorage.setItem('mos_appointments_viewMode', 'week');
+                }}
+              >
+                Tuần
+              </Button>
+              <Button
+                type={viewMode === 'day' ? 'primary' : 'default'}
+                onClick={() => {
+                  setViewMode('day');
+                  setCustomRange(null);
+                  localStorage.setItem('mos_appointments_viewMode', 'day');
+                }}
+              >
+                Ngày
+              </Button>
+            </Space.Compact>
 
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <Space.Compact>
