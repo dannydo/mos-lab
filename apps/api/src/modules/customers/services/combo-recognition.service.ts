@@ -68,7 +68,7 @@ export class ComboRecognitionService {
           LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
           LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
           LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
-          LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
+          LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
           WHERE o_nl.order_state = 'Completed'
             AND os_nl.total_price > 0
             AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
