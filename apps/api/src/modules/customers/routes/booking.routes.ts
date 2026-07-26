@@ -990,6 +990,11 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         data: appointments,
         total,
         summary: {
+          totalPending,
+          totalMissed,
+          totalCompleted,
+          pendingValue,
+          completedRevenue: summaryTotalNetRev,
           totalPlanned,
           totalCheckin: totalCompleted,
           checkInRate: Math.round(checkInRate * 10) / 10,
