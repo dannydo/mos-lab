@@ -164,8 +164,8 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     setLoading(true);
     try {
       const params: SafeAny = {
-        dateFrom: dateRange[0].startOf('day').toISOString(),
-        dateTo: dateRange[1].endOf('day').toISOString(),
+        dateFrom: dateRange[0].startOf('day').format('YYYY-MM-DD 00:00:00'),
+        dateTo: dateRange[1].endOf('day').format('YYYY-MM-DD 23:59:59'),
         type: activeTab,
         page: currentPage,
         limit: pageSize,

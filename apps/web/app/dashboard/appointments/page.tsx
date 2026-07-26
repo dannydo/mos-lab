@@ -257,11 +257,9 @@ export default function AppointmentsPage() {
               optionType="button"
               buttonStyle="solid"
             >
-              <Radio.Group value={viewMode}>
-                <Radio.Button value="month">Tháng</Radio.Button>
-                <Radio.Button value="week">Tuần</Radio.Button>
-                <Radio.Button value="day">Ngày</Radio.Button>
-              </Radio.Group>
+              <Radio.Button value="month">Tháng</Radio.Button>
+              <Radio.Button value="week">Tuần</Radio.Button>
+              <Radio.Button value="day">Ngày</Radio.Button>
             </Radio.Group>
 
             <div style={{ position: 'relative', display: 'inline-block' }}>
