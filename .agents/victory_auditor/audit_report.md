@@ -1,131 +1,61 @@
-# Independent Victory Audit Report: Post-Optimization Performance Re-Audit
-
-**Project:** `mos-lab` (Next.js 15 Web Dashboard + Fastify 5 Backend API Monorepo)  
-**Auditor:** Victory Auditor (Independent Verification Agent)  
-**Date:** July 26, 2026  
-**Target Artifact:** `/Users/dannydo/projects/mos-lab/performance_report_comparison.md`  
-**Verdict:** **VICTORY CONFIRMED**
-
----
-
-```
 === VICTORY AUDIT REPORT ===
 
 VERDICT: VICTORY CONFIRMED
 
 PHASE A — TIMELINE & PROVENANCE AUDIT:
-  Result: PASS
-  Anomalies: none
+Result: PASS
+Anomalies: None. The work product at `/Users/dannydo/projects/mos-lab/.agents/orchestrator/catalog_audit_report.md` was created sequentially during the current orchestration cycle (timestamp: Jul 26 15:32:08 2026). No pre-populated or fabricated history detected.
 
-PHASE B — INTEGRITY CHECK & METRIC SANITY:
-  Result: PASS
-  Details: Verified authentic optimization code changes, SQL query refactoring, 10 composite database indexes, payload size reductions (-98.8% to -99.2%), 0 missing tabular-nums errors, and 100% WCAG AA contrast & accessibility compliance.
+PHASE B — INTEGRITY CHECK:
+Result: PASS
+Details: - Integrity Mode: development - Hardcoded test results: PASS (None found) - Facade implementation: PASS (None found; comprehensive deep-dive analysis provided) - Fabricated verification output: PASS (None found) - Code borrowing / external delegation: PASS (N/A)
 
-PHASE C — INDEPENDENT TEST EXECUTION:
-  Test command: pnpm lint && pnpm build
-  Your results: 4 monorepo packages (@mos-lab/shared, @mos-lab/api, @mos-lab/ads-portal, @mos-lab/web) linted cleanly with 0 warnings/errors and built successfully in Turbo.
-  Claimed results: Clean build and lint execution across all packages with verified performance acceleration.
-  Match: YES — 100% match against claims.
-```
-
----
-
-## Executive Summary & Verification Matrix
-
-The independent Victory Audit evaluated all victory claims submitted by the Orchestrator regarding the post-optimization state of `mos-lab`. The audit covered a 3-phase verification process comprising timeline reconstruction, forensic integrity and cheating detection, metric sanity checks, and independent build/lint test execution.
-
-All **5 checklist criteria** specified in the audit scope were verified against source code, database scripts, CSS themes, React components, and independent execution output.
+PHASE C — INDEPENDENT TEST EXECUTION & VERIFICATION:
+Test command: `pnpm lint` in `/Users/dannydo/projects/mos-lab` & Independent field-by-field verification of PHP DbTable models vs. Prisma schema & Auth middleware.
+Your results: - `pnpm lint`: PASS (0 errors, 4 packages in scope) - R1 Schema Audit: 100% MATCH. Verified all 6 PHP DbTable models in WingsLashes (`ServiceDbTable.php`, `ServiceLanguageDbTable.php`, `ServicePriceDbTable.php`, `ProductDbTable.php`, `ProductLanguageDbTable.php`, `ProductPriceDbTable.php`). Confirmed `reminding_interval_day` discrepancy and phantom column `last_day_required` in existing Prisma schema. - R2 API Design: 100% MATCH. Verified `requireRole` array signature (`UserRole[]`) in `apps/api/src/middlewares/auth.ts`. Confirmed 22 RESTful endpoints specified under `/api/catalog/*` with pagination envelopes. - R3 Business Logic: 100% MATCH. Verified multi-currency defaults (`currency_id = 1`), multi-store defaults (`client_id = 1`, `client_business_id = 1`), parent-child hierarchy (`parent_service_id` for Rule #16 dặm mi), enum casing, cascading soft-disable, and `service_price_package_key` rules for `ComboRecognitionService` / Rule #21 alignment. - R4 Security: 100% MATCH. Verified 3-tier admin guard, READ-ONLY legacy DB exception reconciliation for master catalog data, and `Prisma.$transaction` requirements. - R5 Frontend UX & AGENTS.md: 100% MATCH. Verified Theme rules, `tabular-nums` for numeric/price values (Rule #5), `apiClient` SDK usage, `@mos-lab/shared` types, NodeNext `.js` backend imports, and 3-tab layout design. - Acceptance Criteria & Executive Summary: 100% MATCH. Verified all 17 findings categorized into 3 Critical, 6 High, 5 Medium, and 3 Low with concrete Proposed Fixes and Executive Summary table.
+Claimed results: 17 total findings (3 Critical, 6 High, 5 Medium, 3 Low), 100% Acceptance Criteria satisfied, 6 legacy PHP DbTable models audited, 22 endpoints specified, 100% Proposed Fixes provided.
+Match: YES — No discrepancies found.
 
 ---
 
-## Detailed Verification Checklist Results
+DETAILED CHECKLIST AUDIT FINDINGS
+--------------------------------------------------------------------------------
 
-### 1. 26 Route Benchmark Comparison Matrix Table
+1. R1: Schema Correctness Audit
+   - Checked `ServiceDbTable.php` (29 fields), `ServiceLanguageDbTable.php` (6 fields), `ServicePriceDbTable.php` (16 fields), `ProductDbTable.php` (10 fields), `ProductLanguageDbTable.php` (7 fields), `ProductPriceDbTable.php` (5 fields).
+   - Independently verified that existing `legacy.prisma` line 143 contained misspelled column `remind_interval_day` instead of `reminding_interval_day`, and line 144 contained non-existent column `last_day_required`.
+   - Verified that complete Prisma schema declarations for all 6 tables in Section 1.3 are 100% accurate and match Phalcon ORM annotations in WingsLashes.
 
-- **Requirement:** Complete side-by-side comparison matrix table (Before vs After) across all 26 route/tab combinations in `performance_report_comparison.md`.
-- **Status:** **VERIFIED (PASS)**
-- **Findings:**
-  - `performance_report_comparison.md` contains a complete 26-row matrix table covering 13 primary pages (`/dashboard/today`, `/dashboard/customers`, `/dashboard/nyc`, `/dashboard/loca`, `/dashboard/appointments`, `/dashboard/plans`, `/dashboard/calls`, `/dashboard/omicall`, `/dashboard/kpi`, `/dashboard/cc`, `/dashboard/cv`, `/dashboard/bk`, `/dashboard/staff`) and 13 nested sub-tabs (`customers`: All, My Cust., Referrals; `cc`: Xoay, Thưởng, Minigame, Tip, Diamond, Thu nhập; `cv`: Xoay, Tip, Thu nhập; `bk`: Booking, Done, Tip, Revenue, Thu nhập).
-  - Metrics verified include Initial Load Time (ms), Time-to-Interactive (TTI, ms), API Calls on Mount, API Payload Size (kB), Tabular-Nums Missing Count (0 across all routes), and WCAG AA Compliance Status (PASSED across all routes).
-  - TTI reductions range from **83.0% to 97.5%**, accelerating route load from 12.2s–70.5s down to 1.6s–2.4s.
+2. R2: API Design & Completeness Review
+   - Independently checked `apps/api/src/middlewares/auth.ts` line 54: `export function requireRole(allowedRoles: UserRole[])`. Verified orchestrator finding R2-1 regarding array vs string signature.
+   - Verified 22 RESTful endpoints under `/api/catalog/*` covering CRUD for Services, Combos, Products, as well as operational endpoints (`reorder`, `bulk-status`, `restore`, `select`, `groups`, `types`).
+   - Verified standard response envelopes containing pagination metadata (`page`, `pageSize`, `total`, `totalPages`).
 
-### 2. API Payload Size Reduction Verification
+3. R3: Business Logic Gaps & Edge Cases
+   - Multi-currency: Verified recommendation for `currency_id = 1` default (VND).
+   - Multi-store tenancy: Verified recommendation for `client_id = 1` and `client_business_id = 1` defaults to ensure Fastify KPI queries (`bk.routes.ts`, `export.routes.ts`) function without data loss.
+   - Parent-child service hierarchy: Verified `parent_service_id` handling for Retain/Fix services to support Rule #16 (21-day touch-up for single services / 25-day touch-up for combo packages).
+   - Valid Enums: Verified exact string casing (`service_type`, `service_group`, `service_price_type`) required for KTV FAL bonus rules (Rule #13).
+   - Cascading effects: Verified soft-disable propagation (`is_disabled = true`) to `service_price` while preserving existing customer balance redemptions in `user_service_balance`.
+   - Package Key Format: Verified `service_price_package_key` rules (`single`, `refill_*`, `balance`, `combo_<count>_<descriptor>`) for compatibility with `ComboRecognitionService` and Rule #21.
 
-- **Requirement:** Verify API payload size reduction (e.g. `GET /api/customers/referrals` from 3.93 MB to ~12 kB / ~45 kB paginated, sub-tab payloads <30 kB).
-- **Status:** **VERIFIED (PASS)**
-- **Findings:**
-  - Code inspection of `apps/api/src/modules/customers/routes.ts` (Lines 2628–2785) confirms `page` and `pageSize` parameters are enforced with SQL pagination `LIMIT ${limit} OFFSET ${offset}` on referrer queries.
-  - Referral transaction lookups were refactored from global lookups to scoped lookups using `WHERE user_id IN (${refIdListStr})`.
-  - Referral payload size dropped from **3,932.49 kB (3.93 MB)** down to **45.80 kB** (**-98.8% payload reduction**).
-  - Sub-tab endpoints under `/dashboard/cc` (Thưởng, Minigame, Diamond, Thu nhập) return pre-aggregated summary objects, reducing payload sizes from **2.84 MB – 3.69 MB** down to **28.50 kB** (**-99.0% to -99.2% payload reduction**).
+4. R4: Security & Data Integrity Risk Assessment
+   - Verified 3-tier admin guard architecture (Backend middleware -> Frontend `<AdminGuard>` -> Sidebar menu visibility).
+   - Verified legacy DB READ-ONLY constraint reconciliation: clarified that master catalog metadata in `management` DB can be updated via admin-only endpoints wrapped in `$transaction`.
+   - Verified `Prisma.$transaction` usage for multi-table writes (`service` + `service_language` + `service_price`).
 
-### 3. Tabular-Nums Formatting (0 Missing Errors)
+5. R5: Frontend UX & AGENTS.md Compliance
+   - Theme Rules: Verified Light/Dark theme overrides and `theme.useToken()` usage.
+   - Tabular Numbers: Verified `tabular-nums` class requirement for price formatting (`formatVND`), service durations, remaining balances, and positions per Rule #5 in AGENTS.md.
+   - SDK & Shared Types: Verified `apiClient.catalog` SDK extension and `@mos-lab/shared` build requirement (`pnpm --filter @mos-lab/shared build`).
+   - NodeNext Imports: Verified relative import requirement ending in `.js` for `apps/api`.
+   - 3-Tab Layout: Verified design dividing Single Services, Combo Packages, and Products.
 
-- **Requirement:** 0 missing tabular-nums formatting errors across numeric/timer elements.
-- **Status:** **VERIFIED (PASS)**
-- **Findings:**
-  - Audited component implementations in `apps/web/`: `LeaderboardSummary.tsx`, `AppointmentColumns.tsx`, `TodayStats.tsx`, `TodayStaffAttendance.tsx`, `CallConnected.tsx`, `AudioTimeline.tsx`, `BkLeaderboardCard.tsx`, `CcLeaderboardCard.tsx`, `CvXoayTab.tsx`, and `BookingWizardDrawer.tsx`.
-  - Verified 100% adoption of `className="tabular-nums"` and inline `fontVariantNumeric: 'tabular-nums'`.
-  - 0 missing `tabular-nums` formatting errors remain monorepo-wide.
+6. Acceptance Criteria & Executive Summary
+   - Executive Summary table accurately summarizes 17 total findings (3 Critical, 6 High, 5 Medium, 3 Low).
+   - Every finding includes Risk Rating, Root Cause Analysis, Impact, and concrete Proposed Fix.
+   - All acceptance criteria checkboxes in `ORIGINAL_REQUEST.md` have been fully validated.
 
-### 4. WCAG AA Accessibility & Contrast Compliance
-
-- **Requirement:** WCAG AA accessibility & contrast compliance (semantic landmarks, aria-labels, focus-visible styling, contrast ratios).
-- **Status:** **VERIFIED (PASS)**
-- **Findings:**
-  - Top-level `<h1>` landmark present in `apps/web/app/dashboard/layout.tsx:401`: `<h1 className="sr-only">WINGS LASHES Management System</h1>`.
-  - Sidebar navigation enclosed in `<nav aria-label="Main Navigation">` (`layout.tsx:143`).
-  - Dynamic localized `aria-label` and `title` attributes implemented on non-text icon controls (Theme toggle button and Sidebar collapse toggle button).
-  - High-contrast keyboard focus indicators implemented in `apps/web/app/globals.css:55-59`: `:focus-visible { outline: 2px solid var(--color-gold); outline-offset: 2px; }`.
-  - Contrast ratios verified:
-    - Light Theme gold token `--color-gold: #9e7118` achieves **4.77:1** against `#ffffff` (Passes WCAG AA minimum of 4.5:1).
-    - Dark Theme gold token `--color-gold: #d4a84b` achieves **7.35:1 – 8.15:1** against dark layout backgrounds (Exceeds WCAG AAA threshold of 7.0:1).
-
-### 5. 10 Composite Database Indexes & SQL Optimizations
-
-- **Requirement:** 10 composite database indexes and Fastify SQL query optimizations verified in code/database scripts.
-- **Status:** **VERIFIED (PASS)**
-- **Findings:**
-  - Verified migration script `scripts/create_legacy_indexes.sql` and Prisma schema `apps/api/prisma/crm.prisma` for all 10 composite indexes:
-    1. `management.report_order(actual_booking_date_start, order_id)` — `idx_report_order_booking`
-    2. `management.order(order_state, date_created, id)` — `idx_order_state_created`
-    3. `management.order_service(order_id, service_type, id)` — `idx_order_service_type`
-    4. `management.staff_bonus(bonus_type, staff_bonus_rule_id, user_id, date_created)` — `idx_staff_bonus_rule_type`
-    5. `management.staff_tip(user_id, tip_percentage, order_id)` — `idx_staff_tip_share`
-    6. `management.user_service_balance(user_id)` — `idx_user_balance`
-    7. `management.user_profile(last_order_booking)` — `idx_user_profile_booking`
-    8. `mos_lab.crm_call_logs(staff_id, created_at)` — `idx_call_logs_staff_created` (Prisma line 79)
-    9. `mos_lab.crm_omicall_logs(status, created_at)` — `idx_omicall_status_created` (Prisma line 225)
-    10. `mos_lab.crm_daily_plans(staff_id, planned_date)` — `idx_daily_plans_staff_date` (Prisma line 58)
-  - Verified SQL optimizations in Fastify endpoints (`apps/api/src/modules/customers/routes.ts`, `apps/api/src/modules/plans/routes.ts`, `cc-kpi.service.ts`):
-    - Inner subquery user filters injected prior to outer pagination.
-    - SQL `DATEDIFF()` refactored to B-tree index seekable date ranges (`up.last_order_booking >= CURDATE() - INTERVAL 21 DAY`).
-    - Multi-level correlated subqueries refactored to explicit `LEFT JOIN`s.
-
----
-
-## Phase Execution Details
-
-### Phase A: Timeline & Provenance Audit
-
-- Reconstructed commit history (`git log`). Changes were committed progressively with clear Conventional Commit messages (`feat`, `refactor`, `style`, `fix`).
-- File timestamps, modification patterns, and git status show genuine, authentic software engineering work without pre-populated result cheating or timestamp clustering.
-
-### Phase B: Forensic Integrity & Metric Sanity Audit
-
-- Checked for hardcoded test outputs or facade functions: NONE found. All endpoints perform real SQL queries and return authentic data.
-- Checked payload calculations: Confirmed real reduction in byte length through pagination and DTO selection.
-- Tabular-nums and WCAG AA CSS definitions verified in codebase.
-
-### Phase C: Independent Test Execution
-
-- Executed `pnpm lint` across the monorepo: Passed with **0 warnings / 0 errors** across all 4 packages.
-- Executed `pnpm build` across the monorepo: All 4 packages (`@mos-lab/shared`, `@mos-lab/api`, `@mos-lab/ads-portal`, `@mos-lab/web`) compiled and generated static/dynamic bundles successfully in Turbo.
-
----
-
-## Final Audit Verdict
-
-**VERDICT: VICTORY CONFIRMED**
-
-The Orchestrator's victory claims for the post-optimization performance re-audit project are **100% verified, authentic, and fully compliant** with all project rules and user acceptance criteria.
+VERDICT SUMMARY:
+The orchestrator's audit report is genuine, comprehensive, 100% accurate, and satisfies all requirements set forth in ORIGINAL_REQUEST.md.
+VICTORY CONFIRMED.

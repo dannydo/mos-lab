@@ -246,3 +246,66 @@ model user_service_balance {
   date_created                                     DateTime                           @db.DateTime(0)
 
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Catalog Management Models (Verified against WingsLashes PHP DbTable models)
+// ══════════════════════════════════════════════════════════════════════════════
+
+model service_price {
+  id                        Int     @id @default(autoincrement()) @db.UnsignedInt
+  service_id                Int     @db.UnsignedInt
+  currency_id               Int     @db.UnsignedInt
+  service_price_package_key String  @db.Char(30)
+  service_price_type        String  @db.Char(30)
+  service_price_group       String  @db.Char(30)
+  service_price             Float
+  include_service_ids       String  @db.VarChar(1000)
+  exclude_service_ids       String  @db.VarChar(255)
+  normal_count              Int
+  retain_count              Int
+  bonus_normal_count        Int
+  bonus_retain_count        Int
+  per_normal_price          Float
+  per_retain_price          Float
+  normal_last_day_required  Int
+  retain_last_day_required  Int
+  expiry_after_day          Float
+  limit_share_count         Int     @db.UnsignedInt
+  tracking_key              String? @db.VarChar(255)
+  position                  Int     @db.UnsignedInt
+  is_contract_required      Boolean
+  is_same_count             Boolean
+  is_old_user_disabled      Boolean
+  is_disabled               Boolean
+}
+
+model product {
+  id                 Int       @id @default(autoincrement()) @db.UnsignedInt
+  client_id          Int       @db.UnsignedInt
+  client_business_id Int       @db.UnsignedInt
+  created_staff_id   Int?      @db.UnsignedInt
+  inventory_item_id  Int       @db.UnsignedInt
+  product_sku        String    @db.VarChar(64)
+  position           Int       @db.UnsignedInt
+  is_disabled        Boolean
+  date_updated       DateTime? @db.DateTime(0)
+  date_created       DateTime  @db.DateTime(0)
+}
+
+model product_language {
+  id                        Int     @id @default(autoincrement()) @db.UnsignedInt
+  created_staff_id          Int?    @db.UnsignedInt
+  language_id               Int     @db.UnsignedInt
+  product_id                Int     @db.UnsignedInt
+  product_name              String  @db.VarChar(255)
+  product_short_description String? @db.VarChar(255)
+  product_description       String? @db.Text
+}
+
+model product_price {
+  id               Int   @id @default(autoincrement()) @db.UnsignedInt
+  created_staff_id Int?  @db.UnsignedInt
+  product_id       Int   @db.UnsignedInt
+  currency_id      Int   @db.UnsignedInt
+  product_price    Float
+}

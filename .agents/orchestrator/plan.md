@@ -1,30 +1,52 @@
-# Post-Optimization Re-Audit Plan
+# Audit Plan — Catalog Management Implementation Plan Review
 
 ## Objective
 
-Conduct a comprehensive post-optimization performance, compilation time, rendering latency, API payload size, tabular-nums formatting, and accessibility re-audit across all 13 web dashboard pages and 13 nested sub-tabs (26 total route combinations) in `mos-lab` (http://localhost:4000). Create `performance_report_comparison.md` comparing pre-optimization baseline metrics vs post-optimization metrics with % improvement calculation.
+Conduct a thorough, multi-perspective audit review of the proposed Implementation Plan for "Catalog Management (Services, Combos & Products CRUD for Admin)" in `mos-lab`.
 
-## Decomposed Subtasks & Milestones
+## Audit Dimensions & Task Breakdown
 
-### Milestone 1: Frontend Performance Benchmarking & Route Sweeps
+### Milestone 1: R1 — Schema Correctness Audit
 
-- Benchmark post-optimization navigation compilation/initial load duration (ms), time to interactive & rendering complete (ms), network request counts, and total API payload sizes (kB/MB) across all 26 page & sub-tab combinations.
-- Sub-agent role: `teamwork_preview_explorer` (Frontend Benchmarker)
+- Compare proposed Prisma models (`service_price`, `product`, `product_language`, `product_price`) against actual WingsLashes PHP models (`ServicePriceDbTable.php`, `ProductDbTable.php`, `ProductLanguageDbTable.php`, `ProductPriceDbTable.php`, `ServiceDbTable.php`, `ServiceLanguageDbTable.php`).
+- Audit existing `service` and `service_language` models in `apps/api/prisma/legacy.prisma` against `ServiceDbTable.php` and `ServiceLanguageDbTable.php` for missing columns or mismatched types.
+- Output: Field-by-field comparison tables & missing/mismatched column list.
 
-### Milestone 2: Fastify Backend API Payload & Indexing Verification
+### Milestone 2: R2 — API Design & Completeness Review
 
-- Inspect Fastify backend routes and database schemas to verify API payload reductions (e.g. `GET /api/customers/referrals` reduced from 3.93 MB to ~12 kB), verify pagination, indexing, and pre-aggregation optimizations.
-- Sub-agent role: `teamwork_preview_explorer` (Backend API & DB Verifier)
+- Evaluate 11 proposed endpoints under `/api/catalog/*`.
+- Check RESTful naming conventions and consistency with `apps/api/src/server.ts` and existing module routes.
+- Verify pagination, input validation, error handling, typing, and `requireRole` middleware signature (`UserRole[]` array vs single string).
+- Identify missing endpoints (soft delete, bulk operations, reordering, filtering/search).
 
-### Milestone 3: Tabular-Nums & Accessibility/WCAG AA Compliance Audit
+### Milestone 3: R3 — Business Logic Gaps & Edge Cases
 
-- Verify missing `tabular-nums` formatting count across numeric/timer elements (target: 0 missing).
-- Verify WCAG AA color contrast compliance, heading hierarchy (`<h1>` tag), `<nav>` landmark wrappers, and ARIA labels.
-- Sub-agent role: `teamwork_preview_explorer` (A11y & UI Verifier)
+- Investigate multi-currency handling (`service_price.currency_id`).
+- Address multi-store/client tenancy (`client_id`, `client_business_id`).
+- Analyze parent-child service hierarchy (`parent_service_id`).
+- Catalog valid enum/string values for `service_type`, `service_group`, `service_price_type`.
+- Assess cascading effects on disable/delete.
+- Enforce `service_price_package_key` format convention for compatibility with `ComboRecognitionService`.
 
-### Milestone 4: Report Synthesis & Comparative Matrix Generation
+### Milestone 4: R4 — Security & Data Integrity Risk Assessment
 
-- Aggregate all post-optimization metrics across 26 route combinations.
-- Calculate % improvement for Cold Load, TTI/Render, API Payload Size, Tabular-Nums, and WCAG AA Compliance.
-- Generate `performance_report_comparison.md` at `/Users/dannydo/projects/mos-lab/performance_report_comparison.md`.
-- Send completion message to Sentinel.
+- Verify 3-tier admin access control (Backend middleware, Frontend guard, Sidebar visibility).
+- Assess READ-ONLY legacy DB rule in AGENTS.md vs CRM writing directly to legacy DB `management`.
+- Analyze race conditions and dual-system concurrency with WingsLashes PHP app.
+- Evaluate Prisma `$transaction` requirements for multi-table write operations.
+
+### Milestone 5: R5 — Frontend UX & AGENTS.md Compliance
+
+- Audit Theme compliance (Light/Dark mode, `tabular-nums`, Antd design tokens).
+- Verify `apiClient` SDK usage, shared types from `@mos-lab/shared`, and backend `.js` file extensions.
+- Assess 3-tab layout suitability (Services, Combos, Products).
+
+### Milestone 6: Synthesis & Audit Report Finalization
+
+- Synthesize all subagent findings into a comprehensive audit report with Executive Summary, Risk Ratings (Critical, High, Medium, Low), Proposed Fixes, and Schema Comparison Tables.
+
+## Subagent Allocation Strategy
+
+- Dispatch 5 `teamwork_preview_explorer` subagents (or specialist workers) in parallel for M1 to M5.
+- Each explorer will investigate their specific domain and produce a detailed handoff report in their designated working folder (`.agents/teamwork_preview_explorer_r1/`, etc.).
+- Synthesize results in M6 and present the final report.

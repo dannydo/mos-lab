@@ -63,6 +63,17 @@ import {
   PackageAuditListParams,
   PackageAuditListResponse,
   ReviewPackageAuditParams,
+  CatalogService,
+  CatalogServicePrice,
+  CatalogProduct,
+  CatalogListParams,
+  CatalogListResponse,
+  CatalogDetailResponse,
+  CreateServiceInput,
+  UpdateServiceInput,
+  CreateServicePriceInput,
+  CreateProductInput,
+  UpdateProductInput,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -87,6 +98,92 @@ export const apiClient = {
     },
     impersonate: async (userId: number): Promise<LoginResponse> => {
       const response = await api.post('/auth/impersonate', { userId });
+      return response.data;
+    },
+  },
+
+  catalog: {
+    listServices: async (params: CatalogListParams): Promise<CatalogListResponse<CatalogService>> => {
+      const response = await api.get('/catalog/services', { params });
+      return response.data;
+    },
+    getService: async (id: number): Promise<CatalogDetailResponse<CatalogService>> => {
+      const response = await api.get(`/catalog/services/${id}`);
+      return response.data;
+    },
+    createService: async (data: CreateServiceInput): Promise<CatalogDetailResponse<CatalogService>> => {
+      const response = await api.post('/catalog/services', data);
+      return response.data;
+    },
+    updateService: async (id: number, data: UpdateServiceInput): Promise<CatalogDetailResponse<CatalogService>> => {
+      const response = await api.put(`/catalog/services/${id}`, data);
+      return response.data;
+    },
+    deleteService: async (id: number): Promise<{ success: boolean }> => {
+      const response = await api.delete(`/catalog/services/${id}`);
+      return response.data;
+    },
+    restoreService: async (id: number): Promise<CatalogDetailResponse<CatalogService>> => {
+      const response = await api.post(`/catalog/services/${id}/restore`);
+      return response.data;
+    },
+    reorderServices: async (items: { id: number; position: number }[]): Promise<{ success: boolean }> => {
+      const response = await api.post('/catalog/services/reorder', { items });
+      return response.data;
+    },
+    bulkStatusServices: async (ids: number[], isDisabled: boolean): Promise<{ success: boolean }> => {
+      const response = await api.post('/catalog/services/bulk-status', { ids, isDisabled });
+      return response.data;
+    },
+    listCombos: async (params: CatalogListParams): Promise<CatalogListResponse<CatalogServicePrice>> => {
+      const response = await api.get('/catalog/combos', { params });
+      return response.data;
+    },
+    getCombo: async (id: number): Promise<CatalogDetailResponse<CatalogServicePrice>> => {
+      const response = await api.get(`/catalog/combos/${id}`);
+      return response.data;
+    },
+    createCombo: async (data: CreateServicePriceInput): Promise<CatalogDetailResponse<CatalogServicePrice>> => {
+      const response = await api.post('/catalog/combos', data);
+      return response.data;
+    },
+    updateCombo: async (
+      id: number,
+      data: Partial<CreateServicePriceInput>
+    ): Promise<CatalogDetailResponse<CatalogServicePrice>> => {
+      const response = await api.put(`/catalog/combos/${id}`, data);
+      return response.data;
+    },
+    deleteCombo: async (id: number): Promise<{ success: boolean }> => {
+      const response = await api.delete(`/catalog/combos/${id}`);
+      return response.data;
+    },
+    listProducts: async (params: CatalogListParams): Promise<CatalogListResponse<CatalogProduct>> => {
+      const response = await api.get('/catalog/products', { params });
+      return response.data;
+    },
+    getProduct: async (id: number): Promise<CatalogDetailResponse<CatalogProduct>> => {
+      const response = await api.get(`/catalog/products/${id}`);
+      return response.data;
+    },
+    createProduct: async (data: CreateProductInput): Promise<CatalogDetailResponse<CatalogProduct>> => {
+      const response = await api.post('/catalog/products', data);
+      return response.data;
+    },
+    updateProduct: async (id: number, data: UpdateProductInput): Promise<CatalogDetailResponse<CatalogProduct>> => {
+      const response = await api.put(`/catalog/products/${id}`, data);
+      return response.data;
+    },
+    deleteProduct: async (id: number): Promise<{ success: boolean }> => {
+      const response = await api.delete(`/catalog/products/${id}`);
+      return response.data;
+    },
+    getGroups: async (): Promise<{ success: boolean; data: { key: string; name: string }[] }> => {
+      const response = await api.get('/catalog/groups');
+      return response.data;
+    },
+    getTypes: async (): Promise<{ success: boolean; data: { key: string; label: string }[] }> => {
+      const response = await api.get('/catalog/types');
       return response.data;
     },
   },

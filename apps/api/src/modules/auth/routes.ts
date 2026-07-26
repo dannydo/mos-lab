@@ -71,6 +71,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           username: staff.username,
           displayName: staff.displayName,
           role: staff.role as SafeAny,
+          email: staff.email || staff.username,
         };
 
         // Sign JWT

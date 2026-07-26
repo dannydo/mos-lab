@@ -7,6 +7,7 @@ export interface JwtUserPayload {
   username: string;
   displayName: string;
   role: UserRole;
+  email?: string;
 }
 
 declare module '@fastify/jwt' {
@@ -51,7 +52,8 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
   }
 }
 
-export function requireRole(allowedRoles: UserRole[]) {
+export function requireRole(allowedRoles: UserRole | UserRole[]) {
+  const rolesArray = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
   return async (request: FastifyRequest, reply: FastifyReply) => {
     // Ensure auth ran first and populated request.user
     const user = request.user as JwtUserPayload | undefined;
@@ -60,11 +62,29 @@ export function requireRole(allowedRoles: UserRole[]) {
       return reply.status(401).send({ error: 'Unauthorized', message: 'Authentication required' });
     }
 
-    if (!allowedRoles.includes(user.role)) {
+    if (!rolesArray.includes(user.role)) {
       return reply.status(403).send({
         error: 'Forbidden',
         message: `Role "${user.role}" does not have permission to access this resource`,
       });
     }
   };
+}
+
+export async function requireCatalogAdmin(request: FastifyRequest, reply: FastifyReply) {
+  const user = request.user as JwtUserPayload | undefined;
+
+  if (!user) {
+    return reply.status(401).send({ error: 'Unauthorized', message: 'Authentication required' });
+  }
+
+  const isDanhDo =
+    user.username?.toLowerCase() === 'danhdo@gmail.com' || user.email?.toLowerCase() === 'danhdo@gmail.com';
+
+  if (!isDanhDo) {
+    return reply.status(403).send({
+      error: 'Forbidden',
+      message: 'Chỉ có tài khoản danhdo@gmail.com mới có quyền thêm, sửa, xóa Catalog',
+    });
+  }
 }

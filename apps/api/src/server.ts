@@ -16,6 +16,7 @@ import { rolesRoutes } from './modules/roles/routes.js';
 import { tableConfigRoutes } from './modules/table-config/routes.js';
 import { omicallRoutes } from './modules/omicall/routes.js';
 import { gamificationRoutes } from './modules/gamification/routes.js';
+import { catalogRoutes } from './modules/catalog/routes.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
 // Load environment variables
@@ -162,6 +163,7 @@ const start = async () => {
     await server.register(tableConfigRoutes, { prefix: '/api' });
     await server.register(omicallRoutes, { prefix: '/api' });
     await server.register(gamificationRoutes, { prefix: '/api' });
+    await server.register(catalogRoutes, { prefix: '/api' });
 
     // Start background analyzer polling for AI laugh detection
     startRecordingAnalyzer(server);

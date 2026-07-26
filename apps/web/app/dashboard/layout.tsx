@@ -19,6 +19,7 @@ import {
   HeartOutlined,
   ShareAltOutlined,
   AudioOutlined,
+  ShopOutlined,
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
@@ -78,6 +79,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     if (pathname.includes('/dashboard/staff')) return 'staff';
 
     if (pathname.includes('/dashboard/referrals')) return 'referrals';
+    if (pathname.includes('/dashboard/catalog')) return 'catalog';
     return 'customers-all';
   };
 
@@ -134,6 +136,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
   // Staff menu (only for Admin) - Moved to the bottom
   if (userRole === 'admin') {
     menuItems.push(createNavItem('staff', <SolutionOutlined />, 'Nhân sự (HR)', '/dashboard/staff'));
+    menuItems.push(createNavItem('catalog', <ShopOutlined />, 'Quản lý Catalog', '/dashboard/catalog'));
   }
 
   return (

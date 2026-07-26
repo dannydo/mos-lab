@@ -12,6 +12,7 @@ console.warn = (...args: SafeAny[]) => {
       args[0].includes('Space.Compact') ||
       args[0].includes('Static function can not consume context') ||
       args[0].includes('antd: message') ||
+      args[0].includes('bodyStyle') ||
       args[0].includes('registering a cleanup function after unmount'))
   ) {
     return;
@@ -33,6 +34,7 @@ console.error = (...args: SafeAny[]) => {
       args[0].includes('Space.Compact') ||
       args[0].includes('Static function can not consume context') ||
       args[0].includes('antd: message') ||
+      args[0].includes('bodyStyle') ||
       args[0].includes('registering a cleanup function after unmount'))
   ) {
     return;

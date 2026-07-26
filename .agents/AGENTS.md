@@ -309,11 +309,45 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 
 ---
 
-# 📅 Monday-First Weekly Calendar Business Rules (Quy tắc Tuần Bắt Đầu Từ Thứ 2)
+# 🏷️ Catalog Product Stock & VND Price Integer Rounding Rules
 
-1. **Mốc Bắt Đầu Tuần**: Tất cả các bộ lọc thời gian theo Tuần (Week Preset) ở Frontend (`dayjs`), Backend API (Fastify) và các báo cáo KPI/Leaderboard bắt buộc phải xác định Tuần bắt đầu từ **Thứ 2 (Monday 00:00:00)** và kết thúc vào **Chủ Nhật (Sunday 23:59:59)**.
-2. **Frontend Day.js / Moment**: Tuyệt đối không sử dụng `dayjs().startOf('week')` (mặc định coi Chủ Nhật là đầu tuần theo chuẩn US). Bắt buộc phải dùng `dayjs().startOf('isoWeek')` và `dayjs().endOf('isoWeek')` để đảm bảo Thứ 2 là ngày bắt đầu tuần.
-3. **Backend SQL & Date Bounds**: Khi khởi tạo tham số truy vấn khoảng thời gian Tuần trong các API backend, `dateFrom` luôn là Thứ 2 `00:00:00` và `dateTo` luôn là Chủ Nhật `23:59:59` (`WEEKDAY() = 0` trong MySQL/MariaDB tương ứng với Thứ 2).
+1. **Đơn vị tiền tệ chuẩn (VND)**: Bảng `product_price` và `service_price` lưu trữ giá theo `currency_id = 2` (VND). Khi truy vấn giá sản phẩm/dịch vụ, luôn lọc theo `currency_id = 2`.
+2. **Làm tròn số nguyên (`Math.round`)**: Do CSDL legacy lưu trữ giá dạng `float` chưa VAT (ví dụ `681818.181818`), tất cả các DTO và ô nhập liệu giá tiền **bắt buộc phải bọc trong `Math.round(price)`** để không bị xuất hiện chuỗi số thập phân rườm rà (như `.18181818`).
+3. **Tra cứu Tồn kho Sản phẩm (`inventory_warehouse_item`)**: Số lượng tồn kho sẵn bán của sản phẩm được liên kết từ `product.inventory_item_id` đến `inventory_warehouse_item.inventory_item_id`. Số lượng `inStockCount` được đếm từ các dòng có `item_state = 'New'`.
+
+---
+
+# 📊 Controlled & Persistent Table Pagination Rules
+
+1. **Cấu hình Table Pagination**: Tất cả các bảng dữ liệu Ant Design `<Table>` khi sử dụng phân trang phải dùng dạng kiểm soát (Controlled State) gồm: `current`, `pageSize`, `onChange`, `showSizeChanger`, `pageSizeOptions: ['10', '20', '50', '100']`, và `showTotal`.
+2. **Lưu trạng thái (Persistence)**: Lưu `activeTab`, số trang (`page`) và kích thước trang (`pageSize`) vào `localStorage`. Khi người dùng tải lại trang hoặc chuyển đổi giữa các tab, giao diện phải giữ nguyên trang và tab làm việc hiện tại. Khi đổi bộ lọc/tìm kiếm, số trang tự động quay về 1.
+
+---
+
+# 👁️ Exclusive Hidden Items Filter Rules
+
+1. **Nghiệp vụ công tắc "Chỉ hiện mục đã ẩn"**:
+   - **Trạng thái OFF (Mặc định)**: Bảng chỉ hiển thị danh sách các mục đang hoạt động (`!record.isDisabled`).
+   - **Trạng thái ON**: Bảng chuyển sang chế độ lọc độc quyền **chỉ hiển thị các mục đã bị vô hiệu hóa/ẩn** (`record.isDisabled`), giúp Admin dễ dàng kiểm tra và bật lại trạng thái hoạt động khi cần.
+
+---
+
+# 💰 Auto-Suggested Combo Price Calculation Rules
+
+1. **Công thức Giá Gợi Ý**: Giá trọn gói combo mặc định được tính theo số lượt mua và giá bán lẻ dịch vụ niêm yết:
+   $$\text{Suggested Combo Price} = (\text{Retail Price} \times \text{Purchased Count})$$
+2. **Lượt Tặng 0đ**: Tất cả các lượt tặng (`bonusNormalCount`, `bonusRetainCount`) có giá bằng **0đ** và không được cộng vào giá trọn gói.
+3. **Tính năng Auto-fill & Override**: Khi Admin chọn Dịch vụ hoặc đổi Số lượt mua trong Form Combo, CRM tự động điền Giá gợi ý vào ô *Giá trọn gói (VNĐ)*. Admin có thể nhập đè nếu gói có ưu đãi đặc biệt.
+
+---
+
+# 🔒 Exclusive Catalog Write Authorization Rules (Chỉ danhdo@gmail.com được sửa Catalog)
+
+1. **Phân quyền Backend Middleware (`requireCatalogAdmin`)**: Tất cả các endpoint tạo, sửa, xóa Catalog (`POST /catalog/services`, `PUT /catalog/services/:id`, `DELETE /catalog/services/:id`, `POST /catalog/combos`, `PUT /catalog/combos/:id`, `DELETE /catalog/combos/:id`, `POST /catalog/products`, `PUT /catalog/products/:id`, `DELETE /catalog/products/:id`) **bắt buộc kiểm tra danh tính duy nhất của tài khoản `danhdo@gmail.com`** (`user.username === 'danhdo@gmail.com' || user.email === 'danhdo@gmail.com'`).
+2. **Giao diện Frontend (Read-only Fallback)**: Đối với các tài khoản khác không phải `danhdo@gmail.com`, trang `/dashboard/catalog` tự động hiển thị thông báo Alert ở chế độ *Read-only (Chỉ xem)* và vô hiệu hóa các nút Thêm / Sửa / Xóa.
+
+
+
 
 
 
