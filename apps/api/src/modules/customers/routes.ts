@@ -5938,11 +5938,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (isCompleted) {
           totalCompleted++;
           completedRevenue += Number(o.totalPrice || 0);
-        } else if (isCancelled || isPast) {
-          totalMissed++;
         } else {
-          totalPending++;
-          pendingValue += Number(o.totalPrice || 0);
+          if (!isCancelled) {
+            totalPending++;
+            pendingValue += Number(o.totalPrice || 0);
+          }
+          if (isCancelled || isPast) {
+            totalMissed++;
+          }
         }
       });
 
