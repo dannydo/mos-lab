@@ -307,5 +307,14 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 2. **Quy tắc Chuẩn hóa Ngày Giờ Truy vấn (Date Range Parsing & Padding Rule)**: Khi nhận chuỗi ngày `dateFrom` và `dateTo` (dạng `YYYY-MM-DD` 10 ký tự), Fastify Backend bắt buộc dùng `parseComboDateBounds` chuẩn hóa `dateFrom` thành `YYYY-MM-DD 00:00:00` và `dateTo` thành `YYYY-MM-DD 23:59:59`. Tuyệt đối **CẤM** dùng `.slice(0, 19)` cắt thô làm rụng đuôi `23:59:59` gây lỗi SQL `<='YYYY-MM-DD 00:00:00'` làm bỏ sót 100% các đơn bán combo trong ngày.
 3. **Nguồn Dữ Liệu Tập Trung (Single Source of Truth Service)**: Báo cáo CC, New LoCa, Báo cáo Booker và Filter Khách hàng bắt buộc dùng chung `ComboRecognitionService` (`apps/api/src/modules/customers/services/combo-recognition.service.ts`) để đồng bộ 100% số lượng đơn combo và doanh số combo trên toàn hệ thống.
 
+---
+
+# 📅 Monday-First Weekly Calendar Business Rules (Quy tắc Tuần Bắt Đầu Từ Thứ 2)
+
+1. **Mốc Bắt Đầu Tuần**: Tất cả các bộ lọc thời gian theo Tuần (Week Preset) ở Frontend (`dayjs`), Backend API (Fastify) và các báo cáo KPI/Leaderboard bắt buộc phải xác định Tuần bắt đầu từ **Thứ 2 (Monday 00:00:00)** và kết thúc vào **Chủ Nhật (Sunday 23:59:59)**.
+2. **Frontend Day.js / Moment**: Tuyệt đối không sử dụng `dayjs().startOf('week')` (mặc định coi Chủ Nhật là đầu tuần theo chuẩn US). Bắt buộc phải dùng `dayjs().startOf('isoWeek')` và `dayjs().endOf('isoWeek')` để đảm bảo Thứ 2 là ngày bắt đầu tuần.
+3. **Backend SQL & Date Bounds**: Khi khởi tạo tham số truy vấn khoảng thời gian Tuần trong các API backend, `dateFrom` luôn là Thứ 2 `00:00:00` và `dateTo` luôn là Chủ Nhật `23:59:59` (`WEEKDAY() = 0` trong MySQL/MariaDB tương ứng với Thứ 2).
+
+
 
 

@@ -223,8 +223,8 @@ export function useLocaData(options?: UseLocaDataOptions) {
       };
     } else if (datePreset === 'week') {
       return {
-        dateFrom: selectedDate.startOf('week').format('YYYY-MM-DD 00:00:00'),
-        dateTo: selectedDate.endOf('week').format('YYYY-MM-DD 23:59:59'),
+        dateFrom: selectedDate.startOf('isoWeek').format('YYYY-MM-DD 00:00:00'),
+        dateTo: selectedDate.endOf('isoWeek').format('YYYY-MM-DD 23:59:59'),
       };
     } else {
       return {
