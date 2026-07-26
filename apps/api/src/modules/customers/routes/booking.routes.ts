@@ -1,5 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
+import { SafeAny } from '@mos-lab/shared';
+import { getBkPaystubData } from '../../kpi/services/bk-salary.service.js';
 
 export async function registerBookingRoutes(fastify: FastifyInstance) {
   // POST /api/customers/booking
@@ -709,9 +711,9 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       if (type === 'completed') {
         countSql += ` AND o.order_state = 'Completed'`;
       } else if (type === 'missed') {
-        countSql += ` AND (o.order_state = 'Cancelled' OR (o.order_state != 'Completed' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < NOW()))`;
+        countSql += ` AND (o.order_state IN ('Cancelled', 'Missed') OR (o.order_state != 'Completed' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < NOW()))`;
       } else {
-        countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled')`;
+        countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled', 'Missed') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
       }
 
       const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams);
@@ -722,6 +724,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         SELECT 
           o.id,
           o.order_key as orderKey,
+          o.promotion_id as promotionId,
+          o.selected_promotion_id as selectedPromotionId,
           COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDateStart,
           DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i') as actualBookingTime,
           o.booking_date_end as bookingDateEnd,
@@ -763,8 +767,10 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
 
       if (type === 'completed') {
         sql += ` AND o.order_state = 'Completed'`;
+      } else if (type === 'missed') {
+        sql += ` AND (o.order_state IN ('Cancelled', 'Missed') OR (o.order_state != 'Completed' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < NOW()))`;
       } else {
-        sql += ` AND o.order_state NOT IN ('Completed', 'Cancelled')`;
+        sql += ` AND o.order_state NOT IN ('Completed', 'Cancelled', 'Missed') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
       }
 
       sql += ` ORDER BY o.booking_date_start ASC LIMIT ? OFFSET ?`;
@@ -818,276 +824,99 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Fetch config
-      const conf = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: 'BOOKER_SALARY_CONFIG' },
-      });
-      let config: SafeAny = {
-        baseSalary: 5500000,
-        tipsPercent: 7,
-        clientBonusFullSet: { discount0: 35000, discount30: 12000, discount50: 6000, discountMore: 1000 },
-        clientBonusRefill: { discount30: 9000, discount50: 6000, discountMore: 1000 },
-        doneBonusTiers: [],
-        missedBonusTiers: [],
-        revBonusTiers: [],
-      };
-      if (conf) {
-        try {
-          config = JSON.parse(conf.value);
-        } catch {
-          /* ignore */
-        }
-      }
+      // Single Source of Truth paystub calculation (Rule #11)
+      const startPart = String(dateFrom).split(' ')[0].split('T')[0];
+      const endPart = String(dateTo).split(' ')[0].split('T')[0];
 
-      // 3.5. Query all orders in range to calculate summary KPIs (without pagination)
-      let allOrdersSql = `
-        SELECT 
-          o.id,
-          o.order_state as orderState,
-          o.total_price as totalPrice,
-          COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDateStart,
-          o.user_id as userId,
-          o.date_created as dateCreated
-        FROM \`order\` o
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
-          AND o.order_state != 'Cancelled'
-      `;
-      const allOrdersParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
-
-      if (filterByStaff && staffLegacyId) {
-        if (staffRole === 'oc') {
-          allOrdersSql += ` AND o.assigned_staff_id = ?`;
-        } else {
-          allOrdersSql += ` AND o.created_staff_id = ?`;
-        }
-        allOrdersParams.push(staffLegacyId);
-      }
-
-      const allOrdersInRange = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(allOrdersSql, ...allOrdersParams);
-
-      // Collect all customer IDs from both allOrdersInRange and the paginated result
-      const allRangeUserIds = allOrdersInRange.map((o) => Number(o.userId)).filter((id) => !isNaN(id));
-      const paginatedUserIds = result.map((o) => Number(o.userId)).filter((id) => !isNaN(id));
-      const customerIds = Array.from(new Set([...allRangeUserIds, ...paginatedUserIds]));
-
-      const userBalances =
-        customerIds.length > 0
-          ? await fastify.prisma.legacy.user_service_balance.findMany({
-              where: { user_id: { in: customerIds } },
-            })
-          : [];
-
-      const balanceIds = userBalances.map((b) => b.id);
-      const userBalanceTransactions =
-        balanceIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
-               usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
-               usbt.retain_count, usbt.used_staff_id, usbt.order_id,
-               COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
-        FROM user_service_balance_transaction usbt
-        LEFT JOIN \`order\` o ON o.id = usbt.order_id
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-      `)
-          : [];
-
-      const txnsByBalanceId = new Map<number, SafeAny[]>();
-      for (const t of userBalanceTransactions) {
-        const bid = Number(t.user_service_balance_id);
-        let list = txnsByBalanceId.get(bid);
-        if (!list) {
-          list = [];
-          txnsByBalanceId.set(bid, list);
-        }
-        list.push(t);
-      }
-
-      const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
-        const bTime = bookingDateStart || orderCreatedDate;
-        const userBals = userBalances.filter((b) => b.user_id === userId);
-
-        for (const usb of userBals) {
-          if (new Date(usb.date_created) >= new Date(bTime)) {
-            continue;
-          }
-
-          const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
-            (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
-          );
-
-          txnsBefore.sort((a, b) => {
-            const timeA = new Date(a.o_booking_date_start || a.date_created).getTime();
-            const timeB = new Date(b.o_booking_date_start || b.date_created).getTime();
-            if (timeA !== timeB) return timeB - timeA;
-            return b.id - a.id;
-          });
-
-          const lastTxnBefore = txnsBefore[0];
-
-          const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-          const isNotExpired =
-            !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
-
-          let countLeft: number;
-          if (
-            lastTxnBefore &&
-            lastTxnBefore.total_normal_count_left !== null &&
-            lastTxnBefore.total_retain_count_left !== null
-          ) {
-            countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
-          } else {
-            const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
-              (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
-            );
-
-            let usedAfter = 0;
-            txnsAfterOrAt.forEach((t) => {
-              if (t.used_staff_id !== null) {
-                usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
-              }
-            });
-
-            countLeft = (usb.normal_count || 0) + (usb.retain_count || 0) + usedAfter;
-          }
-
-          if (isNotExpired && countLeft > 0) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      const summaryCompletedOrders = allOrdersInRange.filter((o) => o.orderState === 'Completed');
-      const summaryCompletedOrderIds = summaryCompletedOrders.map((o) => Number(o.id));
-
-      let summaryTotalTips = 0;
-      let summaryClientBonus = 0;
-      let summaryTotalNetRev = 0;
-
-      if (summaryCompletedOrderIds.length > 0) {
-        const summaryPayments = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT order_id as orderId, tip_amount as tipAmount
-          FROM \`order_payment\`
-          WHERE order_id IN (${summaryCompletedOrderIds.join(',')})
-        `);
-        summaryPayments.forEach((p) => {
-          summaryTotalTips += Number(p.tipAmount || 0);
-        });
-
-        const summaryServices = await fastify.prisma.legacy.order_service.findMany({
-          where: { order_id: { in: summaryCompletedOrderIds } },
-        });
-
-        const summaryServiceIds = Array.from(new Set(summaryServices.map((os) => os.service_id)));
-        const summaryServiceNameMap = new Map<number, string>();
-        if (summaryServiceIds.length > 0) {
-          const summaryServiceLanguages = await fastify.prisma.legacy.service_language.findMany({
-            where: { service_id: { in: summaryServiceIds } },
-          });
-          summaryServiceLanguages.forEach((sl) => {
-            summaryServiceNameMap.set(sl.service_id, sl.service_name);
-          });
-        }
-
-        const summaryServicesMap = new Map<number, SafeAny[]>();
-        summaryServices.forEach((os) => {
-          const list = summaryServicesMap.get(os.order_id) || [];
-          list.push(os);
-          summaryServicesMap.set(os.order_id, list);
-        });
-
-        summaryCompletedOrders.forEach((o) => {
-          summaryTotalNetRev += Number(o.totalPrice || 0);
-          const list = summaryServicesMap.get(Number(o.id)) || [];
-          if (list.length > 0) {
-            let primaryService = list[0];
-            for (const os of list) {
-              if (os.service_price > (primaryService?.service_price || 0)) {
-                primaryService = os;
-              }
-            }
-            const serviceName = summaryServiceNameMap.get(primaryService.service_id) || 'Unknown';
-            let discountPercent = 0;
-            if (primaryService.service_price > 0) {
-              discountPercent = Math.round((primaryService.discount_amount / primaryService.service_price) * 100);
-            }
-
-            const isRefill = serviceName.toLowerCase().includes('refill');
-            const isCombo = checkHasLiveCombo(
-              Number(o.userId),
-              o.bookingDateStart ? new Date(o.bookingDateStart) : null,
-              o.dateCreated ? new Date(o.dateCreated) : new Date()
-            );
-
-            let bonus: number;
-            if (isCombo) {
-              bonus = 0;
-            } else if (isRefill) {
-              if (discountPercent === 0) bonus = config.clientBonusRefill.discount30 || 0;
-              else if (discountPercent <= 30) bonus = config.clientBonusRefill.discount30 || 0;
-              else if (discountPercent <= 50) bonus = config.clientBonusRefill.discount50 || 0;
-              else bonus = config.clientBonusRefill.discountMore || 0;
-            } else {
-              if (discountPercent === 0) bonus = config.clientBonusFullSet.discount0 || 0;
-              else if (discountPercent <= 30) bonus = config.clientBonusFullSet.discount30 || 0;
-              else if (discountPercent <= 50) bonus = config.clientBonusFullSet.discount50 || 0;
-              else bonus = config.clientBonusFullSet.discountMore || 0;
-            }
-
-            summaryClientBonus += bonus;
-          }
-        });
-      }
-
-      const now = new Date();
-      // Filter for past or present bookings (up to today/now) to calculate rates
-      const pastOrPresentOrders = allOrdersInRange.filter((o) =>
-        o.bookingDateStart ? new Date(o.bookingDateStart) <= now : true
+      const paystubRes = await getBkPaystubData(
+        fastify,
+        startPart,
+        endPart,
+        filterByStaff && staffLegacyId ? [staffLegacyId] : undefined
       );
-      const totalPlanned = pastOrPresentOrders.length;
-      const totalCheckin = pastOrPresentOrders.filter((o) => o.orderState === 'Completed').length;
-      const checkInRate = totalPlanned > 0 ? (totalCheckin / totalPlanned) * 100 : 0;
-      const baseSalary = config.baseSalary || 0;
 
+      let baseSalary = 0;
+      let summaryClientBonus = 0;
       let doneBonus = 0;
       let doneLevelCount = 0;
-      const sortedDoneTiers = [...(config.doneBonusTiers || [])].sort((a, b) => b.minCount - a.minCount);
-      const overallCompletedCount = summaryCompletedOrders.length;
-      const matchedDone = sortedDoneTiers.find((t) => overallCompletedCount >= t.minCount);
-      if (matchedDone) {
-        doneBonus = matchedDone.bonus;
-        doneLevelCount = matchedDone.minCount;
-      }
-
       let missedBonus = 0;
       let missedLevelRate = 0;
-      const missedCount = totalPlanned - totalCheckin;
-      const missedRatePct = totalPlanned > 0 ? (missedCount / totalPlanned) * 100 : 0;
-      const sortedMissedTiers = [...(config.missedBonusTiers || [])].sort((a, b) => a.maxRate - b.maxRate);
-      if (totalPlanned > 0) {
-        const matchedMissed = sortedMissedTiers.find((t) => missedRatePct <= t.maxRate);
-        if (matchedMissed) {
-          missedBonus = matchedMissed.bonus;
-          missedLevelRate = matchedMissed.maxRate;
-        }
-      }
-
-      const tipBonus = Math.round(summaryTotalTips * ((config.tipsPercent || 7) / 100));
-
+      let missedRatePct = 0;
+      let tipBonus = 0;
+      let summaryTotalTips = 0;
       let revBonus = 0;
       let revLevelRate = 0;
       let revLevelMin = 0;
-      const sortedRevTiers = [...(config.revBonusTiers || [])].sort((a, b) => b.minRev - a.minRev);
-      const matchedRev = sortedRevTiers.find((t) => summaryTotalNetRev >= t.minRev);
-      if (matchedRev) {
-        revBonus = Math.round(summaryTotalNetRev * matchedRev.rate);
-        revLevelRate = matchedRev.rate;
-        revLevelMin = matchedRev.minRev;
+      let summaryTotalNetRev = 0;
+      let totalSalary = 0;
+      let totalCompleted = 0;
+      let totalMissed = 0;
+      let totalPlanned = 0;
+      let pendingValue = 0;
+      let totalPending = 0;
+
+      if (filterByStaff && staffLegacyId && paystubRes.detailsMap.has(staffLegacyId)) {
+        const detail = paystubRes.detailsMap.get(staffLegacyId)!;
+        baseSalary = detail.calculatedBaseSalary;
+        summaryClientBonus = detail.basicCheckinBonus;
+        doneBonus = detail.milestoneBonus;
+        doneLevelCount = detail.doneLevelCount;
+        missedBonus = detail.penaltyBonus;
+        missedLevelRate = detail.missedLevelRate;
+        missedRatePct = detail.missedRatePercent;
+        tipBonus = detail.tipBonus;
+        summaryTotalTips = detail.totalCustomerTip;
+        revBonus = detail.revenueBonus;
+        revLevelRate = detail.revCommissionRate;
+        revLevelMin = detail.revLevelMin;
+        summaryTotalNetRev = detail.totalRevenue;
+        totalSalary = detail.totalIncome;
+        totalCompleted = detail.doneCount;
+        totalMissed = detail.missedCount;
+        totalPlanned = detail.totalCount;
+      } else {
+        baseSalary = paystubRes.summary.totalBaseSalary;
+        summaryClientBonus = paystubRes.summary.totalBasicCheckinBonus;
+        doneBonus = paystubRes.summary.totalMilestoneBonus;
+        missedBonus = paystubRes.summary.totalPenaltyBonus;
+        tipBonus = paystubRes.summary.totalTipBonus;
+        summaryTotalTips = paystubRes.summary.totalCustomerTip;
+        revBonus = paystubRes.summary.totalRevenueBonus;
+        summaryTotalNetRev = paystubRes.summary.totalRevenue;
+        totalSalary = paystubRes.summary.grandTotalIncome;
+        totalCompleted = Array.from(paystubRes.detailsMap.values()).reduce((sum, d) => sum + d.doneCount, 0);
+        totalMissed = Array.from(paystubRes.detailsMap.values()).reduce((sum, d) => sum + d.missedCount, 0);
+        totalPlanned = Array.from(paystubRes.detailsMap.values()).reduce((sum, d) => sum + d.totalCount, 0);
+        missedRatePct = totalPlanned > 0 ? Number(((totalMissed / totalPlanned) * 100).toFixed(1)) : 0;
       }
 
-      const totalSalary = baseSalary + summaryClientBonus + doneBonus + missedBonus + tipBonus + revBonus;
+      // Query pending appointments count & value in range
+      let pendingSql = `
+        SELECT COUNT(*) as totalPending, COALESCE(SUM(o.total_price), 0) as pendingValue
+        FROM \`order\` o
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? 
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
+          AND o.order_state NOT IN ('Completed', 'Cancelled', 'Missed')
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()
+      `;
+      const pendingParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
+      if (filterByStaff && staffLegacyId) {
+        if (staffRole === 'oc') {
+          pendingSql += ` AND o.assigned_staff_id = ?`;
+        } else {
+          pendingSql += ` AND o.created_staff_id = ?`;
+        }
+        pendingParams.push(staffLegacyId);
+      }
+
+      const pendingRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(pendingSql, ...pendingParams);
+      if (pendingRows.length > 0) {
+        totalPending = Number(pendingRows[0].totalPending || 0);
+        pendingValue = Number(pendingRows[0].pendingValue || 0);
+      }
+
+      const checkInRate = totalPlanned > 0 ? Number(((totalCompleted / totalPlanned) * 100).toFixed(1)) : 0;
 
       const appointments = result.map((row: SafeAny) => {
         let serviceName = 'Không có thông tin';
@@ -1101,6 +930,11 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           netRevenue = row.totalPrice;
           const payInfo = orderPaymentMap.get(Number(row.id)) || { tips: 0, debt: 0, totalPaid: 0 };
           tipAmount = payInfo.tips;
+        }
+
+        const checkinInfo = paystubRes.orderCheckinMap.get(Number(row.id));
+        if (checkinInfo) {
+          bookingBonus = checkinInfo.bonus;
         }
 
         const orderServicesList = orderServicesMap.get(Number(row.id)) || [];
@@ -1120,26 +954,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
               discountPercent = Math.round((primaryService.discount_amount / primaryService.service_price) * 100);
             }
 
-            const isRefill = serviceName.toLowerCase().includes('refill');
-            const isCombo = checkHasLiveCombo(
-              Number(row.userId),
-              row.bookingDateStart ? new Date(row.bookingDateStart) : null,
-              row.dateCreated ? new Date(row.dateCreated) : new Date()
-            );
-
-            if (isCombo) {
-              bookingBonus = 0;
+            if (checkinInfo?.isCombo) {
               serviceName += ' (Combo - Không hoa hồng)';
-            } else if (isRefill) {
-              if (discountPercent === 0) bookingBonus = config.clientBonusRefill.discount30 || 0;
-              else if (discountPercent <= 30) bookingBonus = config.clientBonusRefill.discount30 || 0;
-              else if (discountPercent <= 50) bookingBonus = config.clientBonusRefill.discount50 || 0;
-              else bookingBonus = config.clientBonusRefill.discountMore || 0;
-            } else {
-              if (discountPercent === 0) bookingBonus = config.clientBonusFullSet.discount0 || 0;
-              else if (discountPercent <= 30) bookingBonus = config.clientBonusFullSet.discount30 || 0;
-              else if (discountPercent <= 50) bookingBonus = config.clientBonusFullSet.discount50 || 0;
-              else bookingBonus = config.clientBonusFullSet.discountMore || 0;
             }
           }
         }
@@ -1175,7 +991,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         total,
         summary: {
           totalPlanned,
-          totalCheckin,
+          totalCheckin: totalCompleted,
           checkInRate: Math.round(checkInRate * 10) / 10,
           baseSalary,
           clientBonus: summaryClientBonus,
