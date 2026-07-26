@@ -87,10 +87,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState('daysSinceLastVisit');
-  const [assignedStaffId, setAssignedStaffId] = useState<string | number>(() => {
-    if (currentUser?.role === 'telesales') return 'me';
-    return 'ALL';
-  });
+  const [assignedStaffId, setAssignedStaffId] = useState<string | number>('ALL');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
