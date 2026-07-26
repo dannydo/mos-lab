@@ -35,8 +35,9 @@ body {
   --avatar-bg: #e6e8eb;
   --avatar-border: #d9d9d9;
   --client-name-color: #111827;
-  --client-phone-color: #6b7280;
-  --client-desc-color: #6b7280;
+  --client-phone-color: #4b5563;
+  --client-desc-color: #4b5563;
+  --color-gold: #9e7118;
 }
 
 .dark-theme {
@@ -48,6 +49,13 @@ body {
   --client-name-color: #f8fafc;
   --client-phone-color: #9ca3af;
   --client-desc-color: #9ca3af;
+  --color-gold: #d4a84b;
+}
+
+/* WCAG AA Keyboard Focus Visible Outline */
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
 }
 
 body {
@@ -221,4 +229,3 @@ body {
 .compact-table .ant-table-cell {
   padding: 6px 12px !important;
 }
-

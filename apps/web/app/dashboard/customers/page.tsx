@@ -2,20 +2,7 @@
 
 import '../../suppress-warnings';
 import React from 'react';
-import {
-  Tabs,
-  Input,
-  Button,
-  Typography,
-  Select,
-  theme,
-  Tooltip,
-  Space,
-  Modal,
-  Checkbox,
-  Spin,
-  message,
-} from 'antd';
+import { Tabs, Input, Button, Typography, Select, theme, Tooltip, Space, Modal, Checkbox, Spin, message } from 'antd';
 import { SearchOutlined, CalendarOutlined, HistoryOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
@@ -27,9 +14,18 @@ import CustomerFilters from './components/CustomerFilters';
 import CustomerBulkActions from './components/CustomerBulkActions';
 import CustomerTable from './components/CustomerTable';
 import { RetainDataButton } from './components/RetainDataButton';
-import { UndoReasonModal } from './components/UndoReasonModal';
-import { RevokeAssignmentModal } from './components/RevokeAssignmentModal';
-import { AssignmentHistoryDrawer } from './components/AssignmentHistoryDrawer';
+
+const UndoReasonModal = dynamic(() => import('./components/UndoReasonModal').then((m) => m.UndoReasonModal), {
+  ssr: false,
+});
+const RevokeAssignmentModal = dynamic(
+  () => import('./components/RevokeAssignmentModal').then((m) => m.RevokeAssignmentModal),
+  { ssr: false }
+);
+const AssignmentHistoryDrawer = dynamic(
+  () => import('./components/AssignmentHistoryDrawer').then((m) => m.AssignmentHistoryDrawer),
+  { ssr: false }
+);
 
 const { Title, Text } = Typography;
 
@@ -196,15 +192,21 @@ function CustomersPageContent() {
     );
   };
 
-  const [undoModalState, setUndoModalState] = React.useState<{ visible: boolean; batchId: string | null; customerCount?: number }>({
+  const [undoModalState, setUndoModalState] = React.useState<{
+    visible: boolean;
+    batchId: string | null;
+    customerCount?: number;
+  }>({
     visible: false,
     batchId: null,
   });
 
-  const [revokeBatchModalState, setRevokeBatchModalState] = React.useState<{ visible: boolean; customerIds: number[] }>({
-    visible: false,
-    customerIds: [],
-  });
+  const [revokeBatchModalState, setRevokeBatchModalState] = React.useState<{ visible: boolean; customerIds: number[] }>(
+    {
+      visible: false,
+      customerIds: [],
+    }
+  );
 
   return (
     <div>
@@ -267,7 +269,9 @@ function CustomersPageContent() {
           boxShadow: themeMode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.03)',
         }}
       >
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+        <div
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}
+        >
           {/* LEFT: SEARCH & ADVANCED FILTERS */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', flex: 1, minWidth: 280 }}>
             <Input.Search

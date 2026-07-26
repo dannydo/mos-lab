@@ -76,6 +76,7 @@ model CrmCallLog {
   @@index([legacyUserId])
   @@index([staffId])
   @@index([createdAt])
+  @@index([staffId, createdAt])
   @@map("crm_call_logs")
 }
 
@@ -221,6 +222,7 @@ model CrmOmicallLog {
   @@index([happyCallStatus])
   @@index([createdAt])
   @@index([destinationNumber])
+  @@index([status, createdAt])
   @@map("crm_omicall_logs")
 }
 

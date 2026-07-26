@@ -40,7 +40,12 @@ export const CallConnected: React.FC<CallConnectedProps> = ({
   return (
     <div className="p-6 space-y-5 relative overflow-hidden h-full flex flex-col justify-between">
       <div className="text-center">
-        <div className="text-3xl font-bold font-mono tracking-tight">{formatDuration(callDuration)}</div>
+        <div
+          className="text-3xl font-bold font-mono tracking-tight tabular-nums"
+          style={{ fontVariantNumeric: 'tabular-nums' }}
+        >
+          {formatDuration(callDuration)}
+        </div>
         <p className="text-[10px] uppercase tracking-wider mt-1" style={{ color: descColor }}>
           Thời gian đàm thoại
         </p>

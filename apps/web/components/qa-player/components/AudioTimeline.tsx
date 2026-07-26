@@ -89,8 +89,18 @@ export const AudioTimeline: React.FC<AudioTimelineProps> = ({
           {/* Timeline and slider with markers */}
           <div className="relative mb-6 px-1">
             <div className="flex justify-between items-center mb-1">
-              <Text className="text-xs font-mono font-bold text-slate-400">{formatTime(currentTime)}</Text>
-              <Text className="text-xs font-mono font-bold text-slate-400">{formatTime(duration)}</Text>
+              <Text
+                className="text-xs font-mono font-bold text-slate-400 tabular-nums"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
+              >
+                {formatTime(currentTime)}
+              </Text>
+              <Text
+                className="text-xs font-mono font-bold text-slate-400 tabular-nums"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
+              >
+                {formatTime(duration)}
+              </Text>
             </div>
 
             <div className="relative pt-1 pb-4">

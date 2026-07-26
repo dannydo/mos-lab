@@ -2627,7 +2627,38 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // Get list of all customers who referred someone and their details (Optimized)
   fastify.get('/customers/referrals', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      // 1. Fetch referrers summary
+      const { page, pageSize, search, timeFilter } = request.query as {
+        page?: string;
+        pageSize?: string;
+        search?: string;
+        timeFilter?: string;
+      };
+
+      const hasPagination = page !== undefined || pageSize !== undefined;
+      const pageNum = Math.max(1, Number(page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(pageSize) || 20));
+      const offset = (pageNum - 1) * limit;
+
+      let timeWhere = '';
+      if (timeFilter === 'this_month') {
+        timeWhere = 'AND up.date_created >= DATE_FORMAT(NOW(), "%Y-%m-01")';
+      } else if (timeFilter === 'last_month') {
+        timeWhere =
+          'AND up.date_created >= DATE_FORMAT(NOW() - INTERVAL 1 MONTH, "%Y-%m-01") AND up.date_created < DATE_FORMAT(NOW(), "%Y-%m-01")';
+      } else if (timeFilter === 'this_year') {
+        timeWhere = 'AND up.date_created >= DATE_FORMAT(NOW(), "%Y-01-01")';
+      } else if (timeFilter === 'last_year') {
+        timeWhere =
+          'AND up.date_created >= DATE_FORMAT(NOW() - INTERVAL 1 YEAR, "%Y-01-01") AND up.date_created < DATE_FORMAT(NOW(), "%Y-01-01")';
+      }
+
+      let searchWhere = '';
+      if (search && search.trim()) {
+        const cleanSearch = search.trim().replace(/'/g, "''");
+        searchWhere = `AND (r_up.full_name LIKE '%${cleanSearch}%' OR r_uc.phone_number LIKE '%${cleanSearch}%')`;
+      }
+
+      // 1. Fetch referrers summary (with pagination LIMIT offset if enabled)
       const referrers = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT 
            up.referrer_user_id as referrerId,
@@ -2638,12 +2669,19 @@ export async function customerRoutes(fastify: FastifyInstance) {
          INNER JOIN user r_u ON up.referrer_user_id = r_u.id
          INNER JOIN user_profile r_up ON r_u.id = r_up.user_id
          LEFT JOIN user_contact r_uc ON r_u.id = r_uc.user_id AND r_uc.is_disabled = 0
-         WHERE up.referrer_user_id IS NOT NULL AND up.is_deleted = 0
+         WHERE up.referrer_user_id IS NOT NULL AND up.is_deleted = 0 ${timeWhere} ${searchWhere}
          GROUP BY up.referrer_user_id
-         ORDER BY totalReferred DESC`
+         ORDER BY totalReferred DESC
+         ${hasPagination ? `LIMIT ${limit} OFFSET ${offset}` : ''}`
       );
 
-      // 2. Fetch all referred friends at once
+      const referrerIds = referrers.map((r) => Number(r.referrerId)).filter(Boolean);
+      if (referrerIds.length === 0) {
+        return [];
+      }
+      const refIdListStr = referrerIds.join(',');
+
+      // 2. Fetch referred friends for active page referrers only
       const referredFriends = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT 
            u.id as referredId,
@@ -2654,15 +2692,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
          FROM user u
          INNER JOIN user_profile up ON u.id = up.user_id
          LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
-         WHERE up.referrer_user_id IS NOT NULL AND up.is_deleted = 0
+         WHERE up.referrer_user_id IN (${refIdListStr}) AND up.is_deleted = 0
          ORDER BY u.id DESC`
       );
 
-      // 3. Fetch all referral transactions at once for active referrers only
-      // 3. Fetch all referral transactions at once using indexed template_id and currency_id
+      // 3. Fetch referral transactions for active page referrers only
       const referralTxs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT user_id as referrerId, amount, tracking_key FROM user_balance_transaction 
-         WHERE template_id = 7 AND currency_id = 3`
+         WHERE template_id = 7 AND currency_id = 3 AND user_id IN (${refIdListStr})`
       );
 
       // Map of referrerId -> Map of referredId -> rewardAmount

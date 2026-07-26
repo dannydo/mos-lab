@@ -81,38 +81,34 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     return 'customers-all';
   };
 
+  const createNavItem = (key: string, icon: React.ReactNode | null, labelText: string, path: string) => ({
+    key,
+    icon,
+    label: (
+      <span onMouseEnter={() => router.prefetch(path)} style={{ display: 'inline-block', width: '100%' }}>
+        {labelText}
+      </span>
+    ),
+    onClick: () => router.push(path),
+  });
+
   const menuItems: SafeAny[] = [];
 
   // Group customer pages into a SubMenu
   const customerChildren: SafeAny[] = [];
 
   if (userRole === 'admin') {
-    customerChildren.push({
-      key: 'customers-all',
-      label: 'Tất cả KH',
-      onClick: () => router.push('/dashboard/customers?assignedStaffId=all'),
-    });
+    customerChildren.push(
+      createNavItem('customers-all', null, 'Tất cả KH', '/dashboard/customers?assignedStaffId=all')
+    );
   }
 
   customerChildren.push(
-    {
-      key: 'my-customers',
-      label: 'KH của tôi',
-      onClick: () => router.push('/dashboard/customers?assignedStaffId=me'),
-    },
-    {
-      key: 'referrals',
-      label: 'KH giới thiệu',
-      onClick: () => router.push('/dashboard/referrals'),
-    }
+    createNavItem('my-customers', null, 'KH của tôi', '/dashboard/customers?assignedStaffId=me'),
+    createNavItem('referrals', null, 'KH giới thiệu', '/dashboard/referrals')
   );
 
-  menuItems.push({
-    key: 'today',
-    icon: <ClockCircleOutlined />,
-    label: 'Hôm nay',
-    onClick: () => router.push('/dashboard/today'),
-  });
+  menuItems.push(createNavItem('today', <ClockCircleOutlined />, 'Hôm nay', '/dashboard/today'));
 
   menuItems.push({
     key: 'customers-parent',
@@ -123,93 +119,40 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
 
   // Other menus for both roles
   menuItems.push(
-    {
-      key: 'nyc',
-      icon: <ClockCircleOutlined />,
-      label: 'Chiến dịch NYC',
-      onClick: () => router.push('/dashboard/nyc'),
-    },
-    {
-      key: 'loca',
-      icon: <HeartOutlined />,
-      label: 'Chiến dịch LoCa',
-      onClick: () => router.push('/dashboard/loca'),
-    },
-    {
-      key: 'my-appointments',
-      icon: <CalendarOutlined />,
-      label: 'Lịch hẹn của tôi',
-      onClick: () => router.push('/dashboard/appointments'),
-    },
-    {
-      key: 'plans',
-      icon: <CalendarOutlined />,
-      label: 'Kế hoạch gọi',
-      onClick: () => router.push('/dashboard/plans'),
-    },
-    {
-      key: 'calls',
-      icon: <PhoneOutlined />,
-      label: 'Lịch sử cuộc gọi',
-      onClick: () => router.push('/dashboard/calls'),
-    },
-    {
-      key: 'omicall',
-      icon: <AudioOutlined />,
-      label: 'Cuộc gọi OmiCall (AI)',
-      onClick: () => router.push('/dashboard/omicall'),
-    },
-    {
-      key: 'kpi',
-      icon: <BarChartOutlined />,
-      label: 'KPI hiệu suất',
-      onClick: () => router.push('/dashboard/kpi'),
-    },
-    {
-      key: 'cc',
-      icon: <SolutionOutlined />,
-      label: 'Báo Cáo CC',
-      onClick: () => router.push('/dashboard/cc'),
-    },
-    {
-      key: 'cv',
-      icon: <TeamOutlined />,
-      label: 'Báo Cáo CV',
-      onClick: () => router.push('/dashboard/cv'),
-    },
-    {
-      key: 'bk',
-      icon: <CalendarOutlined />,
-      label: 'Báo Cáo BK',
-      onClick: () => router.push('/dashboard/bk'),
-    }
+    createNavItem('nyc', <ClockCircleOutlined />, 'Chiến dịch NYC', '/dashboard/nyc'),
+    createNavItem('loca', <HeartOutlined />, 'Chiến dịch LoCa', '/dashboard/loca'),
+    createNavItem('my-appointments', <CalendarOutlined />, 'Lịch hẹn của tôi', '/dashboard/appointments'),
+    createNavItem('plans', <CalendarOutlined />, 'Kế hoạch gọi', '/dashboard/plans'),
+    createNavItem('calls', <PhoneOutlined />, 'Lịch sử cuộc gọi', '/dashboard/calls'),
+    createNavItem('omicall', <AudioOutlined />, 'Cuộc gọi OmiCall (AI)', '/dashboard/omicall'),
+    createNavItem('kpi', <BarChartOutlined />, 'KPI hiệu suất', '/dashboard/kpi'),
+    createNavItem('cc', <SolutionOutlined />, 'Báo Cáo CC', '/dashboard/cc'),
+    createNavItem('cv', <TeamOutlined />, 'Báo Cáo CV', '/dashboard/cv'),
+    createNavItem('bk', <CalendarOutlined />, 'Báo Cáo BK', '/dashboard/bk')
   );
 
   // Staff menu (only for Admin) - Moved to the bottom
   if (userRole === 'admin') {
-    menuItems.push({
-      key: 'staff',
-      icon: <SolutionOutlined />,
-      label: 'Nhân sự (HR)',
-      onClick: () => router.push('/dashboard/staff'),
-    });
+    menuItems.push(createNavItem('staff', <SolutionOutlined />, 'Nhân sự (HR)', '/dashboard/staff'));
   }
 
   return (
-    <Menu
-      theme={themeMode === 'dark' ? 'dark' : 'light'}
-      mode="inline"
-      selectedKeys={[getSelectedKey()]}
-      openKeys={openKeys}
-      onOpenChange={handleOpenChange}
-      items={menuItems}
-      style={{
-        background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
-        paddingTop: '8px',
-        borderRight: 0,
-      }}
-      className="antd-custom-menu"
-    />
+    <nav aria-label="Main Navigation">
+      <Menu
+        theme={themeMode === 'dark' ? 'dark' : 'light'}
+        mode="inline"
+        selectedKeys={[getSelectedKey()]}
+        openKeys={openKeys}
+        onOpenChange={handleOpenChange}
+        items={menuItems}
+        style={{
+          background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
+          paddingTop: '8px',
+          borderRight: 0,
+        }}
+        className="antd-custom-menu"
+      />
+    </nav>
   );
 }
 
@@ -452,6 +395,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             borderRight: `1px solid ${token.colorBorderSecondary}`,
           }}
         >
+          <h1 className="sr-only">WINGS LASHES Management System</h1>
           <div
             className="flex items-center justify-center"
             style={{
@@ -473,6 +417,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="sidebar-toggle-container">
           <Button
+            aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
+            title={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
             onClick={toggleSidebar}
             icon={
               collapsed ? <RightOutlined style={{ fontSize: '10px' }} /> : <LeftOutlined style={{ fontSize: '10px' }} />
@@ -602,6 +548,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
               <Button
                 type="text"
+                aria-label={themeMode === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
+                title={themeMode === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
                 icon={
                   themeMode === 'dark' ? (
                     <SunOutlined style={{ color: '#FAAD14' }} />

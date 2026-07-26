@@ -338,6 +338,7 @@ const CustomerTable = React.memo(
               : undefined
           }
           pagination={false}
+          scroll={{ x: 'max-content', y: 650 }}
           style={{
             background: token.colorBgContainer,
             border: `1px solid ${token.colorBorderSecondary}`,
@@ -353,7 +354,14 @@ const CustomerTable = React.memo(
 
         <div
           ref={sentinelRef as SafeAny}
-          style={{ height: '40px', margin: '16px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+          style={{
+            height: '40px',
+            margin: '16px 0',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '8px',
+          }}
         >
           {loading ? (
             <Space size="small">

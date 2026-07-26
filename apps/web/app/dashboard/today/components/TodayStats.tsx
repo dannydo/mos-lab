@@ -294,7 +294,12 @@ export default function TodayStats({
               <CalendarOutlined style={{ color: '#52c41a', marginRight: '6px' }} />
               Booking Tạo Hôm Nay
             </span>
-            <strong style={{ fontSize: '15px', color: token.colorText }}>{allBookings.length}</strong>
+            <strong
+              className="tabular-nums"
+              style={{ fontSize: '15px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+            >
+              {allBookings.length}
+            </strong>
           </div>
 
           <Row gutter={16} style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
@@ -340,7 +345,10 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    Combo: <strong>{bookingsCombo.length}</strong>
+                    Combo:{' '}
+                    <strong className="tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {bookingsCombo.length}
+                    </strong>
                   </div>
                   <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}>
                     <span
@@ -353,7 +361,10 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    Tele: <strong>{bookingsOc.length}</strong>
+                    Tele:{' '}
+                    <strong className="tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {bookingsOc.length}
+                    </strong>
                   </div>
                   <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}>
                     <span
@@ -366,7 +377,10 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    Khác: <strong>{bookingsOther.length}</strong>
+                    Khác:{' '}
+                    <strong className="tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {bookingsOther.length}
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -406,7 +420,10 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    DT: <strong>{bookingBranchCounts.dt}</strong>
+                    DT:{' '}
+                    <strong className="tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {bookingBranchCounts.dt}
+                    </strong>
                   </div>
                   <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}>
                     <span
@@ -419,7 +436,10 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    EP: <strong>{bookingBranchCounts.ep}</strong>
+                    EP:{' '}
+                    <strong className="tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {bookingBranchCounts.ep}
+                    </strong>
                   </div>
                   <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}>
                     <span

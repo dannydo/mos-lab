@@ -192,7 +192,7 @@ export class CcKpiService {
    * 1. GET CC Xoay Report Data
    */
   public static async getCcXoayReport(fastify: FastifyInstance, filters: CcKpiFilters) {
-    const { dateFrom, dateTo, storeId, consultantId, page = 1, limit = 3000 } = filters;
+    const { dateFrom, dateTo, storeId, consultantId, page = 1, limit = 100 } = filters;
     const { startStr, endStr } = parseDateRange(dateFrom, dateTo);
     const monthStartStr = `${startStr.substring(0, 7)}-01`;
     const activeCcIds = await this.getActiveCcStaffIds(fastify);

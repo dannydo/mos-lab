@@ -195,8 +195,8 @@ export const apiClient = {
       const response = await api.get(`/customers/${customerId}/assignment-timeline`);
       return response.data;
     },
-    getReferrals: async (): Promise<Referral[]> => {
-      const response = await api.get('/customers/referrals');
+    getReferrals: async (params?: Record<string, unknown>): Promise<Referral[]> => {
+      const response = await api.get('/customers/referrals', { params });
       return response.data;
     },
     getAppointments: async (params: Record<string, unknown>): Promise<ListAppointmentsResponse> => {
@@ -577,26 +577,44 @@ export const apiClient = {
     },
   },
 
-  tableConfig: {
-    get: async (
-      tableId: string
-    ): Promise<{ userConfig: ColumnConfig[] | null; defaultConfig: ColumnConfig[] | null }> => {
-      const response = await api.get(`/table-config/${tableId}`);
-      return response.data;
-    },
-    save: async (
-      tableId: string,
-      columns: ColumnConfig[],
-      saveAsDefault?: boolean
-    ): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post(`/table-config/${tableId}`, { columns, saveAsDefault });
-      return response.data;
-    },
-    reset: async (tableId: string): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post(`/table-config/${tableId}/reset`);
-      return response.data;
-    },
-  },
+  tableConfig: (() => {
+    const tableCache = new Map<
+      string,
+      Promise<{ userConfig: ColumnConfig[] | null; defaultConfig: ColumnConfig[] | null }>
+    >();
+    return {
+      get: async (
+        tableId: string
+      ): Promise<{ userConfig: ColumnConfig[] | null; defaultConfig: ColumnConfig[] | null }> => {
+        if (tableCache.has(tableId)) {
+          return tableCache.get(tableId)!;
+        }
+        const promise = api
+          .get(`/table-config/${tableId}`)
+          .then((res) => res.data)
+          .catch((err) => {
+            tableCache.delete(tableId);
+            throw err;
+          });
+        tableCache.set(tableId, promise);
+        return promise;
+      },
+      save: async (
+        tableId: string,
+        columns: ColumnConfig[],
+        saveAsDefault?: boolean
+      ): Promise<{ success: boolean; message: string }> => {
+        tableCache.delete(tableId);
+        const response = await api.post(`/table-config/${tableId}`, { columns, saveAsDefault });
+        return response.data;
+      },
+      reset: async (tableId: string): Promise<{ success: boolean; message: string }> => {
+        tableCache.delete(tableId);
+        const response = await api.post(`/table-config/${tableId}/reset`);
+        return response.data;
+      },
+    };
+  })(),
 
   omicall: {
     getSipConfig: async (): Promise<unknown> => {

@@ -17,11 +17,48 @@ import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
 
-import BkBookingTab from './components/BkBookingTab';
-import BkDoneTab from './components/BkDoneTab';
-import BkTipTab from './components/BkTipTab';
-import BkRevenueTab from './components/BkRevenueTab';
-import BkThuNhapTab from './components/BkThuNhapTab';
+import { Spin } from 'antd';
+
+const BkBookingTab = dynamic(() => import('./components/BkBookingTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
+const BkDoneTab = dynamic(() => import('./components/BkDoneTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
+const BkTipTab = dynamic(() => import('./components/BkTipTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
+const BkRevenueTab = dynamic(() => import('./components/BkRevenueTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
+const BkThuNhapTab = dynamic(() => import('./components/BkThuNhapTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
 
 const BkConfigDrawer = dynamic(() => import('./components/BkConfigDrawer'), { ssr: false });
 

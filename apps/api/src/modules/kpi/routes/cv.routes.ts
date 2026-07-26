@@ -28,7 +28,7 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
       storeId,
       consultantId,
       page = 1,
-      limit = 3000,
+      limit = 100,
     } = request.query as {
       dateFrom?: string;
       dateTo?: string;

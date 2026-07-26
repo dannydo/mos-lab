@@ -418,7 +418,7 @@ export async function planRoutes(fastify: FastifyInstance) {
         JOIN user_profile up ON u.id = up.user_id
         JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
         LEFT JOIN user_service_balance usb ON u.id = usb.user_id
-        WHERE DATEDIFF(NOW(), up.last_order_booking) = 1
+        WHERE up.last_order_booking >= CURDATE() - INTERVAL 1 DAY AND up.last_order_booking < CURDATE()
         LIMIT 10
       `;
 
@@ -437,7 +437,7 @@ export async function planRoutes(fastify: FastifyInstance) {
         JOIN user_profile up ON u.id = up.user_id
         JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
         LEFT JOIN user_service_balance usb ON u.id = usb.user_id
-        WHERE usb.id IS NULL AND DATEDIFF(NOW(), up.last_order_booking) BETWEEN 19 AND 21
+        WHERE usb.id IS NULL AND up.last_order_booking >= CURDATE() - INTERVAL 21 DAY AND up.last_order_booking <= CURDATE() - INTERVAL 19 DAY
         LIMIT 10
       `;
 
@@ -458,7 +458,7 @@ export async function planRoutes(fastify: FastifyInstance) {
         JOIN user_service_balance usb ON u.id = usb.user_id
         WHERE (usb.normal_count + usb.retain_count) > 0 
           AND (usb.date_expired IS NULL OR usb.date_expired > NOW()) 
-          AND DATEDIFF(NOW(), up.last_order_booking) BETWEEN 23 AND 25
+          AND up.last_order_booking >= CURDATE() - INTERVAL 25 DAY AND up.last_order_booking <= CURDATE() - INTERVAL 23 DAY
         LIMIT 10
       `;
 
@@ -477,8 +477,8 @@ export async function planRoutes(fastify: FastifyInstance) {
         JOIN user_profile up ON u.id = up.user_id
         JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
         LEFT JOIN user_service_balance usb ON u.id = usb.user_id
-        WHERE usb.id IS NULL AND DATEDIFF(NOW(), up.last_order_booking) >= 22
-        ORDER BY daysSinceLastVisit ASC
+        WHERE usb.id IS NULL AND up.last_order_booking <= CURDATE() - INTERVAL 22 DAY
+        ORDER BY up.last_order_booking DESC
         LIMIT 10
       `;
 

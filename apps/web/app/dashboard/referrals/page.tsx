@@ -63,12 +63,12 @@ export default function ReferralsPage() {
 
   useEffect(() => {
     fetchReferrals();
-  }, []);
+  }, [timeFilter]);
 
   const fetchReferrals = async () => {
     setLoading(true);
     try {
-      const data = await apiClient.customers.getReferrals();
+      const data = await apiClient.customers.getReferrals({ timeFilter, search: searchText });
       setReferrers(data || []);
     } catch (err) {
       console.error('[ReferralsPage] Failed to fetch referrals:', err);

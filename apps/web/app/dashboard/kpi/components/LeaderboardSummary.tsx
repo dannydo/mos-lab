@@ -61,38 +61,66 @@ export const LeaderboardSummary: React.FC<LeaderboardSummaryProps> = ({ pageData
         {selectedRole === 'oc' ? (
           <>
             <Table.Summary.Cell index={1}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalCheckin}</span>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
+                {totalCheckin}
+              </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={2}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>-</span>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
+                -
+              </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={3}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalBaseSalary.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={4}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalSalesReward.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={5}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalServicingReward.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={6}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalGrowthReward.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={7}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalStoreServicingReward.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={8}>
-              <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px', fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalEarnings.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>
@@ -100,37 +128,68 @@ export const LeaderboardSummary: React.FC<LeaderboardSummaryProps> = ({ pageData
         ) : (
           <>
             <Table.Summary.Cell index={1}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalPlanned}</span>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
+                {totalPlanned}
+              </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={2}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>{totalCalled}</span>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
+                {totalCalled}
+              </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={3}>
-              <span style={{ fontWeight: 'bold', color: token.colorPrimary }}>{totalBooked}</span>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorPrimary, fontVariantNumeric: 'tabular-nums' }}
+              >
+                {totalBooked}
+              </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={4}>
-              <span style={{ fontWeight: 'bold', color: '#722ED1' }}>{totalCheckin}</span>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: '#722ED1', fontVariantNumeric: 'tabular-nums' }}
+              >
+                {totalCheckin}
+              </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={5}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalBaseSalary.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={6}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalClientBonus.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={7}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalDoneBonus.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={8}>
               <span
+                className="tabular-nums"
                 style={{
                   fontWeight: 'bold',
                   color: totalMissedBonus < 0 ? '#FF4D4F' : token.colorText,
+                  fontVariantNumeric: 'tabular-nums',
                 }}
               >
                 {totalMissedBonus >= 0 ? '+' : ''}
@@ -138,17 +197,26 @@ export const LeaderboardSummary: React.FC<LeaderboardSummaryProps> = ({ pageData
               </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={9}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalTipBonus.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={10}>
-              <span style={{ fontWeight: 'bold', color: token.colorText }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalRevBonus.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={11}>
-              <span style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
+              <span
+                className="tabular-nums"
+                style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px', fontVariantNumeric: 'tabular-nums' }}
+              >
                 {totalEarnings.toLocaleString('vi-VN')} đ
               </span>
             </Table.Summary.Cell>

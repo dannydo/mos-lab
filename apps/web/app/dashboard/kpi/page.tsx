@@ -46,7 +46,14 @@ const SalaryConfigDrawer = dynamic(() => import('./components/SalaryConfigDrawer
 const AppointmentsAuditDrawer = dynamic(() => import('./components/AppointmentsAuditDrawer'), { ssr: false });
 import { getLeaderboardColumns } from './components/KpiColumns';
 import { LeaderboardSummary } from './components/LeaderboardSummary';
-import { PackageAuditTab } from './components/PackageAuditTab';
+const PackageAuditTab = dynamic(() => import('./components/PackageAuditTab').then((m) => m.PackageAuditTab), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
 import { PageHeader } from '../../../components/ui';
 
 dayjs.extend(isoWeek);
