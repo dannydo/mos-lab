@@ -5684,18 +5684,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Query assigned customer IDs for this staff
-      let assignedCustomerIds: number[] = [];
-      if (filterByStaff) {
-        const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-          where: { staffId: targetStaffId },
-          select: { legacyUserId: true },
-        });
-        assignedCustomerIds = assignments.map((a) => Number(a.legacyUserId));
-      }
-
-      // If staff selected but no corresponding legacy user found AND no assigned customers, return empty list
-      if (filterByStaff && !staffLegacyId && assignedCustomerIds.length === 0) {
+      // If staff selected but no corresponding legacy user found, return empty list
+      if (filterByStaff && !staffLegacyId) {
         return { data: [], total: 0 };
       }
 
@@ -5709,20 +5699,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const countParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
 
       if (filterByStaff) {
-        if (assignedCustomerIds.length > 0) {
-          if (staffLegacyId) {
-            countSql += ` AND (o.user_id IN (${assignedCustomerIds.join(',')}) OR o.created_staff_id = ?)`;
-            countParams.push(staffLegacyId);
+        if (staffLegacyId) {
+          if (staffRole === 'oc') {
+            countSql += ` AND o.assigned_staff_id = ?`;
           } else {
-            countSql += ` AND o.user_id IN (${assignedCustomerIds.join(',')})`;
-          }
-        } else {
-          if (staffLegacyId) {
             countSql += ` AND o.created_staff_id = ?`;
-            countParams.push(staffLegacyId);
-          } else {
-            countSql += ` AND 1=0`;
           }
+          countParams.push(staffLegacyId);
+        } else {
+          countSql += ` AND 1=0`;
         }
       }
 
@@ -5771,20 +5756,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const params: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
 
       if (filterByStaff) {
-        if (assignedCustomerIds.length > 0) {
-          if (staffLegacyId) {
-            sql += ` AND (o.user_id IN (${assignedCustomerIds.join(',')}) OR o.created_staff_id = ?)`;
-            params.push(staffLegacyId);
+        if (staffLegacyId) {
+          if (staffRole === 'oc') {
+            sql += ` AND o.assigned_staff_id = ?`;
           } else {
-            sql += ` AND o.user_id IN (${assignedCustomerIds.join(',')})`;
-          }
-        } else {
-          if (staffLegacyId) {
             sql += ` AND o.created_staff_id = ?`;
-            params.push(staffLegacyId);
-          } else {
-            sql += ` AND 1=0`;
           }
+          params.push(staffLegacyId);
+        } else {
+          sql += ` AND 1=0`;
         }
       }
 

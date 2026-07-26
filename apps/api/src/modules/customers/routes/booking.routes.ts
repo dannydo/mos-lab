@@ -679,18 +679,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Query assigned customer IDs for this staff
-      let assignedCustomerIds: number[] = [];
-      if (filterByStaff) {
-        const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-          where: { staffId: targetStaffId },
-          select: { legacyUserId: true },
-        });
-        assignedCustomerIds = assignments.map((a) => Number(a.legacyUserId));
-      }
-
-      // If staff selected but no corresponding legacy user found AND no assigned customers, return empty list
-      if (filterByStaff && !staffLegacyId && assignedCustomerIds.length === 0) {
+      // If staff selected but no corresponding legacy user found, return empty list
+      if (filterByStaff && !staffLegacyId) {
         return { data: [], total: 0 };
       }
 
@@ -698,34 +688,30 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       let countSql = `
         SELECT COUNT(*) as total
         FROM \`order\` o
-        WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
       `;
       const countParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
 
       if (filterByStaff) {
-        if (assignedCustomerIds.length > 0) {
-          if (staffLegacyId) {
-            countSql += ` AND (o.user_id IN (${assignedCustomerIds.join(',')}) OR o.created_staff_id = ?)`;
-            countParams.push(staffLegacyId);
+        if (staffLegacyId) {
+          if (staffRole === 'oc') {
+            countSql += ` AND o.assigned_staff_id = ?`;
           } else {
-            countSql += ` AND o.user_id IN (${assignedCustomerIds.join(',')})`;
-          }
-        } else {
-          if (staffLegacyId) {
             countSql += ` AND o.created_staff_id = ?`;
-            countParams.push(staffLegacyId);
-          } else {
-            countSql += ` AND 1=0`;
           }
+          countParams.push(staffLegacyId);
+        } else {
+          countSql += ` AND 1=0`;
         }
       }
 
       if (type === 'completed') {
         countSql += ` AND o.order_state = 'Completed'`;
       } else if (type === 'missed') {
-        countSql += ` AND (o.order_state = 'Cancelled' OR (o.order_state != 'Completed' AND o.booking_date_start < NOW()))`;
+        countSql += ` AND (o.order_state = 'Cancelled' OR (o.order_state != 'Completed' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < NOW()))`;
       } else {
-        countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled') AND o.booking_date_start >= NOW()`;
+        countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled')`;
       }
 
       const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams);
@@ -736,7 +722,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         SELECT 
           o.id,
           o.order_key as orderKey,
-          o.booking_date_start as bookingDateStart,
+          COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDateStart,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i') as actualBookingTime,
           o.booking_date_end as bookingDateEnd,
           o.booking_note as bookingNote,
           o.booking_channels as bookingChannel,
@@ -754,27 +741,23 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
             WHERE uc.user_id = o.user_id AND uc.is_disabled = 0
           ) as customerPhone
         FROM \`order\` o
+        LEFT JOIN report_order ro ON o.id = ro.order_id
         LEFT JOIN user_profile up ON o.user_id = up.user_id
-        WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
       `;
 
       const params: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
 
       if (filterByStaff) {
-        if (assignedCustomerIds.length > 0) {
-          if (staffLegacyId) {
-            sql += ` AND (o.user_id IN (${assignedCustomerIds.join(',')}) OR o.created_staff_id = ?)`;
-            params.push(staffLegacyId);
+        if (staffLegacyId) {
+          if (staffRole === 'oc') {
+            sql += ` AND o.assigned_staff_id = ?`;
           } else {
-            sql += ` AND o.user_id IN (${assignedCustomerIds.join(',')})`;
-          }
-        } else {
-          if (staffLegacyId) {
             sql += ` AND o.created_staff_id = ?`;
-            params.push(staffLegacyId);
-          } else {
-            sql += ` AND 1=0`;
           }
+          params.push(staffLegacyId);
+        } else {
+          sql += ` AND 1=0`;
         }
       }
 
