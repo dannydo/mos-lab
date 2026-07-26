@@ -5731,7 +5731,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       } else if (type === 'missed') {
         countSql += ` AND (o.order_state = 'Cancelled' OR (o.order_state != 'Completed' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < NOW()))`;
       } else {
-        countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
+        countSql += ` AND o.order_state NOT IN ('Completed', 'Cancelled')`;
       }
 
       const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams);
@@ -5793,7 +5793,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       } else if (type === 'missed') {
         sql += ` AND (o.order_state = 'Cancelled' OR (o.order_state != 'Completed' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < NOW()))`;
       } else {
-        sql += ` AND o.order_state NOT IN ('Completed', 'Cancelled') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
+        sql += ` AND o.order_state NOT IN ('Completed', 'Cancelled')`;
       }
 
       sql += ` ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) ASC LIMIT ? OFFSET ?`;

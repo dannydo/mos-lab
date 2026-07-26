@@ -150,11 +150,15 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
 
   // Reset currentPage to 1 and clear data when filters change
   useEffect(() => {
+    isFetchingRef.current = false;
     setCurrentPage(1);
     setAppointments([]);
     setTotal(0);
     setHasMore(true);
   }, [viewMode, referenceDate, dateRange, activeTab, selectedStaffId]);
+
+  const dateStartVal = dateRange[0]?.valueOf();
+  const dateEndVal = dateRange[1]?.valueOf();
 
   // Fetch appointments data
   const fetchAppointments = useCallback(async () => {
@@ -203,7 +207,7 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  }, [dateRange, activeTab, selectedStaffId, currentUser, currentPage, pageSize]);
+  }, [dateRange, dateStartVal, dateEndVal, activeTab, selectedStaffId, currentUser, currentPage, pageSize]);
 
   const handleCancelBooking = async (orderId: number) => {
     try {
