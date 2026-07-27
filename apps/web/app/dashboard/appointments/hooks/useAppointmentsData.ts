@@ -10,6 +10,7 @@ dayjs.extend(isoWeek);
 import { Appointment, Staff } from '@mos-lab/shared';
 
 const defaultColumnConfig = {
+  stt: { visible: true, width: 55, label: 'STT' },
   customerName: { visible: true, width: 220, label: 'Khách hàng' },
   customerPhone: { visible: true, width: 140, label: 'Số Điện Thoại' },
   appointmentTime: { visible: true, width: 150, label: 'Thời Gian Hẹn' },
@@ -65,6 +66,7 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'missed' | 'completed'>('pending');
+  const [missedStatusFilter, setMissedStatusFilter] = useState<'ALL' | 'UNTAGGED' | 'FOLLOWUP' | 'RESOLVED'>('ALL');
   const [selectedStaffId, setSelectedStaffId] = useState<string>('all');
   const [staffList, setStaffList] = useState<SafeAny[]>([]);
 
@@ -148,66 +150,76 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
   const [hasMore, setHasMore] = useState(true);
   const isFetchingRef = useRef(false);
 
-  // Reset currentPage to 1 and clear data when filters change
-  useEffect(() => {
-    isFetchingRef.current = false;
-    setCurrentPage(1);
-    setAppointments([]);
-    setTotal(0);
-    setHasMore(true);
-  }, [viewMode, referenceDate, dateRange, activeTab, selectedStaffId]);
-
   const dateStartVal = dateRange[0]?.valueOf();
   const dateEndVal = dateRange[1]?.valueOf();
 
   // Fetch appointments data
-  const fetchAppointments = useCallback(async () => {
-    if (!dateRange[0] || !dateRange[1] || isFetchingRef.current) return;
+  const fetchAppointments = useCallback(
+    async (targetPage?: number) => {
+      if (!dateRange[0] || !dateRange[1] || isFetchingRef.current) return;
 
-    isFetchingRef.current = true;
-    setLoading(true);
-    try {
-      const params: SafeAny = {
-        dateFrom: dateRange[0].startOf('day').format('YYYY-MM-DD 00:00:00'),
-        dateTo: dateRange[1].endOf('day').format('YYYY-MM-DD 23:59:59'),
-        type: activeTab,
-        page: currentPage,
-        limit: pageSize,
-      };
+      const pageToFetch = targetPage !== undefined ? targetPage : currentPage;
 
-      if (currentUser?.role === 'admin' && selectedStaffId !== 'all') {
-        params.staffId = selectedStaffId;
+      isFetchingRef.current = true;
+      setLoading(true);
+      try {
+        const params: SafeAny = {
+          dateFrom: dateRange[0].startOf('day').format('YYYY-MM-DD 00:00:00'),
+          dateTo: dateRange[1].endOf('day').format('YYYY-MM-DD 23:59:59'),
+          type: activeTab,
+          page: pageToFetch,
+          limit: pageSize,
+        };
+
+        if (activeTab === 'missed' && missedStatusFilter !== 'ALL') {
+          params.missedStatusFilter = missedStatusFilter;
+        }
+
+        if (currentUser?.role === 'admin' && selectedStaffId !== 'all') {
+          params.staffId = selectedStaffId;
+        }
+
+        const data = await apiClient.customers.getAppointments(params);
+        const fetchedItems = data.data || [];
+
+        if (pageToFetch === 1) {
+          setAppointments(fetchedItems);
+        } else {
+          setAppointments((prev) => {
+            const existingIds = new Set(prev.map((item) => item.id));
+            const newItems = fetchedItems.filter((item: SafeAny) => !existingIds.has(item.id));
+            return [...prev, ...newItems];
+          });
+        }
+
+        setTotal(data.total);
+        setSummary(data.summary || null);
+
+        if (fetchedItems.length < pageSize || pageToFetch * pageSize >= data.total) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+      } catch (err) {
+        console.error('Fetch appointments error:', err);
+        optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể tải lịch hẹn');
+      } finally {
+        setLoading(false);
+        isFetchingRef.current = false;
       }
-
-      const data = await apiClient.customers.getAppointments(params);
-      const fetchedItems = data.data || [];
-
-      if (currentPage === 1) {
-        setAppointments(fetchedItems);
-      } else {
-        setAppointments((prev) => {
-          const existingIds = new Set(prev.map((item) => item.id));
-          const newItems = fetchedItems.filter((item: SafeAny) => !existingIds.has(item.id));
-          return [...prev, ...newItems];
-        });
-      }
-
-      setTotal(data.total);
-      setSummary(data.summary || null);
-
-      if (fetchedItems.length < pageSize || currentPage * pageSize >= data.total) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
-    } catch (err) {
-      console.error('Fetch appointments error:', err);
-      optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể tải lịch hẹn');
-    } finally {
-      setLoading(false);
-      isFetchingRef.current = false;
-    }
-  }, [dateRange, dateStartVal, dateEndVal, activeTab, selectedStaffId, currentUser, currentPage, pageSize]);
+    },
+    [
+      dateRange,
+      dateStartVal,
+      dateEndVal,
+      activeTab,
+      selectedStaffId,
+      missedStatusFilter,
+      currentUser,
+      currentPage,
+      pageSize,
+    ]
+  );
 
   const handleCancelBooking = async (orderId: number) => {
     try {
@@ -216,18 +228,27 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
       setAppointments([]);
       setCurrentPage(1);
       setHasMore(true);
-      fetchAppointments();
+      fetchAppointments(1);
     } catch (err) {
       console.error('[Cancel] Failed to cancel booking:', err);
       optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi hủy lịch hẹn.');
     }
   };
 
+  // Handle filter changes (Reset to Page 1 and fetch)
   useEffect(() => {
-    if (currentUser) {
-      fetchAppointments();
-    }
-  }, [fetchAppointments, currentUser]);
+    if (!currentUser) return;
+    isFetchingRef.current = false;
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchAppointments(1);
+  }, [viewMode, referenceDate, dateRange, activeTab, selectedStaffId, missedStatusFilter, currentUser]);
+
+  // Handle page changes for infinite scroll (Page > 1)
+  useEffect(() => {
+    if (!currentUser || currentPage === 1) return;
+    fetchAppointments(currentPage);
+  }, [currentPage, currentUser]);
 
   // Intersection Observer for Infinite Scroll (Lazy Loading)
   useEffect(() => {
@@ -345,6 +366,8 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     setPickerOpen,
     activeTab,
     setActiveTab,
+    missedStatusFilter,
+    setMissedStatusFilter,
     selectedStaffId,
     setSelectedStaffId,
     staffList,

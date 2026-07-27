@@ -5641,13 +5641,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // GET /api/customers/appointments
   // Get list of appointments for assigned customers
   fastify.get('/customers/appointments', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { dateFrom, dateTo, type, staffId, page, limit } = request.query as {
+    const { dateFrom, dateTo, type, staffId, page, limit, missedStatusFilter } = request.query as {
       dateFrom?: string;
       dateTo?: string;
       type?: 'pending' | 'missed' | 'completed';
       staffId?: string;
       page?: string;
       limit?: string;
+      missedStatusFilter?: 'ALL' | 'UNTAGGED' | 'FOLLOWUP' | 'RESOLVED';
     };
 
     const user = request.user as { id: number; role: string };
@@ -5712,6 +5713,40 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return { data: [], total: 0 };
       }
 
+      // Query crm_missed_logs IDs via Prisma CRM Client to avoid raw SQL cross-database issues
+      let missedFilterCond = '';
+      if (type === 'missed' && missedStatusFilter && missedStatusFilter !== 'ALL') {
+        if (missedStatusFilter === 'UNTAGGED') {
+          const logs = await fastify.prisma.crm.crmMissedLog.findMany({ select: { orderId: true } });
+          if (logs.length > 0) {
+            const ids = logs.map((l) => l.orderId).join(',');
+            missedFilterCond = ` AND o.id NOT IN (${ids})`;
+          }
+        } else if (missedStatusFilter === 'FOLLOWUP') {
+          const logs = await fastify.prisma.crm.crmMissedLog.findMany({
+            where: { followUpStatus: { in: ['PENDING', 'CONTACTED'] } },
+            select: { orderId: true },
+          });
+          if (logs.length > 0) {
+            const ids = logs.map((l) => l.orderId).join(',');
+            missedFilterCond = ` AND o.id IN (${ids})`;
+          } else {
+            missedFilterCond = ` AND 1=0`;
+          }
+        } else if (missedStatusFilter === 'RESOLVED') {
+          const logs = await fastify.prisma.crm.crmMissedLog.findMany({
+            where: { followUpStatus: { in: ['RESCHEDULED', 'CANCELLED', 'UNREACHABLE'] } },
+            select: { orderId: true },
+          });
+          if (logs.length > 0) {
+            const ids = logs.map((l) => l.orderId).join(',');
+            missedFilterCond = ` AND o.id IN (${ids})`;
+          } else {
+            missedFilterCond = ` AND 1=0`;
+          }
+        }
+      }
+
       // 2. Query total count matching filters
       let countSql = `
         SELECT COUNT(*) as total
@@ -5737,7 +5772,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (type === 'completed') {
         countSql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
       } else if (type === 'missed') {
-        countSql += ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))`;
+        countSql +=
+          ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))` +
+          missedFilterCond;
       } else {
         countSql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
       }
@@ -5765,6 +5802,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           o.client_store_id as storeId,
           COALESCE(up.full_name, 'No Name') as customerName,
           up.avatar as customerAvatar,
+          up_created.full_name as bookerName,
+          o.created_staff_id as createdStaffId,
           (
             SELECT COALESCE(MAX(uc.phone_number), '')
             FROM user_contact uc
@@ -5773,6 +5812,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         FROM \`order\` o
         LEFT JOIN report_order ro ON o.id = ro.order_id
         LEFT JOIN user_profile up ON o.user_id = up.user_id
+        LEFT JOIN user_profile up_created ON o.created_staff_id = up_created.user_id
         WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
       `;
 
@@ -5794,7 +5834,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (type === 'completed') {
         sql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
       } else if (type === 'missed') {
-        sql += ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))`;
+        sql +=
+          ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))` +
+          missedFilterCond;
       } else {
         sql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
       }
@@ -5877,6 +5919,37 @@ export async function customerRoutes(fastify: FastifyInstance) {
             discountAmount: Number(p.discountAmount || 0),
           });
         });
+      }
+
+      // Query missed logs from CRM DB for returned appointments
+      const missedLogsMap = new Map<number, SafeAny>();
+      if (orderIds.length > 0) {
+        const missedLogs = await fastify.prisma.crm.crmMissedLog.findMany({
+          where: { orderId: { in: orderIds } },
+        });
+        missedLogs.forEach((ml) => {
+          missedLogsMap.set(ml.orderId, {
+            id: ml.id,
+            orderId: ml.orderId,
+            reasonCategory: ml.reasonCategory,
+            responsibility: ml.responsibility,
+            note: ml.note,
+            followUpStatus: ml.followUpStatus,
+            createdBy: ml.createdBy,
+            createdAt: ml.createdAt ? new Date(ml.createdAt).toISOString() : null,
+            updatedAt: ml.updatedAt ? new Date(ml.updatedAt).toISOString() : null,
+          });
+        });
+      }
+
+      const createdStaffIds = Array.from(new Set(result.map((o) => Number(o.createdStaffId)).filter((id) => id > 0)));
+      const crmStaffMap = new Map<number, string>();
+      if (createdStaffIds.length > 0) {
+        const crmStaffs = await fastify.prisma.crm.crmStaff.findMany({
+          where: { id: { in: createdStaffIds } },
+          select: { id: true, displayName: true },
+        });
+        crmStaffs.forEach((cs) => crmStaffMap.set(cs.id, cs.displayName));
       }
 
       // Single Source of Truth paystub calculation (Rule #11)
@@ -6048,6 +6121,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           bookingBonus: Number(bookingBonus || 0),
           technicianId: row.technicianId ? Number(row.technicianId) : null,
           storeId: row.storeId ? Number(row.storeId) : null,
+          bookerName: row.bookerName || crmStaffMap.get(Number(row.createdStaffId)) || null,
+          missedLog: missedLogsMap.get(Number(row.id)) || null,
         };
       });
 
@@ -6084,6 +6159,265 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: (error as SafeAny).message || 'Failed to retrieve appointments',
+      });
+    }
+  });
+
+  // POST /api/customers/missed/log
+  // Upsert missed log reason, responsibility, note, follow-up status, and sync callback date to Daily Plan
+  fastify.post('/customers/missed/log', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string; id: number; displayName?: string; username?: string };
+    const {
+      orderId,
+      reasonCategory,
+      responsibility,
+      note,
+      followUpStatus = 'PENDING',
+      callbackDate,
+    } = request.body as SafeAny;
+
+    if (!orderId || !reasonCategory || !responsibility) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'orderId, reasonCategory và responsibility là các trường bắt buộc.',
+      });
+    }
+
+    const numOrderId = Number(orderId);
+    const createdBy = user.displayName || user.username || 'Staff';
+    const cbDate = callbackDate ? new Date(callbackDate) : null;
+
+    try {
+      const log = await fastify.prisma.crm.crmMissedLog.upsert({
+        where: { orderId: numOrderId },
+        create: {
+          orderId: numOrderId,
+          reasonCategory,
+          responsibility,
+          note: note || null,
+          followUpStatus,
+          callbackDate: cbDate,
+          createdBy,
+        },
+        update: {
+          reasonCategory,
+          responsibility,
+          note: note || null,
+          followUpStatus,
+          callbackDate: cbDate,
+          createdBy,
+        },
+      });
+
+      // Automatically sync callbackDate to CRM Daily Plan if scheduled
+      if (cbDate && followUpStatus === 'CONTACTED') {
+        const orderRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT user_id as userId FROM \`order\` WHERE id = ? LIMIT 1`,
+          numOrderId
+        );
+        if (orderRows.length > 0 && orderRows[0].userId) {
+          const legacyUserId = Number(orderRows[0].userId);
+          const staffId = user.id;
+          try {
+            await fastify.prisma.crm.crmDailyPlan.upsert({
+              where: {
+                legacyUserId_plannedDate: {
+                  legacyUserId,
+                  plannedDate: cbDate,
+                },
+              },
+              create: {
+                legacyUserId,
+                staffId,
+                plannedDate: cbDate,
+                bucket: 'MISSED_FOLLOWUP',
+                priority: 1,
+                status: 'PLANNED',
+              },
+              update: {
+                staffId,
+                status: 'PLANNED',
+              },
+            });
+          } catch (_e) {
+            // Ignore duplicate plan errors if any
+          }
+        }
+      }
+
+      return reply.send({
+        success: true,
+        data: {
+          id: log.id,
+          orderId: log.orderId,
+          reasonCategory: log.reasonCategory,
+          responsibility: log.responsibility,
+          note: log.note,
+          followUpStatus: log.followUpStatus,
+          callbackDate: log.callbackDate ? log.callbackDate.toISOString().slice(0, 10) : null,
+          createdBy: log.createdBy,
+          createdAt: log.createdAt.toISOString(),
+          updatedAt: log.updatedAt.toISOString(),
+        },
+      });
+    } catch (err: SafeAny) {
+      fastify.log.error(err, 'Save missed log error');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Không thể lưu thông tin lý do missed.',
+      });
+    }
+  });
+
+  // GET /api/customers/missed/summary
+  // Compute aggregated stats for missed orders in date range
+  fastify.get('/customers/missed/summary', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { dateFrom, dateTo, storeId } = request.query as {
+      dateFrom?: string;
+      dateTo?: string;
+      storeId?: string;
+    };
+
+    const dFrom = dateFrom ? `${dateFrom} 00:00:00` : `${new Date().toISOString().slice(0, 10)} 00:00:00`;
+    const dTo = dateTo ? `${dateTo} 23:59:59` : `${new Date().toISOString().slice(0, 10)} 23:59:59`;
+
+    try {
+      let storeFilter = '';
+      const storeParams: SafeAny[] = [new Date(dFrom), new Date(dTo)];
+      if (storeId && storeId !== 'ALL') {
+        storeFilter = ' AND o.client_store_id = ?';
+        storeParams.push(Number(storeId));
+      }
+
+      const countsSql = `
+        SELECT 
+          COUNT(DISTINCT o.id) as totalPlanned,
+          COUNT(DISTINCT CASE 
+            WHEN (o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) 
+              AND ro.actual_booking_date_start IS NULL 
+              AND (o.total_price IS NULL OR o.total_price = 0) 
+              AND o.order_state NOT IN ('Completed', 'CheckOut') 
+            THEN o.id 
+          END) as totalMissed,
+          GROUP_CONCAT(DISTINCT CASE 
+            WHEN (o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) 
+              AND ro.actual_booking_date_start IS NULL 
+              AND (o.total_price IS NULL OR o.total_price = 0) 
+              AND o.order_state NOT IN ('Completed', 'CheckOut') 
+            THEN o.id 
+          END) as missedOrderIdsStr
+        FROM \`order\` o
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? 
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ? ${storeFilter}
+      `;
+
+      const countsRes = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countsSql, ...storeParams);
+      const totalPlanned = Number(countsRes[0]?.totalPlanned || 0);
+      const totalMissed = Number(countsRes[0]?.totalMissed || 0);
+      const missedRatePct = totalPlanned > 0 ? Number(((totalMissed / totalPlanned) * 100).toFixed(1)) : 0;
+
+      const missedOrderIdsRaw = countsRes[0]?.missedOrderIdsStr
+        ? String(countsRes[0].missedOrderIdsStr)
+            .split(',')
+            .map((x) => Number(x.trim()))
+            .filter((x) => Boolean(x) && !isNaN(x))
+        : [];
+
+      let taggedCount = 0;
+      const reasonMap = new Map<string, number>();
+      const respMap = new Map<string, number>();
+      const followUpMap = new Map<string, number>();
+
+      if (missedOrderIdsRaw.length > 0) {
+        const logs = await fastify.prisma.crm.crmMissedLog.findMany({
+          where: { orderId: { in: missedOrderIdsRaw } },
+        });
+
+        taggedCount = logs.length;
+        logs.forEach((l) => {
+          reasonMap.set(l.reasonCategory, (reasonMap.get(l.reasonCategory) || 0) + 1);
+          respMap.set(l.responsibility, (respMap.get(l.responsibility) || 0) + 1);
+          followUpMap.set(l.followUpStatus, (followUpMap.get(l.followUpStatus) || 0) + 1);
+        });
+      }
+
+      const untaggedCount = Math.max(0, totalMissed - taggedCount);
+      const taggedRatePct = totalMissed > 0 ? Number(((taggedCount / totalMissed) * 100).toFixed(1)) : 0;
+
+      const REASON_LABELS: Record<string, string> = {
+        KH_DOI_HUY_LICH: 'Khách đổi/hủy lịch',
+        GOI_KHONG_NGHE: 'Gọi không nghe máy / Thuê bao',
+        TIEM_QUATAI: 'Tiệm quá tải / Hết ghế',
+        BOOKER_LATHUONG: 'Booker tư vấn sai / Đặt nhầm',
+        KTV_BAN_LOI: 'CV bận / Phục vụ chậm',
+        KH_QUEN_LICH: 'Khách quên lịch',
+        LY_DO_KHAC: 'Lý do khác',
+      };
+
+      const RESP_LABELS: Record<string, string> = {
+        CUSTOMER: 'Khách hàng',
+        BOOKER: 'Booker (Telesales)',
+        CC: 'Tư vấn viên (CC)',
+        TECHNICIAN: 'Chuyên viên (CV)',
+        STORE_SYSTEM: 'Hệ thống / Cửa hàng',
+      };
+
+      const FOLLOWUP_LABELS: Record<string, string> = {
+        PENDING: 'Chưa xử lý',
+        CONTACTED: 'Đã gọi chăm sóc',
+        RESCHEDULED: 'Đã đặt lại lịch',
+        UNREACHABLE: 'Không liên hệ được',
+        CANCELLED: 'Khách hủy hẳn',
+      };
+
+      const reasonBreakdown = Object.keys(REASON_LABELS).map((catKey) => {
+        const count = reasonMap.get(catKey) || 0;
+        const pct = totalMissed > 0 ? Number(((count / totalMissed) * 100).toFixed(1)) : 0;
+        return {
+          reasonCategory: catKey as SafeAny,
+          label: REASON_LABELS[catKey],
+          count,
+          pct,
+        };
+      });
+
+      const responsibilityBreakdown = Object.keys(RESP_LABELS).map((respKey) => {
+        const count = respMap.get(respKey) || 0;
+        const pct = totalMissed > 0 ? Number(((count / totalMissed) * 100).toFixed(1)) : 0;
+        return {
+          responsibility: respKey as SafeAny,
+          label: RESP_LABELS[respKey],
+          count,
+          pct,
+        };
+      });
+
+      const followUpBreakdown = Object.keys(FOLLOWUP_LABELS).map((fuKey) => {
+        const count = followUpMap.get(fuKey) || 0;
+        return {
+          status: fuKey as SafeAny,
+          label: FOLLOWUP_LABELS[fuKey],
+          count,
+        };
+      });
+
+      return reply.send({
+        totalMissed,
+        totalPlanned,
+        missedRatePct,
+        taggedCount,
+        untaggedCount,
+        taggedRatePct,
+        reasonBreakdown,
+        responsibilityBreakdown,
+        followUpBreakdown,
+      });
+    } catch (err: SafeAny) {
+      fastify.log.error(err, 'Get missed summary error');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Không thể tính toán thống kê missed.',
       });
     }
   });

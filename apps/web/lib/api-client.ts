@@ -81,6 +81,9 @@ import {
   CreateServicePriceInput,
   CreateProductInput,
   UpdateProductInput,
+  MissedSummaryStats,
+  SaveMissedLogInput,
+  MissedLog,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -330,6 +333,18 @@ export const apiClient = {
     },
     getAppointments: async (params: Record<string, unknown>): Promise<ListAppointmentsResponse> => {
       const response = await api.get('/customers/appointments', { params });
+      return response.data;
+    },
+    getMissedSummary: async (params?: {
+      dateFrom?: string;
+      dateTo?: string;
+      storeId?: string;
+    }): Promise<MissedSummaryStats> => {
+      const response = await api.get('/customers/missed/summary', { params });
+      return response.data;
+    },
+    saveMissedLog: async (data: SaveMissedLogInput): Promise<{ success: boolean; data: MissedLog }> => {
+      const response = await api.post('/customers/missed/log', data);
       return response.data;
     },
     deleteBooking: async (orderId: number): Promise<{ success: boolean; message: string }> => {

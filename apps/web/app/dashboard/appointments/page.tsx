@@ -37,6 +37,10 @@ const RescheduleBookingModal = dynamic(
 );
 import { useAppointmentsData } from './hooks/useAppointmentsData';
 import { getPendingColumns, getCompletedColumns, getMissedColumns } from './components/AppointmentColumns';
+import MissedSummaryCards from './components/MissedSummaryCards';
+import MissedReasonModal from './components/MissedReasonModal';
+import { MissedSummaryStats, Appointment } from '@mos-lab/shared';
+import { apiClient } from '../../../lib/api-client';
 
 dayjs.extend(isoWeek);
 
@@ -79,6 +83,8 @@ export default function AppointmentsPage() {
     setPickerOpen,
     activeTab,
     setActiveTab,
+    missedStatusFilter,
+    setMissedStatusFilter,
     selectedStaffId,
     setSelectedStaffId,
     staffList,
@@ -108,6 +114,32 @@ export default function AppointmentsPage() {
     onSuccess: (msg) => message.success(msg),
     onError: (msg) => message.error(msg),
   });
+
+  const [missedReasonModalVisible, setMissedReasonModalVisible] = React.useState(false);
+  const [selectedMissedAppointment, setSelectedMissedAppointment] = React.useState<Appointment | null>(null);
+  const [missedSummary, setMissedSummary] = React.useState<MissedSummaryStats | null>(null);
+  const [missedSummaryLoading, setMissedSummaryLoading] = React.useState(false);
+
+  const fetchMissedSummary = React.useCallback(async () => {
+    if (!dateRange || !dateRange[0] || !dateRange[1]) return;
+    setMissedSummaryLoading(true);
+    try {
+      const dateFrom = dateRange[0].format('YYYY-MM-DD');
+      const dateTo = dateRange[1].format('YYYY-MM-DD');
+      const res = await apiClient.customers.getMissedSummary({ dateFrom, dateTo });
+      setMissedSummary(res);
+    } catch (err) {
+      // ignore
+    } finally {
+      setMissedSummaryLoading(false);
+    }
+  }, [dateRange]);
+
+  React.useEffect(() => {
+    if (activeTab === 'missed') {
+      fetchMissedSummary();
+    }
+  }, [activeTab, dateRange, fetchMissedSummary]);
 
   const pendingColumns = React.useMemo(
     () =>
@@ -142,6 +174,10 @@ export default function AppointmentsPage() {
         makeCall,
         setBookingInitialCustomer,
         setBookingWizardVisible,
+        onOpenMissedReasonModal: (record) => {
+          setSelectedMissedAppointment(record);
+          setMissedReasonModalVisible(true);
+        },
       }),
     [themeMode, token, openDetailModal, makeCall, setBookingInitialCustomer, setBookingWizardVisible]
   );
@@ -164,7 +200,7 @@ export default function AppointmentsPage() {
     () =>
       baseColumns
         .filter((col) => {
-          if (col.key === 'action') return true;
+          if (col.key === 'action' || col.key === 'stt') return true;
           const config = columnConfig[col.key as string];
           return config ? config.visible : true;
         })
@@ -631,6 +667,30 @@ export default function AppointmentsPage() {
           ]}
         />
 
+        {activeTab === 'missed' && (
+          <div className="mt-4 mb-4 flex flex-col gap-3">
+            <MissedSummaryCards summary={missedSummary} loading={missedSummaryLoading} />
+
+            <div className="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                Lọc công việc theo dõi Missed:
+              </div>
+              <Radio.Group
+                value={missedStatusFilter}
+                onChange={(e) => setMissedStatusFilter(e.target.value)}
+                optionType="button"
+                buttonStyle="solid"
+                size="small"
+              >
+                <Radio.Button value="ALL">Tất cả ({missedSummary?.totalMissed ?? 0})</Radio.Button>
+                <Radio.Button value="UNTAGGED">⚠️ Chưa ghi lý do ({missedSummary?.untaggedCount ?? 0})</Radio.Button>
+                <Radio.Button value="FOLLOWUP">📞 Cần chăm sóc / Hẹn lại</Radio.Button>
+                <Radio.Button value="RESOLVED">✅ Đã giải quyết / Đã hẹn mới</Radio.Button>
+              </Radio.Group>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'completed' && summary && (
           <div style={{ marginTop: '16px', marginBottom: '16px' }}>
             <Row gutter={[12, 12]}>
@@ -1019,6 +1079,32 @@ export default function AppointmentsPage() {
           setSelectedBookingForReschedule(null);
         }}
         onSuccess={fetchAppointments}
+      />
+
+      <MissedReasonModal
+        visible={missedReasonModalVisible}
+        appointment={selectedMissedAppointment}
+        onCancel={() => {
+          setMissedReasonModalVisible(false);
+          setSelectedMissedAppointment(null);
+        }}
+        onSuccess={(status) => {
+          fetchAppointments();
+          fetchMissedSummary();
+          if (status === 'RESCHEDULED' && selectedMissedAppointment) {
+            setBookingInitialCustomer({
+              id: selectedMissedAppointment.customerId,
+              fullName: selectedMissedAppointment.customerName,
+              phoneNumber: selectedMissedAppointment.customerPhone || '',
+            });
+            setBookingWizardVisible(true);
+          }
+        }}
+        makeCall={makeCall}
+        onOpenReschedule={(apt) => {
+          setSelectedBookingForReschedule(apt);
+          setRescheduleModalVisible(true);
+        }}
       />
     </div>
   );

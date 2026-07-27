@@ -173,6 +173,7 @@ export interface Appointment {
   ccInAvatar?: string | null;
   ccOutAvatar?: string | null;
   bookerAvatar?: string | null;
+  missedLog?: MissedLog | null;
 }
 
 export interface CustomerHistoryEntry {
@@ -329,4 +330,71 @@ export interface Service {
   name: string;
   price: number;
   duration: number;
+}
+
+export type MissedReasonCategory =
+  | 'KH_DOI_HUY_LICH'
+  | 'GOI_KHONG_NGHE'
+  | 'TIEM_QUATAI'
+  | 'BOOKER_LATHUONG'
+  | 'KTV_BAN_LOI'
+  | 'KH_QUEN_LICH'
+  | 'LY_DO_KHAC';
+
+export type MissedResponsibility = 'CUSTOMER' | 'BOOKER' | 'CC' | 'TECHNICIAN' | 'STORE_SYSTEM';
+
+export type MissedFollowUpStatus = 'PENDING' | 'CONTACTED' | 'RESCHEDULED' | 'UNREACHABLE' | 'CANCELLED';
+
+export interface MissedLog {
+  id?: number;
+  orderId: number;
+  reasonCategory: MissedReasonCategory;
+  responsibility: MissedResponsibility;
+  note?: string | null;
+  followUpStatus: MissedFollowUpStatus;
+  callbackDate?: string | null;
+  createdBy?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface MissedReasonBreakdownItem {
+  reasonCategory: MissedReasonCategory;
+  label: string;
+  count: number;
+  pct: number;
+}
+
+export interface MissedResponsibilityBreakdownItem {
+  responsibility: MissedResponsibility;
+  label: string;
+  count: number;
+  pct: number;
+}
+
+export interface MissedFollowUpBreakdownItem {
+  status: MissedFollowUpStatus;
+  label: string;
+  count: number;
+}
+
+export interface MissedSummaryStats {
+  totalMissed: number;
+  totalPlanned: number;
+  missedRatePct: number;
+  taggedCount: number;
+  untaggedCount: number;
+  taggedRatePct: number;
+  reasonBreakdown: MissedReasonBreakdownItem[];
+  responsibilityBreakdown: MissedResponsibilityBreakdownItem[];
+  followUpBreakdown: MissedFollowUpBreakdownItem[];
+}
+
+export interface SaveMissedLogInput {
+  orderId: number;
+  reasonCategory: MissedReasonCategory;
+  responsibility: MissedResponsibility;
+  note?: string;
+  followUpStatus?: MissedFollowUpStatus;
+  callbackDate?: string | null;
 }

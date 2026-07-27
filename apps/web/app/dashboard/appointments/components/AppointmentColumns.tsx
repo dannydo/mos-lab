@@ -2,7 +2,15 @@
 
 import React from 'react';
 import { Space, Avatar, Typography, Tag, Tooltip, Button, Popconfirm } from 'antd';
-import { UserOutlined, PhoneOutlined, CalendarOutlined, EyeOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  PhoneOutlined,
+  CalendarOutlined,
+  EyeOutlined,
+  CloseCircleOutlined,
+  EditOutlined,
+  FileTextOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Appointment } from '@mos-lab/shared';
 
@@ -19,6 +27,7 @@ interface ColumnsOptions {
   handleCancelBooking?: (id: number) => void;
   setBookingInitialCustomer?: (customer: SafeAny) => void;
   setBookingWizardVisible?: (visible: boolean) => void;
+  onOpenMissedReasonModal?: (record: Appointment) => void;
 }
 
 export const getPendingColumns = ({
@@ -32,6 +41,17 @@ export const getPendingColumns = ({
   handleCancelBooking,
 }: ColumnsOptions) => {
   return [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 55,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, index: number) => (
+        <span style={{ fontWeight: 600, color: token.colorTextDescription, fontVariantNumeric: 'tabular-nums' }}>
+          {index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Khách hàng',
       key: 'customerName',
@@ -265,6 +285,17 @@ export const getCompletedColumns = ({
 >) => {
   return [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 55,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, index: number) => (
+        <span style={{ fontWeight: 600, color: token.colorTextDescription, fontVariantNumeric: 'tabular-nums' }}>
+          {index + 1}
+        </span>
+      ),
+    },
+    {
       title: 'Khách hàng',
       key: 'customerName',
       render: (record: Appointment) => (
@@ -439,8 +470,46 @@ export const getMissedColumns = ({
   makeCall,
   setBookingInitialCustomer,
   setBookingWizardVisible,
+  onOpenMissedReasonModal,
 }: ColumnsOptions) => {
+  const REASON_MAP: Record<string, { label: string; color: string }> = {
+    KH_DOI_HUY_LICH: { label: 'Khách đổi/hủy', color: 'orange' },
+    GOI_KHONG_NGHE: { label: 'Gọi không nghe', color: 'gold' },
+    TIEM_QUATAI: { label: 'Tiệm quá tải', color: 'red' },
+    BOOKER_LATHUONG: { label: 'Booker nhầm', color: 'purple' },
+    KTV_BAN_LOI: { label: 'CV bận/trễ', color: 'volcano' },
+    KH_QUEN_LICH: { label: 'Khách quên lịch', color: 'magenta' },
+    LY_DO_KHAC: { label: 'Lý do khác', color: 'cyan' },
+  };
+
+  const RESP_MAP: Record<string, { label: string; color: string }> = {
+    CUSTOMER: { label: 'Khách hàng', color: 'default' },
+    BOOKER: { label: 'Booker', color: 'blue' },
+    CC: { label: 'Tư vấn viên (CC)', color: 'geekblue' },
+    TECHNICIAN: { label: 'Chuyên viên (CV)', color: 'purple' },
+    STORE_SYSTEM: { label: 'Hệ thống', color: 'red' },
+  };
+
+  const FOLLOWUP_MAP: Record<string, { label: string; color: string }> = {
+    PENDING: { label: 'Chưa xử lý', color: 'red' },
+    CONTACTED: { label: 'Đã gọi chăm sóc', color: 'blue' },
+    RESCHEDULED: { label: 'Đã hẹn lại', color: 'green' },
+    UNREACHABLE: { label: 'Không liên hệ được', color: 'orange' },
+    CANCELLED: { label: 'Khách hủy hẳn', color: 'default' },
+  };
+
   return [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 55,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, index: number) => (
+        <span style={{ fontWeight: 600, color: token.colorTextDescription, fontVariantNumeric: 'tabular-nums' }}>
+          {index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Khách hàng',
       key: 'customerName',
@@ -515,64 +584,92 @@ export const getMissedColumns = ({
       ),
     },
     {
-      title: 'Giá trị ước tính',
-      dataIndex: 'totalPrice',
-      key: 'totalPrice',
-      sorter: (a: Appointment, b: Appointment) => a.totalPrice - b.totalPrice,
-      render: (price: number) => <span style={{ fontWeight: '500', color: token.colorText }}>{formatVND(price)}</span>,
-    },
-    {
-      title: 'Kênh đặt lịch',
-      dataIndex: 'bookingChannel',
-      key: 'bookingChannel',
-      render: (channel: string) => (
-        <Tag color="orange" style={{ textTransform: 'capitalize' }}>
-          {channel?.toLowerCase()}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Khuyến mãi',
-      key: 'promotion',
+      title: 'Lý do Missed & Ghi chú',
+      key: 'missedReason',
       render: (record: Appointment) => {
-        if (!record.promotionName) {
+        const log = record.missedLog;
+        if (!log || !log.reasonCategory) {
           return (
-            <Text type="secondary" style={{ fontStyle: 'italic' }}>
-              -
-            </Text>
+            <Button
+              type="dashed"
+              danger
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => onOpenMissedReasonModal && onOpenMissedReasonModal(record)}
+            >
+              + Ghi lý do
+            </Button>
           );
         }
-        const pct = record.promotionDiscountPercent || 0;
-        const amt = record.promotionDiscountAmount || 0;
+
+        const reasonInfo = REASON_MAP[log.reasonCategory] || { label: log.reasonCategory, color: 'volcano' };
+
         return (
-          <Space direction="vertical" size={2}>
-            <Tag color="purple" style={{ margin: 0, fontWeight: 600 }}>
-              {record.promotionName}
+          <div
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => onOpenMissedReasonModal && onOpenMissedReasonModal(record)}
+          >
+            <Tag color={reasonInfo.color} style={{ margin: 0, fontWeight: 600 }}>
+              {reasonInfo.label}
             </Tag>
-            {pct > 0 ? (
-              <span style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold' }}>Giảm {pct}%</span>
-            ) : amt > 0 ? (
-              <span style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold' }}>Giảm {formatVND(amt)}</span>
-            ) : null}
-          </Space>
+            {log.note && (
+              <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[180px] mt-0.5">{log.note}</div>
+            )}
+          </div>
         );
       },
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'orderState',
-      key: 'orderState',
-      render: (state: string) => {
-        const isCancelled = state === 'Cancelled';
-        return <Tag color={isCancelled ? 'error' : 'volcano'}>{isCancelled ? 'Đã hủy' : 'Bị lỡ (Quá hạn)'}</Tag>;
+      title: 'Qui trách nhiệm',
+      key: 'responsibility',
+      render: (record: Appointment) => {
+        const log = record.missedLog;
+        if (!log || !log.responsibility) {
+          return (
+            <Text type="secondary" className="italic text-xs">
+              -
+            </Text>
+          );
+        }
+
+        const respInfo = RESP_MAP[log.responsibility] || { label: log.responsibility, color: 'default' };
+
+        return (
+          <Tag color={respInfo.color} style={{ margin: 0 }}>
+            {respInfo.label}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: 'Follow-up',
+      key: 'followUpStatus',
+      render: (record: Appointment) => {
+        const log = record.missedLog;
+        const statusKey = log?.followUpStatus || 'PENDING';
+        const fuInfo = FOLLOWUP_MAP[statusKey] || { label: statusKey, color: 'default' };
+
+        return (
+          <Tag color={fuInfo.color} style={{ margin: 0 }}>
+            {fuInfo.label}
+          </Tag>
+        );
       },
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 140,
+      width: 170,
       render: (record: Appointment) => (
-        <Space size="middle">
+        <Space size="small">
+          <Tooltip title="Ghi Lý do & Qui trách nhiệm">
+            <Button
+              type="text"
+              shape="circle"
+              icon={<FileTextOutlined style={{ fontSize: '16px', color: '#ff4d4f' }} />}
+              onClick={() => onOpenMissedReasonModal && onOpenMissedReasonModal(record)}
+            />
+          </Tooltip>
           <Tooltip title="Chi tiết khách hàng">
             <Button
               type="text"
