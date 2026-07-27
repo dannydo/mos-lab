@@ -70,13 +70,23 @@ export default function AppointmentsPage() {
   const { token } = theme.useToken();
   const { makeCall } = useOmiCall();
 
+  const hookOptions = React.useMemo(
+    () => ({
+      onSuccess: (msg: string) => message.success(msg),
+      onError: (msg: string) => message.error(msg),
+    }),
+    []
+  );
+
   const {
     currentUser,
     columnConfig,
     saveColumnConfig,
     viewMode,
     setViewMode,
+    referenceDate,
     setReferenceDate,
+    customRange,
     setCustomRange,
     dateRange,
     pickerOpen,
@@ -91,12 +101,18 @@ export default function AppointmentsPage() {
     appointments,
     loading,
     hasMore,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
     total,
     summary,
     sentinelRef,
     selectedCustomer,
     detailModalVisible,
     setDetailModalVisible,
+    detailModalLoading,
+    customerHistory,
     bookingWizardVisible,
     setBookingWizardVisible,
     bookingInitialCustomer,
@@ -110,10 +126,7 @@ export default function AppointmentsPage() {
     handleNavigate,
     getPeriodLabel,
     openDetailModal,
-  } = useAppointmentsData({
-    onSuccess: (msg) => message.success(msg),
-    onError: (msg) => message.error(msg),
-  });
+  } = useAppointmentsData(hookOptions);
 
   const [missedReasonModalVisible, setMissedReasonModalVisible] = React.useState(false);
   const [selectedMissedAppointment, setSelectedMissedAppointment] = React.useState<Appointment | null>(null);

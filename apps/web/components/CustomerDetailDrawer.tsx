@@ -176,13 +176,17 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const hookTabChangeRef = useRef(hookTabChange);
   hookTabChangeRef.current = hookTabChange;
 
+  const prevOpenRef = useRef(false);
   // Sync tab with localStorage on mount & open changes
   useEffect(() => {
-    if (open && typeof window !== 'undefined') {
+    if (open && !prevOpenRef.current && typeof window !== 'undefined') {
       const saved = localStorage.getItem('customer_detail_active_tab') || 'bookings';
       setActiveTabKey(saved);
-      hookTabChangeRef.current?.(saved);
+      if (saved !== 'bookings') {
+        hookTabChangeRef.current?.(saved);
+      }
     }
+    prevOpenRef.current = open;
   }, [open]);
 
   const handleTabChange = (key: string) => {

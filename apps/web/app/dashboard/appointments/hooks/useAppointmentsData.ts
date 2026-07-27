@@ -50,18 +50,18 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     if (customRange) {
       return customRange;
     }
-    let start = referenceDate;
-    let end = referenceDate;
+    let start = referenceDate.clone();
+    let end = referenceDate.clone();
 
     if (viewMode === 'month') {
-      start = referenceDate.startOf('month');
-      end = referenceDate.endOf('month');
+      start = referenceDate.clone().startOf('month');
+      end = referenceDate.clone().endOf('month');
     } else if (viewMode === 'week') {
-      start = referenceDate.startOf('isoWeek');
-      end = referenceDate.endOf('isoWeek');
+      start = referenceDate.clone().startOf('isoWeek');
+      end = referenceDate.clone().endOf('isoWeek');
     } else if (viewMode === 'day') {
-      start = referenceDate.startOf('day');
-      end = referenceDate.endOf('day');
+      start = referenceDate.clone().startOf('day');
+      end = referenceDate.clone().endOf('day');
     }
     return [start, end];
   }, [viewMode, refDateStr, customStartStr, customEndStr]);
