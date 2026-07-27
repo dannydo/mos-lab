@@ -233,6 +233,15 @@ export default function AppointmentsPage() {
 
   const totalWidth = React.useMemo(() => columns.reduce((sum, col) => sum + (Number(col.width) || 120), 0), [columns]);
 
+  const tableComponents = React.useMemo(
+    () => ({
+      header: {
+        cell: ResizableHeaderCell,
+      },
+    }),
+    []
+  );
+
   return (
     <div>
       {/* HEADER SECTION */}
@@ -991,11 +1000,7 @@ export default function AppointmentsPage() {
         )}
 
         <Table
-          components={{
-            header: {
-              cell: ResizableHeaderCell,
-            },
-          }}
+          components={tableComponents}
           dataSource={appointments}
           columns={columns}
           rowKey="id"

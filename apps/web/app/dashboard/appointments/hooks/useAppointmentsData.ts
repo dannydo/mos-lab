@@ -281,12 +281,15 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     };
   }, [loading, hasMore, appointments.length]);
 
-  const handleNavigate = (direction: number) => {
-    setCustomRange(null);
-    setReferenceDate((prev) => prev.add(direction, viewMode as 'month' | 'week' | 'day'));
-  };
+  const handleNavigate = useCallback(
+    (direction: number) => {
+      setCustomRange(null);
+      setReferenceDate((prev) => prev.add(direction, viewMode as 'month' | 'week' | 'day'));
+    },
+    [viewMode]
+  );
 
-  const getPeriodLabel = () => {
+  const getPeriodLabel = useCallback(() => {
     if (!dateRange[0] || !dateRange[1]) return 'Chọn thời gian';
 
     const [start, end] = dateRange;
@@ -330,9 +333,9 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
       return `Hôm qua (${ref.format('DD/MM')})`;
     }
     return ref.format('DD/MM/YYYY');
-  };
+  }, [dateRange, referenceDate, viewMode]);
 
-  const openDetailModal = async (customerId: number) => {
+  const openDetailModal = useCallback(async (customerId: number) => {
     setDetailModalVisible(true);
     setDetailModalLoading(true);
     setCustomerHistory([]);
@@ -353,7 +356,7 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     } finally {
       setDetailModalLoading(false);
     }
-  };
+  }, []);
 
   return {
     currentUser,

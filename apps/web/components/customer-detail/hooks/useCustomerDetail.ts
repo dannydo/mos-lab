@@ -137,9 +137,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     Record<string, { items: SafeAny[]; totalCount: number; hasMore: boolean; page: number; loading: boolean }>
   >({});
   const tabDataMapRef = useRef(tabDataMap);
-  useEffect(() => {
-    tabDataMapRef.current = tabDataMap;
-  }, [tabDataMap]);
+  tabDataMapRef.current = tabDataMap;
 
   const fetchDetails = useCallback(async () => {
     if (!customerId) return;
@@ -240,9 +238,6 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     const isCustomerChanged = open && customerId !== prevCustomerIdRef.current;
     const isJustClosed = !open && prevOpenRef.current;
 
-    prevOpenRef.current = open;
-    prevCustomerIdRef.current = customerId;
-
     if (open && customerId && (isJustOpened || isCustomerChanged)) {
       setTabDataMap({});
       setActiveTab('bookings');
@@ -253,7 +248,10 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
       setForbiddenError(null);
       setTabDataMap({});
     }
-  }, [open, customerId, fetchDetails, fetchTabData]);
+
+    prevOpenRef.current = open;
+    prevCustomerIdRef.current = customerId;
+  }, [open, customerId]);
 
   // Drawer resize event handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
