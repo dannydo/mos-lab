@@ -174,9 +174,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
 
   const hookTabChangeRef = useRef(hookTabChange);
-  useEffect(() => {
-    hookTabChangeRef.current = hookTabChange;
-  }, [hookTabChange]);
+  hookTabChangeRef.current = hookTabChange;
 
   // Sync tab with localStorage on mount & open changes
   useEffect(() => {
