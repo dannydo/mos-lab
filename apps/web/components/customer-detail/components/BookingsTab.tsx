@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Tag, Popconfirm, Button } from 'antd';
+import { Tag, Popconfirm, Button, Skeleton } from 'antd';
 import { CloseCircleOutlined, CalendarOutlined, CheckOutlined } from '@ant-design/icons';
 
 interface BookingsTabProps {
@@ -39,7 +39,14 @@ const safeParseDate = (val: SafeAny): Date | null => {
   return isNaN(d.getTime()) ? null : d;
 };
 
-export const BookingsTab: React.FC<BookingsTabProps & { notes?: SafeAny[] }> = ({
+export const BookingsTab: React.FC<
+  BookingsTabProps & {
+    notes?: SafeAny[];
+    loading?: boolean;
+    hasMore?: boolean;
+    onLoadMore?: () => void;
+  }
+> = ({
   bookings,
   notes,
   themeMode,
@@ -47,6 +54,9 @@ export const BookingsTab: React.FC<BookingsTabProps & { notes?: SafeAny[] }> = (
   handleCancelBooking,
   setSelectedBookingForReschedule,
   setRescheduleModalVisible,
+  loading = false,
+  hasMore = false,
+  onLoadMore,
 }) => {
   // Pre-map notes (CC, CS, Pinned) to bookings (by orderId or closest date)
   const notesByBookingMap = new Map<string, SafeAny[]>();
@@ -412,6 +422,30 @@ export const BookingsTab: React.FC<BookingsTabProps & { notes?: SafeAny[] }> = (
               </div>
             );
           })}
+          {hasMore && (
+            <div style={{ textAlign: 'center', marginTop: '16px', paddingBottom: '16px' }}>
+              <Button onClick={onLoadMore} loading={loading} type="default">
+                Tải thêm lịch sử đặt lịch
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : loading ? (
+        <div style={{ padding: '16px 0' }}>
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              style={{
+                marginBottom: '16px',
+                padding: '16px',
+                borderRadius: '8px',
+                background: themeMode === 'dark' ? '#141414' : '#fafafa',
+                border: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
+              }}
+            >
+              <Skeleton active paragraph={{ rows: 2 }} />
+            </div>
+          ))}
         </div>
       ) : (
         <div style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>Không có lịch sử đặt lịch nào.</div>

@@ -158,6 +158,7 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({ open, onCa
                       type="text"
                       danger
                       icon={<DeleteOutlined />}
+                      aria-label="Xóa số điện thoại"
                       onClick={() => remove(name)}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     />

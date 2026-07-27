@@ -165,7 +165,7 @@ export default function CatalogComboLiveTab() {
             title={`Bấm để xem hồ sơ chi tiết ${text}`}
           >
             <UserOutlined className="text-amber-500 group-hover:scale-110 transition-transform" />
-            <span className="font-semibold text-slate-200 dark:text-slate-100 group-hover:text-amber-400 group-hover:underline">
+            <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-amber-400 group-hover:underline">
               {text}
             </span>
             <Tag color="blue" className="text-xs font-mono group-hover:border-amber-400">
@@ -182,7 +182,7 @@ export default function CatalogComboLiveTab() {
           phone ? (
             <Space size={4}>
               <PhoneOutlined className="text-emerald-400 text-xs" />
-              <span className="font-mono tabular-nums text-slate-300 dark:text-slate-300">{phone}</span>
+              <span className="font-mono tabular-nums text-slate-600 dark:text-slate-300">{phone}</span>
             </Space>
           ) : (
             <span className="text-slate-500">-</span>
@@ -231,7 +231,7 @@ export default function CatalogComboLiveTab() {
           }
           return (
             <Space size="small">
-              <span className="tabular-nums text-xs text-slate-300">{formatted}</span>
+              <span className="tabular-nums text-xs text-slate-600 dark:text-slate-300">{formatted}</span>
               {owner.daysRemaining !== null && (
                 <Tag color="success" className="tabular-nums text-xs">
                   Còn {owner.daysRemaining} ngày
@@ -305,7 +305,7 @@ export default function CatalogComboLiveTab() {
         <Space direction="vertical" size={2}>
           <Space>
             <ThunderboltOutlined className="text-amber-400 text-base" />
-            <span className="font-bold text-base text-slate-100 dark:text-slate-100">{name}</span>
+            <span className="font-bold text-base text-slate-700 dark:text-slate-100">{name}</span>
           </Space>
           {record.packageKey && record.packageKey !== name && (
             <Tag color="purple" className="text-xs font-mono">
@@ -371,7 +371,9 @@ export default function CatalogComboLiveTab() {
       key: 'expiryAfterDay',
       align: 'center' as const,
       render: (days: number) => (
-        <span className="tabular-nums text-xs text-slate-300">{days > 0 ? `${days} ngày` : 'Vô thời hạn'}</span>
+        <span className="tabular-nums text-xs text-slate-600 dark:text-slate-300">
+          {days > 0 ? `${days} ngày` : 'Vô thời hạn'}
+        </span>
       ),
     },
   ];
@@ -473,7 +475,7 @@ export default function CatalogComboLiveTab() {
             <Space size="small" className="bg-slate-950/60 px-3 py-1.5 rounded-lg border border-slate-800">
               <Switch checked={expiringSoon} onChange={(checked) => handleExpiringSoonChange(checked)} size="small" />
               <Text
-                className="text-xs text-slate-300 font-medium cursor-pointer"
+                className="text-xs text-slate-600 dark:text-slate-300 font-medium cursor-pointer"
                 onClick={() => handleExpiringSoonChange(!expiringSoon)}
               >
                 Chỉ hiện Combo sắp hết hạn (&lt; 30 ngày)

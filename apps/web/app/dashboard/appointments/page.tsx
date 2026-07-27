@@ -316,7 +316,12 @@ export default function AppointmentsPage() {
 
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <Space.Compact>
-                <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
+                <Button
+                  icon={<LeftOutlined />}
+                  onClick={() => handleNavigate(-1)}
+                  aria-label="Ngày trước đó"
+                  title="Ngày trước đó"
+                />
                 <Button
                   onClick={() => setPickerOpen(true)}
                   style={{
@@ -332,7 +337,12 @@ export default function AppointmentsPage() {
                 >
                   {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
                 </Button>
-                <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
+                <Button
+                  icon={<RightOutlined />}
+                  onClick={() => handleNavigate(1)}
+                  aria-label="Ngày tiếp theo"
+                  title="Ngày tiếp theo"
+                />
               </Space.Compact>
 
               <RangePicker

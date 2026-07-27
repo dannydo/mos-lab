@@ -122,7 +122,11 @@ export const getPendingColumns = ({
       dataIndex: 'totalPrice',
       key: 'totalPrice',
       sorter: (a: Appointment, b: Appointment) => a.totalPrice - b.totalPrice,
-      render: (price: number) => <span style={{ fontWeight: '500', color: token.colorText }}>{formatVND(price)}</span>,
+      render: (price: number) => (
+        <span style={{ fontWeight: '500', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}>
+          {formatVND(price)}
+        </span>
+      ),
     },
     {
       title: 'Kênh đặt lịch',
@@ -153,9 +157,17 @@ export const getPendingColumns = ({
               {record.promotionName}
             </Tag>
             {pct > 0 ? (
-              <span style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold' }}>Giảm {pct}%</span>
+              <span
+                style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}
+              >
+                Giảm {pct}%
+              </span>
             ) : amt > 0 ? (
-              <span style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold' }}>Giảm {formatVND(amt)}</span>
+              <span
+                style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}
+              >
+                Giảm {formatVND(amt)}
+              </span>
             ) : null}
           </Space>
         );
@@ -265,7 +277,14 @@ export const getPendingColumns = ({
               onConfirm={() => handleCancelBooking?.(record.id)}
               okButtonProps={{ danger: true }}
             >
-              <Button type="text" shape="circle" danger icon={<CloseCircleOutlined style={{ fontSize: '16px' }} />} />
+              <Button
+                type="text"
+                shape="circle"
+                danger
+                icon={<CloseCircleOutlined style={{ fontSize: '16px' }} />}
+                aria-label="Hủy lịch hẹn"
+                title="Hủy lịch hẹn"
+              />
             </Popconfirm>
           </Tooltip>
         </Space>
@@ -358,7 +377,7 @@ export const getCompletedColumns = ({
       render: (record: Appointment) => (
         <div style={{ color: token.colorText }}>
           <div style={{ fontWeight: '600' }}>{record.serviceName}</div>
-          <div style={{ fontSize: '12px', color: token.colorTextDescription }}>
+          <div style={{ fontSize: '12px', color: token.colorTextDescription, fontVariantNumeric: 'tabular-nums' }}>
             Giá: {formatVND(record.servicePrice || 0)} | Giảm: {record.discountPercent || 0}%
           </div>
         </div>
@@ -383,9 +402,17 @@ export const getCompletedColumns = ({
               {record.promotionName}
             </Tag>
             {pct > 0 ? (
-              <span style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold' }}>Giảm {pct}%</span>
+              <span
+                style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}
+              >
+                Giảm {pct}%
+              </span>
             ) : amt > 0 ? (
-              <span style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold' }}>Giảm {formatVND(amt)}</span>
+              <span
+                style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}
+              >
+                Giảm {formatVND(amt)}
+              </span>
             ) : null}
           </Space>
         );
@@ -397,7 +424,9 @@ export const getCompletedColumns = ({
       key: 'netRevenue',
       sorter: (a: Appointment, b: Appointment) => (a.netRevenue || 0) - (b.netRevenue || 0),
       render: (val: number) => (
-        <span style={{ fontWeight: '500', color: token.colorText }}>{val > 0 ? formatVND(val) : '-'}</span>
+        <span style={{ fontWeight: '500', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}>
+          {val > 0 ? formatVND(val) : '-'}
+        </span>
       ),
     },
     {
@@ -405,7 +434,11 @@ export const getCompletedColumns = ({
       dataIndex: 'tipAmount',
       key: 'tipAmount',
       sorter: (a: Appointment, b: Appointment) => (a.tipAmount || 0) - (b.tipAmount || 0),
-      render: (val: number) => <span style={{ color: token.colorText }}>{val > 0 ? formatVND(val) : '-'}</span>,
+      render: (val: number) => (
+        <span style={{ color: token.colorText, fontVariantNumeric: 'tabular-nums' }}>
+          {val > 0 ? formatVND(val) : '-'}
+        </span>
+      ),
     },
     {
       title: 'Hoa hồng OC',
@@ -414,7 +447,9 @@ export const getCompletedColumns = ({
       sorter: (a: Appointment, b: Appointment) => (a.bookingBonus || 0) - (b.bookingBonus || 0),
       render: (val: number) =>
         val > 0 ? (
-          <span style={{ color: '#52C41A', fontWeight: 'bold' }}>+{formatVND(val)}</span>
+          <span style={{ color: '#52C41A', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}>
+            +{formatVND(val)}
+          </span>
         ) : (
           <span style={{ color: token.colorTextDescription }}>-</span>
         ),

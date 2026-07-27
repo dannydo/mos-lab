@@ -2,13 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Card, Table, Tag, Input, Space, Button, Typography, theme, Tooltip } from 'antd';
-import {
-  SearchOutlined,
-  ReloadOutlined,
-  SettingOutlined,
-  CompressOutlined,
-  ExpandOutlined,
-} from '@ant-design/icons';
+import { SearchOutlined, ReloadOutlined, SettingOutlined, CompressOutlined, ExpandOutlined } from '@ant-design/icons';
 import { CcXoayRecord } from '@mos-lab/shared';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
@@ -53,7 +47,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         dataIndex: 'clientName',
         key: 'clientName',
         width: 140,
-        render: (val: string) => <span className="font-semibold text-slate-200">{val}</span>,
+        render: (val: string) => <span className="font-semibold text-slate-700 dark:text-slate-200">{val}</span>,
       },
       {
         title: 'Chi Nhánh',
@@ -61,7 +55,8 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         key: 'store',
         width: 90,
         render: (val: string) => {
-          const storeCode = val === 'ESTELLA-PLACE' || val === 'ESTELLA' ? 'EP' : val === 'DE-THAM' || val === 'Đề Thám' ? 'DT' : val;
+          const storeCode =
+            val === 'ESTELLA-PLACE' || val === 'ESTELLA' ? 'EP' : val === 'DE-THAM' || val === 'Đề Thám' ? 'DT' : val;
           return <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {storeCode}</span>;
         },
       },
@@ -104,7 +99,9 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         key: 'consultantLevel',
         width: 80,
         align: 'right' as const,
-        render: (val: number) => <span className="tabular-nums font-semibold text-xs text-slate-300">{val}</span>,
+        render: (val: number) => (
+          <span className="tabular-nums font-semibold text-xs text-slate-600 dark:text-slate-300">{val}</span>
+        ),
       },
       {
         title: 'CC Bonus (đ)',
@@ -134,11 +131,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         key: 'consultantPoints',
         width: 90,
         align: 'right' as const,
-        render: (val: number) => (
-          <span className="tabular-nums font-bold text-cyan-400 text-xs">
-            +{val} pts
-          </span>
-        ),
+        render: (val: number) => <span className="tabular-nums font-bold text-cyan-400 text-xs">+{val} pts</span>,
       },
       {
         title: 'CC In',
@@ -150,10 +143,12 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
           const isSame = !r.ccOutName || r.ccInName === r.ccOutName;
           if (isSame) {
             return (
-              <Space size={4} className="text-xs text-slate-300">
+              <Space size={4} className="text-xs text-slate-600 dark:text-slate-300">
                 <CcAvatar name={val} size={20} />
                 <span>{val}</span>
-                <span className="text-emerald-400 font-bold text-[10px]" title="CC In/Out đồng nhất">✓</span>
+                <span className="text-emerald-400 font-bold text-[10px]" title="CC In/Out đồng nhất">
+                  ✓
+                </span>
               </Space>
             );
           }
@@ -188,7 +183,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         key: 'class',
         width: 130,
         render: (val: string, r: CcXoayRecord) => (
-          <span className="text-xs text-slate-300">
+          <span className="text-xs text-slate-600 dark:text-slate-300">
             {val} <span className="text-slate-500 text-[10px]">({r.classPts}p)</span>
           </span>
         ),
@@ -222,7 +217,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         width: 95,
         align: 'right' as const,
         render: (val: number, r: CcXoayRecord) => (
-          <span className="tabular-nums text-xs text-slate-300">
+          <span className="tabular-nums text-xs text-slate-600 dark:text-slate-300">
             {val}s <span className="text-slate-500 text-[10px]">({r.lashPts}p)</span>
           </span>
         ),

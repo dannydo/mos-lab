@@ -104,3 +104,41 @@ Verify all references to service_price_package_key in apps/api/src/modules/custo
 
 - [ ] Complete list of all service_price_package_key references in WingsLashes documented with safety ratings.
 - [ ] Verification that ComboRecognitionService and all CRM reports operate cleanly with suffix-normalized package keys.
+
+## Follow-up — 2026-07-27T16:34:40Z
+
+Kiểm tra và tự động sửa tất cả các lỗi độ tương phản (contrast), màu sắc và khả năng truy cập (accessibility) cho tất cả các trang (Pages), Modal Popup, và Thanh trượt bên (Side Drawers / Side Slides) trong ứng dụng web mos-lab, đảm bảo đúng theo tiêu chuẩn /modern-web-guidance và hoạt động hoàn hảo trên cả 2 nền Light Theme & Dark Theme.
+
+Working directory: /Users/dannydo/projects/mos-lab
+Integrity mode: development
+
+## Requirements
+
+### R1. Comprehensive Accessibility & Contrast Audit across All Views
+
+Review and identify low-contrast text, missing focus indicators, and improperly scoped dark/light colors across all pages (/dashboard, /login), Modal Popups (KPI, Order detail, Edit Customer, etc.), and Side Drawers (Side Slides) in both Light (.light-theme) and Dark (.dark-theme) modes.
+
+### R2. CSS Token & Modern Color Scheme Standards Alignment
+
+Refactor styles to strictly adhere to Ant Design 5 token system and globals.css theme variables. Ensure text meets WCAG AA standards (contrast ratio ≥ 4.5:1 for normal body text, ≥ 3:1 for large text/interactive components). Eliminate conflicting hardcoded styles (e.g., hardcoding #141414 !important without .dark-theme scoping).
+
+### R3. Interactive States & Tabular Numbers Optimization
+
+Ensure all dynamic counters, time clocks, durations, and financial figures use tabular-nums (font-variant-numeric: tabular-nums). Add clean :focus-visible styling for visual accessibility and ensure buttons/interactive icons have readable labels.
+
+## Acceptance Criteria
+
+### Contrast & Legibility
+
+- [ ] 100% of text elements across all pages, popups, and side drawers meet WCAG AA contrast standards in both Light and Dark themes.
+- [ ] No dark text on dark backgrounds or faint text on light backgrounds in any popup or side drawer.
+
+### Theme & Styling Integrity
+
+- [ ] Modal popups and Side Drawers render seamlessly when toggling between .light-theme and .dark-theme.
+- [ ] All table/modal/drawer overrides in globals.css follow proper theme scoping (e.g. .dark-theme .ant-modal-content).
+
+### Accessibility & Animation
+
+- [ ] Dynamic counter/time elements use tabular-nums to eliminate layout jitter.
+- [ ] Keyboard navigation visual focus (:focus-visible) works cleanly across interactive elements.

@@ -179,15 +179,14 @@ export const getNycColumns = ({
           : sortField === 'totalSpent_desc'
             ? ('descend' as const)
             : null,
-      render: (val: number) => formatVND(val),
+      render: (val: number) => <span className="tabular-nums">{formatVND(val)}</span>,
     },
     {
       title: 'Đã phân bổ',
       key: 'allocatedDays',
       width: 120,
       render: (_: SafeAny, record: Customer) => {
-        const assignedAt =
-          record.assignedStaff?.assignedAt || record.assignedAt || record.lastAllocation?.assignedAt;
+        const assignedAt = record.assignedStaff?.assignedAt || record.assignedAt || record.lastAllocation?.assignedAt;
         if (!assignedAt) {
           return <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)' }}>Chưa từng phân bổ</span>;
         }

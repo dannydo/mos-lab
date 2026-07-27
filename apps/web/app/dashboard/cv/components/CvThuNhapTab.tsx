@@ -451,11 +451,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
         } else if (rank === 3) {
           rankBadge = <span className="text-sm shrink-0 w-5 text-center">🥉</span>;
         } else {
-          rankBadge = (
-            <span className="text-xs font-semibold text-slate-500 w-5 text-center shrink-0">
-              #{rank}
-            </span>
-          );
+          rankBadge = <span className="text-xs font-semibold text-slate-500 w-5 text-center shrink-0">#{rank}</span>;
         }
 
         return (
@@ -463,9 +459,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
             {rankBadge}
             <CcAvatar name={text} src={record.avatar} size={26} />
             <div className="flex items-center gap-1 whitespace-nowrap">
-              <span className="font-semibold text-xs text-slate-200 whitespace-nowrap">
-                {text}
-              </span>
+              <span className="font-semibold text-xs text-slate-700 dark:text-slate-200 whitespace-nowrap">{text}</span>
               <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">L{record.techLevel || 1}</span>
             </div>
           </div>
@@ -495,17 +489,18 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
 
         const hasOffWork = offDays > 0;
 
-        const daysContent = days === 0 ? (
-          <span className="text-slate-600 font-medium text-[11px]">0 ngày</span>
-        ) : hasOffWork ? (
-          <Tooltip title={`Có ${offDays} ngày đi làm vào ngày nghỉ tuần (Được tính x2 lương giờ)`}>
-            <span className="cursor-help text-amber-400 font-semibold text-[11px]">
-              {regularDays}+{offDays} ngày
-            </span>
-          </Tooltip>
-        ) : (
-          <span className="text-slate-400 font-medium text-[11px]">{days} ngày</span>
-        );
+        const daysContent =
+          days === 0 ? (
+            <span className="text-slate-600 font-medium text-[11px]">0 ngày</span>
+          ) : hasOffWork ? (
+            <Tooltip title={`Có ${offDays} ngày đi làm vào ngày nghỉ tuần (Được tính x2 lương giờ)`}>
+              <span className="cursor-help text-amber-400 font-semibold text-[11px]">
+                {regularDays}+{offDays} ngày
+              </span>
+            </Tooltip>
+          ) : (
+            <span className="text-slate-400 font-medium text-[11px]">{days} ngày</span>
+          );
 
         return (
           <div className="flex flex-col items-end w-full text-right leading-tight">
@@ -521,9 +516,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
             ) : (
               <span className="tabular-nums font-mono text-xs text-slate-500 font-medium">0h</span>
             )}
-            <div className="tabular-nums mt-0.5 whitespace-nowrap">
-              {daysContent}
-            </div>
+            <div className="tabular-nums mt-0.5 whitespace-nowrap">{daysContent}</div>
           </div>
         );
       },
@@ -534,7 +527,11 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       key: 'hourlyWage',
       width: 95,
       align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums font-medium text-xs text-slate-300">{val.toLocaleString('vi-VN')}đ</span>,
+      render: (val: number) => (
+        <span className="tabular-nums font-medium text-xs text-slate-600 dark:text-slate-300">
+          {val.toLocaleString('vi-VN')}đ
+        </span>
+      ),
     },
     {
       title: 'CV Xoay',
@@ -543,9 +540,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       width: 100,
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-semibold text-xs text-blue-400">
-          +{val.toLocaleString('vi-VN')}đ
-        </span>
+        <span className="tabular-nums font-semibold text-xs text-blue-400">+{val.toLocaleString('vi-VN')}đ</span>
       ),
     },
     {
@@ -579,7 +574,9 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
 
         return (
           <div>
-            <span className={`tabular-nums font-semibold text-xs block ${colorClass}`}>+{bonus.toLocaleString('vi-VN')}đ</span>
+            <span className={`tabular-nums font-semibold text-xs block ${colorClass}`}>
+              +{bonus.toLocaleString('vi-VN')}đ
+            </span>
             <span className="block text-[10px] font-medium tabular-nums text-slate-500">
               {seniorityStr} {percent > 0 ? `[+${percent}%]` : '[0%]'}
             </span>
@@ -594,9 +591,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       width: 100,
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-semibold text-xs text-purple-400">
-          +{val.toLocaleString('vi-VN')}đ
-        </span>
+        <span className="tabular-nums font-semibold text-xs text-purple-400">+{val.toLocaleString('vi-VN')}đ</span>
       ),
     },
     {
@@ -606,9 +601,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       width: 120,
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-emerald-400 text-sm">
-          {val.toLocaleString('vi-VN')}đ
-        </span>
+        <span className="tabular-nums font-bold text-emerald-400 text-sm">{val.toLocaleString('vi-VN')}đ</span>
       ),
     },
     {

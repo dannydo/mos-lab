@@ -218,7 +218,11 @@ export const PackageAuditTab: React.FC = () => {
             >
               {r.customerName}
             </div>
-            {r.customerPhone && <div style={{ fontSize: '11px', color: '#888' }}>{r.customerPhone}</div>}
+            {r.customerPhone && (
+              <div style={{ fontSize: '11px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                {r.customerPhone}
+              </div>
+            )}
           </div>
         </div>
       ),
@@ -265,7 +269,9 @@ export const PackageAuditTab: React.FC = () => {
         <div>
           {renderStatusTag(status)}
           {r.reviewedByStaffName && (
-            <div style={{ fontSize: '10.5px', color: '#888', marginTop: '2px' }}>bởi {r.reviewedByStaffName}</div>
+            <div style={{ fontSize: '10.5px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginTop: '2px' }}>
+              bởi {r.reviewedByStaffName}
+            </div>
           )}
         </div>
       ),

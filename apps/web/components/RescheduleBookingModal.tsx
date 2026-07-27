@@ -323,7 +323,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Store select */}
           <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
+            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
               <HomeOutlined /> CHI NHÁNH ĐẶT LỊCH (CN)
             </h4>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -378,7 +378,11 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
           {/* Customer Information (Read-only Card) */}
           <Card
-            title={<span style={{ fontSize: '13px', color: '#888' }}>THÔNG TIN KHÁCH HÀNG</span>}
+            title={
+              <span style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                THÔNG TIN KHÁCH HÀNG
+              </span>
+            }
             size="small"
             style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
           >
@@ -390,7 +394,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
           {/* Service Selector */}
           <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
+            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
               <InboxOutlined /> DỊCH VỤ (SERVICE)
             </h4>
             <Select
@@ -462,7 +466,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
               }}
             >
               <div>
-                <span style={{ fontSize: '12px', color: '#888' }}>Ngày đặt:</span>
+                <span style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Ngày đặt:</span>
                 <DatePicker
                   key={`${selectedCV ? selectedCV.id : 'no-cv'}-${(staffList || []).length}`}
                   style={{ marginLeft: '8px' }}
@@ -560,21 +564,24 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13.5px' }}>
               <div>
-                <span style={{ color: '#888' }}>Khách hàng:</span> <strong>{booking?.customerName}</strong> (
-                {booking?.customerPhone})
+                <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Khách hàng:</span>{' '}
+                <strong>{booking?.customerName}</strong> ({booking?.customerPhone})
               </div>
               <div>
-                <span style={{ color: '#888' }}>Chi nhánh mới:</span> <strong>{selectedCN?.name}</strong>
+                <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Chi nhánh mới:</span>{' '}
+                <strong>{selectedCN?.name}</strong>
               </div>
               <div>
-                <span style={{ color: '#888' }}>Chuyên viên:</span>{' '}
+                <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Chuyên viên:</span>{' '}
                 <strong>{selectedCV ? selectedCV.displayName : 'Chuyên viên tự do'}</strong>
               </div>
               <div>
-                <span style={{ color: '#888' }}>Dịch vụ:</span> <strong>{selectedService?.name}</strong>
+                <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Dịch vụ:</span>{' '}
+                <strong>{selectedService?.name}</strong>
               </div>
               <div>
-                <span style={{ color: '#888' }}>Giờ hẹn mới:</span> <strong>{selectedSlot}</strong>{' '}
+                <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Giờ hẹn mới:</span>{' '}
+                <strong>{selectedSlot}</strong>{' '}
                 {(() => {
                   const dateInfo = getRelativeDateInfo(bookingDate);
                   const formattedDate = bookingDate
@@ -594,7 +601,9 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
           {/* Booking note */}
           <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>GHI CHÚ ĐẶT LỊCH (BOOKING NOTE)</h4>
+            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
+              GHI CHÚ ĐẶT LỊCH (BOOKING NOTE)
+            </h4>
             <TextArea
               rows={4}
               placeholder="Nhập các ghi chú đặc biệt từ khách hàng..."

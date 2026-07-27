@@ -81,9 +81,19 @@ export const getLocaColumns = ({
               <div
                 style={{ fontSize: '12px', color: '#D4A84B', fontWeight: '500' }}
                 className="hover:underline cursor-pointer flex items-center gap-1 mt-0.5"
+                role="button"
+                tabIndex={0}
+                aria-label={`Gọi điện thoại cho ${record.name || 'khách hàng'}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   makeCall(record.phone, record.name, record.id, record.avatar || undefined);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    makeCall(record.phone, record.name, record.id, record.avatar || undefined);
+                  }
                 }}
               >
                 <PhoneOutlined style={{ fontSize: '10px' }} />
@@ -106,7 +116,7 @@ export const getLocaColumns = ({
             <Tag color={totalRemaining === 1 ? 'red' : 'green'} style={{ fontWeight: 'bold' }}>
               Còn {totalRemaining} lần
             </Tag>
-            <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--client-desc-color)', marginTop: '2px' }}>
               (Mới: {record.comboBalance.normalCount || 0} | Dặm: {record.comboBalance.retainCount || 0})
             </div>
           </div>
@@ -128,7 +138,7 @@ export const getLocaColumns = ({
             <div style={{ fontWeight: '600', color: isExpiringSoon ? '#ff4d4f' : token.colorText }}>
               {expDate.format('DD/MM/YYYY')}
             </div>
-            <div style={{ fontSize: '11px', color: isExpiringSoon ? '#ff4d4f' : '#888' }}>
+            <div style={{ fontSize: '11px', color: isExpiringSoon ? '#ff4d4f' : 'var(--client-desc-color)' }}>
               {daysLeft > 0 ? `Còn ${daysLeft} ngày` : 'Đã hết hạn'}
             </div>
           </div>
@@ -192,15 +202,14 @@ export const getLocaColumns = ({
           : sortField === 'totalSpent_desc'
             ? ('descend' as const)
             : null,
-      render: (val: number) => formatVND(val),
+      render: (val: number) => <span className="tabular-nums">{formatVND(val)}</span>,
     },
     {
       title: 'Đã phân bổ',
       key: 'allocatedDays',
       width: 120,
       render: (_: SafeAny, record: Customer) => {
-        const assignedAt =
-          record.assignedStaff?.assignedAt || record.assignedAt || record.lastAllocation?.assignedAt;
+        const assignedAt = record.assignedStaff?.assignedAt || record.assignedAt || record.lastAllocation?.assignedAt;
         if (!assignedAt) {
           return <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)' }}>Chưa từng phân bổ</span>;
         }
@@ -372,9 +381,19 @@ export const getNewLocaColumns = ({
               <div
                 style={{ fontSize: '12px', color: '#D4A84B', fontWeight: '500' }}
                 className="hover:underline cursor-pointer flex items-center gap-1 mt-0.5"
+                role="button"
+                tabIndex={0}
+                aria-label={`Gọi điện thoại cho ${record.name || 'khách hàng'}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   makeCall(record.phone, record.name, record.id, record.avatar || undefined);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    makeCall(record.phone, record.name, record.id, record.avatar || undefined);
+                  }
                 }}
               >
                 <PhoneOutlined style={{ fontSize: '10px' }} />
@@ -417,7 +436,7 @@ export const getNewLocaColumns = ({
         return booker ? (
           <Tag color="cyan">{booker}</Tag>
         ) : (
-          <span style={{ fontStyle: 'italic', color: '#888' }}>System</span>
+          <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)' }}>System</span>
         );
       },
     },
@@ -452,7 +471,7 @@ export const getNewLocaColumns = ({
         return cv && cv !== 'Chưa phân công' ? (
           <Tag color="gold">{cv}</Tag>
         ) : (
-          <span style={{ fontStyle: 'italic', color: '#888' }}>Chưa phân công</span>
+          <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)' }}>Chưa phân công</span>
         );
       },
     },

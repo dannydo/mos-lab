@@ -2,7 +2,18 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Table, Tag, Typography, Row, Col, Statistic, theme, Space, Button, Input, Tooltip } from 'antd';
-import { GiftOutlined, EyeOutlined, DollarOutlined, HeartOutlined, SearchOutlined, ReloadOutlined, InfoCircleOutlined, CheckCircleOutlined, CompressOutlined, ExpandOutlined } from '@ant-design/icons';
+import {
+  GiftOutlined,
+  EyeOutlined,
+  DollarOutlined,
+  HeartOutlined,
+  SearchOutlined,
+  ReloadOutlined,
+  InfoCircleOutlined,
+  CheckCircleOutlined,
+  CompressOutlined,
+  ExpandOutlined,
+} from '@ant-design/icons';
 import { BkTipLeaderboardEntry, BkTipRecord } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -61,7 +72,9 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
         storeId: selectedStore,
       });
       setLeaderboard(res.leaderboard || []);
-      setSummary(res.summary || { totalBookingsCount: 0, tippedBookingsCount: 0, totalCustomerTip: 0, totalBkTipBonus: 0 });
+      setSummary(
+        res.summary || { totalBookingsCount: 0, tippedBookingsCount: 0, totalCustomerTip: 0, totalBkTipBonus: 0 }
+      );
     } catch (err) {
       console.error('Error loading BK tip leaderboard', err);
     } finally {
@@ -160,9 +173,15 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
                 >
                   {name}
                 </span>
-                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">· {formatStoreCode(record.store)}</span>
+                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
+                  · {formatStoreCode(record.store)}
+                </span>
                 {isSelected && (
-                  <Tag color="gold" icon={<CheckCircleOutlined />} className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap">
+                  <Tag
+                    color="gold"
+                    icon={<CheckCircleOutlined />}
+                    className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap"
+                  >
                     Đang lọc
                   </Tag>
                 )}
@@ -188,7 +207,11 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
       dataIndex: 'totalCustomerTip',
       key: 'totalCustomerTip',
       align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums font-semibold text-xs text-slate-300">{formatCurrency(val)}</span>,
+      render: (val: number) => (
+        <span className="tabular-nums font-semibold text-xs text-slate-600 dark:text-slate-300">
+          {formatCurrency(val)}
+        </span>
+      ),
     },
     {
       title: 'BK Tip Bonus (% Share)',
@@ -196,9 +219,7 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
       key: 'totalBkTipBonus',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-sm text-pink-400">
-          {formatCurrency(val)}
-        </span>
+        <span className="tabular-nums font-bold text-sm text-pink-400">{formatCurrency(val)}</span>
       ),
     },
     {
@@ -231,39 +252,55 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
       key: 'stt',
       width: 50,
       align: 'center' as const,
-      render: (_: any, __: any, index: number) => <span className="tabular-nums text-xs text-slate-500 font-medium">{index + 1}</span>,
+      render: (_: any, __: any, index: number) => (
+        <span className="tabular-nums text-xs text-slate-500 font-medium">{index + 1}</span>
+      ),
     },
     {
       title: 'Thời Gian',
       dataIndex: 'checkinTime',
       key: 'checkinTime',
-      render: (dateStr: string) => <span className="tabular-nums text-xs text-slate-400 font-medium whitespace-nowrap">{dateStr ? dateStr.replace('T', ' ').substring(0, 16) : '-'}</span>,
+      render: (dateStr: string) => (
+        <span className="tabular-nums text-xs text-slate-400 font-medium whitespace-nowrap">
+          {dateStr ? dateStr.replace('T', ' ').substring(0, 16) : '-'}
+        </span>
+      ),
     },
     {
       title: 'Khách Hàng',
       dataIndex: 'clientName',
       key: 'clientName',
-      render: (name: string) => <span className="font-semibold text-xs text-sky-400 whitespace-nowrap">{name || 'Khách hàng'}</span>,
+      render: (name: string) => (
+        <span className="font-semibold text-xs text-sky-400 whitespace-nowrap">{name || 'Khách hàng'}</span>
+      ),
     },
     {
       title: 'Booker',
       dataIndex: 'bookerName',
       key: 'bookerName',
-      render: (bName: string) => <span className="font-medium text-xs text-slate-300 whitespace-nowrap">{bName || '-'}</span>,
+      render: (bName: string) => (
+        <span className="font-medium text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">{bName || '-'}</span>
+      ),
     },
     {
       title: 'Chi Nhánh',
       dataIndex: 'store',
       key: 'store',
       align: 'center' as const,
-      render: (val: string) => <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(val)}</span>,
+      render: (val: string) => (
+        <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(val)}</span>
+      ),
     },
     {
       title: 'Tip Khách Cho',
       dataIndex: 'totalCustomerTip',
       key: 'totalCustomerTip',
       align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums font-semibold text-xs text-slate-300">{formatCurrency(val)}</span>,
+      render: (val: number) => (
+        <span className="tabular-nums font-semibold text-xs text-slate-600 dark:text-slate-300">
+          {formatCurrency(val)}
+        </span>
+      ),
     },
     {
       title: 'Thưởng BK Tip (% Share)',
@@ -283,7 +320,10 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
       {/* Summary Header */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} md={8}>
-          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl" style={{ background: token.colorBgContainer }}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
             <Statistic
               title={<span className="text-xs font-semibold text-slate-500 uppercase">Đơn Đặt Được Khách Tip</span>}
               value={summary.tippedBookingsCount}
@@ -293,7 +333,10 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl" style={{ background: token.colorBgContainer }}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
             <Statistic
               title={<span className="text-xs font-semibold text-slate-500 uppercase">Tổng Tip Khách Cho</span>}
               value={summary.totalCustomerTip}
@@ -304,9 +347,14 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl" style={{ background: token.colorBgContainer }}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Tổng Thưởng BK Tip (% Share)</span>}
+              title={
+                <span className="text-xs font-semibold text-slate-500 uppercase">Tổng Thưởng BK Tip (% Share)</span>
+              }
               value={summary.totalBkTipBonus}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#db2777', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
@@ -382,7 +430,14 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
               />
             </Tooltip>
             <Tooltip title="Làm mới dữ liệu">
-              <Button icon={<ReloadOutlined />} size="small" onClick={fetchDetails} loading={detailsLoading} />
+              <Button
+                icon={<ReloadOutlined />}
+                size="small"
+                onClick={fetchDetails}
+                loading={detailsLoading}
+                aria-label="Tải lại dữ liệu"
+                title="Tải lại dữ liệu"
+              />
             </Tooltip>
           </Space>
         </div>

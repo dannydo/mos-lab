@@ -212,7 +212,11 @@ export default function CcTipTab({
       render: (name: string, record: CcTipLeaderboardEntry) => {
         const isSelected = selectedCcName === name;
         return (
-          <Space className="cursor-pointer group whitespace-nowrap" onClick={() => setSelectedCcName(isSelected ? null : name)} size={8}>
+          <Space
+            className="cursor-pointer group whitespace-nowrap"
+            onClick={() => setSelectedCcName(isSelected ? null : name)}
+            size={8}
+          >
             <CcAvatar name={name} src={record.avatar} isSelected={isSelected} size={32} />
             <div>
               <div className="flex items-center gap-1.5 whitespace-nowrap">
@@ -224,9 +228,15 @@ export default function CcTipTab({
                 >
                   {name}
                 </span>
-                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">· {formatStoreCode(record.store)}</span>
+                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
+                  · {formatStoreCode(record.store)}
+                </span>
                 {isSelected && (
-                  <Tag color="gold" icon={<CheckCircleOutlined />} className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap">
+                  <Tag
+                    color="gold"
+                    icon={<CheckCircleOutlined />}
+                    className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap"
+                  >
                     Đang lọc
                   </Tag>
                 )}
@@ -322,7 +332,7 @@ export default function CcTipTab({
       title: 'Tên Dịch Vụ',
       dataIndex: 'serviceName',
       key: 'serviceName',
-      render: (val: string) => <span className="font-medium text-slate-300 text-xs">{val}</span>,
+      render: (val: string) => <span className="font-medium text-slate-600 dark:text-slate-300 text-xs">{val}</span>,
     },
     {
       title: 'CC In',
@@ -334,10 +344,12 @@ export default function CcTipTab({
         const isSame = !r.ccOutName || r.ccInName === r.ccOutName;
         if (isSame) {
           return (
-            <Space size={4} className="text-xs text-slate-300 whitespace-nowrap">
+            <Space size={4} className="text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
               <CcAvatar name={val} size={20} />
               <span>{val}</span>
-              <span className="text-emerald-400 font-bold text-[10px]" title="CC In/Out đồng nhất">✓</span>
+              <span className="text-emerald-400 font-bold text-[10px]" title="CC In/Out đồng nhất">
+                ✓
+              </span>
             </Space>
           );
         }
@@ -432,7 +444,9 @@ export default function CcTipTab({
     }
 
     return (
-      <Tooltip title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian tháng (Ca 09:00 - 21:00 + 2h buffer checkout)`}>
+      <Tooltip
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian tháng (Ca 09:00 - 21:00 + 2h buffer checkout)`}
+      >
         <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
           <span>Dự kiến cuối tháng:</span>
           <span className="tabular-nums font-semibold text-emerald-400">

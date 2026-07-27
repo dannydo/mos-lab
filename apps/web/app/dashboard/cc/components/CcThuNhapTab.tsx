@@ -317,7 +317,19 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       width: 240,
       render: (name: string, record: CcPaystubRecord, index: number) => {
         return (
-          <Space className="group cursor-pointer" onClick={() => handleOpenDetailModal(record)}>
+          <Space
+            className="group cursor-pointer"
+            role="button"
+            tabIndex={0}
+            aria-label={`Xem chi tiết thu nhập của tư vấn viên ${name}`}
+            onClick={() => handleOpenDetailModal(record)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleOpenDetailModal(record);
+              }
+            }}
+          >
             <span className="tabular-nums font-bold text-xs w-6 text-center">
               {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
             </span>
@@ -347,7 +359,16 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
           >
             <div
               className="text-right cursor-pointer group hover:bg-blue-500/10 p-1.5 rounded-lg transition-colors border border-transparent hover:border-blue-500/30"
+              role="button"
+              tabIndex={0}
+              aria-label={`Xem báo cáo chi tiết ca làm việc IN/OUT của ${record.displayName}`}
               onClick={() => handleOpenWorkLogModal(record)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleOpenWorkLogModal(record);
+                }
+              }}
             >
               <div className="tabular-nums font-bold text-blue-500 text-sm group-hover:underline underline-offset-2">
                 +{Math.round(val || 0).toLocaleString('vi-VN')} đ
@@ -372,7 +393,16 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
         <Tooltip title={`Click để xem Chi Tiết Ca Check-in Xoay (${record.checkinCount} lượt check-in)`}>
           <div
             className="text-right cursor-pointer group hover:bg-purple-500/10 p-1.5 rounded-lg transition-colors border border-transparent hover:border-purple-500/30"
+            role="button"
+            tabIndex={0}
+            aria-label={`Xem chi tiết ca Check-in Xoay của ${record.displayName}`}
             onClick={() => handleOpenCcXoayModal(record)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleOpenCcXoayModal(record);
+              }
+            }}
           >
             <div className="tabular-nums font-bold text-purple-500 text-sm group-hover:underline underline-offset-2">
               +{Math.round(val || 0).toLocaleString('vi-VN')} đ
@@ -1046,13 +1076,17 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                     dataIndex: 'clientName',
                     key: 'clientName',
                     width: 150,
-                    render: (val: string) => <span className="font-semibold text-gray-800 dark:text-gray-200">{val || 'Khách Vãng Lai'}</span>,
+                    render: (val: string) => (
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">{val || 'Khách Vãng Lai'}</span>
+                    ),
                   },
                   {
                     title: 'Dịch Vụ',
                     dataIndex: 'serviceName',
                     key: 'serviceName',
-                    render: (val: string) => <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">{val}</span>,
+                    render: (val: string) => (
+                      <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">{val}</span>
+                    ),
                   },
                   {
                     title: 'Level CC',
@@ -1060,7 +1094,11 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                     key: 'consultantLevel',
                     width: 90,
                     align: 'center' as const,
-                    render: (val: number) => <Tag color="gold" className="font-bold">Lv.{val || 1}</Tag>,
+                    render: (val: number) => (
+                      <Tag color="gold" className="font-bold">
+                        Lv.{val || 1}
+                      </Tag>
+                    ),
                   },
                   {
                     title: 'Điểm (+pts)',
@@ -1068,7 +1106,9 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                     key: 'consultantPoints',
                     width: 100,
                     align: 'right' as const,
-                    render: (val: number) => <span className="tabular-nums font-semibold text-blue-500">+{val || 0} pts</span>,
+                    render: (val: number) => (
+                      <span className="tabular-nums font-semibold text-blue-500">+{val || 0} pts</span>
+                    ),
                   },
                   {
                     title: 'Thưởng CC Xoay',

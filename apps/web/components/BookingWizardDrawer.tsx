@@ -594,7 +594,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Branch Check */}
           <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
+            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
               <HomeOutlined /> CHI NHÁNH ĐẶT LỊCH (CN)
             </h4>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -651,7 +651,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
           <Card
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <span style={{ fontSize: '13px', color: '#888' }}>
+                <span style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
                   <UserOutlined /> THÔNG TIN KHÁCH HÀNG
                 </span>
                 <Radio.Group
@@ -701,7 +701,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
                     }}
                   >
                     <div style={{ fontWeight: 'bold', color: token.colorText }}>{selectedCustomer.name}</div>
-                    <div style={{ fontSize: '12px', color: '#888' }}>
+                    <div style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
                       SĐT: {selectedCustomer.phone} | Phân loại: <Tag color="warning">{selectedCustomer.bucket}</Tag>
                     </div>
                   </div>
@@ -727,7 +727,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
 
           {/* Service Select */}
           <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
+            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
               <InboxOutlined /> CHỌN DỊCH VỤ (SERVICE)
             </h4>
             <Select
@@ -866,7 +866,13 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
                         >
                           <div>
                             <span style={{ fontWeight: 'bold' }}>{cb.serviceName}</span>
-                            <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                            <div
+                              style={{
+                                fontSize: '11px',
+                                color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                                marginTop: '2px',
+                              }}
+                            >
                               Còn lại: {cb.normalCount || 0} mới | {cb.retainCount || 0} dặm
                             </div>
                           </div>

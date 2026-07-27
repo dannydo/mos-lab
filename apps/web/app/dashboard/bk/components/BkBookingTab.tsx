@@ -161,9 +161,19 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
           <Space
             className="cursor-pointer group whitespace-nowrap"
             size={8}
+            role="button"
+            tabIndex={0}
+            aria-label={`Chọn booker ${name}`}
             onClick={(e) => {
               e.stopPropagation();
               handleSelectBooker(String(record.bookerId), name);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.stopPropagation();
+                e.preventDefault();
+                handleSelectBooker(String(record.bookerId), name);
+              }
             }}
           >
             <BkAvatar name={name} src={record.avatar} size={32} />
@@ -279,11 +289,24 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       render: (name: string, r: BkBookingRecord) => (
         <div
           className="cursor-pointer group whitespace-nowrap"
+          role="button"
+          tabIndex={0}
+          aria-label={`Xem chi tiết khách hàng ${name || 'Khách hàng'}`}
           onClick={(e) => {
             e.stopPropagation();
             if (r.customerId) {
               setSelectedCustomerId(r.customerId);
               setCustomerDrawerOpen(true);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.stopPropagation();
+              e.preventDefault();
+              if (r.customerId) {
+                setSelectedCustomerId(r.customerId);
+                setCustomerDrawerOpen(true);
+              }
             }
           }}
         >
@@ -303,7 +326,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       dataIndex: 'bookerName',
       key: 'bookerName',
       render: (bName: string) => (
-        <span className="font-medium text-xs text-slate-300 whitespace-nowrap">{bName || '-'}</span>
+        <span className="font-medium text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">{bName || '-'}</span>
       ),
     },
     {
@@ -491,7 +514,14 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
               />
             </Tooltip>
             <Tooltip title="Làm mới dữ liệu">
-              <Button icon={<ReloadOutlined />} size="small" onClick={fetchDetails} loading={detailsLoading} />
+              <Button
+                icon={<ReloadOutlined />}
+                size="small"
+                onClick={fetchDetails}
+                loading={detailsLoading}
+                aria-label="Tải lại dữ liệu"
+                title="Tải lại dữ liệu"
+              />
             </Tooltip>
           </Space>
         </div>

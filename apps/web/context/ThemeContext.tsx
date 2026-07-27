@@ -57,11 +57,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         theme={{
           algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
           token: {
-            colorPrimary: '#D4A84B',
-            colorInfo: '#D4A84B',
+            colorPrimary: isDark ? '#D4A84B' : '#9E7118',
+            colorInfo: isDark ? '#D4A84B' : '#9E7118',
             colorSuccess: '#52c41a',
             colorWarning: '#faad14',
             colorError: '#ff4d4f',
+            controlOutline: isDark ? 'rgba(212, 168, 75, 0.25)' : 'rgba(158, 113, 24, 0.25)',
+            controlOutlineWidth: 2,
             borderRadius: 8,
             borderRadiusLG: 12,
             borderRadiusSM: 6,
@@ -74,7 +76,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             colorBorderSecondary: isDark ? '#374151' : '#f3f4f6',
             colorText: isDark ? '#f8fafc' : '#0f172a',
             colorTextSecondary: isDark ? '#94a3b8' : '#64748b',
-            colorTextDescription: isDark ? '#64748b' : '#94a3b8',
+            colorTextDescription: isDark ? '#94a3b8' : '#64748b',
           },
           components: {
             DatePicker: {

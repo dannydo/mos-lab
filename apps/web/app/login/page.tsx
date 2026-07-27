@@ -6,6 +6,7 @@ import { Form, Input, Button, Card, Typography, message, Divider } from 'antd';
 import { UserOutlined, LockOutlined, GoogleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '../../lib/api-client';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
 
@@ -15,6 +16,9 @@ export default function LoginPage() {
   const [mockEmail, setMockEmail] = useState('danny.do@wingslashes.com');
   const [showMockOptions, setShowMockOptions] = useState(false);
   const router = useRouter();
+
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
 
   // Check if already logged in
   useEffect(() => {
@@ -140,7 +144,10 @@ export default function LoginPage() {
     <div
       className="flex items-center justify-center min-h-screen"
       style={{
-        background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)',
+        background:
+          themeMode === 'dark'
+            ? 'linear-gradient(135deg, #0b0f19 0%, #111827 100%)'
+            : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
         padding: '20px',
       }}
     >
@@ -148,9 +155,9 @@ export default function LoginPage() {
         style={{
           width: 400,
           borderRadius: 12,
-          boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-          background: '#141414',
-          border: '1px solid #2a2a2a',
+          boxShadow: themeMode === 'dark' ? '0 8px 30px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.08)',
+          background: themeMode === 'dark' ? '#111827' : '#ffffff',
+          border: `1px solid ${themeMode === 'dark' ? '#1f2937' : '#e2e8f0'}`,
         }}
       >
         <div className="text-center mb-8">

@@ -5659,6 +5659,558 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/customers/:id/summary
+  // Lightweight endpoint returning Customer Profile, KPI stats, and Tab Counts in <150ms
+  fastify.get('/customers/:id/summary', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const customerId = parseInt(id, 10);
+    const user = request.user as { id: number; role: string };
+
+    if (isNaN(customerId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
+    }
+
+    try {
+      // 1. Permission check
+      const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
+        where: { legacyUserId: customerId },
+        include: { staff: true },
+      });
+      const onlineConsultantName = assigned?.staff?.displayName || 'Chưa phân bổ';
+
+      if (user.role !== 'admin') {
+        if (!assigned || assigned.staffId !== user.id) {
+          return reply
+            .status(403)
+            .send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin chi tiết khách hàng này.' });
+        }
+      }
+
+      // 2. Parallel queries for maximum speed
+      const customerSql = `
+        SELECT 
+          u.id, 
+          COALESCE(up.full_name, 'No Name') as name, 
+          up.avatar as avatar,
+          COALESCE(up.is_deleted, 0) as isDeleted,
+          COALESCE(uc.phone_number, '') as phone, 
+          u.email,
+          u.gender,
+          u.date_of_birth as dob,
+          up.last_order_booking as lastVisit,
+          DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
+          CASE
+            WHEN usb.id IS NULL THEN 'SINGLE'
+            WHEN (usb.normal_count + usb.retain_count) > 0 AND (usb.date_expired IS NULL OR usb.date_expired > NOW()) THEN 'COMBO_LIVE'
+            ELSE 'COMBO_DEAD'
+          END as bucket,
+          usb.normal_count as normalCount,
+          usb.retain_count as retainCount,
+          usb.date_expired as expiryDate
+        FROM user u
+        LEFT JOIN user_profile up ON u.id = up.user_id
+        LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
+        LEFT JOIN user_service_balance usb ON u.id = usb.user_id
+        WHERE u.id = ?
+        LIMIT 1
+      `;
+
+      const [
+        customerResult,
+        userContacts,
+        completedOrders,
+        gemBalanceRow,
+        bookingCountResult,
+        noteCountResult,
+        callCount,
+        timelineCount,
+        referrerRow,
+        referredUsers,
+      ] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(customerSql, customerId),
+        fastify.prisma.legacy.user_contact.findMany({ where: { user_id: customerId } }),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT o.id, o.booking_date_start as bookingDate, o.total_price as totalPrice
+           FROM \`order\` o
+           WHERE o.user_id = ? AND o.order_state = 'Completed'
+           ORDER BY o.booking_date_start DESC`,
+          customerId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT amount FROM user_balance WHERE user_id = ? AND currency_id = 3 LIMIT 1`,
+          customerId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT COUNT(*) as cnt FROM \`order\` WHERE user_id = ?`,
+          customerId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT COUNT(*) as cnt FROM user_note WHERE user_id = ? AND (is_disabled = 0 OR note_field_key = 'order_note')`,
+          customerId
+        ),
+        fastify.prisma.crm.crmCallLog.count({ where: { legacyUserId: customerId } }),
+        fastify.prisma.crm.crmAssignmentHistory.count({ where: { legacyUserId: customerId } }),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT u.id, up.full_name as name, COALESCE(uc.phone_number, '') as phone
+           FROM user u
+           LEFT JOIN user_profile up ON u.id = up.user_id
+           LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
+           WHERE u.id = (SELECT referrer_user_id FROM user_profile WHERE user_id = ? LIMIT 1)
+           LIMIT 1`,
+          customerId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT u.id, up.full_name as name, COALESCE(uc.phone_number, '') as phone, u.date_created as dateCreated
+           FROM user u
+           LEFT JOIN user_profile up ON u.id = up.user_id
+           LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
+           WHERE up.referrer_user_id = ?
+           ORDER BY u.id DESC`,
+          customerId
+        ),
+      ]);
+
+      if (customerResult.length === 0) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Customer not found' });
+      }
+      const row = customerResult[0];
+
+      const totalSpent = completedOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
+      const totalVisits = completedOrders.length;
+
+      let avgFrequency = 0;
+      if (completedOrders.length > 1) {
+        const sortedBookingDates = [...completedOrders]
+          .map((o) => new Date(o.bookingDate).getTime())
+          .sort((a, b) => a - b);
+        let totalDays = 0;
+        for (let i = 1; i < sortedBookingDates.length; i++) {
+          totalDays += (sortedBookingDates[i] - sortedBookingDates[i - 1]) / (1000 * 60 * 60 * 24);
+        }
+        avgFrequency = Number((totalDays / (sortedBookingDates.length - 1)).toFixed(1));
+      }
+
+      // Fetch tip summary from order_payment
+      const completedOrderIds = completedOrders.map((o) => Number(o.id));
+      let totalTips = 0;
+      let tipCount = 0;
+      if (completedOrderIds.length > 0) {
+        const tipRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT SUM(tip_amount) as totalTips, COUNT(CASE WHEN tip_amount > 0 THEN 1 END) as tipCount
+          FROM \`order_payment\`
+          WHERE order_id IN (${completedOrderIds.join(',')})
+        `);
+        if (tipRows.length > 0 && tipRows[0].totalTips) {
+          totalTips = Number(tipRows[0].totalTips || 0);
+          tipCount = Number(tipRows[0].tipCount || 0);
+        }
+      }
+
+      const tipRate = totalVisits > 0 ? Number(((tipCount / totalVisits) * 100).toFixed(1)) : 0;
+      const avgTip = tipCount > 0 ? Math.round(totalTips / tipCount) : 0;
+      const gemBalance = gemBalanceRow.length > 0 ? Number(gemBalanceRow[0].amount) : 0;
+
+      const bookingCount = Number(bookingCountResult[0]?.cnt || 0);
+      const noteCount = Number(noteCountResult[0]?.cnt || 0);
+
+      const referrer =
+        referrerRow.length > 0
+          ? {
+              id: Number(referrerRow[0].id),
+              name: referrerRow[0].name,
+              phone: referrerRow[0].phone,
+            }
+          : null;
+
+      const friendsGrouped = new Map<number, SafeAny>();
+      for (const ru of referredUsers) {
+        const friendId = Number(ru.id);
+        if (!friendId) continue;
+        if (!friendsGrouped.has(friendId)) {
+          friendsGrouped.set(friendId, {
+            id: friendId,
+            name: ru.name || 'Khách hàng',
+            phone: ru.phone || '',
+            dateCreated: ru.dateCreated ? new Date(ru.dateCreated).toISOString() : null,
+            rewardDiamonds: 0,
+          });
+        }
+      }
+
+      return {
+        customer: {
+          id: row.id,
+          name: row.name,
+          phone: row.phone,
+          phones: userContacts.map((uc) => ({
+            id: uc.id,
+            phone_number: uc.phone_number,
+            is_disabled: uc.is_disabled,
+          })),
+          email: row.email,
+          gender: row.gender,
+          dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
+          lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
+          daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
+          bucket: row.bucket,
+          avatar: row.avatar,
+          onlineConsultant: onlineConsultantName,
+          onlineConsultantId: assigned?.staffId || null,
+          isDeleted: row.isDeleted === 1,
+        },
+        stats: {
+          totalSpent,
+          totalVisits,
+          comboCount: Number(row.normalCount || 0) + Number(row.retainCount || 0),
+          comboWalletBalance: 0,
+          gemBalance,
+          avgFrequency,
+          totalTips,
+          tipRate,
+          avgTip,
+        },
+        counts: {
+          bookingCount,
+          noteCount,
+          callCount,
+          timelineCount,
+        },
+        comboBalances: [],
+        referrer,
+        referredUsers: Array.from(friendsGrouped.values()),
+      };
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get summary customer error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve customer summary',
+      });
+    }
+  });
+
+  // GET /api/customers/:id/bookings
+  // Paginated bookings endpoint
+  fastify.get('/customers/:id/bookings', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const customerId = parseInt(id, 10);
+    const { page = '1', limit = '15' } = request.query as { page?: string; limit?: string };
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 15));
+    const offset = (pageNum - 1) * limitNum;
+
+    if (isNaN(customerId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
+    }
+
+    try {
+      const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT COUNT(*) as cnt FROM \`order\` WHERE user_id = ?`,
+        customerId
+      );
+      const totalCount = Number(countResult[0]?.cnt || 0);
+
+      const bookingsSql = `
+        SELECT 
+          o.id,
+          o.order_key as orderKey,
+          o.booking_date_start as bookingDate,
+          o.booking_note as bookingNote,
+          o.order_state as orderState,
+          o.total_price as totalPrice,
+          o.assigned_staff_id as technicianId,
+          o.client_store_id as storeId,
+          o.created_staff_id as createdStaffId,
+          COALESCE(csl.client_store_name, 'Estella Place') as branchName,
+          up.full_name as assignedTechnicianName
+        FROM \`order\` o
+        LEFT JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
+        LEFT JOIN user_profile up ON o.assigned_staff_id = up.user_id
+        WHERE o.user_id = ?
+        ORDER BY o.booking_date_start DESC
+        LIMIT ? OFFSET ?
+      `;
+
+      const bookingsRaw = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        bookingsSql,
+        customerId,
+        limitNum,
+        offset
+      );
+
+      const bookingIds = bookingsRaw.map((b) => Number(b.id));
+      const servicesByOrderId = new Map<number, string[]>();
+      let orderServicesDetails: SafeAny[] = [];
+
+      if (bookingIds.length > 0) {
+        const [servicesRaw, osDetails] = await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT os.order_id as orderId, COALESCE(sl.service_name, s.service_key) as serviceName
+            FROM order_service os
+            LEFT JOIN service s ON os.service_id = s.id
+            LEFT JOIN service_language sl ON os.service_id = sl.service_id AND sl.language_id = 1
+            WHERE os.order_id IN (${bookingIds.join(',')})
+          `),
+          fastify.prisma.legacy.order_service.findMany({
+            where: { order_id: { in: bookingIds } },
+            select: {
+              order_id: true,
+              assigned_staff_id: true,
+              check_in_staff_id: true,
+              check_out_staff_id: true,
+            },
+          }),
+        ]);
+
+        orderServicesDetails = osDetails;
+        for (const s of servicesRaw) {
+          const list = servicesByOrderId.get(Number(s.orderId)) || [];
+          list.push(s.serviceName);
+          servicesByOrderId.set(Number(s.orderId), list);
+        }
+      }
+
+      // Collect staff IDs for name lookup
+      const staffUserIds = new Set<number>();
+      for (const b of bookingsRaw) {
+        if (b.technicianId) staffUserIds.add(Number(b.technicianId));
+        if (b.createdStaffId) staffUserIds.add(Number(b.createdStaffId));
+      }
+      for (const os of orderServicesDetails) {
+        if (os.assigned_staff_id) staffUserIds.add(Number(os.assigned_staff_id));
+        if (os.check_in_staff_id) staffUserIds.add(Number(os.check_in_staff_id));
+        if (os.check_out_staff_id) staffUserIds.add(Number(os.check_out_staff_id));
+      }
+
+      const staffIdArray = Array.from(staffUserIds);
+      const staffProfiles =
+        staffIdArray.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT user_id as userId, full_name as fullName, is_disabled as isDisabled, is_leaved as isLeaved
+        FROM user_profile
+        WHERE user_id IN (${staffIdArray.join(',')})
+      `)
+          : [];
+
+      const staffNamesMap = new Map<number, string>(staffProfiles.map((s) => [Number(s.userId), s.fullName]));
+      const staffInactiveMap = new Map<number, boolean>(
+        staffProfiles.map((s) => [
+          Number(s.userId),
+          s.isDisabled === 1 || s.isDisabled === true || s.isLeaved === 1 || s.isLeaved === true,
+        ])
+      );
+
+      const items = bookingsRaw.map((b) => {
+        const orderSvs = orderServicesDetails.filter((os) => Number(os.order_id) === Number(b.id));
+        const rawCheckIn = orderSvs.find((os) => os.check_in_staff_id && os.check_in_staff_id > 0)?.check_in_staff_id;
+        const rawCheckOut = orderSvs.find(
+          (os) => os.check_out_staff_id && os.check_out_staff_id > 0
+        )?.check_out_staff_id;
+        const firstCvStaffId =
+          b.technicianId || orderSvs.find((os) => os.assigned_staff_id && os.assigned_staff_id > 0)?.assigned_staff_id;
+        const rawBooker = b.createdStaffId;
+
+        const isCheckedIn = [
+          'CheckIn',
+          'Consultation',
+          'Preparation',
+          'ServiceStart',
+          'ServiceCleaned',
+          'ServiceEnd',
+          'Checkout',
+          'Payment',
+          'ServiceCompleted',
+          'Completed',
+        ].includes(b.orderState);
+
+        const ccInName = isCheckedIn && rawCheckIn ? staffNamesMap.get(Number(rawCheckIn)) || null : null;
+        const ccOutName = isCheckedIn && rawCheckOut ? staffNamesMap.get(Number(rawCheckOut)) || null : null;
+        const bookerName = rawBooker ? staffNamesMap.get(Number(rawBooker)) || null : null;
+
+        const technicianName = (() => {
+          if (!firstCvStaffId) return null;
+          const name = staffNamesMap.get(Number(firstCvStaffId));
+          if (!name) return null;
+          const isInactive = staffInactiveMap.get(Number(firstCvStaffId));
+          return isInactive ? `${name} (Đã nghỉ)` : name;
+        })();
+
+        return {
+          id: Number(b.id),
+          orderKey: b.orderKey,
+          bookingDate: b.bookingDate ? new Date(b.bookingDate).toISOString().replace('Z', '+07:00') : null,
+          bookingNote: b.bookingNote || null,
+          orderState: b.orderState,
+          totalPrice: Number(b.totalPrice || 0),
+          technicianName,
+          ccInName,
+          ccOutName,
+          bookerName,
+          branchName: b.branchName,
+          services: servicesByOrderId.get(Number(b.id)) || [],
+        };
+      });
+
+      return {
+        items,
+        totalCount,
+        hasMore: offset + items.length < totalCount,
+      };
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get customer bookings error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve customer bookings',
+      });
+    }
+  });
+
+  // GET /api/customers/:id/notes
+  // Paginated customer notes endpoint
+  fastify.get('/customers/:id/notes', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const customerId = parseInt(id, 10);
+    const { page = '1', limit = '15' } = request.query as { page?: string; limit?: string };
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 15));
+    const offset = (pageNum - 1) * limitNum;
+
+    if (isNaN(customerId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
+    }
+
+    try {
+      const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT COUNT(*) as cnt FROM user_note WHERE user_id = ? AND (is_disabled = 0 OR note_field_key = 'order_note')`,
+        customerId
+      );
+      const totalCount = Number(countResult[0]?.cnt || 0);
+
+      const notesSql = `
+        SELECT 
+          un.id,
+          un.note,
+          un.note_field_key as noteFieldKey,
+          un.is_sticky as isSticky,
+          un.is_issue as isIssue,
+          un.date_created as dateCreated,
+          COALESCE(up.full_name, 'System') as staffName,
+          up.avatar as staffAvatar
+        FROM user_note un
+        LEFT JOIN user_profile up ON un.created_staff_id = up.user_id
+        WHERE un.user_id = ? AND (un.is_disabled = 0 OR un.note_field_key = 'order_note')
+        ORDER BY un.date_created DESC
+        LIMIT ? OFFSET ?
+      `;
+
+      const notesRaw = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(notesSql, customerId, limitNum, offset);
+
+      const items = notesRaw.map((n) => {
+        let safeIsoDate: string | null = null;
+        if (n.dateCreated) {
+          if (n.dateCreated instanceof Date) {
+            safeIsoDate = isNaN(n.dateCreated.getTime()) ? null : n.dateCreated.toISOString();
+          } else if (typeof n.dateCreated === 'string') {
+            const parsed = new Date(n.dateCreated.replace(' ', 'T'));
+            safeIsoDate = isNaN(parsed.getTime()) ? null : parsed.toISOString();
+          } else {
+            const parsed = new Date(n.dateCreated);
+            safeIsoDate = isNaN(parsed.getTime()) ? null : parsed.toISOString();
+          }
+        }
+        return {
+          id: Number(n.id),
+          note: n.note || '',
+          noteFieldKey: n.noteFieldKey || 'note',
+          isSticky: Boolean(n.isSticky),
+          isIssue: Boolean(n.isIssue),
+          dateCreated: safeIsoDate,
+          staffName: n.staffName,
+          staffAvatar: n.staffAvatar || null,
+        };
+      });
+
+      return {
+        items,
+        totalCount,
+        hasMore: offset + items.length < totalCount,
+      };
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get customer notes error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve customer notes',
+      });
+    }
+  });
+
+  // GET /api/customers/:id/calls
+  // Paginated call logs endpoint
+  fastify.get('/customers/:id/calls', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const customerId = parseInt(id, 10);
+    const { page = '1', limit = '15' } = request.query as { page?: string; limit?: string };
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 15));
+    const offset = (pageNum - 1) * limitNum;
+
+    if (isNaN(customerId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
+    }
+
+    try {
+      const [totalCount, logs] = await Promise.all([
+        fastify.prisma.crm.crmCallLog.count({ where: { legacyUserId: customerId } }),
+        fastify.prisma.crm.crmCallLog.findMany({
+          where: { legacyUserId: customerId },
+          orderBy: { createdAt: 'desc' },
+          skip: offset,
+          take: limitNum,
+        }),
+      ]);
+
+      const staffIds = Array.from(new Set(logs.map((l) => l.staffId)));
+      const staffList =
+        staffIds.length > 0
+          ? await fastify.prisma.crm.crmStaff.findMany({
+              where: { id: { in: staffIds } },
+              select: { id: true, displayName: true, avatarUrl: true },
+            })
+          : [];
+
+      const staffMap = new Map(staffList.map((s) => [s.id, s.displayName]));
+      const staffAvatarUrlMap = new Map(staffList.map((s) => [s.id, s.avatarUrl || null]));
+
+      const items = logs.map((log) => ({
+        id: log.id,
+        planId: log.planId,
+        callType: log.callType,
+        callResult: log.callResult,
+        durationSec: log.durationSec,
+        note: log.note,
+        outcome: log.outcome,
+        callbackDate: log.callbackDate ? new Date(log.callbackDate).toISOString().split('T')[0] : null,
+        createdAt: log.createdAt.toISOString(),
+        staffName: staffMap.get(log.staffId) || 'Unknown Staff',
+        staffAvatar: staffAvatarUrlMap.get(log.staffId) || null,
+      }));
+
+      return {
+        items,
+        totalCount,
+        hasMore: offset + items.length < totalCount,
+      };
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Get customer calls error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve customer calls',
+      });
+    }
+  });
+
   // GET /api/customers/appointments
   // Get list of appointments for assigned customers
   fastify.get('/customers/appointments', { preHandler: [requireAuth] }, async (request, reply) => {

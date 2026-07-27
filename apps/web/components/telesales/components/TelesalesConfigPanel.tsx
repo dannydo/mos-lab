@@ -150,7 +150,8 @@ export default function TelesalesConfigPanel({
                           </span>
                           <input
                             type="number"
-                            className={`w-16 h-6 rounded-md border text-center text-xs font-bold focus:border-gold/50 outline-none ${
+                            aria-label={`Mục tiêu ${m.label} cho ${p.label}`}
+                            className={`w-16 h-6 rounded-md border text-center text-xs font-bold focus:border-gold/50 focus:outline-2 focus:outline-gold ${
                               themeMode === 'dark'
                                 ? 'bg-black/30 border-white/10 text-white'
                                 : 'bg-white border-gray-300 text-gray-900'

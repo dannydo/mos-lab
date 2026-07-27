@@ -1,26 +1,26 @@
-# Project: Combo Package Key (service_price_package_key) Renaming Audit & Verification
+# Project: mos-lab Accessibility, Contrast, and Theme Integrity Refactoring
 
 ## Architecture
 
-- Legacy Codebase: WingsLashes (PHP Backend `/WingsLashes/Server/src/api/1` + Angular Frontend `/WingsLashes/Client`)
-- CRM Codebase: mos-lab (Next.js 15 Frontend `apps/web` + Fastify 5 API `apps/api`)
-- Database: MySQL Legacy DB (`management`) & CRM DB (`mos_lab`)
-- Target Deliverable: Comprehensive audit report `combo_package_key_audit_report.md` in `.agents/orchestrator/`
+- Web Application: Next.js 15 + Ant Design 5 + Tailwind CSS v4 (`apps/web`)
+- Theme System: Global `.light-theme` & `.dark-theme` classes on `<html>` root, Ant Design 5 token system (`ConfigProvider`), `globals.css` overrides.
+- Standards: WCAG AA contrast ratio (≥ 4.5:1 body text, ≥ 3:1 large text & UI components), `:focus-visible` outline indicators, `tabular-nums` for dynamic numbers/currencies/times.
+- Scope: All Pages (`/dashboard`, `/login`, `/customers`, etc.), Modal Popups, and Side Drawers (Side Slides) in Light & Dark modes.
 
 ## Milestones
 
-| #   | Name                          | Scope                                                                                                                                                                | Dependencies | Status |
-| --- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------ |
-| 1   | M1_wingslashes_legacy_audit   | Audit WingsLashes PHP backend models/controllers and Angular frontend for all references to `service_price_package_key`, hardcoded checks, price suffix side-effects | None         | DONE   |
-| 2   | M2_moslab_crm_audit           | Verify `service_price_package_key` in `combo-recognition.service.ts`, `catalog/routes.ts`, frontend components, ensuring 100% compliance with Rule #21               | None         | DONE   |
-| 3   | M3_audit_synthesis_and_report | Synthesize comprehensive audit report documenting all references, safety ratings, normalizations, and Rule #21 verification                                          | M1, M2       | DONE   |
-| 4   | M4_review_and_verification    | Independent review and verification of audit findings and evidence                                                                                                   | M3           | DONE   |
+| #   | Name                                | Scope                                                                                                                                                                         | Dependencies | Status |
+| --- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------ |
+| 1   | M1_accessibility_and_contrast_audit | Comprehensive audit of all pages, modal popups, and side drawers for contrast, unscoped dark/light CSS, missing focus indicators, missing tabular-nums, Antd 5 token misuses. | None         | DONE   |
+| 2   | M2_theme_refactoring_and_wcag_fixes | Refactor `globals.css`, Ant Design theme config, pages, modals, drawers to meet WCAG AA, properly scoped `.light-theme`/`.dark-theme`, `:focus-visible`, `tabular-nums`.      | M1           | DONE   |
+| 3   | M3_review_and_adversarial_challenge | Independent review by 2 Reviewers & adversarial verification by 2 Challengers for correctness, theme toggling, contrast compliance, and build/lint passing.                   | M2           | DONE   |
+| 4   | M4_forensic_integrity_audit         | Forensic integrity verification by `teamwork_preview_auditor` to ensure zero hardcoded test hacks, authentic code refactoring, clean audit verdict.                           | M3           | DONE   |
+| 5   | M5_synthesis_and_completion_report  | Final synthesis of audit & refactoring results, verification confirmation, and completion report to Sentinel/Parent.                                                          | M4           | DONE   |
 
 ## Code Layout
 
-- `WingsLashes/Server/src/api/1/`: WingsLashes PHP backend models and controllers
-- `WingsLashes/Client/`: WingsLashes Angular frontend components and services
-- `apps/api/src/modules/customers/services/combo-recognition.service.ts`: mos-lab combo recognition logic
-- `apps/api/src/modules/catalog/routes.ts`: mos-lab catalog management API routes
-- `apps/web/`: mos-lab Next.js frontend
-- `packages/shared/`: Shared types
+- `apps/web/app/globals.css`: Theme variables, Antd CSS overrides (`.dark-theme` / `.light-theme`), focus styles, tabular-nums utility rules.
+- `apps/web/app/layout.tsx`: Root layout, ThemeProvider, Antd `ConfigProvider` token configuration.
+- `apps/web/app/`: Next.js pages (`/dashboard`, `/login`, `/customers`, `/kpi`, `/catalog`, etc.).
+- `apps/web/components/`: Reusable UI components, Modals, Drawers, Headers, Sidebar.
+- `apps/web/lib/`: Theme context (`ThemeContext.tsx`), API client.

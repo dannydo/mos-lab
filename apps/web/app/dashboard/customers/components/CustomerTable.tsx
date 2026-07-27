@@ -130,7 +130,7 @@ const CustomerTable = React.memo(
           render: (phone: string, record: Customer) =>
             phone ? (
               <span
-                className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
+                className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text tabular-nums"
                 onClick={() => makeCall(phone, record.name, record.id, record.avatar || undefined)}
                 style={{ color: token.colorText, fontWeight: '600' }}
               >
@@ -214,14 +214,18 @@ const CustomerTable = React.memo(
             }
 
             // 4. normal daysSinceLastVisit ("số dương -> chưa ghé x days, bình thường")
-            return days !== null ? `${days} ngày` : <Text style={{ color: '#888' }}>Chưa từng đến</Text>;
+            return days !== null ? (
+              `${days} ngày`
+            ) : (
+              <Text style={{ color: token.colorTextDescription }}>Chưa từng đến</Text>
+            );
           },
         },
         {
           title: 'Chi tiêu',
           dataIndex: 'totalSpent',
           key: 'totalSpent',
-          render: (spent: number) => formatVND(spent),
+          render: (spent: number) => <span className="tabular-nums">{formatVND(spent)}</span>,
         },
         {
           title: 'Dùng Promo',

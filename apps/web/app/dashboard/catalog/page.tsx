@@ -985,7 +985,7 @@ export default function CatalogPage() {
             cancelText="Hủy"
           >
             <Tooltip title="Vô hiệu hóa">
-              <Button type="text" danger icon={<DeleteOutlined />} />
+              <Button type="text" danger icon={<DeleteOutlined />} aria-label="Xóa danh mục" title="Xóa danh mục" />
             </Tooltip>
           </Popconfirm>
         </Space>

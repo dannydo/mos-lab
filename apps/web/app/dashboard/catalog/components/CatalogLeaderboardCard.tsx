@@ -79,7 +79,15 @@ export default function CatalogLeaderboardCard({
           <Space
             className="cursor-pointer group py-0.5"
             size={6}
+            role="button"
+            tabIndex={0}
             onClick={() => onSelectItem({ itemId: record.itemId, itemType: record.itemType, name })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelectItem({ itemId: record.itemId, itemType: record.itemType, name });
+              }
+            }}
           >
             <span
               className={`font-semibold text-xs transition-colors ${

@@ -355,6 +355,31 @@ export const apiClient = {
       const response = await api.get(`/customers/${id}/detailed`);
       return response.data;
     },
+    getSummary: async (id: number): Promise<SafeAny> => {
+      const response = await api.get(`/customers/${id}/summary`);
+      return response.data;
+    },
+    getBookings: async (
+      id: number,
+      params?: { page?: number; limit?: number }
+    ): Promise<{ items: SafeAny[]; totalCount: number; hasMore: boolean }> => {
+      const response = await api.get(`/customers/${id}/bookings`, { params });
+      return response.data;
+    },
+    getNotes: async (
+      id: number,
+      params?: { page?: number; limit?: number }
+    ): Promise<{ items: SafeAny[]; totalCount: number; hasMore: boolean }> => {
+      const response = await api.get(`/customers/${id}/notes`, { params });
+      return response.data;
+    },
+    getCalls: async (
+      id: number,
+      params?: { page?: number; limit?: number }
+    ): Promise<{ items: SafeAny[]; totalCount: number; hasMore: boolean }> => {
+      const response = await api.get(`/customers/${id}/calls`, { params });
+      return response.data;
+    },
     delete: async (id: number): Promise<{ success: boolean; message: string }> => {
       const response = await api.delete(`/customers/${id}`);
       return response.data;

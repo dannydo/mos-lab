@@ -51,7 +51,6 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
 
-
   const [leaderboard, setLeaderboard] = useState<BkDoneLeaderboardEntry[]>([]);
   const [summary, setSummary] = useState({
     totalDone: 0,
@@ -188,9 +187,15 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
                 >
                   {name}
                 </span>
-                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">· {formatStoreCode(record.store)}</span>
+                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
+                  · {formatStoreCode(record.store)}
+                </span>
                 {isSelected && (
-                  <Tag color="gold" icon={<CheckCircleOutlined />} className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap">
+                  <Tag
+                    color="gold"
+                    icon={<CheckCircleOutlined />}
+                    className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap"
+                  >
                     Đang lọc
                   </Tag>
                 )}
@@ -216,9 +221,19 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
         <span
           className="tabular-nums font-semibold text-xs text-rose-400 cursor-pointer hover:underline hover:text-rose-300 transition-colors"
           title="Click để lọc ra và xem chi tiết danh sách khách missed của Booker này"
+          role="button"
+          tabIndex={0}
+          aria-label={`Xem chi tiết danh sách khách missed của booker ${record.displayName}`}
           onClick={(e) => {
             e.stopPropagation();
             handleSelectBookerMissed(String(record.bookerId), record.displayName);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.stopPropagation();
+              e.preventDefault();
+              handleSelectBookerMissed(String(record.bookerId), record.displayName);
+            }
           }}
         >
           {val} <span className="text-[11px] font-normal opacity-90">({record.missedRatePercent || 0}%)</span>
@@ -230,7 +245,9 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       dataIndex: 'basicBonus',
       key: 'basicBonus',
       align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums font-semibold text-xs text-emerald-400">{formatCurrency(val)}</span>,
+      render: (val: number) => (
+        <span className="tabular-nums font-semibold text-xs text-emerald-400">{formatCurrency(val)}</span>
+      ),
     },
     {
       title: 'Thưởng Mốc Done',
@@ -260,9 +277,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       key: 'totalDoneBonus',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-sm text-emerald-400">
-          {formatCurrency(val)}
-        </span>
+        <span className="tabular-nums font-bold text-sm text-emerald-400">{formatCurrency(val)}</span>
       ),
     },
     {
@@ -296,11 +311,24 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       render: (record: BkDoneRecord) => (
         <div
           className="cursor-pointer group whitespace-nowrap"
+          role="button"
+          tabIndex={0}
+          aria-label={`Xem chi tiết khách hàng ${record.clientName || 'Khách hàng'}`}
           onClick={(e) => {
             e.stopPropagation();
             if (record.customerId) {
               setSelectedCustomerId(record.customerId);
               setCustomerDrawerOpen(true);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.stopPropagation();
+              e.preventDefault();
+              if (record.customerId) {
+                setSelectedCustomerId(record.customerId);
+                setCustomerDrawerOpen(true);
+              }
             }
           }}
         >
@@ -319,7 +347,9 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       title: 'Booker',
       dataIndex: 'bookerName',
       key: 'bookerName',
-      render: (bName: string) => <span className="font-medium text-xs text-slate-300 whitespace-nowrap">{bName || '-'}</span>,
+      render: (bName: string) => (
+        <span className="font-medium text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">{bName || '-'}</span>
+      ),
     },
     {
       title: 'Ngày hẹn',
@@ -336,7 +366,9 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       key: 'service',
       render: (record: BkDoneRecord) => (
         <div>
-          <div className="text-xs font-medium text-slate-300">{record.serviceName || 'Không có thông tin'}</div>
+          <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            {record.serviceName || 'Không có thông tin'}
+          </div>
           {(record.servicePrice || 0) > 0 && (
             <div className="text-[10px] text-slate-400 tabular-nums">
               Giá: {formatCurrency(record.servicePrice || 0)} | Giảm: {record.discountPercent || 0}%
@@ -352,7 +384,9 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       align: 'right' as const,
       render: (val: number) =>
         val > 0 ? (
-          <span className="tabular-nums font-semibold text-xs text-slate-300">{formatCurrency(val)}</span>
+          <span className="tabular-nums font-semibold text-xs text-slate-600 dark:text-slate-300">
+            {formatCurrency(val)}
+          </span>
         ) : (
           <span className="text-slate-500 text-xs">-</span>
         ),
@@ -416,10 +450,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
         }
 
         return (
-          <Tag
-            color={color}
-            className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap"
-          >
+          <Tag color={color} className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap">
             {label}
           </Tag>
         );
@@ -432,7 +463,10 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       {/* Summary Header */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} md={8}>
-          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl" style={{ background: token.colorBgContainer }}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
             <Statistic
               title={<span className="text-xs font-semibold text-slate-500 uppercase">Lượt Check-in Thắng</span>}
               value={summary.totalDone}
@@ -442,7 +476,10 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl" style={{ background: token.colorBgContainer }}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
             <Statistic
               title={<span className="text-xs font-semibold text-slate-500 uppercase">Tỷ Lệ Done Trung Bình</span>}
               value={summary.avgDoneRate}
@@ -453,9 +490,14 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl" style={{ background: token.colorBgContainer }}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Tổng Hoa Hồng OC & Thưởng Done</span>}
+              title={
+                <span className="text-xs font-semibold text-slate-500 uppercase">Tổng Hoa Hồng OC & Thưởng Done</span>
+              }
               value={summary.totalDoneBonus}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#059669', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
@@ -511,8 +553,8 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
               {filterStatus === 'MISSED'
                 ? 'Đang hiển thị danh sách tất cả Khách hàng MISSED (đã đặt hẹn nhưng không đến)'
                 : filterStatus === 'COMPLETED'
-                ? 'Đang hiển thị danh sách Khách hàng DONE (đã đến làm dịch vụ thành công)'
-                : 'Hiển thị tất cả đơn hàng đặt lịch của Booker'}
+                  ? 'Đang hiển thị danh sách Khách hàng DONE (đã đến làm dịch vụ thành công)'
+                  : 'Hiển thị tất cả đơn hàng đặt lịch của Booker'}
             </Text>
           </div>
 
@@ -523,7 +565,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
                 className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
                   filterStatus === 'ALL'
                     ? 'bg-amber-500 text-white shadow-xs font-semibold'
-                    : 'text-slate-400 hover:text-slate-200'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
                 onClick={() => setFilterStatus('ALL')}
               >
@@ -534,7 +576,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
                 className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
                   filterStatus === 'COMPLETED'
                     ? 'bg-emerald-600 text-white shadow-xs font-semibold'
-                    : 'text-slate-400 hover:text-slate-200'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
                 onClick={() => setFilterStatus('COMPLETED')}
               >
@@ -545,7 +587,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
                 className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
                   filterStatus === 'MISSED'
                     ? 'bg-rose-600 text-white shadow-xs font-semibold'
-                    : 'text-slate-400 hover:text-slate-200'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
                 onClick={() => setFilterStatus('MISSED')}
               >
@@ -571,7 +613,14 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
               />
             </Tooltip>
             <Tooltip title="Làm mới dữ liệu">
-              <Button icon={<ReloadOutlined />} size="small" onClick={fetchDetails} loading={detailsLoading} />
+              <Button
+                icon={<ReloadOutlined />}
+                size="small"
+                onClick={fetchDetails}
+                loading={detailsLoading}
+                aria-label="Tải lại dữ liệu"
+                title="Tải lại dữ liệu"
+              />
             </Tooltip>
           </Space>
         </div>

@@ -133,15 +133,21 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     }
   }, []);
 
+  // Tab data state & memory cache
+  const [activeTab, setActiveTab] = useState<string>('bookings');
+  const [tabDataMap, setTabDataMap] = useState<
+    Record<string, { items: SafeAny[]; totalCount: number; hasMore: boolean; page: number; loading: boolean }>
+  >({});
+
   const fetchDetails = useCallback(async () => {
     if (!customerId) return;
     setLoading(true);
     setForbiddenError(null);
     try {
-      const detailedData = await apiClient.customers.getDetailed(customerId);
-      setData(detailedData);
+      const summaryData = await apiClient.customers.getSummary(customerId);
+      setData(summaryData);
     } catch (err) {
-      console.error('Failed to fetch detailed customer:', err);
+      console.error('Failed to fetch summary customer:', err);
       if ((err as SafeAny).response?.status === 403) {
         setForbiddenError(
           (err as SafeAny).response?.data?.message || 'Bạn không có quyền xem thông tin chi tiết khách hàng này.'
@@ -156,14 +162,85 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     }
   }, [customerId]);
 
+  const fetchTabData = useCallback(
+    async (tabKey: string, pageNum = 1, append = false) => {
+      if (!customerId) return;
+
+      // If already cached and not loading more page 1, skip
+      if (!append && pageNum === 1 && tabDataMap[tabKey]?.items && tabDataMap[tabKey].items.length > 0) {
+        return;
+      }
+
+      setTabDataMap((prev) => ({
+        ...prev,
+        [tabKey]: {
+          items: append ? prev[tabKey]?.items || [] : prev[tabKey]?.items || [],
+          totalCount: prev[tabKey]?.totalCount || 0,
+          hasMore: prev[tabKey]?.hasMore ?? true,
+          page: pageNum,
+          loading: true,
+        },
+      }));
+
+      try {
+        let res: { items: SafeAny[]; totalCount: number; hasMore: boolean };
+        if (tabKey === 'bookings') {
+          res = await apiClient.customers.getBookings(customerId, { page: pageNum, limit: 15 });
+        } else if (tabKey === 'notes') {
+          res = await apiClient.customers.getNotes(customerId, { page: pageNum, limit: 15 });
+        } else if (tabKey === 'calls') {
+          res = await apiClient.customers.getCalls(customerId, { page: pageNum, limit: 15 });
+        } else {
+          res = { items: [], totalCount: 0, hasMore: false };
+        }
+
+        setTabDataMap((prev) => {
+          const currentItems = append ? prev[tabKey]?.items || [] : [];
+          return {
+            ...prev,
+            [tabKey]: {
+              items: [...currentItems, ...res.items],
+              totalCount: res.totalCount,
+              hasMore: res.hasMore,
+              page: pageNum,
+              loading: false,
+            },
+          };
+        });
+      } catch (err) {
+        console.error(`Failed to fetch tab ${tabKey}:`, err);
+        setTabDataMap((prev) => ({
+          ...prev,
+          [tabKey]: {
+            ...prev[tabKey],
+            loading: false,
+          },
+        }));
+      }
+    },
+    [customerId, tabDataMap]
+  );
+
+  const handleTabChange = useCallback(
+    (key: string) => {
+      setActiveTab(key);
+      fetchTabData(key, 1, false);
+    },
+    [fetchTabData]
+  );
+
   useEffect(() => {
     if (open && customerId) {
+      setTabDataMap({});
+      setActiveTab('bookings');
       fetchDetails();
+      fetchTabData('bookings', 1, false);
     } else {
       setData(null);
       setForbiddenError(null);
+      setTabDataMap({});
     }
-  }, [open, customerId, fetchDetails]);
+  }, [open, customerId, fetchDetails, fetchTabData]);
 
   // Drawer resize event handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -706,6 +783,12 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
   };
 
   return {
+    // tab states & caching
+    activeTab,
+    tabDataMap,
+    handleTabChange,
+    fetchTabData,
+    counts: data?.counts || { bookingCount: 0, noteCount: 0, callCount: 0, timelineCount: 0 },
     // states
     loading,
     data,

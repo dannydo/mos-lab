@@ -39,3 +39,20 @@ Acceptance Criteria:
 
 Your Working Directory: /Users/dannydo/projects/mos-lab/.agents/orchestrator
 Please create/update plan.md, progress.md, dispatch necessary subagents (e.g. explorers/implementers/reviewers), synthesize findings, and report when all milestones are complete.
+
+## Follow-up — 2026-07-27T16:35:22Z
+
+Full audit and refactoring/fixing of contrast, color, and accessibility (WCAG AA) issues across all Pages (e.g. /dashboard, /login, /customers, etc.), Modal Popups, and Side Drawers in mos-lab for both Light (.light-theme) and Dark (.dark-theme) modes.
+
+Refer to the verbatim user request in `/Users/dannydo/projects/mos-lab/.agents/ORIGINAL_REQUEST.md` (the latest section).
+
+Key Requirements & Rules to Enforce:
+
+1. Working directory: /Users/dannydo/projects/mos-lab/.agents/orchestrator
+2. Audit all pages, modals, and side drawers for low-contrast text, missing focus indicators, and improperly scoped dark/light colors in both Light (.light-theme) and Dark (.dark-theme) modes.
+3. Refactor styles to strictly adhere to Ant Design 5 token system and globals.css theme variables. Text must meet WCAG AA standards (contrast ratio >= 4.5:1 for normal body text, >= 3:1 for large text/interactive components). Eliminate conflicting hardcoded styles (e.g. hardcoding #141414 !important without .dark-theme scoping).
+4. Ensure all dynamic counters, time clocks, durations, and financial figures use tabular-nums (font-variant-numeric: tabular-nums / Tailwind class tabular-nums). Add clean :focus-visible styling for visual accessibility.
+5. Continuously update `/Users/dannydo/projects/mos-lab/.agents/orchestrator/progress.md` with milestone progress.
+6. Verify changes by running `pnpm lint` and `pnpm build` (or relevant checks).
+7. Follow all project rules in `/Users/dannydo/projects/mos-lab/AGENTS.md` and `.agents/AGENTS.md`.
+8. When all milestones are complete, send a completion report back to Sentinel claiming victory.

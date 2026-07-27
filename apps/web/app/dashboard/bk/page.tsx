@@ -216,11 +216,21 @@ export default function BkDashboardPage() {
 
           {/* Date Navigation */}
           <Space.Compact size="middle">
-            <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
+            <Button
+              icon={<LeftOutlined />}
+              onClick={() => handleNavigate(-1)}
+              aria-label="Ngày trước đó"
+              title="Ngày trước đó"
+            />
             <Button onClick={() => setPickerOpen(true)} className="font-semibold tabular-nums min-w-[160px]">
               {getPeriodLabel()}
             </Button>
-            <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
+            <Button
+              icon={<RightOutlined />}
+              onClick={() => handleNavigate(1)}
+              aria-label="Ngày tiếp theo"
+              title="Ngày tiếp theo"
+            />
           </Space.Compact>
 
           {/* Date Range Picker Modal */}

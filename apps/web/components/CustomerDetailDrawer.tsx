@@ -83,6 +83,11 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const [editForm] = Form.useForm();
 
   const {
+    activeTab,
+    tabDataMap,
+    handleTabChange: hookTabChange,
+    fetchTabData,
+    counts,
     loading,
     data,
     rescheduleModalVisible,
@@ -149,14 +154,18 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     onClose,
     onDeleteSuccess,
     editForm,
-    onSuccess: (msg) => message.success(msg),
-    onError: (msg) => message.error(msg),
   });
 
   const currentUser = useMemo(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('mos_user');
-      return stored ? JSON.parse(stored) : null;
+      const userStr = localStorage.getItem('crm_user');
+      if (userStr) {
+        try {
+          return JSON.parse(userStr);
+        } catch {
+          // ignore
+        }
+      }
     }
     return null;
   }, []);
@@ -167,17 +176,15 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   // Sync tab with localStorage on mount & open changes
   useEffect(() => {
     if (open && typeof window !== 'undefined') {
-      const saved = localStorage.getItem('customer_detail_active_tab');
-      if (saved) {
-        setActiveTabKey(saved);
-      } else {
-        setActiveTabKey('bookings');
-      }
+      const saved = localStorage.getItem('customer_detail_active_tab') || 'bookings';
+      setActiveTabKey(saved);
+      hookTabChange(saved);
     }
-  }, [open]);
+  }, [open, hookTabChange]);
 
   const handleTabChange = (key: string) => {
     setActiveTabKey(key);
+    hookTabChange(key);
     if (typeof window !== 'undefined') {
       localStorage.setItem('customer_detail_active_tab', key);
     }
@@ -670,57 +677,88 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     </div>
                   </div>
                 )}
-                <Tabs
-                  activeKey={activeTabKey}
-                  onChange={handleTabChange}
-                  items={[
-                    {
-                      key: 'bookings',
-                      label: `Lịch sử đặt lịch (${bookings.length})`,
-                      children: (
-                        <BookingsTab
-                          bookings={bookings}
-                          notes={notes}
-                          themeMode={themeMode}
-                          customer={customer}
-                          handleCancelBooking={handleCancelBooking}
-                          setSelectedBookingForReschedule={setSelectedBookingForReschedule}
-                          setRescheduleModalVisible={setRescheduleModalVisible}
-                        />
-                      ),
-                    },
-                    {
-                      key: 'timeline',
-                      label: `Tổng hợp ghi chú (${timelineCount})`,
-                      children: (
-                        <TimelineViewTab bookings={bookings} notes={notes} calls={calls} themeMode={themeMode} />
-                      ),
-                    },
-                    {
-                      key: 'notes',
-                      label: `Nhật ký ghi chú (${notes.length})`,
-                      children: (
-                        <NotesTab
-                          notes={notes}
-                          themeMode={themeMode}
-                          currentUser={currentUser}
-                          onPinToggle={handlePinToggle}
-                          unpinLoading={unpinLoading}
-                        />
-                      ),
-                    },
-                    {
-                      key: 'calls',
-                      label: `Lịch sử cuộc gọi (${calls.length})`,
-                      children: <CallsTab calls={calls} themeMode={themeMode} />,
-                    },
-                    {
-                      key: 'assignment-timeline',
-                      label: `Lịch sử Phân bổ`,
-                      children: <CustomerAssignmentTimeline customerId={customer.id} />,
-                    },
-                  ]}
-                />
+                {(() => {
+                  const activeBookings = tabDataMap['bookings']?.items || bookings || [];
+                  const activeNotes = tabDataMap['notes']?.items || notes || [];
+                  const activeCalls = tabDataMap['calls']?.items || calls || [];
+
+                  const bCount = counts?.bookingCount ?? activeBookings.length;
+                  const nCount = counts?.noteCount ?? activeNotes.length;
+                  const cCount = counts?.callCount ?? activeCalls.length;
+
+                  return (
+                    <Tabs
+                      activeKey={activeTabKey}
+                      onChange={handleTabChange}
+                      items={[
+                        {
+                          key: 'bookings',
+                          label: `Lịch sử đặt lịch (${bCount})`,
+                          children: (
+                            <BookingsTab
+                              bookings={activeBookings}
+                              notes={activeNotes}
+                              themeMode={themeMode}
+                              customer={customer}
+                              handleCancelBooking={handleCancelBooking}
+                              setSelectedBookingForReschedule={setSelectedBookingForReschedule}
+                              setRescheduleModalVisible={setRescheduleModalVisible}
+                              loading={tabDataMap['bookings']?.loading}
+                              hasMore={tabDataMap['bookings']?.hasMore}
+                              onLoadMore={() => fetchTabData('bookings', (tabDataMap['bookings']?.page || 1) + 1, true)}
+                            />
+                          ),
+                        },
+                        {
+                          key: 'timeline',
+                          label: `Tổng hợp ghi chú (${nCount})`,
+                          children: (
+                            <TimelineViewTab
+                              bookings={activeBookings}
+                              notes={activeNotes}
+                              calls={activeCalls}
+                              themeMode={themeMode}
+                            />
+                          ),
+                        },
+                        {
+                          key: 'notes',
+                          label: `Nhật ký ghi chú (${nCount})`,
+                          children: (
+                            <NotesTab
+                              notes={activeNotes}
+                              themeMode={themeMode}
+                              currentUser={currentUser}
+                              onPinToggle={handlePinToggle}
+                              unpinLoading={unpinLoading}
+                              loading={tabDataMap['notes']?.loading}
+                              hasMore={tabDataMap['notes']?.hasMore}
+                              onLoadMore={() => fetchTabData('notes', (tabDataMap['notes']?.page || 1) + 1, true)}
+                            />
+                          ),
+                        },
+                        {
+                          key: 'calls',
+                          label: `Lịch sử cuộc gọi (${cCount})`,
+                          children: (
+                            <CallsTab
+                              calls={activeCalls}
+                              themeMode={themeMode}
+                              loading={tabDataMap['calls']?.loading}
+                              hasMore={tabDataMap['calls']?.hasMore}
+                              onLoadMore={() => fetchTabData('calls', (tabDataMap['calls']?.page || 1) + 1, true)}
+                            />
+                          ),
+                        },
+                        {
+                          key: 'assignment-timeline',
+                          label: `Lịch sử Phân bổ`,
+                          children: <CustomerAssignmentTimeline customerId={customer.id} />,
+                        },
+                      ]}
+                    />
+                  );
+                })()}
               </div>
             </div>
           )

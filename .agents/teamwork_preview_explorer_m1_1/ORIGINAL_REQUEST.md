@@ -1,35 +1,21 @@
-## 2026-07-26T03:50:02Z
+## 2026-07-27T16:36:34Z
 
-You are teamwork_preview_explorer_m1_1 (Role: Frontend Performance Benchmarker).
-Working directory: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1
+<USER_REQUEST>
+You are teamwork_preview_explorer_m1_1, an Explorer subagent for mos-lab.
 
-Your task:
-Conduct a comprehensive post-optimization performance benchmark sweep across all 13 primary web dashboard pages and 13 nested sub-tabs (26 total page & sub-tab route combinations) on mos-lab (http://localhost:4000).
+Working Directory: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1
+Project Scope Document: /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md
 
-Routes & tabs to benchmark:
+Your Task:
+Perform a comprehensive accessibility, contrast, and theme audit across all Pages in `apps/web/app/` (including `/dashboard`, `/login`, `/customers`, `/kpi`, `/catalog`, `/orders`, `/reports`, `/booker`, etc.) for both Light (.light-theme) and Dark (.dark-theme) modes.
 
-1. /dashboard/today
-2. /dashboard/customers (All, My Customers, Referrals)
-3. /dashboard/nyc
-4. /dashboard/loca
-5. /dashboard/appointments
-6. /dashboard/plans
-7. /dashboard/calls
-8. /dashboard/omicall
-9. /dashboard/kpi
-10. /dashboard/cc (Xoay, Thưởng, Minigame, Tip, Diamond, Thu nhập)
-11. /dashboard/cv (Xoay, Tip, Thu nhập)
-12. /dashboard/bk (Booking, Done, Tip, Revenue, Thu nhập)
-13. /dashboard/staff
+Audit Requirements:
 
-For each of the 26 route combinations, measure/verify:
+1. Low-contrast text elements failing WCAG AA (contrast ratio < 4.5:1 for normal body text, < 3:1 for large/bold/interactive text).
+2. Hardcoded color styles (e.g. `color: #333`, `background: #141414`, `#fff`, `#222`) that are not properly scoped to `.light-theme` / `.dark-theme` or do not react to `themeMode` / Antd token system.
+3. Financial amounts ($ Combo, $ Single, $ Product), counters, clocks, durations, and timestamps missing `tabular-nums` (`font-variant-numeric: tabular-nums` or Tailwind `tabular-nums`).
+4. Interactive elements missing clear visual focus indicators (`:focus-visible`).
+5. Reference rules in `/Users/dannydo/projects/mos-lab/AGENTS.md` and `.agents/AGENTS.md`.
 
-- Navigation compilation & initial load duration (ms)
-- Time to interactive & rendering complete (ms)
-- Total network requests
-- Total API payload size (kB / MB)
-- API calls triggered on mount
-
-Compare your findings against the baseline metrics in `/Users/dannydo/projects/mos-lab/performance_report.md`.
-
-Write your full report to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/frontend_benchmark.md` and deliver your handoff via send_message to the orchestrator (conversation ID: 1637e593-c5dd-44c8-bdd8-336ba0ce826a).
+You are READ-ONLY. Do NOT modify source code files. Write your audit report to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/audit.md` and send a message back to the orchestrator with your findings.
+</USER_REQUEST>

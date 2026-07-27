@@ -1,14 +1,23 @@
 'use client';
 
 import React from 'react';
-import { Tag, Space } from 'antd';
+import { Tag, Space, Button, Skeleton } from 'antd';
 
 interface CallsTabProps {
   calls: SafeAny[];
   themeMode: 'light' | 'dark';
+  loading?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }
 
-export const CallsTab: React.FC<CallsTabProps> = ({ calls, themeMode }) => {
+export const CallsTab: React.FC<CallsTabProps> = ({
+  calls,
+  themeMode,
+  loading = false,
+  hasMore = false,
+  onLoadMore,
+}) => {
   return (
     <div
       className="custom-scrollbar"
@@ -102,6 +111,30 @@ export const CallsTab: React.FC<CallsTabProps> = ({ calls, themeMode }) => {
               </div>
             );
           })}
+          {hasMore && (
+            <div style={{ textAlign: 'center', marginTop: '16px', paddingBottom: '16px' }}>
+              <Button onClick={onLoadMore} loading={loading} type="default">
+                Tải thêm lịch sử cuộc gọi
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : loading ? (
+        <div style={{ padding: '16px 0' }}>
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              style={{
+                marginBottom: '16px',
+                padding: '16px',
+                borderRadius: '8px',
+                background: themeMode === 'dark' ? '#141414' : '#fafafa',
+                border: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
+              }}
+            >
+              <Skeleton active paragraph={{ rows: 2 }} />
+            </div>
+          ))}
         </div>
       ) : (
         <div style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>

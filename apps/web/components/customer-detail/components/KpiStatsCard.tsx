@@ -44,9 +44,15 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
 
   const subtextStyle = {
     fontSize: '11px',
-    color: '#888',
+    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
     marginTop: '2px',
     fontWeight: '400',
+  };
+
+  const labelStyle = {
+    fontSize: '12px',
+    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+    fontWeight: '500',
   };
 
   return (
@@ -81,7 +87,7 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>LTV</span>
+            <span style={labelStyle}>LTV</span>
             <div
               style={{
                 width: '26px',
@@ -98,7 +104,9 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
             </div>
           </div>
           <div>
-            <div style={valueStyle}>{formatCompactVND(stats?.totalSpent || 0)}</div>
+            <div style={{ ...valueStyle, fontVariantNumeric: 'tabular-nums' }}>
+              {formatCompactVND(stats?.totalSpent || 0)}
+            </div>
             <div style={subtextStyle}>Tổng chi tiêu</div>
           </div>
         </div>
@@ -119,7 +127,7 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>Lịch hẹn</span>
+            <span style={labelStyle}>Lịch hẹn</span>
             <div
               style={{
                 width: '26px',
@@ -137,8 +145,12 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', lineHeight: '1.2' }}>
-              <span style={valueStyle}>{stats?.totalVisits || 0}</span>
-              <span style={{ color: '#888', fontSize: '12px', fontWeight: '500' }}>lần</span>
+              <span style={{ ...valueStyle, fontVariantNumeric: 'tabular-nums' }}>{stats?.totalVisits || 0}</span>
+              <span
+                style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b', fontSize: '12px', fontWeight: '500' }}
+              >
+                lần
+              </span>
             </div>
             <div style={subtextStyle}>
               {stats?.avgFrequency ? `Mỗi ${Math.round(Number(stats.avgFrequency))} ngày` : 'Chưa có tần suất'}
@@ -163,7 +175,7 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>Kim Cương</span>
+            <span style={labelStyle}>Kim Cương</span>
             <div
               style={{
                 width: '26px',
@@ -181,8 +193,8 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', lineHeight: '1.2' }}>
-              <span style={valueStyle}>{stats?.gemBalance || 0}</span>
-              <span style={{ fontSize: '13px', color: '#888' }}>💎</span>
+              <span style={{ ...valueStyle, fontVariantNumeric: 'tabular-nums' }}>{stats?.gemBalance || 0}</span>
+              <span style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>💎</span>
             </div>
             <div style={subtextStyle}>Số dư tích luỹ</div>
           </div>
@@ -205,7 +217,7 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>Tips</span>
+            <span style={labelStyle}>Tips</span>
             <div
               style={{
                 width: '26px',
@@ -222,8 +234,10 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
             </div>
           </div>
           <div>
-            <div style={valueStyle}>{formatCompactVND(stats?.totalTips || 0)}</div>
-            <div style={subtextStyle}>
+            <div style={{ ...valueStyle, fontVariantNumeric: 'tabular-nums' }}>
+              {formatCompactVND(stats?.totalTips || 0)}
+            </div>
+            <div style={{ ...subtextStyle, fontVariantNumeric: 'tabular-nums' }}>
               {stats?.tipRate || 0}% (Avg {formatCompactVND(stats?.avgTip || 0).replace(' đ', '')})
             </div>
           </div>

@@ -214,7 +214,9 @@ export default function CvXoayTab({
                 >
                   {name}
                 </span>
-                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">· {formatStoreCode(record.store)}</span>
+                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
+                  · {formatStoreCode(record.store)}
+                </span>
                 <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">L{record.techLevel}</span>
               </div>
             </div>
@@ -253,9 +255,7 @@ export default function CvXoayTab({
       key: 'totalBonus',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-emerald-400 text-sm">
-          {val.toLocaleString('vi-VN')}đ
-        </span>
+        <span className="tabular-nums font-bold text-emerald-400 text-sm">{val.toLocaleString('vi-VN')}đ</span>
       ),
     },
   ];
@@ -277,7 +277,9 @@ export default function CvXoayTab({
         <Space size={6} className="whitespace-nowrap">
           <CcAvatar name={text} src={record.avatar} size={24} />
           <div className="flex items-center gap-1 whitespace-nowrap">
-            <span className="font-semibold text-xs text-slate-200 whitespace-nowrap">{text || 'N/A'}</span>
+            <span className="font-semibold text-xs text-slate-700 dark:text-slate-200 whitespace-nowrap">
+              {text || 'N/A'}
+            </span>
             <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">· L{record.techLevel}</span>
           </div>
         </Space>
@@ -304,7 +306,7 @@ export default function CvXoayTab({
       dataIndex: 'serviceName',
       key: 'serviceName',
       width: 170,
-      render: (text: string) => <span className="text-xs font-medium text-slate-300">{text}</span>,
+      render: (text: string) => <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{text}</span>,
     },
     {
       title: 'FAL Rule',
@@ -314,7 +316,10 @@ export default function CvXoayTab({
       render: (rule?: string) => {
         if (!rule) return <span className="text-slate-500 text-xs">-</span>;
         return (
-          <Tag color={rule === 'Fix' ? 'error' : rule === 'Adjust' ? 'warning' : 'default'} className="font-semibold text-[10px] m-0 py-0 px-1">
+          <Tag
+            color={rule === 'Fix' ? 'error' : rule === 'Adjust' ? 'warning' : 'default'}
+            className="font-semibold text-[10px] m-0 py-0 px-1"
+          >
             {rule}
           </Tag>
         );
@@ -333,19 +338,13 @@ export default function CvXoayTab({
               </span>
             )}
             {record.fanPts > 0 && (
-              <span className="text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded font-mono">
-                Fan +{record.fanPts}
-              </span>
+              <span className="text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded font-mono">Fan +{record.fanPts}</span>
             )}
             {record.typePts > 0 && (
-              <span className="text-sky-400 bg-sky-500/10 px-1 py-0.5 rounded font-mono">
-                Type +{record.typePts}
-              </span>
+              <span className="text-sky-400 bg-sky-500/10 px-1 py-0.5 rounded font-mono">Type +{record.typePts}</span>
             )}
             {record.lashPts > 0 && (
-              <span className="text-rose-400 bg-rose-500/10 px-1 py-0.5 rounded font-mono">
-                Lash +{record.lashPts}
-              </span>
+              <span className="text-rose-400 bg-rose-500/10 px-1 py-0.5 rounded font-mono">Lash +{record.lashPts}</span>
             )}
             {record.designPts > 0 && (
               <span className="text-purple-400 bg-purple-500/10 px-1 py-0.5 rounded font-mono">
@@ -388,9 +387,7 @@ export default function CvXoayTab({
       width: 110,
       align: 'right' as const,
       render: (bonus: number) => (
-        <span className="tabular-nums font-bold text-xs text-emerald-400">
-          {bonus.toLocaleString('vi-VN')}đ
-        </span>
+        <span className="tabular-nums font-bold text-xs text-emerald-400">{bonus.toLocaleString('vi-VN')}đ</span>
       ),
     },
   ];

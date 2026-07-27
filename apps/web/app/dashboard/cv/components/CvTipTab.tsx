@@ -198,9 +198,15 @@ export default function CvTipTab({
                 >
                   {name}
                 </span>
-                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">· {formatStoreCode(record.store)}</span>
+                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
+                  · {formatStoreCode(record.store)}
+                </span>
                 {isSelected && (
-                  <Tag color="gold" icon={<CheckCircleOutlined />} className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap">
+                  <Tag
+                    color="gold"
+                    icon={<CheckCircleOutlined />}
+                    className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap"
+                  >
                     Đang lọc
                   </Tag>
                 )}
@@ -309,11 +315,7 @@ export default function CvTipTab({
       dataIndex: 'serviceName',
       key: 'serviceName',
       width: 170,
-      render: (val: string) => (
-        <span className="font-medium text-slate-300 text-xs">
-          {val}
-        </span>
-      ),
+      render: (val: string) => <span className="font-medium text-slate-600 dark:text-slate-300 text-xs">{val}</span>,
     },
     {
       title: 'Trạng Thái',

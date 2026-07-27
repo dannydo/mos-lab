@@ -149,6 +149,7 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
                 }
               />
             }
+            aria-label="Đóng bảng điều khiển Telesales"
             onClick={onClose}
             className="hover:bg-red-500/10 flex items-center justify-center w-8 h-8 rounded-lg"
           />
@@ -413,15 +414,18 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
               ></circle>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-black tracking-tight" style={{ color: activeMetricConfig.color }}>
+              <span
+                className="text-3xl font-black tracking-tight tabular-nums"
+                style={{ color: activeMetricConfig.color }}
+              >
                 {activeValue}
               </span>
               <span
-                className={`text-[10px] font-bold mt-0.5 ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}
+                className={`text-[10px] font-bold mt-0.5 tabular-nums ${themeMode === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}
               >
                 / {activeTarget} {activeMetricConfig.label}
               </span>
-              <span className="text-sm font-extrabold mt-0.5" style={{ color: activeMetricConfig.color }}>
+              <span className="text-sm font-extrabold mt-0.5 tabular-nums" style={{ color: activeMetricConfig.color }}>
                 {activePercent}%
               </span>
             </div>

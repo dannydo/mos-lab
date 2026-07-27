@@ -404,21 +404,36 @@ export default function TodayDashboard() {
       />
 
       <style jsx global>{`
-        /* Custom styles for Ant Design Table under Dark Mode */
+        /* Custom styles for Ant Design Table under Dark & Light Mode */
         .dark-theme .antd-custom-table .ant-table {
-          background: #141414 !important;
-          color: #ccc !important;
+          background: #111827 !important;
+          color: #cbd5e1 !important;
+        }
+        .light-theme .antd-custom-table .ant-table {
+          background: #ffffff !important;
+          color: #0f172a !important;
         }
         .dark-theme .antd-custom-table .ant-table-thead > tr > th {
-          background: #1f1f1f !important;
+          background: #1e293b !important;
           color: #d4a84b !important;
-          border-bottom: 1px solid #2a2a2a !important;
+          border-bottom: 1px solid #334155 !important;
+        }
+        .light-theme .antd-custom-table .ant-table-thead > tr > th {
+          background: #f8fafc !important;
+          color: #9e7118 !important;
+          border-bottom: 1px solid #e2e8f0 !important;
         }
         .dark-theme .antd-custom-table .ant-table-tbody > tr > td {
-          border-bottom: 1px solid #1a1a1a !important;
+          border-bottom: 1px solid #1f2937 !important;
+        }
+        .light-theme .antd-custom-table .ant-table-tbody > tr > td {
+          border-bottom: 1px solid #e2e8f0 !important;
         }
         .dark-theme .antd-custom-table .ant-table-row:hover > td {
-          background: #1e1e1e !important;
+          background: #1e293b !important;
+        }
+        .light-theme .antd-custom-table .ant-table-row:hover > td {
+          background: #f1f5f9 !important;
         }
 
         /* Gold highlights for both light/dark */

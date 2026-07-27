@@ -191,7 +191,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
       open={open}
       destroyOnClose
       style={{
-        background: themeMode === 'dark' ? '#141414' : '#f9f9f9',
+        background: themeMode === 'dark' ? '#111827' : '#f9f9f9',
         color: token.colorText,
       }}
       styles={{ body: { padding: '20px', position: 'relative' } }}
