@@ -193,3 +193,134 @@ export interface CatalogStats {
   totalProducts: number;
   activeProducts: number;
 }
+
+// ─── Catalog Leaderboard & Report DTOs ──────────────────────────────────────
+
+export type CatalogItemType = 'service' | 'combo' | 'product';
+
+export interface CatalogLeaderboardEntry {
+  id: string;
+  rank: number;
+  itemId: number;
+  itemType: CatalogItemType;
+  name: string;
+  groupOrKey: string;
+  unitPrice: number;
+  unitsSold: number;
+  revenue: number;
+  revenueSharePercent: number;
+  isDisabled: boolean;
+}
+
+export interface CatalogReportSummary {
+  totalRevenue: number;
+  singleServiceRevenue: number;
+  comboRevenue: number;
+  productRevenue: number;
+  totalOrdersCount: number;
+  totalUnitsSold: number;
+  leaderboard: CatalogLeaderboardEntry[];
+}
+
+export interface CatalogReportSummaryParams {
+  period?: 'today' | 'week' | 'month' | 'custom';
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  itemType?: 'all' | 'service' | 'combo' | 'product';
+}
+
+export interface CatalogItemHistoryRow {
+  orderId: number;
+  orderCode: string;
+  customerName: string;
+  customerPhone?: string;
+  orderDate: string;
+  staffName?: string;
+  quantity: number;
+  amount: number;
+}
+
+export interface CatalogItemHistoryParams {
+  itemId: number;
+  itemType: CatalogItemType;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface CatalogItemHistoryResponse {
+  success: boolean;
+  item: {
+    itemId: number;
+    itemType: CatalogItemType;
+    name: string;
+    unitPrice: number;
+    totalRevenue: number;
+    totalUnitsSold: number;
+    isDisabled: boolean;
+  };
+  orders: CatalogItemHistoryRow[];
+}
+
+// ─── Combo Live Types ───────────────────────────────────────────────────────
+
+export interface ComboLiveOwnerItem {
+  balanceId: number;
+  userId: number;
+  customerName: string;
+  customerPhone?: string;
+  normalCount: number;
+  retainCount: number;
+  dateExpired: string | null;
+  dateCreated: string;
+  daysRemaining: number | null;
+  isExpiringSoon: boolean;
+}
+
+export interface ComboLiveSummaryItem {
+  id: string;
+  comboName: string;
+  packageKey: string;
+  serviceId: number;
+  servicePriceId?: number;
+  packagePrice: number;
+  expiryAfterDay: number;
+  ownerCount: number;
+  totalNormalBalance: number;
+  totalRetainBalance: number;
+  expiringSoonOwnerCount: number;
+  owners: ComboLiveOwnerItem[];
+}
+
+export interface ComboLiveParams {
+  search?: string;
+  expiringSoon?: boolean;
+}
+
+export interface ComboLiveResponse {
+  success: boolean;
+  meta: {
+    totalCombos: number;
+    totalActiveOwners: number;
+    totalNormalBalance: number;
+    totalRetainBalance: number;
+    totalExpiringSoonOwners: number;
+  };
+  data: ComboLiveSummaryItem[];
+}
+
+export interface AffectedComboItem {
+  comboName: string;
+  packagePrice: number;
+  ownerCount: number;
+  totalNormalBalance: number;
+  totalRetainBalance: number;
+}
+
+export interface ServiceLiveComboCheckResult {
+  serviceId: number;
+  totalOwners: number;
+  totalNormalBalance: number;
+  totalRetainBalance: number;
+  affectedCombos: AffectedComboItem[];
+}

@@ -1,58 +1,37 @@
-# Orchestrator Handoff Report — Catalog Management Implementation Plan Audit
-
-**Author**: Project Orchestrator (`mos-lab`)  
-**Date**: 2026-07-26  
-**Status**: Hard Handoff — Task Completed Successfully
-
----
+# Handoff Report: Combo Package Key Audit & Verification
 
 ## 1. Milestone State
 
-| Milestone | Description                              | Status   | Key Outputs / Artifacts                                                                                                                                                                                                            |
-| --------- | ---------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1        | R1: Schema Correctness Audit             | **DONE** | Field-by-field tables, 2 schema bugs caught (`reminding_interval_day`, `last_day_required`), 4 missing models defined. (`.agents/teamwork_preview_explorer_r1/handoff.md`)                                                         |
-| M2        | R2: API Design & Completeness Review     | **DONE** | 22-endpoint complete specification, `requireRole` array signature fix, `/api/catalog/*` namespace, pagination standard. (`.agents/teamwork_preview_explorer_r2/handoff.md`)                                                        |
-| M3        | R3: Business Logic Gaps & Edge Cases     | **DONE** | Single-tenant defaults (`client_id=1`, `client_business_id=1`, `currency_id=1`), parent-child hierarchy, strict enums, package key rules for `ComboRecognitionService`. (`.agents/teamwork_preview_explorer_r3/handoff.md`)        |
-| M4        | R4: Security & Data Integrity Assessment | **DONE** | 3-tier admin guard, READ-ONLY legacy DB rule exception framework, race conditions mitigation, `$transaction` safety. (`.agents/teamwork_preview_explorer_r4/handoff.md`)                                                           |
-| M5        | R5: Frontend UX & AGENTS.md Compliance   | **DONE** | Theme compliance, mandatory `tabular-nums` jitter prevention, `apiClient.catalog` SDK extension, `@mos-lab/shared` types, NodeNext `.js` backend imports, 3-tab layout design. (`.agents/teamwork_preview_explorer_r5/handoff.md`) |
-| M6        | Report Synthesis & Verification          | **DONE** | Comprehensive 17-finding audit report synthesized with Risk Ratings, Executive Summary, Schema Tables, and Actionable Implementer Checklist. (`.agents/orchestrator/catalog_audit_report.md`)                                      |
-
----
+- **M1: WingsLashes Legacy Codebase Audit (R1)**: DONE
+- **M2: mos-lab CRM Compatibility Audit (R2)**: DONE
+- **M3: Audit Report Synthesis**: DONE
+- **M4: Review & Verification**: DONE (APPROVED)
 
 ## 2. Active Subagents
 
-| Subagent ID                            | Role / Type                 | Domain                      | Status    | Handoff Artifact                                  |
-| -------------------------------------- | --------------------------- | --------------------------- | --------- | ------------------------------------------------- |
-| `6aae25c7-2983-418d-ba12-c58d859eb6d5` | `teamwork_preview_explorer` | R1 Schema Audit             | Completed | `.agents/teamwork_preview_explorer_r1/handoff.md` |
-| `1ac07783-5b58-4420-b067-ac89a439d71c` | `teamwork_preview_explorer` | R2 API Design               | Completed | `.agents/teamwork_preview_explorer_r2/handoff.md` |
-| `54374993-8160-44c3-b542-1ecef93f5287` | `teamwork_preview_explorer` | R3 Business Logic           | Completed | `.agents/teamwork_preview_explorer_r3/handoff.md` |
-| `34d70123-39ea-4a0a-8d06-7cd244720271` | `teamwork_preview_explorer` | R4 Security & Integrity     | Completed | `.agents/teamwork_preview_explorer_r4/handoff.md` |
-| `33236661-f901-46a0-ba11-a0a607effd94` | `teamwork_preview_explorer` | R5 Frontend UX & Compliance | Completed | `.agents/teamwork_preview_explorer_r5/handoff.md` |
+- None (All subagents completed and retired).
 
----
+## 3. Key Findings Summary
 
-## 3. Pending Decisions
+1. **WingsLashes Legacy Codebase Impact**:
+   - **12 HIGH_RISK / BREAKING Locations**: Identified strict string equality (`==`), array key lookups, and `in_array()` calls. Renaming keys or adding price suffixes like `_100k` directly breaks order contract generation (`public.php`), staff skill level tracking (`UserUrl.php`), balance deduction engines (`OrderService.php`), balance upgrade/refund SQL queries (`UserServiceBalance.php`), and Angular UI expiry warnings (`customer-detail.component.ts`).
+   - **18 CAUTION Locations**: Exact SQL equality (`WHERE service_price_package_key = 'single'`) or model constant checks (`ServicePrice::SERVICE_PRICE_PACKAGE_KEY_SINGLE`).
+   - **35+ SAFE Locations**: Wildcard SQL checks (`NOT LIKE '%single%'`), regex pattern matching, or dynamic UI table rendering.
 
-None. All 17 audit findings across R1–R5 have been fully analyzed, risk-rated, and paired with concrete, ready-to-implement proposed fixes.
+2. **mos-lab CRM Codebase Compatibility**:
+   - **Critical SQL Bug in `ComboRecognitionService` (`combo-recognition.service.ts` L71)**: Alias typo `osc_nl.service_id` in second `UNION` query block (`order_service`) triggers MySQL `Unknown column 'osc_nl.service_id'` error when `order_service` rows match, silently dropping new combo customer detection. Fixed in `12d5338` (`os_nl.service_id`).
+   - **Regex Caret Anchor Limitation (`/^(\d+)\+(\d+)/`)**: `mapComboDto` (`catalog/routes.ts` L47) and `useCustomerDetail.ts` (L679) anchor to string start `^`. Keys with prefixes (e.g. `combo_3+1_100k`) fail count extraction. Unanchoring to `/(\d+)\+(\d+)/` fixes this.
+   - **DB Column Length Limit (`CHAR(30)`)**: `service_price_package_key` is `CHAR(30)` in MySQL. Max length validation (30 characters) required in catalog CRUD endpoints.
+   - **Single Price Invariant (`service_price_package_key = 'single'`)**: Base single service keys strictly require `service_price_package_key = 'single'`.
 
----
+3. **Normalization Strategy**:
+   - Central `ServicePriceHelper::getBasePackageKey()` in PHP strips `_\d+k$` suffixes before comparisons.
+   - Unanchor JS/TS regex to `/(\d+)\+(\d+)/`.
+   - Update SQL single joins to `(sp.service_price_package_key LIKE 'single%' OR sp.service_price_type = 'Single')`.
 
-## 4. Remaining Work
+## 4. Key Artifacts
 
-- The audit review phase for the Implementation Plan of Catalog Management is 100% complete.
-- Next step for the team: Trigger Victory Audit / proceed with implementation based on the comprehensive audit report in `.agents/orchestrator/catalog_audit_report.md`.
-
----
-
-## 5. Key Artifacts
-
-1. `/Users/dannydo/projects/mos-lab/.agents/orchestrator/catalog_audit_report.md` — Final Comprehensive Audit Report
-2. `/Users/dannydo/projects/mos-lab/.agents/orchestrator/plan.md` — Orchestration Audit Plan
-3. `/Users/dannydo/projects/mos-lab/.agents/orchestrator/progress.md` — Execution Progress Log
-4. `/Users/dannydo/projects/mos-lab/.agents/orchestrator/context.md` — Working Context Memory
-5. Subagent Detailed Reports:
-   - `.agents/teamwork_preview_explorer_r1/handoff.md` (Schema Audit)
-   - `.agents/teamwork_preview_explorer_r2/handoff.md` (API Design Review)
-   - `.agents/teamwork_preview_explorer_r3/handoff.md` (Business Logic & Edge Cases)
-   - `.agents/teamwork_preview_explorer_r4/handoff.md` (Security & Data Integrity)
-   - `.agents/teamwork_preview_explorer_r5/handoff.md` (Frontend UX & Compliance)
+- Final Deliverable Audit Report: `/Users/dannydo/projects/mos-lab/.agents/orchestrator/combo_package_key_audit_report.md`
+- WingsLashes Audit Report: `/Users/dannydo/projects/mos-lab/.agents/explorer_r1/r1_wingslashes_audit.md`
+- mos-lab CRM Audit Report: `/Users/dannydo/projects/mos-lab/.agents/explorer_r2/r2_moslab_audit.md`
+- Reviewer Report: `/Users/dannydo/projects/mos-lab/.agents/reviewer_m4/review_report.md`

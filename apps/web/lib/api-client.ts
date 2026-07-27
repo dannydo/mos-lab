@@ -69,6 +69,13 @@ import {
   CatalogListParams,
   CatalogListResponse,
   CatalogDetailResponse,
+  CatalogReportSummary,
+  CatalogReportSummaryParams,
+  CatalogItemHistoryResponse,
+  CatalogItemHistoryParams,
+  ComboLiveParams,
+  ComboLiveResponse,
+  ServiceLiveComboCheckResult,
   CreateServiceInput,
   UpdateServiceInput,
   CreateServicePriceInput,
@@ -115,24 +122,35 @@ export const apiClient = {
       const response = await api.post('/catalog/services', data);
       return response.data;
     },
-    updateService: async (id: number, data: UpdateServiceInput): Promise<CatalogDetailResponse<CatalogService>> => {
+    updateService: async (
+      id: number,
+      data: UpdateServiceInput & { confirm?: boolean }
+    ): Promise<CatalogDetailResponse<CatalogService>> => {
       const response = await api.put(`/catalog/services/${id}`, data);
       return response.data;
     },
-    deleteService: async (id: number): Promise<{ success: boolean }> => {
-      const response = await api.delete(`/catalog/services/${id}`);
+    deleteService: async (id: number, confirm?: boolean): Promise<{ success: boolean }> => {
+      const response = await api.delete(`/catalog/services/${id}`, { data: { confirm } });
       return response.data;
     },
     restoreService: async (id: number): Promise<CatalogDetailResponse<CatalogService>> => {
       const response = await api.post(`/catalog/services/${id}/restore`);
       return response.data;
     },
+    checkServiceLiveCombos: async (id: number): Promise<{ success: boolean; data: ServiceLiveComboCheckResult }> => {
+      const response = await api.get(`/catalog/services/${id}/live-combo-check`);
+      return response.data;
+    },
     reorderServices: async (items: { id: number; position: number }[]): Promise<{ success: boolean }> => {
       const response = await api.post('/catalog/services/reorder', { items });
       return response.data;
     },
-    bulkStatusServices: async (ids: number[], isDisabled: boolean): Promise<{ success: boolean }> => {
-      const response = await api.post('/catalog/services/bulk-status', { ids, isDisabled });
+    bulkStatusServices: async (
+      ids: number[],
+      isDisabled: boolean,
+      confirm?: boolean
+    ): Promise<{ success: boolean }> => {
+      const response = await api.post('/catalog/services/bulk-status', { ids, isDisabled, confirm });
       return response.data;
     },
     listCombos: async (params: CatalogListParams): Promise<CatalogListResponse<CatalogServicePrice>> => {
@@ -184,6 +202,20 @@ export const apiClient = {
     },
     getTypes: async (): Promise<{ success: boolean; data: { key: string; label: string }[] }> => {
       const response = await api.get('/catalog/types');
+      return response.data;
+    },
+    statsSummary: async (
+      params?: CatalogReportSummaryParams
+    ): Promise<{ success: boolean; data: CatalogReportSummary }> => {
+      const response = await api.get('/catalog/stats-summary', { params });
+      return response.data;
+    },
+    itemHistory: async (params: CatalogItemHistoryParams): Promise<CatalogItemHistoryResponse> => {
+      const response = await api.get('/catalog/item-history', { params });
+      return response.data;
+    },
+    getComboLive: async (params?: ComboLiveParams): Promise<ComboLiveResponse> => {
+      const response = await api.get('/catalog/combo-live', { params });
       return response.data;
     },
   },

@@ -24,6 +24,7 @@ import {
   InputNumber,
   Popconfirm,
   Tooltip,
+  DatePicker,
 } from 'antd';
 import {
   ShopOutlined,
@@ -34,10 +35,42 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
+  TrophyOutlined,
+  LeftOutlined,
+  RightOutlined,
+  CalendarOutlined,
+  ScheduleOutlined,
+  ClockCircleOutlined,
+  ReloadOutlined,
+  FilterOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
-import { CatalogService, CatalogServicePrice, CatalogProduct } from '@mos-lab/shared';
+import dayjs, { Dayjs } from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import { PageHeader } from '../../../components/ui';
+import CatalogReportHeader from './components/CatalogReportHeader';
+import CatalogLeaderboardCard from './components/CatalogLeaderboardCard';
+import CatalogItemDetailPanel from './components/CatalogItemDetailPanel';
+import CatalogComboLiveTab from './components/CatalogComboLiveTab';
+import { ServiceDeactivateConfirmModal } from './components/ServiceDeactivateConfirmModal';
+import {
+  CatalogService,
+  CatalogServicePrice,
+  CatalogProduct,
+  CatalogReportSummary,
+  CatalogItemHistoryResponse,
+  CatalogItemType,
+  ServiceLiveComboCheckResult,
+  SERVICE_GROUPS,
+  SERVICE_TYPES,
+} from '@mos-lab/shared';
+
+dayjs.extend(isoWeek);
+
+export type CatalogViewMode = 'month' | 'week' | 'day';
+export type CatalogFilterItemType = 'all' | 'service' | 'combo' | 'product';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -48,10 +81,31 @@ export default function CatalogPage() {
 
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
-  // Persistent Tab state
-  const [activeTab, setActiveTab] = useState<string>('services');
+  // Persistent Tab state ('report' | 'services' | 'combos' | 'products')
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('catalog_active_tab');
+      if (saved) return saved;
+    }
+    return 'report';
+  });
 
   // Persistent Pagination states
+  const [leaderboardPage, setLeaderboardPage] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('catalog_leaderboard_page');
+      if (saved) return Number(saved);
+    }
+    return 1;
+  });
+  const [leaderboardPageSize, setLeaderboardPageSize] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('catalog_leaderboard_pageSize');
+      if (saved) return Number(saved);
+    }
+    return 20;
+  });
+
   const [servicePage, setServicePage] = useState<number>(1);
   const [servicePageSize, setServicePageSize] = useState<number>(10);
 
@@ -92,6 +146,18 @@ export default function CatalogPage() {
   const [serviceDrawerOpen, setServiceDrawerOpen] = useState(false);
   const [editingService, setEditingService] = useState<CatalogService | null>(null);
 
+  // Live Combo Pre-deactivation Warning Modal states
+  const [liveComboModalOpen, setLiveComboModalOpen] = useState(false);
+  const [liveComboCheckData, setLiveComboCheckData] = useState<ServiceLiveComboCheckResult | null>(null);
+  const [pendingDeactivateTarget, setPendingDeactivateTarget] = useState<{
+    type: 'toggle' | 'save' | 'delete';
+    id: number;
+    values?: any;
+    currentDisabled?: boolean;
+    serviceName?: string;
+  } | null>(null);
+  const [deactivateLoading, setDeactivateLoading] = useState(false);
+
   const [comboDrawerOpen, setComboDrawerOpen] = useState(false);
   const [editingCombo, setEditingCombo] = useState<CatalogServicePrice | null>(null);
 
@@ -105,7 +171,60 @@ export default function CatalogPage() {
   const [isCatalogAdmin, setIsCatalogAdmin] = useState(false);
 
   // Show disabled items filter (default false -> hides disabled items)
-  const [showDisabled, setShowDisabled] = useState<boolean>(false);
+  const [showDisabled, setShowDisabled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('catalog_show_disabled');
+      if (saved !== null) return saved === 'true';
+    }
+    return false;
+  });
+
+  // Report & Leaderboard States (CC Dashboard Style)
+  const [viewMode, setViewMode] = useState<CatalogViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('catalog_view_mode');
+      if (saved && ['month', 'week', 'day'].includes(saved)) return saved as CatalogViewMode;
+    }
+    return 'month';
+  });
+  const [referenceDate, setReferenceDate] = useState<Dayjs>(dayjs());
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [reportItemType, setReportItemType] = useState<CatalogFilterItemType>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('catalog_report_item_type');
+      if (saved && ['all', 'service', 'combo', 'product'].includes(saved)) return saved as CatalogFilterItemType;
+    }
+    return 'all';
+  });
+  const [reportSearch, setReportSearch] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('catalog_report_search');
+      if (saved !== null) return saved;
+    }
+    return '';
+  });
+  const [reportSummary, setReportSummary] = useState<CatalogReportSummary | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+
+  const getPeriodLabel = () => {
+    if (viewMode === 'month') {
+      return `Tháng ${referenceDate.format('MM/YYYY')}`;
+    }
+    if (viewMode === 'week') {
+      const weekNum = referenceDate.isoWeek();
+      return `Tuần ${weekNum} (${referenceDate.startOf('isoWeek').format('DD/MM')} - ${referenceDate.endOf('isoWeek').format('DD/MM/YYYY')})`;
+    }
+    return referenceDate.format('DD/MM/YYYY');
+  };
+
+  // Selected Item Detail State
+  const [selectedLeaderboardItem, setSelectedLeaderboardItem] = useState<{
+    itemId: number;
+    itemType: CatalogItemType;
+    name: string;
+  } | null>(null);
+  const [itemHistoryData, setItemHistoryData] = useState<CatalogItemHistoryResponse | null>(null);
+  const [loadingItemHistory, setLoadingItemHistory] = useState(false);
 
   // Load persistent settings from localStorage on mount
   useEffect(() => {
@@ -127,12 +246,6 @@ export default function CatalogPage() {
       setIsCatalogAdmin(false);
     }
 
-    const savedShowDisabled = localStorage.getItem('catalog_show_disabled');
-    if (savedShowDisabled !== null) setShowDisabled(savedShowDisabled === 'true');
-
-    const savedTab = localStorage.getItem('catalog_active_tab');
-    if (savedTab) setActiveTab(savedTab);
-
     const savedServicePage = localStorage.getItem('catalog_service_page');
     if (savedServicePage) setServicePage(Number(savedServicePage));
     const savedServiceSize = localStorage.getItem('catalog_service_pageSize');
@@ -148,6 +261,31 @@ export default function CatalogPage() {
     const savedProductSize = localStorage.getItem('catalog_product_pageSize');
     if (savedProductSize) setProductPageSize(Number(savedProductSize));
   }, []);
+
+  const handleViewModeChange = (mode: CatalogViewMode) => {
+    setViewMode(mode);
+    setLeaderboardPage(1);
+    localStorage.setItem('catalog_view_mode', mode);
+  };
+
+  const handleReportItemTypeChange = (type: CatalogFilterItemType) => {
+    setReportItemType(type);
+    setLeaderboardPage(1);
+    localStorage.setItem('catalog_report_item_type', type);
+  };
+
+  const handleReportSearchChange = (val: string) => {
+    setReportSearch(val);
+    setLeaderboardPage(1);
+    localStorage.setItem('catalog_report_search', val);
+  };
+
+  const handleLeaderboardPageChange = (page: number, pageSize: number) => {
+    setLeaderboardPage(page);
+    setLeaderboardPageSize(pageSize);
+    localStorage.setItem('catalog_leaderboard_page', String(page));
+    localStorage.setItem('catalog_leaderboard_pageSize', String(pageSize));
+  };
 
   const handleShowDisabledChange = (checked: boolean) => {
     setShowDisabled(checked);
@@ -223,6 +361,132 @@ export default function CatalogPage() {
       message.error('Lỗi khi tải danh sách sản phẩm');
     } finally {
       setLoadingProducts(false);
+    }
+  };
+
+  const getDateBounds = () => {
+    let dFrom: string;
+    let dTo: string;
+    if (viewMode === 'day') {
+      dFrom = referenceDate.format('YYYY-MM-DD');
+      dTo = referenceDate.format('YYYY-MM-DD');
+    } else if (viewMode === 'week') {
+      dFrom = referenceDate.startOf('isoWeek').format('YYYY-MM-DD');
+      dTo = referenceDate.endOf('isoWeek').format('YYYY-MM-DD');
+    } else {
+      dFrom = referenceDate.startOf('month').format('YYYY-MM-DD');
+      dTo = referenceDate.endOf('month').format('YYYY-MM-DD');
+    }
+    return { dFrom, dTo };
+  };
+
+  const handleNavigateDate = (direction: number) => {
+    if (viewMode === 'month') {
+      setReferenceDate((prev) => prev.add(direction, 'month'));
+    } else if (viewMode === 'week') {
+      setReferenceDate((prev) => prev.add(direction, 'week'));
+    } else if (viewMode === 'day') {
+      setReferenceDate((prev) => prev.add(direction, 'day'));
+    }
+  };
+
+  const handleToday = () => {
+    setReferenceDate(dayjs());
+    setViewMode('month');
+  };
+
+  const fetchReportSummary = async () => {
+    setLoadingReport(true);
+    try {
+      const { dFrom, dTo } = getDateBounds();
+      const res = await apiClient.catalog.statsSummary({
+        period: viewMode === 'day' ? 'today' : viewMode,
+        dateFrom: dFrom,
+        dateTo: dTo,
+        search: reportSearch || undefined,
+        itemType: reportItemType,
+      });
+      if (res && res.success) {
+        setReportSummary(res.data);
+      }
+    } catch (err) {
+      console.error('Error fetching catalog report summary:', err);
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
+  const fetchItemHistory = async (item: { itemId: number; itemType: CatalogItemType; name: string }) => {
+    setLoadingItemHistory(true);
+    try {
+      const { dFrom, dTo } = getDateBounds();
+      const res = await apiClient.catalog.itemHistory({
+        itemId: item.itemId,
+        itemType: item.itemType,
+        dateFrom: dFrom,
+        dateTo: dTo,
+      });
+      if (res && res.success) {
+        setItemHistoryData(res);
+      }
+    } catch (err) {
+      console.error('Error fetching item history:', err);
+    } finally {
+      setLoadingItemHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReportSummary();
+  }, [viewMode, referenceDate, reportItemType, reportSearch]);
+
+  useEffect(() => {
+    if (selectedLeaderboardItem) {
+      fetchItemHistory(selectedLeaderboardItem);
+    } else {
+      setItemHistoryData(null);
+    }
+  }, [selectedLeaderboardItem, viewMode, referenceDate]);
+
+  const handleEditItemFromDetail = (itemId: number, itemType: CatalogItemType) => {
+    if (itemType === 'service') {
+      const target = services.find((s) => s.id === itemId);
+      if (target) {
+        setActiveTab('services');
+        handleOpenServiceDrawer(target);
+      } else {
+        message.info('Vui lòng mở tab Dịch vụ bên dưới để chỉnh sửa');
+      }
+    } else if (itemType === 'combo') {
+      const target = combos.find((c) => c.id === itemId);
+      if (target) {
+        setActiveTab('combos');
+        handleOpenComboDrawer(target);
+      } else {
+        message.info('Vui lòng mở tab Combo bên dưới để chỉnh sửa');
+      }
+    } else {
+      const target = products.find((p) => p.id === itemId);
+      if (target) {
+        setActiveTab('products');
+        handleOpenProductDrawer(target);
+      } else {
+        message.info('Vui lòng mở tab Sản phẩm bên dưới để chỉnh sửa');
+      }
+    }
+  };
+
+  const handleToggleStatusFromDetail = async (itemId: number, itemType: CatalogItemType, currentDisabled: boolean) => {
+    if (itemType === 'service') {
+      await handleToggleServiceStatus(itemId, currentDisabled);
+    } else if (itemType === 'combo') {
+      await handleToggleComboStatus(itemId, currentDisabled);
+    } else {
+      await handleToggleProductStatus(itemId, currentDisabled);
+    }
+    fetchReportSummary();
+    if (selectedLeaderboardItem) {
+      fetchItemHistory(selectedLeaderboardItem);
     }
   };
 
@@ -303,11 +567,30 @@ export default function CatalogPage() {
     setServiceDrawerOpen(true);
   };
 
-  const handleSaveService = async (values: any) => {
+  const handleSaveService = async (values: any, forceConfirm = false) => {
     setSaving(true);
     try {
       if (editingService) {
-        await apiClient.catalog.updateService(editingService.id, values);
+        if (values.isDisabled && !forceConfirm) {
+          try {
+            const checkRes = await apiClient.catalog.checkServiceLiveCombos(editingService.id);
+            if (checkRes.data && checkRes.data.totalOwners > 0) {
+              setLiveComboCheckData(checkRes.data);
+              setPendingDeactivateTarget({
+                type: 'save',
+                id: editingService.id,
+                values,
+                serviceName: editingService.serviceName,
+              });
+              setLiveComboModalOpen(true);
+              setSaving(false);
+              return;
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        await apiClient.catalog.updateService(editingService.id, { ...values, confirm: forceConfirm });
         message.success('Cập nhật dịch vụ thành công');
       } else {
         await apiClient.catalog.createService(values);
@@ -315,30 +598,127 @@ export default function CatalogPage() {
       }
       setServiceDrawerOpen(false);
       fetchServices();
-    } catch {
-      message.error('Lỗi khi lưu dịch vụ');
+    } catch (err: any) {
+      if (err.response?.data?.code === 'LIVE_COMBOS_DETECTED' && err.response?.data?.data) {
+        setLiveComboCheckData(err.response.data.data);
+        setPendingDeactivateTarget({
+          type: 'save',
+          id: editingService?.id || 0,
+          values,
+          serviceName: editingService?.serviceName,
+        });
+        setLiveComboModalOpen(true);
+      } else {
+        message.error('Lỗi khi lưu dịch vụ');
+      }
     } finally {
       setSaving(false);
     }
   };
 
-  const handleToggleServiceStatus = async (id: number, currentDisabled: boolean) => {
+  const handleToggleServiceStatus = async (id: number, currentDisabled: boolean, forceConfirm = false) => {
+    const targetService = services.find((s) => s.id === id);
+    const targetName = targetService?.serviceName;
+
+    if (!currentDisabled && !forceConfirm) {
+      try {
+        const checkRes = await apiClient.catalog.checkServiceLiveCombos(id);
+        if (checkRes.data && checkRes.data.totalOwners > 0) {
+          setLiveComboCheckData(checkRes.data);
+          setPendingDeactivateTarget({
+            type: 'toggle',
+            id,
+            currentDisabled,
+            serviceName: targetName,
+          });
+          setLiveComboModalOpen(true);
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
     try {
-      await apiClient.catalog.updateService(id, { isDisabled: !currentDisabled });
+      await apiClient.catalog.updateService(id, { isDisabled: !currentDisabled, confirm: forceConfirm });
       message.success(currentDisabled ? 'Đã kích hoạt dịch vụ' : 'Đã vô hiệu hóa dịch vụ');
       fetchServices();
-    } catch {
-      message.error('Lỗi khi đổi trạng thái dịch vụ');
+    } catch (err: any) {
+      if (err.response?.data?.code === 'LIVE_COMBOS_DETECTED' && err.response?.data?.data) {
+        setLiveComboCheckData(err.response.data.data);
+        setPendingDeactivateTarget({
+          type: 'toggle',
+          id,
+          currentDisabled,
+          serviceName: targetName,
+        });
+        setLiveComboModalOpen(true);
+      } else {
+        message.error('Lỗi khi đổi trạng thái dịch vụ');
+      }
     }
   };
 
-  const handleDeleteService = async (id: number) => {
+  const handleDeleteService = async (id: number, forceConfirm = false) => {
+    const targetService = services.find((s) => s.id === id);
+    const targetName = targetService?.serviceName;
+
+    if (!forceConfirm) {
+      try {
+        const checkRes = await apiClient.catalog.checkServiceLiveCombos(id);
+        if (checkRes.data && checkRes.data.totalOwners > 0) {
+          setLiveComboCheckData(checkRes.data);
+          setPendingDeactivateTarget({
+            type: 'delete',
+            id,
+            serviceName: targetName,
+          });
+          setLiveComboModalOpen(true);
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
     try {
-      await apiClient.catalog.deleteService(id);
+      await apiClient.catalog.deleteService(id, forceConfirm);
       message.success('Đã vô hiệu hóa dịch vụ');
       fetchServices();
+    } catch (err: any) {
+      if (err.response?.data?.code === 'LIVE_COMBOS_DETECTED' && err.response?.data?.data) {
+        setLiveComboCheckData(err.response.data.data);
+        setPendingDeactivateTarget({
+          type: 'delete',
+          id,
+          serviceName: targetName,
+        });
+        setLiveComboModalOpen(true);
+      } else {
+        message.error('Lỗi khi vô hiệu hóa dịch vụ');
+      }
+    }
+  };
+
+  const handleConfirmDeactivateModal = async () => {
+    if (!pendingDeactivateTarget) return;
+    setDeactivateLoading(true);
+    try {
+      const { type, id, values, currentDisabled } = pendingDeactivateTarget;
+      if (type === 'save' && values) {
+        await handleSaveService(values, true);
+      } else if (type === 'toggle') {
+        await handleToggleServiceStatus(id, currentDisabled || false, true);
+      } else if (type === 'delete') {
+        await handleDeleteService(id, true);
+      }
+      setLiveComboModalOpen(false);
+      setLiveComboCheckData(null);
+      setPendingDeactivateTarget(null);
     } catch {
-      message.error('Lỗi khi vô hiệu hóa dịch vụ');
+      message.error('Lỗi khi ngưng hoạt động dịch vụ');
+    } finally {
+      setDeactivateLoading(false);
     }
   };
 
@@ -813,29 +1193,138 @@ export default function CatalogPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Page Header */}
-      <div
-        className="p-6 rounded-2xl border shadow-sm flex justify-between items-center"
-        style={{
-          background:
-            themeMode === 'dark'
-              ? 'linear-gradient(135deg, #1f1f1f 0%, #141414 100%)'
-              : 'linear-gradient(135deg, #ffffff 0%, #fffbe6 100%)',
-          borderColor: token.colorBorderSecondary,
-        }}
-      >
-        <Space size="middle">
-          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500">
-            <ShopOutlined style={{ fontSize: '28px' }} />
-          </div>
-          <div>
-            <Title level={3} style={{ margin: 0, color: token.colorText }}>
-              Quản lý Catalog
-            </Title>
-            <Text type="secondary">Cấu hình Dịch vụ, Gói Combo, và Sản phẩm</Text>
-          </div>
-        </Space>
-      </div>
+      {/* Page Header (CC Dashboard Style) */}
+      <PageHeader
+        title="Quản lý Catalog"
+        subtitle="Báo cáo doanh số & Quản lý danh mục Dịch vụ, Gói Combo, và Sản phẩm"
+        icon={<ShopOutlined />}
+        extra={
+          <Space wrap size={8}>
+            {/* View Mode Switcher: Minimalist Icons + Tooltips */}
+            <Space.Compact>
+              <Tooltip title="Xem theo Tháng">
+                <Button
+                  type={viewMode === 'month' ? 'primary' : 'default'}
+                  icon={<CalendarOutlined />}
+                  onClick={() => handleViewModeChange('month')}
+                />
+              </Tooltip>
+              <Tooltip title="Xem theo Tuần">
+                <Button
+                  type={viewMode === 'week' ? 'primary' : 'default'}
+                  icon={<ScheduleOutlined />}
+                  onClick={() => handleViewModeChange('week')}
+                />
+              </Tooltip>
+              <Tooltip title="Xem theo Ngày">
+                <Button
+                  type={viewMode === 'day' ? 'primary' : 'default'}
+                  icon={<ClockCircleOutlined />}
+                  onClick={() => handleViewModeChange('day')}
+                />
+              </Tooltip>
+            </Space.Compact>
+
+            {/* Date Navigation & Selector Pill (CC Style Image 2) */}
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900/60 flex items-center shadow-sm">
+              <Tooltip title="Kỳ trước">
+                <Button
+                  type="text"
+                  icon={<LeftOutlined className="text-slate-600 dark:text-slate-300" />}
+                  onClick={() => handleNavigateDate(-1)}
+                  className="hover:bg-slate-200/60 dark:hover:bg-slate-800"
+                />
+              </Tooltip>
+              <Tooltip title="Bấm để chọn ngày trực tiếp">
+                <Button
+                  type="text"
+                  icon={<CalendarOutlined className="text-amber-600 dark:text-amber-400" />}
+                  onClick={() => setPickerOpen(true)}
+                  className="font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800"
+                >
+                  {getPeriodLabel()}
+                </Button>
+              </Tooltip>
+              <Tooltip title="Kỳ sau">
+                <Button
+                  type="text"
+                  icon={<RightOutlined className="text-slate-600 dark:text-slate-300" />}
+                  onClick={() => handleNavigateDate(1)}
+                  className="hover:bg-slate-200/60 dark:hover:bg-slate-800"
+                />
+              </Tooltip>
+            </div>
+
+            {/* Today Button: Minimalist Icon + Tooltip */}
+            <Tooltip title="Quay về Hôm nay">
+              <Button
+                size="middle"
+                type="default"
+                icon={<ReloadOutlined />}
+                onClick={handleToday}
+                className="text-amber-600 dark:text-amber-400 border-slate-200 dark:border-amber-500/30 hover:border-amber-500 bg-white dark:bg-transparent shadow-sm"
+              />
+            </Tooltip>
+
+            {/* Hidden DatePicker for direct date picking */}
+            <DatePicker
+              open={pickerOpen}
+              onOpenChange={(open) => setPickerOpen(open)}
+              picker={viewMode === 'month' ? 'month' : viewMode === 'week' ? 'week' : 'date'}
+              onChange={(val) => {
+                if (val) {
+                  setReferenceDate(val);
+                }
+              }}
+              style={{ display: 'none' }}
+            />
+
+            {/* Filter Item Type for Report Tab */}
+            {activeTab === 'report' && (
+              <Select
+                value={reportItemType}
+                onChange={(val) => handleReportItemTypeChange(val as CatalogFilterItemType)}
+                style={{ width: 130 }}
+                options={[
+                  { value: 'all', label: 'Tất cả loại' },
+                  { value: 'service', label: 'Dịch vụ' },
+                  { value: 'combo', label: 'Gói Combo' },
+                  { value: 'product', label: 'Sản phẩm' },
+                ]}
+              />
+            )}
+
+            {/* Search Input for Report Tab */}
+            {activeTab === 'report' && (
+              <Input
+                placeholder="Tìm kiếm..."
+                prefix={<SearchOutlined className="text-slate-400" />}
+                value={reportSearch}
+                onChange={(e) => handleReportSearchChange(e.target.value)}
+                allowClear
+                style={{ width: 150 }}
+              />
+            )}
+
+            {/* Action Buttons for Catalog Admin: Minimalist Icon + Tooltip */}
+            {isCatalogAdmin && activeTab === 'services' && (
+              <Tooltip title="Thêm dịch vụ mới">
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenServiceDrawer()} />
+              </Tooltip>
+            )}
+            {isCatalogAdmin && activeTab === 'combos' && (
+              <Tooltip title="Thêm gói combo mới">
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenComboDrawer()} />
+              </Tooltip>
+            )}
+            {isCatalogAdmin && activeTab === 'products' && (
+              <Tooltip title="Thêm sản phẩm mới">
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenProductDrawer()} />
+              </Tooltip>
+            )}
+          </Space>
+        }
+      />
 
       {!isCatalogAdmin && (
         <Alert
@@ -843,95 +1332,68 @@ export default function CatalogPage() {
           showIcon
           message="Phân quyền Quản lý Catalog"
           description="Chỉ riêng tài khoản danhdo@gmail.com mới có quyền Thêm, Sửa, Xóa dữ liệu Catalog. Bạn đang xem ở chế độ Read-only."
-          className="mb-4"
+          className="mb-4 rounded-xl"
         />
       )}
 
-      {/* Stats Cards */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={8}>
-          <Card
-            variant="outlined"
-            style={{
-              background: token.colorBgContainer,
-              borderColor: token.colorBorderSecondary,
-            }}
-          >
-            <Space align="center">
-              <AppstoreOutlined style={{ fontSize: '24px', color: token.colorPrimary }} />
-              <div>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
-                  DỊCH VỤ (HOẠT ĐỘNG / TỔNG)
-                </Text>
-                <div style={{ fontSize: '24px', fontWeight: 'bold' }} className="tabular-nums">
-                  <span style={{ color: '#52c41a' }}>{stats.activeServices}</span>
-                  <span style={{ color: token.colorTextSecondary }}> / {stats.totalServices}</span>
-                </div>
-              </div>
-            </Space>
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card
-            variant="outlined"
-            style={{
-              background: token.colorBgContainer,
-              borderColor: token.colorBorderSecondary,
-            }}
-          >
-            <Space align="center">
-              <ProjectOutlined style={{ fontSize: '24px', color: token.colorPrimary }} />
-              <div>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
-                  GÓI COMBO (HOẠT ĐỘNG / TỔNG)
-                </Text>
-                <div style={{ fontSize: '24px', fontWeight: 'bold' }} className="tabular-nums">
-                  <span style={{ color: '#52c41a' }}>{stats.activeCombos}</span>
-                  <span style={{ color: token.colorTextSecondary }}> / {stats.totalCombos}</span>
-                </div>
-              </div>
-            </Space>
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card
-            variant="outlined"
-            style={{
-              background: token.colorBgContainer,
-              borderColor: token.colorBorderSecondary,
-            }}
-          >
-            <Space align="center">
-              <TagOutlined style={{ fontSize: '24px', color: token.colorPrimary }} />
-              <div>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
-                  SẢN PHẨM (HOẠT ĐỘNG / TỔNG)
-                </Text>
-                <div style={{ fontSize: '24px', fontWeight: 'bold' }} className="tabular-nums">
-                  <span style={{ color: '#52c41a' }}>{stats.activeProducts}</span>
-                  <span style={{ color: token.colorTextSecondary }}> / {stats.totalProducts}</span>
-                </div>
-              </div>
-            </Space>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Main Tabs Container */}
+      {/* Main Tabs Container (CC Dashboard Style) */}
       <Card
         variant="outlined"
-        style={{
-          background: token.colorBgContainer,
-          borderColor: token.colorBorderSecondary,
-        }}
-        styles={{ body: { padding: 0 } }}
+        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+        styles={{ body: { padding: '12px 16px 16px 16px' } }}
+        className="shadow-sm rounded-xl dashboard-main-tabs-card"
       >
         <Tabs
           activeKey={activeTab}
           onChange={handleTabChange}
-          className="px-4 pt-2"
+          size="large"
+          destroyOnHidden
           animated={{ inkBar: true, tabPane: true }}
           items={[
+            {
+              key: 'report',
+              label: (
+                <Space>
+                  <TrophyOutlined className="text-amber-500" />
+                  <span>Báo cáo & Leaderboard</span>
+                </Space>
+              ),
+              children: (
+                <div className="p-4 space-y-4">
+                  <CatalogReportHeader summary={reportSummary} loading={loadingReport} />
+                  <CatalogLeaderboardCard
+                    leaderboard={reportSummary?.leaderboard || []}
+                    loading={loadingReport}
+                    selectedItem={selectedLeaderboardItem}
+                    page={leaderboardPage}
+                    pageSize={leaderboardPageSize}
+                    onPageChange={handleLeaderboardPageChange}
+                    onSelectItem={(item) => {
+                      if (
+                        selectedLeaderboardItem?.itemId === item.itemId &&
+                        selectedLeaderboardItem?.itemType === item.itemType
+                      ) {
+                        setSelectedLeaderboardItem(null);
+                      } else {
+                        setSelectedLeaderboardItem(item);
+                      }
+                    }}
+                  />
+                  {selectedLeaderboardItem && (
+                    <div className="mt-6 pt-2">
+                      <CatalogItemDetailPanel
+                        selectedItem={selectedLeaderboardItem}
+                        historyData={itemHistoryData}
+                        loading={loadingItemHistory}
+                        onClose={() => setSelectedLeaderboardItem(null)}
+                        onEditItem={handleEditItemFromDetail}
+                        onToggleStatus={handleToggleStatusFromDetail}
+                      />
+                    </div>
+                  )}
+                </div>
+              ),
+            },
             {
               key: 'services',
               label: (
@@ -1078,6 +1540,20 @@ export default function CatalogPage() {
                     }}
                     scroll={{ x: 900 }}
                   />
+                </div>
+              ),
+            },
+            {
+              key: 'combo-live',
+              label: (
+                <Space>
+                  <ThunderboltOutlined className="text-amber-400" />
+                  <span>Combo Live</span>
+                </Space>
+              ),
+              children: (
+                <div className="p-4 space-y-4">
+                  <CatalogComboLiveTab />
                 </div>
               ),
             },
@@ -1352,12 +1828,22 @@ export default function CatalogPage() {
               formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
             />
           </Form.Item>
-
-          <Form.Item name="productDescription" label="Mô tả sản phẩm">
-            <TextArea rows={3} placeholder="Nhập mô tả sản phẩm..." />
-          </Form.Item>
         </Form>
       </Drawer>
+
+      {/* ─── Service Deactivate Live Combo Warning Modal ─────────────────── */}
+      <ServiceDeactivateConfirmModal
+        open={liveComboModalOpen}
+        loading={deactivateLoading}
+        serviceName={pendingDeactivateTarget?.serviceName}
+        data={liveComboCheckData}
+        onCancel={() => {
+          setLiveComboModalOpen(false);
+          setLiveComboCheckData(null);
+          setPendingDeactivateTarget(null);
+        }}
+        onConfirm={handleConfirmDeactivateModal}
+      />
     </div>
   );
 }

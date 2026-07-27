@@ -1,52 +1,43 @@
-# Audit Plan — Catalog Management Implementation Plan Review
+# Audit Plan: Combo Package Key (service_price_package_key) Renaming & Compatibility
 
 ## Objective
 
-Conduct a thorough, multi-perspective audit review of the proposed Implementation Plan for "Catalog Management (Services, Combos & Products CRUD for Admin)" in `mos-lab`.
+Execute a deep audit and verification of `service_price_package_key` references and renaming impacts across:
 
-## Audit Dimensions & Task Breakdown
+1. **WingsLashes Legacy Codebase** (PHP backend `/WingsLashes/Server/src/api/1` & Angular frontend `/WingsLashes/Client`)
+2. **mos-lab CRM Codebase** (`apps/api/src/modules/customers/services/combo-recognition.service.ts`, `apps/api/src/modules/catalog/routes.ts`, frontend components in `apps/web/`)
 
-### Milestone 1: R1 — Schema Correctness Audit
+## Milestones & Work Items
 
-- Compare proposed Prisma models (`service_price`, `product`, `product_language`, `product_price`) against actual WingsLashes PHP models (`ServicePriceDbTable.php`, `ProductDbTable.php`, `ProductLanguageDbTable.php`, `ProductPriceDbTable.php`, `ServiceDbTable.php`, `ServiceLanguageDbTable.php`).
-- Audit existing `service` and `service_language` models in `apps/api/prisma/legacy.prisma` against `ServiceDbTable.php` and `ServiceLanguageDbTable.php` for missing columns or mismatched types.
-- Output: Field-by-field comparison tables & missing/mismatched column list.
+### Milestone 1: WingsLashes Legacy Codebase Impact Audit (R1)
 
-### Milestone 2: R2 — API Design & Completeness Review
+- Search and list all occurrences of `service_price_package_key` across PHP models, controllers, services, SQL queries, and Angular frontend.
+- Analyze if there are hardcoded package key checks (e.g. `'combo_5_5'`, `'combo_7_3'`, `'single'`, `'refill'`, `'balance'`).
+- Evaluate side effects of appending price suffixes (e.g. `_100k`, `_150k`, `_200k` or `_price`) to package keys.
+- Rate safety of each reference (Safe / Caution / High Risk / Breaking).
 
-- Evaluate 11 proposed endpoints under `/api/catalog/*`.
-- Check RESTful naming conventions and consistency with `apps/api/src/server.ts` and existing module routes.
-- Verify pagination, input validation, error handling, typing, and `requireRole` middleware signature (`UserRole[]` array vs single string).
-- Identify missing endpoints (soft delete, bulk operations, reordering, filtering/search).
+### Milestone 2: mos-lab CRM Compatibility Audit (R2)
 
-### Milestone 3: R3 — Business Logic Gaps & Edge Cases
+- Inspect `apps/api/src/modules/customers/services/combo-recognition.service.ts` for package key regexes, exclusions (`%single%`, `%refill%`, `%balance%`), normalization, and matching.
+- Inspect `apps/api/src/modules/catalog/routes.ts` and catalog routes/services for package key generation/modification.
+- Inspect `apps/web/` frontend components for hardcoded package key handling.
+- Verify 100% compliance with **Rule #21**:
+  - `total_price > 0`
+  - Package key exclusion (`%single%`, `%refill%`, `%balance%`)
+  - `user_service_type = 'combo'` or `service_group = 'combo'`
+  - Date range parsing & padding (`parseComboDateBounds`)
+  - `user_service_balance` update.
 
-- Investigate multi-currency handling (`service_price.currency_id`).
-- Address multi-store/client tenancy (`client_id`, `client_business_id`).
-- Analyze parent-child service hierarchy (`parent_service_id`).
-- Catalog valid enum/string values for `service_type`, `service_group`, `service_price_type`.
-- Assess cascading effects on disable/delete.
-- Enforce `service_price_package_key` format convention for compatibility with `ComboRecognitionService`.
+### Milestone 3: Report Synthesis & Risk Assessment
 
-### Milestone 4: R4 — Security & Data Integrity Risk Assessment
+- Consolidate findings into a comprehensive audit report `combo_package_key_audit_report.md` in `.agents/orchestrator/`.
+- Produce full tables of references, safety ratings, normalization recommendations, and verification matrix.
 
-- Verify 3-tier admin access control (Backend middleware, Frontend guard, Sidebar visibility).
-- Assess READ-ONLY legacy DB rule in AGENTS.md vs CRM writing directly to legacy DB `management`.
-- Analyze race conditions and dual-system concurrency with WingsLashes PHP app.
-- Evaluate Prisma `$transaction` requirements for multi-table write operations.
+### Milestone 4: Review & Verification
 
-### Milestone 5: R5 — Frontend UX & AGENTS.md Compliance
+- Review findings with reviewer / challenger subagents to verify completeness and accuracy.
 
-- Audit Theme compliance (Light/Dark mode, `tabular-nums`, Antd design tokens).
-- Verify `apiClient` SDK usage, shared types from `@mos-lab/shared`, and backend `.js` file extensions.
-- Assess 3-tab layout suitability (Services, Combos, Products).
+## Dispatch Plan
 
-### Milestone 6: Synthesis & Audit Report Finalization
-
-- Synthesize all subagent findings into a comprehensive audit report with Executive Summary, Risk Ratings (Critical, High, Medium, Low), Proposed Fixes, and Schema Comparison Tables.
-
-## Subagent Allocation Strategy
-
-- Dispatch 5 `teamwork_preview_explorer` subagents (or specialist workers) in parallel for M1 to M5.
-- Each explorer will investigate their specific domain and produce a detailed handoff report in their designated working folder (`.agents/teamwork_preview_explorer_r1/`, etc.).
-- Synthesize results in M6 and present the final report.
+- `explorer_wingslashes`: Subagent (`teamwork_preview_explorer`) to audit WingsLashes PHP backend and Angular frontend.
+- `explorer_moslab`: Subagent (`teamwork_preview_explorer`) to audit mos-lab Fastify API and Next.js frontend.

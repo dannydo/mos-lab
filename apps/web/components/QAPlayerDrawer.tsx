@@ -204,8 +204,9 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
       />
 
       {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Spin size="large" tip="Đang tải chi tiết cuộc gọi..." />
+        <div className="flex flex-col justify-center items-center h-64 gap-3">
+          <Spin size="large" />
+          <span className="text-xs text-slate-400 font-medium">Đang tải chi tiết cuộc gọi...</span>
         </div>
       ) : logDetails ? (
         <div>

@@ -1,8 +1,8 @@
-# BRIEFING — 2026-07-26T15:32:15+07:00
+# BRIEFING — 2026-07-26T23:58:00+07:00
 
 ## Mission
 
-Conduct a thorough audit review of the Implementation Plan for "Catalog Management (Services, Combos & Products CRUD for Admin)" in mos-lab, delegating R1-R5 deep dives to specialist subagents and synthesizing a high-quality audit report.
+Deep audit and verification of combo package key (`service_price_package_key`) renaming across both WingsLashes (legacy PHP/Angular) and mos-lab (Next.js/Fastify) codebases.
 
 ## 🔒 My Identity
 
@@ -10,65 +10,64 @@ Conduct a thorough audit review of the Implementation Plan for "Catalog Manageme
 - Roles: orchestrator, user_liaison, human_reporter, successor
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/orchestrator
 - Original parent: parent
-- Original parent conversation ID: b0ff1a67-4ea8-4489-97dd-a95abcf090b7
+- Original parent conversation ID: 8799a1c8-9066-4d2f-ba7d-cd1e8c2af87f
 
 ## 🔒 My Workflow
 
-- **Pattern**: Project / Canonical (Orchestrator review)
+- **Pattern**: Project / Canonical
 - **Scope document**: /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md
 
-1. **Decompose**: Decomposed audit into 5 work items (R1: Schema, R2: API Design, R3: Business Logic, R4: Security/Data Integrity, R5: Frontend UX)
-2. **Dispatch & Execute**: Dispatched 5 specialist subagents in parallel for R1-R5 deep dives; collected all handoffs and synthesized final comprehensive audit report.
-3. **On failure**: N/A
-4. **Succession**: N/A
+1. **Decompose**: Decomposed into 4 milestones (M1: WingsLashes Legacy Audit, M2: mos-lab CRM Audit, M3: Synthesis & Report, M4: Review & Verification).
+2. **Dispatch & Execute**: Dispatched parallel Explorer subagents for R1 and R2 audit tasks; synthesized findings into `combo_package_key_audit_report.md`; dispatched Reviewer subagent for M4 verification.
+3. **On failure**: Retry / Replace stuck agents.
+4. **Succession**: Self-succeed if spawn count >= 16.
 
 - **Work items**:
-  1. R1: Schema Correctness Audit [done]
-  2. R2: API Design & Completeness Review [done]
-  3. R3: Business Logic Gaps & Edge Cases [done]
-  4. R4: Security & Data Integrity Risk Assessment [done]
-  5. R5: Frontend UX & AGENTS.md Compliance [done]
-  6. Final Report Synthesis & Verification [done]
+  1. R1: WingsLashes Legacy Codebase Impact Audit [done]
+  2. R2: mos-lab CRM Compatibility Audit [done]
+  3. M3: Final Synthesis Report [done]
+  4. M4: Review & Verification [done]
 
 - **Current phase**: 4 (Completed)
-- **Current focus**: Completed final synthesis report and communicated to parent
+- **Current focus**: All milestones complete; delivering final report to user/parent
 
 ## 🔒 Key Constraints
 
 - NEVER write, modify, or create source code files directly.
 - MAY use file-editing tools ONLY for metadata/state files (.md) in .agents/ folder.
 - Follow Handoff and Audit rules.
+- Strictly adhere to user rules and Rule #21.
 
 ## Current Parent
 
-- Conversation ID: b0ff1a67-4ea8-4489-97dd-a95abcf090b7
-- Updated: 2026-07-26T15:27:14+07:00
+- Conversation ID: 8799a1c8-9066-4d2f-ba7d-cd1e8c2af87f
+- Updated: 2026-07-26T23:51:51+07:00
 
 ## Key Decisions Made
 
-- Completed deep-dive audit across all 5 dimensions. Synthesized 17 total findings (3 Critical, 6 High, 5 Medium, 3 Low) into `/Users/dannydo/projects/mos-lab/.agents/orchestrator/catalog_audit_report.md`.
+- Conducted deep-dive audits across WingsLashes (PHP/Angular) and mos-lab (Next.js/Fastify).
+- Verified 12 High Risk/Breaking locations in WingsLashes and critical SQL bug (`osc_nl.service_id` typo) in `combo-recognition.service.ts`.
+- Synthesized `combo_package_key_audit_report.md` and received Reviewer approval.
 
 ## Team Roster
 
-| Agent         | Type                      | Work Item               | Status    | Conv ID                              |
-| ------------- | ------------------------- | ----------------------- | --------- | ------------------------------------ |
-| R1 Specialist | teamwork_preview_explorer | R1 Schema Audit         | completed | 6aae25c7-2983-418d-ba12-c58d859eb6d5 |
-| R2 Specialist | teamwork_preview_explorer | R2 API Design           | completed | 1ac07783-5b58-4420-b067-ac89a439d71c |
-| R3 Specialist | teamwork_preview_explorer | R3 Business Logic       | completed | 54374993-8160-44c3-b542-1ecef93f5287 |
-| R4 Specialist | teamwork_preview_explorer | R4 Security & Integrity | completed | 34d70123-39ea-4a0a-8d06-7cd244720271 |
-| R5 Specialist | teamwork_preview_explorer | R5 Frontend & UX        | completed | 33236661-f901-46a0-ba11-a0a607effd94 |
+| Agent       | Type                      | Work Item                   | Status    | Conv ID                              |
+| ----------- | ------------------------- | --------------------------- | --------- | ------------------------------------ |
+| explorer_r1 | teamwork_preview_explorer | R1 WingsLashes Legacy Audit | completed | 4e0b6289-34c0-499b-957a-a11ab404da7a |
+| explorer_r2 | teamwork_preview_explorer | R2 mos-lab CRM Audit        | completed | b93959ae-a223-493c-8ba8-7385780e8433 |
+| reviewer_m4 | teamwork_preview_reviewer | M4 Review & Verification    | completed | c447334c-0bb2-429b-92c6-bc6f2877e05d |
 
 ## Succession Status
 
 - Succession required: no
-- Spawn count: 5 / 16
+- Spawn count: 3 / 16
 - Pending subagents: none
 - Predecessor: none
 - Successor: not yet spawned
 
 ## Active Timers
 
-- Heartbeat cron: 35cb364f-e976-430d-abf1-6ac93ece4943/task-33
+- Heartbeat cron: c3872400-e461-49fa-8107-1db52b27732f/task-11 (Active)
 - Safety timer: none
 
 ## Artifact Index
@@ -76,6 +75,5 @@ Conduct a thorough audit review of the Implementation Plan for "Catalog Manageme
 - /Users/dannydo/projects/mos-lab/.agents/orchestrator/ORIGINAL_REQUEST.md — Original User Request
 - /Users/dannydo/projects/mos-lab/.agents/orchestrator/plan.md — Audit Plan
 - /Users/dannydo/projects/mos-lab/.agents/orchestrator/progress.md — Execution Progress
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/context.md — Context Memory
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/catalog_audit_report.md — Comprehensive Audit Report
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/handoff.md — Orchestrator Handoff
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md — Project Scope & Milestones
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/combo_package_key_audit_report.md — Final Audit Report

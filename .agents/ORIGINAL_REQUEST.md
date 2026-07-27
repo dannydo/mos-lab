@@ -81,3 +81,26 @@ Phát hiện các edge cases và business logic chưa được đề cập:
 - [ ] Mỗi finding có risk rating: Critical / High / Medium / Low
 - [ ] Mỗi finding có "Proposed Fix" mô tả thay đổi cụ thể cần áp dụng vào implementation plan
 - [ ] Executive summary ở đầu báo cáo tổng hợp số lượng findings theo mức độ
+
+## Follow-up — 2026-07-26T16:51:23Z
+
+Deep audit and verification of combo package key (service_price_package_key) renaming across both WingsLashes (legacy PHP/Angular) and mos-lab (Next.js/Fastify) codebases.
+
+Working directory: /Users/dannydo/projects/mos-lab
+
+## Requirements
+
+### R1. WingsLashes Legacy Codebase Impact Audit
+
+Audit all references to service_price_package_key across WingsLashes/Server/src/api/1 models, controllers, and Angular frontend components to identify any hardcoded key checks or potential side effects of adding price suffixes.
+
+### R2. mos-lab CRM Compatibility Audit
+
+Verify all references to service_price_package_key in apps/api/src/modules/customers/services/combo-recognition.service.ts, catalog/routes.ts, and frontend components to ensure 100% compatibility with Rule #21.
+
+## Acceptance Criteria
+
+### Audit & Verification Criteria
+
+- [ ] Complete list of all service_price_package_key references in WingsLashes documented with safety ratings.
+- [ ] Verification that ComboRecognitionService and all CRM reports operate cleanly with suffix-normalized package keys.

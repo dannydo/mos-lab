@@ -34,11 +34,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted) return;
     const root = document.documentElement;
     if (themeMode === 'light') {
-      root.classList.remove('dark-theme');
+      root.classList.remove('dark-theme', 'dark');
       root.classList.add('light-theme');
     } else {
       root.classList.remove('light-theme');
-      root.classList.add('dark-theme');
+      root.classList.add('dark-theme', 'dark');
     }
   }, [themeMode, mounted]);
 
