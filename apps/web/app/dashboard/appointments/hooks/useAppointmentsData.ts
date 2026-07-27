@@ -34,11 +34,56 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
-  const [currentUser, setCurrentUser] = useState<Staff | null>(null);
-  const [columnConfig, setColumnConfig] =
-    useState<Record<string, { visible: boolean; width: number; label: string }>>(defaultColumnConfig);
+  const [currentUser, setCurrentUser] = useState<Staff | null>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch {
+          // ignore
+        }
+      }
+    }
+    return null;
+  });
 
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
+  const [columnConfig, setColumnConfig] = useState<Record<string, { visible: boolean; width: number; label: string }>>(
+    () => {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('appointment_columns_config_v2');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            const merged = { ...defaultColumnConfig };
+            Object.keys(parsed).forEach((key) => {
+              if (merged[key as keyof typeof defaultColumnConfig]) {
+                merged[key as keyof typeof defaultColumnConfig] = {
+                  ...merged[key as keyof typeof defaultColumnConfig],
+                  visible: parsed[key].visible,
+                  width: parsed[key].width || merged[key as keyof typeof defaultColumnConfig].width,
+                };
+              }
+            });
+            return merged;
+          } catch {
+            // ignore
+          }
+        }
+      }
+      return defaultColumnConfig;
+    }
+  );
+
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mos_appointments_viewMode');
+      if (saved && ['month', 'week', 'day'].includes(saved)) {
+        return saved as 'month' | 'week' | 'day';
+      }
+    }
+    return 'month';
+  });
   const [referenceDate, setReferenceDate] = useState<dayjs.Dayjs>(dayjs());
   const [customRange, setCustomRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 
@@ -67,9 +112,23 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
   }, [viewMode, refDateStr, customStartStr, customEndStr]);
 
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pending' | 'missed' | 'completed'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'missed' | 'completed'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mos_appointments_activeTab');
+      if (saved && ['pending', 'missed', 'completed'].includes(saved)) {
+        return saved as 'pending' | 'missed' | 'completed';
+      }
+    }
+    return 'pending';
+  });
   const [missedStatusFilter, setMissedStatusFilter] = useState<'ALL' | 'UNTAGGED' | 'FOLLOWUP' | 'RESOLVED'>('ALL');
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('all');
+  const [selectedStaffId, setSelectedStaffId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mos_appointments_selectedStaffId');
+      if (saved) return saved;
+    }
+    return 'all';
+  });
   const [staffList, setStaffList] = useState<SafeAny[]>([]);
 
   // Appointments data state
@@ -78,7 +137,13 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(20);
+  const [pageSize, setPageSize] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mos_appointments_pageSize');
+      if (saved) return parseInt(saved, 10);
+    }
+    return 20;
+  });
   const [total, setTotal] = useState<number>(0);
   const [summary, setSummary] = useState<SafeAny>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -94,55 +159,13 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
   const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<SafeAny>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedColumns = localStorage.getItem('appointment_columns_config_v2');
-      if (savedColumns) {
-        try {
-          const parsed = JSON.parse(savedColumns);
-          const merged = { ...defaultColumnConfig };
-          Object.keys(parsed).forEach((key) => {
-            if (merged[key as keyof typeof defaultColumnConfig]) {
-              merged[key as keyof typeof defaultColumnConfig] = {
-                ...merged[key as keyof typeof defaultColumnConfig],
-                visible: parsed[key].visible,
-                width: parsed[key].width || merged[key as keyof typeof defaultColumnConfig].width,
-              };
-            }
-          });
-          setColumnConfig(merged);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      const savedViewMode = localStorage.getItem('mos_appointments_viewMode');
-      if (savedViewMode) {
-        setViewMode(savedViewMode as 'month' | 'week' | 'day');
-      }
-      const savedActiveTab = localStorage.getItem('mos_appointments_activeTab');
-      if (savedActiveTab && ['pending', 'missed', 'completed'].includes(savedActiveTab)) {
-        setActiveTab(savedActiveTab as 'pending' | 'missed' | 'completed');
-      }
-      const savedStaffId = localStorage.getItem('mos_appointments_selectedStaffId');
-      if (savedStaffId) {
-        setSelectedStaffId(savedStaffId);
-      }
-      const savedPageSize = localStorage.getItem('mos_appointments_pageSize');
-      if (savedPageSize) {
-        setPageSize(parseInt(savedPageSize, 10));
-      }
-      const storedUser = localStorage.getItem('mos_user');
-      if (storedUser) {
-        const parsed = JSON.parse(storedUser);
-        setCurrentUser(parsed);
-        if (parsed.role === 'admin') {
-          apiClient.customers
-            .getStaff()
-            .then((data) => setStaffList(data))
-            .catch((err) => console.error('Failed to load staff list:', err));
-        }
-      }
+    if (currentUser?.role === 'admin') {
+      apiClient.customers
+        .getStaff()
+        .then((data) => setStaffList(data))
+        .catch((err) => console.error('Failed to load staff list:', err));
     }
-  }, []);
+  }, [currentUser]);
 
   const saveColumnConfig = (newConfig: typeof columnConfig) => {
     setColumnConfig(newConfig);

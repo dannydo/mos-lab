@@ -38,11 +38,28 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   const [sdkError, setSdkErrors] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [sipConfig, setSipConfig] = useState<SafeAny>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('mos_token');
+    }
+    return null;
+  });
   const [isSimulated, setIsSimulated] = useState(false);
   const simulatedTimerRef = useRef<SafeAny>(null);
-  const [shouldInit, setShouldInit] = useState(false);
-  const [omicallReady, setOmicallReadyState] = useState(false);
+  const [omicallReady, setOmicallReadyState] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('mos_omicall_auto_init') === 'true';
+    }
+    return false;
+  });
+  const [shouldInit, setShouldInit] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const t = localStorage.getItem('mos_token');
+      const r = localStorage.getItem('mos_omicall_auto_init') === 'true';
+      return !!(t && r);
+    }
+    return false;
+  });
   const [lastRegisterEvent, setLastRegisterEvent] = useState<SafeAny>(null);
 
   // Global CallLogModal states
@@ -75,22 +92,6 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setToken(localStorage.getItem('mos_token'));
-    }
-  }, []);
-
-  // Load initial value of omicallReady from localStorage once token is available
-  useEffect(() => {
-    if (token) {
-      const resolvedAutoInit = localStorage.getItem('mos_omicall_auto_init');
-      if (resolvedAutoInit === 'true') {
-        setOmicallReadyState(true);
-      }
-    }
-  }, [token]);
-
   // Set ready status helper
   const setOmicallReady = (ready: boolean) => {
     setOmicallReadyState(ready);
@@ -108,13 +109,6 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       }
     }
   };
-
-  // Run initialization when omicallReady & token are true
-  useEffect(() => {
-    if (omicallReady && token) {
-      setShouldInit(true);
-    }
-  }, [omicallReady, token]);
 
   // Call States
   const [callState, setCallState] = useState<CallState>('idle');
