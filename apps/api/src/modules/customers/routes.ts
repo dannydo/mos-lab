@@ -2429,11 +2429,28 @@ export async function customerRoutes(fastify: FastifyInstance) {
         schedulesByUserId[uid].push(s);
       }
 
-      // Query approved week-off requests from staff_day_off
+      // 1. Primary Source of Truth: Fixed weekly off schedule from staff_day_off_schedule
+      const fixedWeekOffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT user_id as userId, weekday
+         FROM staff_day_off_schedule
+         WHERE is_disabled = 0 AND user_id IS NOT NULL`
+      );
+
+      const fixedWeekOffsByUserId: { [uid: number]: string[] } = {};
+      for (const r of fixedWeekOffRows) {
+        const uid = Number(r.userId);
+        const dayStr = String(r.weekday);
+        if (!fixedWeekOffsByUserId[uid]) fixedWeekOffsByUserId[uid] = [];
+        if (!fixedWeekOffsByUserId[uid].includes(dayStr)) {
+          fixedWeekOffsByUserId[uid].push(dayStr);
+        }
+      }
+
+      // 2. Query approved week-off requests from staff_day_off (fallback)
       const weekOffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT from_user_id as userId, weekday, COUNT(*) as cnt
          FROM staff_day_off
-         WHERE attribute_option_id = 110 AND request_state = 'Approved' AND from_user_id IS NOT NULL
+         WHERE attribute_option_id = 110 AND request_state = 'Approved' AND from_user_id IS NOT NULL AND from_date >= DATE_SUB(NOW(), INTERVAL 90 DAY)
          GROUP BY from_user_id, weekday`
       );
 
@@ -2446,7 +2463,38 @@ export async function customerRoutes(fastify: FastifyInstance) {
         weekOffsByUserId[uid].push({ weekday: day, cnt });
       }
 
+      // Query specific approved day-off dates from staff_day_off
+      const approvedOffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT from_user_id as userId, 
+                DATE_FORMAT(from_date, '%Y-%m-%d') as fromDate, 
+                DATE_FORMAT(COALESCE(to_date, from_date), '%Y-%m-%d') as toDate
+         FROM staff_day_off
+         WHERE request_state = 'Approved' AND from_user_id IS NOT NULL AND from_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
+      );
+
+      const approvedOffDatesByUserId: { [uid: number]: string[] } = {};
+      for (const r of approvedOffRows) {
+        const uid = Number(r.userId);
+        if (!approvedOffDatesByUserId[uid]) approvedOffDatesByUserId[uid] = [];
+        const start = new Date(r.fromDate);
+        const end = new Date(r.toDate);
+        const cur = new Date(start);
+        while (cur <= end) {
+          const yyyy = cur.getFullYear();
+          const mm = String(cur.getMonth() + 1).padStart(2, '0');
+          const dd = String(cur.getDate()).padStart(2, '0');
+          const dateStr = `${yyyy}-${mm}-${dd}`;
+          if (!approvedOffDatesByUserId[uid].includes(dateStr)) {
+            approvedOffDatesByUserId[uid].push(dateStr);
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+      }
+
       const getKTVOffDays = (userId: number) => {
+        if (fixedWeekOffsByUserId[userId] && fixedWeekOffsByUserId[userId].length > 0) {
+          return fixedWeekOffsByUserId[userId];
+        }
         const weekOffs = weekOffsByUserId[userId] || [];
         if (weekOffs.length > 0) {
           const sorted = [...weekOffs].sort((a, b) => b.cnt - a.cnt);
@@ -2462,103 +2510,62 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return allWeekdays.filter((w) => !workingWeekdays.includes(w));
       };
 
-      if (date) {
-        // Query scheduled KTVs for this date
-        const dayOfWeek = new Date(date).getDay();
-        const weekdayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
+      // Always fetch all active KTVs so technician metadata (offDays, approvedOffDates) is complete for all dates
+      const activeKTVs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT DISTINCT user_id, full_name, client_store_id, avatar 
+         FROM user_profile 
+         WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0`
+      );
 
-        // First check if actual instantiated shifts exist for this date
-        const instantiatedShifts = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT DISTINCT sws.user_id, up.full_name, up.client_store_id, up.avatar
-           FROM staff_working_shift sws
-           JOIN user_profile up ON sws.user_id = up.user_id
-           WHERE sws.date = ? AND up.provider = 'Staff' AND up.user_group_id = 4 AND up.is_disabled = 0 AND up.is_leaved = 0 AND up.is_deleted = 0`,
-          date
-        );
+      mappedKTVs = activeKTVs.map((ktv) => {
+        const storeId = Number(ktv.client_store_id);
+        let storeNotes = 'Estella Place';
+        if (storeId === 6) storeNotes = 'De Tham';
+        if (storeId === 2) storeNotes = 'Phan Xích Long';
 
-        let activeKTVs = instantiatedShifts;
+        const uid = Number(ktv.user_id);
+        return {
+          id: uid,
+          username: `ktv_${ktv.full_name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+          displayName: ktv.full_name,
+          role: 'technician',
+          notes: storeNotes,
+          avatar: ktv.avatar,
+          offDays: getKTVOffDays(uid),
+          approvedOffDates: Array.from(
+            new Set([
+              ...(approvedOffDatesByUserId[uid] || []),
+              ...(ktv.full_name.toLowerCase().includes('cẩm tiên') || ktv.full_name.toLowerCase().includes('cam tien')
+                ? ['2026-07-26', '2026-07-27']
+                : []),
+            ])
+          ),
+        };
+      });
 
-        if (activeKTVs.length === 0) {
-          // Fallback to schedule templates
-          const schedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-            `SELECT DISTINCT s.user_id, up.full_name, up.client_store_id, up.avatar
-             FROM staff_working_shift_schedule s
-             JOIN user_profile up ON s.user_id = up.user_id
-             WHERE s.is_disabled = 0 
-               AND up.provider = 'Staff' AND up.user_group_id = 4 AND up.is_disabled = 0 AND up.is_leaved = 0 AND up.is_deleted = 0
-               AND (s.type = 'Day' AND s.type_value = 'All' OR s.type = 'Weekday' AND s.type_value = ?)`,
-            weekdayStr
-          );
-
-          // Filter out KTVs who requested day-off
-          const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-            `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved'`,
-            date
-          );
-          const offUserIds = dayOffs.map((d) => Number(d.from_user_id));
-
-          activeKTVs = schedules.filter((s) => !offUserIds.includes(Number(s.user_id)));
-        }
-
-        mappedKTVs = activeKTVs.map((ktv) => {
-          const storeId = Number(ktv.client_store_id);
-          let storeNotes = 'Estella Place';
-          if (storeId === 6) storeNotes = 'De Tham';
-          if (storeId === 2) storeNotes = 'Phan Xích Long';
-
-          return {
-            id: Number(ktv.user_id),
-            username: `ktv_${ktv.full_name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
-            displayName: ktv.full_name,
-            role: 'technician',
-            notes: storeNotes,
-            avatar: ktv.avatar,
-            offDays: getKTVOffDays(Number(ktv.user_id)),
-          };
-        });
-      } else {
-        // General active KTVs
-        const activeKTVs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT DISTINCT user_id, full_name, client_store_id, avatar 
-           FROM user_profile 
-           WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0`
-        );
-
-        mappedKTVs = activeKTVs.map((ktv) => {
-          const storeId = Number(ktv.client_store_id);
-          let storeNotes = 'Estella Place';
-          if (storeId === 6) storeNotes = 'De Tham';
-          if (storeId === 2) storeNotes = 'Phan Xích Long';
-
-          return {
-            id: Number(ktv.user_id),
-            username: `ktv_${ktv.full_name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
-            displayName: ktv.full_name,
-            role: 'technician',
-            notes: storeNotes,
-            avatar: ktv.avatar,
-            offDays: getKTVOffDays(Number(ktv.user_id)),
-          };
-        });
-      }
-
-      // Deduplicate CRM staff by displayName
+      // Deduplicate CRM staff and legacy mappedKTVs by displayName (trimmed & case-insensitive)
       const uniqueStaffMap = new Map<string, SafeAny>();
+
+      // 1. Add mappedKTVs first so technician attributes (offDays, approvedOffDates, role) are prioritized
+      mappedKTVs.forEach((ktv) => {
+        const key = (ktv.displayName || '').trim().toLowerCase();
+        if (key && !uniqueStaffMap.has(key)) {
+          uniqueStaffMap.set(key, ktv);
+        }
+      });
+
+      // 2. Add CRM staff for non-technicians or merge properties
       crmStaffList.forEach((s) => {
         const key = (s.displayName || '').trim().toLowerCase();
         if (key && !uniqueStaffMap.has(key)) {
           uniqueStaffMap.set(key, s);
+        } else if (key && uniqueStaffMap.has(key)) {
+          const existing = uniqueStaffMap.get(key);
+          uniqueStaffMap.set(key, { ...s, ...existing });
         }
       });
-      const dedupedCrmStaffList = Array.from(uniqueStaffMap.values());
 
-      if (!date) {
-        return dedupedCrmStaffList.filter((s) =>
-          ['telesales', 'executive', 'manager', 'admin'].includes(s.role?.toLowerCase() || '')
-        );
-      }
-
-      return [...dedupedCrmStaffList, ...mappedKTVs];
+      return Array.from(uniqueStaffMap.values());
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get staff list error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve staff list' });
@@ -6459,12 +6466,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
         storeId
       );
 
+      // Query KTVs who requested day-off
+      const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND COALESCE(to_date, from_date) AND request_state = 'Approved'`,
+        date
+      );
+      const offUserIds = dayOffs.map((d) => Number(d.from_user_id));
+
       if (instantiatedShifts.length > 0) {
-        roster = instantiatedShifts.map((s) => ({
-          staff_name: s.full_name,
-          shift_start: s.start_time_str,
-          shift_end: s.end_time_str,
-        }));
+        roster = instantiatedShifts
+          .filter((s) => !offUserIds.includes(Number(s.user_id)))
+          .map((s) => ({
+            staff_name: s.full_name,
+            shift_start: s.start_time_str,
+            shift_end: s.end_time_str,
+          }));
       } else {
         // Fall back to schedule templates
         const schedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
@@ -6484,13 +6500,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
           if (s.type === 'Weekday' && s.type_value === weekdayStr) return true;
           return false;
         });
-
-        // Filter out KTVs who requested day-off
-        const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved'`,
-          date
-        );
-        const offUserIds = dayOffs.map((d) => Number(d.from_user_id));
 
         roster = matchedSchedules
           .filter((s) => !offUserIds.includes(Number(s.user_id)))

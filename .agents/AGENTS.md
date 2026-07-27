@@ -365,6 +365,18 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 
 1. **Kiểu dáng nút Icon**: Các icon bộ lọc dạng nút bấm đơn lẻ đặt cạnh ô tìm kiếm trên thanh toolbar (ví dụ: Bộ lọc trạng thái đặt lịch `Tất cả`, `Đã book`, `Chưa book`) bắt buộc phải được thiết kế dạng khối vuông `32x32px` (`w-8 h-8 rounded-lg`) đồng bộ hoàn toàn với kích thước, chiều cao (`h-8`), bo góc (`rounded-lg`) và viền của nút Cấu hình (Gear button).
 
+---
+
+# 📅 Staff Fixed Weekly Off Single Source of Truth Rules (`staff_day_off_schedule`)
+
+1. **Nguồn Dữ Liệu Chuẩn (Source of Truth)**: Ngày OFF tuần cố định của tất cả các nhân sự trong hệ thống (KTV/CV, Tư vấn viên/CC, Booker/BK/Telesales) **bắt buộc phải truy vấn từ bảng master `staff_day_off_schedule`** trong CSDL legacy `management` (với điều kiện `is_disabled = 0 AND user_id IS NOT NULL`).
+2. **Giá trị đại diện**: Cột `weekday` (`1` = Thứ 2, `2` = Thứ 3, ..., `7` = Chủ Nhật).
+3. **Thứ tự ưu tiên (Precedence Order)**:
+   - **Ưu tiên hàng đầu**: Lấy từ `staff_day_off_schedule` (`is_disabled = 0`).
+   - **Dự phòng (Fallback)**: Chỉ khi nhân sự không có dòng cấu hình trong `staff_day_off_schedule` mới dùng số liệu đếm từ `staff_day_off` (lọc 90 ngày gần nhất) hoặc lịch ca làm `staff_working_shift_schedule`.
+4. **Phân biệt với Ngày Nghỉ Phép**: Bảng `staff_day_off` đại diện cho các phiếu/ticket xin nghỉ phép ngày cụ thể (`approvedOffDates`), không được dùng làm căn cứ chính để xác định lịch off tuần cố định.
+
+
 
 
 

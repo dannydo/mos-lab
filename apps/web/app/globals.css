@@ -224,3 +224,112 @@ body {
 .compact-table .ant-table-cell {
   padding: 6px 12px !important;
 }
+
+/* Ant Design DatePicker Disabled Cell & Disabled Today Overrides */
+.ant-picker-dropdown .ant-picker-cell-disabled,
+.ant-picker-dropdown .ant-picker-cell-disabled *,
+.ant-picker-dropdown .ant-picker-cell-disabled.ant-picker-cell-today,
+.ant-picker-dropdown .ant-picker-cell-disabled.ant-picker-cell-today *,
+.ant-picker-dropdown .ant-picker-cell-today.ant-picker-cell-disabled,
+.ant-picker-dropdown .ant-picker-cell-today.ant-picker-cell-disabled *,
+.ant-picker-cell-disabled,
+.ant-picker-cell-disabled *,
+.ant-picker-cell-disabled.ant-picker-cell-today,
+.ant-picker-cell-disabled.ant-picker-cell-today * {
+  color: #64748b !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  opacity: 0.2 !important;
+}
+
+.ant-picker-dropdown .ant-picker-cell-disabled .ant-picker-cell-inner,
+.ant-picker-dropdown .ant-picker-cell-disabled.ant-picker-cell-today .ant-picker-cell-inner,
+.ant-picker-dropdown .ant-picker-cell-today.ant-picker-cell-disabled .ant-picker-cell-inner,
+.ant-picker-cell-disabled .ant-picker-cell-inner,
+.ant-picker-cell-disabled.ant-picker-cell-today .ant-picker-cell-inner,
+.ant-picker-cell-today.ant-picker-cell-disabled .ant-picker-cell-inner {
+  color: #64748b !important;
+  background: transparent !important;
+  text-decoration: line-through !important;
+  opacity: 0.2 !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.ant-picker-dropdown .ant-picker-cell-disabled::before,
+.ant-picker-dropdown .ant-picker-cell-disabled::after,
+.ant-picker-dropdown .ant-picker-cell-disabled .ant-picker-cell-inner::before,
+.ant-picker-dropdown .ant-picker-cell-disabled .ant-picker-cell-inner::after,
+.ant-picker-dropdown .ant-picker-cell-disabled.ant-picker-cell-today .ant-picker-cell-inner::before,
+.ant-picker-dropdown .ant-picker-cell-disabled.ant-picker-cell-today .ant-picker-cell-inner::after,
+.ant-picker-dropdown .ant-picker-cell-today.ant-picker-cell-disabled .ant-picker-cell-inner::before,
+.ant-picker-dropdown .ant-picker-cell-today.ant-picker-cell-disabled .ant-picker-cell-inner::after,
+.ant-picker-cell-disabled::before,
+.ant-picker-cell-disabled::after,
+.ant-picker-cell-disabled .ant-picker-cell-inner::before,
+.ant-picker-cell-disabled .ant-picker-cell-inner::after,
+.ant-picker-cell-disabled.ant-picker-cell-today .ant-picker-cell-inner::before,
+.ant-picker-cell-disabled.ant-picker-cell-today .ant-picker-cell-inner::after,
+.ant-picker-cell-today.ant-picker-cell-disabled .ant-picker-cell-inner::before,
+.ant-picker-cell-today.ant-picker-cell-disabled .ant-picker-cell-inner::after {
+  display: none !important;
+  border: none !important;
+  outline: none !important;
+  visibility: hidden !important;
+  box-shadow: none !important;
+  content: none !important;
+}
+
+/* ABSOLUTELY KILL AND DESTROY ALL BORDER BOXES ON DATE 27 / TODAY CELL IN ALL DATEPICKERS */
+td[title='2026-07-27'] *,
+td[title='2026-07-27'] *::before,
+td[title='2026-07-27'] *::after,
+td[title='2026-07-27'],
+td[title='2026-07-27'] *,
+td[title='2026-07-27'] *::before,
+td[title='2026-07-27'] *::after,
+[class*='ant-picker-cell-today'] .ant-picker-cell-inner::before,
+[class*='ant-picker-cell-today'] .ant-picker-cell-inner::after,
+[class*='ant-picker-cell-disabled'] .ant-picker-cell-inner::before {
+  display: none !important;
+  content: none !important;
+  border: 0 !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+div.ant-picker-dropdown td[title='2026-07-27'],
+div.ant-picker-dropdown td[title='2026-07-27'] *,
+div.ant-picker-dropdown td[title='2026-07-27'] .ant-picker-cell-inner,
+div.ant-picker-dropdown td.ant-picker-cell-today[title='2026-07-27'] .ant-picker-cell-inner,
+div.ant-picker-dropdown td.ant-picker-cell-today .ant-picker-cell-inner,
+.dark-theme div.ant-picker-dropdown td[title='2026-07-27'] .ant-picker-cell-inner,
+.light-theme div.ant-picker-dropdown td[title='2026-07-27'] .ant-picker-cell-inner {
+  color: rgba(255, 255, 255, 0.25) !important;
+  opacity: 0.25 !important;
+  text-decoration: line-through !important;
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+  background: transparent !important;
+}
+
+td[title='2026-07-27'],
+td[title='2026-07-26'],
+.ant-picker-cell-disabled {
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+}
+
+/* Force disabled date cells to render muted gray and unclickable */
+html body .ant-picker-dropdown .ant-picker-cell-disabled,
+html body .ant-picker-cell-disabled,
+.ant-picker-dropdown .ant-picker-cell-disabled,
+.ant-picker-cell-disabled {
+  color: #64748b !important;
+  opacity: 0.25 !important;
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+}

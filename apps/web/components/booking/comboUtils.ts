@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+
 export const hasActiveLowerLashCombo = (balances: SafeAny[]) => {
   return balances.some((cb) => {
     const isCountActive = (cb.normalCount || 0) + (cb.retainCount || 0) > 0;
@@ -53,4 +55,37 @@ export const getCalculatedPrice = (selectedService: SafeAny, selectedPromotion: 
     discount,
     final: Math.max(0, original - discount),
   };
+};
+
+export const getRelativeDateInfo = (date: any) => {
+  if (!date) return { prefix: ' ', label: 'ngày', isRelative: false };
+
+  let targetStr = '';
+  if (typeof date.format === 'function') {
+    targetStr = date.format('YYYY-MM-DD');
+  } else {
+    const d = dayjs(date);
+    if (!d.isValid()) return { prefix: ' ', label: 'ngày', isRelative: false };
+    targetStr = d.format('YYYY-MM-DD');
+  }
+
+  const todayStr = dayjs().format('YYYY-MM-DD');
+
+  const targetMs = Date.parse(`${targetStr}T00:00:00Z`);
+  const todayMs = Date.parse(`${todayStr}T00:00:00Z`);
+  const diffDays = Math.round((targetMs - todayMs) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return { prefix: ' ', label: 'hôm nay', isRelative: true };
+  }
+  if (diffDays === 1) {
+    return { prefix: ' ', label: 'ngày mai', isRelative: true };
+  }
+  if (diffDays === 2) {
+    return { prefix: ' ', label: 'ngày mốt', isRelative: true };
+  }
+  if (diffDays === -1) {
+    return { prefix: ' ', label: 'hôm qua', isRelative: true };
+  }
+  return { prefix: ' ', label: 'ngày', isRelative: false };
 };

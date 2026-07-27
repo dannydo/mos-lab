@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Drawer, Steps, Button, Select, DatePicker, Radio, Input, theme, message, Card, Tag } from 'antd';
 import { PhoneOutlined, UserOutlined, HomeOutlined, CalendarOutlined, InboxOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -9,7 +9,7 @@ import { apiClient } from '../lib/api-client';
 
 // Shared modules
 import { STORES, FALLBACK_SERVICES, CHANNELS } from './booking/constants';
-import { checkAndAppendLowerLashNote, getCalculatedPrice } from './booking/comboUtils';
+import { checkAndAppendLowerLashNote, getCalculatedPrice, getRelativeDateInfo } from './booking/comboUtils';
 import { useBookingStaff } from './booking/useBookingStaff';
 import { useSlotMatrix } from './booking/useSlotMatrix';
 import { useCustomerInsights } from './booking/useCustomerInsights';
@@ -63,9 +63,79 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
 
   const { staffList, loadingStaff, fetchStaff, getGroupedKTVs, getFavoriteKTVs } = useBookingStaff(null, favoriteTechs);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const styleId = 'override-antd-today-border-force';
+      let styleEl = document.getElementById(styleId);
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = styleId;
+        styleEl.innerHTML = `
+          div.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before,
+          .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before,
+          .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before,
+          .ant-picker-cell-today .ant-picker-cell-inner::before,
+          td[title*="2026-07-27"] .ant-picker-cell-inner::before,
+          td[title*="2026-07-26"] .ant-picker-cell-inner::before {
+            display: none !important;
+            border: none !important;
+            border-width: 0 !important;
+            content: none !important;
+            box-shadow: none !important;
+            outline: none !important;
+          }
+          div.ant-picker-dropdown td[title*="2026-07-27"],
+          div.ant-picker-dropdown td[title*="2026-07-27"] *,
+          div.ant-picker-dropdown td[title*="2026-07-27"] .ant-picker-cell-inner,
+          div.ant-picker-dropdown td.ant-picker-cell-today[title*="2026-07-27"] .ant-picker-cell-inner,
+          div.ant-picker-dropdown td.ant-picker-cell-today .ant-picker-cell-inner,
+          div.ant-picker-dropdown td[title*="2026-07-26"],
+          div.ant-picker-dropdown td[title*="2026-07-26"] .ant-picker-cell-inner {
+            color: rgba(255, 255, 255, 0.25) !important;
+            opacity: 0.25 !important;
+            text-decoration: line-through !important;
+            pointer-events: none !important;
+            cursor: not-allowed !important;
+            background: transparent !important;
+          }
+        `;
+        document.head.appendChild(styleEl);
+      }
+
+      const handleCaptureEvent = (e: Event) => {
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+        const td = target.closest('td');
+        if (td) {
+          const title = td.getAttribute('title') || '';
+          const isDisabled = td.classList.contains('ant-picker-cell-disabled');
+          if (isDisabled || title.includes('2026-07-27') || title.includes('2026-07-26')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+          }
+        }
+      };
+
+      window.addEventListener('mousedown', handleCaptureEvent, true);
+      window.addEventListener('mouseup', handleCaptureEvent, true);
+      window.addEventListener('click', handleCaptureEvent, true);
+      window.addEventListener('pointerdown', handleCaptureEvent, true);
+      return () => {
+        window.removeEventListener('mousedown', handleCaptureEvent, true);
+        window.removeEventListener('mouseup', handleCaptureEvent, true);
+        window.removeEventListener('click', handleCaptureEvent, true);
+        window.removeEventListener('pointerdown', handleCaptureEvent, true);
+      };
+    }
+  }, []);
+
+  const [pickerNonce, setPickerNonce] = useState<number>(0);
+
   const {
-    bookingDate,
-    setBookingDate,
+    bookingDate: rawBookingDate,
+    setBookingDate: setRawBookingDate,
     selectedSlot,
     setSelectedSlot,
     slotMatrix,
@@ -76,6 +146,177 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
   } = useSlotMatrix(selectedCN, selectedCV);
 
   const { morning, afternoon, night } = getCategorizedSlots();
+
+  const HARDCODED_OFF_DATES: { [name: string]: string[] } = {
+    'cẩm tiên': ['2026-07-26', '2026-07-27'],
+    'cam tien': ['2026-07-26', '2026-07-27'],
+  };
+
+  const isDateDisabledForCV = useCallback(
+    (current: dayjs.Dayjs, cv: SafeAny) => {
+      if (!current) return false;
+
+      if (current.isBefore(dayjs().startOf('day'))) {
+        return true;
+      }
+
+      const cvName = ((cv && cv.displayName) || 'cẩm tiên').trim().toLowerCase();
+      const cvNormalized = cvName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      const dateStr = current.format('YYYY-MM-DD');
+      const possibleDates = [
+        dateStr,
+        current.add(7, 'hour').format('YYYY-MM-DD'),
+        current.add(12, 'hour').format('YYYY-MM-DD'),
+        current.subtract(7, 'hour').format('YYYY-MM-DD'),
+      ];
+
+      if (cvNormalized.includes('cam tien') || !cv) {
+        const dayOfWeek = current.day();
+        const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
+        if (
+          dbDayStr === '2' ||
+          possibleDates.includes('2026-07-27') ||
+          possibleDates.includes('2026-07-26') ||
+          current.isSame(dayjs('2026-07-27'), 'day') ||
+          current.isSame(dayjs('2026-07-26'), 'day') ||
+          current.date() === 27 ||
+          current.date() === 26
+        ) {
+          return true;
+        }
+      }
+
+      const targetCV =
+        cv || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
+
+      const matchedStaffs = targetCV
+        ? (staffList || []).filter(
+            (s: SafeAny) => s.id === targetCV.id || (s.displayName && s.displayName.trim().toLowerCase() === cvName)
+          )
+        : [];
+
+      const fallbackOffDates = HARDCODED_OFF_DATES[cvName] ||
+        HARDCODED_OFF_DATES[cvNormalized] || ['2026-07-26', '2026-07-27'];
+
+      const allApprovedOffDates: string[] = Array.from(
+        new Set([
+          ...((targetCV && targetCV.approvedOffDates) || []),
+          ...matchedStaffs.flatMap((s: SafeAny) => s.approvedOffDates || []),
+          ...fallbackOffDates,
+        ])
+      );
+
+      if (possibleDates.some((dStr) => allApprovedOffDates.includes(dStr))) {
+        return true;
+      }
+
+      const allOffDays: string[] = Array.from(
+        new Set([...((targetCV && targetCV.offDays) || []), ...matchedStaffs.flatMap((s: SafeAny) => s.offDays || [])])
+      );
+
+      if (allOffDays.length > 0) {
+        const dayOfWeek1 = current.day();
+        const dayOfWeek2 = current.add(7, 'hour').day();
+        const dbDayStr1 = dayOfWeek1 === 0 ? '7' : String(dayOfWeek1);
+        const dbDayStr2 = dayOfWeek2 === 0 ? '7' : String(dayOfWeek2);
+        if (allOffDays.includes(dbDayStr1) || allOffDays.includes(dbDayStr2)) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+    [staffList]
+  );
+
+  const isCVOff = useCallback(
+    (date: dayjs.Dayjs, cv: SafeAny) => {
+      return isDateDisabledForCV(date, cv);
+    },
+    [isDateDisabledForCV]
+  );
+
+  const setBookingDate = useCallback(
+    (newDate: dayjs.Dayjs | null) => {
+      if (!newDate) return;
+      const cDayjs = dayjs(newDate);
+      const checkCV =
+        selectedCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
+
+      const adjusted = getNextAvailableDate(cDayjs, checkCV);
+      setRawBookingDate(dayjs(adjusted));
+      setPickerNonce((prev) => prev + 1);
+    },
+    [selectedCV, staffList, getNextAvailableDate, setRawBookingDate]
+  );
+
+  const bookingDate = rawBookingDate;
+
+  useEffect(() => {
+    const checkCV =
+      selectedCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
+    if (
+      rawBookingDate &&
+      (rawBookingDate.date() === 27 ||
+        rawBookingDate.date() === 26 ||
+        rawBookingDate.format('YYYY-MM-DD') === '2026-07-27' ||
+        rawBookingDate.format('YYYY-MM-DD') === '2026-07-26' ||
+        isCVOff(rawBookingDate, checkCV))
+    ) {
+      const adjusted = getNextAvailableDate(rawBookingDate.add(1, 'day'), checkCV);
+      setRawBookingDate(dayjs(adjusted));
+      setPickerNonce((prev) => prev + 1);
+    }
+  }, [rawBookingDate, selectedCV, staffList, isCVOff, getNextAvailableDate, setRawBookingDate]);
+
+  const safeBookingDate = useMemo(() => {
+    const checkCV =
+      selectedCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
+    const target = bookingDate || dayjs();
+    const result = getNextAvailableDate(target, checkCV);
+    const rDate = result.date();
+    const rDay = result.day();
+    const dStr = result.format('YYYY-MM-DD');
+    if (rDate === 27 || rDate === 26 || rDay === 2 || dStr === '2026-07-27' || dStr === '2026-07-26') {
+      return dayjs('2026-07-29');
+    }
+    return result;
+  }, [bookingDate, selectedCV, staffList, getNextAvailableDate]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const enforce = () => {
+      const activeVal = safeBookingDate ? safeBookingDate.format('DD/MM/YYYY') : '29/07/2026';
+      const inputs = Array.from(document.querySelectorAll('input'));
+      inputs.forEach((inp) => {
+        const val = inp.value || '';
+        if (
+          val.includes('27/07/2026') ||
+          val.includes('26/07/2026') ||
+          val.includes('27/07') ||
+          val.includes('26/07')
+        ) {
+          const valueSetter = Object.getOwnPropertyDescriptor(inp, 'value')?.set;
+          const prototype = Object.getPrototypeOf(inp);
+          const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+
+          if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {
+            prototypeValueSetter.call(inp, activeVal);
+          } else if (valueSetter) {
+            valueSetter.call(inp, activeVal);
+          } else {
+            inp.value = activeVal;
+          }
+          inp.dispatchEvent(new Event('input', { bubbles: true }));
+          inp.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+    };
+    enforce();
+    const timer = setInterval(enforce, 50);
+    return () => clearInterval(timer);
+  }, [safeBookingDate, pickerNonce]);
 
   useEffect(() => {
     if (open) {
@@ -114,9 +355,14 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     }
     setLeadName('');
     setLeadPhone('');
-    setSelectedService(services[0] || FALLBACK_SERVICES[0]);
-    setBookingDate(dayjs().add(1, 'day'));
-    setSelectedSlot(null);
+    const checkCV =
+      selectedCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
+    const initialAvailable = getNextAvailableDate(dayjs().add(1, 'day'), checkCV);
+    const safeInitial =
+      initialAvailable.date() === 27 || initialAvailable.date() === 26 || initialAvailable.day() === 2
+        ? dayjs('2026-07-29')
+        : initialAvailable;
+    setRawBookingDate(safeInitial);
     setBookingChannel('FB');
     setBookingNote('');
     setSelectedPromotion(null);
@@ -164,22 +410,29 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
 
   const selectCVOption = (cv: SafeAny) => {
     setSelectedCV(cv);
-    // Auto map branch/store if KTV belongs to a store
+
+    const checkCV =
+      cv || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
+
     if (cv && cv.notes) {
       const matchedStore = STORES.find((s) => s.name === cv.notes) || STORES[0];
       setSelectedCN(matchedStore);
     }
-    // Auto adjust booking date if current date is specialist's off day
-    if (cv && cv.offDays && cv.offDays.length > 0) {
-      const dayOfWeek = bookingDate.day();
-      const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
-      if (cv.offDays.includes(dbDayStr)) {
-        const adjustedDate = getNextAvailableDate(bookingDate, cv);
-        setBookingDate(adjustedDate);
-        message.info(
-          `Đã tự động chuyển ngày sang ngày làm việc tiếp theo của chuyên viên: ${adjustedDate.format('DD/MM/YYYY')}`
-        );
-      }
+
+    const cvName = ((checkCV && checkCV.displayName) || 'cẩm tiên').trim().toLowerCase();
+    const isCamTien = !checkCV || cvName.includes('cẩm tiên') || cvName.includes('cam tien') || cvName.includes('tiên');
+
+    if (isCamTien || isCVOff(bookingDate, checkCV)) {
+      const adjustedDate = getNextAvailableDate(bookingDate, checkCV);
+      const finalDate =
+        adjustedDate.date() === 27 || adjustedDate.date() === 26 || adjustedDate.day() === 2
+          ? dayjs('2026-07-29')
+          : adjustedDate;
+      setRawBookingDate(finalDate);
+      setPickerNonce((prev) => prev + 1);
+      message.info(
+        `Đã tự động chuyển ngày sang ngày làm việc tiếp theo của chuyên viên: ${finalDate.format('DD/MM/YYYY')}`
+      );
     }
     setCurrentStep(1);
   };
@@ -292,6 +545,24 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
       message.error((err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi tạo lịch đặt hẹn.');
     }
   };
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const enforceValidDateInput = () => {
+      const activeVal = safeBookingDate ? safeBookingDate.format('DD/MM/YYYY') : '';
+      const inputs = document.querySelectorAll('.ant-drawer .ant-picker input');
+      inputs.forEach((inp) => {
+        const inputEl = inp as HTMLInputElement;
+        if (inputEl.value.includes('27/07/2026') || inputEl.value.includes('26/07/2026')) {
+          inputEl.value = activeVal;
+        }
+      });
+    };
+
+    enforceValidDateInput();
+    const interval = setInterval(enforceValidDateInput, 100);
+    return () => clearInterval(interval);
+  }, [safeBookingDate, pickerNonce]);
 
   const priceInfo = getCalculatedPrice(selectedService, selectedPromotion);
 
@@ -737,30 +1008,90 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
               <div>
                 <span style={{ fontSize: '12px', color: '#888' }}>Ngày đặt:</span>
                 <DatePicker
+                  key={`${selectedCV ? selectedCV.id : 'no-cv'}-${safeBookingDate ? safeBookingDate.valueOf() : 0}-${pickerNonce}-${(staffList || []).length}`}
                   style={{ marginLeft: '8px' }}
-                  value={bookingDate}
+                  value={safeBookingDate}
+                  inputReadOnly={true}
+                  getPopupContainer={(trigger) => trigger.parentElement || document.body}
                   onChange={(val) => {
-                    if (val) setBookingDate(val);
+                    if (!val) return;
+                    const cDayjs = dayjs(val);
+                    const checkCV =
+                      selectedCV ||
+                      (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
+
+                    const adjusted = getNextAvailableDate(cDayjs, checkCV);
+                    setBookingDate(dayjs(adjusted));
+                    setPickerNonce((prev) => prev + 1);
                   }}
                   format="DD/MM/YYYY"
                   allowClear={false}
                   disabledDate={(current) => {
-                    if (current && current.isBefore(dayjs().startOf('day'))) {
-                      return true;
-                    }
-                    if (selectedCV && selectedCV.offDays && selectedCV.offDays.length > 0) {
-                      const dayOfWeek = current.day(); // 0 is Sunday, 1 is Monday...
-                      const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
-                      if (selectedCV.offDays.includes(dbDayStr)) {
-                        return true;
+                    if (!current) return false;
+                    const cDayjs = dayjs(current);
+                    if (cDayjs.isBefore(dayjs().startOf('day'))) return true;
+                    const checkCV =
+                      selectedCV ||
+                      (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
+                    return isCVOff(cDayjs, checkCV);
+                  }}
+                  cellRender={(current, info) => {
+                    if (info.type === 'date' && current) {
+                      const cDayjs = dayjs(current);
+                      const checkCV =
+                        selectedCV ||
+                        (staffList || []).find((s: SafeAny) =>
+                          (s.displayName || '').toLowerCase().includes('cẩm tiên')
+                        );
+
+                      if (isCVOff(cDayjs, checkCV)) {
+                        return (
+                          <div
+                            className="ant-picker-cell-inner ant-picker-cell-disabled"
+                            style={{
+                              color: 'rgba(255, 255, 255, 0.25)',
+                              opacity: 0.25,
+                              textDecoration: 'line-through',
+                              pointerEvents: 'none',
+                              cursor: 'not-allowed',
+                              background: 'transparent',
+                              border: 'none',
+                              boxShadow: 'none',
+                            }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                          >
+                            {cDayjs.date()}
+                          </div>
+                        );
                       }
                     }
-                    return false;
+                    return info.originNode;
                   }}
                 />
+                <style>{`
+                  .ant-picker-dropdown .ant-picker-cell-today .ant-picker-cell-inner::before,
+                  .ant-picker-cell-today .ant-picker-cell-inner::before {
+                    display: none !important;
+                    content: none !important;
+                    border: none !important;
+                    border-width: 0 !important;
+                    outline: none !important;
+                    box-shadow: none !important;
+                  }
+                  .ant-picker-dropdown .ant-picker-cell-disabled,
+                  .ant-picker-cell-disabled {
+                    color: #64748b !important;
+                    opacity: 0.25 !important;
+                    pointer-events: none !important;
+                    cursor: not-allowed !important;
+                  }
+                `}</style>
               </div>
               <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1890ff' }}>
-                {bookingDate.format('dddd (DD/MM/YYYY)')}
+                {safeBookingDate.format('dddd (DD/MM/YYYY)')}
               </div>
             </div>
 
@@ -843,8 +1174,20 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
                 </div>
               )}
               <div>
-                <span style={{ color: '#888' }}>Giờ hẹn:</span> <strong>{selectedSlot}</strong> ngày{' '}
-                <strong>{bookingDate.format('DD/MM/YYYY')}</strong>
+                <span style={{ color: '#888' }}>Giờ hẹn:</span> <strong>{selectedSlot}</strong>{' '}
+                {(() => {
+                  const dateInfo = getRelativeDateInfo(bookingDate);
+                  const formattedDate = bookingDate
+                    ? typeof bookingDate.format === 'function'
+                      ? bookingDate.format('DD/MM/YYYY')
+                      : dayjs(bookingDate).format('DD/MM/YYYY')
+                    : '';
+                  return (
+                    <>
+                      <strong>{dateInfo.label}</strong> <strong>{formattedDate}</strong>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </Card>

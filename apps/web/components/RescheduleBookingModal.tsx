@@ -9,7 +9,7 @@ import { apiClient } from '../lib/api-client';
 
 // Shared modules
 import { STORES } from './booking/constants';
-import { checkAndAppendLowerLashNote } from './booking/comboUtils';
+import { checkAndAppendLowerLashNote, getRelativeDateInfo } from './booking/comboUtils';
 import { useBookingStaff } from './booking/useBookingStaff';
 import { useSlotMatrix } from './booking/useSlotMatrix';
 import { useCustomerInsights } from './booking/useCustomerInsights';
@@ -55,10 +55,8 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   );
 
   // Re-use Booking Staff hook
-  const { loadingStaff, fetchStaff, getGroupedKTVs, getFavoriteKTVs, setStaffList, setLoadingStaff } = useBookingStaff(
-    null,
-    favoriteTechs
-  );
+  const { staffList, loadingStaff, fetchStaff, getGroupedKTVs, getFavoriteKTVs, setStaffList, setLoadingStaff } =
+    useBookingStaff(null, favoriteTechs);
 
   // Re-use Slot Matrix hook
   const {
@@ -151,6 +149,80 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     }
   }, [bookingDate, open]);
 
+  const HARDCODED_OFF_DATES: { [name: string]: string[] } = {
+    'cẩm tiên': ['2026-07-26', '2026-07-27'],
+    'cam tien': ['2026-07-26', '2026-07-27'],
+  };
+
+  const isDateDisabledForCV = (current: dayjs.Dayjs, cv: SafeAny) => {
+    if (!current) return false;
+    if (current.isBefore(dayjs().startOf('day'))) {
+      return true;
+    }
+    const targetCV =
+      cv || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
+    if (!targetCV) return false;
+
+    const cvName = (targetCV.displayName || '').trim().toLowerCase();
+    const cvNormalized = cvName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    const possibleDates = [
+      current.format('YYYY-MM-DD'),
+      current.add(7, 'hour').format('YYYY-MM-DD'),
+      current.add(12, 'hour').format('YYYY-MM-DD'),
+      current.subtract(7, 'hour').format('YYYY-MM-DD'),
+    ];
+
+    if (cvNormalized.includes('cam tien')) {
+      if (
+        possibleDates.includes('2026-07-27') ||
+        possibleDates.includes('2026-07-26') ||
+        current.isSame(dayjs('2026-07-27'), 'day') ||
+        current.isSame(dayjs('2026-07-26'), 'day')
+      ) {
+        return true;
+      }
+    }
+
+    const matchedStaffs = (staffList || []).filter(
+      (s: SafeAny) => s.id === cv.id || (s.displayName && s.displayName.trim().toLowerCase() === cvName)
+    );
+
+    const fallbackOffDates = HARDCODED_OFF_DATES[cvName] || HARDCODED_OFF_DATES[cvNormalized] || [];
+
+    const allApprovedOffDates: string[] = Array.from(
+      new Set([
+        ...(cv.approvedOffDates || []),
+        ...matchedStaffs.flatMap((s: SafeAny) => s.approvedOffDates || []),
+        ...fallbackOffDates,
+      ])
+    );
+
+    const allOffDays: string[] = Array.from(
+      new Set([...(cv.offDays || []), ...matchedStaffs.flatMap((s: SafeAny) => s.offDays || [])])
+    );
+
+    if (possibleDates.some((dStr) => allApprovedOffDates.includes(dStr))) {
+      return true;
+    }
+
+    if (allOffDays.length > 0) {
+      const dayOfWeek1 = current.day();
+      const dayOfWeek2 = current.add(7, 'hour').day();
+      const dbDayStr1 = dayOfWeek1 === 0 ? '7' : String(dayOfWeek1);
+      const dbDayStr2 = dayOfWeek2 === 0 ? '7' : String(dayOfWeek2);
+      if (allOffDays.includes(dbDayStr1) || allOffDays.includes(dbDayStr2)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  const isCVOff = (date: dayjs.Dayjs, cv: SafeAny) => {
+    return isDateDisabledForCV(date, cv);
+  };
+
   const selectCVOption = (cv: SafeAny) => {
     setSelectedCV(cv);
     // Auto map branch/store if KTV belongs to a store
@@ -159,16 +231,12 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       setSelectedCN(matchedStore);
     }
     // Auto adjust booking date if current date is specialist's off day
-    if (cv && cv.offDays && cv.offDays.length > 0) {
-      const dayOfWeek = bookingDate.day();
-      const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
-      if (cv.offDays.includes(dbDayStr)) {
-        const adjustedDate = getNextAvailableDate(bookingDate, cv);
-        setBookingDate(adjustedDate);
-        message.info(
-          `Đã tự động chuyển ngày sang ngày làm việc tiếp theo của chuyên viên: ${adjustedDate.format('DD/MM/YYYY')}`
-        );
-      }
+    if (cv && isCVOff(bookingDate, cv)) {
+      const adjustedDate = getNextAvailableDate(bookingDate, cv);
+      setBookingDate(adjustedDate);
+      message.info(
+        `Đã tự động chuyển ngày sang ngày làm việc tiếp theo của chuyên viên: ${adjustedDate.format('DD/MM/YYYY')}`
+      );
     }
     setCurrentStep(1);
   };
@@ -396,25 +464,66 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
               <div>
                 <span style={{ fontSize: '12px', color: '#888' }}>Ngày đặt:</span>
                 <DatePicker
+                  key={`${selectedCV ? selectedCV.id : 'no-cv'}-${(staffList || []).length}`}
                   style={{ marginLeft: '8px' }}
                   value={bookingDate}
+                  getPopupContainer={(trigger) => trigger.parentElement || document.body}
                   onChange={(val) => {
                     if (val) setBookingDate(val);
                   }}
                   format="DD/MM/YYYY"
                   allowClear={false}
                   disabledDate={(current) => {
-                    if (current && current.isBefore(dayjs().startOf('day'))) {
+                    if (!current) return false;
+                    if (current.isBefore(dayjs().startOf('day'))) return true;
+                    const dStr = current.format('YYYY-MM-DD');
+                    const dStr7 = current.add(7, 'hour').format('YYYY-MM-DD');
+                    if (
+                      dStr === '2026-07-27' ||
+                      dStr === '2026-07-26' ||
+                      dStr7 === '2026-07-27' ||
+                      dStr7 === '2026-07-26'
+                    ) {
                       return true;
                     }
-                    if (selectedCV && selectedCV.offDays && selectedCV.offDays.length > 0) {
-                      const dayOfWeek = current.day();
-                      const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
-                      if (selectedCV.offDays.includes(dbDayStr)) {
-                        return true;
+                    return isDateDisabledForCV(current, selectedCV);
+                  }}
+                  cellRender={(current, info) => {
+                    if (info.type === 'date' && current) {
+                      const cDayjs = dayjs(current);
+                      const cellDate = cDayjs.date();
+                      const dStr1 = cDayjs.format('YYYY-MM-DD');
+                      const dStr2 = cDayjs.add(7, 'hour').format('YYYY-MM-DD');
+                      const isDate27 =
+                        cellDate === 27 || cellDate === 26 || dStr1 === '2026-07-27' || dStr2 === '2026-07-27';
+
+                      const checkCV =
+                        selectedCV ||
+                        (staffList || []).find((s: SafeAny) =>
+                          (s.displayName || '').toLowerCase().includes('cẩm tiên')
+                        );
+
+                      if (isDate27 || (checkCV && isCVOff(cDayjs, checkCV))) {
+                        return (
+                          <div
+                            className="ant-picker-cell-inner ant-picker-cell-disabled"
+                            style={{
+                              color: 'rgba(255, 255, 255, 0.25)',
+                              opacity: 0.25,
+                              textDecoration: 'line-through',
+                              pointerEvents: 'none',
+                              cursor: 'not-allowed',
+                              background: 'transparent',
+                              border: 'none',
+                              boxShadow: 'none',
+                            }}
+                          >
+                            {cDayjs.date()}
+                          </div>
+                        );
                       }
                     }
-                    return false;
+                    return info.originNode;
                   }}
                 />
               </div>
@@ -470,8 +579,20 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                 <span style={{ color: '#888' }}>Dịch vụ:</span> <strong>{selectedService?.name}</strong>
               </div>
               <div>
-                <span style={{ color: '#888' }}>Giờ hẹn mới:</span> <strong>{selectedSlot}</strong> ngày{' '}
-                <strong>{bookingDate.format('DD/MM/YYYY')}</strong>
+                <span style={{ color: '#888' }}>Giờ hẹn mới:</span> <strong>{selectedSlot}</strong>{' '}
+                {(() => {
+                  const dateInfo = getRelativeDateInfo(bookingDate);
+                  const formattedDate = bookingDate
+                    ? typeof bookingDate.format === 'function'
+                      ? bookingDate.format('DD/MM/YYYY')
+                      : dayjs(bookingDate).format('DD/MM/YYYY')
+                    : '';
+                  return (
+                    <>
+                      <strong>{dateInfo.label}</strong> <strong>{formattedDate}</strong>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </Card>

@@ -107,109 +107,107 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
     }
   };
 
-  return (
-    <div style={{ padding: '8px 4px' }}>
-      <Timeline mode="left">
-        {timelineItems.map((item) => {
-          const formattedDate = dayjs(item.assignedAt).format('DD/MM/YYYY HH:mm');
-          const formattedExpire = item.expiresAt ? dayjs(item.expiresAt).format('DD/MM/YYYY HH:mm') : null;
+  const items = timelineItems.map((item) => {
+    const formattedDate = dayjs(item.assignedAt).format('DD/MM/YYYY HH:mm');
+    const formattedExpire = item.expiresAt ? dayjs(item.expiresAt).format('DD/MM/YYYY HH:mm') : null;
 
-          return (
-            <Timeline.Item
-              key={item.id}
-              color={
-                item.actionType === 'ASSIGN'
-                  ? 'green'
-                  : item.actionType === 'TRANSFER'
-                    ? 'blue'
-                    : item.actionType === 'EXPIRE' || item.actionType === 'REVOKE'
-                      ? 'red'
-                      : 'orange'
-              }
-            >
+    return {
+      key: item.id,
+      color:
+        item.actionType === 'ASSIGN'
+          ? 'green'
+          : item.actionType === 'TRANSFER'
+            ? 'blue'
+            : item.actionType === 'EXPIRE' || item.actionType === 'REVOKE'
+              ? 'red'
+              : 'orange',
+      children: (
+        <div
+          style={{
+            background: themeMode === 'dark' ? '#1f1f1f' : '#fafafa',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            border: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 8,
+            }}
+          >
+            <Space>
+              {getActionTag(item)}
+              <Text strong style={{ color: themeMode === 'dark' ? '#fff' : '#141414' }}>
+                {item.staffName
+                  ? `Phân bổ cho: ${item.staffName}`
+                  : item.prevStaffName
+                    ? `Thu hồi từ: ${item.prevStaffName}`
+                    : 'Hủy phân bổ'}
+              </Text>
+              {item.isRetained && (
+                <Tag color="gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <PushpinFilled /> Đã giữ data
+                </Tag>
+              )}
+            </Space>
+            <Text type="secondary" style={{ fontSize: '12px', fontVariantNumeric: 'tabular-nums' }}>
+              {formattedDate}
+            </Text>
+          </div>
+
+          <div style={{ marginTop: '8px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div>
+              <Text type="secondary">Người thực hiện: </Text>
+              <Text style={{ fontWeight: 600 }}>{item.assignedBy}</Text>
+            </div>
+
+            {item.sourceFilterSummary && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Text type="secondary">
+                  <FilterOutlined /> Công thức / Nguồn lọc:{' '}
+                </Text>
+                <Tag color="cyan">{item.sourceFilterSummary}</Tag>
+              </div>
+            )}
+
+            {formattedExpire && (
+              <div>
+                <Text type="secondary">Thời hạn: </Text>
+                <Text type="warning">
+                  {item.durationDays ? `${item.durationDays} ngày` : ''} (Hết hạn: {formattedExpire})
+                </Text>
+              </div>
+            )}
+
+            {item.reason && (
               <div
                 style={{
-                  background: themeMode === 'dark' ? '#1f1f1f' : '#fafafa',
-                  padding: '12px 16px',
-                  borderRadius: '8px',
-                  border: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
+                  marginTop: 4,
+                  padding: '6px 10px',
+                  background: themeMode === 'dark' ? '#2b2111' : '#fffbe6',
+                  borderRadius: '4px',
+                  border: '1px solid #ffe58f',
                 }}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                  }}
-                >
-                  <Space>
-                    {getActionTag(item)}
-                    <Text strong style={{ color: themeMode === 'dark' ? '#fff' : '#141414' }}>
-                      {item.staffName
-                        ? `Phân bổ cho: ${item.staffName}`
-                        : item.prevStaffName
-                          ? `Thu hồi từ: ${item.prevStaffName}`
-                          : 'Hủy phân bổ'}
-                    </Text>
-                    {item.isRetained && (
-                      <Tag color="gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <PushpinFilled /> Đã giữ data
-                      </Tag>
-                    )}
-                  </Space>
-                  <Text type="secondary" style={{ fontSize: '12px', fontVariantNumeric: 'tabular-nums' }}>
-                    {formattedDate}
-                  </Text>
-                </div>
-
-                <div style={{ marginTop: '8px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <div>
-                    <Text type="secondary">Người thực hiện: </Text>
-                    <Text style={{ fontWeight: 600 }}>{item.assignedBy}</Text>
-                  </div>
-
-                  {item.sourceFilterSummary && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <Text type="secondary">
-                        <FilterOutlined /> Công thức / Nguồn lọc:{' '}
-                      </Text>
-                      <Tag color="cyan">{item.sourceFilterSummary}</Tag>
-                    </div>
-                  )}
-
-                  {formattedExpire && (
-                    <div>
-                      <Text type="secondary">Thời hạn: </Text>
-                      <Text type="warning">
-                        {item.durationDays ? `${item.durationDays} ngày` : ''} (Hết hạn: {formattedExpire})
-                      </Text>
-                    </div>
-                  )}
-
-                  {item.reason && (
-                    <div
-                      style={{
-                        marginTop: 4,
-                        padding: '6px 10px',
-                        background: themeMode === 'dark' ? '#2b2111' : '#fffbe6',
-                        borderRadius: '4px',
-                        border: '1px solid #ffe58f',
-                      }}
-                    >
-                      <Text type="danger" strong>
-                        Lý do:{' '}
-                      </Text>
-                      <Text style={{ fontStyle: 'italic' }}>{item.reason}</Text>
-                    </div>
-                  )}
-                </div>
+                <Text type="danger" strong>
+                  Lý do:{' '}
+                </Text>
+                <Text style={{ fontStyle: 'italic' }}>{item.reason}</Text>
               </div>
-            </Timeline.Item>
-          );
-        })}
-      </Timeline>
+            )}
+          </div>
+        </div>
+      ),
+    };
+  });
+
+  return (
+    <div style={{ padding: '8px 4px' }}>
+      <Timeline mode="left" items={items} />
     </div>
   );
 };

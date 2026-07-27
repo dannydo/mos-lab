@@ -77,6 +77,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             colorTextDescription: isDark ? '#64748b' : '#94a3b8',
           },
           components: {
+            DatePicker: {
+              colorBorder: isDark ? '#1f2937' : '#e5e7eb',
+            },
             Card: {
               paddingLG: 16,
               headerHeight: 48,
