@@ -337,7 +337,7 @@ export async function catalogRoutes(fastify: FastifyInstance) {
     }
   });
 
-  async function checkServiceLiveCombos(fastify: any, serviceId: number) {
+  async function checkServiceLiveCombos(fastify: FastifyInstance, serviceId: number) {
     const sql = `
     SELECT 
       usb.id as balanceId,
@@ -367,7 +367,7 @@ export async function catalogRoutes(fastify: FastifyInstance) {
       )
   `;
 
-    const rows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(sql);
+    const rows = (await fastify.prisma.legacy.$queryRawUnsafe(sql)) as Record<string, unknown>[];
 
     const seenBalances = new Set<number>();
     const affectedCombosMap = new Map<
@@ -385,7 +385,7 @@ export async function catalogRoutes(fastify: FastifyInstance) {
     let totalNormalBalance = 0;
     let totalRetainBalance = 0;
 
-    (rows || []).forEach((r) => {
+    (rows || []).forEach((r: Record<string, unknown>) => {
       const balanceId = Number(r.balanceId);
       if (seenBalances.has(balanceId)) return;
       seenBalances.add(balanceId);
@@ -393,7 +393,7 @@ export async function catalogRoutes(fastify: FastifyInstance) {
       const normalCount = Math.max(0, Number(r.normalCount || 0));
       const retainCount = Math.max(0, Number(r.retainCount || 0));
       const packagePrice = Math.round(Number(r.packagePrice || 0));
-      const comboName = r.packageKey || r.serviceName || 'Gói Combo';
+      const comboName = String(r.packageKey || r.serviceName || 'Gói Combo');
 
       totalOwners++;
       totalNormalBalance += normalCount;
