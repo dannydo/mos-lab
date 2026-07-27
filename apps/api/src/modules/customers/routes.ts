@@ -5411,20 +5411,34 @@ export async function customerRoutes(fastify: FastifyInstance) {
           up.avatar as staffAvatar
         FROM user_note un
         LEFT JOIN user_profile up ON un.created_staff_id = up.user_id
-        WHERE un.user_id = ? AND un.is_disabled = 0
+        WHERE un.user_id = ? AND (un.is_disabled = 0 OR un.note_field_key = 'order_note')
         ORDER BY un.date_created DESC
       `;
       const notesRaw = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(notesSql, customerId);
-      const formattedNotes = notesRaw.map((n) => ({
-        id: Number(n.id),
-        note: n.note || '',
-        noteFieldKey: n.noteFieldKey || 'note',
-        isSticky: Boolean(n.isSticky),
-        isIssue: Boolean(n.isIssue),
-        dateCreated: n.dateCreated ? new Date(n.dateCreated).toISOString() : null,
-        staffName: n.staffName,
-        staffAvatar: n.staffAvatar || null,
-      }));
+      const formattedNotes = notesRaw.map((n) => {
+        let safeIsoDate: string | null = null;
+        if (n.dateCreated) {
+          if (n.dateCreated instanceof Date) {
+            safeIsoDate = isNaN(n.dateCreated.getTime()) ? null : n.dateCreated.toISOString();
+          } else if (typeof n.dateCreated === 'string') {
+            const parsed = new Date(n.dateCreated.replace(' ', 'T'));
+            safeIsoDate = isNaN(parsed.getTime()) ? null : parsed.toISOString();
+          } else {
+            const parsed = new Date(n.dateCreated);
+            safeIsoDate = isNaN(parsed.getTime()) ? null : parsed.toISOString();
+          }
+        }
+        return {
+          id: Number(n.id),
+          note: n.note || '',
+          noteFieldKey: n.noteFieldKey || 'note',
+          isSticky: Boolean(n.isSticky),
+          isIssue: Boolean(n.isIssue),
+          dateCreated: safeIsoDate,
+          staffName: n.staffName,
+          staffAvatar: n.staffAvatar || null,
+        };
+      });
 
       // 8. Fetch CRM Call Logs
       const logs = await fastify.prisma.crm.crmCallLog.findMany({

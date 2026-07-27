@@ -27,14 +27,70 @@ const getDaysDiffText = (bookingDate: string | Date) => {
   return `${Math.abs(diffDays)} ngày nữa`;
 };
 
-export const BookingsTab: React.FC<BookingsTabProps> = ({
+const safeParseDate = (val: SafeAny): Date | null => {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  if (typeof val === 'string') {
+    const cleaned = val.replace(' ', 'T');
+    const d = new Date(cleaned);
+    if (!isNaN(d.getTime())) return d;
+  }
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+export const BookingsTab: React.FC<BookingsTabProps & { notes?: SafeAny[] }> = ({
   bookings,
+  notes,
   themeMode,
   customer,
   handleCancelBooking,
   setSelectedBookingForReschedule,
   setRescheduleModalVisible,
 }) => {
+  // Pre-map notes (CC, CS, Pinned) to bookings (by orderId or closest date)
+  const notesByBookingMap = new Map<string, SafeAny[]>();
+
+  if (notes && notes.length > 0 && bookings.length > 0) {
+    notes.forEach((n: SafeAny) => {
+      let targetBookingId: string | null = n.orderId ? String(n.orderId) : null;
+
+      if (!targetBookingId) {
+        const nDate = safeParseDate(n.dateCreated);
+        if (nDate) {
+          const nTime = nDate.getTime();
+          let closestB: SafeAny = null;
+          let minDiff = Infinity;
+
+          bookings.forEach((b: SafeAny) => {
+            const bDate = safeParseDate(b.bookingDate);
+            if (!bDate) return;
+            const diff = Math.abs(bDate.getTime() - nTime);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestB = b;
+            }
+          });
+
+          if (closestB) {
+            targetBookingId = String(closestB.id);
+          }
+        }
+      }
+
+      // Fallback: attach to first/latest booking if no date matched
+      if (!targetBookingId && bookings.length > 0) {
+        targetBookingId = String(bookings[0].id);
+      }
+
+      if (targetBookingId) {
+        const list = notesByBookingMap.get(targetBookingId) || [];
+        list.push(n);
+        notesByBookingMap.set(targetBookingId, list);
+      }
+    });
+  }
+
   return (
     <div
       className="custom-scrollbar"
@@ -50,12 +106,17 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
             const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
 
             let formattedDate = 'N/A';
-            if (b.bookingDate) {
-              const d = new Date(b.bookingDate);
+            const bParsedDate = safeParseDate(b.bookingDate);
+            if (bParsedDate) {
               const dayPrefixes = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-              const dayPrefix = dayPrefixes[d.getDay()];
-              formattedDate = `${dayPrefix}, ${d.toLocaleString('vi-VN')}`;
+              const dayPrefix = dayPrefixes[bParsedDate.getDay()];
+              formattedDate = `${dayPrefix}, ${bParsedDate.toLocaleString('vi-VN')}`;
             }
+
+            const attachedNotes = notesByBookingMap.get(String(b.id)) || [];
+            const bookerAuthorName = b.bookerStaffName || b.bookerName || 'Đặt trực tuyến';
+            const hasBookingNote = Boolean(b.bookingNote && b.bookingNote.trim() !== '');
+            const hasAttachedNotes = attachedNotes.length > 0;
 
             return (
               <div
@@ -147,21 +208,152 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                   </div>
                 </div>
 
-                {b.bookingNote && b.bookingNote.trim() !== '' && (
+                {(hasBookingNote || hasAttachedNotes) && (
                   <div
                     style={{
-                      background: themeMode === 'dark' ? '#0f172a' : '#fff',
-                      border: `1px solid ${themeMode === 'dark' ? '#1e293b' : '#f0f0f0'}`,
+                      background: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
+                      border: `1px solid ${themeMode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
                       borderRadius: '6px',
                       padding: '8px 12px',
                       marginTop: '8px',
-                      fontStyle: 'italic',
-                      fontSize: '13px',
-                      color: themeMode === 'dark' ? '#cbd5e1' : '#4b5563',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
                       borderLeft: `3px solid ${themeMode === 'dark' ? '#D4A84B' : '#d4b106'}`,
                     }}
                   >
-                    Ghi chú đặt lịch: {b.bookingNote}
+                    {hasBookingNote && (
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          color: themeMode === 'dark' ? '#cbd5e1' : '#4b5563',
+                          display: 'flex',
+                          gap: '6px',
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 'bold',
+                            padding: '1px 5px',
+                            borderRadius: '3px',
+                            background: themeMode === 'dark' ? 'rgba(99, 102, 241, 0.2)' : '#e0e7ff',
+                            color: themeMode === 'dark' ? '#818cf8' : '#4338ca',
+                            flexShrink: 0,
+                            marginTop: '2px',
+                          }}
+                        >
+                          CC
+                        </span>
+                        <div style={{ flex: 1 }}>
+                          <strong style={{ color: themeMode === 'dark' ? '#f1f5f9' : '#1e293b' }}>
+                            {b.ccInName || b.ccOutName || b.bookerStaffName || 'CC'}:
+                          </strong>
+                          <div
+                            style={{
+                              marginTop: '2px',
+                              fontStyle: 'italic',
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                              lineHeight: '1.5',
+                              color: themeMode === 'dark' ? '#e2e8f0' : '#334155',
+                            }}
+                          >
+                            {b.bookingNote}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {attachedNotes
+                      .filter((n: SafeAny) => !hasBookingNote || (n.note || '').trim() !== (b.bookingNote || '').trim())
+                      .map((n: SafeAny) => {
+                        const isCcNote = n.noteFieldKey === 'order_note';
+                        const isPinned = Boolean(n.isSticky);
+                        const badgeLabel = isCcNote ? 'CC' : isPinned ? '📌 Note' : 'CS';
+                        const staffAuthor = n.staffName || (isCcNote ? 'CC' : 'Nhân viên');
+                        const parsedNDate = safeParseDate(n.dateCreated);
+
+                        return (
+                          <div
+                            key={n.id}
+                            style={{
+                              fontSize: '13px',
+                              color: themeMode === 'dark' ? '#cbd5e1' : '#4b5563',
+                              display: 'flex',
+                              gap: '6px',
+                              alignItems: 'flex-start',
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                padding: '1px 5px',
+                                borderRadius: '3px',
+                                background: isPinned
+                                  ? themeMode === 'dark'
+                                    ? 'rgba(239, 68, 68, 0.2)'
+                                    : '#fff1f0'
+                                  : isCcNote
+                                    ? themeMode === 'dark'
+                                      ? 'rgba(99, 102, 241, 0.2)'
+                                      : '#e0e7ff'
+                                    : themeMode === 'dark'
+                                      ? 'rgba(16, 185, 129, 0.2)'
+                                      : '#d1fae5',
+                                color: isPinned
+                                  ? themeMode === 'dark'
+                                    ? '#f87171'
+                                    : '#cf1322'
+                                  : isCcNote
+                                    ? themeMode === 'dark'
+                                      ? '#818cf8'
+                                      : '#4338ca'
+                                    : themeMode === 'dark'
+                                      ? '#34d399'
+                                      : '#047857',
+                                flexShrink: 0,
+                                marginTop: '2px',
+                              }}
+                            >
+                              {badgeLabel}
+                            </span>
+                            <div style={{ flex: 1 }}>
+                              <strong style={{ color: themeMode === 'dark' ? '#f1f5f9' : '#1e293b' }}>
+                                {staffAuthor}
+                                {parsedNDate && (
+                                  <span
+                                    className="tabular-nums"
+                                    style={{
+                                      fontSize: '11px',
+                                      fontWeight: 'normal',
+                                      opacity: 0.7,
+                                      marginLeft: '4px',
+                                    }}
+                                  >
+                                    ({parsedNDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })})
+                                  </span>
+                                )}
+                                :
+                              </strong>
+                              <div
+                                style={{
+                                  marginTop: '2px',
+                                  fontStyle: 'italic',
+                                  whiteSpace: 'pre-wrap',
+                                  wordBreak: 'break-word',
+                                  lineHeight: '1.5',
+                                  color: themeMode === 'dark' ? '#e2e8f0' : '#334155',
+                                }}
+                              >
+                                {n.note}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 )}
 

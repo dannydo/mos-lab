@@ -11,7 +11,16 @@ export const useCustomerList = (
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState<number>(20);
+  const [pageSize, setPageSize] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mos_customers_pageSize');
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+    }
+    return 20;
+  });
 
   const [stats, setStats] = useState({
     total: 0,
@@ -68,14 +77,6 @@ export const useCustomerList = (
     },
     [filterParams, randomSelectedIds]
   );
-
-  const loadingRef = useRef(loading);
-  const hasMoreRef = useRef(false);
-
-  useEffect(() => {
-    loadingRef.current = loading;
-    hasMoreRef.current = customers.length < total && total > 0;
-  }, [loading, customers.length, total]);
 
   const fetchIdRef = useRef(0);
 
@@ -137,15 +138,7 @@ export const useCustomerList = (
         // Ignore stale response if a newer fetch was initiated
         if (currentFetchId !== fetchIdRef.current) return;
 
-        if (page === 1) {
-          setCustomers(data.data);
-        } else {
-          setCustomers((prev) => {
-            const existingIds = new Set(prev.map((item) => item.id));
-            const newItems = data.data.filter((item: SafeAny) => !existingIds.has(item.id));
-            return [...prev, ...newItems];
-          });
-        }
+        setCustomers(data.data);
 
         if (idsToUse && idsToUse.length > 0) {
           setTotal(idsToUse.length);
@@ -175,7 +168,6 @@ export const useCustomerList = (
     prevFilterRef.current = filterParams;
 
     if (filtersChanged) {
-      setCustomers([]);
       if (currentPage !== 1) {
         setCurrentPage(1);
         return;
@@ -186,27 +178,7 @@ export const useCustomerList = (
     fetchStats();
   }, [currentPage, pageSize, filterParams, fetchCustomers, fetchStats]);
 
-  const observerRef = useRef<IntersectionObserver | null>(null);
-
-  // Infinite Scroll / Lazy Loading Observer using callback ref & rootMargin
-  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-      observerRef.current = null;
-    }
-
-    if (node) {
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && !loadingRef.current && hasMoreRef.current) {
-            setCurrentPage((prev) => prev + 1);
-          }
-        },
-        { rootMargin: '300px', threshold: 0 }
-      );
-      observerRef.current.observe(node);
-    }
-  }, []);
+  const sentinelRef = useCallback(() => {}, []);
 
   const refreshListAndStats = useCallback(() => {
     fetchCustomers(1, pageSize);

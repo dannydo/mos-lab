@@ -12,6 +12,7 @@ import {
   FormOutlined,
   PushpinFilled,
   PushpinOutlined,
+  ExportOutlined,
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../context/ThemeContext';
@@ -241,6 +242,32 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     return bookingIdsWithNotes.size + (hasGeneralNotes ? 1 : 0);
   }, [bookings, notes, calls]);
 
+  const activePhone = useMemo(() => {
+    if (!customer) return '';
+    if (customer.phones && customer.phones.length > 0) {
+      const enabled = customer.phones.find((p: SafeAny) => !p.is_disabled);
+      if (enabled && enabled.phone_number) return enabled.phone_number;
+      if (customer.phones[0] && customer.phones[0].phone_number) return customer.phones[0].phone_number;
+    }
+    return customer.phone || '';
+  }, [customer]);
+
+  const getLegacyDomain = () => {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.')) {
+        return 'http://localhost';
+      }
+    }
+    return 'https://wingslashes.com';
+  };
+
+  const domain = getLegacyDomain();
+  const phoneToUse = activePhone || customer?.phone || '';
+  const legacyProfileUrl = phoneToUse
+    ? `${domain}/admin/customer-support/user/customer?phone=${encodeURIComponent(phoneToUse)}`
+    : `${domain}/admin/customer-support/user/customer?id=${customer?.id || ''}`;
+
   return (
     <Drawer
       title={
@@ -329,7 +356,28 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                       </span>
                     )}
                   </div>
-                  <span>Mã KH: {customer.id}</span>
+                  <Tooltip title="Mở hồ sơ trên hệ thống Legacy">
+                    <a
+                      href={legacyProfileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: themeMode === 'dark' ? '#60a5fa' : '#2563eb',
+                        fontSize: '12px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '6px',
+                        background: themeMode === 'dark' ? 'rgba(37, 99, 235, 0.15)' : '#eff6ff',
+                        border: `1px solid ${themeMode === 'dark' ? 'rgba(96, 165, 250, 0.3)' : '#bfdbfe'}`,
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <ExportOutlined style={{ fontSize: '12px' }} />
+                    </a>
+                  </Tooltip>
                   {customer.email && <span>Email: {customer.email}</span>}
                 </div>
               </div>
@@ -517,6 +565,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
 
                 <ComboBalancesCard
                   comboBalances={comboBalances}
+                  customerName={customer?.name || ''}
                   themeMode={themeMode}
                   getComboDisplayInfo={getComboDisplayInfo}
                   onOpenComboModal={() => setIsComboModalOpen(true)}
@@ -631,6 +680,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                       children: (
                         <BookingsTab
                           bookings={bookings}
+                          notes={notes}
                           themeMode={themeMode}
                           customer={customer}
                           handleCancelBooking={handleCancelBooking}

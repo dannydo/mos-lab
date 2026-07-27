@@ -18,16 +18,32 @@ interface CustomerTableProps {
   customers: Customer[];
   loading: boolean;
   total: number;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  pageSize: number;
+  setPageSize: (size: number) => void;
   selectedRowKeys: React.Key[];
   setSelectedRowKeys: (keys: React.Key[]) => void;
   currentUser: SafeAny;
   openDetailModal: (customer: Customer) => void;
-  sentinelRef: SafeAny;
+  sentinelRef?: SafeAny;
 }
 
 const CustomerTable = React.memo(
   React.forwardRef<{ openConfig: () => void }, CustomerTableProps>(function CustomerTable(
-    { customers, loading, total, selectedRowKeys, setSelectedRowKeys, currentUser, openDetailModal, sentinelRef },
+    {
+      customers,
+      loading,
+      total,
+      currentPage,
+      setCurrentPage,
+      pageSize,
+      setPageSize,
+      selectedRowKeys,
+      setSelectedRowKeys,
+      currentUser,
+      openDetailModal,
+    },
     ref
   ) {
     const { themeMode } = useTheme();
@@ -337,12 +353,28 @@ const CustomerTable = React.memo(
                 }
               : undefined
           }
-          pagination={false}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: total,
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              if (size !== pageSize) {
+                setPageSize(size);
+                localStorage.setItem('mos_customers_pageSize', size.toString());
+              }
+              window.scrollTo({ top: 200, behavior: 'smooth' });
+            },
+            showTotal: (totalCount) => `Tổng số: ${totalCount} khách hàng`,
+          }}
           scroll={{ x: 'max-content', y: 650 }}
           style={{
             background: token.colorBgContainer,
             border: `1px solid ${token.colorBorderSecondary}`,
             borderRadius: '8px',
+            marginBottom: '16px',
           }}
           components={{
             header: {
@@ -351,31 +383,6 @@ const CustomerTable = React.memo(
           }}
           className="antd-custom-table"
         />
-
-        <div
-          ref={sentinelRef as SafeAny}
-          style={{
-            height: '40px',
-            margin: '16px 0',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          {loading ? (
-            <Space size="small">
-              <Spin size="small" />
-              <Typography.Text type="secondary" style={{ fontSize: '13px' }}>
-                Đang tự động tải thêm dữ liệu...
-              </Typography.Text>
-            </Space>
-          ) : customers.length >= total && total > 0 ? (
-            <Typography.Text type="secondary" style={{ fontSize: '13px', fontStyle: 'italic' }}>
-              Đã tải toàn bộ {total.toLocaleString('vi-VN')} khách hàng
-            </Typography.Text>
-          ) : null}
-        </div>
 
         <TableConfigDrawer
           visible={configVisible}

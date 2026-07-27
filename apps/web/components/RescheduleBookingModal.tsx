@@ -491,29 +491,24 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                   cellRender={(current, info) => {
                     if (info.type === 'date' && current) {
                       const cDayjs = dayjs(current);
-                      const cellDate = cDayjs.date();
-                      const dStr1 = cDayjs.format('YYYY-MM-DD');
-                      const dStr2 = cDayjs.add(7, 'hour').format('YYYY-MM-DD');
-                      const isDate27 =
-                        cellDate === 27 || cellDate === 26 || dStr1 === '2026-07-27' || dStr2 === '2026-07-27';
-
                       const checkCV =
                         selectedCV ||
                         (staffList || []).find((s: SafeAny) =>
                           (s.displayName || '').toLowerCase().includes('cẩm tiên')
                         );
 
-                      if (isDate27 || (checkCV && isCVOff(cDayjs, checkCV))) {
+                      if (checkCV && isCVOff(cDayjs, checkCV)) {
                         return (
                           <div
                             className="ant-picker-cell-inner ant-picker-cell-disabled"
                             style={{
-                              color: 'rgba(255, 255, 255, 0.25)',
-                              opacity: 0.25,
+                              color: themeMode === 'dark' ? '#cbd5e1' : '#334155',
+                              opacity: 1,
                               textDecoration: 'line-through',
                               pointerEvents: 'none',
                               cursor: 'not-allowed',
-                              background: 'transparent',
+                              background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                              borderRadius: '4px',
                               border: 'none',
                               boxShadow: 'none',
                             }}

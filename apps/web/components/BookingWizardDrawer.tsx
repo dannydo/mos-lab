@@ -71,32 +71,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
         styleEl = document.createElement('style');
         styleEl.id = styleId;
         styleEl.innerHTML = `
-          div.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before,
-          .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before,
-          .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before,
-          .ant-picker-cell-today .ant-picker-cell-inner::before,
-          td[title*="2026-07-27"] .ant-picker-cell-inner::before,
-          td[title*="2026-07-26"] .ant-picker-cell-inner::before {
+          .ant-picker-cell-today .ant-picker-cell-inner::before {
             display: none !important;
-            border: none !important;
-            border-width: 0 !important;
             content: none !important;
-            box-shadow: none !important;
-            outline: none !important;
-          }
-          div.ant-picker-dropdown td[title*="2026-07-27"],
-          div.ant-picker-dropdown td[title*="2026-07-27"] *,
-          div.ant-picker-dropdown td[title*="2026-07-27"] .ant-picker-cell-inner,
-          div.ant-picker-dropdown td.ant-picker-cell-today[title*="2026-07-27"] .ant-picker-cell-inner,
-          div.ant-picker-dropdown td.ant-picker-cell-today .ant-picker-cell-inner,
-          div.ant-picker-dropdown td[title*="2026-07-26"],
-          div.ant-picker-dropdown td[title*="2026-07-26"] .ant-picker-cell-inner {
-            color: rgba(255, 255, 255, 0.25) !important;
-            opacity: 0.25 !important;
-            text-decoration: line-through !important;
-            pointer-events: none !important;
-            cursor: not-allowed !important;
-            background: transparent !important;
           }
         `;
         document.head.appendChild(styleEl);
@@ -1049,12 +1026,13 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
                           <div
                             className="ant-picker-cell-inner ant-picker-cell-disabled"
                             style={{
-                              color: 'rgba(255, 255, 255, 0.25)',
-                              opacity: 0.25,
+                              color: themeMode === 'dark' ? '#cbd5e1' : '#334155',
+                              opacity: 1,
                               textDecoration: 'line-through',
                               pointerEvents: 'none',
                               cursor: 'not-allowed',
-                              background: 'transparent',
+                              background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                              borderRadius: '4px',
                               border: 'none',
                               boxShadow: 'none',
                             }}

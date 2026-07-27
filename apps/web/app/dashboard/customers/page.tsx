@@ -486,6 +486,10 @@ function CustomersPageContent() {
         customers={data.customers}
         loading={data.loading}
         total={data.total}
+        currentPage={data.currentPage}
+        setCurrentPage={data.setCurrentPage}
+        pageSize={data.pageSize}
+        setPageSize={data.setPageSize}
         selectedRowKeys={data.selectedRowKeys}
         setSelectedRowKeys={data.setSelectedRowKeys}
         currentUser={data.currentUser}
