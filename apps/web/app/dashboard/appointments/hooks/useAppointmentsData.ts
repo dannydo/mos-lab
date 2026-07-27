@@ -32,9 +32,7 @@ export interface UseAppointmentsDataOptions {
 
 export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
   const optionsRef = useRef(options);
-  useEffect(() => {
-    optionsRef.current = options;
-  }, [options]);
+  optionsRef.current = options;
 
   const [currentUser, setCurrentUser] = useState<Staff | null>(null);
   const [columnConfig, setColumnConfig] =
@@ -43,6 +41,10 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [referenceDate, setReferenceDate] = useState<dayjs.Dayjs>(dayjs());
   const [customRange, setCustomRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+
+  const refDateStr = referenceDate.format('YYYY-MM-DD');
+  const customStartStr = customRange?.[0]?.format('YYYY-MM-DD') || '';
+  const customEndStr = customRange?.[1]?.format('YYYY-MM-DD') || '';
 
   const dateRange = useMemo<[dayjs.Dayjs, dayjs.Dayjs]>(() => {
     if (customRange) {
@@ -62,7 +64,7 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
       end = referenceDate.endOf('day');
     }
     return [start, end];
-  }, [viewMode, referenceDate, customRange]);
+  }, [viewMode, refDateStr, customStartStr, customEndStr]);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'missed' | 'completed'>('pending');
@@ -150,13 +152,13 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
   const [hasMore, setHasMore] = useState(true);
   const isFetchingRef = useRef(false);
 
-  const dateStartVal = dateRange[0]?.valueOf();
-  const dateEndVal = dateRange[1]?.valueOf();
+  const dateFromStr = dateRange[0]?.startOf('day').format('YYYY-MM-DD 00:00:00') || '';
+  const dateToStr = dateRange[1]?.endOf('day').format('YYYY-MM-DD 23:59:59') || '';
 
   // Fetch appointments data
   const fetchAppointments = useCallback(
     async (targetPage?: number) => {
-      if (!dateRange[0] || !dateRange[1] || isFetchingRef.current) return;
+      if (!dateFromStr || !dateToStr) return;
 
       const pageToFetch = targetPage !== undefined ? targetPage : currentPage;
 
@@ -164,8 +166,8 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
       setLoading(true);
       try {
         const params: SafeAny = {
-          dateFrom: dateRange[0].startOf('day').format('YYYY-MM-DD 00:00:00'),
-          dateTo: dateRange[1].endOf('day').format('YYYY-MM-DD 23:59:59'),
+          dateFrom: dateFromStr,
+          dateTo: dateToStr,
           type: activeTab,
           page: pageToFetch,
           limit: pageSize,
@@ -208,17 +210,7 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
         isFetchingRef.current = false;
       }
     },
-    [
-      dateRange,
-      dateStartVal,
-      dateEndVal,
-      activeTab,
-      selectedStaffId,
-      missedStatusFilter,
-      currentUser,
-      currentPage,
-      pageSize,
-    ]
+    [dateFromStr, dateToStr, activeTab, selectedStaffId, missedStatusFilter, currentUser, currentPage, pageSize]
   );
 
   const handleCancelBooking = async (orderId: number) => {
@@ -237,26 +229,27 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
 
   // Handle filter changes (Reset to Page 1 and fetch)
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || !dateFromStr || !dateToStr) return;
     isFetchingRef.current = false;
     setCurrentPage(1);
     setHasMore(true);
     fetchAppointments(1);
-  }, [viewMode, referenceDate, dateRange, activeTab, selectedStaffId, missedStatusFilter, currentUser]);
+  }, [dateFromStr, dateToStr, activeTab, selectedStaffId, missedStatusFilter, currentUser]);
 
   // Handle page changes for infinite scroll (Page > 1)
   useEffect(() => {
-    if (!currentUser || currentPage === 1) return;
+    if (!currentUser || currentPage === 1 || isFetchingRef.current) return;
     fetchAppointments(currentPage);
-  }, [currentPage, currentUser]);
+  }, [currentPage, currentUser, fetchAppointments]);
 
   // Intersection Observer for Infinite Scroll (Lazy Loading)
   useEffect(() => {
-    if (loading || !hasMore || appointments.length === 0) return;
+    if (loading || !hasMore || appointments.length === 0 || isFetchingRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isFetchingRef.current && hasMore) {
+        if (entries[0].isIntersecting && !isFetchingRef.current && hasMore && !loading) {
+          isFetchingRef.current = true;
           setCurrentPage((prev) => prev + 1);
         }
       },

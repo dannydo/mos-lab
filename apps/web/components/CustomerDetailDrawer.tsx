@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Drawer, Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message } from 'antd';
 import {
   PhoneOutlined,
@@ -173,14 +173,19 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const [activeTabKey, setActiveTabKey] = useState<string>('bookings');
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
 
+  const hookTabChangeRef = useRef(hookTabChange);
+  useEffect(() => {
+    hookTabChangeRef.current = hookTabChange;
+  }, [hookTabChange]);
+
   // Sync tab with localStorage on mount & open changes
   useEffect(() => {
     if (open && typeof window !== 'undefined') {
       const saved = localStorage.getItem('customer_detail_active_tab') || 'bookings';
       setActiveTabKey(saved);
-      hookTabChange(saved);
+      hookTabChangeRef.current?.(saved);
     }
-  }, [open, hookTabChange]);
+  }, [open]);
 
   const handleTabChange = (key: string) => {
     setActiveTabKey(key);

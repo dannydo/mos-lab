@@ -120,26 +120,27 @@ export default function AppointmentsPage() {
   const [missedSummary, setMissedSummary] = React.useState<MissedSummaryStats | null>(null);
   const [missedSummaryLoading, setMissedSummaryLoading] = React.useState(false);
 
+  const dateFromStr = dateRange?.[0]?.format('YYYY-MM-DD') || '';
+  const dateToStr = dateRange?.[1]?.format('YYYY-MM-DD') || '';
+
   const fetchMissedSummary = React.useCallback(async () => {
-    if (!dateRange || !dateRange[0] || !dateRange[1]) return;
+    if (!dateFromStr || !dateToStr) return;
     setMissedSummaryLoading(true);
     try {
-      const dateFrom = dateRange[0].format('YYYY-MM-DD');
-      const dateTo = dateRange[1].format('YYYY-MM-DD');
-      const res = await apiClient.customers.getMissedSummary({ dateFrom, dateTo });
+      const res = await apiClient.customers.getMissedSummary({ dateFrom: dateFromStr, dateTo: dateToStr });
       setMissedSummary(res);
     } catch (err) {
       // ignore
     } finally {
       setMissedSummaryLoading(false);
     }
-  }, [dateRange]);
+  }, [dateFromStr, dateToStr]);
 
   React.useEffect(() => {
-    if (activeTab === 'missed') {
+    if (activeTab === 'missed' && dateFromStr && dateToStr) {
       fetchMissedSummary();
     }
-  }, [activeTab, dateRange, fetchMissedSummary]);
+  }, [activeTab, dateFromStr, dateToStr, fetchMissedSummary]);
 
   const pendingColumns = React.useMemo(
     () =>
@@ -1061,21 +1062,23 @@ export default function AppointmentsPage() {
       </Card>
 
       {/* CUSTOMER DETAIL DRAWER */}
-      <CustomerDetailDrawer
-        open={detailModalVisible}
-        customerId={selectedCustomer?.id || null}
-        onClose={() => setDetailModalVisible(false)}
-        onBookAppointment={(cust) => {
-          setDetailModalVisible(false);
-          setBookingInitialCustomer({
-            id: cust.id,
-            name: cust.name,
-            phone: cust.phone,
-            bucket: cust.bucket,
-          });
-          setBookingWizardVisible(true);
-        }}
-      />
+      {detailModalVisible && (
+        <CustomerDetailDrawer
+          open={detailModalVisible}
+          customerId={selectedCustomer?.id || null}
+          onClose={() => setDetailModalVisible(false)}
+          onBookAppointment={(cust) => {
+            setDetailModalVisible(false);
+            setBookingInitialCustomer({
+              id: cust.id,
+              name: cust.name,
+              phone: cust.phone,
+              bucket: cust.bucket,
+            });
+            setBookingWizardVisible(true);
+          }}
+        />
+      )}
 
       {/* BOOKING WIZARD DRAWER */}
       <BookingWizardDrawer

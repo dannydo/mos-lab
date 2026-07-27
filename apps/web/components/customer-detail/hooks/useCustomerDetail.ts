@@ -17,9 +17,7 @@ interface UseCustomerDetailProps {
 export function useCustomerDetail(options: UseCustomerDetailProps) {
   const { open, customerId, onClose, onDeleteSuccess, editForm } = options;
   const optionsRef = useRef(options);
-  useEffect(() => {
-    optionsRef.current = options;
-  }, [options]);
+  optionsRef.current = options;
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<SafeAny>(null);
   const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
@@ -138,6 +136,10 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
   const [tabDataMap, setTabDataMap] = useState<
     Record<string, { items: SafeAny[]; totalCount: number; hasMore: boolean; page: number; loading: boolean }>
   >({});
+  const tabDataMapRef = useRef(tabDataMap);
+  useEffect(() => {
+    tabDataMapRef.current = tabDataMap;
+  }, [tabDataMap]);
 
   const fetchDetails = useCallback(async () => {
     if (!customerId) return;
@@ -166,8 +168,9 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     async (tabKey: string, pageNum = 1, append = false) => {
       if (!customerId) return;
 
+      const currentTabData = tabDataMapRef.current[tabKey];
       // If already cached and not loading more page 1, skip
-      if (!append && pageNum === 1 && tabDataMap[tabKey]?.items && tabDataMap[tabKey].items.length > 0) {
+      if (!append && pageNum === 1 && currentTabData?.items && currentTabData.items.length > 0) {
         return;
       }
 
@@ -218,7 +221,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
         }));
       }
     },
-    [customerId, tabDataMap]
+    [customerId]
   );
 
   const handleTabChange = useCallback(
@@ -229,18 +232,27 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     [fetchTabData]
   );
 
+  const prevOpenRef = useRef<boolean>(false);
+  const prevCustomerIdRef = useRef<number | null>(null);
+
   useEffect(() => {
-    if (open && customerId) {
+    const isJustOpened = open && !prevOpenRef.current;
+    const isCustomerChanged = open && customerId !== prevCustomerIdRef.current;
+
+    prevOpenRef.current = open;
+    prevCustomerIdRef.current = customerId;
+
+    if (open && customerId && (isJustOpened || isCustomerChanged)) {
       setTabDataMap({});
       setActiveTab('bookings');
       fetchDetails();
       fetchTabData('bookings', 1, false);
-    } else {
-      setData(null);
-      setForbiddenError(null);
-      setTabDataMap({});
+    } else if (!open) {
+      setData((prev: SafeAny) => (prev === null ? prev : null));
+      setForbiddenError((prev: string | null) => (prev === null ? prev : null));
+      setTabDataMap((prev) => (Object.keys(prev).length === 0 ? prev : {}));
     }
-  }, [open, customerId, fetchDetails, fetchTabData]);
+  }, [open, customerId]);
 
   // Drawer resize event handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
