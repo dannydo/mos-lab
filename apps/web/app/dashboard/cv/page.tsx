@@ -161,9 +161,9 @@ export default function CvReportPage() {
             </Space.Compact>
 
             {/* Date Navigator: < Tháng 07/2026 > */}
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <Space.Compact>
-                <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
+            <Space.Compact>
+              <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
+              <div style={{ position: 'relative', display: 'inline-block' }}>
                 <Button
                   onClick={() => setPickerOpen(true)}
                   style={{
@@ -179,29 +179,32 @@ export default function CvReportPage() {
                 >
                   {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
                 </Button>
-                <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
-              </Space.Compact>
-
-              <RangePicker
-                value={dateRange}
-                onChange={(dates) => {
-                  if (dates) setDateRange([dates[0]!, dates[1]!]);
-                }}
-                format="DD/MM/YYYY"
-                open={pickerOpen}
-                onOpenChange={(open) => setPickerOpen(open)}
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: '100%',
-                  opacity: 0,
-                  pointerEvents: 'none',
-                  zIndex: -1,
-                }}
-              />
-            </div>
+                <RangePicker
+                  value={dateRange}
+                  onChange={(dates) => {
+                    if (dates) {
+                      setDateRange([dates[0]!, dates[1]!]);
+                      setPickerOpen(false);
+                    }
+                  }}
+                  format="DD/MM/YYYY"
+                  open={pickerOpen}
+                  onOpenChange={(open) => setPickerOpen(open)}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: 0,
+                    height: 0,
+                    padding: 0,
+                    border: 'none',
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                  }}
+                />
+              </div>
+              <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
+            </Space.Compact>
 
             {/* Store Filter (Chi Nhánh) */}
             <Select

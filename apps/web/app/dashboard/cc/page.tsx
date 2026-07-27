@@ -316,9 +316,18 @@ export default function CcDashboardPage() {
               onChange={(val) => {
                 if (val) {
                   setReferenceDate(val);
+                  setPickerOpen(false);
                 }
               }}
-              style={{ display: 'none' }}
+              style={{
+                position: 'absolute',
+                width: 0,
+                height: 0,
+                padding: 0,
+                border: 'none',
+                visibility: 'hidden',
+                pointerEvents: 'none',
+              }}
             />
 
             {/* Store Filter */}

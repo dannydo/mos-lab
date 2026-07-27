@@ -314,14 +314,14 @@ export default function AppointmentsPage() {
               </Button>
             </Space.Compact>
 
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <Space.Compact>
-                <Button
-                  icon={<LeftOutlined />}
-                  onClick={() => handleNavigate(-1)}
-                  aria-label="Ngày trước đó"
-                  title="Ngày trước đó"
-                />
+            <Space.Compact>
+              <Button
+                icon={<LeftOutlined />}
+                onClick={() => handleNavigate(-1)}
+                aria-label="Ngày trước đó"
+                title="Ngày trước đó"
+              />
+              <div style={{ position: 'relative', display: 'inline-block' }}>
                 <Button
                   onClick={() => setPickerOpen(true)}
                   style={{
@@ -337,34 +337,37 @@ export default function AppointmentsPage() {
                 >
                   {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
                 </Button>
-                <Button
-                  icon={<RightOutlined />}
-                  onClick={() => handleNavigate(1)}
-                  aria-label="Ngày tiếp theo"
-                  title="Ngày tiếp theo"
+                <RangePicker
+                  value={dateRange}
+                  onChange={(dates) => {
+                    if (dates) {
+                      setCustomRange([dates[0]!, dates[1]!]);
+                      setPickerOpen(false);
+                    }
+                  }}
+                  format="DD/MM/YYYY"
+                  open={pickerOpen}
+                  onOpenChange={(open) => setPickerOpen(open)}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: 0,
+                    height: 0,
+                    padding: 0,
+                    border: 'none',
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                  }}
                 />
-              </Space.Compact>
-
-              <RangePicker
-                value={dateRange}
-                onChange={(dates) => {
-                  if (dates) setCustomRange([dates[0]!, dates[1]!]);
-                }}
-                format="DD/MM/YYYY"
-                open={pickerOpen}
-                onOpenChange={(open) => setPickerOpen(open)}
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: '100%',
-                  opacity: 0,
-                  pointerEvents: 'none',
-                  zIndex: -1,
-                }}
+              </div>
+              <Button
+                icon={<RightOutlined />}
+                onClick={() => handleNavigate(1)}
+                aria-label="Ngày tiếp theo"
+                title="Ngày tiếp theo"
               />
-            </div>
+            </Space.Compact>
 
             <Popover
               title={

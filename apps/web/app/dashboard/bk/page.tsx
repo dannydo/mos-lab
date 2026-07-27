@@ -222,9 +222,33 @@ export default function BkDashboardPage() {
               aria-label="Ngày trước đó"
               title="Ngày trước đó"
             />
-            <Button onClick={() => setPickerOpen(true)} className="font-semibold tabular-nums min-w-[160px]">
-              {getPeriodLabel()}
-            </Button>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <Button onClick={() => setPickerOpen(true)} className="font-semibold tabular-nums min-w-[160px]">
+                {getPeriodLabel()}
+              </Button>
+              <RangePicker
+                open={pickerOpen}
+                onOpenChange={setPickerOpen}
+                value={dateRange}
+                onChange={(dates) => {
+                  if (dates && dates[0] && dates[1]) {
+                    setDateRange([dates[0], dates[1]]);
+                    setPickerOpen(false);
+                  }
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: 0,
+                  height: 0,
+                  padding: 0,
+                  border: 'none',
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                }}
+              />
+            </div>
             <Button
               icon={<RightOutlined />}
               onClick={() => handleNavigate(1)}
@@ -232,19 +256,6 @@ export default function BkDashboardPage() {
               title="Ngày tiếp theo"
             />
           </Space.Compact>
-
-          {/* Date Range Picker Modal */}
-          <RangePicker
-            open={pickerOpen}
-            onOpenChange={setPickerOpen}
-            value={dateRange}
-            onChange={(dates) => {
-              if (dates && dates[0] && dates[1]) {
-                setDateRange([dates[0], dates[1]]);
-              }
-            }}
-            style={{ display: 'none' }}
-          />
 
           {/* Store Filter */}
           <Select
