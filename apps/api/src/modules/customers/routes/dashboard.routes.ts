@@ -123,7 +123,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       }
       const defaultConfigs = {
         LOCA_ALL: [
-          { key: 'now', label: 'Chạm 24h', daysMin: 0, daysMax: 1, color: 'blue' },
+          { key: 'now', label: 'Chạm 24h', daysMin: 1, daysMax: 1, color: 'blue' },
           { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'cyan' },
           { key: '19', label: 'Chạm 19', daysMin: 19, daysMax: 19, color: 'cyan' },
           { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'green' },

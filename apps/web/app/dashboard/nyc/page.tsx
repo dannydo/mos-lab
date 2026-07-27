@@ -289,7 +289,7 @@ export default function NycCampaignPage() {
               onChange={(val) => setAssignedStaffId(val)}
               style={{ width: 200 }}
               options={[
-                { value: 'all', label: 'Tất cả nhân sự' },
+                { value: 'ALL', label: 'All Bookers' },
                 { value: 'unassigned', label: 'Chưa phân bổ' },
                 ...staffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),
               ]}

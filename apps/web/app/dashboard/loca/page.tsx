@@ -47,6 +47,8 @@ import {
   MessageOutlined,
   LeftOutlined,
   RightOutlined,
+  UnorderedListOutlined,
+  CloseCircleOutlined,
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
@@ -105,6 +107,7 @@ export default function LocaCampaignPage() {
     addingIds,
     datePreset,
     selectedDate,
+    bookingStatusFilter,
     // setters
     setActiveTab,
     setActiveTouchpointKey,
@@ -112,6 +115,7 @@ export default function LocaCampaignPage() {
     setSearchQuery,
     setSortField,
     setAssignedStaffId,
+    setBookingStatusFilter,
     setCurrentPage,
     setPageSize,
     setDatePreset,
@@ -314,7 +318,7 @@ export default function LocaCampaignPage() {
               onChange={(val) => setAssignedStaffId(val)}
               style={{ width: 200 }}
               options={[
-                { value: 'all', label: 'Tất cả nhân sự' },
+                { value: 'ALL', label: 'All Bookers' },
                 { value: 'unassigned', label: 'Chưa phân bổ' },
                 ...staffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),
               ]}
@@ -714,6 +718,55 @@ export default function LocaCampaignPage() {
               />
             </div>
           )}
+
+          {/* Minimalist Booking Status Filter Buttons (Square Buttons matching Gear Button style) */}
+          <div className="flex items-center gap-1.5">
+            <Tooltip title="Tất cả khách hàng (Cả đã book & chưa book)">
+              <button
+                type="button"
+                onClick={() => setBookingStatusFilter('ALL')}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                  bookingStatusFilter === 'ALL'
+                    ? 'bg-slate-800 text-amber-400 border-slate-600 shadow-sm dark:bg-slate-800 dark:border-slate-700'
+                    : 'bg-slate-500/5 hover:bg-slate-500/10 text-slate-400 border-slate-200/60 dark:border-slate-800/60'
+                }`}
+              >
+                <UnorderedListOutlined style={{ fontSize: '14px' }} />
+              </button>
+            </Tooltip>
+
+            <Tooltip title="Đã book (Có lịch hẹn tương lai)">
+              <button
+                type="button"
+                onClick={() => setBookingStatusFilter('BOOKED')}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                  bookingStatusFilter === 'BOOKED'
+                    ? 'bg-emerald-950/50 text-emerald-400 border-emerald-500/50 shadow-sm'
+                    : 'bg-slate-500/5 hover:bg-slate-500/10 text-slate-400 border-slate-200/60 dark:border-slate-800/60'
+                }`}
+              >
+                <CalendarOutlined
+                  style={{ fontSize: '14px', color: bookingStatusFilter === 'BOOKED' ? '#10B981' : undefined }}
+                />
+              </button>
+            </Tooltip>
+
+            <Tooltip title="Chưa book (Chưa có lịch hẹn tương lai)">
+              <button
+                type="button"
+                onClick={() => setBookingStatusFilter('NOT_BOOKED')}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                  bookingStatusFilter === 'NOT_BOOKED'
+                    ? 'bg-rose-950/50 text-rose-400 border-rose-500/50 shadow-sm'
+                    : 'bg-slate-500/5 hover:bg-slate-500/10 text-slate-400 border-slate-200/60 dark:border-slate-800/60'
+                }`}
+              >
+                <CloseCircleOutlined
+                  style={{ fontSize: '14px', color: bookingStatusFilter === 'NOT_BOOKED' ? '#F43F5E' : undefined }}
+                />
+              </button>
+            </Tooltip>
+          </div>
 
           {/* Borderless Search Input */}
           <div className="flex items-center border border-slate-200 dark:border-slate-800/60 bg-slate-500/5 px-2.5 h-8 rounded-lg max-w-[280px] focus-within:border-slate-300 dark:focus-within:border-slate-700 transition-colors">

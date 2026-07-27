@@ -38,7 +38,7 @@ export interface UseLocaDataOptions {
 
 const DEFAULT_LOCA_CONFIGS: TabConfigs = {
   LOCA_ALL: [
-    { key: 'now', label: 'Hôm nay / Hôm qua', daysMin: 0, daysMax: 1, color: '#10B981' },
+    { key: 'now', label: 'Hôm qua', daysMin: 1, daysMax: 1, color: '#10B981' },
     { key: '17', label: '17 ngày', daysMin: 17, daysMax: 17, color: '#3B82F6' },
     { key: '19', label: '19 ngày', daysMin: 19, daysMax: 19, color: '#6366F1' },
     { key: '21', label: '21 ngày', daysMin: 21, daysMax: 21, color: '#8B5CF6' },
@@ -88,6 +88,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState('daysSinceLastVisit');
   const [assignedStaffId, setAssignedStaffId] = useState<string | number>('ALL');
+  const [bookingStatusFilter, setBookingStatusFilterState] = useState<'ALL' | 'BOOKED' | 'NOT_BOOKED'>('ALL');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -314,6 +315,8 @@ export function useLocaData(options?: UseLocaDataOptions) {
       if (activeTab === 'SP') params.hasProduct = 'true';
       if (activeTab === 'CALLBACK') params.hasCallback = 'true';
       if (activeTab === 'BOOKED') params.hasFutureBooking = 'true';
+      if (bookingStatusFilter === 'BOOKED') params.hasFutureBooking = 'true';
+      if (bookingStatusFilter === 'NOT_BOOKED') params.hasFutureBooking = 'false';
       if (activeTab === 'CONTACTED') {
         params.contacted = 'true';
         if (contactSubTab !== 'ALL') {
@@ -339,6 +342,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
     searchQuery,
     sortField,
     assignedStaffId,
+    bookingStatusFilter,
     configs,
     currentUser,
     dateRange,
@@ -431,7 +435,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
   const resetConfigDefaults = async () => {
     const defaultConfigs: TabConfigs = {
       LOCA_ALL: [
-        { key: 'now', label: 'Chạm 24h', daysMin: 0, daysMax: 1, color: 'blue' },
+        { key: 'now', label: 'Chạm 24h', daysMin: 1, daysMax: 1, color: 'blue' },
         { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'cyan' },
         { key: '19', label: 'Chạm 19', daysMin: 19, daysMax: 19, color: 'cyan' },
         { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'green' },
@@ -524,6 +528,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
     addingIds,
     datePreset,
     selectedDate,
+    bookingStatusFilter,
     // setters
     setActiveTab: changeActiveTab,
     setActiveTouchpointKey,
@@ -531,6 +536,10 @@ export function useLocaData(options?: UseLocaDataOptions) {
     setSearchQuery,
     setSortField,
     setAssignedStaffId,
+    setBookingStatusFilter: (val: 'ALL' | 'BOOKED' | 'NOT_BOOKED') => {
+      setBookingStatusFilterState(val);
+      setCurrentPage(1);
+    },
     setCurrentPage,
     setPageSize,
     setDatePreset,

@@ -78,13 +78,16 @@ export async function requireCatalogAdmin(request: FastifyRequest, reply: Fastif
     return reply.status(401).send({ error: 'Unauthorized', message: 'Authentication required' });
   }
 
-  const isDanhDo =
-    user.username?.toLowerCase() === 'danhdo@gmail.com' || user.email?.toLowerCase() === 'danhdo@gmail.com';
+  const isAuthorized =
+    user.role === 'admin' ||
+    user.username?.toLowerCase() === 'admin' ||
+    user.username?.toLowerCase() === 'danhdo@gmail.com' ||
+    user.email?.toLowerCase() === 'danhdo@gmail.com';
 
-  if (!isDanhDo) {
+  if (!isAuthorized) {
     return reply.status(403).send({
       error: 'Forbidden',
-      message: 'Chỉ có tài khoản danhdo@gmail.com mới có quyền thêm, sửa, xóa Catalog',
+      message: 'Chỉ có tài khoản Admin mới có quyền thêm, sửa, xóa Catalog',
     });
   }
 }

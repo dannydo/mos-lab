@@ -367,6 +367,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
             },
           };
         }
+      } else if (hasFutureBooking === 'false') {
+        const bookedUserIds = (
+          await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
+            `SELECT DISTINCT user_id
+             FROM \`order\`
+             WHERE booking_date_start > NOW() AND order_state IN ('New', 'Confirmed')`
+          )
+        ).map((r) => Number(r.user_id));
+
+        if (bookedUserIds.length > 0 && allowedUserIds !== null) {
+          allowedUserIds = allowedUserIds.filter((id) => !bookedUserIds.includes(id));
+        }
       }
 
       const usbUserFilter =
@@ -599,6 +611,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
       if (hasFutureBooking === 'true') {
         innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM \`order\` o_bk 
+          WHERE o_bk.user_id = u.id AND o_bk.booking_date_start > NOW() AND o_bk.order_state IN ('New', 'Confirmed')
+        )`);
+      } else if (hasFutureBooking === 'false') {
+        innerWhereClauses.push(`NOT EXISTS (
           SELECT 1 FROM \`order\` o_bk 
           WHERE o_bk.user_id = u.id AND o_bk.booking_date_start > NOW() AND o_bk.order_state IN ('New', 'Confirmed')
         )`);
@@ -1497,6 +1514,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
           SELECT 1 FROM \`order\` o_bk 
           WHERE o_bk.user_id = u.id AND o_bk.booking_date_start > NOW() AND o_bk.order_state IN ('New', 'Confirmed')
         )`);
+      } else if (hasFutureBooking === 'false') {
+        innerWhereClauses.push(`NOT EXISTS (
+          SELECT 1 FROM \`order\` o_bk 
+          WHERE o_bk.user_id = u.id AND o_bk.booking_date_start > NOW() AND o_bk.order_state IN ('New', 'Confirmed')
+        )`);
       }
       if (contacted === 'true') {
         if (contactType === 'TEXT') {
@@ -1687,7 +1709,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         where: { key: 'LOCA_TOUCHPOINTS_CONFIG' },
       });
       const defaultTouchpoints = [
-        { key: 'now', daysMin: 0, daysMax: 1 },
+        { key: 'now', daysMin: 1, daysMax: 1 },
         { key: '17', daysMin: 17, daysMax: 17 },
         { key: '19', daysMin: 19, daysMax: 19 },
         { key: '21', daysMin: 21, daysMax: 21 },
@@ -6373,7 +6395,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
       const defaultConfigs = {
         LOCA_ALL: [
-          { key: 'now', label: 'Chạm 24h', daysMin: 0, daysMax: 1, color: 'blue' },
+          { key: 'now', label: 'Chạm 24h', daysMin: 1, daysMax: 1, color: 'blue' },
           { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'cyan' },
           { key: '19', label: 'Chạm 19', daysMin: 19, daysMax: 19, color: 'cyan' },
           { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'green' },

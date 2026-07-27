@@ -490,7 +490,7 @@ export async function catalogRoutes(fastify: FastifyInstance) {
 
         if (serviceName !== undefined || serviceShortDescription !== undefined || serviceDescription !== undefined) {
           const lang = await tx.service_language.findFirst({
-            where: { service_id: Number(id), language_id: CATALOG_DEFAULTS.DEFAULT_LANGUAGE_ID },
+            where: { service_id: Number(id) },
           });
           if (lang) {
             await tx.service_language.update({
@@ -502,17 +502,48 @@ export async function catalogRoutes(fastify: FastifyInstance) {
                 service_description: serviceDescription !== undefined ? serviceDescription : lang.service_description,
               },
             });
+          } else {
+            await tx.service_language.create({
+              data: {
+                service_id: Number(id),
+                language_id: CATALOG_DEFAULTS.DEFAULT_LANGUAGE_ID,
+                service_name: serviceName || '',
+                service_short_description: serviceShortDescription || null,
+                service_description: serviceDescription || null,
+              },
+            });
           }
         }
 
         if (servicePrice !== undefined) {
           const mainPrice = await tx.service_price.findFirst({
-            where: { service_id: Number(id), is_disabled: false },
+            where: { service_id: Number(id) },
+            orderBy: { id: 'asc' },
           });
           if (mainPrice) {
             await tx.service_price.update({
               where: { id: mainPrice.id },
               data: { service_price: servicePrice, per_normal_price: servicePrice },
+            });
+          } else {
+            await tx.service_price.create({
+              data: {
+                client_id: CATALOG_DEFAULTS.CLIENT_ID,
+                client_business_id: CATALOG_DEFAULTS.CLIENT_BUSINESS_ID,
+                service_id: Number(id),
+                currency_id: CATALOG_DEFAULTS.DEFAULT_CURRENCY_ID,
+                service_price_package_key: 'single',
+                service_price_type: 'Single',
+                service_price: servicePrice,
+                normal_count: 1,
+                retain_count: 0,
+                per_normal_price: servicePrice,
+                per_retain_price: 0,
+                position: 0,
+                is_same_count: false,
+                is_new_user_disabled: false,
+                is_disabled: false,
+              },
             });
           }
         }
