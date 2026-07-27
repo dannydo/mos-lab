@@ -227,19 +227,30 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     }
   };
 
+  const filterKey = `${dateFromStr}_${dateToStr}_${activeTab}_${selectedStaffId}_${missedStatusFilter}`;
+  const prevFilterKeyRef = useRef('');
+  const prevPageRef = useRef(1);
+
   // Handle filter changes (Reset to Page 1 and fetch)
   useEffect(() => {
     if (!currentUser || !dateFromStr || !dateToStr) return;
-    isFetchingRef.current = false;
-    setCurrentPage(1);
-    setHasMore(true);
-    fetchAppointments(1);
-  }, [dateFromStr, dateToStr, activeTab, selectedStaffId, missedStatusFilter, currentUser]);
+
+    if (prevFilterKeyRef.current !== filterKey) {
+      prevFilterKeyRef.current = filterKey;
+      isFetchingRef.current = false;
+      setCurrentPage(1);
+      setHasMore(true);
+      fetchAppointments(1);
+    }
+  }, [filterKey, currentUser, fetchAppointments]);
 
   // Handle page changes for infinite scroll (Page > 1)
   useEffect(() => {
-    if (!currentUser || currentPage === 1 || isFetchingRef.current) return;
-    fetchAppointments(currentPage);
+    if (!currentUser || currentPage === 1) return;
+    if (prevPageRef.current !== currentPage) {
+      prevPageRef.current = currentPage;
+      fetchAppointments(currentPage);
+    }
   }, [currentPage, currentUser, fetchAppointments]);
 
   // Intersection Observer for Infinite Scroll (Lazy Loading)

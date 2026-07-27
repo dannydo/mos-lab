@@ -238,6 +238,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
   useEffect(() => {
     const isJustOpened = open && !prevOpenRef.current;
     const isCustomerChanged = open && customerId !== prevCustomerIdRef.current;
+    const isJustClosed = !open && prevOpenRef.current;
 
     prevOpenRef.current = open;
     prevCustomerIdRef.current = customerId;
@@ -247,12 +248,12 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
       setActiveTab('bookings');
       fetchDetails();
       fetchTabData('bookings', 1, false);
-    } else if (!open) {
-      setData((prev: SafeAny) => (prev === null ? prev : null));
-      setForbiddenError((prev: string | null) => (prev === null ? prev : null));
-      setTabDataMap((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+    } else if (isJustClosed) {
+      setData(null);
+      setForbiddenError(null);
+      setTabDataMap({});
     }
-  }, [open, customerId]);
+  }, [open, customerId, fetchDetails, fetchTabData]);
 
   // Drawer resize event handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
