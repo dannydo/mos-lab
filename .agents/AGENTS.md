@@ -341,10 +341,29 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 
 ---
 
-# 🔒 Exclusive Catalog Write Authorization Rules (Chỉ danhdo@gmail.com được sửa Catalog)
+# 🔒 Catalog Write Authorization & Language Entry Fallback Rules
 
-1. **Phân quyền Backend Middleware (`requireCatalogAdmin`)**: Tất cả các endpoint tạo, sửa, xóa Catalog (`POST /catalog/services`, `PUT /catalog/services/:id`, `DELETE /catalog/services/:id`, `POST /catalog/combos`, `PUT /catalog/combos/:id`, `DELETE /catalog/combos/:id`, `POST /catalog/products`, `PUT /catalog/products/:id`, `DELETE /catalog/products/:id`) **bắt buộc kiểm tra danh tính duy nhất của tài khoản `danhdo@gmail.com`** (`user.username === 'danhdo@gmail.com' || user.email === 'danhdo@gmail.com'`).
-2. **Giao diện Frontend (Read-only Fallback)**: Đối với các tài khoản khác không phải `danhdo@gmail.com`, trang `/dashboard/catalog` tự động hiển thị thông báo Alert ở chế độ *Read-only (Chỉ xem)* và vô hiệu hóa các nút Thêm / Sửa / Xóa.
+1. **Phân quyền Backend Middleware (`requireCatalogAdmin`)**: Cho phép `user.role === 'admin'`, `user.username === 'admin'`, hoặc `user.username === 'danhdo@gmail.com'` / `user.email === 'danhdo@gmail.com'` thực hiện các thao tác thêm, sửa, xóa Catalog (`/catalog/*`) trên cả môi trường Local và Production.
+2. **Truy vấn Ngôn ngữ Dịch vụ (`service_language`)**: Khi cập nhật dịch vụ (`PUT /catalog/services/:id`), tìm kiếm `service_language` theo `service_id` linh hoạt (không gán cứng `language_id = 1`) và tự động tạo `tx.service_language.create` fallback nếu dịch vụ chưa có dòng tên trong CSDL.
+
+---
+
+# 🕒 Chạm 24h Yesterday-Only Definition Invariant
+
+1. **Quy tắc tính số ngày**: `Chạm 24h` (`key: 'now'`) trong chiến dịch LoCa được định nghĩa nghiêm ngặt là **chỉ lọc khách hàng ghé tiệm làm mi vào HÔM QUA** (`daysMin: 1, daysMax: 1`, `DATEDIFF(NOW(), last_visit) = 1`).
+2. **Loại trừ hôm nay**: Tuyệt đối **loại trừ** khách hàng ghé tiệm trong ngày hôm nay (`0 ngày`).
+
+---
+
+# 👤 Booker Selector Option Label & Value Invariant
+
+1. **Chuẩn nhãn hiển thị**: Tất cả các ô chọn Select Booker / Telesales trên các trang chiến dịch (LoCa, NYC) bắt buộc phải sử dụng option value `'ALL'` và nhãn hiển thị **`All Bookers`** (thay vì `'all'`, raw `'ALL'`, hoặc `'Tất cả nhân sự'`).
+
+---
+
+# 🔲 Synchronized Minimalist Square Button Toolbar Styling Rules
+
+1. **Kiểu dáng nút Icon**: Các icon bộ lọc dạng nút bấm đơn lẻ đặt cạnh ô tìm kiếm trên thanh toolbar (ví dụ: Bộ lọc trạng thái đặt lịch `Tất cả`, `Đã book`, `Chưa book`) bắt buộc phải được thiết kế dạng khối vuông `32x32px` (`w-8 h-8 rounded-lg`) đồng bộ hoàn toàn với kích thước, chiều cao (`h-8`), bo góc (`rounded-lg`) và viền của nút Cấu hình (Gear button).
 
 
 
