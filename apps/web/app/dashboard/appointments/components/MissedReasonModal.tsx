@@ -81,6 +81,8 @@ export default function MissedReasonModal({
 
   const selectedFollowUpStatus = Form.useWatch('followUpStatus', form);
 
+  const prevVisibleRef = React.useRef(false);
+
   useEffect(() => {
     if (visible && appointment) {
       const log = appointment.missedLog;
@@ -91,9 +93,10 @@ export default function MissedReasonModal({
         followUpStatus: log?.followUpStatus || 'PENDING',
         callbackDate: log?.callbackDate ? dayjs(log.callbackDate) : null,
       });
-    } else {
+    } else if (!visible && prevVisibleRef.current) {
       form.resetFields();
     }
+    prevVisibleRef.current = visible;
   }, [visible, appointment, form]);
 
   if (!appointment) return null;

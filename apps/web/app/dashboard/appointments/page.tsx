@@ -242,6 +242,30 @@ export default function AppointmentsPage() {
     []
   );
 
+  const handleRow = React.useCallback(
+    (record: Appointment) => {
+      const isPast = record.bookingDateStart ? dayjs(record.bookingDateStart).isBefore(dayjs()) : false;
+      const isCompleted = record.orderState === 'Completed';
+      const isInService = ['CheckIn', 'ServiceCleaned', 'CheckOut'].includes(record.orderState);
+
+      const style: React.CSSProperties = {};
+
+      if (isPast && !isCompleted && !isInService) {
+        style.backgroundColor = themeMode === 'dark' ? '#2d1818' : '#fff1f0';
+      } else if (!isCompleted && !isInService) {
+        const isToday = record.bookingDateStart ? dayjs(record.bookingDateStart).isSame(dayjs(), 'day') : false;
+        if (isToday) {
+          style.backgroundColor = themeMode === 'dark' ? '#252115' : '#fefbe6';
+        }
+      } else if (isInService) {
+        style.backgroundColor = themeMode === 'dark' ? '#112134' : '#e6f7ff';
+      }
+
+      return { style };
+    },
+    [themeMode]
+  );
+
   return (
     <div>
       {/* HEADER SECTION */}
@@ -1016,26 +1040,7 @@ export default function AppointmentsPage() {
             marginTop: '16px',
           }}
           className="antd-custom-table"
-          onRow={(record) => {
-            const isPast = record.bookingDateStart ? dayjs(record.bookingDateStart).isBefore(dayjs()) : false;
-            const isCompleted = record.orderState === 'Completed';
-            const isInService = ['CheckIn', 'ServiceCleaned', 'CheckOut'].includes(record.orderState);
-
-            const style: React.CSSProperties = {};
-
-            if (isPast && !isCompleted && !isInService) {
-              style.backgroundColor = themeMode === 'dark' ? '#2d1818' : '#fff1f0';
-            } else if (!isCompleted && !isInService) {
-              const isToday = record.bookingDateStart ? dayjs(record.bookingDateStart).isSame(dayjs(), 'day') : false;
-              if (isToday) {
-                style.backgroundColor = themeMode === 'dark' ? '#252115' : '#fefbe6';
-              }
-            } else if (isInService) {
-              style.backgroundColor = themeMode === 'dark' ? '#112134' : '#e6f7ff';
-            }
-
-            return { style };
-          }}
+          onRow={handleRow}
         />
 
         {/* Infinite Scroll Sentinel */}
@@ -1086,51 +1091,57 @@ export default function AppointmentsPage() {
       )}
 
       {/* BOOKING WIZARD DRAWER */}
-      <BookingWizardDrawer
-        open={bookingWizardVisible}
-        initialCustomer={bookingInitialCustomer}
-        onClose={() => {
-          setBookingWizardVisible(false);
-          setBookingInitialCustomer(null);
-        }}
-        onSuccess={fetchAppointments}
-      />
+      {bookingWizardVisible && (
+        <BookingWizardDrawer
+          open={bookingWizardVisible}
+          initialCustomer={bookingInitialCustomer}
+          onClose={() => {
+            setBookingWizardVisible(false);
+            setBookingInitialCustomer(null);
+          }}
+          onSuccess={fetchAppointments}
+        />
+      )}
 
-      <RescheduleBookingModal
-        open={rescheduleModalVisible}
-        booking={selectedBookingForReschedule}
-        onClose={() => {
-          setRescheduleModalVisible(false);
-          setSelectedBookingForReschedule(null);
-        }}
-        onSuccess={fetchAppointments}
-      />
+      {rescheduleModalVisible && (
+        <RescheduleBookingModal
+          open={rescheduleModalVisible}
+          booking={selectedBookingForReschedule}
+          onClose={() => {
+            setRescheduleModalVisible(false);
+            setSelectedBookingForReschedule(null);
+          }}
+          onSuccess={fetchAppointments}
+        />
+      )}
 
-      <MissedReasonModal
-        visible={missedReasonModalVisible}
-        appointment={selectedMissedAppointment}
-        onCancel={() => {
-          setMissedReasonModalVisible(false);
-          setSelectedMissedAppointment(null);
-        }}
-        onSuccess={(status) => {
-          fetchAppointments();
-          fetchMissedSummary();
-          if (status === 'RESCHEDULED' && selectedMissedAppointment) {
-            setBookingInitialCustomer({
-              id: selectedMissedAppointment.customerId,
-              fullName: selectedMissedAppointment.customerName,
-              phoneNumber: selectedMissedAppointment.customerPhone || '',
-            });
-            setBookingWizardVisible(true);
-          }
-        }}
-        makeCall={makeCall}
-        onOpenReschedule={(apt) => {
-          setSelectedBookingForReschedule(apt);
-          setRescheduleModalVisible(true);
-        }}
-      />
+      {missedReasonModalVisible && (
+        <MissedReasonModal
+          visible={missedReasonModalVisible}
+          appointment={selectedMissedAppointment}
+          onCancel={() => {
+            setMissedReasonModalVisible(false);
+            setSelectedMissedAppointment(null);
+          }}
+          onSuccess={(status) => {
+            fetchAppointments();
+            fetchMissedSummary();
+            if (status === 'RESCHEDULED' && selectedMissedAppointment) {
+              setBookingInitialCustomer({
+                id: selectedMissedAppointment.customerId,
+                fullName: selectedMissedAppointment.customerName,
+                phoneNumber: selectedMissedAppointment.customerPhone || '',
+              });
+              setBookingWizardVisible(true);
+            }
+          }}
+          makeCall={makeCall}
+          onOpenReschedule={(apt) => {
+            setSelectedBookingForReschedule(apt);
+            setRescheduleModalVisible(true);
+          }}
+        />
+      )}
     </div>
   );
 }

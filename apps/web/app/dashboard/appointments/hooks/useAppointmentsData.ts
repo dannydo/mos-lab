@@ -152,8 +152,8 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
   const [hasMore, setHasMore] = useState(true);
   const isFetchingRef = useRef(false);
 
-  const dateFromStr = dateRange[0]?.startOf('day').format('YYYY-MM-DD 00:00:00') || '';
-  const dateToStr = dateRange[1]?.endOf('day').format('YYYY-MM-DD 23:59:59') || '';
+  const dateFromStr = dateRange[0] ? dateRange[0].format('YYYY-MM-DD 00:00:00') : '';
+  const dateToStr = dateRange[1] ? dateRange[1].format('YYYY-MM-DD 23:59:59') : '';
 
   // Fetch appointments data
   const fetchAppointments = useCallback(
