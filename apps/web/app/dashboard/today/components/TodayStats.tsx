@@ -452,7 +452,10 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    PXL: <strong>{bookingBranchCounts.pxl}</strong>
+                    PXL:{' '}
+                    <strong className="tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {bookingBranchCounts.pxl}
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -487,7 +490,8 @@ export default function TodayStats({
               Khách Đến Hôm Nay
             </span>
             <strong
-              style={{ fontSize: '13px', color: token.colorText }}
+              className="tabular-nums"
+              style={{ fontSize: '13px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
               title={`Tổng cộng: ${comingStats.totalCount} khách • ${comingStats.totalPrice.toLocaleString('vi-VN')} đ`}
             >
               {comingStats.totalCount} khách • {comingStats.totalPrice.toLocaleString('vi-VN')} đ
@@ -540,7 +544,7 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    Combo: <strong>{comingStats.combo.count}</strong>{' '}
+                    Combo: <strong className="tabular-nums">{comingStats.combo.count}</strong>{' '}
                     <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>
                       ({formatCenterRevenue(comingStats.combo.price)})
                     </span>
@@ -559,7 +563,7 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    Tele: <strong>{comingStats.oc.count}</strong>{' '}
+                    Tele: <strong className="tabular-nums">{comingStats.oc.count}</strong>{' '}
                     <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>
                       ({formatCenterRevenue(comingStats.oc.price)})
                     </span>
@@ -578,7 +582,7 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    Khác: <strong>{comingStats.other.count}</strong>{' '}
+                    Khác: <strong className="tabular-nums">{comingStats.other.count}</strong>{' '}
                     <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>
                       ({formatCenterRevenue(comingStats.other.price)})
                     </span>
@@ -624,7 +628,7 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    DT: <strong>{comingBranchStats.dt.count}</strong>{' '}
+                    DT: <strong className="tabular-nums">{comingBranchStats.dt.count}</strong>{' '}
                     <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>
                       ({formatCenterRevenue(comingBranchStats.dt.price)})
                     </span>
@@ -643,7 +647,7 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    EP: <strong>{comingBranchStats.ep.count}</strong>{' '}
+                    EP: <strong className="tabular-nums">{comingBranchStats.ep.count}</strong>{' '}
                     <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>
                       ({formatCenterRevenue(comingBranchStats.ep.price)})
                     </span>
@@ -662,7 +666,7 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    PXL: <strong>{comingBranchStats.pxl.count}</strong>{' '}
+                    PXL: <strong className="tabular-nums">{comingBranchStats.pxl.count}</strong>{' '}
                     <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>
                       ({formatCenterRevenue(comingBranchStats.pxl.price)})
                     </span>
@@ -700,7 +704,8 @@ export default function TodayStats({
               Doanh Thu Thực Tế
             </span>
             <strong
-              style={{ fontSize: '14px', color: token.colorText }}
+              className="tabular-nums"
+              style={{ fontSize: '14px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
               title={`Tổng cộng: ${totalRevenueData.total.toLocaleString('vi-VN')} đ`}
             >
               {totalRevenueData.total.toLocaleString('vi-VN')} đ
@@ -755,7 +760,7 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    Combo: <strong>{formatCenterRevenue(totalRevenueData.revCombo)}</strong>
+                    Combo: <strong className="tabular-nums">{formatCenterRevenue(totalRevenueData.revCombo)}</strong>
                   </div>
                   <div
                     style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}
@@ -771,7 +776,7 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    Lẻ: <strong>{formatCenterRevenue(totalRevenueData.revLe)}</strong>
+                    Lẻ: <strong className="tabular-nums">{formatCenterRevenue(totalRevenueData.revLe)}</strong>
                   </div>
                   <div
                     style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}
@@ -787,7 +792,7 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    SP: <strong>{formatCenterRevenue(totalRevenueData.revProduct)}</strong>
+                    SP: <strong className="tabular-nums">{formatCenterRevenue(totalRevenueData.revProduct)}</strong>
                   </div>
                 </div>
               </div>

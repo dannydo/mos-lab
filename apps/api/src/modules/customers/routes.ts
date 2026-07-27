@@ -2398,7 +2398,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
         .status(403)
         .send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập danh sách nhân viên.' });
     }
-    const { date } = request.query as { date?: string };
     try {
       // 1. Fetch CRM Staff
       const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
@@ -6812,7 +6811,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 status: 'PLANNED',
               },
             });
-          } catch (_e) {
+          } catch {
             // Ignore duplicate plan errors if any
           }
         }
