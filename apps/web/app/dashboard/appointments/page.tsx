@@ -337,29 +337,33 @@ export default function AppointmentsPage() {
                 >
                   {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
                 </Button>
-                <RangePicker
-                  value={dateRange}
-                  onChange={(dates) => {
-                    if (dates) {
-                      setCustomRange([dates[0]!, dates[1]!]);
-                      setPickerOpen(false);
-                    }
-                  }}
-                  format="DD/MM/YYYY"
-                  open={pickerOpen}
-                  onOpenChange={(open) => setPickerOpen(open)}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: 0,
-                    height: 0,
-                    padding: 0,
-                    border: 'none',
-                    visibility: 'hidden',
-                    pointerEvents: 'none',
-                  }}
-                />
+                {pickerOpen && (
+                  <RangePicker
+                    value={dateRange}
+                    onChange={(dates) => {
+                      if (dates && dates[0] && dates[1]) {
+                        setCustomRange([dates[0]!, dates[1]!]);
+                        setPickerOpen(false);
+                      }
+                    }}
+                    format="DD/MM/YYYY"
+                    open={true}
+                    onOpenChange={(open) => {
+                      if (!open) setPickerOpen(false);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: 0,
+                      height: 0,
+                      padding: 0,
+                      border: 'none',
+                      visibility: 'hidden',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
               </div>
               <Button
                 icon={<RightOutlined />}

@@ -226,28 +226,32 @@ export default function BkDashboardPage() {
               <Button onClick={() => setPickerOpen(true)} className="font-semibold tabular-nums min-w-[160px]">
                 {getPeriodLabel()}
               </Button>
-              <RangePicker
-                open={pickerOpen}
-                onOpenChange={setPickerOpen}
-                value={dateRange}
-                onChange={(dates) => {
-                  if (dates && dates[0] && dates[1]) {
-                    setDateRange([dates[0], dates[1]]);
-                    setPickerOpen(false);
-                  }
-                }}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: 0,
-                  height: 0,
-                  padding: 0,
-                  border: 'none',
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
-                }}
-              />
+              {pickerOpen && (
+                <RangePicker
+                  open={true}
+                  onOpenChange={(open) => {
+                    if (!open) setPickerOpen(false);
+                  }}
+                  value={dateRange}
+                  onChange={(dates) => {
+                    if (dates && dates[0] && dates[1]) {
+                      setDateRange([dates[0], dates[1]]);
+                      setPickerOpen(false);
+                    }
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: 0,
+                    height: 0,
+                    padding: 0,
+                    border: 'none',
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
             </div>
             <Button
               icon={<RightOutlined />}

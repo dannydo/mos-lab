@@ -309,26 +309,30 @@ export default function CcDashboardPage() {
             </Space>
 
             {/* Hidden DatePicker */}
-            <DatePicker
-              open={pickerOpen}
-              onOpenChange={(open) => setPickerOpen(open)}
-              picker={viewMode === 'month' ? 'month' : viewMode === 'week' ? 'week' : 'date'}
-              onChange={(val) => {
-                if (val) {
-                  setReferenceDate(val);
-                  setPickerOpen(false);
-                }
-              }}
-              style={{
-                position: 'absolute',
-                width: 0,
-                height: 0,
-                padding: 0,
-                border: 'none',
-                visibility: 'hidden',
-                pointerEvents: 'none',
-              }}
-            />
+            {pickerOpen && (
+              <DatePicker
+                open={true}
+                onOpenChange={(open) => {
+                  if (!open) setPickerOpen(false);
+                }}
+                picker={viewMode === 'month' ? 'month' : viewMode === 'week' ? 'week' : 'date'}
+                onChange={(val) => {
+                  if (val) {
+                    setReferenceDate(val);
+                    setPickerOpen(false);
+                  }
+                }}
+                style={{
+                  position: 'absolute',
+                  width: 0,
+                  height: 0,
+                  padding: 0,
+                  border: 'none',
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
 
             {/* Store Filter */}
             <Select
