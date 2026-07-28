@@ -548,6 +548,15 @@ function CustomersPageContent() {
                 Chỉ chọn khách hàng chưa được phân bổ Booker
               </Checkbox>
             </div>
+            <div>
+              <Checkbox
+                checked={data.excludeFutureBooking}
+                onChange={(e) => data.setExcludeFutureBooking(e.target.checked)}
+                style={{ color: token.colorText }}
+              >
+                Bỏ khách hàng đã có lịch book tương lai
+              </Checkbox>
+            </div>
           </div>
         </div>
       </Modal>

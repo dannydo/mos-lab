@@ -2059,6 +2059,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMin,
       referralCountMax,
       excludeAssigned = 'true',
+      excludeFutureBooking = 'true',
+      hasFutureBooking,
     } = request.query as SafeAny;
 
     const limitNum = parseInt(limit, 10) || 20;
@@ -2136,6 +2138,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (excludedUserIds.length > 0) {
           innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
         }
+      }
+
+      if (excludeFutureBooking === 'true' || hasFutureBooking === 'false') {
+        innerWhereClauses.push(`NOT EXISTS (
+          SELECT 1 FROM \`order\` o_bk 
+          WHERE o_bk.user_id = u.id AND o_bk.booking_date_start > NOW() AND o_bk.order_state IN ('New', 'Confirmed')
+        )`);
+      } else if (hasFutureBooking === 'true') {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM \`order\` o_bk 
+          WHERE o_bk.user_id = u.id AND o_bk.booking_date_start > NOW() AND o_bk.order_state IN ('New', 'Confirmed')
+        )`);
       }
 
       // Apply other filters (search, bucket, stats, etc.)

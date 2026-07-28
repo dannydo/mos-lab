@@ -11,6 +11,7 @@ export const useRandomSelector = (
   const [randomLoading, setRandomLoading] = useState(false);
   const [randomSelectedIds, setRandomSelectedIds] = useState<number[] | null>(null);
   const [excludeAssigned, setExcludeAssigned] = useState<boolean>(true);
+  const [excludeFutureBooking, setExcludeFutureBooking] = useState<boolean>(true);
 
   const handleRandomSelect = useCallback(async () => {
     setRandomLoading(true);
@@ -33,18 +34,19 @@ export const useRandomSelector = (
         referralCountMax: filterParams.referralCountMax?.toString(),
         assignedStaffId: filterParams.assignedStaffId !== 'all' ? filterParams.assignedStaffId : undefined,
         excludeAssigned: excludeAssigned ? 'true' : 'false',
+        excludeFutureBooking: excludeFutureBooking ? 'true' : 'false',
       };
 
       const data = await apiClient.customers.getRandomIds(params);
       const selectedIds = (data as SafeAny).ids;
 
       if (selectedIds.length === 0) {
-        optionsRef.current?.onWarning?.('Không tìm thấy khách hàng chưa phân bổ nào phù hợp với bộ lọc hiện tại.');
+        optionsRef.current?.onWarning?.('Không tìm thấy khách hàng nào phù hợp với bộ lọc hiện tại.');
       } else {
         setRandomSelectedIds(selectedIds);
         onSelected(selectedIds);
         setRandomModalVisible(false);
-        optionsRef.current?.onSuccess?.(`Đã chọn ngẫu nhiên ${selectedIds.length} khách hàng chưa phân bổ!`);
+        optionsRef.current?.onSuccess?.(`Đã chọn ngẫu nhiên ${selectedIds.length} khách hàng!`);
       }
     } catch (err) {
       console.error('Random select error:', err);
@@ -52,7 +54,7 @@ export const useRandomSelector = (
     } finally {
       setRandomLoading(false);
     }
-  }, [randomCount, excludeAssigned, filterParams, onSelected, optionsRef]);
+  }, [randomCount, excludeAssigned, excludeFutureBooking, filterParams, onSelected, optionsRef]);
 
   return {
     randomModalVisible,
@@ -64,6 +66,8 @@ export const useRandomSelector = (
     setRandomSelectedIds,
     excludeAssigned,
     setExcludeAssigned,
+    excludeFutureBooking,
+    setExcludeFutureBooking,
     handleRandomSelect,
   };
 };
