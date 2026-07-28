@@ -139,6 +139,26 @@ export const getPendingColumns = ({
       ),
     },
     {
+      title: 'Booker / Phân bổ',
+      dataIndex: 'bookerName',
+      key: 'bookerName',
+      render: (name: string | null | undefined, record: Appointment) => {
+        const booker = name || record.bookerName;
+        if (!booker) {
+          return (
+            <Text type="secondary" style={{ fontStyle: 'italic' }}>
+              -
+            </Text>
+          );
+        }
+        return (
+          <Tag color="cyan" style={{ margin: 0, fontWeight: 500 }}>
+            {booker}
+          </Tag>
+        );
+      },
+    },
+    {
       title: 'Khuyến mãi',
       key: 'promotion',
       render: (record: Appointment) => {
@@ -351,6 +371,26 @@ export const getCompletedColumns = ({
           {channel?.toLowerCase()}
         </Tag>
       ),
+    },
+    {
+      title: 'Booker / Phân bổ',
+      dataIndex: 'bookerName',
+      key: 'bookerName',
+      render: (name: string | null | undefined, record: Appointment) => {
+        const booker = name || record.bookerName;
+        if (!booker) {
+          return (
+            <Text type="secondary" style={{ fontStyle: 'italic' }}>
+              -
+            </Text>
+          );
+        }
+        return (
+          <Tag color="cyan" style={{ margin: 0, fontWeight: 500 }}>
+            {booker}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Ngày hẹn',
@@ -617,6 +657,26 @@ export const getMissedColumns = ({
       render: (name: string) => (
         <span style={{ fontWeight: '500', color: token.colorText }}>{name || 'Khách chưa chọn'}</span>
       ),
+    },
+    {
+      title: 'Booker / Phân bổ',
+      dataIndex: 'bookerName',
+      key: 'bookerName',
+      render: (name: string | null | undefined, record: Appointment) => {
+        const booker = name || record.bookerName;
+        if (!booker) {
+          return (
+            <Text type="secondary" style={{ fontStyle: 'italic' }}>
+              -
+            </Text>
+          );
+        }
+        return (
+          <Tag color="cyan" style={{ margin: 0, fontWeight: 500 }}>
+            {booker}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Lý do Missed & Ghi chú',

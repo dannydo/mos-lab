@@ -2448,6 +2448,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         .status(403)
         .send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập danh sách nhân viên.' });
     }
+    const { role } = request.query as { date?: string; role?: string };
     try {
       // 1. Fetch CRM Staff
       const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
@@ -2614,7 +2615,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       });
 
-      return Array.from(uniqueStaffMap.values());
+      const result = Array.from(uniqueStaffMap.values());
+      if (role === 'booker' || role === 'telesales') {
+        return result.filter(
+          (s) => ['telesales', 'booker'].includes(s.role?.toLowerCase() || '') || s.displayName === 'Tâm Nguyễn'
+        );
+      }
+      return result;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get staff list error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve staff list' });

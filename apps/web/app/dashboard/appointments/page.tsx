@@ -100,7 +100,6 @@ export default function AppointmentsPage() {
     staffList,
     appointments,
     loading,
-    hasMore,
     currentPage,
     setCurrentPage,
     pageSize,
@@ -122,6 +121,7 @@ export default function AppointmentsPage() {
     selectedBookingForReschedule,
     setSelectedBookingForReschedule,
     fetchAppointments,
+    handlePageChange,
     handleCancelBooking,
     handleNavigate,
     getPeriodLabel,
@@ -1045,7 +1045,21 @@ export default function AppointmentsPage() {
           rowKey="id"
           size="small"
           loading={loading && appointments.length === 0}
-          pagination={false}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: total,
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showTotal: (totalCount, range) => (
+              <span style={{ fontSize: '13px', color: token.colorTextDescription, fontVariantNumeric: 'tabular-nums' }}>
+                Hiển thị {range[0]}-{range[1]} / Tổng số {totalCount} ca
+              </span>
+            ),
+            onChange: (page, size) => {
+              handlePageChange(page, size);
+            },
+          }}
           scroll={{ x: totalWidth }}
           tableLayout="fixed"
           style={{
@@ -1057,33 +1071,6 @@ export default function AppointmentsPage() {
           className="antd-custom-table"
           onRow={handleRow}
         />
-
-        {/* Infinite Scroll Sentinel */}
-        <div
-          ref={sentinelRef}
-          style={{
-            padding: '20px 0',
-            textAlign: 'center',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '10px',
-            color: token.colorTextDescription,
-            fontSize: '14px',
-          }}
-        >
-          {loading && appointments.length > 0 && (
-            <>
-              <Spin size="small" />
-              <span>Đang tải thêm dữ liệu...</span>
-            </>
-          )}
-          {!loading && !hasMore && appointments.length > 0 && (
-            <span style={{ fontStyle: 'italic', opacity: 0.8 }}>
-              Đã hiển thị tất cả {appointments.length} / {total} lịch hẹn
-            </span>
-          )}
-        </div>
       </Card>
 
       {/* CUSTOMER DETAIL DRAWER */}

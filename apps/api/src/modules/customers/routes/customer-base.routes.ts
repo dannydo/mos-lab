@@ -1140,7 +1140,7 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
         .status(403)
         .send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập danh sách nhân viên.' });
     }
-    const { date } = request.query as { date?: string };
+    const { date, role } = request.query as { date?: string; role?: string };
     try {
       // 1. Fetch CRM Staff
       const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
@@ -1295,6 +1295,11 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
       const dedupedCrmStaffList = Array.from(uniqueStaffMap.values());
 
       if (!date) {
+        if (role === 'booker' || role === 'telesales') {
+          return dedupedCrmStaffList.filter(
+            (s) => ['telesales', 'booker'].includes(s.role?.toLowerCase() || '') || s.displayName === 'Tâm Nguyễn'
+          );
+        }
         return dedupedCrmStaffList.filter((s) =>
           ['telesales', 'executive', 'manager', 'admin'].includes(s.role?.toLowerCase() || '')
         );

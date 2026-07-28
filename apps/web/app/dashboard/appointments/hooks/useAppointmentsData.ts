@@ -20,6 +20,7 @@ const defaultColumnConfig = {
   tipAmount: { visible: true, width: 120, label: 'Tiền tips' },
   bookingBonus: { visible: true, width: 130, label: 'Hoa hồng OC' },
   bookingChannel: { visible: true, width: 120, label: 'Kênh đặt lịch' },
+  bookerName: { visible: true, width: 150, label: 'Booker / Phân bổ' },
   promotion: { visible: true, width: 150, label: 'Khuyến mãi' },
   bookingNote: { visible: true, width: 220, label: 'Ghi chú đặt lịch' },
   orderState: { visible: true, width: 120, label: 'Trạng thái' },
@@ -136,7 +137,13 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
   const [loading, setLoading] = useState(true);
 
   // Pagination states
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [currentPage, setCurrentPage] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mos_appointments_currentPage');
+      if (saved) return parseInt(saved, 10);
+    }
+    return 1;
+  });
   const [pageSize, setPageSize] = useState<number>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('mos_appointments_pageSize');
@@ -161,8 +168,15 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
   useEffect(() => {
     if (currentUser?.role === 'admin') {
       apiClient.customers
-        .getStaff()
-        .then((data) => setStaffList(data))
+        .getStaff({ role: 'booker' })
+        .then((data) => {
+          const bookerTeam = (data || []).filter((s: SafeAny) => {
+            const role = (s.role || '').toLowerCase();
+            const name = (s.displayName || '').trim();
+            return role === 'telesales' || role === 'booker' || name === 'Tâm Nguyễn';
+          });
+          setStaffList(bookerTeam);
+        })
         .catch((err) => console.error('Failed to load staff list:', err));
     }
   }, [currentUser]);
@@ -172,7 +186,6 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     localStorage.setItem('appointment_columns_config_v2', JSON.stringify(newConfig));
   };
 
-  const [hasMore, setHasMore] = useState(true);
   const isFetchingRef = useRef(false);
 
   const dateFromStr = dateRange[0] ? dateRange[0].format('YYYY-MM-DD 00:00:00') : '';
@@ -180,10 +193,11 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
 
   // Fetch appointments data
   const fetchAppointments = useCallback(
-    async (targetPage?: number) => {
+    async (targetPage?: number, targetSize?: number) => {
       if (!dateFromStr || !dateToStr) return;
 
       const pageToFetch = targetPage !== undefined ? targetPage : currentPage;
+      const sizeToFetch = targetSize !== undefined ? targetSize : pageSize;
 
       isFetchingRef.current = true;
       setLoading(true);
@@ -193,7 +207,7 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
           dateTo: dateToStr,
           type: activeTab,
           page: pageToFetch,
-          limit: pageSize,
+          limit: sizeToFetch,
         };
 
         if (activeTab === 'missed' && missedStatusFilter !== 'ALL') {
@@ -207,24 +221,9 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
         const data = await apiClient.customers.getAppointments(params);
         const fetchedItems = data.data || [];
 
-        if (pageToFetch === 1) {
-          setAppointments(fetchedItems);
-        } else {
-          setAppointments((prev) => {
-            const existingIds = new Set(prev.map((item) => item.id));
-            const newItems = fetchedItems.filter((item: SafeAny) => !existingIds.has(item.id));
-            return [...prev, ...newItems];
-          });
-        }
-
-        setTotal(data.total);
+        setAppointments(fetchedItems);
+        setTotal(data.total || 0);
         setSummary(data.summary || null);
-
-        if (fetchedItems.length < pageSize || pageToFetch * pageSize >= data.total) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
       } catch (err) {
         console.error('Fetch appointments error:', err);
         optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể tải lịch hẹn');
@@ -236,13 +235,31 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     [dateFromStr, dateToStr, activeTab, selectedStaffId, missedStatusFilter, currentUser, currentPage, pageSize]
   );
 
+  const handlePageChange = useCallback(
+    (page: number, size?: number) => {
+      setCurrentPage(page);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mos_appointments_currentPage', String(page));
+      }
+      if (size && size !== pageSize) {
+        setPageSize(size);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('mos_appointments_pageSize', String(size));
+        }
+      }
+      fetchAppointments(page, size);
+    },
+    [pageSize, fetchAppointments]
+  );
+
   const handleCancelBooking = async (orderId: number) => {
     try {
       await apiClient.customers.deleteBooking(orderId);
       optionsRef.current?.onSuccess?.('Hủy lịch hẹn thành công!');
-      setAppointments([]);
       setCurrentPage(1);
-      setHasMore(true);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mos_appointments_currentPage', '1');
+      }
       fetchAppointments(1);
     } catch (err) {
       console.error('[Cancel] Failed to cancel booking:', err);
@@ -252,7 +269,6 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
 
   const filterKey = `${dateFromStr}_${dateToStr}_${activeTab}_${selectedStaffId}_${missedStatusFilter}`;
   const prevFilterKeyRef = useRef('');
-  const prevPageRef = useRef(1);
 
   // Handle filter changes (Reset to Page 1 and fetch)
   useEffect(() => {
@@ -262,47 +278,12 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
       prevFilterKeyRef.current = filterKey;
       isFetchingRef.current = false;
       setCurrentPage(1);
-      setHasMore(true);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mos_appointments_currentPage', '1');
+      }
       fetchAppointments(1);
     }
   }, [filterKey, currentUser, fetchAppointments]);
-
-  // Handle page changes for infinite scroll (Page > 1)
-  useEffect(() => {
-    if (!currentUser || currentPage === 1) return;
-    if (prevPageRef.current !== currentPage) {
-      prevPageRef.current = currentPage;
-      fetchAppointments(currentPage);
-    }
-  }, [currentPage, currentUser, fetchAppointments]);
-
-  // Intersection Observer for Infinite Scroll (Lazy Loading)
-  useEffect(() => {
-    if (loading || !hasMore || appointments.length === 0 || isFetchingRef.current) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isFetchingRef.current && hasMore && !loading) {
-          isFetchingRef.current = true;
-          setCurrentPage((prev) => prev + 1);
-        }
-      },
-      {
-        rootMargin: '100px',
-      }
-    );
-
-    const currentSentinel = sentinelRef.current;
-    if (currentSentinel) {
-      observer.observe(currentSentinel);
-    }
-
-    return () => {
-      if (currentSentinel) {
-        observer.unobserve(currentSentinel);
-      }
-    };
-  }, [loading, hasMore, appointments.length]);
 
   const handleNavigate = useCallback(
     (direction: number) => {
@@ -403,7 +384,6 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     staffList,
     appointments,
     loading,
-    hasMore,
     currentPage,
     setCurrentPage,
     pageSize,
@@ -425,6 +405,7 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     selectedBookingForReschedule,
     setSelectedBookingForReschedule,
     fetchAppointments,
+    handlePageChange,
     handleCancelBooking,
     handleNavigate,
     getPeriodLabel,
