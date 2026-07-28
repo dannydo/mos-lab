@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { SafeAny } from '@mos-lab/shared';
 import { getBkPaystubData } from '../../kpi/services/bk-salary.service.js';
+import { BookingAuditService } from '../services/booking-audit.service.js';
 
 export async function registerBookingRoutes(fastify: FastifyInstance) {
   // POST /api/customers/booking
@@ -344,21 +345,27 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
               assignedBy: user.id,
             },
           });
-
-          const batchId = `alloc_auto_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-          await fastify.prisma.crm.crmAssignmentHistory.create({
-            data: {
-              batchId,
-              legacyUserId: finalCustomerId,
-              prevStaffId: null,
-              newStaffId: user.id,
-              assignedBy: user.id,
-            },
-          });
         }
       }
 
-      return { success: true, orderId, customerId: finalCustomerId };
+      // Audit Log Creation
+      await BookingAuditService.logAction(fastify, {
+        orderId,
+        actionType: 'EDIT',
+        actorStaffId: validStaffId,
+        originalStaffId: validStaffId,
+        reasonCategory: 'TẠO_LỊCH_MỚI',
+        reasonNote: 'Tạo đơn đặt lịch hẹn mới',
+        newData: {
+          bookingDateStart: mysqlStart,
+          storeId,
+          technicianId,
+          bookingNote: finalBookingNote,
+        },
+        ipAddress: request.ip,
+      });
+
+      return reply.send({ success: true, orderId, orderKey });
     } catch (error) {
       fastify.log.error(error as Error, '[Booking] Failed to create booking:');
       return reply.status(500).send({
@@ -369,7 +376,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
   });
 
   // PUT /api/customers/booking/:id
-  // Reschedule an existing booking
+  // Reschedule or update an existing booking
   fastify.put('/customers/booking/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
     if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
@@ -391,6 +398,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       bookingTime,
       bookingNote,
       serviceId,
+      reasonCategory,
+      reasonNote,
     } = request.body as {
       storeId: number;
       storeName: string;
@@ -400,6 +409,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       bookingTime: string; // HH:mm
       bookingNote?: string | null;
       serviceId?: number | null;
+      reasonCategory?: string | null;
+      reasonNote?: string | null;
     };
 
     if (!storeId || !bookingDate || !bookingTime) {
@@ -410,7 +421,6 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      // Verify that the current user has linked legacy staff account
       const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
         where: { id: user.id },
         select: { legacyStaffId: true },
@@ -435,9 +445,10 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // 1. Fetch current order details (like duration and user_id)
+      // 1. Fetch current order details before updating
       const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT user_id, booking_duration_minute, total_price FROM \`order\` WHERE id = ?`,
+        `SELECT id, user_id, created_staff_id, client_store_id, assigned_staff_id, booking_date_start, booking_note, booking_duration_minute, total_price 
+         FROM \`order\` WHERE id = ?`,
         orderId
       );
 
@@ -447,15 +458,22 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
 
       const order = existingOrders[0];
       const finalCustomerId = Number(order.user_id);
+      const originalStaffId = order.created_staff_id ? Number(order.created_staff_id) : null;
+
+      // Old Data snapshot
+      const oldData = {
+        bookingDateStart: order.booking_date_start ? new Date(order.booking_date_start).toISOString() : null,
+        storeId: Number(order.client_store_id),
+        technicianId: order.assigned_staff_id ? Number(order.assigned_staff_id) : null,
+        bookingNote: order.booking_note || null,
+      };
 
       // 2. Fetch service price & duration if serviceId is provided
       let srvPrice = 0;
       let srvDuration = 90;
       let finalServiceId = serviceId;
       if (finalServiceId !== undefined && finalServiceId !== null) {
-        if (finalServiceId === 0) {
-          finalServiceId = 1; // Map to "Any - Lashes 2"
-        }
+        if (finalServiceId === 0) finalServiceId = 1;
         const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT s.duration_minute_standard as duration, sp.service_price as price
            FROM service s
@@ -478,7 +496,6 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       const startDate = new Date(startStr);
       const endDate = new Date(startDate.getTime() + duration * 60 * 1000);
 
-      // Adjust date timezone for SQL representation using timezone-naive local format
       const formatLocalMySQL = (date: Date) => {
         const pad = (n: number) => String(n).padStart(2, '0');
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
@@ -486,7 +503,25 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       const mysqlStart = formatLocalMySQL(startDate);
       const mysqlEnd = formatLocalMySQL(endDate);
 
-      // 4. Update order in legacy database
+      const newData = {
+        bookingDateStart: mysqlStart,
+        storeId,
+        technicianId: technicianId || null,
+        bookingNote: bookingNote || null,
+      };
+
+      // 4. Determine action type
+      let actionType: 'RESCHEDULE' | 'CHANGE_KTV' | 'CHANGE_STORE' | 'EDIT' = 'EDIT';
+      const oldStartStr = order.booking_date_start ? formatLocalMySQL(new Date(order.booking_date_start)) : '';
+      if (oldStartStr !== mysqlStart) {
+        actionType = 'RESCHEDULE';
+      } else if (Number(order.assigned_staff_id || 0) !== Number(technicianId || 0)) {
+        actionType = 'CHANGE_KTV';
+      } else if (Number(order.client_store_id) !== Number(storeId)) {
+        actionType = 'CHANGE_STORE';
+      }
+
+      // Update order in legacy database
       await fastify.prisma.legacy.$executeRawUnsafe(
         `UPDATE \`order\` 
          SET booking_date_start = ?, 
@@ -553,15 +588,28 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         );
       }
 
-      // 5. Update user's last_order_booking date
+      // Update user's last_order_booking date
       await fastify.prisma.legacy.$executeRawUnsafe(
         `UPDATE user_profile SET last_order_booking = ? WHERE user_id = ?`,
         mysqlStart,
         finalCustomerId
       );
 
+      // 6. Audit Log Recording
+      await BookingAuditService.logAction(fastify, {
+        orderId,
+        actionType,
+        actorStaffId: crmStaff.legacyStaffId,
+        originalStaffId,
+        reasonCategory,
+        reasonNote,
+        oldData,
+        newData,
+        ipAddress: request.ip,
+      });
+
       return reply.send({ success: true, orderId });
-    } catch (err) {
+    } catch (err: SafeAny) {
       fastify.log.error(err, 'Reschedule booking error:');
       return reply
         .status(500)
@@ -583,16 +631,44 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'ID lịch hẹn không hợp lệ' });
     }
 
+    const { reasonCategory, reasonNote } = (request.body || {}) as {
+      reasonCategory?: string | null;
+      reasonNote?: string | null;
+    };
+
     try {
-      // 1. Fetch the order details first to verify existence
+      const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
+        where: { id: user.id },
+        select: { legacyStaffId: true },
+      });
+
+      if (!crmStaff || !crmStaff.legacyStaffId) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message:
+            'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.',
+        });
+      }
+
+      // 1. Fetch the order details first to verify existence & capture original creator
       const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT id FROM \`order\` WHERE id = ?`,
+        `SELECT id, created_staff_id, booking_date_start, client_store_id, assigned_staff_id, booking_note FROM \`order\` WHERE id = ?`,
         orderId
       );
 
       if (existingOrders.length === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy lịch hẹn trên hệ thống.' });
       }
+
+      const order = existingOrders[0];
+      const originalStaffId = order.created_staff_id ? Number(order.created_staff_id) : null;
+
+      const oldData = {
+        bookingDateStart: order.booking_date_start ? new Date(order.booking_date_start).toISOString() : null,
+        storeId: Number(order.client_store_id),
+        technicianId: order.assigned_staff_id ? Number(order.assigned_staff_id) : null,
+        bookingNote: order.booking_note || null,
+      };
 
       // 2. Perform soft delete / update status to 'Cancelled'
       await fastify.prisma.legacy.$executeRawUnsafe(
@@ -603,8 +679,23 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         orderId
       );
 
-      return reply.send({ success: true, orderId });
-    } catch (err) {
+      // 3. Create Audit Log
+      await BookingAuditService.logAction(fastify, {
+        orderId,
+        actionType: 'CANCEL',
+        actorStaffId: crmStaff.legacyStaffId,
+        originalStaffId,
+        reasonCategory,
+        reasonNote,
+        oldData,
+        newData: { orderState: 'Cancelled' },
+        ipAddress: request.ip,
+      });
+
+      const isCrossAction = Boolean(originalStaffId && crmStaff.legacyStaffId !== originalStaffId);
+
+      return reply.send({ success: true, orderId, isCrossAction });
+    } catch (err: SafeAny) {
       fastify.log.error(err, 'Cancel booking error:');
       return reply
         .status(500)

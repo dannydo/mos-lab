@@ -308,6 +308,34 @@ model CrmTeamMember {
   @@map("crm_team_members")
 }
 
+// ═══════════════════════════════════════════
+// Booking Audit Logs — Trace changes & cross-booker cancellations
+// ═══════════════════════════════════════════
+model CrmBookingLog {
+  id                  Int      @id @default(autoincrement())
+  orderId             Int      @map("order_id")
+  actionType          String   @map("action_type") @db.VarChar(30) // CANCEL, RESCHEDULE, CHANGE_KTV, CHANGE_STORE, EDIT
+  actorStaffId        Int      @map("actor_staff_id")
+  actorStaffName      String?  @map("actor_staff_name") @db.VarChar(100)
+  originalStaffId     Int?     @map("original_staff_id")
+  originalStaffName   String?  @map("original_staff_name") @db.VarChar(100)
+  isCrossAction       Boolean  @default(false) @map("is_cross_action")
+  reasonCategory      String?  @map("reason_category") @db.VarChar(100)
+  reasonNote          String?  @map("reason_note") @db.Text
+  oldDataJson         String?  @map("old_data_json") @db.Text
+  newDataJson         String?  @map("new_data_json") @db.Text
+  ipAddress           String?  @map("ip_address") @db.VarChar(45)
+  dateCreated         DateTime @default(now()) @map("date_created") @db.DateTime(0)
+
+  @@index([orderId])
+  @@index([actorStaffId])
+  @@index([originalStaffId])
+  @@index([isCrossAction])
+  @@index([dateCreated])
+  @@map("crm_booking_logs")
+}
+
+
 
 
 

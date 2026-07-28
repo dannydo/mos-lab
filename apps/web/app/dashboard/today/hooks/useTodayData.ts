@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
 import { DEFAULT_BOOKER_TEAMS, BookerTeamConfig } from '../components/BookerTeamConfigModal';
+import type { RevenueHourlyResponse } from '@mos-lab/shared';
 
 export interface BookingData {
   key: string;
@@ -171,6 +172,11 @@ export function useTodayData(options?: UseTodayDataOptions) {
   const [bookingsOc, setBookingsOc] = useState<BookingData[]>([]);
   const [bookingsOther, setBookingsOther] = useState<BookingData[]>([]);
 
+  // Revenue View states
+  const [revenueData, setRevenueData] = useState<RevenueHourlyResponse | null>(null);
+  const [revenueLoading, setRevenueLoading] = useState(false);
+  const [showRevenueView, setShowRevenueView] = useState(false);
+
   // Load persisted states on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -197,6 +203,9 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
       const persistedShowTax = localStorage.getItem('today_show_tax');
       if (persistedShowTax !== null) setShowTax(persistedShowTax === 'true');
+
+      const persistedRevenueView = localStorage.getItem('today_show_revenue_view');
+      if (persistedRevenueView !== null) setShowRevenueView(persistedRevenueView === 'true');
 
       const urlBookingFilter = urlParams.get('bookingFilter') || urlParams.get('tab');
       const persistedBookingFilter = urlBookingFilter || localStorage.getItem('today_booking_filter');
@@ -277,6 +286,17 @@ export function useTodayData(options?: UseTodayDataOptions) {
         setBookingsCombo(data.bookingsCombo);
         setBookingsOc(data.bookingsOc || []);
         setBookingsOther(data.bookingsOther);
+
+        // Fetch revenue data in parallel (non-blocking)
+        try {
+          const revParams: SafeAny = { dateFrom, dateTo };
+          if (bookingBranch && bookingBranch !== 'all') revParams.branchKey = bookingBranch;
+          if (selectedBooker && selectedBooker !== 'all') revParams.bookerFilter = selectedBooker;
+          const revData = (await apiClient.dashboard.getRevenueHourly(revParams)) as RevenueHourlyResponse;
+          setRevenueData(revData);
+        } catch (revErr) {
+          console.error('Fetch revenue hourly error (non-blocking):', revErr);
+        }
       } catch (err) {
         console.error('Fetch dashboard today error:', err);
         if (!isSilent) {
@@ -290,14 +310,14 @@ export function useTodayData(options?: UseTodayDataOptions) {
         }
       }
     },
-    []
+    [bookingBranch, selectedBooker]
   );
 
   useEffect(() => {
     if (selectedDate) {
       fetchDashboardData(selectedDate, dateRangeMode);
     }
-  }, [selectedDate, dateRangeMode, fetchDashboardData]);
+  }, [selectedDate, dateRangeMode, bookingBranch, selectedBooker, fetchDashboardData]);
 
   const dateBounds = useMemo(() => {
     if (!selectedDate) {
@@ -673,6 +693,17 @@ export function useTodayData(options?: UseTodayDataOptions) {
     setDrawerVisible,
     setSelectedCustomer,
     setShowTax,
+
+    // Revenue View
+    revenueData,
+    revenueLoading,
+    showRevenueView,
+    setShowRevenueView: (val: boolean) => {
+      setShowRevenueView(val);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('today_show_revenue_view', String(val));
+      }
+    },
 
     // functions
     openCustomerDrawer,

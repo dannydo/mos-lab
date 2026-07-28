@@ -126,7 +126,10 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     setIsTipModalOpen,
     setIsRevenueModalOpen,
     fetchDetails,
+    refetchTabData,
+    refreshAllDetails,
     handleMouseDown,
+
     handleModalDragStart,
     handleGemModalDragStart,
     handleTipModalDragStart,
@@ -717,6 +720,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                               loading={tabDataMap['bookings']?.loading}
                               hasMore={tabDataMap['bookings']?.hasMore}
                               onLoadMore={() => fetchTabData('bookings', (tabDataMap['bookings']?.page || 1) + 1, true)}
+                              onRefreshDetails={refreshAllDetails}
                             />
                           ),
                         },

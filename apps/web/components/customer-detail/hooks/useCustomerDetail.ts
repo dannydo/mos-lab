@@ -163,12 +163,12 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
   }, [customerId]);
 
   const fetchTabData = useCallback(
-    async (tabKey: string, pageNum = 1, append = false) => {
+    async (tabKey: string, pageNum = 1, append = false, force = false) => {
       if (!customerId) return;
 
       const currentTabData = tabDataMapRef.current[tabKey];
-      // If already cached and not loading more page 1, skip
-      if (!append && pageNum === 1 && currentTabData?.items && currentTabData.items.length > 0) {
+      // If already cached and not loading more page 1, skip (unless force is true)
+      if (!force && !append && pageNum === 1 && currentTabData?.items && currentTabData.items.length > 0) {
         return;
       }
 
@@ -221,6 +221,18 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     },
     [customerId]
   );
+
+  const refetchTabData = useCallback(
+    (tabKey: string) => {
+      return fetchTabData(tabKey, 1, false, true);
+    },
+    [fetchTabData]
+  );
+
+  const refreshAllDetails = useCallback(async () => {
+    await fetchDetails();
+    await fetchTabData('bookings', 1, false, true);
+  }, [fetchDetails, fetchTabData]);
 
   const handleTabChange = useCallback(
     (key: string) => {
@@ -637,9 +649,16 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
 
   const isCompletedOrValidVisit = (orderState: string) => {
     return (
-      ['ServiceCompleted', 'Completed', 'CheckOut', 'CheckIn', 'ServiceStart', 'ServiceEnd', 'ServiceCleaned', 'Consultation'].includes(
-        orderState
-      ) || orderState !== 'Cancelled'
+      [
+        'ServiceCompleted',
+        'Completed',
+        'CheckOut',
+        'CheckIn',
+        'ServiceStart',
+        'ServiceEnd',
+        'ServiceCleaned',
+        'Consultation',
+      ].includes(orderState) || orderState !== 'Cancelled'
     );
   };
 
@@ -848,7 +867,10 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     setIsTipModalOpen,
     setIsRevenueModalOpen,
     fetchDetails,
+    refetchTabData,
+    refreshAllDetails,
     handleMouseDown,
+
     handleModalDragStart,
     handleGemModalDragStart,
     handleTipModalDragStart,

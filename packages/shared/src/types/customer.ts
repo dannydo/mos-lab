@@ -417,3 +417,43 @@ export interface SaveMissedLogInput {
   followUpStatus?: MissedFollowUpStatus;
   callbackDate?: string | null;
 }
+
+export type BookingActionType = 'CANCEL' | 'RESCHEDULE' | 'CHANGE_KTV' | 'CHANGE_STORE' | 'EDIT';
+
+export interface BookingAuditLog {
+  id: number;
+  orderId: number;
+  actionType: BookingActionType;
+  actorStaffId: number;
+  actorStaffName?: string | null;
+  originalStaffId?: number | null;
+  originalStaffName?: string | null;
+  isCrossAction: boolean;
+  reasonCategory?: string | null;
+  reasonNote?: string | null;
+  oldDataJson?: string | null;
+  newDataJson?: string | null;
+  ipAddress?: string | null;
+  dateCreated: string;
+  orderKey?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+}
+
+export interface BookingAuditLogFilter {
+  dateFrom?: string;
+  dateTo?: string;
+  actorStaffId?: number | string;
+  originalStaffId?: number | string;
+  isCrossActionOnly?: boolean;
+  actionType?: BookingActionType | 'ALL';
+  page?: number | string;
+  limit?: number | string;
+}
+
+export interface BookingAuditSummary {
+  totalLogs: number;
+  totalCrossActions: number;
+  totalCrossCancels: number;
+  totalCrossReschedules: number;
+}

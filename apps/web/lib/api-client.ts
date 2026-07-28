@@ -850,6 +850,25 @@ export const apiClient = {
       const response = await api.get('/dashboard/today', { params });
       return response.data;
     },
+    getRevenueHourly: async (params: {
+      dateFrom: string;
+      dateTo: string;
+      branchKey?: string;
+      bookerFilter?: string;
+    }): Promise<unknown> => {
+      const response = await api.get('/dashboard/today/revenue-hourly', { params });
+      return response.data;
+    },
+    getRevenueDetail: async (params: {
+      dateFrom: string;
+      dateTo: string;
+      hour?: string;
+      branchKey?: string;
+      bookerFilter?: string;
+    }): Promise<unknown> => {
+      const response = await api.get('/dashboard/today/revenue-detail', { params });
+      return response.data;
+    },
   },
 
   gamification: {
@@ -947,6 +966,25 @@ export const apiClient = {
       data: UpdateTeamMembersRequest
     ): Promise<{ success: boolean; message: string }> => {
       const response = await api.put(`/teams/${id}/members`, data);
+      return response.data;
+    },
+  },
+
+  bookingAudit: {
+    getLogsForOrder: async (orderId: number) => {
+      const response = await api.get(`/customers/booking/${orderId}/logs`);
+      return response.data;
+    },
+    getAuditLogReport: async (params?: Record<string, any>) => {
+      const response = await api.get('/kpi/booking-audit-logs', { params });
+      return response.data;
+    },
+    cancelBooking: async (id: number, data?: { reasonCategory?: string; reasonNote?: string }) => {
+      const response = await api.delete(`/customers/booking/${id}`, { data });
+      return response.data;
+    },
+    rescheduleBooking: async (id: number, data: Record<string, any>) => {
+      const response = await api.put(`/customers/booking/${id}`, data);
       return response.data;
     },
   },

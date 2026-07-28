@@ -33,6 +33,7 @@ import {
   LeftOutlined,
   RightOutlined,
   SafetyOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -54,6 +55,11 @@ const PackageAuditTab = dynamic(() => import('./components/PackageAuditTab').the
     </div>
   ),
 });
+const BookingAuditLogReportTab = dynamic(
+  () => import('./components/BookingAuditLogReportTab').then((m) => m.BookingAuditLogReportTab),
+  { ssr: false }
+);
+
 import { PageHeader } from '../../../components/ui';
 
 dayjs.extend(isoWeek);
@@ -723,6 +729,15 @@ export default function KPIPage() {
                 </span>
               ),
               children: <PackageAuditTab />,
+            },
+            {
+              key: 'booking-audit',
+              label: (
+                <span>
+                  <HistoryOutlined /> Nhật Ký Hủy & Dời Lịch
+                </span>
+              ),
+              children: <BookingAuditLogReportTab />,
             },
           ]}
         />

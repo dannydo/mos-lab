@@ -296,6 +296,10 @@ export default function TodayDashboard() {
             setTeamModalVisible={data.setTeamModalVisible}
             openCustomerDrawer={data.openCustomerDrawer}
             selectedDate={data.selectedDate}
+            revenueData={data.revenueData}
+            revenueLoading={data.revenueLoading}
+            showRevenueView={data.showRevenueView}
+            setShowRevenueView={data.setShowRevenueView}
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

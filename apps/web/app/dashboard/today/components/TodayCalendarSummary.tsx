@@ -30,12 +30,19 @@ import {
   PieChartOutlined,
   ClockCircleOutlined,
   SettingOutlined,
+  DollarOutlined,
+  SwapOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { BookingData, ComingClientData } from '../hooks/useTodayData';
 import { BookerTeamConfig, DEFAULT_BOOKER_TEAMS } from './BookerTeamConfigModal';
 import { removeVietnameseTones, vietnameseSearchFilter } from '@mos-lab/shared';
+import type { RevenueHourlyResponse } from '@mos-lab/shared';
 import { useOmiCall } from '../../../../context/OmiCallContext';
+import { RevenueKpiCards } from './RevenueKpiCards';
+import { RevenueHourlyChart } from './RevenueHourlyChart';
+import { RevenueBranchHeatmap } from './RevenueBranchHeatmap';
+import { RevenueDetailModal } from './RevenueDetailModal';
 
 const { Text } = Typography;
 
@@ -76,6 +83,11 @@ interface TodayCalendarSummaryProps {
   setTeamModalVisible?: (visible: boolean) => void;
   openCustomerDrawer: (record: SafeAny) => void;
   selectedDate: dayjs.Dayjs;
+  // Revenue props
+  revenueData?: RevenueHourlyResponse | null;
+  revenueLoading?: boolean;
+  showRevenueView?: boolean;
+  setShowRevenueView?: (val: boolean) => void;
 }
 
 export default function TodayCalendarSummary({
@@ -92,6 +104,10 @@ export default function TodayCalendarSummary({
   setTeamModalVisible,
   openCustomerDrawer,
   selectedDate,
+  revenueData,
+  revenueLoading,
+  showRevenueView,
+  setShowRevenueView,
 }: TodayCalendarSummaryProps) {
   const { makeCall } = useOmiCall();
   const [matrixStatusFilter, setMatrixStatusFilter] = useState<'all' | 'created' | 'scheduled' | 'missed' | 'done'>(
@@ -102,6 +118,28 @@ export default function TodayCalendarSummary({
     branchKey?: string;
     type: 'all' | 'created' | 'scheduled' | 'missed' | 'done';
   } | null>(null);
+  const [revenueDetailContext, setRevenueDetailContext] = useState<{
+    hour?: string;
+    branchKey?: string;
+    branchName?: string;
+    type?: string;
+  } | null>(null);
+  const [revenueDetailOpen, setRevenueDetailOpen] = useState(false);
+
+  const handleRevenueBarClick = (hour: string) => {
+    setRevenueDetailContext({ hour });
+    setRevenueDetailOpen(true);
+  };
+
+  const handleRevenueCellClick = (branchKey: string, hour: string) => {
+    const branchNames: Record<string, string> = {
+      detham: 'Đề Thám',
+      pxl: 'Phan Xích Long',
+      estella: 'Estella',
+    };
+    setRevenueDetailContext({ hour, branchKey, branchName: branchNames[branchKey] || branchKey });
+    setRevenueDetailOpen(true);
+  };
 
   const matchesBookerFilter = React.useCallback(
     (bookerName: string | undefined, filter: string | null) => {
@@ -362,9 +400,78 @@ export default function TodayCalendarSummary({
                 />
               )}
             </Space>
+
+            {/* Revenue View Toggle */}
+            {setShowRevenueView && (
+              <Button
+                size="small"
+                type={showRevenueView ? 'primary' : 'default'}
+                icon={<DollarOutlined />}
+                onClick={() => setShowRevenueView(!showRevenueView)}
+                style={{
+                  background: showRevenueView ? 'linear-gradient(135deg, #10b981, #059669)' : undefined,
+                  borderColor: showRevenueView ? '#10b981' : undefined,
+                  fontWeight: 'bold',
+                }}
+              >
+                {showRevenueView ? '💰 Ẩn Doanh Thu' : '💰 Xem Doanh Thu'}
+              </Button>
+            )}
           </Space>
         </div>
       </Card>
+
+      {/* REVENUE VIEW SECTION (toggled) */}
+      {showRevenueView && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            padding: '2px',
+            borderRadius: '12px',
+            background:
+              themeMode === 'dark'
+                ? 'linear-gradient(135deg, rgba(16,185,129,0.05), rgba(6,182,212,0.05))'
+                : 'linear-gradient(135deg, rgba(16,185,129,0.03), rgba(6,182,212,0.03))',
+          }}
+        >
+          {/* Revenue KPI Cards */}
+          <RevenueKpiCards
+            themeMode={themeMode}
+            token={token}
+            summary={revenueData?.summary || null}
+            loading={revenueLoading}
+            onCardClick={(type) => {
+              if (type === 'revenue' || type === 'combo') {
+                setRevenueDetailContext({ type });
+                setRevenueDetailOpen(true);
+              }
+            }}
+          />
+
+          {/* Revenue Hourly Chart + Branch Heatmap */}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={16}>
+              <RevenueHourlyChart
+                themeMode={themeMode}
+                token={token}
+                hourlyBreakdown={revenueData?.hourlyBreakdown || []}
+                dailyTarget={revenueData?.summary?.dailyTarget || 0}
+                onBarClick={handleRevenueBarClick}
+              />
+            </Col>
+            <Col xs={24} lg={8}>
+              <RevenueBranchHeatmap
+                themeMode={themeMode}
+                token={token}
+                branchHourlyMatrix={revenueData?.branchHourlyMatrix || []}
+                onCellClick={handleRevenueCellClick}
+              />
+            </Col>
+          </Row>
+        </div>
+      )}
 
       {/* SECTION 1: 4 INTERACTIVE KPI CARDS */}
       <Row gutter={[16, 16]}>
@@ -1160,6 +1267,21 @@ export default function TodayCalendarSummary({
           </div>
         </div>
       </Modal>
+
+      {/* REVENUE DETAIL MODAL */}
+      <RevenueDetailModal
+        themeMode={themeMode}
+        token={token}
+        open={revenueDetailOpen}
+        onClose={() => {
+          setRevenueDetailOpen(false);
+          setRevenueDetailContext(null);
+        }}
+        context={revenueDetailContext}
+        dateFrom={dateBounds?.dateFrom || selectedDate.format('YYYY-MM-DD')}
+        dateTo={dateBounds?.dateTo || selectedDate.format('YYYY-MM-DD')}
+        openCustomerDrawer={openCustomerDrawer}
+      />
     </div>
   );
 }

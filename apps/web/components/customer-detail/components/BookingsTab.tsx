@@ -1,8 +1,11 @@
 'use client';
 
-import React from 'react';
-import { Tag, Popconfirm, Button, Skeleton } from 'antd';
-import { CloseCircleOutlined, CalendarOutlined, CheckOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Tag, Button, Skeleton } from 'antd';
+import { CloseCircleOutlined, CalendarOutlined, CheckOutlined, HistoryOutlined } from '@ant-design/icons';
+import { CancelBookingModal } from '../../booking/CancelBookingModal';
+import { BookingAuditLogDrawer } from '../../booking/BookingAuditLogDrawer';
+import { SafeAny } from '@mos-lab/shared';
 
 interface BookingsTabProps {
   bookings: SafeAny[];
@@ -45,6 +48,7 @@ export const BookingsTab: React.FC<
     loading?: boolean;
     hasMore?: boolean;
     onLoadMore?: () => void;
+    onRefreshDetails?: () => void;
   }
 > = ({
   bookings,
@@ -57,8 +61,14 @@ export const BookingsTab: React.FC<
   loading = false,
   hasMore = false,
   onLoadMore,
+  onRefreshDetails,
 }) => {
   // Pre-map notes (CC, CS, Pinned) to bookings (by orderId or closest date)
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedBookingForCancel, setSelectedBookingForCancel] = useState<SafeAny | null>(null);
+  const [auditDrawerOpen, setAuditDrawerOpen] = useState(false);
+  const [selectedOrderIdForAudit, setSelectedOrderIdForAudit] = useState<{ id: number; key?: string } | null>(null);
+
   const notesByBookingMap = new Map<string, SafeAny[]>();
 
   if (notes && notes.length > 0 && bookings.length > 0) {
@@ -367,58 +377,77 @@ export const BookingsTab: React.FC<
                   </div>
                 )}
 
-                {!isCompleted && b.orderState !== 'Cancelled' && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'flex-end',
-                      marginTop: '10px',
-                      gap: '8px',
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    marginTop: '10px',
+                    gap: '8px',
+                  }}
+                >
+                  <Button
+                    type="default"
+                    size="small"
+                    icon={<HistoryOutlined />}
+                    style={{ borderRadius: '4px', fontSize: '12px' }}
+                    onClick={() => {
+                      setSelectedOrderIdForAudit({ id: b.id, key: b.orderKey });
+                      setAuditDrawerOpen(true);
                     }}
                   >
-                    <Popconfirm
-                      title="Xác nhận hủy lịch"
-                      description="Anh/chị có chắc chắn muốn hủy lịch hẹn này không?"
-                      okText="Có, Hủy lịch"
-                      cancelText="Không"
-                      onConfirm={() => handleCancelBooking(b.id)}
-                      okButtonProps={{ danger: true }}
-                    >
+                    Nhật ký thao tác
+                  </Button>
+
+                  {!isCompleted && b.orderState !== 'Cancelled' && (
+                    <>
                       <Button
                         type="default"
                         danger
                         size="small"
                         icon={<CloseCircleOutlined />}
                         style={{ borderRadius: '4px', fontWeight: '600' }}
+                        onClick={() => {
+                          setSelectedBookingForCancel({
+                            id: b.id,
+                            orderKey: b.orderKey,
+                            dateCreated: b.dateCreated,
+                            bookingDate: b.bookingDate,
+                            createdStaffId: b.createdStaffId,
+                            createdStaffName: b.createdStaffName || b.bookerName,
+                            customerName: customer?.name || 'Khách Hàng',
+                          });
+                          setCancelModalOpen(true);
+                        }}
                       >
                         Hủy lịch
                       </Button>
-                    </Popconfirm>
-                    <Button
-                      type="primary"
-                      size="small"
-                      icon={<CalendarOutlined />}
-                      style={{
-                        backgroundColor: '#D4A84B',
-                        borderColor: '#D4A84B',
-                        color: '#000000',
-                        fontWeight: '600',
-                        borderRadius: '4px',
-                      }}
-                      onClick={() => {
-                        setSelectedBookingForReschedule({
-                          ...b,
-                          customerName: customer?.name || 'Khách Hàng',
-                          customerPhone: customer?.phone || '',
-                          customerId: customer?.id,
-                        });
-                        setRescheduleModalVisible(true);
-                      }}
-                    >
-                      Dời lịch hẹn
-                    </Button>
-                  </div>
-                )}
+
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<CalendarOutlined />}
+                        style={{
+                          backgroundColor: '#D4A84B',
+                          borderColor: '#D4A84B',
+                          color: '#000000',
+                          fontWeight: '600',
+                          borderRadius: '4px',
+                        }}
+                        onClick={() => {
+                          setSelectedBookingForReschedule({
+                            ...b,
+                            customerName: customer?.name || 'Khách Hàng',
+                            customerPhone: customer?.phone || '',
+                            customerId: customer?.id,
+                          });
+                          setRescheduleModalVisible(true);
+                        }}
+                      >
+                        Dời lịch hẹn
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -450,6 +479,37 @@ export const BookingsTab: React.FC<
       ) : (
         <div style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>Không có lịch sử đặt lịch nào.</div>
       )}
+
+      {/* Cancel Booking Modal */}
+      <CancelBookingModal
+        open={cancelModalOpen}
+        booking={selectedBookingForCancel}
+        currentStaffId={customer?.assignedStaff?.id}
+        onCancel={() => {
+          setCancelModalOpen(false);
+          setSelectedBookingForCancel(null);
+        }}
+        onSuccess={() => {
+          setCancelModalOpen(false);
+          setSelectedBookingForCancel(null);
+          if (onRefreshDetails) {
+            onRefreshDetails();
+          } else if (selectedBookingForCancel?.id) {
+            window.location.reload();
+          }
+        }}
+      />
+
+      {/* Booking Audit Log Drawer */}
+      <BookingAuditLogDrawer
+        open={auditDrawerOpen}
+        orderId={selectedOrderIdForAudit?.id || null}
+        orderKey={selectedOrderIdForAudit?.key}
+        onClose={() => {
+          setAuditDrawerOpen(false);
+          setSelectedOrderIdForAudit(null);
+        }}
+      />
     </div>
   );
 };
