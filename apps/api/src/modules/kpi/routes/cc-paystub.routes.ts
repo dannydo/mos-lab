@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { CcPaystubRecord, CcPaystubResponse, SafeAny } from '@mos-lab/shared';
 import { CcKpiService } from '../services/cc-kpi.service.js';
+import { TeamService } from '../../teams/team.service.js';
 
 export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
   // GET /api/kpi/cc-paystub
@@ -19,22 +20,8 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
     const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
 
     try {
-      // 1. Get active CC staff IDs from crmConfig
-      let activeCcIds: number[] = [37790, 34295, 46092, 51659, 48026, 48997];
-      try {
-        const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
-          where: { key: 'ACTIVE_CC_STAFF_CONFIG' },
-        });
-
-        if (configRecord && configRecord.value) {
-          const parsed = JSON.parse(configRecord.value);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            activeCcIds = parsed.map((id) => Number(id)).filter((id) => !isNaN(id));
-          }
-        }
-      } catch {
-        fastify.log.warn('Could not load ACTIVE_CC_STAFF_CONFIG, using default list.');
-      }
+      // 1. Get active CC staff IDs from TeamService (Single Source of Truth)
+      const activeCcIds = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG');
 
       if (activeCcIds.length === 0) {
         return reply.send({

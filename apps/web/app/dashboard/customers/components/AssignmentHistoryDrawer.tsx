@@ -41,6 +41,7 @@ interface AssignmentHistoryDrawerProps {
   applyFilterFromJson: (jsonStr: string) => void;
   onOpenUndoModal: (batchId: string, customerCount: number) => void;
   onOpenRevokeBatchModal?: (batchId: string, customerCount: number) => void;
+  onOpenCustomerDetail?: (customerId: number) => void;
 }
 
 export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = ({
@@ -64,6 +65,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
   applyFilterFromJson,
   onOpenUndoModal,
   onOpenRevokeBatchModal,
+  onOpenCustomerDetail,
 }) => {
   const [filterAction, setFilterAction] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -75,6 +77,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
       if (filterAction === 'ASSIGN' && (item.isUndone || item.actionType !== 'ASSIGN')) return false;
       if (filterAction === 'REVOKE' && item.actionType !== 'REVOKE') return false;
       if (filterAction === 'TRANSFER' && item.actionType !== 'TRANSFER') return false;
+      if (filterAction === 'RANDOM' && item.actionType !== 'RANDOM_SELECT') return false;
       if (filterAction === 'UNDONE' && !item.isUndone) return false;
 
       // Filter by text search
@@ -99,6 +102,8 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
       return { label: 'Đã hoàn tác', color: 'default', borderLeft: '#8c8c8c' };
     }
     switch (item.actionType) {
+      case 'RANDOM_SELECT':
+        return { label: 'Chọn ngẫu nhiên', color: 'purple', borderLeft: '#722ed1' };
       case 'TRANSFER':
         return { label: 'Chuyển Booker', color: 'blue', borderLeft: '#1890ff' };
       case 'REVOKE':
@@ -201,6 +206,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
               buttonStyle="solid"
             >
               <Radio.Button value="ALL">Tất cả</Radio.Button>
+              <Radio.Button value="RANDOM">🟣 Chọn ngẫu nhiên</Radio.Button>
               <Radio.Button value="ASSIGN">🟢 Phân bổ</Radio.Button>
               <Radio.Button value="REVOKE">🔴 Thu hồi</Radio.Button>
               <Radio.Button value="TRANSFER">🔵 Chuyển</Radio.Button>
@@ -545,9 +551,23 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                                 title: 'Họ và tên',
                                 dataIndex: 'fullName',
                                 key: 'fullName',
-                                render: (text) => (
-                                  <span style={{ fontWeight: 600, color: token.colorText }}>{text}</span>
-                                ),
+                                render: (text, record: SafeAny) => {
+                                  if (onOpenCustomerDetail && record.legacyUserId) {
+                                    return (
+                                      <Button
+                                        type="link"
+                                        onClick={() => {
+                                          onClose();
+                                          onOpenCustomerDetail(record.legacyUserId);
+                                        }}
+                                        style={{ padding: 0, height: 'auto', fontWeight: 600, color: '#D4A84B' }}
+                                      >
+                                        {text || `Khách hàng #${record.legacyUserId}`}
+                                      </Button>
+                                    );
+                                  }
+                                  return <span style={{ fontWeight: 600, color: token.colorText }}>{text}</span>;
+                                },
                               },
                               {
                                 title: 'Số điện thoại',

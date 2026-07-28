@@ -2,6 +2,7 @@
 
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Typography, Card, theme, DatePicker, Select, Radio, Space, Button, Tabs, Spin, message, Tooltip } from 'antd';
 import {
   CalendarOutlined,
@@ -84,6 +85,7 @@ const { RangePicker } = DatePicker;
 export default function CcDashboardPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const router = useRouter();
 
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [referenceDate, setReferenceDate] = useState<Dayjs>(dayjs());
@@ -94,7 +96,6 @@ export default function CcDashboardPage() {
 
   const [activeTab, setActiveTab] = useState<string>('xoay');
   const [loading, setLoading] = useState(false);
-  const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
   const [xoayData, setXoayData] = useState<CcXoayRecord[]>([]);
 
   const [xoayTotal, setXoayTotal] = useState(0);
@@ -403,7 +404,7 @@ export default function CcDashboardPage() {
                 aria-label="Cấu hình CC"
                 type="primary"
                 icon={<SettingOutlined />}
-                onClick={() => setConfigDrawerOpen(true)}
+                onClick={() => router.push('/dashboard/staff/teams?selected=CC')}
                 style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
               />
             </Tooltip>
@@ -420,15 +421,6 @@ export default function CcDashboardPage() {
       >
         <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} size="large" destroyOnHidden />
       </Card>
-
-      <CcConfigDrawer
-        open={configDrawerOpen}
-        onClose={() => setConfigDrawerOpen(false)}
-        onSaveSuccess={() => {
-          setConfigDrawerOpen(false);
-          fetchCcData();
-        }}
-      />
     </div>
   );
 }

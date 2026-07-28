@@ -67,6 +67,13 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
 
   const getActionTag = (item: CustomerAssignmentTimelineItem) => {
     switch (item.actionType) {
+      case 'RANDOM_SELECT':
+        return (
+          <Tag color="purple">
+            <FilterOutlined style={{ marginRight: 4 }} />
+            Chọn ngẫu nhiên
+          </Tag>
+        );
       case 'ASSIGN':
         return (
           <Tag color="green">
@@ -114,13 +121,15 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
     return {
       key: item.id,
       color:
-        item.actionType === 'ASSIGN'
-          ? 'green'
-          : item.actionType === 'TRANSFER'
-            ? 'blue'
-            : item.actionType === 'EXPIRE' || item.actionType === 'REVOKE'
-              ? 'red'
-              : 'orange',
+        item.actionType === 'RANDOM_SELECT'
+          ? 'purple'
+          : item.actionType === 'ASSIGN'
+            ? 'green'
+            : item.actionType === 'TRANSFER'
+              ? 'blue'
+              : item.actionType === 'EXPIRE' || item.actionType === 'REVOKE'
+                ? 'red'
+                : 'orange',
       children: (
         <div
           style={{
@@ -142,11 +151,13 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
             <Space>
               {getActionTag(item)}
               <Text strong style={{ color: themeMode === 'dark' ? '#fff' : '#141414' }}>
-                {item.staffName
-                  ? `Phân bổ cho: ${item.staffName}`
-                  : item.prevStaffName
-                    ? `Thu hồi từ: ${item.prevStaffName}`
-                    : 'Hủy phân bổ'}
+                {item.actionType === 'RANDOM_SELECT'
+                  ? 'Được chọn ngẫu nhiên trong đợt lọc'
+                  : item.staffName
+                    ? `Phân bổ cho: ${item.staffName}`
+                    : item.prevStaffName
+                      ? `Thu hồi từ: ${item.prevStaffName}`
+                      : 'Hủy phân bổ'}
               </Text>
               {item.isRetained && (
                 <Tag color="gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>

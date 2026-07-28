@@ -18,6 +18,8 @@ import {
   AssignmentHistoryResponse,
   AssignmentHistoryDetailsResponse,
   CustomerAssignmentTimelineItem,
+  RevokePreviewResponse,
+  RandomIdsResponse,
   Referral,
   ListAppointmentsResponse,
   DetailedCustomerResponse,
@@ -60,6 +62,10 @@ import {
   BkPaystubResponse,
   BkConfigResponse,
   BkSalaryConfig,
+  TeamListResponse,
+  TeamDetailResponse,
+  UpsertTeamRequest,
+  UpdateTeamMembersRequest,
   PackageAuditListParams,
   PackageAuditListResponse,
   ReviewPackageAuditParams,
@@ -258,8 +264,12 @@ export const apiClient = {
       const response = await api.get(`/customers/${id}/history`);
       return response.data;
     },
-    getRandomIds: async (params: Record<string, unknown>): Promise<number[]> => {
+    getRandomIds: async (params: Record<string, unknown>): Promise<RandomIdsResponse | number[]> => {
       const response = await api.get('/customers/random-ids', { params });
+      return response.data;
+    },
+    revokePreview: async (data: { customerIds: number[] }): Promise<RevokePreviewResponse> => {
+      const response = await api.post('/customers/revoke/preview', data);
       return response.data;
     },
     assign: async (data: {
@@ -269,6 +279,7 @@ export const apiClient = {
       sourceType?: string;
       sourceFilterSummary?: string;
       sourceFilterJson?: string;
+      parentBatchId?: string;
     }): Promise<{ success: boolean; count: number; batchId?: string }> => {
       const response = await api.post('/customers/assign', data);
       return response.data;
@@ -278,10 +289,12 @@ export const apiClient = {
       reason: string;
       targetStaffId?: number | null;
       batchId?: string;
+      parentBatchId?: string;
     }): Promise<{
       success: boolean;
       count: number;
       revokedCount?: number;
+      skippedUnassignedCount?: number;
       alreadyExpiredCount?: number;
       batchId?: string;
     }> => {
@@ -908,6 +921,32 @@ export const apiClient = {
       config?: Partial<BkSalaryConfig>;
     }): Promise<{ success: boolean; message: string }> => {
       const response = await api.post('/kpi/bk/config', data);
+      return response.data;
+    },
+  },
+
+  teams: {
+    list: async (): Promise<TeamListResponse> => {
+      const response = await api.get('/teams');
+      return response.data;
+    },
+    getByCode: async (code: string): Promise<TeamDetailResponse> => {
+      const response = await api.get(`/teams/${code}`);
+      return response.data;
+    },
+    create: async (data: UpsertTeamRequest): Promise<{ success: boolean; team: unknown }> => {
+      const response = await api.post('/teams', data);
+      return response.data;
+    },
+    update: async (id: number, data: UpsertTeamRequest): Promise<{ success: boolean; team: unknown }> => {
+      const response = await api.put(`/teams/${id}`, data);
+      return response.data;
+    },
+    updateMembers: async (
+      id: number,
+      data: UpdateTeamMembersRequest
+    ): Promise<{ success: boolean; message: string }> => {
+      const response = await api.put(`/teams/${id}/members`, data);
       return response.data;
     },
   },

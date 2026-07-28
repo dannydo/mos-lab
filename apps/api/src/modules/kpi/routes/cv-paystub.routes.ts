@@ -7,6 +7,7 @@ import {
   CvWorkLogDetailResponse,
   SafeAny,
 } from '@mos-lab/shared';
+import { TeamService } from '../../teams/team.service.js';
 
 const getLocalDate = (dStr: string) => {
   const p = dStr.split('-');
@@ -95,22 +96,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
     const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
 
     try {
-      // 1. Get active CV staff IDs from crmConfig
-      let activeCvIds: number[] = [47510, 48026, 46092, 37790, 34295];
-      try {
-        const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
-          where: { key: 'ACTIVE_CV_STAFF_CONFIG' },
-        });
-
-        if (configRecord && configRecord.value) {
-          const parsed = JSON.parse(configRecord.value);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            activeCvIds = parsed.map((id: SafeAny) => Number(id)).filter((id: number) => !isNaN(id));
-          }
-        }
-      } catch {
-        fastify.log.warn('Could not load ACTIVE_CV_STAFF_CONFIG, using default list.');
-      }
+      // 1. Get active CV staff IDs from TeamService (Single Source of Truth)
+      const activeCvIds = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
 
       if (activeCvIds.length === 0) {
         return reply.send({

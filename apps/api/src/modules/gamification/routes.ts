@@ -6,6 +6,7 @@ import {
   DailySalesBonusTransaction,
   SafeAny,
 } from '@mos-lab/shared';
+import { TeamService } from '../teams/team.service.js';
 
 const DEFAULT_CONFIG: DailySalesBonusConfig = {
   combo_unit_bonus: 200000,
@@ -58,21 +59,8 @@ async function getBonusConfig(fastify: FastifyInstance): Promise<DailySalesBonus
   }
 }
 
-async function getActiveCcIds(fastify: FastifyInstance): Promise<number[] | null> {
-  try {
-    const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
-      where: { key: 'ACTIVE_CC_STAFF_CONFIG' },
-    });
-    if (configRecord && configRecord.value) {
-      const ids = JSON.parse(configRecord.value);
-      if (Array.isArray(ids) && ids.length > 0) {
-        return ids.map(Number);
-      }
-    }
-  } catch (err) {
-    fastify.log.warn(err as SafeAny, 'Error fetching ACTIVE_CC_STAFF_CONFIG in gamification routes');
-  }
-  return null;
+async function getActiveCcIds(fastify: FastifyInstance): Promise<number[]> {
+  return await TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG');
 }
 
 export async function gamificationRoutes(fastify: FastifyInstance) {

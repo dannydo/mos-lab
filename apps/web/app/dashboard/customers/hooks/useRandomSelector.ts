@@ -7,17 +7,19 @@ export const useRandomSelector = (
   onSelected: (ids: number[]) => void
 ) => {
   const [randomModalVisible, setRandomModalVisible] = useState(false);
-  const [randomCount, setRandomCount] = useState<number>(20);
+  const [randomCount, setRandomCount] = useState<number | ''>(20);
   const [randomLoading, setRandomLoading] = useState(false);
   const [randomSelectedIds, setRandomSelectedIds] = useState<number[] | null>(null);
+  const [randomBatchId, setRandomBatchId] = useState<string | null>(null);
   const [excludeAssigned, setExcludeAssigned] = useState<boolean>(true);
   const [excludeFutureBooking, setExcludeFutureBooking] = useState<boolean>(true);
 
   const handleRandomSelect = useCallback(async () => {
     setRandomLoading(true);
+    const countNum = typeof randomCount === 'number' && randomCount > 0 ? randomCount : 20;
     try {
       const params: SafeAny = {
-        limit: randomCount.toString(),
+        limit: countNum.toString(),
         bucket: filterParams.activeTab !== 'ALL' ? filterParams.activeTab : undefined,
         search: filterParams.searchQuery || undefined,
         daysSinceLastVisitMin: filterParams.daysSinceLastVisitMin?.toString(),
@@ -38,12 +40,14 @@ export const useRandomSelector = (
       };
 
       const data = await apiClient.customers.getRandomIds(params);
-      const selectedIds = (data as SafeAny).ids;
+      const selectedIds = Array.isArray(data) ? data : (data as SafeAny).ids || [];
+      const batchId = Array.isArray(data) ? null : (data as SafeAny).batchId || null;
 
       if (selectedIds.length === 0) {
         optionsRef.current?.onWarning?.('Không tìm thấy khách hàng nào phù hợp với bộ lọc hiện tại.');
       } else {
         setRandomSelectedIds(selectedIds);
+        setRandomBatchId(batchId);
         onSelected(selectedIds);
         setRandomModalVisible(false);
         optionsRef.current?.onSuccess?.(`Đã chọn ngẫu nhiên ${selectedIds.length} khách hàng!`);
@@ -64,6 +68,8 @@ export const useRandomSelector = (
     randomLoading,
     randomSelectedIds,
     setRandomSelectedIds,
+    randomBatchId,
+    setRandomBatchId,
     excludeAssigned,
     setExcludeAssigned,
     excludeFutureBooking,

@@ -258,6 +258,57 @@ model CrmMissedLog {
   @@map("crm_missed_logs")
 }
 
+// ═══════════════════════════════════════════
+// Team Configuration — Unified team/group management
+// ═══════════════════════════════════════════
+model CrmTeam {
+  id            Int             @id @default(autoincrement())
+  code          String          @unique @db.VarChar(30)        // CC, CV, BK, BK_TELESALES...
+  name          String          @db.VarChar(100)               // Display name
+  description   String?         @db.Text
+  color         String?         @db.VarChar(30)                // Hex or named color
+  icon          String?         @db.VarChar(50)                // Emoji or icon name
+  sortOrder     Int             @default(0) @map("sort_order")
+  isActive      Boolean         @default(true) @map("is_active") @db.TinyInt
+  parentTeamId  Int?            @map("parent_team_id")
+  metadata      String?         @db.Text                       // JSON: salary config, bonus formula
+  createdAt     DateTime        @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.DateTime(0)
+
+  // Self-referencing hierarchy
+  parent        CrmTeam?        @relation("TeamHierarchy", fields: [parentTeamId], references: [id], onDelete: SetNull)
+  children      CrmTeam[]       @relation("TeamHierarchy")
+  members       CrmTeamMember[]
+
+  @@index([parentTeamId])
+  @@index([isActive])
+  @@map("crm_teams")
+}
+
+model CrmTeamMember {
+  id              Int       @id @default(autoincrement())
+  teamId          Int       @map("team_id")
+  legacyStaffId   Int       @map("legacy_staff_id")
+  crmStaffId      Int?      @map("crm_staff_id")
+  displayName     String?   @map("display_name") @db.VarChar(100)
+  role            String?   @db.VarChar(20)                  // leader, member, trainee
+  isActive        Boolean   @default(true) @map("is_active") @db.TinyInt
+  sortOrder       Int       @default(0) @map("sort_order")
+  joinedAt        DateTime  @default(now()) @map("joined_at") @db.DateTime(0)
+  leftAt          DateTime? @map("left_at") @db.DateTime(0)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  team            CrmTeam   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, legacyStaffId], name: "teamId_legacyStaffId")
+  @@index([legacyStaffId])
+  @@index([crmStaffId])
+  @@index([isActive])
+  @@map("crm_team_members")
+}
+
+
 
 
 

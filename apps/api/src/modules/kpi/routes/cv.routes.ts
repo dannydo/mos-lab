@@ -1,22 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { CvConfigResponse, CvStaffOption, CvXoayRecord, CvXoayReportResponse, SafeAny } from '@mos-lab/shared';
+import { TeamService } from '../../teams/team.service.js';
 
-async function getActiveCvIds(fastify: FastifyInstance): Promise<number[] | null> {
-  try {
-    const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
-      where: { key: 'ACTIVE_CV_STAFF_CONFIG' },
-    });
-    if (configRecord && configRecord.value) {
-      const parsed = JSON.parse(configRecord.value);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((id: SafeAny) => Number(id)).filter((id: number) => !isNaN(id));
-      }
-    }
-  } catch (err) {
-    fastify.log.error(err as SafeAny, 'Error fetching ACTIVE_CV_STAFF_CONFIG from DB');
-  }
-  return null;
+async function getActiveCvIds(fastify: FastifyInstance): Promise<number[]> {
+  const ids = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
+  return ids.length > 0 ? ids : [47510, 48026, 46092, 37790, 34295, 51659];
 }
 
 export async function registerCvRoutes(fastify: FastifyInstance) {
@@ -315,6 +304,11 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
     try {
       const cleanIds = activeCvIds.map((id) => Number(id)).filter((id) => !isNaN(id));
       const jsonValue = JSON.stringify(cleanIds);
+
+      const cvTeam = await fastify.prisma.crm.crmTeam.findUnique({ where: { code: 'CV' } });
+      if (cvTeam) {
+        await TeamService.updateTeamMembers(fastify, cvTeam.id, cleanIds);
+      }
 
       await fastify.prisma.crm.crmConfig.upsert({
         where: { key: 'ACTIVE_CV_STAFF_CONFIG' },

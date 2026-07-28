@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { SafeAny } from '@mos-lab/shared';
+import { TeamService } from '../../teams/team.service.js';
 
 export interface CcKpiFilters {
   dateFrom?: string;
@@ -130,22 +131,10 @@ export class CcKpiService {
    * Helper: Get configured active CC staff IDs from crmConfig (ACTIVE_CC_STAFF_CONFIG)
    */
   public static async getActiveCcStaffIds(fastify: FastifyInstance): Promise<number[]> {
-    try {
-      const config = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: 'ACTIVE_CC_STAFF_CONFIG' },
-      });
-      if (config && config.value) {
-        const parsed = JSON.parse(config.value);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const ids = parsed.map((item) => Number(item.id || item)).filter((id) => !isNaN(id) && id > 0);
-          if (ids.length > 0) return ids;
-        }
-      }
-    } catch (err) {
-      fastify.log.error(err as Error, 'Error reading ACTIVE_CC_STAFF_CONFIG');
-    }
+    const ids = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG');
+    if (ids.length > 0) return ids;
 
-    // Query legacy DB for staff members with Client Consultant role or payroll
+    // Ultimate fallback: query legacy DB for Client Consultant staff
     try {
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT DISTINCT up.user_id

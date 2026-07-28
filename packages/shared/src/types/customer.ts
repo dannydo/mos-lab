@@ -200,8 +200,27 @@ export interface AssignmentHistoryBatch {
   sourceType?: string;
   sourceFilterJson?: string | null;
   sourceFilterSummary?: string | null;
-  actionType?: string;
+  actionType?: 'ASSIGN' | 'REVOKE' | 'TRANSFER' | 'UNASSIGN' | 'RANDOM_SELECT' | string;
   reason?: string | null;
+  parentBatchId?: string | null;
+}
+
+export interface RevokePreviewResponse {
+  totalCount: number;
+  unassignedCount: number;
+  assignedCount: number;
+  staffBreakdown: Array<{
+    staffId: number;
+    staffName: string;
+    count: number;
+  }>;
+}
+
+export interface RandomIdsResponse {
+  ids: number[];
+  batchId?: string;
+  count?: number;
+  filterSummary?: string;
 }
 
 export interface CustomerAssignmentTimelineItem {

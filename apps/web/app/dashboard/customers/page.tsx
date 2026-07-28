@@ -2,7 +2,21 @@
 
 import '../../suppress-warnings';
 import React from 'react';
-import { Tabs, Input, Button, Typography, Select, theme, Tooltip, Space, Modal, Checkbox, Spin, message } from 'antd';
+import {
+  Tabs,
+  Input,
+  Button,
+  Typography,
+  Select,
+  theme,
+  Tooltip,
+  Space,
+  Modal,
+  Checkbox,
+  Spin,
+  message,
+  Tag,
+} from 'antd';
 import { SearchOutlined, CalendarOutlined, HistoryOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
@@ -421,6 +435,7 @@ function CustomersPageContent() {
         handleAssignCustomers={data.handleAssignCustomers}
         handleUnassignCustomers={data.handleUnassignCustomers}
         onRefresh={data.refreshListAndStats}
+        randomBatchId={data.randomBatchId}
       />
 
       <Tabs
@@ -528,16 +543,51 @@ function CustomersPageContent() {
             Hệ thống sẽ tự động tìm kiếm và chọn ngẫu nhiên các khách hàng thỏa mãn bộ lọc hiện tại của anh/chị.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ color: token.colorText }}>Số lượng khách hàng:</span>
-              <Input
-                type="number"
-                min={1}
-                max={1000}
-                value={data.randomCount}
-                onChange={(e) => data.setRandomCount(Number(e.target.value) || 20)}
-                style={{ width: '120px' }}
-              />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ color: token.colorText, fontWeight: 500 }}>Số lượng khách hàng:</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={1000}
+                  placeholder="Nhập số..."
+                  value={data.randomCount}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      data.setRandomCount('');
+                    } else {
+                      const num = parseInt(val, 10);
+                      data.setRandomCount(isNaN(num) ? '' : num);
+                    }
+                  }}
+                  style={{ width: '110px', borderRadius: '6px' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                <span style={{ fontSize: '12px', color: token.colorTextDescription }}>Preset chọn nhanh:</span>
+                {[10, 20, 50, 100, 200].map((preset) => (
+                  <Tag.CheckableTag
+                    key={preset}
+                    checked={data.randomCount === preset}
+                    onChange={() => data.setRandomCount(preset)}
+                    style={{
+                      borderRadius: '12px',
+                      padding: '2px 10px',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      border: `1px solid ${
+                        data.randomCount === preset ? '#D4A84B' : themeMode === 'dark' ? '#434343' : '#d9d9d9'
+                      }`,
+                      background: data.randomCount === preset ? '#D4A84B' : 'transparent',
+                      color: data.randomCount === preset ? '#000' : token.colorText,
+                      fontWeight: data.randomCount === preset ? 600 : 400,
+                    }}
+                  >
+                    {preset} KH
+                  </Tag.CheckableTag>
+                ))}
+              </div>
             </div>
             <div>
               <Checkbox
@@ -613,6 +663,9 @@ function CustomersPageContent() {
               batchId,
             });
           });
+        }}
+        onOpenCustomerDetail={(customerId) => {
+          data.openDetailModal({ id: customerId } as SafeAny);
         }}
       />
 

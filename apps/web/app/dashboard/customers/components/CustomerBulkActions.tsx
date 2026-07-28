@@ -26,9 +26,10 @@ interface CustomerBulkActionsProps {
   staffList: Staff[];
   assigning: boolean;
   unassigning: boolean;
-  handleAssignCustomers: () => Promise<void>;
+  handleAssignCustomers: (sourceTypeOverride?: unknown, randomBatchId?: string | null) => Promise<void>;
   handleUnassignCustomers: () => Promise<void>;
   onRefresh?: () => void;
+  randomBatchId?: string | null;
 }
 
 const DURATION_PRESETS = [
@@ -61,6 +62,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
   handleAssignCustomers,
   handleUnassignCustomers,
   onRefresh,
+  randomBatchId,
 }: CustomerBulkActionsProps) {
   const [revokeModalVisible, setRevokeModalVisible] = useState(false);
   const [customDays, setCustomDays] = useState<number | undefined>(undefined);
@@ -169,7 +171,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
             key="submit"
             type="primary"
             loading={assigning}
-            onClick={() => handleAssignCustomers()}
+            onClick={() => handleAssignCustomers(undefined, randomBatchId)}
             style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000' }}
           >
             Xác nhận phân bổ
@@ -190,7 +192,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
               value={targetStaffId}
               onChange={(val) => setTargetStaffId(val)}
               options={staffList
-                .filter((s) => ['telesales', 'executive', 'manager', 'admin'].includes(s.role?.toLowerCase() || ''))
+                .filter((s) => ['telesales', 'booker'].includes(s.role?.toLowerCase() || ''))
                 .map((s) => ({ value: s.id, label: `${s.displayName} (${s.username})` }))}
             />
           </div>
@@ -259,6 +261,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
         }}
         customerIds={selectedNumericIds}
         staffList={staffList}
+        parentBatchId={randomBatchId}
       />
     </>
   );

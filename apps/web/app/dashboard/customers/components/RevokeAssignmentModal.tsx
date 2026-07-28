@@ -1,10 +1,30 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Modal, Select, Input, Form, message, Alert, Space, Typography, Tag, Segmented, Tooltip, theme } from 'antd';
-import { WarningOutlined, UserSwitchOutlined, InboxOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import {
+  Modal,
+  Select,
+  Input,
+  Form,
+  message,
+  Alert,
+  Space,
+  Typography,
+  Tag,
+  Segmented,
+  Tooltip,
+  theme,
+  Spin,
+} from 'antd';
+import {
+  WarningOutlined,
+  UserSwitchOutlined,
+  InboxOutlined,
+  InfoCircleOutlined,
+  CheckCircleOutlined,
+} from '@ant-design/icons';
 import { apiClient } from '../../../../lib/api-client';
-import { SafeAny, Staff, vietnameseSearchFilter } from '@mos-lab/shared';
+import { SafeAny, Staff, RevokePreviewResponse, vietnameseSearchFilter } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 
 const { Text } = Typography;
@@ -16,6 +36,7 @@ interface RevokeAssignmentModalProps {
   customerIds: number[];
   staffList: Staff[];
   batchId?: string | null;
+  parentBatchId?: string | null;
 }
 
 const PRESET_REASONS = [
@@ -32,12 +53,28 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
   customerIds,
   staffList,
   batchId,
+  parentBatchId,
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [actionType, setActionType] = useState<'POOL' | 'TRANSFER'>('POOL');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<RevokePreviewResponse | null>(null);
+
+  useEffect(() => {
+    if (visible && customerIds && customerIds.length > 0) {
+      setPreviewLoading(true);
+      apiClient.customers
+        .revokePreview({ customerIds })
+        .then((res) => setPreviewData(res))
+        .catch((err) => console.error('Revoke preview error:', err))
+        .finally(() => setPreviewLoading(false));
+    } else {
+      setPreviewData(null);
+    }
+  }, [visible, customerIds]);
 
   const handleSubmit = async () => {
     try {
@@ -55,15 +92,16 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
         reason: reason.trim(),
         targetStaffId: actionType === 'TRANSFER' ? values.targetStaffId : null,
         batchId: batchId || undefined,
+        parentBatchId: parentBatchId || undefined,
       });
 
       if (res.success) {
         let msg =
           actionType === 'TRANSFER'
-            ? `Đã chuyển ${customerIds.length} data sang Booker mới!`
-            : `Đã thu hồi thành công data đợt này về Pool tổng!`;
-        if (res.alreadyExpiredCount && res.alreadyExpiredCount > 0) {
-          msg += ` (${res.alreadyExpiredCount} KH đã được giải phóng/hết hạn từ trước)`;
+            ? `Đã chuyển ${res.revokedCount ?? customerIds.length} data sang Booker mới!`
+            : `Đã thu hồi thành công ${res.revokedCount ?? customerIds.length} data về Pool tổng!`;
+        if (res.skippedUnassignedCount && res.skippedUnassignedCount > 0) {
+          msg += ` (Đã tự động bỏ qua ${res.skippedUnassignedCount} KH chưa từng phân bổ)`;
         }
         message.success(msg);
         form.resetFields();
@@ -116,16 +154,54 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
         },
       }}
     >
-      <Alert
-        message={
-          <Text style={{ fontSize: '13px' }}>
-            Hành động sẽ được ghi nhận vào <b>Nhật ký Phân bổ & Timeline</b> của {customerIds.length} khách hàng.
-          </Text>
-        }
-        type="warning"
-        showIcon
-        style={{ marginBottom: 20, borderRadius: '8px' }}
-      />
+      {previewLoading ? (
+        <div style={{ padding: '16px', textAlign: 'center', marginBottom: 16 }}>
+          <Spin size="small" /> <span style={{ marginLeft: 8 }}>Đang kiểm tra trạng thái phân bổ...</span>
+        </div>
+      ) : previewData ? (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '12px 16px',
+            borderRadius: '10px',
+            background: themeMode === 'dark' ? '#262626' : '#fffbe6',
+            border: `1px solid ${themeMode === 'dark' ? '#434343' : '#ffe58f'}`,
+          }}
+        >
+          <div style={{ fontWeight: 600, marginBottom: 6, color: '#d48806' }}>
+            📊 Phân tích danh sách {previewData.totalCount} KH đã chọn:
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: 8 }}>
+            <Tag color="green" style={{ borderRadius: 10 }}>
+              Chưa phân bổ: <b>{previewData.unassignedCount} KH</b> (Tự động bỏ qua)
+            </Tag>
+            <Tag color="volcano" style={{ borderRadius: 10 }}>
+              Đang có Booker: <b>{previewData.assignedCount} KH</b> (Sẽ thu hồi)
+            </Tag>
+          </div>
+          {previewData.staffBreakdown.length > 0 && (
+            <div style={{ fontSize: '12px', color: token.colorTextDescription }}>
+              <b>Booker hiện tại:</b>{' '}
+              {previewData.staffBreakdown.map((s) => (
+                <Tag key={s.staffId} color="blue" style={{ marginTop: 4 }}>
+                  {s.staffName}: {s.count} KH
+                </Tag>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <Alert
+          message={
+            <Text style={{ fontSize: '13px' }}>
+              Hành động sẽ được ghi nhận vào <b>Nhật ký Phân bổ & Timeline</b> của {customerIds.length} khách hàng.
+            </Text>
+          }
+          type="warning"
+          showIcon
+          style={{ marginBottom: 20, borderRadius: '8px' }}
+        />
+      )}
 
       <Form form={form} layout="vertical" initialValues={{ presetReason: PRESET_REASONS[0] }}>
         <Form.Item label={<Text strong>Thao tác thu hồi</Text>} style={{ marginBottom: 16 }}>
@@ -190,7 +266,7 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
               style={{ borderRadius: '6px' }}
             >
               {staffList
-                .filter((s) => ['telesales', 'executive', 'manager', 'admin'].includes(s.role?.toLowerCase() || ''))
+                .filter((s) => ['telesales', 'booker'].includes(s.role?.toLowerCase() || ''))
                 .map((staff) => (
                   <Select.Option key={staff.id} value={staff.id}>
                     {staff.displayName} (@{staff.username})

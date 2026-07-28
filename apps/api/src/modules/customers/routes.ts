@@ -2132,6 +2132,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       if (excludeAssigned === 'true') {
         const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+          where: {
+            staffId: { not: null },
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
           select: { legacyUserId: true },
         });
         const excludedUserIds = allAssignments.map((a) => a.legacyUserId);
@@ -2243,7 +2247,32 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(query, ...innerParams);
       const ids = rows.map((r) => Number(r.id));
 
-      return { ids };
+      const adminUser = request.user as { id: number; role: string };
+      const batchId = `rand_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const filterSummaryParts: string[] = [`${ids.length} KH`];
+      if (excludeAssigned === 'true') filterSummaryParts.push('Chưa phân bổ');
+      if (bucket && bucket !== 'ALL') filterSummaryParts.push(`Nhóm: ${bucket}`);
+      if (search && search.trim() !== '') filterSummaryParts.push(`Từ khóa: ${search.trim()}`);
+      const sourceFilterSummary = `Chọn ngẫu nhiên ${filterSummaryParts.join(' | ')}`;
+
+      if (ids.length > 0 && adminUser?.id) {
+        await fastify.prisma.crm.crmAssignmentHistory.createMany({
+          data: ids.map((cid) => ({
+            batchId,
+            legacyUserId: cid,
+            prevStaffId: null,
+            newStaffId: null,
+            assignedBy: adminUser.id,
+            assignedAt: new Date(),
+            sourceType: 'RANDOM',
+            sourceFilterJson: JSON.stringify(request.query),
+            sourceFilterSummary,
+            actionType: 'RANDOM_SELECT',
+          })),
+        });
+      }
+
+      return { ids, batchId, count: ids.length, filterSummary: sourceFilterSummary };
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get random customer ids error:');
       return reply.status(500).send({
@@ -3730,6 +3759,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       sourceType = 'MANUAL',
       sourceFilterSummary,
       sourceFilterJson,
+      parentBatchId,
     } = request.body as {
       customerIds: number[];
       staffId: number;
@@ -3737,6 +3767,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       sourceType?: string;
       sourceFilterSummary?: string;
       sourceFilterJson?: string;
+      parentBatchId?: string;
     };
     const adminUser = request.user as { id: number; role: string };
 
@@ -3762,6 +3793,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // 3. Generate a unique batch ID
       const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const summaryText = parentBatchId
+        ? `${sourceFilterSummary || 'Phân bổ Booker'} (Nguồn: ${parentBatchId})`
+        : sourceFilterSummary || null;
 
       // 4. Perform upserts and create history entries in a transaction
       await fastify.prisma.crm.$transaction([
@@ -3799,9 +3833,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
               assignedAt: now,
               expiresAt,
               sourceType: sourceType || 'MANUAL',
-              sourceFilterSummary: sourceFilterSummary || null,
+              sourceFilterSummary: summaryText,
               sourceFilterJson: sourceFilterJson || null,
               actionType: 'ASSIGN',
+              reason: parentBatchId ? `Nguồn ngẫu nhiên: ${parentBatchId}` : null,
             },
           })
         ),
@@ -3814,6 +3849,65 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // POST /api/customers/revoke/preview
+  // Preview breakdown of customers before revoking
+  fastify.post('/customers/revoke/preview', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { customerIds } = request.body as { customerIds: number[] };
+    const adminUser = request.user as { id: number; role: string };
+
+    if (adminUser.role !== 'admin') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền xem thông tin thu hồi.' });
+    }
+
+    if (!customerIds || !Array.isArray(customerIds) || customerIds.length === 0) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'customerIds is required' });
+    }
+
+    try {
+      const activeAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+        where: {
+          legacyUserId: { in: customerIds },
+          staffId: { not: null },
+        },
+        include: {
+          staff: { select: { id: true, displayName: true } },
+        },
+      });
+
+      const assignedCount = activeAssignments.length;
+      const unassignedCount = customerIds.length - assignedCount;
+
+      const staffCountMap = new Map<number, { staffName: string; count: number }>();
+      for (const a of activeAssignments) {
+        if (a.staffId) {
+          const existing = staffCountMap.get(a.staffId);
+          const name = a.staff?.displayName || `Booker #${a.staffId}`;
+          if (existing) {
+            existing.count += 1;
+          } else {
+            staffCountMap.set(a.staffId, { staffName: name, count: 1 });
+          }
+        }
+      }
+
+      const staffBreakdown = Array.from(staffCountMap.entries()).map(([staffId, info]) => ({
+        staffId,
+        staffName: info.staffName,
+        count: info.count,
+      }));
+
+      return {
+        totalCount: customerIds.length,
+        unassignedCount,
+        assignedCount,
+        staffBreakdown,
+      };
+    } catch (error: SafeAny) {
+      fastify.log.error({ err: error }, 'Revoke preview error');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to generate revoke preview' });
+    }
+  });
+
   // POST /api/customers/revoke
   // Revoke assignments before expiration (to pool or re-assign to targetStaffId) with MANDATORY reason
   fastify.post('/customers/revoke', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -3822,11 +3916,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
       targetStaffId,
       reason,
       batchId: requestedBatchId,
+      parentBatchId,
     } = request.body as {
       customerIds: number[];
       targetStaffId?: number | null;
       reason: string;
       batchId?: string;
+      parentBatchId?: string;
     };
     const adminUser = request.user as { id: number; role: string };
 
@@ -3845,9 +3941,28 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const cleanReason = reason.trim();
 
     try {
+      // Strictly filter to customers that actually have an active assignment
       const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-        where: { legacyUserId: { in: customerIds } },
+        where: {
+          legacyUserId: { in: customerIds },
+          staffId: { not: null },
+        },
       });
+
+      const toRevokeUserIds = currentAssignments.map((a) => a.legacyUserId);
+      const skippedUnassignedCount = customerIds.length - toRevokeUserIds.length;
+
+      if (toRevokeUserIds.length === 0) {
+        return {
+          success: true,
+          count: customerIds.length,
+          revokedCount: 0,
+          skippedUnassignedCount,
+          batchId: null,
+          message: 'Tất cả khách hàng đã chọn đều chưa được phân bổ.',
+        };
+      }
+
       const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
       const batchId = requestedBatchId || `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const now = new Date();
@@ -3855,7 +3970,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (targetStaffId) {
         // Direct transfer to new Booker
         await fastify.prisma.crm.$transaction([
-          ...customerIds.map((cid) =>
+          ...toRevokeUserIds.map((cid) =>
             fastify.prisma.crm.crmCustomerAssignment.upsert({
               where: { legacyUserId: cid },
               update: {
@@ -3874,7 +3989,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
               },
             })
           ),
-          ...customerIds.map((cid) =>
+          ...toRevokeUserIds.map((cid) =>
             fastify.prisma.crm.crmAssignmentHistory.create({
               data: {
                 batchId,
@@ -3884,7 +3999,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 assignedBy: adminUser.id,
                 assignedAt: now,
                 actionType: 'TRANSFER',
-                reason: cleanReason,
+                reason: parentBatchId ? `${cleanReason} (Nguồn: ${parentBatchId})` : cleanReason,
               },
             })
           ),
@@ -3904,7 +4019,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       } else {
         // Revoke back to pool
         await fastify.prisma.crm.$transaction(async (tx) => {
-          for (const cid of customerIds) {
+          for (const cid of toRevokeUserIds) {
             const existing = await tx.crmCustomerAssignment.findUnique({
               where: { legacyUserId: cid },
             });
@@ -3932,7 +4047,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 assignedBy: adminUser.id,
                 assignedAt: now,
                 actionType: 'REVOKE',
-                reason: cleanReason,
+                reason: parentBatchId ? `${cleanReason} (Nguồn: ${parentBatchId})` : cleanReason,
               },
             });
           }
@@ -3953,8 +4068,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return {
         success: true,
         count: customerIds.length,
-        revokedCount: currentAssignments.length,
-        alreadyExpiredCount: customerIds.length - currentAssignments.length,
+        revokedCount: toRevokeUserIds.length,
+        skippedUnassignedCount,
         batchId,
       };
     } catch (error: SafeAny) {

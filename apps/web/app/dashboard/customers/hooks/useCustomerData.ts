@@ -194,6 +194,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     randomCount: randomSelectorHook.randomCount,
     randomLoading: randomSelectorHook.randomLoading,
     randomSelectedIds: randomSelectorHook.randomSelectedIds,
+    randomBatchId: randomSelectorHook.randomBatchId,
     excludeAssigned: randomSelectorHook.excludeAssigned,
     excludeFutureBooking: randomSelectorHook.excludeFutureBooking,
     filterDrawerVisible: filtersHook.filterDrawerVisible,

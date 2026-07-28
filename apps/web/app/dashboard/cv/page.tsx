@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, DatePicker, Select, Radio, Tabs, Button, Typography, Space, theme, Tooltip } from 'antd';
 import {
   CalendarOutlined,
@@ -29,6 +30,7 @@ const { RangePicker } = DatePicker;
 
 export default function CvReportPage() {
   const { token } = theme.useToken();
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
@@ -54,8 +56,7 @@ export default function CvReportPage() {
   const [selectedConsultant, setSelectedConsultant] = useState<string>('ALL');
   const [activeTab, setActiveTab] = useState<string>('xoay');
 
-  // Staff Config Drawer & Staff Options
-  const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
+  // Staff Config & Staff Options
   const [staffOptions, setStaffOptions] = useState<CvStaffOption[]>([]);
 
   // Update date range when viewMode or referenceDate changes
@@ -242,7 +243,7 @@ export default function CvReportPage() {
               <Button
                 type="primary"
                 icon={<SettingOutlined />}
-                onClick={() => setConfigDrawerOpen(true)}
+                onClick={() => router.push('/dashboard/staff/teams?selected=CV')}
                 style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
               />
             </Tooltip>
@@ -302,15 +303,6 @@ export default function CvReportPage() {
           ]}
         />
       </Card>
-
-      {/* Global CV Config Drawer */}
-      <CvConfigDrawer
-        open={configDrawerOpen}
-        onClose={() => setConfigDrawerOpen(false)}
-        onSaveSuccess={() => {
-          fetchStaffConfig();
-        }}
-      />
     </div>
   );
 }

@@ -2,29 +2,17 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { CcStaffOption, SafeAny } from '@mos-lab/shared';
 import { CcKpiService } from '../services/cc-kpi.service.js';
+import { TeamService } from '../../teams/team.service.js';
 
-async function getActiveCcIds(fastify: FastifyInstance): Promise<number[] | null> {
-  try {
-    const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
-      where: { key: 'ACTIVE_CC_STAFF_CONFIG' },
-    });
-    if (configRecord && configRecord.value) {
-      const parsed = JSON.parse(configRecord.value);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((id) => Number(id)).filter((id) => !isNaN(id));
-      }
-    }
-  } catch (err) {
-    fastify.log.error(err as SafeAny, 'Error fetching ACTIVE_CC_STAFF_CONFIG from DB');
-  }
-  return null;
+async function getActiveCcIds(fastify: FastifyInstance): Promise<number[]> {
+  return await TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG');
 }
 
 export async function registerCcRoutes(fastify: FastifyInstance) {
   // GET /api/kpi/cc-config (Get active CC staff IDs and all staff options)
   fastify.get('/kpi/cc-config', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      const activeCcIds = (await getActiveCcIds(fastify)) || [];
+      const activeCcIds = await getActiveCcIds(fastify);
 
       // Query strictly staff profiles whose role/position is Client Consultant
       let staffProfiles: SafeAny[] = [];
@@ -95,6 +83,11 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
     }
 
     try {
+      const ccTeam = await fastify.prisma.crm.crmTeam.findUnique({ where: { code: 'CC' } });
+      if (ccTeam) {
+        await TeamService.updateTeamMembers(fastify, ccTeam.id, activeCcIds);
+      }
+
       await fastify.prisma.crm.crmConfig.upsert({
         where: { key: 'ACTIVE_CC_STAFF_CONFIG' },
         update: { value: JSON.stringify(activeCcIds) },

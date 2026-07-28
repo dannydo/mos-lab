@@ -76,6 +76,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     if (pathname.includes('/dashboard/cc')) return 'cc';
     if (pathname.includes('/dashboard/cv')) return 'cv';
     if (pathname.includes('/dashboard/bk')) return 'bk';
+    if (pathname.includes('/dashboard/staff/teams')) return 'teams';
     if (pathname.includes('/dashboard/staff')) return 'staff';
 
     if (pathname.includes('/dashboard/referrals')) return 'referrals';
@@ -136,6 +137,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
   // Staff menu (only for Admin) - Moved to the bottom
   if (userRole === 'admin') {
     menuItems.push(createNavItem('staff', <SolutionOutlined />, 'Nhân sự (HR)', '/dashboard/staff'));
+    menuItems.push(createNavItem('teams', <TeamOutlined />, 'Cấu hình Đội nhóm', '/dashboard/staff/teams'));
     menuItems.push(createNavItem('catalog', <ShopOutlined />, 'Quản lý Catalog', '/dashboard/catalog'));
   }
 

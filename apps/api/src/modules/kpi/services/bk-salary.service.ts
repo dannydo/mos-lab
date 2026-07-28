@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { BkSalaryConfig, BkPaystubRecord, SafeAny } from '@mos-lab/shared';
+import { TeamService } from '../../teams/team.service.js';
 
 export const DEFAULT_BK_CONFIG: BkSalaryConfig = {
   activeBkIds: [43554, 50670, 52316, 32268, 49126, 50585],
@@ -45,20 +46,8 @@ export const DEFAULT_BK_CONFIG: BkSalaryConfig = {
 };
 
 export async function getActiveBkIds(fastify: FastifyInstance): Promise<number[]> {
-  try {
-    const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
-      where: { key: 'ACTIVE_BK_STAFF_CONFIG' },
-    });
-    if (configRecord && configRecord.value) {
-      const parsed = JSON.parse(configRecord.value);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((id: SafeAny) => Number(id)).filter((id: number) => !isNaN(id));
-      }
-    }
-  } catch (err) {
-    fastify.log.error(err as SafeAny, 'Error fetching ACTIVE_BK_STAFF_CONFIG from DB');
-  }
-  return DEFAULT_BK_CONFIG.activeBkIds;
+  const ids = await TeamService.getActiveStaffIdsWithFallback(fastify, 'BK', 'ACTIVE_BK_STAFF_CONFIG');
+  return ids.length > 0 ? ids : DEFAULT_BK_CONFIG.activeBkIds;
 }
 
 export async function getBkSalaryConfig(fastify: FastifyInstance): Promise<BkSalaryConfig> {

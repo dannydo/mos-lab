@@ -18,7 +18,7 @@ export const useCustomerAssignment = (
   const [lastSourceType, setLastSourceType] = useState<'MANUAL' | 'RANDOM'>('MANUAL');
 
   const handleAssignCustomers = useCallback(
-    async (sourceTypeOverride?: unknown) => {
+    async (sourceTypeOverride?: unknown, randomBatchId?: string | null) => {
       if (!targetStaffId) {
         optionsRef.current?.onError?.('Vui lòng chọn nhân viên Booker');
         return;
@@ -34,7 +34,7 @@ export const useCustomerAssignment = (
         const sourceFilterSummary = buildFilterSummary
           ? buildFilterSummary(sourceType, selectedRowKeys.length)
           : `${sourceType === 'RANDOM' ? '🎲 Ngẫu nhiên' : 'Chọn thủ công'} ${selectedRowKeys.length} KH`;
-        
+
         // Ensure clean JSON string without circular references
         const sourceFilterJson = JSON.stringify(currentCriteria || {});
 
@@ -45,6 +45,7 @@ export const useCustomerAssignment = (
           sourceType,
           sourceFilterSummary,
           sourceFilterJson,
+          parentBatchId: randomBatchId || undefined,
         });
         optionsRef.current?.onSuccess?.(`Đã phân bổ thành công ${selectedRowKeys.length} khách hàng!`);
         setSelectedRowKeys([]);
@@ -60,7 +61,17 @@ export const useCustomerAssignment = (
         setAssigning(false);
       }
     },
-    [targetStaffId, selectedRowKeys, durationDays, lastSourceType, getFilterCriteria, buildFilterSummary, clearRandomSelection, onRefresh, optionsRef]
+    [
+      targetStaffId,
+      selectedRowKeys,
+      durationDays,
+      lastSourceType,
+      getFilterCriteria,
+      buildFilterSummary,
+      clearRandomSelection,
+      onRefresh,
+      optionsRef,
+    ]
   );
 
   const handleUnassignCustomers = useCallback(async () => {

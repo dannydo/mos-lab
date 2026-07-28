@@ -21,6 +21,7 @@ import {
   computeBkOrderCheckins,
   getBkPaystubData,
 } from '../services/bk-salary.service.js';
+import { TeamService } from '../../teams/team.service.js';
 
 export async function registerBkRoutes(fastify: FastifyInstance) {
   // 1. Booking Leaderboard
@@ -995,6 +996,11 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
     try {
       if (activeBkIds && Array.isArray(activeBkIds)) {
+        const bkTeam = await fastify.prisma.crm.crmTeam.findUnique({ where: { code: 'BK' } });
+        if (bkTeam) {
+          await TeamService.updateTeamMembers(fastify, bkTeam.id, activeBkIds);
+        }
+
         await fastify.prisma.crm.crmConfig.upsert({
           where: { key: 'ACTIVE_BK_STAFF_CONFIG' },
           update: { value: JSON.stringify(activeBkIds) },

@@ -1,22 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { CcTipLeaderboardEntry, CcTipLeaderboardResponse, CcTipRecord, CcTipResponse, SafeAny } from '@mos-lab/shared';
+import { TeamService } from '../../teams/team.service.js';
 
-async function getActiveCcIds(fastify: FastifyInstance): Promise<number[] | null> {
-  try {
-    const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
-      where: { key: 'ACTIVE_CC_STAFF_CONFIG' },
-    });
-    if (configRecord && configRecord.value) {
-      const parsed = JSON.parse(configRecord.value);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((id) => Number(id)).filter((id) => !isNaN(id));
-      }
-    }
-  } catch (err) {
-    fastify.log.error(err as SafeAny, 'Error fetching ACTIVE_CC_STAFF_CONFIG for CC Tip from DB');
-  }
-  return null;
+async function getActiveCcIds(fastify: FastifyInstance): Promise<number[]> {
+  const ids = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG');
+  return ids.length > 0 ? ids : [37790, 34295, 46092, 51659, 48026, 48997];
 }
 
 export async function registerCcTipRoutes(fastify: FastifyInstance) {

@@ -2,6 +2,7 @@
 
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Typography, Card, theme, DatePicker, Select, Radio, Space, Button, Tabs } from 'antd';
 import {
   CalendarOutlined,
@@ -69,6 +70,7 @@ const { RangePicker } = DatePicker;
 
 export default function BkDashboardPage() {
   const { token } = theme.useToken();
+  const router = useRouter();
 
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [referenceDate, setReferenceDate] = useState<Dayjs>(dayjs());
@@ -78,7 +80,6 @@ export default function BkDashboardPage() {
   const [selectedBooker] = useState<string>('ALL');
 
   const [activeTab, setActiveTab] = useState<string>('booking');
-  const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
 
   // Restore active tab from URL param or localStorage on mount
   useEffect(() => {
@@ -274,12 +275,12 @@ export default function BkDashboardPage() {
             ]}
           />
 
-          {/* Config Drawer Button */}
+          {/* Config Button → Team Management */}
           <Button
             type="primary"
             icon={<SettingOutlined />}
             size="middle"
-            onClick={() => setConfigDrawerOpen(true)}
+            onClick={() => router.push('/dashboard/staff/teams?selected=BK')}
             className="bg-amber-500 hover:bg-amber-600 border-amber-500"
           >
             Cấu hình BK
@@ -303,9 +304,6 @@ export default function BkDashboardPage() {
           destroyOnHidden
         />
       </Card>
-
-      {/* Config Drawer */}
-      <BkConfigDrawer open={configDrawerOpen} onClose={() => setConfigDrawerOpen(false)} />
     </div>
   );
 }
