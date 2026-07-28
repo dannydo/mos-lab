@@ -1,30 +1,29 @@
-# BRIEFING — 2026-07-27T23:55:40Z
+# BRIEFING — 2026-07-28T09:43:40Z
 
 ## Mission
 
-Perform a MANDATORY, BLOCKING, and RIGOROUS Victory Audit of the Project Orchestrator's claim of victory for the task:
-"Kiểm tra và tự động sửa tất cả các lỗi độ tương phản (contrast), màu sắc và khả năng truy cập (accessibility WCAG AA) cho tất cả các trang (Pages), Modal Popup, và Thanh trượt bên (Side Drawers) trong ứng dụng web mos-lab trên cả 2 nền Light Theme & Dark Theme."
+Perform an independent, empirical, adversarial Victory Audit to verify the orchestrator's claim for Vietnamese search filtering (removeVietnameseTones) refactoring across all CRM dashboard modules in mos-lab.
 
 ## 🔒 My Identity
 
 - Archetype: victory_auditor
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/victory_auditor
-- Caller / Sentinel ID: e616b0eb-86a8-4b0b-b83c-6d48a5a1d84b
+- Caller / Sentinel ID: 7699a38e-37d6-4763-8f97-08686a3bc0b6
 - Orchestrator: Project Orchestrator
 
 ## 🔒 Key Constraints
 
-- Perform independent, empirical code inspection of `apps/web`.
+- Perform independent, empirical code inspection of `packages/shared`, `apps/web`, `apps/api`.
 - Do not trust orchestrator claims blindly; check files directly.
 - Conclude with a BINARY VERDICT: `VICTORY CONFIRMED` or `VICTORY REJECTED`.
-- Write complete Victory Audit Report to `/Users/dannydo/projects/mos-lab/.agents/victory_auditor/audit_report.md`.
+- Write complete Victory Audit Report to `/Users/dannydo/projects/mos-lab/.agents/victory_auditor/handoff.md`.
 - Send message to Sentinel with final verdict and summary.
 
 ## User Context
 
-- **Last user request**: Audit accessibility WCAG AA, color contrast, and theme compliance refactoring in `mos-lab`.
+- **Last user request**: Audit tone-insensitive & case-insensitive Vietnamese search (removeVietnameseTones) refactoring across all CRM modules.
 - **Pending clarifications**: none
-- **Delivered results**: Victory Audit Report completed (`audit_report.md`), verdict: `VICTORY CONFIRMED`.
+- **Delivered results**: Victory Audit Report completed (`handoff.md`), verdict: `VICTORY CONFIRMED`.
 
 ## Project Status
 
@@ -38,4 +37,4 @@ Perform a MANDATORY, BLOCKING, and RIGOROUS Victory Audit of the Project Orchest
 
 ## Artifact Index
 
-- `/Users/dannydo/projects/mos-lab/.agents/victory_auditor/audit_report.md` — Victory Audit Report (`VICTORY CONFIRMED`)
+- `/Users/dannydo/projects/mos-lab/.agents/victory_auditor/handoff.md` — Victory Audit Report (`VICTORY CONFIRMED`)

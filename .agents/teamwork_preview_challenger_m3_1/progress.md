@@ -1,12 +1,11 @@
-# Progress Log
+# Progress Log - challenger_m3_1
 
-Last visited: 2026-07-27T23:44:28+07:00
+Last visited: 2026-07-28T09:21:22+07:00
 
-- [x] Created ORIGINAL_REQUEST.md and BRIEFING.md
-- [x] Read worker handoff report and PROJECT.md
-- [x] Search for un-scoped `#141414 !important` or `#fff !important` CSS rules
-- [x] Stress test color contrast ratios & low-contrast text
-- [x] Search for hardcoded hex colors (`#333`, `#222`, `#888`, `#aaa`, `#ccc`, etc.) in inline styles
-- [x] Run `pnpm lint` and `pnpm --filter @mos-lab/web build`
-- [x] Write handoff.md report with findings and verdict (FAIL)
-- [x] Send result message to parent
+- [x] Initialized workspace and recorded original request in `ORIGINAL_REQUEST.md`.
+- [x] Created `BRIEFING.md`.
+- [x] Write standalone empirical test harness `test-harness.ts` in workspace.
+- [x] Run test harness and capture output (22 test cases).
+- [x] Stress-test edge cases and surface failure modes (discovered Array `children` bug in `vietnameseSearchFilter`).
+- [x] Write detailed `handoff.md` with 5-component report.
+- [ ] Send completion message to parent.

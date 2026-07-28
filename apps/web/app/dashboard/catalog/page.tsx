@@ -65,6 +65,7 @@ import {
   ServiceLiveComboCheckResult,
   SERVICE_GROUPS,
   SERVICE_TYPES,
+  vietnameseSearchFilter,
 } from '@mos-lab/shared';
 
 dayjs.extend(isoWeek);
@@ -1746,7 +1747,7 @@ export default function CatalogPage() {
             <Select
               showSearch
               placeholder="Chọn dịch vụ"
-              optionFilterProp="label"
+              filterOption={vietnameseSearchFilter}
               options={services.map((s) => ({
                 value: s.id,
                 label: `${s.serviceName || s.serviceKey} (${s.serviceGroup})`,

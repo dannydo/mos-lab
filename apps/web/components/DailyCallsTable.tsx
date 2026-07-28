@@ -35,7 +35,7 @@ import { useTableConfig } from '../hooks/useTableConfig';
 import { ResizableHeaderCell } from './ResizableHeaderCell';
 import { apiClient } from '../lib/api-client';
 import { formatVND, formatDuration } from '../lib/format-utils';
-import { DailyCallEntry } from '@mos-lab/shared';
+import { DailyCallEntry, vietnameseSearchFilter } from '@mos-lab/shared';
 
 const CustomerDetailDrawer = dynamic(() => import('./CustomerDetailDrawer'), { ssr: false });
 const TableConfigDrawer = dynamic(() => import('./TableConfigDrawer').then((m) => m.TableConfigDrawer), { ssr: false });
@@ -596,6 +596,8 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
           {/* Lọc theo nhân viên cho Admin (chỉ hiển thị khi không ở tab 'Khách của tôi') */}
           {currentUser?.role === 'admin' && scope !== 'me' && (
             <Select
+              showSearch
+              filterOption={vietnameseSearchFilter}
               value={selectedStaffId}
               onChange={(val) => {
                 setSelectedStaffId(val);

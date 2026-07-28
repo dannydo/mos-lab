@@ -13,3 +13,4 @@ export * from './types/cv';
 export * from './types/bk';
 export * from './types/catalog';
 export * from './types/omicall';
+export * from './utils/search';

@@ -27,6 +27,8 @@ async function getBonusConfig(fastify: FastifyInstance): Promise<DailySalesBonus
     });
 
     const config: DailySalesBonusConfig = configRecord ? JSON.parse(configRecord.value) : { ...DEFAULT_CONFIG };
+    config.combo_unit_bonus = config.combo_unit_bonus ?? 200000;
+    config.product_unit_bonus = config.product_unit_bonus ?? 50000;
 
     // Attempt to sync tiers directly from management.staff_payroll_level_rule if present
     try {
@@ -587,8 +589,15 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
 
   // 3. POST /api/gamification/daily-sales-bonus/config
   fastify.post('/gamification/daily-sales-bonus/config', { preHandler: [requireAuth] }, async (request, reply) => {
-    const user = request.user as { role: string };
-    if (user.role !== 'admin' && user.role !== 'manager') {
+    const user = request.user as { role?: string; username?: string; email?: string };
+    const isAuthorized =
+      user.role === 'admin' ||
+      user.role === 'manager' ||
+      user.username?.toLowerCase() === 'admin' ||
+      user.username?.toLowerCase() === 'danhdo@gmail.com' ||
+      user.email?.toLowerCase() === 'danhdo@gmail.com';
+
+    if (!isAuthorized) {
       return reply
         .status(403)
         .send({ error: 'Forbidden', message: 'Chỉ Admin/Manager mới có quyền cập nhật cấu hình thưởng.' });

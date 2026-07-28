@@ -1,28 +1,27 @@
-## 2026-07-27T16:50:29Z
+## 2026-07-28T02:11:48Z
 
-You are teamwork_preview_worker_m2_3, a Worker subagent for mos-lab.
+You are worker_m2_3. Your working directory is /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m2_3.
 
-Working Directory: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m2_3
-Project Scope Document: /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md
-Auditor Evidence Report: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_auditor_m4_1/handoff.md
+MANDATORY INTEGRITY WARNING: DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
-MANDATORY INTEGRITY WARNING:
-DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
+Mission:
+Refactor search controls across `/dashboard/nyc`, `/dashboard/omicall`, `/dashboard/staff`, and shared dashboard components (`BookingWizardDrawer.tsx`, `RescheduleBookingModal.tsx`, `DailyCallsTable.tsx`) using `removeVietnameseTones` / `vietnameseSearchFilter`, then verify web build.
 
-Your Task:
-Surgically fix the exact 3 files and line locations flagged in the Forensic Auditor's evidence report `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_auditor_m4_1/handoff.md`:
+1. `/dashboard/nyc`:
+   - `apps/web/app/dashboard/nyc/page.tsx`: add `showSearch` + `filterOption={vietnameseSearchFilter}` to Booker/Telesales Select dropdown (line 286).
+2. `/dashboard/omicall`:
+   - `apps/web/app/dashboard/omicall/page.tsx`: refactor Staff filter `<Select showSearch>` line 621 to use `filterOption={vietnameseSearchFilter}`.
+3. `/dashboard/staff`:
+   - `apps/web/app/dashboard/staff/components/StaffTabsContent.tsx`: refactor Legacy Wings Lashes Staff Select line 208 to use `filterOption={vietnameseSearchFilter}` (remove `optionFilterProp="children"`).
+   - `apps/web/app/dashboard/staff/page.tsx`: add `showSearch` + `filterOption={vietnameseSearchFilter}` to Target Merge Staff Select (line 1168).
+4. Shared Components:
+   - `apps/web/components/BookingWizardDrawer.tsx`: refactor Service (line 735) and Promotion (line 897) `<Select showSearch>` to use `filterOption={vietnameseSearchFilter}`.
+   - `apps/web/components/RescheduleBookingModal.tsx`: refactor Service `<Select showSearch>` (line 402) to use `filterOption={vietnameseSearchFilter}`.
+   - `apps/web/components/DailyCallsTable.tsx`: add `showSearch` + `filterOption={vietnameseSearchFilter}` to Booker filter Select (line 598).
+5. Build Verification:
+   - Execute `pnpm --filter @mos-lab/web build` to verify clean TypeScript compilation and static page generation without any type or build errors.
 
-1. `apps/web/app/dashboard/cc/components/CcTipTab.tsx`:
-   - Line 325: Replace `<span className="font-medium text-slate-300 text-xs">` with `<span className="font-medium text-slate-600 dark:text-slate-300 text-xs">`.
-   - Line 337: Replace `<Space className="text-xs text-slate-300">` with `<Space className="text-xs text-slate-600 dark:text-slate-300">`.
-2. `apps/web/app/dashboard/cv/components/CvTipTab.tsx`:
-   - Line 313: Replace `<span className="font-medium text-slate-300 text-xs">` with `<span className="font-medium text-slate-600 dark:text-slate-300 text-xs">`.
-3. `apps/web/app/dashboard/catalog/components/CatalogComboLiveTab.tsx`:
-   - Line 308: Replace `<span className="font-bold text-base text-slate-100 dark:text-slate-100">` with `<span className="font-bold text-base text-slate-700 dark:text-slate-100">`.
+Output & Verification:
 
-Build Verification Requirements:
-
-- Run `pnpm lint` and `pnpm --filter @mos-lab/web build` (or `pnpm build`) to verify 0 errors.
-- Document exact execution logs in your handoff report.
-
-Write your completion report to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m2_3/handoff.md` and send a message back to the orchestrator when finished.
+- Document all changes and build output in `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m2_3/handoff.md`.
+- Send a message to orchestrator (ID: 7699a38e-37d6-4763-8f97-08686a3bc0b6) upon completion.

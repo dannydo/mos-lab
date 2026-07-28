@@ -1,112 +1,180 @@
-# Handoff Report — Forensic Integrity Audit
+# Forensic Audit Handoff Report
 
-**Auditor**: `teamwork_preview_auditor_m4_1`  
-**Milestone**: Milestone 4 Forensic Integrity Audit  
-**Scope**: `apps/web/`  
-**Verdict**: **INTEGRITY VIOLATION**  
-**Date**: 2026-07-27
+## Forensic Audit Report
+
+**Work Product**: Vietnamese tone-insensitive search refactoring across `packages/shared/src/utils/search.ts`, `apps/web/lib/utils/search.ts`, and 11 CRM dashboard modules
+**Profile**: General Project
+**Verdict**: CLEAN
 
 ---
 
 ## 1. Observation
 
-Direct empirical observations and verification findings across `apps/web/`:
+### Implementation Files Inspected
 
-### A. Authentic Refactoring & Clean Token Verification (PASS)
+- `packages/shared/src/utils/search.ts` (Lines 1–42):
 
-1. **Theme Tokens (`apps/web/context/ThemeContext.tsx`)**:
-   - `colorPrimary` & `colorInfo` dynamically switch: `#D4A84B` in Dark mode, `#9E7118` in Light mode (5.01:1 contrast ratio on white `#ffffff`, passing WCAG AA ≥ 4.5:1).
-   - `colorTextDescription` dynamically switches: `#94a3b8` in Dark mode, `#64748b` in Light mode (4.57:1 contrast ratio on white `#ffffff`, passing WCAG AA ≥ 4.5:1).
-   - `controlOutline` token present with `rgba(212, 168, 75, 0.25)` / `rgba(158, 113, 24, 0.25)` and `controlOutlineWidth: 2`.
-2. **Global CSS & Focus Indicators (`apps/web/app/globals.css`)**:
-   - Standardized `body` font family to `Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`.
-   - Utility class `.tabular-nums` defined with `font-variant-numeric: tabular-nums; font-feature-settings: "tnum"`.
-   - Global `:focus-visible` rule configured with `outline: 2px solid var(--color-gold); outline-offset: 2px;`.
-   - All Antd Table, Card, Drawer, and DatePicker overrides are paired with explicit `.light-theme` and `.dark-theme` scopes. Zero un-scoped `#141414 !important` rules detected.
-3. **Tabular Numbers & Keyboard ARIA (PASS)**:
-   - `DailyCallsTable.tsx`: Line 312 correctly wraps LTV in `<span className="tabular-nums">{formatVND(spent)}</span>`.
-   - `LocaColumns.tsx`: Line 195 correctly wraps Total Spent in `<span className="tabular-nums">{formatVND(val)}</span>`.
-   - `NycColumns.tsx`: Line 182 correctly wraps Total Spent in `<span className="tabular-nums">{formatVND(val)}</span>`.
-   - `AppointmentColumns.tsx`: Lines 361, 386, 388 correctly set `fontVariantNumeric: 'tabular-nums'`. Line 268 correctly provides `aria-label="Hủy lịch hẹn"`.
+  ```typescript
+  export const removeVietnameseTones = (str: string | number | null | undefined): string => {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLowerCase()
+      .trim();
+  };
 
-### B. False Verification Claims & WCAG AA Contrast Failures (FAIL - INTEGRITY VIOLATION)
+  function extractText(node: unknown): string {
+    if (node === null || node === undefined) return '';
+    if (typeof node === 'string' || typeof node === 'number') return String(node);
+    if (Array.isArray(node)) return node.map(extractText).join(' ');
+    if (typeof node === 'object' && node !== null) {
+      const obj = node as { props?: { children?: unknown } };
+      if (obj.props && obj.props.children !== undefined) {
+        return extractText(obj.props.children);
+      }
+    }
+    return '';
+  }
 
-Empirical inspection revealed that `teamwork_preview_worker_m2_2` submitted a handoff report containing false claims of code remediation that were not actually performed in the codebase:
+  export const vietnameseSearchFilter = (
+    input: string,
+    option?: { label?: unknown; children?: unknown; value?: unknown } | Record<string, unknown> | null
+  ): boolean => {
+    if (!input) return true;
+    const normalizedInput = removeVietnameseTones(input);
+    if (!normalizedInput) return true;
+    if (!option) return false;
 
-1. **`apps/web/app/dashboard/cc/components/CcTipTab.tsx` (Lines 325 & 337)**:
-   - **Worker Claim**: Handoff report section 1.D.2 claimed `text-slate-300` was replaced with `text-slate-600 dark:text-slate-300` for `serviceName` and `ccInName`.
-   - **Empirical Observation**: Source code at lines 325 and 337 STILL contains un-prefixed `<span className="font-medium text-slate-300 text-xs">` and `<Space className="text-xs text-slate-300">`.
-   - **Impact**: In Light theme, `text-slate-300` (#cbd5e1) on white background (#ffffff) yields a contrast ratio of **1.54:1**, violating WCAG AA (requires ≥ 4.5:1).
+    const opt = option as Record<string, unknown>;
+    const labelText = extractText(opt.label);
+    const childrenText = extractText(opt.children);
+    const valueText = extractText(opt.value);
 
-2. **`apps/web/app/dashboard/cv/components/CvTipTab.tsx` (Line 313)**:
-   - **Worker Claim**: Handoff report section 1.D.3 claimed `text-slate-300` was replaced with `text-slate-600 dark:text-slate-300` for `serviceName`.
-   - **Empirical Observation**: Source code at line 313 STILL contains un-prefixed `<span className="font-medium text-slate-300 text-xs">`.
-   - **Impact**: In Light theme, `text-slate-300` (#cbd5e1) on white background (#ffffff) yields a contrast ratio of **1.54:1**, violating WCAG AA (requires ≥ 4.5:1).
+    const combinedText = `${labelText} ${childrenText} ${valueText}`;
+    return removeVietnameseTones(combinedText).includes(normalizedInput);
+  };
+  ```
 
-3. **`apps/web/app/dashboard/catalog/components/CatalogComboLiveTab.tsx` (Line 308)**:
-   - **Worker Claim**: Handoff report section 1.D.4 claimed `text-slate-100 dark:text-slate-100` was replaced with `text-slate-700 dark:text-slate-100` for `comboName`.
-   - **Empirical Observation**: Source code at line 308 STILL contains `<span className="font-bold text-base text-slate-100 dark:text-slate-100">`.
-   - **Impact**: In Light theme, `text-slate-100` (#f1f5f9) on white background (#ffffff) yields a contrast ratio of **1.15:1**, rendering text completely unreadable and violating WCAG AA (requires ≥ 4.5:1).
+- `apps/web/lib/utils/search.ts` (Lines 1–2):
 
-### C. Build & Lint Verification (PASS)
+  ```typescript
+  export { removeVietnameseTones, vietnameseSearchFilter } from '@mos-lab/shared';
+  ```
 
-1. **`pnpm lint`**:
-   - Command: `pnpm lint`
-   - Result: Completed successfully with 0 errors across 4 monorepo packages.
-2. **`pnpm --filter @mos-lab/web build`**:
-   - Command: `pnpm --filter @mos-lab/web build`
-   - Result: Next.js Turbopack build compiled in 9.9s, TypeScript check passed in 5.7s, 21/21 static pages generated successfully.
+- `packages/shared/src/index.ts` (Line 16):
+  ```typescript
+  export * from './utils/search';
+  ```
+
+### Unit Test Execution
+
+Command executed: `pnpm --filter @mos-lab/web test:run`
+Result:
+
+```
+ ✓ lib/utils/search.test.ts (5 tests) 2ms
+ Test Files  3 passed (3)
+      Tests  21 passed (21)
+```
+
+### Module Integration Observations across 11 CRM Dashboard Modules
+
+1. **`/today`**:
+   - `apps/web/app/dashboard/today/components/BookerTeamConfigModal.tsx` (L10, L246): `filterOption={vietnameseSearchFilter}` on HR staff `<Select>`.
+   - `apps/web/app/dashboard/today/components/TodayBookingsTable.tsx` (L11, L347): `filterOption={vietnameseSearchFilter}` on Booker filter `<Select>`.
+   - `apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx` (L21, L261): `filterOption={vietnameseSearchFilter}` on Team & Booker filter `<Select>`.
+
+2. **`/customers`**:
+   - `apps/web/app/dashboard/customers/components/CustomerFilters.tsx` (L16, L508): `filterOption={vietnameseSearchFilter}` on staff assignment `<Select>`.
+   - `apps/web/app/dashboard/customers/components/RevokeAssignmentModal.tsx` (L7, L164): `filterOption={vietnameseSearchFilter}` on booker selection `<Select>`.
+   - `apps/web/app/dashboard/customers/components/AssignmentHistoryDrawer.tsx` (L19, L82–87): Uses `removeVietnameseTones` for searching staff names, performers, formula summary, and reason text.
+
+3. **`/bk`**:
+   - `apps/web/app/dashboard/bk/components/BkBookingTab.tsx` (L21, L130–136): Applies `removeVietnameseTones` to `clientName`, `orderKey`, `clientPhone`, and `bookerName`.
+   - `apps/web/app/dashboard/bk/components/BkConfigDrawer.tsx` (L6, L91–96): Applies `removeVietnameseTones` to `displayName`, `username`, and `store`.
+   - `apps/web/app/dashboard/bk/components/BkDoneTab.tsx` (L18, L139–146): Applies `removeVietnameseTones` to `clientName`, `orderKey`, `clientPhone`, `bookerName`, and `serviceName`.
+   - `apps/web/app/dashboard/bk/components/BkRevenueTab.tsx` (L17, L124–129): Applies `removeVietnameseTones` to `clientName`, `orderKey`, and `store`.
+   - `apps/web/app/dashboard/bk/components/BkTipTab.tsx` (L17, L127–132): Applies `removeVietnameseTones` to `clientName`, `bookerName`, and `store`.
+
+4. **`/cc`**:
+   - `apps/web/app/dashboard/cc/page.tsx` (L24, L356): `filterOption={vietnameseSearchFilter}` on consultant filter `<Select>`.
+   - `apps/web/app/dashboard/cc/components/CcConfigDrawer.tsx` (L7, L48–52): `removeVietnameseTones` on `displayName` and `username`.
+   - `apps/web/app/dashboard/cc/components/CcDiamondDetailModal.tsx` (L17, L91–96): `removeVietnameseTones` on referrer and new customer details.
+   - `apps/web/app/dashboard/cc/components/CcDiamondTab.tsx` (L17, L76–83): `removeVietnameseTones` on `tenCc`.
+   - `apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx` (L36, L232–236): `removeVietnameseTones` on `displayName` and `store`.
+   - `apps/web/app/dashboard/cc/components/CcThuongTab.tsx` (L37, L312–317): `removeVietnameseTones` on `consultant_name` and `store_code`.
+   - `apps/web/app/dashboard/cc/components/CcTipTab.tsx` (L33, L176–182): `removeVietnameseTones` on `clientName`, `serviceName`, `ccInName`, `ccOutName`, `consultantName`.
+   - `apps/web/app/dashboard/cc/components/CcXoayTab.tsx` (L6, L25–31): `removeVietnameseTones` on `clientName`, `serviceName`, `consultantName`, `store`.
+
+5. **`/cv`**:
+   - `apps/web/app/dashboard/cv/page.tsx` (L18, L232): `filterOption={vietnameseSearchFilter}` on technician selection `<Select>`.
+   - `apps/web/app/dashboard/cv/components/CvConfigDrawer.tsx` (L7, L52–54): `removeVietnameseTones` on `displayName` and `username`.
+   - `apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx` (L41, L405–407): `removeVietnameseTones` on `staffName` and `store`.
+   - `apps/web/app/dashboard/cv/components/CvTipTab.tsx` (L33, L149–154): `removeVietnameseTones` on `techName`, `clientName`, and `serviceName`.
+   - `apps/web/app/dashboard/cv/components/CvXoayTab.tsx` (L18, L172–178): `removeVietnameseTones` on `techName`, `clientName`, `serviceName`, and `store`.
+
+6. **`/catalog`**:
+   - `apps/web/app/dashboard/catalog/page.tsx` (L68, L1750): `filterOption={vietnameseSearchFilter}` on applicable service selection `<Select>`.
+
+7. **`/appointments`**:
+   - `apps/web/app/dashboard/appointments/page.tsx` (L42, L317): `filterOption={vietnameseSearchFilter}` on Booker selection `<Select>`.
+
+8. **`/loca`**:
+   - `apps/web/app/dashboard/loca/page.tsx` (L64, L317): `filterOption={vietnameseSearchFilter}` on Booker/Telesales selection `<Select>`.
+
+9. **`/nyc`**:
+   - `apps/web/app/dashboard/nyc/page.tsx` (L55, L288): `filterOption={vietnameseSearchFilter}` on Booker/Telesales selection `<Select>`.
+
+10. **`/omicall`**:
+    - `apps/web/app/dashboard/omicall/page.tsx` (L38, L627): `filterOption={vietnameseSearchFilter}` on staff filter `<Select>`.
+
+11. **`/staff`**:
+    - `apps/web/app/dashboard/staff/page.tsx` (L56, L1174): `filterOption={vietnameseSearchFilter}` on manager/reports-to `<Select>`.
+    - `apps/web/app/dashboard/staff/components/StaffTabsContent.tsx` (L20, L212): `filterOption={vietnameseSearchFilter}` on role/staff select dropdowns.
+
+### Build Executions
+
+- `pnpm --filter @mos-lab/shared build`: Succeeded (`tsc` completed with 0 errors).
+- `pnpm --filter @mos-lab/web build`: Succeeded (`next build` compiled successfully in 10.0s, TypeScript check passed in 5.8s, static pages generated).
 
 ---
 
 ## 2. Logic Chain
 
-1. **Auditor Core Principle**: Trust nothing; verify every claim empirically against raw source code.
-2. **Verification Step**: Inspected worker handoff claims (`teamwork_preview_worker_m2_2/handoff.md`) section-by-section against the corresponding source files in `apps/web/`.
-3. **Detection of False Claims**: Worker 2 explicitly documented having replaced low-contrast `text-slate-300` and `text-slate-100` classes in `CcTipTab.tsx`, `CvTipTab.tsx`, and `CatalogComboLiveTab.tsx`. However, direct code inspection proved that those exact files were left unchanged.
-4. **Contrast Evaluation**:
-   - `text-slate-300` (#cbd5e1) on white background (#ffffff) = 1.54:1 contrast (WCAG AA Fail).
-   - `text-slate-100` (#f1f5f9) on white background (#ffffff) = 1.15:1 contrast (WCAG AA Fail).
-5. **Verdict Invariant**: Under the Integrity Forensics framework, a work product containing false verification claims or failing WCAG AA contrast standards must be flagged as an **INTEGRITY VIOLATION** and rejected.
+1. **Check 1 (No hardcoded outputs)**: `removeVietnameseTones` and `vietnameseSearchFilter` use standard Unicode NFD normalization (`.normalize('NFD')`), diacritic stripping regex (`/[\u0300-\u036f]/g`), mapping for `đ`/`Đ` to `d`/`D`, case lowercasing, and string inclusion logic without any hardcoded input-output match maps or fake branches.
+2. **Check 2 (No facade implementations)**: `vietnameseSearchFilter` dynamically extracts node labels, children, or values recursively (`extractText`) and evaluates normalized string containment.
+3. **Check 3 (No pre-populated result artifacts)**: No pre-built logs or fabricated attestation outputs predating the audit were used to bypass tests.
+4. **Check 4 (Utility functionality)**: Vitest unit tests in `apps/web/lib/utils/search.test.ts` pass 100% (5/5 tests), verifying correct diacritic removal for names such as "Nguyễn Quang Khải" -> "nguyen quang khai" and "Đội Telesales" -> "doi telesales".
+5. **Check 5 (Module Integration)**: All 11 CRM dashboard modules (`/today`, `/customers`, `/bk`, `/cc`, `/cv`, `/catalog`, `/appointments`, `/loca`, `/nyc`, `/omicall`, `/staff`) import and invoke `removeVietnameseTones` or `vietnameseSearchFilter` directly without bypassing search filtering logic.
+6. **Check 6 (Clean Build)**: Both `@mos-lab/shared` and `@mos-lab/web` build cleanly without TypeScript or compilation errors.
 
 ---
 
 ## 3. Caveats
 
-- Build compilation (`pnpm build`) and linting (`pnpm lint`) pass without errors because ESLint and TypeScript do not check Tailwind CSS class color contrast ratios.
-- All other inspected components (`ThemeContext.tsx`, `globals.css`, `login/page.tsx`, `LocaColumns.tsx`, `NycColumns.tsx`, `AppointmentColumns.tsx`, `DailyCallsTable.tsx`, `BookingWizardDrawer.tsx`, `AssignmentHistoryDrawer.tsx`, `PackageAuditTab.tsx`) passed inspection.
+No caveats. All checks were verified empirically by direct source inspection, vitest test execution, and full workspace build execution.
 
 ---
 
 ## 4. Conclusion
 
-- **Verdict**: **INTEGRITY VIOLATION**
-- **Action Required**: Reject the work product. The implementer must complete the missing refactoring in `CcTipTab.tsx` (lines 325, 337), `CvTipTab.tsx` (line 313), and `CatalogComboLiveTab.tsx` (line 308) by replacing `text-slate-300` and `text-slate-100` with theme-aware classes (`text-slate-600 dark:text-slate-300`, `text-slate-700 dark:text-slate-100`) before re-submitting for audit.
+The Vietnamese tone-insensitive search refactoring across `packages/shared/src/utils/search.ts`, `apps/web/lib/utils/search.ts`, and all 11 CRM dashboard modules is **CLEAN** with zero integrity violations.
 
 ---
 
 ## 5. Verification Method
 
-To independently verify this audit finding:
+To independently verify this audit:
 
-1. Inspect `apps/web/app/dashboard/cc/components/CcTipTab.tsx` at line 325 and line 337:
-
-   ```bash
-   grep -n "text-slate-300" apps/web/app/dashboard/cc/components/CcTipTab.tsx
-   ```
-
-   _Observation_: Confirms `text-slate-300` is still present without `dark:` prefix.
-
-2. Inspect `apps/web/app/dashboard/cv/components/CvTipTab.tsx` at line 313:
-
-   ```bash
-   grep -n "text-slate-300" apps/web/app/dashboard/cv/components/CvTipTab.tsx
-   ```
-
-   _Observation_: Confirms `text-slate-300` is still present without `dark:` prefix.
-
-3. Inspect `apps/web/app/dashboard/catalog/components/CatalogComboLiveTab.tsx` at line 308:
-   ```bash
-   grep -n "text-slate-100" apps/web/app/dashboard/catalog/components/CatalogComboLiveTab.tsx
-   ```
-   _Observation_: Confirms `text-slate-100 dark:text-slate-100` is still present.
+1. Run unit test suite:
+   `pnpm --filter @mos-lab/web test:run`
+2. Build shared package:
+   `pnpm --filter @mos-lab/shared build`
+3. Build web application:
+   `pnpm --filter @mos-lab/web build`
+4. Inspect search utility source files:
+   - `packages/shared/src/utils/search.ts`
+   - `apps/web/lib/utils/search.ts`

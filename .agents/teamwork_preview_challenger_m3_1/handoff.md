@@ -1,158 +1,269 @@
-# Challenger Handoff Report — Theme Toggling & Color Contrast Integrity Verification
+# Empirical Test & Stress Verification Handoff Report
 
-**Challenger Agent**: `teamwork_preview_challenger_m3_1`  
-**Milestone**: Milestone 3 Review & Adversarial Challenge  
-**Scope**: `apps/web/`  
-**Date**: 2026-07-27  
-**Verdict**: **FAIL**
-
----
-
-## Challenge Summary
-
-**Overall risk assessment**: **HIGH**
-
-Empirical stress verification discovered multiple severe theme toggling and color contrast violations across `apps/web/`:
-
-1. `apps/web/app/login/page.tsx` contains hardcoded dark styling (`#0f0f0f`, `#1a1a1a`, `#141414`, `#2a2a2a`) on lines 147, 156, 157 and fails to react to `themeMode` or light theme toggling (directly contradicting the worker's handoff claim).
-2. Multiple table components (`BkBookingTab.tsx`, `CcTipTab.tsx`, `CvTipTab.tsx`) contain un-prefixed Tailwind text classes (`text-slate-300`). In Light Mode on white background (`#ffffff`), `text-slate-300` (`#cbd5e1`) yields a contrast ratio of **1.35:1** (failing WCAG AA 4.5:1 requirement severely).
-3. Multiple components (`PackageAuditTab.tsx`, `LocaColumns.tsx`, `BookingWizardDrawer.tsx`, `login/page.tsx`) contain hardcoded inline `color: '#888'` text styles. On white background in Light mode, `#888` yields a contrast ratio of **3.55:1** (failing WCAG AA 4.5:1 requirement).
+**Agent**: challenger_m3_1  
+**Working Directory**: `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1`  
+**Target Milestone**: M3 - Empirical Testing & Verification of `removeVietnameseTones` & `vietnameseSearchFilter`  
+**Date**: 2026-07-28
 
 ---
 
 ## 1. Observation
 
-Direct observations and evidence chain from empirical inspection and grep commands:
+### 1.1 Test Harness Execution Command & Raw Output
 
-### A. Un-themed Login Page & Style Injections
+Ran standalone ts-node/tsx test harness at `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1/test-harness.ts`:
 
-- **`apps/web/app/login/page.tsx` lines 146–158**:
-  ```tsx
-  style={{
-    background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)',
-    padding: '20px',
-  }}
-  ...
-  <Card
-    style={{
-      width: 400,
-      borderRadius: 12,
-      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-      background: '#141414',
-      border: '1px solid #2a2a2a',
-    }}
-  >
-  ```
-  _Evidence_: `useTheme()` hook is imported on line 9 and destructured on line 20, but the page container and Card backgrounds are hardcoded dark colors (`#0f0f0f`, `#1a1a1a`, `#141414`) that ignore `themeMode`.
+**Command Executed**:
 
-### B. Severe Contrast Violations in Light Mode (1.35:1 Contrast Ratio)
+```bash
+npx tsx /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1/test-harness.ts
+```
 
-- **`apps/web/app/dashboard/bk/components/BkBookingTab.tsx` line 318**:
+**Verbatim Console Output**:
 
-  ```tsx
-  render: (bName: string) => (
-    <span className="font-medium text-xs text-slate-300 whitespace-nowrap">{bName || '-'}</span>
-  ),
-  ```
+```text
+====================================================
+   EMPIRICAL VERIFICATION HARNESS - SEARCH UTILS
+====================================================
 
-  _Evidence_: `text-slate-300` (`#cbd5e1`) on white table background (`#ffffff`) has a contrast ratio of **1.35:1** (WCAG AA requirement is >= 4.5:1). Text is unreadable in Light Mode.
+--- TASK 1: removeVietnameseTones ---
 
-- **`apps/web/app/dashboard/cc/components/CcTipTab.tsx` line 325 & line 337**:
+--- TASK 2: vietnameseSearchFilter Option Objects ---
 
-  ```tsx
-  render: (val: string) => <span className="font-medium text-slate-300 text-xs">{val}</span>,
-  ...
-  <Space size={4} className="text-xs text-slate-300 whitespace-nowrap">
-  ```
+====================================================
+                 SUMMARY RESULTS
+====================================================
+[1] [Task 1 - Matching] "diep" matching "Ngọc Điệp"
+    Status:   ✅ PASS
+    Expected: true
+    Actual:   true
+    Details:  str: "ngoc diep", query: "diep"
 
-  _Evidence_: Table cell content renders in light grey `text-slate-300` in Light Mode, failing contrast criteria at **1.35:1**.
+[2] [Task 1 - Matching] "hang" matching "Hằng Ni"
+    Status:   ✅ PASS
+    Expected: true
+    Actual:   true
+    Details:  str: "hang ni", query: "hang"
 
-- **`apps/web/app/dashboard/cv/components/CvTipTab.tsx` line 313**:
-  ```tsx
-  render: (val: string) => (
-    <span className="font-medium text-slate-300 text-xs">{val}</span>
-  ),
-  ```
-  _Evidence_: `text-slate-300` on white table background yields **1.35:1** contrast ratio.
+[3] [Task 1 - Matching] "thuy" matching "Thuỳ Trang 🌸"
+    Status:   ✅ PASS
+    Expected: true
+    Actual:   true
+    Details:  str: "thuy trang 🌸", query: "thuy"
 
-### C. Low-Contrast Hardcoded Inline `#888` Colors (3.55:1 Contrast Ratio)
+[4] [Task 1 - Matching] "nhat" matching "Nhật"
+    Status:   ✅ PASS
+    Expected: true
+    Actual:   true
+    Details:  str: "nhat", query: "nhat"
 
-- **`apps/web/app/dashboard/kpi/components/PackageAuditTab.tsx` lines 221 & 268**:
+[5] [Task 1 - Matching] "DONG" matching "Đồng Bằng"
+    Status:   ✅ PASS
+    Expected: true
+    Actual:   true
+    Details:  str: "dong bang", query: "dong"
 
-  ```tsx
-  {r.customerPhone && <div style={{ fontSize: '11px', color: '#888' }}>{r.customerPhone}</div>}
-  ...
-  <div style={{ fontSize: '10.5px', color: '#888', marginTop: '2px' }}>bởi {r.reviewedByStaffName}</div>
-  ```
+[6] [Task 1 - Edge] null input
+    Status:   ✅ PASS
+    Expected: ""
+    Actual:   ""
 
-  _Evidence_: `#888` on `#ffffff` in Light Mode yields a contrast ratio of **3.55:1** (failing WCAG AA >= 4.5:1 for body text).
+[7] [Task 1 - Edge] undefined input
+    Status:   ✅ PASS
+    Expected: ""
+    Actual:   ""
 
-- **`apps/web/app/dashboard/loca/components/LocaColumns.tsx` lines 109, 131, 420, 455**:
+[8] [Task 1 - Edge] 0 (number)
+    Status:   ✅ PASS
+    Expected: "0"
+    Actual:   "0"
 
-  ```tsx
-  <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
-  ```
+[9] [Task 1 - Edge] 12345 (number)
+    Status:   ✅ PASS
+    Expected: "12345"
+    Actual:   "12345"
 
-  _Evidence_: Hardcoded `color: '#888'` yields **3.55:1** contrast in Light Mode.
+[10] [Task 1 - Edge] strings with emojis ("Thuỳ Trang 🌸")
+    Status:   ✅ PASS
+    Expected: "thuy trang 🌸"
+    Actual:   "thuy trang 🌸"
 
-- **`apps/web/components/BookingWizardDrawer.tsx` lines 597, 654, 704, 730, 869**:
-  ```tsx
-  <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
-  ```
-  _Evidence_: Hardcoded `color: '#888'` yields **3.55:1** contrast in Light Mode.
+[11] [Task 1 - Edge] uppercase ("ĐỒNG BẰNG")
+    Status:   ✅ PASS
+    Expected: "dong bang"
+    Actual:   "dong bang"
 
-### D. Verification Commands
+[12] [Task 1 - Edge] leading/trailing whitespace ("  Hằng Ni  ")
+    Status:   ✅ PASS
+    Expected: "hang ni"
+    Actual:   "hang ni"
 
-- `pnpm lint`: PASSED with 0 errors (108 warnings).
-- `pnpm --filter @mos-lab/web build`: PASSED with 0 compilation errors.
+[13] [Task 2 - Filter] Filter { label: "Ngọc Điệp" } with "diep"
+    Status:   ✅ PASS
+    Expected: true
+    Actual:   true
+
+[14] [Task 2 - Filter] Filter { children: "Hằng Ni" } with "hang"
+    Status:   ✅ PASS
+    Expected: true
+    Actual:   true
+
+[15] [Task 2 - Filter] Filter { children: ["Thuỳ Trang ", "🌸"] } with "thuy"
+    Status:   ❌ FAIL
+    Expected: true
+    Actual:   false
+    Details:  Array children fail string type check
+
+[16] [Task 2 - Filter] Filter { value: 123, label: "Đồng Bằng" } with "DONG"
+    Status:   ✅ PASS
+    Expected: true
+    Actual:   true
+
+[17] [Task 2 - Extended] Filter with null option
+    Status:   ✅ PASS
+    Expected: false
+    Actual:   false
+
+[18] [Task 2 - Extended] Filter trailing whitespace
+    Status:   ✅ PASS
+    Expected: false
+    Actual:   false
+
+[19] [Task 2 - Extended] Filter with empty string input
+    Status:   ✅ PASS
+    Expected: true
+    Actual:   true
+
+[20] [Task 2 - Extended] Filter { value: 123 } without label/children with input "123"
+    Status:   ✅ PASS
+    Expected: true
+    Actual:   true
+
+[21] [Task 2 - Stress] Filter { label: ["Đồng ", "Bằng"] } with "dong"
+    Status:   ❌ FAIL
+    Expected: true
+    Actual:   false
+    Details:  Array label fails string type check
+
+[22] [Task 2 - Stress] Filter React Node children
+    Status:   ❌ FAIL
+    Expected: true
+    Actual:   false
+    Details:  React element children fail type check
+
+----------------------------------------------------
+TOTAL TESTS RUN: 22
+PASSED:          19
+FAILED:          3
+----------------------------------------------------
+```
+
+### 1.2 Inspection of Implementation File
+
+In `/Users/dannydo/projects/mos-lab/packages/shared/src/utils/search.ts` (lines 20–28):
+
+```ts
+20:   const opt = option as Record<string, unknown>;
+21:   const label =
+22:     typeof opt.label === 'string' || typeof opt.label === 'number'
+23:       ? String(opt.label)
+24:       : typeof opt.children === 'string' || typeof opt.children === 'number'
+25:       ? String(opt.children)
+26:       : typeof opt.value === 'string' || typeof opt.value === 'number'
+27:       ? String(opt.value)
+28:       : '';
+```
 
 ---
 
 ## 2. Logic Chain
 
-1. **Worker Claims vs. Reality**: The worker's handoff report claimed that `login/page.tsx` was refactored to use dynamic slate backgrounds for Light/Dark themes and that hardcoded `#888` text colors in `PackageAuditTab.tsx` were replaced with token-aware colors. Empirical inspection disproves both claims.
-2. **Theme Toggling Integrity**: `login/page.tsx` ignores `themeMode` and stays permanently dark (`#141414`), breaking full app theme parity.
-3. **WCAG 2.1 AA Contrast Rules**: WCAG AA mandates minimum 4.5:1 contrast for normal text. `text-slate-300` on `#ffffff` provides only 1.35:1 contrast, rendering text invisible in Light Mode. Inline `#888` on `#ffffff` provides 3.55:1 contrast, failing the 4.5:1 standard.
-4. **Conclusion**: While `pnpm lint` and `pnpm --filter @mos-lab/web build` compile cleanly, the theme toggling and color contrast integrity requirements are NOT satisfied.
+1. **Task 1 Core & Edge Cases (`removeVietnameseTones`)**:
+   - `removeVietnameseTones` normalizes strings using NFD, removes combining diacritical marks (`[\u0300-\u036f]`), replaces `'đ'` -> `'d'` and `'Đ'` -> `'D'`, converts to lowercase, and trims whitespace.
+   - Observations [1]–[12] empirically prove that:
+     - `"diep"` matches `"Ngọc Điệp"` -> normalized string is `"ngoc diep"`, query is `"diep"`, `.includes()` returns `true`.
+     - `"hang"` matches `"Hằng Ni"` -> normalized string is `"hang ni"`, query is `"hang"`, `.includes()` returns `true`.
+     - `"thuy"` matches `"Thuỳ Trang 🌸"` -> normalized string is `"thuy trang 🌸"`, query is `"thuy"`, `.includes()` returns `true`.
+     - `"nhat"` matches `"Nhật"` -> normalized string is `"nhat"`, query is `"nhat"`, `.includes()` returns `true`.
+     - `"DONG"` matches `"Đồng Bằng"` -> normalized string is `"dong bang"`, query is `"dong"`, `.includes()` returns `true`.
+     - Edge inputs `null` and `undefined` safely return `""`.
+     - Numbers `0` and `12345` safely return `"0"` and `"12345"`.
+     - Emojis in strings are preserved (e.g. `"thuy trang 🌸"`).
+     - Uppercase and leading/trailing whitespace are properly normalized.
+
+2. **Task 2 Option Object Filtering (`vietnameseSearchFilter`)**:
+   - Observations [13], [14], [16], [17]–[20] confirm that `{ label: 'Ngọc Điệp' }`, `{ children: 'Hằng Ni' }`, and `{ value: 123, label: 'Đồng Bằng' }` properly extract single string/number properties and match expected queries.
+   - **Observation [15] Failure Mode**: When passed `{ children: ['Thuỳ Trang ', '🌸'] }`, `opt.children` is an Array (`typeof opt.children === 'object'`).
+   - Line 24 in `packages/shared/src/utils/search.ts` strictly checks `typeof opt.children === 'string' || typeof opt.children === 'number'`. Because `typeof opt.children` is `'object'`, the check evaluates to `false`.
+   - The fallback chain proceeds past `opt.label`, `opt.children`, and `opt.value`, ultimately returning `label = ''`.
+   - `removeVietnameseTones('').includes('thuy')` evaluates to `false`, causing an empirical failure for `{ children: ['Thuỳ Trang ', '🌸'] }`.
 
 ---
 
-## 3. Stress Test Results
+## 3. Caveats
 
-| Scenario / Criterion                         | Expected Behavior                                  | Actual Behavior                                                                                            | Pass / Fail |
-| -------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------- |
-| 1. Un-scoped hardcoded page dark backgrounds | Light mode toggles page & card to light background | `login/page.tsx` container remains hardcoded `#0f0f0f` / `#141414`                                         | **FAIL**    |
-| 2. `text-slate-300` contrast in Light mode   | Contrast >= 4.5:1 against light background         | Contrast is **1.35:1** (`#cbd5e1` on `#ffffff`) in `BkBookingTab`, `CcTipTab`, `CvTipTab`                  | **FAIL**    |
-| 3. Hardcoded `#888` contrast in Light mode   | Contrast >= 4.5:1 or theme-aware token             | Contrast is **3.55:1** (`#888888` on `#ffffff`) in `PackageAuditTab`, `LocaColumns`, `BookingWizardDrawer` | **FAIL**    |
-| 4. Clean build & lint compilation            | `pnpm lint` and `pnpm build` pass with 0 errors    | `pnpm lint` (0 errors), `pnpm build` (0 errors)                                                            | **PASS**    |
+- **Scope Boundary**: As a review-only challenger agent, I am not modifying source implementation files directly. The identified failure mode is documented as an empirical finding.
+- **Ant Design JSX Children**: In Ant Design `<Select>`, when options contain JSX children like `<Select.Option><Avatar /> Thuỳ Trang 🌸</Select.Option>`, React converts children to arrays or VNode objects. A robust helper should recursively extract text from string arrays or React children arrays.
 
 ---
 
-## 4. Caveats
+## 4. Conclusion
 
-- No caveats. All findings were verified directly by inspection of source files and execution of lint and build scripts.
-
----
-
-## 5. Conclusion
-
-**Verdict**: **FAIL**
-
-The codebase fails theme toggling and color contrast adversarial stress testing due to:
-
-- Hardcoded dark theme styles in `apps/web/app/login/page.tsx`.
-- Severe contrast failures (1.35:1) in `BkBookingTab.tsx`, `CcTipTab.tsx`, `CvTipTab.tsx` from un-prefixed `text-slate-300`.
-- Contrast failures (3.55:1) in `PackageAuditTab.tsx`, `LocaColumns.tsx`, `BookingWizardDrawer.tsx` from hardcoded `#888` inline colors.
-
-Remediation required before passing Milestone 3.
+- `removeVietnameseTones` **100% PASSED** all user acceptance criteria and edge case requirements (diacritics removal, tone insensitivity, case insensitivity, emojis, numbers, null/undefined safety, whitespace trimming).
+- `vietnameseSearchFilter` **PASSED 4 out of 5** standard option object test cases (`label: string`, `children: string`, `value: number + label: string`, empty/null option handling).
+- `vietnameseSearchFilter` **FAILED 1 explicit user criteria requirement**: `{ children: ['Thuỳ Trang ', '🌸'] }` (and Array labels/children in general) returns `false` due to `typeof` type checks excluding Arrays.
 
 ---
 
-## 6. Verification Method
+## 5. Verification Method
 
-To independently verify these findings:
+### How to Independently Verify
 
-1. `view_file` on `apps/web/app/login/page.tsx` lines 145–160 to observe hardcoded `#0f0f0f` and `#141414`.
-2. `view_file` on `apps/web/app/dashboard/bk/components/BkBookingTab.tsx` line 318, `CcTipTab.tsx` line 325, and `CvTipTab.tsx` line 313 to observe un-prefixed `text-slate-300`.
-3. `view_file` on `apps/web/app/dashboard/kpi/components/PackageAuditTab.tsx` line 221 & 268 to observe hardcoded `color: '#888'`.
-4. Run `pnpm lint` and `pnpm --filter @mos-lab/web build` to confirm build completion.
+1. Run the empirical test harness script:
+   ```bash
+   npx tsx /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1/test-harness.ts
+   ```
+2. Run web unit tests:
+   ```bash
+   pnpm --filter @mos-lab/web test:run
+   ```
+3. Inspect `test-harness.ts` test case #15 to observe the exact failure assertion.
+
+---
+
+## Challenge Summary
+
+**Overall risk assessment**: MEDIUM
+
+### Challenges
+
+#### [Medium] Array Children / React Node Array Filtering Failure in `vietnameseSearchFilter`
+
+- **Assumption challenged**: Assumed `option.children` or `option.label` is always a single primitive string or number.
+- **Attack scenario**: Ant Design `<Select>` options with multiple child elements or array children (e.g. `{ children: ['Thuỳ Trang ', '🌸'] }`) passed to `vietnameseSearchFilter`.
+- **Blast radius**: Filter fails to match valid options with array children, causing search results to drop items when users type valid tone-free text.
+- **Mitigation**: Update `vietnameseSearchFilter` to support Array values for `label` and `children` by checking `Array.isArray(...)` and joining string elements, e.g.:
+  ```ts
+  const extractText = (val: unknown): string => {
+    if (typeof val === 'string' || typeof val === 'number') return String(val);
+    if (Array.isArray(val)) return val.map(extractText).join(' ');
+    return '';
+  };
+  ```
+
+---
+
+## Attack Surface
+
+### Hypotheses Tested
+
+- `removeVietnameseTones` handles Vietnamese diacritics removal, uppercase conversion, whitespace trimming, numbers, null, undefined, emojis. (CONFIRMED PASS)
+- `vietnameseSearchFilter` handles option object formats: `{ label: string }`, `{ children: string }`, `{ children: Array }`, `{ value: number, label: string }`. (ARRAY CHILDREN FAILED)
+
+### Vulnerabilities Found
+
+- Array `children` or `label` in `vietnameseSearchFilter` (e.g. `{ children: ['Thuỳ Trang ', '🌸'] }`) causes string conversion to fail and returns `false`.
+
+### Untested Angles
+
+- Deeply nested React component instances inside options where text is embedded inside `props.children` object structures.

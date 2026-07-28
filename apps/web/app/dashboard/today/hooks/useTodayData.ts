@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
+import { DEFAULT_BOOKER_TEAMS, BookerTeamConfig } from '../components/BookerTeamConfigModal';
 
 export interface BookingData {
   key: string;
@@ -136,6 +137,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
   }, [options]);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
+  const [dateRangeMode, setDateRangeMode] = useState<'day' | 'week' | 'month'>('day');
 
   // Auto-refresh states
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -150,6 +152,8 @@ export function useTodayData(options?: UseTodayDataOptions) {
   const [comingCategory, setComingCategory] = useState<'all' | 'combo' | 'oc' | 'other'>('all');
   const [shopBranch, setShopBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
   const [selectedBooker, setSelectedBooker] = useState<string | null>(null);
+  const [teamConfig, setTeamConfig] = useState<BookerTeamConfig>(DEFAULT_BOOKER_TEAMS);
+  const [teamModalVisible, setTeamModalVisible] = useState(false);
 
   // Drawer states
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -171,6 +175,22 @@ export function useTodayData(options?: UseTodayDataOptions) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
+
+      const persistedTeamConfig = localStorage.getItem('booker_team_config');
+      if (persistedTeamConfig) {
+        try {
+          const parsed = JSON.parse(persistedTeamConfig);
+          if (parsed && typeof parsed === 'object') {
+            setTeamConfig(parsed);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      const persistedDateMode = urlParams.get('dateRangeMode') || localStorage.getItem('today_date_range_mode');
+      if (persistedDateMode && ['day', 'week', 'month'].includes(persistedDateMode)) {
+        setDateRangeMode(persistedDateMode as 'day' | 'week' | 'month');
+      }
 
       const persistedDate = urlParams.get('date') || localStorage.getItem('today_selected_date');
       setSelectedDate(persistedDate ? dayjs(persistedDate) : dayjs());
@@ -233,38 +253,112 @@ export function useTodayData(options?: UseTodayDataOptions) {
     setDrawerVisible(true);
   };
 
-  const fetchDashboardData = useCallback(async (date: dayjs.Dayjs, isSilent = false) => {
-    if (!isSilent) {
-      setLoading(true);
-    } else {
-      setSilentLoading(true);
-    }
-    try {
-      const dateStr = date.format('YYYY-MM-DD');
-      const data = (await apiClient.dashboard.getToday({ date: dateStr })) as SafeAny;
-      setBranchesData(data.branchesData);
-      setBookingsCombo(data.bookingsCombo);
-      setBookingsOc(data.bookingsOc || []);
-      setBookingsOther(data.bookingsOther);
-    } catch (err) {
-      console.error('Fetch dashboard today error:', err);
+  const fetchDashboardData = useCallback(
+    async (date: dayjs.Dayjs, mode: 'day' | 'week' | 'month' = 'day', isSilent = false) => {
       if (!isSilent) {
-        optionsRef.current?.onError?.('Lỗi khi tải dữ liệu vận hành thực tế!');
-      }
-    } finally {
-      if (!isSilent) {
-        setLoading(false);
+        setLoading(true);
       } else {
-        setSilentLoading(false);
+        setSilentLoading(true);
       }
-    }
-  }, []);
+      try {
+        let dateFrom = date.format('YYYY-MM-DD');
+        let dateTo = date.format('YYYY-MM-DD');
+
+        if (mode === 'week') {
+          dateFrom = date.startOf('isoWeek').format('YYYY-MM-DD');
+          dateTo = date.endOf('isoWeek').format('YYYY-MM-DD');
+        } else if (mode === 'month') {
+          dateFrom = date.startOf('month').format('YYYY-MM-DD');
+          dateTo = date.endOf('month').format('YYYY-MM-DD');
+        }
+
+        const data = (await apiClient.dashboard.getToday({ dateFrom, dateTo })) as SafeAny;
+        setBranchesData(data.branchesData);
+        setBookingsCombo(data.bookingsCombo);
+        setBookingsOc(data.bookingsOc || []);
+        setBookingsOther(data.bookingsOther);
+      } catch (err) {
+        console.error('Fetch dashboard today error:', err);
+        if (!isSilent) {
+          optionsRef.current?.onError?.('Lỗi khi tải dữ liệu vận hành thực tế!');
+        }
+      } finally {
+        if (!isSilent) {
+          setLoading(false);
+        } else {
+          setSilentLoading(false);
+        }
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (selectedDate) {
-      fetchDashboardData(selectedDate);
+      fetchDashboardData(selectedDate, dateRangeMode);
     }
-  }, [selectedDate, fetchDashboardData]);
+  }, [selectedDate, dateRangeMode, fetchDashboardData]);
+
+  const dateBounds = useMemo(() => {
+    if (!selectedDate) {
+      const todayStr = dayjs().format('YYYY-MM-DD');
+      return { dateFrom: todayStr, dateTo: todayStr, label: '' };
+    }
+
+    if (dateRangeMode === 'week') {
+      const startOfWeek = selectedDate.startOf('isoWeek');
+      const endOfWeek = selectedDate.endOf('isoWeek');
+      return {
+        dateFrom: startOfWeek.format('YYYY-MM-DD'),
+        dateTo: endOfWeek.format('YYYY-MM-DD'),
+        label: `Tuần ${selectedDate.isoWeek()} (${startOfWeek.format('DD/MM')} - ${endOfWeek.format('DD/MM/YYYY')})`,
+      };
+    }
+
+    if (dateRangeMode === 'month') {
+      const startOfMonth = selectedDate.startOf('month');
+      const endOfMonth = selectedDate.endOf('month');
+      return {
+        dateFrom: startOfMonth.format('YYYY-MM-DD'),
+        dateTo: endOfMonth.format('YYYY-MM-DD'),
+        label: `Tháng ${selectedDate.format('MM/YYYY')}`,
+      };
+    }
+
+    const dateStr = selectedDate.format('YYYY-MM-DD');
+    return {
+      dateFrom: dateStr,
+      dateTo: dateStr,
+      label: selectedDate.format('DD/MM/YYYY'),
+    };
+  }, [selectedDate, dateRangeMode]);
+
+  const handlePrevDate = () => {
+    if (!selectedDate) return;
+    let newDate = selectedDate;
+    if (dateRangeMode === 'day') newDate = selectedDate.subtract(1, 'day');
+    else if (dateRangeMode === 'week') newDate = selectedDate.subtract(1, 'week');
+    else if (dateRangeMode === 'month') newDate = selectedDate.subtract(1, 'month');
+
+    setSelectedDate(newDate);
+    localStorage.setItem('today_selected_date', newDate.format('YYYY-MM-DD'));
+  };
+
+  const handleNextDate = () => {
+    if (!selectedDate) return;
+    let newDate = selectedDate;
+    if (dateRangeMode === 'day') newDate = selectedDate.add(1, 'day');
+    else if (dateRangeMode === 'week') newDate = selectedDate.add(1, 'week');
+    else if (dateRangeMode === 'month') newDate = selectedDate.add(1, 'month');
+
+    setSelectedDate(newDate);
+    localStorage.setItem('today_selected_date', newDate.format('YYYY-MM-DD'));
+  };
+
+  const changeDateRangeMode = (mode: 'day' | 'week' | 'month') => {
+    setDateRangeMode(mode);
+    localStorage.setItem('today_date_range_mode', mode);
+  };
 
   // Auto-refresh countdown
   useEffect(() => {
@@ -279,7 +373,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
       }
       setCountdown((prev) => {
         if (prev <= 1) {
-          fetchDashboardData(selectedDate, true);
+          fetchDashboardData(selectedDate, dateRangeMode, true);
           return refreshInterval;
         }
         return prev - 1;
@@ -290,7 +384,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchDashboardData(selectedDate, true);
+        fetchDashboardData(selectedDate, dateRangeMode, true);
         setCountdown(refreshInterval);
       }
     };
@@ -301,7 +395,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
       clearInterval(timer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [autoRefresh, selectedDate, refreshInterval, fetchDashboardData]);
+  }, [autoRefresh, selectedDate, dateRangeMode, refreshInterval, fetchDashboardData]);
 
   // Reset countdown if selectedDate changes or refreshInterval changes
   useEffect(() => {
@@ -310,7 +404,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
   const handleRefresh = async () => {
     if (selectedDate) {
-      await fetchDashboardData(selectedDate);
+      await fetchDashboardData(selectedDate, dateRangeMode);
       optionsRef.current?.onSuccess?.('Đã làm mới dữ liệu vận hành từ cơ sở dữ liệu!');
       setCountdown(refreshInterval);
     }
@@ -331,6 +425,34 @@ export function useTodayData(options?: UseTodayDataOptions) {
     ];
     return combined.sort((a, b) => Number(b.key) - Number(a.key));
   }, [bookingsCombo, bookingsOc, bookingsOther]);
+
+  const matchesBookerFilter = useCallback(
+    (bookerName: string | undefined, filter: string | null) => {
+      if (!filter || filter === 'all') return true;
+      const name = (bookerName || '').trim().toLowerCase();
+      if (!name) return false;
+
+      if (filter === 'team:telesales') {
+        return (teamConfig.telesales || []).some((n) => n.trim().toLowerCase() === name);
+      }
+      if (filter === 'team:control_cs') {
+        return (teamConfig.control_cs || []).some((n) => n.trim().toLowerCase() === name);
+      }
+      if (filter === 'team:other') {
+        return (teamConfig.other || []).some((n) => n.trim().toLowerCase() === name);
+      }
+
+      return name === filter.trim().toLowerCase();
+    },
+    [teamConfig]
+  );
+
+  const saveTeamConfig = useCallback((newConfig: BookerTeamConfig) => {
+    setTeamConfig(newConfig);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('booker_team_config', JSON.stringify(newConfig));
+    }
+  }, []);
 
   const bookingBranchCounts = useMemo(() => {
     let dt = 0;
@@ -354,12 +476,12 @@ export function useTodayData(options?: UseTodayDataOptions) {
         if (bookingBranch === 'pxl' && b.branchName !== 'PXL') return false;
         if (bookingBranch === 'estella' && b.branchName !== 'Estella') return false;
       }
-      if (selectedBooker && (b.booker || '').toLowerCase() !== selectedBooker.toLowerCase()) {
+      if (!matchesBookerFilter(b.booker, selectedBooker)) {
         return false;
       }
       return true;
     });
-  }, [allBookings, bookingFilter, bookingBranch, selectedBooker]);
+  }, [allBookings, bookingFilter, bookingBranch, selectedBooker, matchesBookerFilter]);
 
   const allComingList = useMemo(() => {
     return Object.keys(branchesData).flatMap((branchKey) =>
@@ -379,14 +501,14 @@ export function useTodayData(options?: UseTodayDataOptions) {
       if (comingCategory !== 'all' && item.category !== comingCategory) {
         return false;
       }
-      if (selectedBooker && (item.booker || '').toLowerCase() !== selectedBooker.toLowerCase()) {
+      if (!matchesBookerFilter(item.booker, selectedBooker)) {
         return false;
       }
       return true;
     });
 
     return [...filtered].sort((a, b) => a.time.localeCompare(b.time));
-  }, [allComingList, comingBranch, comingCategory, selectedBooker]);
+  }, [allComingList, comingBranch, comingCategory, selectedBooker, matchesBookerFilter]);
 
   const activeShopData = useMemo(() => {
     const raw =
@@ -503,6 +625,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
     // states
     loading,
     selectedDate,
+    dateRangeMode,
     autoRefresh,
     refreshInterval,
     countdown,
@@ -513,6 +636,8 @@ export function useTodayData(options?: UseTodayDataOptions) {
     comingCategory,
     shopBranch,
     selectedBooker,
+    teamConfig,
+    teamModalVisible,
     drawerVisible,
     selectedCustomer,
     showTax,
@@ -528,9 +653,11 @@ export function useTodayData(options?: UseTodayDataOptions) {
     allComingList,
     activeComingList,
     activeShopData,
+    dateBounds,
 
     // setters
     setSelectedDate,
+    setDateRangeMode: changeDateRangeMode,
     setAutoRefresh,
     setRefreshInterval,
     setCountdown,
@@ -540,6 +667,9 @@ export function useTodayData(options?: UseTodayDataOptions) {
     setComingCategory: changeComingCategory,
     setShopBranch: changeShopBranch,
     setSelectedBooker: changeSelectedBooker,
+    setTeamConfig,
+    setTeamModalVisible,
+    saveTeamConfig,
     setDrawerVisible,
     setSelectedCustomer,
     setShowTax,
@@ -548,6 +678,8 @@ export function useTodayData(options?: UseTodayDataOptions) {
     openCustomerDrawer,
     fetchDashboardData,
     handleRefresh,
+    handlePrevDate,
+    handleNextDate,
     getBranchLabel,
   };
 }

@@ -32,6 +32,7 @@ export default function CcAvatar({ name = '', src, size = 36, isSelected, classN
     >
       <Avatar
         src={formattedSrc}
+        alt={name ? `Ảnh đại diện ${name}` : 'Ảnh đại diện'}
         size={size}
         style={{
           backgroundColor: isSelected ? '#f59e0b' : formattedSrc ? undefined : 'rgba(245, 158, 11, 0.15)',

@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, Table, Tag, Input, Space, Button, Typography, theme, Tooltip } from 'antd';
 import { SearchOutlined, ReloadOutlined, SettingOutlined, CompressOutlined, ExpandOutlined } from '@ant-design/icons';
-import { CcXoayRecord } from '@mos-lab/shared';
+import { CcXoayRecord, removeVietnameseTones } from '@mos-lab/shared';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import CcAvatar from './CcAvatar';
@@ -22,13 +22,13 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
 
   const filteredData = useMemo(() => {
     if (!searchText) return data;
-    const lower = searchText.toLowerCase();
+    const q = removeVietnameseTones(searchText);
     return data.filter((item) => {
       return (
-        item.clientName?.toLowerCase().includes(lower) ||
-        item.serviceName?.toLowerCase().includes(lower) ||
-        item.consultantName?.toLowerCase().includes(lower) ||
-        item.store?.toLowerCase().includes(lower)
+        (item.clientName && removeVietnameseTones(item.clientName).includes(q)) ||
+        (item.serviceName && removeVietnameseTones(item.serviceName).includes(q)) ||
+        (item.consultantName && removeVietnameseTones(item.consultantName).includes(q)) ||
+        (item.store && removeVietnameseTones(item.store).includes(q))
       );
     });
   }, [data, searchText]);
@@ -40,7 +40,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         dataIndex: 'checkin',
         key: 'checkin',
         width: 150,
-        render: (val: string) => <span className="tabular-nums text-xs text-slate-400">{val}</span>,
+        render: (val: string) => <span className="tabular-nums text-xs text-slate-600 dark:text-slate-400">{val}</span>,
       },
       {
         title: 'Khách Hàng',
@@ -57,7 +57,11 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         render: (val: string) => {
           const storeCode =
             val === 'ESTELLA-PLACE' || val === 'ESTELLA' ? 'EP' : val === 'DE-THAM' || val === 'Đề Thám' ? 'DT' : val;
-          return <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {storeCode}</span>;
+          return (
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
+              · {storeCode}
+            </span>
+          );
         },
       },
       {
@@ -65,7 +69,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         dataIndex: 'serviceName',
         key: 'serviceName',
         width: 220,
-        render: (val: string) => <span className="font-medium text-amber-400">{val}</span>,
+        render: (val: string) => <span className="font-medium text-amber-800 dark:text-amber-400">{val}</span>,
       },
       {
         title: 'Loại',
@@ -74,9 +78,9 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         width: 90,
         render: (val: string) =>
           val === 'Normal' ? (
-            <span className="text-xs text-slate-500">Normal</span>
+            <span className="text-xs text-slate-600 dark:text-slate-400">Normal</span>
           ) : (
-            <Tag color="amber" className="m-0 text-[11px] font-semibold border-amber-500/30">
+            <Tag className="m-0 text-[11px] font-semibold text-amber-800 bg-amber-100 border-amber-300 dark:text-amber-300 dark:bg-amber-900/30 dark:border-amber-700">
               {val}
             </Tag>
           ),
@@ -271,13 +275,14 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
       title={
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-base" style={{ color: token.colorText }}>
+            <h3 className="font-bold text-base m-0" style={{ color: token.colorText }}>
               Bảng Dữ Liệu Báo Cáo CC Xoay
-            </span>
+            </h3>
           </div>
 
           <Space wrap>
             <Input
+              aria-label="Tìm kiếm khách hàng, dịch vụ, CC"
               prefix={<SearchOutlined />}
               placeholder="Tìm khách hàng, dịch vụ, CC..."
               value={searchText}
@@ -287,6 +292,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
             />
             <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
               <Button
+                aria-label={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn'}
                 icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
                 onClick={() => setIsCompact(!isCompact)}
                 className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
@@ -294,11 +300,11 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
             </Tooltip>
             {onRefresh && (
               <Tooltip title="Làm mới dữ liệu">
-                <Button icon={<ReloadOutlined />} onClick={onRefresh} />
+                <Button aria-label="Làm mới dữ liệu" icon={<ReloadOutlined />} onClick={onRefresh} />
               </Tooltip>
             )}
             <Tooltip title="Cấu hình cột">
-              <Button icon={<SettingOutlined />} onClick={openConfig} />
+              <Button aria-label="Cấu hình cột" icon={<SettingOutlined />} onClick={openConfig} />
             </Tooltip>
           </Space>
         </div>

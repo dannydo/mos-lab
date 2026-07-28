@@ -39,7 +39,7 @@ import { useAppointmentsData } from './hooks/useAppointmentsData';
 import { getPendingColumns, getCompletedColumns, getMissedColumns } from './components/AppointmentColumns';
 import MissedSummaryCards from './components/MissedSummaryCards';
 import MissedReasonModal from './components/MissedReasonModal';
-import { MissedSummaryStats, Appointment } from '@mos-lab/shared';
+import { MissedSummaryStats, Appointment, vietnameseSearchFilter } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 
 dayjs.extend(isoWeek);
@@ -313,6 +313,8 @@ export default function AppointmentsPage() {
         <div className="flex items-center gap-3 flex-wrap">
           {currentUser?.role === 'admin' && (
             <Select
+              showSearch
+              filterOption={vietnameseSearchFilter}
               value={selectedStaffId}
               onChange={(value) => {
                 setSelectedStaffId(value);

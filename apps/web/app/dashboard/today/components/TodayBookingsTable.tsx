@@ -8,6 +8,7 @@ import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import { BookingData } from '../hooks/useTodayData';
 import { SectionCard } from '../../../../components/ui';
+import { vietnameseSearchFilter } from '@mos-lab/shared';
 
 const { Text } = Typography;
 
@@ -306,6 +307,32 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
     resetConfig: resetBookingConfig,
   } = useTableConfig('today_booking_table', bookingColumns);
 
+  const bookerOptions = React.useMemo(() => {
+    const set = new Set<string>();
+    (allBookings || []).forEach((b) => {
+      if (b.booker) set.add(b.booker);
+    });
+    return Array.from(set).map((name) => ({ value: name, label: name }));
+  }, [allBookings]);
+
+  const groupedBookerOptions = React.useMemo(() => {
+    return [
+      { value: 'all', label: 'Tất cả Đội Nhóm & Booker' },
+      {
+        label: '🛡️ Lọc Theo Đội Nhóm',
+        options: [
+          { value: 'team:telesales', label: '🛡️ Đội Telesales' },
+          { value: 'team:control_cs', label: '🎧 Control / CS' },
+          { value: 'team:other', label: '🌐 Khác (Web/Direct)' },
+        ],
+      },
+      {
+        label: '👤 Lọc Theo Cá Nhân Booker',
+        options: bookerOptions,
+      },
+    ];
+  }, [bookerOptions]);
+
   return (
     <SectionCard
       title={
@@ -313,7 +340,18 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
           <span className="text-sm font-bold" style={{ color: token.colorPrimary }}>
             Danh sách khách Booker đặt lịch hôm nay ({filteredBookings.length})
           </span>
-          <Space>
+          <Space wrap>
+            {setSelectedBooker && (
+              <Select
+                showSearch
+                filterOption={vietnameseSearchFilter}
+                value={selectedBooker || 'all'}
+                onChange={(val) => setSelectedBooker(val === 'all' ? null : val)}
+                options={groupedBookerOptions}
+                style={{ width: '200px' }}
+                placeholder="Lọc Đội / Booker"
+              />
+            )}
             <Select
               value={bookingBranch}
               onChange={(val) => {
@@ -326,7 +364,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
                 { value: 'pxl', label: `Phan Xích Long (${bookingBranchCounts.pxl})` },
                 { value: 'estella', label: `Estella (${bookingBranchCounts.ep})` },
               ]}
-              style={{ width: '220px' }}
+              style={{ width: '200px' }}
             />
             <Button icon={<SettingOutlined />} onClick={openBookingConfig}>
               Cấu hình cột
@@ -353,12 +391,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
         <div className="flex items-center gap-2 mb-3 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs">
           <span className="text-slate-500 dark:text-slate-400 font-medium">Bộ lọc đang mở:</span>
           {bookingBranch !== 'all' && (
-            <Tag
-              color="cyan"
-              closable
-              onClose={() => setBookingBranch('all')}
-              className="font-semibold text-xs py-0.5"
-            >
+            <Tag color="cyan" closable onClose={() => setBookingBranch('all')} className="font-semibold text-xs py-0.5">
               Chi nhánh: {bookingBranch === 'detham' ? 'Đề Thám' : bookingBranch === 'pxl' ? 'PXL' : 'Estella'}
             </Tag>
           )}

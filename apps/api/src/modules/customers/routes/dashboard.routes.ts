@@ -190,7 +190,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
   // GET /api/dashboard/today - Real operational data for the "today" dashboard
   fastify.get('/dashboard/today', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { date } = request.query as { date?: string };
+    const { date, dateFrom, dateTo } = request.query as { date?: string; dateFrom?: string; dateTo?: string };
     const getVnDateStr = () => {
       const formatter = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Ho_Chi_Minh',
@@ -200,15 +200,17 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       });
       return formatter.format(new Date());
     };
-    const targetDateStr = date || getVnDateStr();
+    const targetDateFrom = (dateFrom || date || getVnDateStr()).slice(0, 10);
+    const targetDateTo = (dateTo || date || getVnDateStr()).slice(0, 10);
+    const targetDateStr = targetDateFrom;
 
-    // booking_date_only needs timezone-naive date at UTC midnight
-    const bookingDateOnlyDate = new Date(targetDateStr + 'T00:00:00.000Z');
+    const bookingDateOnlyStart = new Date(targetDateFrom + 'T00:00:00.000Z');
+    const bookingDateOnlyEnd = new Date(targetDateTo + 'T23:59:59.999Z');
 
     // Since database datetimes are local and Prisma reads them as UTC,
     // we query using timezone-naive start/end bounds directly
-    const startOfDay = new Date(targetDateStr + 'T00:00:00.000Z');
-    const endOfDay = new Date(targetDateStr + 'T23:59:59.999Z');
+    const startOfDay = new Date(targetDateFrom + 'T00:00:00.000Z');
+    const endOfDay = new Date(targetDateTo + 'T23:59:59.999Z');
 
     const toActualDate = (dbDate: Date | null | undefined) => {
       if (!dbDate) return new Date(0);
@@ -253,10 +255,13 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         orderBy: { date_created: 'desc' },
       });
 
-      // 2. Query coming today
+      // 2. Query coming today/range
       const comingOrders = await fastify.prisma.legacy.order.findMany({
         where: {
-          OR: [{ booking_date_only: bookingDateOnlyDate }, { booking_date_start: { gte: startOfDay, lte: endOfDay } }],
+          OR: [
+            { booking_date_only: { gte: bookingDateOnlyStart, lte: bookingDateOnlyEnd } },
+            { booking_date_start: { gte: startOfDay, lte: endOfDay } },
+          ],
           order_state: { not: 'Cancelled' },
         },
         orderBy: { booking_date_start: 'asc' },

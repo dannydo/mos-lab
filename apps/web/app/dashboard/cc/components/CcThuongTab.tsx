@@ -34,7 +34,11 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { DailySalesBonusConsultantRecord, DailySalesBonusLeaderboardEntry } from '@mos-lab/shared';
+import {
+  DailySalesBonusConsultantRecord,
+  DailySalesBonusLeaderboardEntry,
+  removeVietnameseTones,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import CcThuongConfigModal from './CcThuongConfigModal';
@@ -309,12 +313,12 @@ export default function CcThuongTab({
     }
 
     if (searchText) {
-      const lower = searchText.toLowerCase();
+      const q = removeVietnameseTones(searchText);
       result = result.filter(
         (r) =>
-          r.consultant_name.toLowerCase().includes(lower) ||
-          r.date.includes(lower) ||
-          (r.store_code && r.store_code.toLowerCase().includes(lower))
+          removeVietnameseTones(r.consultant_name).includes(q) ||
+          r.date.includes(searchText) ||
+          (r.store_code && removeVietnameseTones(r.store_code).includes(q))
       );
     }
 
@@ -645,7 +649,9 @@ export default function CcThuongTab({
     }
 
     return (
-      <Tooltip title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian tháng (Ca 09:00 - 21:00 + 2h buffer checkout)`}>
+      <Tooltip
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian tháng (Ca 09:00 - 21:00 + 2h buffer checkout)`}
+      >
         <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
           <span>Dự kiến cuối tháng:</span>
           <span className="tabular-nums font-semibold text-emerald-400">

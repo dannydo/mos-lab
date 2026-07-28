@@ -13,6 +13,7 @@ import {
   SaveOutlined,
   PushpinFilled,
 } from '@ant-design/icons';
+import { vietnameseSearchFilter } from '@mos-lab/shared';
 
 // Shared and custom sub-components
 import FilterSectionHeader from '~/components/filters/FilterSectionHeader';
@@ -503,6 +504,8 @@ const CustomerFilters = React.memo(function CustomerFilters({
                 }
               >
                 <Select
+                  showSearch
+                  filterOption={vietnameseSearchFilter}
                   value={assignedStaffId}
                   style={{ width: '100%' }}
                   onChange={(val) => {

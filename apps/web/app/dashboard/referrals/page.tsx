@@ -6,6 +6,7 @@ import { SearchOutlined, ShareAltOutlined, EyeOutlined } from '@ant-design/icons
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
+import { removeVietnameseTones } from '@mos-lab/shared';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 
@@ -168,11 +169,11 @@ export default function ReferralsPage() {
 
   // Filter local referrers based on name or phone
   const filteredReferrers = React.useMemo(() => {
+    const term = removeVietnameseTones(searchText);
+    if (!term) return processedReferrers;
     return processedReferrers.filter((r) => {
-      const term = searchText.toLowerCase().trim();
-      if (!term) return true;
       return (
-        (r.referrerName || '').toLowerCase().includes(term) || (r.referrerPhone || '').toLowerCase().includes(term)
+        removeVietnameseTones(r.referrerName).includes(term) || removeVietnameseTones(r.referrerPhone).includes(term)
       );
     });
   }, [processedReferrers, searchText]);

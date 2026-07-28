@@ -1,96 +1,115 @@
-# Handoff Report — Adversarial Verification: Tabular Numbers & Keyboard Focus / ARIA Accessibility
-
-**Challenger**: `teamwork_preview_challenger_m3_2`  
-**Milestone**: Milestone 3.2 Challenger Verification  
-**Scope**: `apps/web/`  
-**Verdict**: **FAIL**  
-**Date**: 2026-07-27
-
----
+# Handoff Report — Challenger M3-2: Vietnamese Tone Normalization & Web Build Verification
 
 ## 1. Observation
 
-Direct empirical observations across `apps/web/`:
+### Build & Type Verification
 
-### A. Tabular Numbers (`tabular-nums`) Deficiencies
+- **Command**: `pnpm --filter @mos-lab/web build`
+- **Exit Code**: `0`
+- **Total Build Time**: `17.1s` (Compilation: `10.5s`, TypeScript check: `6.2s`, Static page generation: `414ms`)
+- **Type Errors**: `0` (TypeScript check finished with zero errors across all 19 routes including 11 CRM dashboard modules).
 
-1. **`LocaColumns.tsx:195`**: Total Spent column renderer `render: (val: number) => formatVND(val)` returns a raw string without `<span className="tabular-nums">` or `fontVariantNumeric: 'tabular-nums'`.
-2. **`NycColumns.tsx:182`**: Total Spent column renderer `render: (val: number) => formatVND(val)` returns a raw string without `tabular-nums` wrapping.
-3. **`DailyCallsTable.tsx:312`**: Lifetime Value column renderer `render: (spent: number) => formatVND(spent)` returns a raw string without `tabular-nums` wrapping.
-4. **`AppointmentColumns.tsx:362`**: Main service price text `Giá: {formatVND(record.servicePrice || 0)} | Giảm: {record.discountPercent || 0}%` lacks `fontVariantNumeric: 'tabular-nums'`.
-5. **`AppointmentColumns.tsx:386, 388`**: Promotion discount percentage `Giảm {pct}%` and discount amount `Giảm {formatVND(amt)}` in the promotion column renderer lack `fontVariantNumeric: 'tabular-nums'`.
+### Static Scan of `<Select showSearch>` and Search Controls
 
-### B. Keyboard Focus & ARIA Accessibility Gaps on Custom Triggers and Icon Buttons
+- **Scope**: Scanned 161 `.tsx`/`.ts` files across `apps/web/app/dashboard/` and `apps/web/components/`.
+- **`<Select showSearch>` Components**:
+  - `18` `<Select showSearch>` components explicitly use `filterOption={vietnameseSearchFilter}`:
+    1. `apps/web/app/dashboard/appointments/page.tsx:317`
+    2. `apps/web/app/dashboard/catalog/page.tsx:1750`
+    3. `apps/web/app/dashboard/cc/page.tsx:356`
+    4. `apps/web/app/dashboard/customers/components/CustomerFilters.tsx:508`
+    5. `apps/web/app/dashboard/customers/components/RevokeAssignmentModal.tsx:164`
+    6. `apps/web/app/dashboard/cv/page.tsx:232`
+    7. `apps/web/app/dashboard/loca/page.tsx:317`
+    8. `apps/web/app/dashboard/nyc/page.tsx:288`
+    9. `apps/web/app/dashboard/omicall/page.tsx:627`
+    10. `apps/web/app/dashboard/staff/components/StaffTabsContent.tsx:212`
+    11. `apps/web/app/dashboard/staff/page.tsx:1174`
+    12. `apps/web/app/dashboard/today/components/BookerTeamConfigModal.tsx:246`
+    13. `apps/web/app/dashboard/today/components/TodayBookingsTable.tsx:347`
+    14. `apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx:261`
+    15. `apps/web/components/BookingWizardDrawer.tsx:736`
+    16. `apps/web/components/BookingWizardDrawer.tsx:898`
+    17. `apps/web/components/DailyCallsTable.tsx:600`
+    18. `apps/web/components/RescheduleBookingModal.tsx:403`
+  - `1` `<Select showSearch>` in `apps/web/components/BookingWizardDrawer.tsx:679` uses `filterOption={false}` because search is delegated asynchronously to backend server API `apiClient.customers.list({ search: val })`.
+  - `0` `<Select showSearch>` components use default `optionFilterProp="children"` without tone normalization.
 
-1. **Interactive `<span>` / `<div>` / `<Space>` triggers lacking `role="button"`, `tabIndex={0}`, or `onKeyDown` keyboard listeners**:
-   - `BkDoneTab.tsx:216-224`: Missed count `<span className="tabular-nums font-semibold ... cursor-pointer" onClick={(e) => handleSelectBookerMissed(...)}>` lacks `role="button"`, `tabIndex={0}`, `aria-label`, and `onKeyDown`.
-   - `BkDoneTab.tsx:298-305`: Client detail `<div className="cursor-pointer group ... " onClick={(e) => setSelectedCustomerId(...)}>` lacks `role="button"`, `tabIndex={0}`, `aria-label`, and `onKeyDown`.
-   - `BkBookingTab.tsx:161-168`: Booker selector `<Space className="cursor-pointer group ..." onClick={(e) => handleSelectBooker(...)}>` lacks `role="button"`, `tabIndex={0}`, `aria-label`, and `onKeyDown`.
-   - `BkBookingTab.tsx:280-290`: Customer trigger `<div className="cursor-pointer group ..." role="button" tabIndex={0} onClick=...>` has `role="button"` and `tabIndex={0}` but lacks an `onKeyDown` (Enter/Space) keyboard handler.
-   - `CcThuNhapTab.tsx:320, 349, 374`: Detail modal triggers `<Space className="group cursor-pointer" onClick=...>` and `<div className="cursor-pointer ..." onClick=...>` lack `role="button"`, `tabIndex={0}`, `aria-label`, and `onKeyDown`.
-   - `LocaColumns.tsx:83, 374`: Detail link triggers `<span className="hover:underline cursor-pointer ..." onClick=...>` lack `role="button"`, `tabIndex={0}`, `aria-label`, and `onKeyDown`.
-2. **Icon-only `<Button>` components lacking `aria-label` / `title`**:
-   - `AppointmentColumns.tsx:268`: `<Button type="text" shape="circle" danger icon={<CloseCircleOutlined />} />` lacks `aria-label` or `title`.
-   - `appointments/page.tsx:319, 335`: Date navigation `<Button icon={<LeftOutlined />} onClick=... />` and `<Button icon={<RightOutlined />} onClick=... />` lack `aria-label` or `title`.
-   - `bk/page.tsx:219, 223`: Date navigation `<Button icon={<LeftOutlined />} onClick=... />` and `<Button icon={<RightOutlined />} onClick=... />` lack `aria-label` or `title`.
-   - `BkBookingTab.tsx:506`, `BkDoneTab.tsx:574`, `BkRevenueTab.tsx:405`, `BkTipTab.tsx:385`: Reload buttons `<Button icon={<ReloadOutlined />} size="small" onClick=... />` lack `aria-label` or `title`.
-   - `catalog/page.tsx:988`: Delete action `<Button type="text" danger icon={<DeleteOutlined />} />` lacks `aria-label` or `title`.
+- **Unnormalized Client-Side Search Filters Found**:
+  1. **`apps/web/app/dashboard/kpi/components/AppointmentsAuditDrawer.tsx` (Line 97)**:
+     ```tsx
+     const query = drillSearchText.toLowerCase();
+     const nameMatch = (item.clientName || '').toLowerCase().includes(query);
+     ```
+  2. **`apps/web/app/dashboard/referrals/page.tsx` (Line 175)**:
+     ```tsx
+     (r.referrerName || '').toLowerCase().includes(term) || (r.referrerPhone || '').toLowerCase().includes(term);
+     ```
 
-### C. Focus Suppression (`outline-none`) Check
+### Empirical Test Harness Results (`test_harness.js`)
 
-- Verified via `grep_search`: No `outline-none`, `outline: none`, or `outline: 0` rules exist in source `.tsx` or `.css` files under `apps/web/app` or `apps/web/components`. (Only pre-existing static mockup HTML and 3rd-party vendor JS in `public/` contained `outline-none`).
-
-### D. Build & Compilation Verification
-
-- Ran `pnpm lint && pnpm --filter @mos-lab/web build`:
-  - `pnpm lint`: 0 errors across monorepo packages.
-  - `pnpm --filter @mos-lab/web build`: Next.js Turbopack compilation succeeded with 0 errors (TypeScript check passed in 5.9s, static page generation 21/21 completed).
+- Executed `node /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_2/test_harness.js`:
+  - **Query "diep" vs Target "Ngọc Điệp"**:
+    - `removeVietnameseTones("diep")` => `"diep"`
+    - `removeVietnameseTones("Ngọc Điệp")` => `"ngoc diep"`
+    - Includes match: `true` ✅
+    - `vietnameseSearchFilter("diep", { label: "Ngọc Điệp" })`: `true` ✅
+    - Unnormalized `.toLowerCase().includes()`: `false` ❌ (MISSED)
+  - **Query "hang" vs Target "Hằng Ni"**:
+    - `removeVietnameseTones("hang")` => `"hang"`
+    - `removeVietnameseTones("Hằng Ni")` => `"hang ni"`
+    - Includes match: `true` ✅
+    - `vietnameseSearchFilter("hang", { label: "Hằng Ni" })`: `true` ✅
+    - Unnormalized `.toLowerCase().includes()`: `false` ❌ (MISSED)
+  - **Query "thuy" vs Target "Thuỳ Trang 🌸"**:
+    - `removeVietnameseTones("thuy")` => `"thuy"`
+    - `removeVietnameseTones("Thuỳ Trang 🌸")` => `"thuy trang 🌸"`
+    - Includes match: `true` ✅
+    - `vietnameseSearchFilter("thuy", { label: "Thuỳ Trang 🌸" })`: `true` ✅
+    - Unnormalized `.toLowerCase().includes()`: `false` ❌ (MISSED)
 
 ---
 
 ## 2. Logic Chain
 
-1. **Criterion 1 (Tabular Numbers)**: Financial figures, currency formats, discount percentages, and durations must use `tabular-nums` to prevent horizontal layout jitter during dynamic updates. While worker `teamwork_preview_worker_m2_1` added `tabular-nums` in several core components, table renderer functions in `LocaColumns.tsx:195`, `NycColumns.tsx:182`, `DailyCallsTable.tsx:312`, and `AppointmentColumns.tsx:362, 386, 388` return un-wrapped currency and discount strings without `tabular-nums`.
-2. **Criterion 2 (Focus Suppression)**: The codebase was confirmed clean of `outline-none` focus suppression in source components.
-3. **Criterion 3 (Keyboard Focus & ARIA Accessibility)**: Non-native interactive elements (`<div>`, `<span>`, `<Space>`) with `onClick` handlers must have `role="button"`, `tabIndex={0}`, an accessible `aria-label`, and `onKeyDown` listeners (Enter/Space) so keyboard-only users can focus and activate them. Furthermore, icon-only `<Button>` controls must provide `aria-label` or `title` for screen reader accessibility. Multiple instances across `BkDoneTab.tsx`, `BkBookingTab.tsx`, `CcThuNhapTab.tsx`, `LocaColumns.tsx`, `AppointmentColumns.tsx`, `appointments/page.tsx`, and `catalog/page.tsx` fail these criteria.
-4. **Criterion 4 (Build Verification)**: `pnpm lint && pnpm --filter @mos-lab/web build` compiles cleanly with 0 TypeScript/ESLint errors.
+1. **Step 1 (Tone Normalization Core)**: `removeVietnameseTones` strips NFD diacritics and converts `đ/Đ` to `d/D`, transforming `"Ngọc Điệp"` -> `"ngoc diep"`, `"Hằng Ni"` -> `"hang ni"`, and `"Thuỳ Trang 🌸"` -> `"thuy trang 🌸"`. `vietnameseSearchFilter` utilizes this function to compare option labels against input queries tone-insensitively.
+2. **Step 2 (Select Component Scan)**: 100% of active client-side `<Select showSearch>` elements across all 11 CRM dashboard modules (`/dashboard/*`) and shared components use `filterOption={vietnameseSearchFilter}`.
+3. **Step 3 (Custom Client Filter Gaps)**: Two client-side text filtering functions in `AppointmentsAuditDrawer.tsx` (line 97) and `referrals/page.tsx` (line 175) use raw `.toLowerCase().includes()` without `removeVietnameseTones`. As demonstrated empirically, searching "diep" in these two components fails to match "Ngọc Điệp".
+4. **Step 4 (Build Verification)**: Running `pnpm --filter @mos-lab/web build` compiles Turbopack assets in 10.5s and completes TypeScript type checking in 6.2s with 0 errors and exit code 0.
 
 ---
 
 ## 3. Caveats
 
-- Minified third-party scripts (e.g. `public/core.min.js`, `public/ui.min.js`) and static HTML mockups (`public/mockup-omicall-flow.html`) contain legacy vendor inline styles (`outline:0`) which do not affect the main Next.js web app bundle.
+- **Server-Side Search Queries**: Asynchronous customer search (such as in `BookingWizardDrawer.tsx` line 677 using `apiClient.customers.list`) delegates string matching to MySQL. Backend SQL queries rely on MySQL table collation (`utf8mb4_unicode_ci` / `utf8mb4_general_ci`) for tone-insensitive `LIKE %query%` matching.
+- **Review Scope Constraint**: Under role constraints, implementation code was not modified directly; findings are reported here for implementer resolution.
 
 ---
 
 ## 4. Conclusion
 
-- **Verdict**: **FAIL**
-- **Reason**: Although build compilation is clean and focus outline suppression is resolved, multiple financial/numeric table columns lack `tabular-nums` wrapping, and interactive custom triggers/icon-only buttons lack requisite ARIA attributes (`aria-label`), keyboard focusability (`tabIndex={0}`), and keyboard event handlers (`onKeyDown`).
+- **Build Quality**: PASSED. `pnpm --filter @mos-lab/web build` succeeds with zero TypeScript type errors.
+- **Select Components (`showSearch`)**: PASSED (100% compliant). All `<Select showSearch>` in dashboard modules use `vietnameseSearchFilter`.
+- **Search Test Cases**: PASSED for `@mos-lab/shared` utilities ("diep" matches "Ngọc Điệp", "hang" matches "Hằng Ni", "thuy" matches "Thuỳ Trang 🌸").
+- **Actionable Gap Identified**:
+  - `AppointmentsAuditDrawer.tsx` (line 97) and `referrals/page.tsx` (line 175) should be updated to wrap target text and query with `removeVietnameseTones(...)` to prevent unaccented queries from missing accented client/referrer names.
 
 ---
 
 ## 5. Verification Method
 
-Independent commands and inspection steps to reproduce findings:
+To re-verify build and tone normalization independently:
 
-1. **Build & Lint Verification**:
+1. **Run Production Build**:
 
    ```bash
-   pnpm lint && pnpm --filter @mos-lab/web build
+   pnpm --filter @mos-lab/web build
    ```
 
-   _Result_: Clean compilation (0 errors).
+   _Expected Output_: `Exit code: 0`, `Finished TypeScript in X.Xs` with 0 type errors.
 
-2. **Tabular Numbers Inspection**:
-   - Inspect `apps/web/app/dashboard/loca/components/LocaColumns.tsx:195`
-   - Inspect `apps/web/app/dashboard/nyc/components/NycColumns.tsx:182`
-   - Inspect `apps/web/components/DailyCallsTable.tsx:312`
-   - Inspect `apps/web/app/dashboard/appointments/components/AppointmentColumns.tsx:362, 386, 388`
-
-3. **Keyboard & ARIA Inspection**:
-   - Inspect `apps/web/app/dashboard/bk/components/BkDoneTab.tsx:216-224, 298-305`
-   - Inspect `apps/web/app/dashboard/bk/components/BkBookingTab.tsx:161-168, 280-290`
-   - Inspect `apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx:320, 349, 374`
-   - Inspect `apps/web/app/dashboard/appointments/components/AppointmentColumns.tsx:268`
-   - Inspect `apps/web/app/dashboard/appointments/page.tsx:319, 335`
+2. **Run Empirical Test Harness**:
+   ```bash
+   node /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_2/test_harness.js
+   ```
+   _Expected Output_: 3/3 utility tests PASS ✅; raw `.toLowerCase().includes()` MISSED ❌.

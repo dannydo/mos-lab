@@ -61,7 +61,7 @@ const TableConfigDrawer = dynamic(
 );
 import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
 import { useTableConfig } from '../../../hooks/useTableConfig';
-import { Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
+import { Customer, CALL_RESULT_LABELS, vietnameseSearchFilter } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { useLocaData, TAB_KEYS } from './hooks/useLocaData';
 import { getLocaColumns, getNewLocaColumns } from './components/LocaColumns';
@@ -313,6 +313,8 @@ export default function LocaCampaignPage() {
         <Space wrap>
           {currentUser?.role === 'admin' && (
             <Select
+              showSearch
+              filterOption={vietnameseSearchFilter}
               placeholder="Chọn Booker/Telesales"
               value={assignedStaffId}
               onChange={(val) => setAssignedStaffId(val)}

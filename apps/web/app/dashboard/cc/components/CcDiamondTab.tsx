@@ -14,7 +14,7 @@ import {
   EyeOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CcDiamondEntry, CcDiamondResponse } from '@mos-lab/shared';
+import { CcDiamondEntry, CcDiamondResponse, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import CcAvatar from './CcAvatar';
@@ -73,10 +73,11 @@ export default function CcDiamondTab({
 
   // Filtered rows
   const filteredData = (diamondData?.data || []).filter((item) => {
+    const q = removeVietnameseTones(searchText);
     const matchesSearch =
-      item.tenCc.toLowerCase().includes(searchText.toLowerCase()) || String(item.ccId).includes(searchText);
+      !searchText || removeVietnameseTones(item.tenCc).includes(q) || String(item.ccId).includes(searchText);
     const matchesConsultant =
-      selectedConsultant === 'ALL' || item.tenCc.toLowerCase() === selectedConsultant.toLowerCase();
+      selectedConsultant === 'ALL' || removeVietnameseTones(item.tenCc) === removeVietnameseTones(selectedConsultant);
     return matchesSearch && matchesConsultant;
   });
 

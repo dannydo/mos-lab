@@ -14,7 +14,7 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
-import { BkTipLeaderboardEntry, BkTipRecord } from '@mos-lab/shared';
+import { BkTipLeaderboardEntry, BkTipRecord, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import BkAvatar from './BkAvatar';
@@ -124,12 +124,12 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
 
   const filteredDetailRecords = useMemo(() => {
     if (!searchText) return detailRecords;
-    const lower = searchText.toLowerCase();
+    const q = removeVietnameseTones(searchText);
     return detailRecords.filter(
       (r) =>
-        r.clientName.toLowerCase().includes(lower) ||
-        (r.bookerName && r.bookerName.toLowerCase().includes(lower)) ||
-        (r.store && r.store.toLowerCase().includes(lower))
+        removeVietnameseTones(r.clientName).includes(q) ||
+        (r.bookerName && removeVietnameseTones(r.bookerName).includes(q)) ||
+        (r.store && removeVietnameseTones(r.store).includes(q))
     );
   }, [detailRecords, searchText]);
 

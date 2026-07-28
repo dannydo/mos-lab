@@ -6,6 +6,7 @@ import { FormOutlined, HomeOutlined, InboxOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../lib/api-client';
+import { vietnameseSearchFilter } from '@mos-lab/shared';
 
 // Shared modules
 import { STORES } from './booking/constants';
@@ -399,7 +400,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             </h4>
             <Select
               showSearch
-              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+              filterOption={vietnameseSearchFilter}
               style={{ width: '100%' }}
               placeholder="Chọn hoặc tìm dịch vụ..."
               value={selectedService?.id}

@@ -1,9 +1,24 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Drawer, Form, InputNumber, Button, Checkbox, Input, Space, Divider, Typography, message, Spin, theme, Tabs, Badge } from 'antd';
+import {
+  Drawer,
+  Form,
+  InputNumber,
+  Button,
+  Checkbox,
+  Input,
+  Space,
+  Divider,
+  Typography,
+  message,
+  Spin,
+  theme,
+  Tabs,
+  Badge,
+} from 'antd';
 import { SettingOutlined, SaveOutlined, CalculatorOutlined, TeamOutlined, SearchOutlined } from '@ant-design/icons';
-import { BkStaffOption, BkSalaryConfig } from '@mos-lab/shared';
+import { BkStaffOption, BkSalaryConfig, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 
@@ -39,7 +54,7 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
       form.setFieldsValue({
         baseSalary: cfg.baseSalary || 5500000,
         tipsPercent: cfg.tipsPercent || 7,
-        
+
         fullSet0: cfg.clientBonusFullSet?.discount0 || 35000,
         fullSet30: cfg.clientBonusFullSet?.discount30 || 12000,
         fullSet50: cfg.clientBonusFullSet?.discount50 || 6000,
@@ -88,9 +103,12 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
 
   const filteredStaff = React.useMemo(() => {
     if (!searchText) return allStaff;
-    const lower = searchText.toLowerCase();
+    const q = removeVietnameseTones(searchText);
     return allStaff.filter(
-      (s) => s.displayName.toLowerCase().includes(lower) || (s.username && s.username.toLowerCase().includes(lower)) || (s.store && s.store.toLowerCase().includes(lower))
+      (s) =>
+        removeVietnameseTones(s.displayName).includes(q) ||
+        (s.username && removeVietnameseTones(s.username).includes(q)) ||
+        (s.store && removeVietnameseTones(s.store).includes(q))
     );
   }, [allStaff, searchText]);
 
@@ -206,19 +224,37 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
 
           {/* Section 2 */}
           <div>
-            <h4 className="text-sm font-bold text-amber-500 uppercase mb-3">2. Thưởng Check-in Nối Mi Mới (Full Set)</h4>
+            <h4 className="text-sm font-bold text-amber-500 uppercase mb-3">
+              2. Thưởng Check-in Nối Mi Mới (Full Set)
+            </h4>
             <div className="grid grid-cols-4 gap-3">
               <Form.Item name="fullSet0" label="Không giảm (0%)">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="fullSet30" label="Giảm <= 30%">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="fullSet50" label="Giảm <= 50%">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="fullSetMore" label="Giảm cực lớn">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
             </div>
           </div>
@@ -230,13 +266,25 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
             <h4 className="text-sm font-bold text-amber-500 uppercase mb-3">3. Thưởng Check-in Dặm Mi (Refill)</h4>
             <div className="grid grid-cols-3 gap-3">
               <Form.Item name="refill30" label="Giảm <= 30%">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="refill50" label="Giảm <= 50%">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="refillMore" label="Giảm cực lớn">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
             </div>
           </div>
@@ -245,34 +293,72 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
 
           {/* Section 4 */}
           <div>
-            <h4 className="text-sm font-bold text-amber-500 uppercase mb-3">4. Thưởng Mốc Đạt Khách Hoàn Thành (DONE)</h4>
+            <h4 className="text-sm font-bold text-amber-500 uppercase mb-3">
+              4. Thưởng Mốc Đạt Khách Hoàn Thành (DONE)
+            </h4>
             <div className="grid grid-cols-3 gap-3">
               <Form.Item name="done100" label="Đạt >= 100">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="done150" label="Đạt >= 150">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="done200" label="Đạt >= 200">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="done250" label="Đạt >= 250">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="done300" label="Đạt >= 300">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="done350" label="Đạt >= 350">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="done400" label="Đạt >= 400">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="done450" label="Đạt >= 450">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="done500" label="Đạt >= 500">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
             </div>
           </div>
@@ -281,22 +367,44 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
 
           {/* Section 5 */}
           <div>
-            <h4 className="text-sm font-bold text-amber-500 uppercase mb-3">5. Thưởng/Phạt Tỷ Lệ Lỡ Hẹn (Missed Call Rate)</h4>
+            <h4 className="text-sm font-bold text-amber-500 uppercase mb-3">
+              5. Thưởng/Phạt Tỷ Lệ Lỡ Hẹn (Missed Call Rate)
+            </h4>
             <div className="grid grid-cols-2 gap-3">
               <Form.Item name="missed10" label="Tỷ lệ lỡ <= 10% (Thưởng)">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="missed15" label="Tỷ lệ lỡ <= 15% (Thưởng)">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="missed20" label="Tỷ lệ lỡ <= 20% (Hòa)">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="missed25" label="Tỷ lệ lỡ <= 25% (Hòa)">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
               <Form.Item name="missedMore" label="Tỷ lệ lỡ > 25% (Phạt)" className="col-span-2">
-                <InputNumber className="w-full tabular-nums" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any} />
+                <InputNumber
+                  className="w-full tabular-nums"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                />
               </Form.Item>
             </div>
           </div>
@@ -342,7 +450,8 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
         <div className="pt-2">
           <div className="mb-4">
             <Text type="secondary" className="text-xs block mb-3">
-              Tích chọn các nhân sự được công nhận là <strong>Online Consultant (BK / Telesales)</strong>. Cấu hình này sẽ tự động áp dụng toàn cục trên Bảng xếp hạng Booker Leaderboard và các báo cáo BK.
+              Tích chọn các nhân sự được công nhận là <strong>Online Consultant (BK / Telesales)</strong>. Cấu hình này
+              sẽ tự động áp dụng toàn cục trên Bảng xếp hạng Booker Leaderboard và các báo cáo BK.
             </Text>
 
             <Input
@@ -439,7 +548,13 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
       extra={
         <Space>
           <Button onClick={onClose}>Hủy</Button>
-          <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave} className="bg-amber-500 hover:bg-amber-600 border-amber-500">
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            loading={saving}
+            onClick={handleSave}
+            className="bg-amber-500 hover:bg-amber-600 border-amber-500"
+          >
             Lưu Cấu Hình ({selectedBkIds.length} BK)
           </Button>
         </Space>

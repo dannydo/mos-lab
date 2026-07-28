@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Drawer, Checkbox, Input, Button, Typography, Spin, message, theme, Badge } from 'antd';
 import { SearchOutlined, SaveOutlined, SettingOutlined } from '@ant-design/icons';
 import { apiClient } from '../../../../lib/api-client';
-import { CvStaffOption } from '@mos-lab/shared';
+import { CvStaffOption, removeVietnameseTones } from '@mos-lab/shared';
 
 const { Text } = Typography;
 
@@ -49,9 +49,11 @@ export default function CvConfigDrawer({ open, onClose, onSaveSuccess }: CvConfi
 
   const filteredStaff = React.useMemo(() => {
     if (!searchText) return validStaffList;
-    const lower = searchText.toLowerCase();
+    const q = removeVietnameseTones(searchText);
     return validStaffList.filter(
-      (s) => s.displayName.toLowerCase().includes(lower) || (s.username && s.username.toLowerCase().includes(lower))
+      (s) =>
+        removeVietnameseTones(s.displayName).includes(q) ||
+        (s.username && removeVietnameseTones(s.username).includes(q))
     );
   }, [validStaffList, searchText]);
 

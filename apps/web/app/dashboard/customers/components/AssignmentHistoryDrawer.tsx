@@ -16,7 +16,7 @@ import {
   TeamOutlined,
   UserDeleteOutlined,
 } from '@ant-design/icons';
-import { SafeAny } from '@mos-lab/shared';
+import { SafeAny, removeVietnameseTones } from '@mos-lab/shared';
 
 const { Text } = Typography;
 
@@ -79,12 +79,12 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
 
       // Filter by text search
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
+        const q = removeVietnameseTones(searchQuery);
         const matchStaff =
-          (item.newStaffName || '').toLowerCase().includes(q) || (item.prevStaffName || '').toLowerCase().includes(q);
-        const matchPerformer = (item.assignedBy || '').toLowerCase().includes(q);
-        const matchFormula = (item.sourceFilterSummary || '').toLowerCase().includes(q);
-        const matchReason = (item.reason || '').toLowerCase().includes(q);
+          removeVietnameseTones(item.newStaffName).includes(q) || removeVietnameseTones(item.prevStaffName).includes(q);
+        const matchPerformer = removeVietnameseTones(item.assignedBy).includes(q);
+        const matchFormula = removeVietnameseTones(item.sourceFilterSummary).includes(q);
+        const matchReason = removeVietnameseTones(item.reason).includes(q);
         return matchStaff || matchPerformer || matchFormula || matchReason;
       }
 

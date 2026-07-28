@@ -19,7 +19,7 @@ import {
 } from 'antd';
 import { SearchOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { LeaderboardEntry } from '@mos-lab/shared';
+import { LeaderboardEntry, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 
 const { Text } = Typography;
@@ -93,9 +93,9 @@ export default function AppointmentsAuditDrawer({
     return bookerAppointments.filter((item) => {
       // 1. Search text filter (Name or Phone)
       if (drillSearchText) {
-        const query = drillSearchText.toLowerCase();
-        const nameMatch = (item.clientName || '').toLowerCase().includes(query);
-        const phoneMatch = (item.clientPhone || '').includes(query);
+        const query = removeVietnameseTones(drillSearchText);
+        const nameMatch = removeVietnameseTones(item.clientName).includes(query);
+        const phoneMatch = removeVietnameseTones(item.clientPhone).includes(query);
         if (!nameMatch && !phoneMatch) return false;
       }
 

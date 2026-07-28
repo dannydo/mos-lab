@@ -35,6 +35,7 @@ import {
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
+import { vietnameseSearchFilter } from '@mos-lab/shared';
 
 const QAPlayerDrawer = dynamic(() => import('../../../components/QAPlayerDrawer').then((m) => m.QAPlayerDrawer), {
   ssr: false,
@@ -623,9 +624,7 @@ export default function OmicallLogsPage() {
                           onChange={setStaffFilter}
                           style={{ width: 170 }}
                           showSearch
-                          filterOption={(input, option) =>
-                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                          }
+                          filterOption={vietnameseSearchFilter}
                           options={[
                             { value: 'ALL', label: 'Tất cả nhân viên' },
                             ...staffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),

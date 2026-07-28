@@ -1,13 +1,23 @@
-## 2026-07-27T16:36:34Z
+## 2026-07-28T02:09:14Z
 
-Perform a comprehensive accessibility, contrast, and theme audit across all Modal Popups, Side Drawers (Side Slides), Cards, and Tables in `apps/web/components/` and page components for both Light (.light-theme) and Dark (.dark-theme) modes.
+You are explorer_m1_2. Your working directory is /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_2.
 
-Audit Requirements:
+Mission:
+Audit and inventory all Ant Design `<Select showSearch>` components, table filters, and text search input fields across the following CRM modules:
 
-1. Audit all Modals (e.g. Telesales Dashboard Modal, Order Detail Modal, Edit Customer Modal, KPI Modal, Call Wrapup Modal, etc.) and Side Drawers for contrast issues in headers, content bodies, tables, buttons, and footers.
-2. Verify that modal and drawer wrapper classes properly scope `.dark-theme .ant-modal-content`, `.light-theme .ant-modal-content`, `.dark-theme .ant-drawer-content`, etc., without conflicting `#141414 !important` overrides.
-3. Check for dynamic counters, financial figures, durations, and clocks in modals/drawers that miss `tabular-nums`.
-4. Check for keyboard focus states (`:focus-visible`) and label accessibility.
-5. Reference rules in `/Users/dannydo/projects/mos-lab/AGENTS.md` and `.agents/AGENTS.md`.
+1. `/dashboard/cv` (or `apps/web/app/dashboard/cv/` and related components)
+2. `/dashboard/catalog` (or `apps/web/app/dashboard/catalog/` and related components)
+3. `/dashboard/appointments` (or `apps/web/app/dashboard/appointments/` and related components)
+4. `/dashboard/loca` (or `apps/web/app/dashboard/loca/` and related components)
 
-You are READ-ONLY. Do NOT modify source code files. Write your audit report to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_2/audit.md` and send a message back to the orchestrator with your findings.
+Tasks:
+
+- Locate every single `<Select showSearch>`, `<Select filterOption=...>`, Table filter (`filterDropdown`, `onFilter`), and custom search Input in these modules.
+- Check their current filtering implementation (e.g. default AntD filter, `option.children`, `option.label`, case-sensitivity, tone sensitivity).
+- Document exact file paths, line numbers, component names, and current `filterOption` logic for each control.
+- Formulate the exact refactoring needed for each control using `removeVietnameseTones`.
+
+Output Requirements:
+
+- Write your comprehensive audit report and handoff file to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_2/handoff.md`.
+- Send a message back to the orchestrator (conversation ID: 7699a38e-37d6-4763-8f97-08686a3bc0b6) when finished.

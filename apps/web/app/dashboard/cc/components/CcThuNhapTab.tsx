@@ -33,7 +33,13 @@ import {
   LoginOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
-import { CcPaystubRecord, CcPaystubResponse, CcWorkLogDetailRecord, CcWorkLogDetailResponse } from '@mos-lab/shared';
+import {
+  CcPaystubRecord,
+  CcPaystubResponse,
+  CcWorkLogDetailRecord,
+  CcWorkLogDetailResponse,
+  removeVietnameseTones,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import dayjs from 'dayjs';
 import CcAvatar from './CcAvatar';
@@ -229,9 +235,9 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
 
   const filteredData = useMemo(() => {
     if (!searchText) return paystubData;
-    const lower = searchText.toLowerCase();
+    const q = removeVietnameseTones(searchText);
     return paystubData.filter(
-      (r) => r.displayName.toLowerCase().includes(lower) || r.store.toLowerCase().includes(lower)
+      (r) => removeVietnameseTones(r.displayName).includes(q) || (r.store && removeVietnameseTones(r.store).includes(q))
     );
   }, [paystubData, searchText]);
 

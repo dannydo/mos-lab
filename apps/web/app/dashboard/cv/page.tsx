@@ -15,7 +15,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
 import { apiClient } from '../../../lib/api-client';
-import { CvStaffOption } from '@mos-lab/shared';
+import { CvStaffOption, vietnameseSearchFilter } from '@mos-lab/shared';
 
 dayjs.extend(isoWeek);
 
@@ -229,7 +229,7 @@ export default function CvReportPage() {
               onChange={setSelectedConsultant}
               style={{ width: 170 }}
               showSearch
-              filterOption={(input, option) => (option?.label as string)?.toLowerCase().includes(input.toLowerCase())}
+              filterOption={vietnameseSearchFilter}
               options={[
                 { value: 'ALL', label: 'Tất cả CV' },
                 ...staffOptions.map((s) => ({ value: String(s.staffId), label: s.displayName })),

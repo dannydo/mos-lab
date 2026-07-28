@@ -2,8 +2,33 @@
 
 import '../../suppress-warnings';
 import React, { useEffect, useState } from 'react';
-import { Card, theme, DatePicker, Radio, Space, Row, Col, Spin, Divider, Button, Switch, Select, message } from 'antd';
-import { ClockCircleOutlined, SyncOutlined, ShopOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import {
+  Card,
+  theme,
+  DatePicker,
+  Radio,
+  Space,
+  Row,
+  Col,
+  Spin,
+  Divider,
+  Button,
+  Switch,
+  Select,
+  Tag,
+  Tooltip,
+  message,
+} from 'antd';
+import {
+  ClockCircleOutlined,
+  SyncOutlined,
+  ShopOutlined,
+  LeftOutlined,
+  RightOutlined,
+  CalendarOutlined,
+  ScheduleOutlined,
+  UnorderedListOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
@@ -14,6 +39,8 @@ import TodayStats from './components/TodayStats';
 import TodayBookingsTable from './components/TodayBookingsTable';
 import TodayComingTable from './components/TodayComingTable';
 import TodayStaffAttendance from './components/TodayStaffAttendance';
+import TodayCalendarSummary from './components/TodayCalendarSummary';
+import BookerTeamConfigModal from './components/BookerTeamConfigModal';
 import { PageHeader } from '../../../components/ui';
 
 const RealtimeClock = React.memo(() => {
@@ -44,6 +71,17 @@ RealtimeClock.displayName = 'RealtimeClock';
 export default function TodayDashboard() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const [mainViewMode, setMainViewMode] = useState<'operations' | 'calendar'>('operations');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('today_main_view_mode');
+      if (savedMode === 'calendar' || savedMode === 'operations') {
+        setMainViewMode(savedMode);
+      }
+    }
+  }, []);
+
   const data = useTodayData({
     onSuccess: (msg) => message.success(msg),
     onError: (msg) => message.error(msg),
@@ -69,7 +107,7 @@ export default function TodayDashboard() {
     (data.activeShopData.revLe || 0) + (data.activeShopData.revCombo || 0) + (data.activeShopData.revProduct || 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Title & Control Header */}
       <PageHeader
         title="Control Board Hôm Nay (Today operations)"
@@ -85,17 +123,32 @@ export default function TodayDashboard() {
               type="vertical"
               style={{ height: '32px', borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9' }}
             />
-            <Space.Compact>
-              <Button
-                icon={<LeftOutlined />}
-                onClick={() => {
-                  if (data.selectedDate) {
-                    const prevDate = data.selectedDate.subtract(1, 'day');
-                    data.setSelectedDate(prevDate);
-                    localStorage.setItem('today_selected_date', prevDate.format('YYYY-MM-DD'));
-                  }
-                }}
-              />
+            <Radio.Group
+              value={data.dateRangeMode}
+              onChange={(e) => data.setDateRangeMode(e.target.value)}
+              optionType="button"
+              buttonStyle="solid"
+              size="small"
+            >
+              <Tooltip title="Xem theo Ngày (Daily)">
+                <Radio.Button value="day" style={{ padding: '0 10px' }}>
+                  <CalendarOutlined />
+                </Radio.Button>
+              </Tooltip>
+              <Tooltip title="Xem theo Tuần (Weekly - Thứ 2 đến Chủ Nhật)">
+                <Radio.Button value="week" style={{ padding: '0 10px' }}>
+                  <ScheduleOutlined />
+                </Radio.Button>
+              </Tooltip>
+              <Tooltip title="Xem theo Tháng (Monthly)">
+                <Radio.Button value="month" style={{ padding: '0 10px' }}>
+                  <ClockCircleOutlined />
+                </Radio.Button>
+              </Tooltip>
+            </Radio.Group>
+
+            <Space.Compact size="small">
+              <Button icon={<LeftOutlined />} onClick={data.handlePrevDate} />
               <DatePicker
                 value={data.selectedDate}
                 onChange={(date) => {
@@ -104,27 +157,41 @@ export default function TodayDashboard() {
                     localStorage.setItem('today_selected_date', date.format('YYYY-MM-DD'));
                   }
                 }}
-                format="DD/MM/YYYY"
-                allowClear={false}
-                style={{ width: '130px' }}
-              />
-              <Button
-                icon={<RightOutlined />}
-                onClick={() => {
-                  if (data.selectedDate) {
-                    const nextDate = data.selectedDate.add(1, 'day');
-                    data.setSelectedDate(nextDate);
-                    localStorage.setItem('today_selected_date', nextDate.format('YYYY-MM-DD'));
+                picker={data.dateRangeMode === 'month' ? 'month' : undefined}
+                format={(val) => {
+                  if (data.dateRangeMode === 'month') {
+                    return `Tháng ${val.format('MM/YYYY')}`;
                   }
+                  if (data.dateRangeMode === 'week') {
+                    const start = val.startOf('isoWeek');
+                    const end = val.endOf('isoWeek');
+                    return `Tuần ${val.isoWeek()} (${start.format('DD/MM')} - ${end.format('DD/MM/YYYY')})`;
+                  }
+                  return val.format('DD/MM/YYYY');
+                }}
+                allowClear={false}
+                suffixIcon={<CalendarOutlined />}
+                style={{
+                  width: data.dateRangeMode === 'week' ? '235px' : data.dateRangeMode === 'month' ? '135px' : '130px',
+                  fontWeight: 600,
+                  textAlign: 'center',
                 }}
               />
+              <Button icon={<RightOutlined />} onClick={data.handleNextDate} />
             </Space.Compact>
-            <Button
-              type="primary"
-              icon={<SyncOutlined spin={data.loading || data.silentLoading} />}
-              onClick={data.handleRefresh}
-              style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000000', fontWeight: 'bold' }}
-            />
+
+            <Tooltip title="Làm mới dữ liệu">
+              <Button
+                type="default"
+                size="small"
+                icon={<SyncOutlined spin={data.loading || data.silentLoading} />}
+                onClick={data.handleRefresh}
+                style={{
+                  borderColor: themeMode === 'dark' ? '#424242' : '#d9d9d9',
+                  padding: '0 10px',
+                }}
+              />
+            </Tooltip>
 
             {data.selectedDate?.isSame(dayjs(), 'day') && (
               <>
@@ -185,215 +252,261 @@ export default function TodayDashboard() {
         }
       />
 
+      {/* VIEW MODE TOGGLE BAR */}
+      <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '4px' }}>
+        <Radio.Group
+          value={mainViewMode}
+          onChange={(e) => {
+            const val = e.target.value;
+            setMainViewMode(val);
+            localStorage.setItem('today_main_view_mode', val);
+          }}
+          optionType="button"
+          buttonStyle="solid"
+          size="middle"
+        >
+          <Radio.Button value="operations">
+            <Space size="small">
+              <UnorderedListOutlined />
+              <span style={{ fontWeight: '600' }}>Bảng Vận Hành Operations</span>
+            </Space>
+          </Radio.Button>
+          <Radio.Button value="calendar">
+            <Space size="small">
+              <CalendarOutlined style={{ color: mainViewMode === 'calendar' ? '#D4A84B' : undefined }} />
+              <span style={{ fontWeight: '600' }}>Lịch Tổng Quan Calendar Summary</span>
+            </Space>
+          </Radio.Button>
+        </Radio.Group>
+      </div>
+
       <Spin spinning={data.loading}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* STATS KPIs DONUT CHARTS */}
-          <TodayStats
+        {mainViewMode === 'calendar' ? (
+          <TodayCalendarSummary
             themeMode={themeMode}
             token={token}
             allBookings={data.allBookings}
-            bookingsCombo={data.bookingsCombo}
-            bookingsOc={data.bookingsOc}
-            bookingsOther={data.bookingsOther}
-            bookingBranchCounts={data.bookingBranchCounts}
-            branchesData={data.branchesData}
-            showTax={data.showTax}
+            allComingList={data.allComingList}
+            bookingBranch={data.bookingBranch}
+            setBookingBranch={data.setBookingBranch}
+            selectedBooker={data.selectedBooker}
+            setSelectedBooker={data.setSelectedBooker}
+            teamConfig={data.teamConfig}
+            dateBounds={data.dateBounds}
+            setTeamModalVisible={data.setTeamModalVisible}
+            openCustomerDrawer={data.openCustomerDrawer}
+            selectedDate={data.selectedDate}
           />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* STATS KPIs DONUT CHARTS */}
+            <TodayStats
+              themeMode={themeMode}
+              token={token}
+              allBookings={data.allBookings}
+              bookingsCombo={data.bookingsCombo}
+              bookingsOc={data.bookingsOc}
+              bookingsOther={data.bookingsOther}
+              bookingBranchCounts={data.bookingBranchCounts}
+              branchesData={data.branchesData}
+              showTax={data.showTax}
+            />
 
-          <Row gutter={[24, 24]}>
-            {/* BOOKINGS TABLE */}
-            <Col xs={24} lg={24}>
-              <TodayBookingsTable
-                filteredBookings={data.filteredBookings}
-                bookingFilter={data.bookingFilter}
-                setBookingFilter={data.setBookingFilter}
-                bookingBranch={data.bookingBranch}
-                setBookingBranch={data.setBookingBranch}
-                selectedBooker={data.selectedBooker}
-                setSelectedBooker={data.setSelectedBooker}
-                openCustomerDrawer={data.openCustomerDrawer}
-                bookingBranchCounts={data.bookingBranchCounts}
-                allBookings={data.allBookings}
-              />
-            </Col>
-
-            {/* COMING CLIENTS TABLE */}
-            <Col xs={24} lg={24}>
-              <TodayComingTable
-                activeComingList={data.activeComingList}
-                comingBranch={data.comingBranch}
-                setComingBranch={data.setComingBranch}
-                comingCategory={data.comingCategory}
-                setComingCategory={data.setComingCategory}
-                selectedBooker={data.selectedBooker}
-                setSelectedBooker={data.setSelectedBooker}
-                openCustomerDrawer={data.openCustomerDrawer}
-                allComingList={data.allComingList}
-              />
-            </Col>
-
-            {/* STAFF ATTENDANCE PANEL */}
-            <Col xs={24} lg={24}>
-              <Card
-                title={
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: '12px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <ShopOutlined style={{ color: '#D4A84B' }} />
-                      <span style={{ fontSize: '15px', fontWeight: 'bold' }}>
-                        Tình hình nhân sự & Thực tế phục vụ tại cửa hàng
-                      </span>
-                    </div>
-
-                    <Space size="middle">
-                      <Select
-                        value={data.shopBranch}
-                        onChange={(val) => {
-                          data.setShopBranch(val);
-                          localStorage.setItem('today_shop_branch', val);
-                        }}
-                        options={[
-                          { value: 'all', label: 'Tất cả chi nhánh' },
-                          { value: 'detham', label: 'Chi nhánh Đề Thám' },
-                          { value: 'pxl', label: 'Chi nhánh Phan Xích Long' },
-                          { value: 'estella', label: 'Chi nhánh Estella' },
-                        ]}
-                        style={{ width: '200px' }}
-                      />
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: token.colorTextDescription }}>Thuế (VAT):</span>
-                        <Radio.Group
-                          value={data.showTax ? 'inc' : 'exc'}
-                          onChange={(e) => {
-                            const val = e.target.value === 'inc';
-                            data.setShowTax(val);
-                            localStorage.setItem('today_show_tax', String(val));
-                          }}
-                          optionType="button"
-                          buttonStyle="solid"
-                          size="small"
-                        >
-                          <Radio.Button value="inc">Sau thuế (VAT)</Radio.Button>
-                          <Radio.Button value="exc">Trước thuế</Radio.Button>
-                        </Radio.Group>
-                      </div>
-                    </Space>
-                  </div>
-                }
-                styles={{ body: { padding: '16px' } }}
-                style={{
-                  background: token.colorBgContainer,
-                  borderColor: token.colorBorderSecondary,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontWeight: 'bold',
-                      fontSize: '13px',
-                      color: token.colorTextSecondary,
-                      marginBottom: '12px',
-                    }}
-                  >
-                    Phân Phối Doanh Thu Hôm Nay (Revenue Breakdown)
-                  </div>
-                  <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-                    <Col xs={24} sm={12} md={6}>
-                      <Card
-                        size="small"
-                        style={{
-                          background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
-                          border: `1px solid ${token.colorBorderSecondary}`,
-                        }}
-                      >
-                        <span style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                          Doanh Thu Dịch Vụ Lẻ
-                        </span>
-                        <div
-                          className="tabular-nums font-mono"
-                          style={{ fontSize: '20px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}
-                        >
-                          {data.activeShopData.revLe.toLocaleString('vi-VN')} đ
-                        </div>
-                      </Card>
-                    </Col>
-
-                    <Col xs={24} sm={12} md={6}>
-                      <Card
-                        size="small"
-                        style={{
-                          background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
-                          border: `1px solid ${token.colorBorderSecondary}`,
-                        }}
-                      >
-                        <span style={{ fontSize: '11px', color: '#D4A84B' }}>Doanh Thu Combo (Gói)</span>
-                        <div
-                          className="tabular-nums font-mono"
-                          style={{ fontSize: '20px', fontWeight: 'bold', color: '#D4A84B', marginTop: '4px' }}
-                        >
-                          {data.activeShopData.revCombo.toLocaleString('vi-VN')} đ
-                        </div>
-                      </Card>
-                    </Col>
-
-                    <Col xs={24} sm={12} md={6}>
-                      <Card
-                        size="small"
-                        style={{
-                          background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
-                          border: `1px solid ${token.colorBorderSecondary}`,
-                        }}
-                      >
-                        <span style={{ fontSize: '11px', color: '#52c41a' }}>Doanh Thu Sản Phẩm</span>
-                        <div
-                          className="tabular-nums font-mono"
-                          style={{ fontSize: '20px', fontWeight: 'bold', color: '#52c41a', marginTop: '4px' }}
-                        >
-                          {data.activeShopData.revProduct.toLocaleString('vi-VN')} đ
-                        </div>
-                      </Card>
-                    </Col>
-
-                    <Col xs={24} sm={12} md={6}>
-                      <Card
-                        size="small"
-                        style={{
-                          background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
-                          border: `1px solid ${token.colorBorderSecondary}`,
-                        }}
-                      >
-                        <span style={{ fontSize: '11px', color: '#1890ff', fontWeight: 'bold' }}>Tổng Doanh Thu</span>
-                        <div
-                          className="tabular-nums font-mono"
-                          style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff', marginTop: '4px' }}
-                        >
-                          {activeShopTotalRevenue.toLocaleString('vi-VN')} đ
-                        </div>
-                      </Card>
-                    </Col>
-                  </Row>
-                </div>
-
-                {/* CC & CV Table split */}
-                <TodayStaffAttendance
-                  themeMode={themeMode}
-                  token={token}
-                  ccList={data.activeShopData.cc}
-                  cvList={data.activeShopData.cv}
+            <Row gutter={[24, 24]}>
+              {/* BOOKINGS TABLE */}
+              <Col xs={24} lg={24}>
+                <TodayBookingsTable
+                  filteredBookings={data.filteredBookings}
+                  bookingFilter={data.bookingFilter}
+                  setBookingFilter={data.setBookingFilter}
+                  bookingBranch={data.bookingBranch}
+                  setBookingBranch={data.setBookingBranch}
+                  selectedBooker={data.selectedBooker}
+                  setSelectedBooker={data.setSelectedBooker}
+                  openCustomerDrawer={data.openCustomerDrawer}
+                  bookingBranchCounts={data.bookingBranchCounts}
+                  allBookings={data.allBookings}
                 />
-              </Card>
-            </Col>
-          </Row>
-        </div>
+              </Col>
+
+              {/* COMING CLIENTS TABLE */}
+              <Col xs={24} lg={24}>
+                <TodayComingTable
+                  activeComingList={data.activeComingList}
+                  comingBranch={data.comingBranch}
+                  setComingBranch={data.setComingBranch}
+                  comingCategory={data.comingCategory}
+                  setComingCategory={data.setComingCategory}
+                  selectedBooker={data.selectedBooker}
+                  setSelectedBooker={data.setSelectedBooker}
+                  openCustomerDrawer={data.openCustomerDrawer}
+                  allComingList={data.allComingList}
+                />
+              </Col>
+
+              {/* STAFF ATTENDANCE PANEL */}
+              <Col xs={24} lg={24}>
+                <Card
+                  title={
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <ShopOutlined style={{ color: '#D4A84B' }} />
+                        <span style={{ fontSize: '15px', fontWeight: 'bold' }}>
+                          Tình hình nhân sự & Thực tế phục vụ tại cửa hàng
+                        </span>
+                      </div>
+
+                      <Space size="middle">
+                        <Select
+                          value={data.shopBranch}
+                          onChange={(val) => {
+                            data.setShopBranch(val);
+                            localStorage.setItem('today_shop_branch', val);
+                          }}
+                          options={[
+                            { value: 'all', label: 'Tất cả chi nhánh' },
+                            { value: 'detham', label: 'Chi nhánh Đề Thám' },
+                            { value: 'pxl', label: 'Chi nhánh Phan Xích Long' },
+                            { value: 'estella', label: 'Chi nhánh Estella' },
+                          ]}
+                          style={{ width: '200px' }}
+                        />
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '12px', color: token.colorTextDescription }}>Thuế (VAT):</span>
+                          <Radio.Group
+                            value={data.showTax ? 'inc' : 'exc'}
+                            onChange={(e) => {
+                              const val = e.target.value === 'inc';
+                              data.setShowTax(val);
+                              localStorage.setItem('today_show_tax', String(val));
+                            }}
+                            optionType="button"
+                            buttonStyle="solid"
+                            size="small"
+                          >
+                            <Radio.Button value="inc">Sau thuế (VAT)</Radio.Button>
+                            <Radio.Button value="exc">Trước thuế</Radio.Button>
+                          </Radio.Group>
+                        </div>
+                      </Space>
+                    </div>
+                  }
+                  styles={{ body: { padding: '16px' } }}
+                  style={{
+                    background: token.colorBgContainer,
+                    borderColor: token.colorBorderSecondary,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontWeight: 'bold',
+                        fontSize: '13px',
+                        color: token.colorTextSecondary,
+                        marginBottom: '12px',
+                      }}
+                    >
+                      Phân Phối Doanh Thu Hôm Nay (Revenue Breakdown)
+                    </div>
+                    <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+                      <Col xs={24} sm={12} md={6}>
+                        <Card
+                          size="small"
+                          style={{
+                            background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
+                            border: `1px solid ${token.colorBorderSecondary}`,
+                          }}
+                        >
+                          <span style={{ fontSize: '11px', color: token.colorTextDescription }}>
+                            Doanh Thu Dịch Vụ Lẻ
+                          </span>
+                          <div
+                            className="tabular-nums font-mono"
+                            style={{ fontSize: '20px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}
+                          >
+                            {data.activeShopData.revLe.toLocaleString('vi-VN')} đ
+                          </div>
+                        </Card>
+                      </Col>
+
+                      <Col xs={24} sm={12} md={6}>
+                        <Card
+                          size="small"
+                          style={{
+                            background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
+                            border: `1px solid ${token.colorBorderSecondary}`,
+                          }}
+                        >
+                          <span style={{ fontSize: '11px', color: '#D4A84B' }}>Doanh Thu Combo (Gói)</span>
+                          <div
+                            className="tabular-nums font-mono"
+                            style={{ fontSize: '20px', fontWeight: 'bold', color: '#D4A84B', marginTop: '4px' }}
+                          >
+                            {data.activeShopData.revCombo.toLocaleString('vi-VN')} đ
+                          </div>
+                        </Card>
+                      </Col>
+
+                      <Col xs={24} sm={12} md={6}>
+                        <Card
+                          size="small"
+                          style={{
+                            background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
+                            border: `1px solid ${token.colorBorderSecondary}`,
+                          }}
+                        >
+                          <span style={{ fontSize: '11px', color: '#52c41a' }}>Doanh Thu Sản Phẩm</span>
+                          <div
+                            className="tabular-nums font-mono"
+                            style={{ fontSize: '20px', fontWeight: 'bold', color: '#52c41a', marginTop: '4px' }}
+                          >
+                            {data.activeShopData.revProduct.toLocaleString('vi-VN')} đ
+                          </div>
+                        </Card>
+                      </Col>
+
+                      <Col xs={24} sm={12} md={6}>
+                        <Card
+                          size="small"
+                          style={{
+                            background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
+                            border: `1px solid ${token.colorBorderSecondary}`,
+                          }}
+                        >
+                          <span style={{ fontSize: '11px', color: '#1890ff', fontWeight: 'bold' }}>Tổng Doanh Thu</span>
+                          <div
+                            className="tabular-nums font-mono"
+                            style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff', marginTop: '4px' }}
+                          >
+                            {activeShopTotalRevenue.toLocaleString('vi-VN')} đ
+                          </div>
+                        </Card>
+                      </Col>
+                    </Row>
+                  </div>
+
+                  {/* CC & CV Table split */}
+                  <TodayStaffAttendance
+                    themeMode={themeMode}
+                    token={token}
+                    ccList={data.activeShopData.cc}
+                    cvList={data.activeShopData.cv}
+                  />
+                </Card>
+              </Col>
+            </Row>
+          </div>
+        )}
       </Spin>
 
       {/* Customer Detail Drawer */}
@@ -401,6 +514,16 @@ export default function TodayDashboard() {
         open={data.drawerVisible}
         customerId={data.selectedCustomer?.customerId || null}
         onClose={() => data.setDrawerVisible(false)}
+      />
+
+      {/* Booker Team Config Modal */}
+      <BookerTeamConfigModal
+        open={data.teamModalVisible}
+        onClose={() => data.setTeamModalVisible(false)}
+        teamConfig={data.teamConfig}
+        onSave={data.saveTeamConfig}
+        themeMode={themeMode}
+        token={token}
       />
 
       <style jsx global>{`

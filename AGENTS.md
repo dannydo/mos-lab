@@ -218,6 +218,28 @@ mos-lab/
   2. Dự phòng (Fallback): Chỉ khi nhân sự không có dòng cấu hình trong `staff_day_off_schedule` mới dùng số liệu đếm từ `staff_day_off` (lọc 90 ngày gần nhất) hoặc lịch ca làm `staff_working_shift_schedule`.
 - **Phân biệt với Ngày Nghỉ Phép**: Bảng `staff_day_off` đại diện cho các phiếu/ticket xin nghỉ phép ngày cụ thể (`approvedOffDates`), không được dùng làm căn cứ chính để xác định lịch off tuần cố định.
 
+### 32. System-wide Tone-Insensitive Vietnamese Search Invariant (Quy tắc Tìm kiếm Tiếng Việt Không Dấu)
+- **Mọi ô tìm kiếm trên toàn bộ hệ thống** (bao gồm `<Select showSearch>`, bộ lọc `<Table>`, ô tìm kiếm Khách hàng, Nhân sự HR, Booker, Catalog, Dịch vụ):
+  - **Bắt buộc hỗ trợ Tìm kiếm tiếng Việt không dấu** (Tone-insensitive & Case-insensitive matching).
+  - **Hàm Chuẩn hóa (Normalize Helper)**: Luôn loại bỏ dấu tiếng Việt khi so sánh chuỗi:
+    ```typescript
+    export const removeVietnameseTones = (str: string): string => {
+      return (str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .toLowerCase()
+        .trim();
+    };
+    ```
+  - **Cấu hình Antd Select**: Đối với thành phần `<Select showSearch>`, truyền hàm `filterOption` chuẩn hóa không dấu:
+    ```typescript
+    filterOption={(input, option) =>
+      removeVietnameseTones(String(option?.label || '')).includes(removeVietnameseTones(input))
+    }
+    ```
+
 
 
 

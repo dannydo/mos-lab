@@ -58,11 +58,20 @@ export default function CcLeaderboardCard({
                 >
                   {name}
                 </span>
-                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
-                  · {record.store === 'ESTELLA-PLACE' || record.store === 'ESTELLA' ? 'EP' : record.store === 'DE-THAM' || record.store === 'Đề Thám' ? 'DT' : record.store}
+                <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">
+                  ·{' '}
+                  {record.store === 'ESTELLA-PLACE' || record.store === 'ESTELLA'
+                    ? 'EP'
+                    : record.store === 'DE-THAM' || record.store === 'Đề Thám'
+                      ? 'DT'
+                      : record.store}
                 </span>
                 {isSelected && (
-                  <Tag color="gold" icon={<CheckCircleOutlined />} className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap">
+                  <Tag
+                    color="gold"
+                    icon={<CheckCircleOutlined />}
+                    className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap"
+                  >
                     Đang lọc
                   </Tag>
                 )}
@@ -81,7 +90,7 @@ export default function CcLeaderboardCard({
       render: (level: number, record: CcLeaderboardEntry) => {
         const lvl = record.level || Math.floor((record.totalPointsAccu || 0) / 100) + 1;
         return (
-          <span className="tabular-nums font-semibold text-xs text-amber-400 border border-amber-400/30 px-2 py-0.5 rounded-full">
+          <span className="tabular-nums font-semibold text-xs text-amber-800 dark:text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded-full">
             Lv.{lvl}
           </span>
         );
@@ -92,14 +101,18 @@ export default function CcLeaderboardCard({
       dataIndex: 'totalCheckins',
       key: 'totalCheckins',
       align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums font-semibold text-xs text-blue-400">{val} khách</span>,
+      render: (val: number) => (
+        <span className="tabular-nums font-semibold text-xs text-blue-600 dark:text-blue-400">{val} khách</span>
+      ),
     },
     {
       title: 'Lượt Dịch Vụ',
       dataIndex: 'totalServices',
       key: 'totalServices',
       align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums font-semibold text-xs text-purple-400">{val || 0} dv</span>,
+      render: (val: number) => (
+        <span className="tabular-nums font-semibold text-xs text-purple-600 dark:text-purple-400">{val || 0} dv</span>
+      ),
     },
     {
       title: 'Doanh Thu Combo',
@@ -108,9 +121,13 @@ export default function CcLeaderboardCard({
       align: 'right' as const,
       render: (val: number, record: CcLeaderboardEntry) => (
         <div>
-          <span className="tabular-nums font-bold text-xs text-sky-400">{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
+          <span className="tabular-nums font-bold text-xs text-sky-600 dark:text-sky-400">
+            {Math.round(val || 0).toLocaleString('vi-VN')} đ
+          </span>
           {Boolean(record.comboCount) && (
-            <div className="text-[10px] text-slate-500 tabular-nums">({record.comboCount} combo)</div>
+            <div className="text-[10px] text-slate-600 dark:text-slate-400 tabular-nums">
+              ({record.comboCount} combo)
+            </div>
           )}
         </div>
       ),
@@ -121,7 +138,9 @@ export default function CcLeaderboardCard({
       key: 'totalPointsAccu',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-semibold text-xs text-emerald-400">+{val.toLocaleString('vi-VN')} pts</span>
+        <span className="tabular-nums font-semibold text-xs text-emerald-600 dark:text-emerald-400">
+          +{val.toLocaleString('vi-VN')} pts
+        </span>
       ),
     },
     {
@@ -130,7 +149,9 @@ export default function CcLeaderboardCard({
       key: 'totalConsultantBonus',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-xs text-amber-400">{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
+        <span className="tabular-nums font-bold text-xs text-amber-800 dark:text-amber-400">
+          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+        </span>
       ),
     },
     {
@@ -140,7 +161,12 @@ export default function CcLeaderboardCard({
       width: 160,
       render: (rate: number) => (
         <div className="w-full">
-          <Progress percent={rate} size="small" strokeColor={rate >= 100 ? '#52c41a' : '#faad14'} />
+          <Progress
+            percent={rate}
+            size="small"
+            strokeColor={rate >= 100 ? '#52c41a' : '#faad14'}
+            aria-label={`Tiến độ chỉ số: ${rate}%`}
+          />
         </div>
       ),
     },
@@ -152,9 +178,9 @@ export default function CcLeaderboardCard({
         <div className="flex flex-wrap justify-between items-center gap-2">
           <div className="flex items-center gap-2">
             <TrophyOutlined className="text-amber-500 text-lg" />
-            <span style={{ color: token.colorText }} className="font-bold">
+            <h3 style={{ color: token.colorText }} className="font-bold text-base m-0">
               Bảng Xếp Hạng Báo Cáo CC (CC Leaderboard)
-            </span>
+            </h3>
           </div>
 
           <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">

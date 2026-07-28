@@ -6,6 +6,7 @@ import { PhoneOutlined, UserOutlined, HomeOutlined, CalendarOutlined, InboxOutli
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../lib/api-client';
+import { vietnameseSearchFilter } from '@mos-lab/shared';
 
 // Shared modules
 import { STORES, FALLBACK_SERVICES, CHANNELS } from './booking/constants';
@@ -732,7 +733,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
             </h4>
             <Select
               showSearch
-              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+              filterOption={vietnameseSearchFilter}
               style={{ width: '100%' }}
               placeholder="Chọn hoặc tìm dịch vụ..."
               value={selectedService?.id}
@@ -894,7 +895,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
               <Select
                 showSearch
                 allowClear
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                filterOption={vietnameseSearchFilter}
                 style={{ width: '100%' }}
                 placeholder="Chọn chương trình khuyến mãi (nếu có)..."
                 value={selectedPromotion?.id}

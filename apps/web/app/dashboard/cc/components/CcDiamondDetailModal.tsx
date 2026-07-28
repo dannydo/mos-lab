@@ -14,7 +14,7 @@ import {
   IdcardOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CcDiamondEntry, CcDiamondDetailEntry } from '@mos-lab/shared';
+import { CcDiamondEntry, CcDiamondDetailEntry, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 
@@ -88,12 +88,12 @@ export default function CcDiamondDetailModal({ open, onClose, ccRecord, dateRang
 
   const filteredDetails = detailsData.filter((item) => {
     if (!searchText) return true;
-    const lower = searchText.toLowerCase();
+    const q = removeVietnameseTones(searchText);
     return (
-      item.referrerName.toLowerCase().includes(lower) ||
-      item.referrerPhone.includes(lower) ||
-      item.newName.toLowerCase().includes(lower) ||
-      item.newPhone.includes(lower)
+      removeVietnameseTones(item.referrerName).includes(q) ||
+      (item.referrerPhone && removeVietnameseTones(item.referrerPhone).includes(q)) ||
+      removeVietnameseTones(item.newName).includes(q) ||
+      (item.newPhone && removeVietnameseTones(item.newPhone).includes(q))
     );
   });
 

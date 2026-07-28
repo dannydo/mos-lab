@@ -142,3 +142,34 @@ Ensure all dynamic counters, time clocks, durations, and financial figures use t
 
 - [ ] Dynamic counter/time elements use tabular-nums to eliminate layout jitter.
 - [ ] Keyboard navigation visual focus (:focus-visible) works cleanly across interactive elements.
+
+## Follow-up — 2026-07-28T09:07:27Z
+
+Refactor standard search filtering across all CRM dashboard modules in mos-lab (apps/web & apps/api) to support tone-insensitive & case-insensitive Vietnamese search (removeVietnameseTones).
+
+Working directory: /Users/dannydo/projects/mos-lab
+Integrity mode: development
+
+## Requirements
+
+### R1. System-Wide Tone-Insensitive Vietnamese Search Helper
+
+- Export a standardized removeVietnameseTones(str: string): string utility in shared package/lib (apps/web/lib/utils/search.ts or @mos-lab/shared).
+- Implement tone-insensitive and case-insensitive matching logic for all <Select showSearch> components, table filters, and search inputs across all CRM modules.
+
+### R2. Refactor Existing Search Controls Across All Dashboard Modules
+
+- Refactor all Ant Design <Select showSearch> controls and table filters across all modules (/dashboard/today, /dashboard/customers, /dashboard/bk, /dashboard/cc, /dashboard/cv, /dashboard/catalog, /dashboard/appointments, /dashboard/loca, /dashboard/nyc, /dashboard/omicall, /dashboard/staff) to use filterOption={(input, option) => removeVietnameseTones(String(option?.label || '')).includes(removeVietnameseTones(input))}.
+
+### R3. Automated Build Verification
+
+- Execute pnpm --filter @mos-lab/web build to verify clean TypeScript compilation and static page generation without any errors.
+
+## Acceptance Criteria
+
+### Comprehensive Search Support
+
+- [ ] Searching "diep" matches "Ngọc Điệp" in staff/booker/customer search inputs across all modules.
+- [ ] Searching "hang" matches "Hằng Ni" and "thuy" matches "Thuỳ Trang 🌸".
+- [ ] All <Select showSearch> components in /dashboard/* use removeVietnameseTones.
+- [ ] pnpm --filter @mos-lab/web build passes with zero type errors.

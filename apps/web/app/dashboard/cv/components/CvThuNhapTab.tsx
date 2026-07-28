@@ -38,7 +38,7 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
-import { CvPaystubRecord, CvWorkLogDetailRecord } from '@mos-lab/shared';
+import { CvPaystubRecord, CvWorkLogDetailRecord, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import dayjs from 'dayjs';
@@ -402,9 +402,9 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
 
   const filteredData = React.useMemo(() => {
     if (!searchText) return paystubData;
-    const lower = searchText.toLowerCase();
+    const q = removeVietnameseTones(searchText);
     return paystubData.filter(
-      (item) => item.staffName.toLowerCase().includes(lower) || item.store.toLowerCase().includes(lower)
+      (item) => removeVietnameseTones(item.staffName).includes(q) || removeVietnameseTones(item.store).includes(q)
     );
   }, [paystubData, searchText]);
 

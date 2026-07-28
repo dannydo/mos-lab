@@ -30,7 +30,7 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CcTipLeaderboardEntry, CcTipRecord } from '@mos-lab/shared';
+import { CcTipLeaderboardEntry, CcTipRecord, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import CcAvatar from './CcAvatar';
@@ -173,14 +173,14 @@ export default function CcTipTab({
     if (tipFilter === 'NO_TIP' && r.tipStatus !== 'No Tip') return false;
 
     if (searchText) {
-      const lower = searchText.toLowerCase();
+      const q = removeVietnameseTones(searchText);
       return (
-        r.clientName.toLowerCase().includes(lower) ||
-        r.serviceName.toLowerCase().includes(lower) ||
-        r.ccInName.toLowerCase().includes(lower) ||
-        r.ccOutName.toLowerCase().includes(lower) ||
-        r.consultantName.toLowerCase().includes(lower) ||
-        r.checkinTime.includes(lower)
+        removeVietnameseTones(r.clientName).includes(q) ||
+        removeVietnameseTones(r.serviceName).includes(q) ||
+        removeVietnameseTones(r.ccInName).includes(q) ||
+        removeVietnameseTones(r.ccOutName).includes(q) ||
+        removeVietnameseTones(r.consultantName).includes(q) ||
+        r.checkinTime.includes(searchText)
       );
     }
     return true;

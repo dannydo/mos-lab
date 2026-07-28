@@ -17,7 +17,7 @@ import {
   InputNumber,
 } from 'antd';
 import { UserOutlined, InfoCircleOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
-import { Staff, Role } from '@mos-lab/shared';
+import { Staff, Role, vietnameseSearchFilter } from '@mos-lab/shared';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -209,7 +209,7 @@ export default function StaffTabsContent({
                   placeholder="Chọn tài khoản Wings Lashes liên kết"
                   allowClear
                   showSearch
-                  optionFilterProp="children"
+                  filterOption={vietnameseSearchFilter}
                 >
                   {legacyStaffList.map((item) => (
                     <Option key={item.id} value={item.id}>

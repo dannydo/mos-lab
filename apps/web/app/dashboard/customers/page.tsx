@@ -201,12 +201,15 @@ function CustomersPageContent() {
     batchId: null,
   });
 
-  const [revokeBatchModalState, setRevokeBatchModalState] = React.useState<{ visible: boolean; customerIds: number[] }>(
-    {
-      visible: false,
-      customerIds: [],
-    }
-  );
+  const [revokeBatchModalState, setRevokeBatchModalState] = React.useState<{
+    visible: boolean;
+    customerIds: number[];
+    batchId?: string | null;
+  }>({
+    visible: false,
+    customerIds: [],
+    batchId: null,
+  });
 
   return (
     <div>
@@ -224,7 +227,8 @@ function CustomersPageContent() {
 
       <RevokeAssignmentModal
         visible={revokeBatchModalState.visible}
-        onClose={() => setRevokeBatchModalState({ visible: false, customerIds: [] })}
+        batchId={revokeBatchModalState.batchId}
+        onClose={() => setRevokeBatchModalState({ visible: false, customerIds: [], batchId: null })}
         onSuccess={() => {
           data.fetchAssignmentHistory(data.historyPage);
           data.refreshListAndStats();
@@ -597,6 +601,7 @@ function CustomersPageContent() {
             setRevokeBatchModalState({
               visible: true,
               customerIds,
+              batchId,
             });
           });
         }}

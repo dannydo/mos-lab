@@ -277,7 +277,14 @@ export const apiClient = {
       customerIds: number[];
       reason: string;
       targetStaffId?: number | null;
-    }): Promise<{ success: boolean; count: number; batchId?: string }> => {
+      batchId?: string;
+    }): Promise<{
+      success: boolean;
+      count: number;
+      revokedCount?: number;
+      alreadyExpiredCount?: number;
+      batchId?: string;
+    }> => {
       const response = await api.post('/customers/revoke', data);
       return response.data;
     },
@@ -313,14 +320,15 @@ export const apiClient = {
     },
     undoAssignment: async (
       batchId: string,
-      reason: string
+      reason: string,
+      force = true
     ): Promise<{
       success: boolean;
       revertedCount: number;
       totalCount: number;
       skippedCount: number;
     }> => {
-      const response = await api.post('/customers/assignment-history/undo', { batchId, reason });
+      const response = await api.post('/customers/assignment-history/undo', { batchId, reason, force });
       return response.data;
     },
     getTimeline: async (customerId: number): Promise<{ data: CustomerAssignmentTimelineItem[] }> => {

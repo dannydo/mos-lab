@@ -30,7 +30,7 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CvTipLeaderboardEntry, CvTipRecord } from '@mos-lab/shared';
+import { CvTipLeaderboardEntry, CvTipRecord, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import CcAvatar from '../../cc/components/CcAvatar';
 
@@ -146,12 +146,12 @@ export default function CvTipTab({
 
   const filteredRecords = React.useMemo(() => {
     if (!searchText) return records;
-    const lower = searchText.toLowerCase();
+    const q = removeVietnameseTones(searchText);
     return records.filter(
       (r) =>
-        r.techName.toLowerCase().includes(lower) ||
-        r.clientName.toLowerCase().includes(lower) ||
-        r.serviceName.toLowerCase().includes(lower)
+        removeVietnameseTones(r.techName).includes(q) ||
+        removeVietnameseTones(r.clientName).includes(q) ||
+        removeVietnameseTones(r.serviceName).includes(q)
     );
   }, [records, searchText]);
 

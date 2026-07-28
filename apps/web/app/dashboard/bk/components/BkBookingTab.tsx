@@ -18,7 +18,7 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
-import { BkBookingLeaderboardEntry, BkBookingRecord } from '@mos-lab/shared';
+import { BkBookingLeaderboardEntry, BkBookingRecord, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import BkAvatar from './BkAvatar';
@@ -127,13 +127,13 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
 
   const filteredDetailRecords = useMemo(() => {
     if (!searchText) return detailRecords;
-    const lower = searchText.toLowerCase();
+    const q = removeVietnameseTones(searchText);
     return detailRecords.filter(
       (r) =>
-        r.clientName.toLowerCase().includes(lower) ||
-        r.orderKey.toLowerCase().includes(lower) ||
-        (r.clientPhone && r.clientPhone.includes(lower)) ||
-        (r.bookerName && r.bookerName.toLowerCase().includes(lower))
+        removeVietnameseTones(r.clientName).includes(q) ||
+        removeVietnameseTones(r.orderKey).includes(q) ||
+        (r.clientPhone && removeVietnameseTones(r.clientPhone).includes(q)) ||
+        (r.bookerName && removeVietnameseTones(r.bookerName).includes(q))
     );
   }, [detailRecords, searchText]);
 

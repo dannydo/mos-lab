@@ -21,7 +21,7 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
-import { CcLeaderboardEntry, CcXoayRecord } from '@mos-lab/shared';
+import { CcLeaderboardEntry, CcXoayRecord, vietnameseSearchFilter } from '@mos-lab/shared';
 
 import CcLeaderboardCard from './components/CcLeaderboardCard';
 import { PageHeader } from '../../../components/ui';
@@ -288,29 +288,63 @@ export default function CcDashboardPage() {
           <Space wrap size={8}>
             {/* View Mode Switcher: Tháng / Tuần / Ngày */}
             <Space.Compact>
-              <Button type={viewMode === 'month' ? 'primary' : 'default'} onClick={() => setViewMode('month')}>
+              <Button
+                aria-label="Xem theo tháng"
+                type={viewMode === 'month' ? 'primary' : 'default'}
+                onClick={() => setViewMode('month')}
+              >
                 Tháng
               </Button>
-              <Button type={viewMode === 'week' ? 'primary' : 'default'} onClick={() => setViewMode('week')}>
+              <Button
+                aria-label="Xem theo tuần"
+                type={viewMode === 'week' ? 'primary' : 'default'}
+                onClick={() => setViewMode('week')}
+              >
                 Tuần
               </Button>
-              <Button type={viewMode === 'day' ? 'primary' : 'default'} onClick={() => setViewMode('day')}>
+              <Button
+                aria-label="Xem theo ngày"
+                type={viewMode === 'day' ? 'primary' : 'default'}
+                onClick={() => setViewMode('day')}
+              >
                 Ngày
               </Button>
             </Space.Compact>
 
             {/* Date Navigation & Selector */}
-            <Space size={0} className="border border-slate-700 rounded-md overflow-hidden bg-slate-900/50">
-              <Button type="text" icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
-              <Button type="text" icon={<CalendarOutlined />} onClick={() => setPickerOpen(true)}>
+            <Space
+              size={0}
+              className="border border-slate-200 dark:border-slate-700 rounded-md overflow-hidden bg-white dark:bg-slate-900/50 shadow-sm"
+            >
+              <Button
+                aria-label="Kỳ trước"
+                type="text"
+                icon={<LeftOutlined />}
+                onClick={() => handleNavigate(-1)}
+                className="text-slate-700 dark:text-slate-200 hover:text-amber-600 dark:hover:text-amber-400"
+              />
+              <Button
+                aria-label={`Chọn khoảng thời gian ${getPeriodLabel()}`}
+                type="text"
+                icon={<CalendarOutlined />}
+                onClick={() => setPickerOpen(true)}
+                className="text-slate-800 dark:text-slate-200 font-medium hover:text-amber-600 dark:hover:text-amber-400"
+              >
                 {getPeriodLabel()}
               </Button>
-              <Button type="text" icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
+              <Button
+                aria-label="Kỳ sau"
+                type="text"
+                icon={<RightOutlined />}
+                onClick={() => handleNavigate(1)}
+                className="text-slate-700 dark:text-slate-200 hover:text-amber-600 dark:hover:text-amber-400"
+              />
             </Space>
 
             {/* Hidden DatePicker */}
             {pickerOpen && (
               <DatePicker
+                aria-label="Chọn ngày xem báo cáo"
                 open={true}
                 onOpenChange={(open) => {
                   if (!open) setPickerOpen(false);
@@ -336,6 +370,7 @@ export default function CcDashboardPage() {
 
             {/* Store Filter */}
             <Select
+              aria-label="Lọc theo chi nhánh tiệm"
               value={selectedStore}
               onChange={(val) => setSelectedStore(val)}
               style={{ width: 140 }}
@@ -349,6 +384,9 @@ export default function CcDashboardPage() {
 
             {/* Consultant Filter */}
             <Select
+              aria-label="Lọc theo tư vấn viên CC"
+              showSearch
+              filterOption={vietnameseSearchFilter}
               value={selectedConsultant}
               onChange={(val) => setSelectedConsultant(val)}
               style={{ width: 180 }}
@@ -362,6 +400,7 @@ export default function CcDashboardPage() {
             {/* Config Button (Admin Global Config) */}
             <Tooltip title="Cấu hình CC">
               <Button
+                aria-label="Cấu hình CC"
                 type="primary"
                 icon={<SettingOutlined />}
                 onClick={() => setConfigDrawerOpen(true)}

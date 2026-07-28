@@ -3803,10 +3803,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // POST /api/customers/revoke
   // Revoke assignments before expiration (to pool or re-assign to targetStaffId) with MANDATORY reason
   fastify.post('/customers/revoke', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { customerIds, targetStaffId, reason } = request.body as {
+    const {
+      customerIds,
+      targetStaffId,
+      reason,
+      batchId: requestedBatchId,
+    } = request.body as {
       customerIds: number[];
       targetStaffId?: number | null;
       reason: string;
+      batchId?: string;
     };
     const adminUser = request.user as { id: number; role: string };
 
@@ -3829,7 +3835,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         where: { legacyUserId: { in: customerIds } },
       });
       const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
-      const batchId = `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const batchId = requestedBatchId || `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const now = new Date();
 
       if (targetStaffId) {
@@ -3868,6 +3874,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
               },
             })
           ),
+          ...(requestedBatchId
+            ? [
+                fastify.prisma.crm.crmAssignmentHistory.updateMany({
+                  where: { batchId: requestedBatchId },
+                  data: {
+                    isUndone: true,
+                    undoneAt: now,
+                    reason: cleanReason,
+                  },
+                }),
+              ]
+            : []),
         ]);
       } else {
         // Revoke back to pool
@@ -3904,10 +3922,27 @@ export async function customerRoutes(fastify: FastifyInstance) {
               },
             });
           }
+
+          if (requestedBatchId) {
+            await tx.crmAssignmentHistory.updateMany({
+              where: { batchId: requestedBatchId },
+              data: {
+                isUndone: true,
+                undoneAt: now,
+                reason: cleanReason,
+              },
+            });
+          }
         });
       }
 
-      return { success: true, count: customerIds.length, batchId };
+      return {
+        success: true,
+        count: customerIds.length,
+        revokedCount: currentAssignments.length,
+        alreadyExpiredCount: customerIds.length - currentAssignments.length,
+        batchId,
+      };
     } catch (error: SafeAny) {
       fastify.log.error({ err: error }, 'Revoke customers error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to revoke customers' });
@@ -4261,14 +4296,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
   );
 
   // POST /api/customers/assignment-history/undo
-  // Undo a batch of assignments with MANDATORY reason
+  // Undo a batch of assignments with MANDATORY reason (supports force option for old batches)
   fastify.post('/customers/assignment-history/undo', { preHandler: [requireAuth] }, async (request, reply) => {
     const adminUser = request.user as { id: number; role: string };
     if (adminUser.role !== 'admin') {
       return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền hoàn tác phân bổ.' });
     }
 
-    const { batchId, reason } = request.body as { batchId: string; reason?: string };
+    const { batchId, reason, force = true } = request.body as { batchId: string; reason?: string; force?: boolean };
     if (!batchId) {
       return reply.status(400).send({ error: 'Bad Request', message: 'batchId is required' });
     }
@@ -4302,7 +4337,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       for (const record of historyRecords) {
         const currentStaffId = currentMap.get(record.legacyUserId);
 
+        // In force mode (or if current staff still matches), revert the assignment
         const isCurrentMatch =
+          force ||
           (newStaffId === null && currentStaffId === undefined) ||
           (newStaffId !== null && currentStaffId === newStaffId);
 
@@ -7370,7 +7407,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
   // GET /api/dashboard/today - Real operational data for the "today" dashboard
   fastify.get('/dashboard/today', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { date } = request.query as { date?: string };
+    const { date, dateFrom, dateTo } = request.query as { date?: string; dateFrom?: string; dateTo?: string };
     const getVnDateStr = () => {
       const formatter = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Ho_Chi_Minh',
@@ -7380,15 +7417,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
       return formatter.format(new Date());
     };
-    const targetDateStr = date || getVnDateStr();
+    const targetDateFrom = (dateFrom || date || getVnDateStr()).slice(0, 10);
+    const targetDateTo = (dateTo || date || getVnDateStr()).slice(0, 10);
+    const targetDateStr = targetDateFrom;
 
-    // booking_date_only needs timezone-naive date at UTC midnight
-    const bookingDateOnlyDate = new Date(targetDateStr + 'T00:00:00.000Z');
+    const bookingDateOnlyStart = new Date(targetDateFrom + 'T00:00:00.000Z');
+    const bookingDateOnlyEnd = new Date(targetDateTo + 'T23:59:59.999Z');
 
     // Since database datetimes are local and Prisma reads them as UTC,
     // we query using timezone-naive start/end bounds directly
-    const startOfDay = new Date(targetDateStr + 'T00:00:00.000Z');
-    const endOfDay = new Date(targetDateStr + 'T23:59:59.999Z');
+    const startOfDay = new Date(targetDateFrom + 'T00:00:00.000Z');
+    const endOfDay = new Date(targetDateTo + 'T23:59:59.999Z');
 
     const toActualDate = (dbDate: Date | null | undefined) => {
       if (!dbDate) return new Date(0);
@@ -7433,10 +7472,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         orderBy: { date_created: 'desc' },
       });
 
-      // 2. Query coming today
+      // 2. Query coming today/range
       const comingOrders = await fastify.prisma.legacy.order.findMany({
         where: {
-          OR: [{ booking_date_only: bookingDateOnlyDate }, { booking_date_start: { gte: startOfDay, lte: endOfDay } }],
+          OR: [
+            { booking_date_only: { gte: bookingDateOnlyStart, lte: bookingDateOnlyEnd } },
+            { booking_date_start: { gte: startOfDay, lte: endOfDay } },
+          ],
           order_state: { not: 'Cancelled' },
         },
         orderBy: { booking_date_start: 'asc' },

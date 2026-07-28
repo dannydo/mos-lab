@@ -15,7 +15,7 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CvXoayRecord } from '@mos-lab/shared';
+import { CvXoayRecord, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
@@ -169,13 +169,13 @@ export default function CvXoayTab({
       result = result.filter((item) => item.techName.toLowerCase() === selectedCvName.toLowerCase());
     }
     if (searchText) {
-      const lower = searchText.toLowerCase();
+      const q = removeVietnameseTones(searchText);
       result = result.filter(
         (item) =>
-          item.techName.toLowerCase().includes(lower) ||
-          item.clientName.toLowerCase().includes(lower) ||
-          item.serviceName.toLowerCase().includes(lower) ||
-          item.store.toLowerCase().includes(lower)
+          removeVietnameseTones(item.techName).includes(q) ||
+          removeVietnameseTones(item.clientName).includes(q) ||
+          removeVietnameseTones(item.serviceName).includes(q) ||
+          removeVietnameseTones(item.store).includes(q)
       );
     }
     return result;

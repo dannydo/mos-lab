@@ -1,15 +1,15 @@
-# BRIEFING — 2026-07-27T23:35:15+07:00
+# BRIEFING — 2026-07-28T09:08:00+07:00
 
 ## Mission
 
-Record user request, spawn orchestrator to audit and auto-fix contrast, color, and accessibility (WCAG AA) issues across all Pages, Modals, and Drawers in mos-lab for Light & Dark themes, set up crons, and trigger victory audit upon completion.
+Record user request, spawn orchestrator to refactor standard search filtering across all CRM dashboard modules in mos-lab to support tone-insensitive & case-insensitive Vietnamese search (removeVietnameseTones), set up crons, and trigger victory audit upon completion.
 
 ## 🔒 My Identity
 
 - Archetype: sentinel
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/sentinel
-- Orchestrator: b5de3b3f-fb0b-417c-b8a6-d69cf4aeea3e
-- Victory Auditor: 5acd7ab7-83f6-4286-8740-c13ce30f58ec
+- Orchestrator: b443607f-5adc-4cf6-b4eb-a237d405d7f4
+- Victory Auditor: e0e60c71-a58d-4bfa-8250-e302e207b55b
 
 ## 🔒 Key Constraints
 
@@ -18,9 +18,9 @@ Record user request, spawn orchestrator to audit and auto-fix contrast, color, a
 
 ## User Context
 
-- **Last user request**: Audit and auto-fix contrast, colors, and accessibility (WCAG AA, tabular-nums, :focus-visible, theme scoping) across all Pages, Modal Popups, and Side Drawers in Light (.light-theme) and Dark (.dark-theme) modes.
+- **Last user request**: Refactor standard search filtering across all CRM dashboard modules in mos-lab (apps/web & apps/api) to support tone-insensitive & case-insensitive Vietnamese search (removeVietnameseTones).
 - **Pending clarifications**: none
-- **Delivered results**: Accessibility audit & refactoring completed & VICTORY CONFIRMED by Victory Auditor.
+- **Delivered results**: Orchestrator completed task; Victory Auditor spawned for mandatory audit.
 
 ## Project Status
 

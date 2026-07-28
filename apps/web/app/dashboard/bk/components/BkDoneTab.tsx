@@ -15,7 +15,7 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
-import { BkDoneLeaderboardEntry, BkDoneRecord } from '@mos-lab/shared';
+import { BkDoneLeaderboardEntry, BkDoneRecord, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import BkAvatar from './BkAvatar';
@@ -136,14 +136,14 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
 
   const filteredDetailRecords = useMemo(() => {
     if (!searchText) return detailRecords;
-    const lower = searchText.toLowerCase();
+    const q = removeVietnameseTones(searchText);
     return detailRecords.filter(
       (r) =>
-        r.clientName.toLowerCase().includes(lower) ||
-        r.orderKey.toLowerCase().includes(lower) ||
-        (r.clientPhone && r.clientPhone.toLowerCase().includes(lower)) ||
-        (r.bookerName && r.bookerName.toLowerCase().includes(lower)) ||
-        (r.serviceName && r.serviceName.toLowerCase().includes(lower))
+        removeVietnameseTones(r.clientName).includes(q) ||
+        removeVietnameseTones(r.orderKey).includes(q) ||
+        (r.clientPhone && removeVietnameseTones(r.clientPhone).includes(q)) ||
+        (r.bookerName && removeVietnameseTones(r.bookerName).includes(q)) ||
+        (r.serviceName && removeVietnameseTones(r.serviceName).includes(q))
     );
   }, [detailRecords, searchText]);
 

@@ -1,19 +1,21 @@
-## 2026-07-27T16:42:14Z
+## 2026-07-28T02:20:28Z
 
-You are teamwork_preview_challenger_m3_2, a Challenger subagent for mos-lab.
+You are challenger_m3_2. Your working directory is /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_2.
 
-Working Directory: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_2
-Project Scope Document: /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md
-Worker Handoff: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m2_1/handoff.md
+Mission:
+Adversarial scan and build verification across all 11 CRM dashboard modules in `apps/web/app/dashboard/` and `apps/web/components/`.
 
-Your Task:
-Perform adversarial verification of Tabular Numbers Coverage (`tabular-nums`) and Keyboard Focus / ARIA Accessibility across `apps/web/`.
+Tasks:
 
-Adversarial Stress Verification Criteria:
+1. Perform a full static scan across `apps/web/app/dashboard/` and `apps/web/components/` for any remaining `<Select showSearch>` components or search controls that use raw `.toLowerCase().includes()` or default `optionFilterProp="children"` without Vietnamese tone normalization.
+2. Execute `pnpm --filter @mos-lab/web build` and record total build time, exit code, and zero-type-error confirmation.
+3. Validate that 100% of acceptance criteria are satisfied:
+   - Searching "diep" matches "Ngọc Điệp" in staff/booker/customer search inputs across all modules.
+   - Searching "hang" matches "Hằng Ni" and "thuy" matches "Thuỳ Trang 🌸".
+   - All `<Select showSearch>` components in `/dashboard/*` use `removeVietnameseTones`.
+   - `pnpm --filter @mos-lab/web build` passes with zero type errors.
 
-1. Search across all tables, cards, paystubs, modals, and drawers for any financial amounts ($ Combo, $ Single, $ Product, Revenue, Price, Salary, Bonus, Tips), countdowns, clocks, durations, or phone numbers missing `tabular-nums` / `font-variant-numeric: tabular-nums` / `font-feature-settings: "tnum"`.
-2. Check for `outline-none` or `outline: none` rules suppressing focus indicators on interactive form controls or buttons.
-3. Check for icon-only buttons or custom interactive triggers (`<span>`, `<div>`) that lack `aria-label`, `role="button"`, `tabIndex={0}`, or keyboard handlers.
-4. Run `pnpm lint` and `pnpm --filter @mos-lab/web build` to verify clean build compilation.
+Output Requirements:
 
-Write your challenger report to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_2/handoff.md` and send a message back to the orchestrator with your findings and verdict (PASS / FAIL).
+- Write your scan and verification report to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_2/handoff.md`.
+- Send a message to orchestrator (ID: 7699a38e-37d6-4763-8f97-08686a3bc0b6) upon completion.

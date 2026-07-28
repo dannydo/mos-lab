@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Modal, Select, Input, Form, message, Alert, Space, Typography, Tag, Segmented, Tooltip, theme } from 'antd';
 import { WarningOutlined, UserSwitchOutlined, InboxOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { apiClient } from '../../../../lib/api-client';
-import { SafeAny, Staff } from '@mos-lab/shared';
+import { SafeAny, Staff, vietnameseSearchFilter } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 
 const { Text } = Typography;
@@ -15,6 +15,7 @@ interface RevokeAssignmentModalProps {
   onSuccess: () => void;
   customerIds: number[];
   staffList: Staff[];
+  batchId?: string | null;
 }
 
 const PRESET_REASONS = [
@@ -30,6 +31,7 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
   onSuccess,
   customerIds,
   staffList,
+  batchId,
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
@@ -52,14 +54,18 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
         customerIds,
         reason: reason.trim(),
         targetStaffId: actionType === 'TRANSFER' ? values.targetStaffId : null,
+        batchId: batchId || undefined,
       });
 
       if (res.success) {
-        message.success(
+        let msg =
           actionType === 'TRANSFER'
             ? `Đã chuyển ${customerIds.length} data sang Booker mới!`
-            : `Đã thu hồi ${customerIds.length} data về Pool tổng!`
-        );
+            : `Đã thu hồi thành công data đợt này về Pool tổng!`;
+        if (res.alreadyExpiredCount && res.alreadyExpiredCount > 0) {
+          msg += ` (${res.alreadyExpiredCount} KH đã được giải phóng/hết hạn từ trước)`;
+        }
+        message.success(msg);
         form.resetFields();
         onSuccess();
         onClose();
@@ -131,7 +137,15 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
               {
                 label: (
                   <Tooltip title="Đưa data về Pool chung để phân bổ lại sau">
-                    <div style={{ padding: '6px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <div
+                      style={{
+                        padding: '6px 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                      }}
+                    >
                       <InboxOutlined style={{ fontSize: 15 }} />
                       <span>Thu hồi về Pool tổng</span>
                     </div>
@@ -142,7 +156,15 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
               {
                 label: (
                   <Tooltip title="Chuyển giao trực tiếp data cho 1 Booker mới">
-                    <div style={{ padding: '6px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <div
+                      style={{
+                        padding: '6px 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                      }}
+                    >
                       <UserSwitchOutlined style={{ fontSize: 15 }} />
                       <span>Chuyển cho Booker mới</span>
                     </div>
@@ -161,7 +183,12 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
             label={<Text strong>Chọn Booker nhận mới</Text>}
             rules={[{ required: true, message: 'Vui lòng chọn Booker nhận mới!' }]}
           >
-            <Select placeholder="Chọn Booker..." showSearch optionFilterProp="children" style={{ borderRadius: '6px' }}>
+            <Select
+              placeholder="Chọn Booker..."
+              showSearch
+              filterOption={vietnameseSearchFilter}
+              style={{ borderRadius: '6px' }}
+            >
               {staffList
                 .filter((s) => ['telesales', 'executive', 'manager', 'admin'].includes(s.role?.toLowerCase() || ''))
                 .map((staff) => (
@@ -215,7 +242,13 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
             label={<Text strong>Lý do cụ thể</Text>}
             rules={[{ required: true, message: 'Vui lòng nhập lý do cụ thể!' }]}
           >
-            <Input.TextArea rows={3} placeholder="Nhập lý do chi tiết..." maxLength={200} showCount style={{ borderRadius: '6px' }} />
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập lý do chi tiết..."
+              maxLength={200}
+              showCount
+              style={{ borderRadius: '6px' }}
+            />
           </Form.Item>
         )}
       </Form>

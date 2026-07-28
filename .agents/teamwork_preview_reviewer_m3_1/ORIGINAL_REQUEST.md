@@ -1,21 +1,17 @@
-## 2026-07-27T16:42:14Z
+## 2026-07-28T02:20:28Z
 
-You are teamwork_preview_reviewer_m3_1, a Reviewer subagent for mos-lab.
+You are reviewer_m3_1. Your working directory is /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_reviewer_m3_1.
 
-Working Directory: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_reviewer_m3_1
-Project Scope Document: /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md
-Worker Handoff: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m2_1/handoff.md
+Mission:
+Perform an independent code review of the Vietnamese search refactoring across `packages/shared/src/utils/search.ts`, `apps/web/lib/utils/search.ts`, `/dashboard/today`, `/dashboard/customers`, `/dashboard/bk`, `/dashboard/cc`, `/dashboard/cv`, `/dashboard/catalog`.
 
-Your Task:
-Independently review the theme token system, global CSS overrides, and font stack in `apps/web/context/ThemeContext.tsx` and `apps/web/app/globals.css`.
+Tasks:
 
-Review Criteria:
+1. Examine `removeVietnameseTones` and `vietnameseSearchFilter` for correctness, performance, edge cases (null/undefined/numbers), and type safety.
+2. Review all refactored `<Select showSearch>` filterOption functions and custom array filters in `/dashboard/today`, `/dashboard/customers`, `/dashboard/bk`, `/dashboard/cc`, `/dashboard/cv`, `/dashboard/catalog`.
+3. Verify that `pnpm --filter @mos-lab/shared build` and `pnpm --filter @mos-lab/web build` compile without errors.
 
-1. Verify `colorPrimary` & `colorInfo` in `ThemeContext.tsx` use dynamic gold (`#9E7118` in Light mode / `#D4A84B` in Dark mode) yielding WCAG AA contrast >= 4.5:1.
-2. Verify `colorTextDescription` uses dynamic slate (`#64748b` in Light mode / `#94a3b8` in Dark mode) yielding WCAG AA contrast >= 4.5:1.
-3. Verify explicit `controlOutline` and `controlOutlineWidth` tokens exist.
-4. Verify paired `.light-theme` CSS rules exist for all `.dark-theme` Antd table, card, drawer, and tabs overrides in `globals.css`.
-5. Verify explicit `.tabular-nums` fallback class rule exists with `font-variant-numeric: tabular-nums` and `font-feature-settings: "tnum"`.
-6. Run `pnpm lint` and `pnpm --filter @mos-lab/web build` and document exact commands and results.
+Output Requirements:
 
-Write your review report to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_reviewer_m3_1/handoff.md` and send a message back to the orchestrator with your verdict (APPROVED / VETO).
+- Write your detailed review report to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_reviewer_m3_1/handoff.md`.
+- Send a message to orchestrator (ID: 7699a38e-37d6-4763-8f97-08686a3bc0b6) upon completion.

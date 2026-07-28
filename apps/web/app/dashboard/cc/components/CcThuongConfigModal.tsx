@@ -30,8 +30,8 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
       const res = await apiClient.gamification.getDailySalesBonusConfig();
       if (res) {
         form.setFieldsValue({
-          combo_unit_bonus: res.combo_unit_bonus || 200000,
-          product_unit_bonus: res.product_unit_bonus || 50000,
+          combo_unit_bonus: res.combo_unit_bonus ?? 200000,
+          product_unit_bonus: res.product_unit_bonus ?? 50000,
         });
         setTiers(res.tiers || []);
       }

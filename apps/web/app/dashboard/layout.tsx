@@ -535,6 +535,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Badge count={dailyCallsCount} offset={[-8, 2]} size="small" showZero={false}>
                 <Button
                   type="text"
+                  aria-label="Cuộc gọi hôm nay"
                   icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
                   onClick={() => setIsDailyCallsOpen(true)}
                   style={{
@@ -578,6 +579,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         ? user.avatarUrl.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com')
                         : undefined
                     }
+                    alt={user?.name ? `Ảnh đại diện ${user.name}` : 'Ảnh đại diện người dùng'}
                     icon={<UserOutlined />}
                     style={{ backgroundColor: token.colorPrimary, color: '#000' }}
                   />

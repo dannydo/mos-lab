@@ -53,7 +53,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
-import { Staff, Role } from '@mos-lab/shared';
+import { Staff, Role, vietnameseSearchFilter } from '@mos-lab/shared';
 import { useStaffData } from './hooks/useStaffData';
 import { getStaffColumns, getRoleColumns } from './components/StaffColumns';
 import StaffTabsContent from './components/StaffTabsContent';
@@ -1170,6 +1170,8 @@ export default function StaffPage() {
               placeholder="Chọn tài khoản chính giữ lại..."
               value={targetMergeStaffId}
               onChange={(val) => setTargetMergeStaffId(val)}
+              showSearch
+              filterOption={vietnameseSearchFilter}
             >
               {staffList
                 .filter((s) => selectedRowKeys.includes(s.id))

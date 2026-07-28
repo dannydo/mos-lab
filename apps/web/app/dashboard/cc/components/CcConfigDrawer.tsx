@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Drawer, Checkbox, Input, Button, Space, Typography, Spin, message, theme, Badge } from 'antd';
 import { SearchOutlined, SaveOutlined, UserOutlined, SettingOutlined } from '@ant-design/icons';
 import { apiClient } from '../../../../lib/api-client';
-import { CcStaffOption } from '@mos-lab/shared';
+import { CcStaffOption, removeVietnameseTones } from '@mos-lab/shared';
 
 const { Text, Title } = Typography;
 
@@ -45,9 +45,11 @@ export default function CcConfigDrawer({ open, onClose, onSaveSuccess }: CcConfi
 
   const filteredStaff = React.useMemo(() => {
     if (!searchText) return allStaff;
-    const lower = searchText.toLowerCase();
+    const q = removeVietnameseTones(searchText);
     return allStaff.filter(
-      (s) => s.displayName.toLowerCase().includes(lower) || (s.username && s.username.toLowerCase().includes(lower))
+      (s) =>
+        removeVietnameseTones(s.displayName).includes(q) ||
+        (s.username && removeVietnameseTones(s.username).includes(q))
     );
   }, [allStaff, searchText]);
 

@@ -1,29 +1,29 @@
-# Handoff Report — Sentinel Completion
+# Sentinel Final Handoff Report
 
 ## Observation
 
-- Received user request to audit and auto-fix contrast, color, and accessibility (WCAG AA) issues across all Pages, Modals, and Drawers in mos-lab for both Light (.light-theme) and Dark (.dark-theme) modes.
-- Project Orchestrator executed all 5 milestones (Exploration Audit, Refactoring & Fixes, Independent Review & Adversarial Challenge, Forensic Integrity Audit, Synthesis).
-- Independent Victory Auditor conducted empirical code verification and issued verdict `VICTORY CONFIRMED`.
+- Received user request to refactor standard search filtering across all CRM dashboard modules in mos-lab (`apps/web` & `apps/api`) to support tone-insensitive & case-insensitive Vietnamese search (`removeVietnameseTones`).
+- Recorded user request verbatim into `/Users/dannydo/projects/mos-lab/.agents/ORIGINAL_REQUEST.md`.
+- Spawned `teamwork_preview_orchestrator` (ID: `b443607f-5adc-4cf6-b4eb-a237d405d7f4`) to coordinate execution.
+- Managed subagent execution through code exploration, implementation across all 11 CRM modules, independent reviews, adversarial testing, and forensic audit.
+- Orchestrator reported victory.
+- Spawned independent Victory Auditor (`e0e60c71-a58d-4bfa-8250-e302e207b55b`) for mandatory audit.
+- Victory Auditor returned verdict: **VICTORY CONFIRMED**.
 
 ## Logic Chain
 
-- Verified AntD Design 5 dynamic gold token (`#9E7118` Light / `#D4A84B` Dark) yielding >= 4.36:1 - 5.0:1 contrast on white (PASS WCAG AA) and >= 8.0:1 on dark background.
-- Verified dynamic description text token (`#64748b` Light / `#94a3b8` Dark, >= 4.58:1 contrast PASS).
-- Verified symmetrical `.light-theme` and `.dark-theme` CSS overrides in `globals.css` for Antd tables, modals, drawers, and tabs.
-- Verified dual-theme text class pairings across report tabs and page components (`text-slate-700 dark:text-slate-200`, `text-slate-600 dark:text-slate-300`).
-- Verified `tabular-nums` formatting on numerical columns, timestamps, tip shares, metrics, financial amounts.
-- Verified `:focus-visible` ring styling and button ARIA labels.
-- Verified `pnpm lint` (0 errors) and `pnpm --filter @mos-lab/web build` (21/21 static pages generated with 0 compilation errors).
+- All user requirements and acceptance criteria have been empirically verified.
+- Diacritic removal, `đ`/`Đ` mapping, case insensitivity, React node text extraction, and module refactoring were audited across all 11 modules (`/today`, `/customers`, `/bk`, `/cc`, `/cv`, `/catalog`, `/appointments`, `/loca`, `/nyc`, `/omicall`, `/staff`).
+- Build verification (`pnpm --filter @mos-lab/web build`) completed with 0 errors.
 
 ## Caveats
 
-- None. Victory Audit verdict is VICTORY CONFIRMED.
+- None.
 
 ## Conclusion
 
-- All requirements R1, R2, R3 and acceptance criteria met 100%.
+- Project completed successfully with confirmed victory.
 
 ## Verification Method
 
-- Independent Victory Audit Report at `/Users/dannydo/projects/mos-lab/.agents/victory_auditor/audit_report.md`.
+- Independent Victory Audit report at `/Users/dannydo/projects/mos-lab/.agents/victory_auditor/handoff.md`.
