@@ -144,10 +144,10 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     setLoading(true);
     setForbiddenError(null);
     try {
-      const summaryData = await apiClient.customers.getSummary(customerId);
-      setData(summaryData);
+      const detailedData = await apiClient.customers.getDetailed(customerId);
+      setData(detailedData);
     } catch (err) {
-      console.error('Failed to fetch summary customer:', err);
+      console.error('Failed to fetch detailed customer:', err);
       if ((err as SafeAny).response?.status === 403) {
         setForbiddenError(
           (err as SafeAny).response?.data?.message || 'Bạn không có quyền xem thông tin chi tiết khách hàng này.'
@@ -635,16 +635,26 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     return maxVal > 0 ? `${dayNames[maxIndex]} (${maxVal} lần)` : 'N/A';
   };
 
+  const isCompletedOrValidVisit = (orderState: string) => {
+    return (
+      ['ServiceCompleted', 'Completed', 'CheckOut', 'CheckIn', 'ServiceStart', 'ServiceEnd', 'ServiceCleaned', 'Consultation'].includes(
+        orderState
+      ) || orderState !== 'Cancelled'
+    );
+  };
+
   const getFavoriteTechnicians = (bookingsList: SafeAny[]) => {
     if (!bookingsList || bookingsList.length === 0) return 'Chưa có';
     const techCounts: { [key: string]: number } = {};
 
     bookingsList.forEach((b) => {
-      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-      if (isCompleted && b.technicianName && b.technicianName !== 'Unknown' && b.technicianName !== 'Kỹ thuật viên') {
-        const name = b.technicianName.trim();
-        if (!name.includes('(Đã nghỉ)')) {
-          techCounts[name] = (techCounts[name] || 0) + 1;
+      if (isCompletedOrValidVisit(b.orderState)) {
+        const name = b.technicianName || b.checkinStaffName || b.checkoutStaffName;
+        if (name && name !== 'Unknown' && name !== 'Kỹ thuật viên') {
+          const trimmed = name.trim();
+          if (!trimmed.includes('(Đã nghỉ)')) {
+            techCounts[trimmed] = (techCounts[trimmed] || 0) + 1;
+          }
         }
       }
     });
@@ -664,8 +674,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     const branchCounts: { [key: string]: number } = {};
 
     bookingsList.forEach((b) => {
-      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-      if (isCompleted && b.branchName) {
+      if (isCompletedOrValidVisit(b.orderState) && b.branchName) {
         const name = b.branchName.trim();
         branchCounts[name] = (branchCounts[name] || 0) + 1;
       }
@@ -690,11 +699,13 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     });
 
     for (const b of sorted) {
-      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-      if (isCompleted && b.technicianName && b.technicianName !== 'Unknown' && b.technicianName !== 'Kỹ thuật viên') {
-        const name = b.technicianName.trim();
-        if (!name.includes('(Đã nghỉ)')) {
-          return name;
+      if (isCompletedOrValidVisit(b.orderState)) {
+        const name = b.technicianName || b.checkinStaffName || b.checkoutStaffName;
+        if (name && name !== 'Unknown' && name !== 'Kỹ thuật viên') {
+          const trimmed = name.trim();
+          if (!trimmed.includes('(Đã nghỉ)')) {
+            return trimmed;
+          }
         }
       }
     }
@@ -706,8 +717,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     const hourCounts: { [key: number]: number } = {};
 
     bookingsList.forEach((b) => {
-      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-      if (isCompleted && b.bookingDate) {
+      if (isCompletedOrValidVisit(b.orderState) && b.bookingDate) {
         const hour = new Date(b.bookingDate).getHours();
         hourCounts[hour] = (hourCounts[hour] || 0) + 1;
       }
@@ -738,8 +748,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
 
     for (const b of sorted) {
-      const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-      if (isCompleted && b.bookingDate) {
+      if (isCompletedOrValidVisit(b.orderState) && b.bookingDate) {
         const date = new Date(b.bookingDate);
         const dayOfWeek = dayNames[date.getDay()];
         const hours = date.getHours();

@@ -282,6 +282,10 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     ? `${domain}/admin/customer-support/user/customer?phone=${encodeURIComponent(phoneToUse)}`
     : `${domain}/admin/customer-support/user/customer?id=${customer?.id || ''}`;
 
+  const activeBookings = useMemo(() => {
+    return tabDataMap['bookings']?.items || bookings || [];
+  }, [tabDataMap, bookings]);
+
   return (
     <Drawer
       title={
@@ -568,7 +572,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
 
                 <BookingHabitsCard
                   themeMode={themeMode}
-                  bookings={bookings}
+                  bookings={activeBookings}
                   getFavoriteBranch={getFavoriteBranch}
                   getFavoriteTechnicians={getFavoriteTechnicians}
                   getRecentTechnician={getRecentTechnician}
