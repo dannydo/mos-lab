@@ -227,6 +227,45 @@ export default function TodayStats({
     };
   }, [branchesData, getItemPrice]);
 
+  const comingStatusStats = React.useMemo(() => {
+    let doneCount = 0,
+      donePrice = 0;
+    let servingCount = 0,
+      servingPrice = 0;
+    let lateCount = 0,
+      latePrice = 0;
+    let pendingCount = 0,
+      pendingPrice = 0;
+
+    const allComing = Object.keys(branchesData).flatMap((branchKey) => branchesData[branchKey].coming || []);
+    allComing.forEach((item) => {
+      const price = item.status === 'completed' ? getItemPrice(item) : 0;
+      if (item.status === 'completed') {
+        doneCount++;
+        donePrice += price;
+      } else if (item.status === 'serving' || item.status === 'arrived') {
+        servingCount++;
+        servingPrice += price;
+      } else if (item.status === 'late') {
+        lateCount++;
+        latePrice += price;
+      } else {
+        pendingCount++;
+        pendingPrice += price;
+      }
+    });
+
+    const totalCount = allComing.length;
+
+    return {
+      done: { count: doneCount, price: donePrice },
+      serving: { count: servingCount, price: servingPrice },
+      late: { count: lateCount, price: latePrice },
+      pending: { count: pendingCount, price: pendingPrice },
+      totalCount,
+    };
+  }, [branchesData, getItemPrice]);
+
   const totalRevenueData = React.useMemo(() => {
     const revLe = Object.values(branchesData).reduce((sum, b) => sum + (showTax ? b.revLe || 0 : b.netLe || 0), 0);
     const revCombo = Object.values(branchesData).reduce(
@@ -591,7 +630,7 @@ export default function TodayStats({
               </div>
             </Col>
 
-            {/* Right Column: Chi nhánh khách đến */}
+            {/* Right Column: Trạng thái khách đến */}
             <Col span={12} style={{ display: 'flex', flexDirection: 'column', paddingLeft: '8px' }}>
               <div
                 style={{
@@ -601,41 +640,42 @@ export default function TodayStats({
                   marginBottom: '8px',
                 }}
               >
-                Chi nhánh
+                Trạng thái
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <DonutChart
-                  total={comingBranchStats.totalCount}
+                  total={comingStatusStats.totalCount}
                   themeMode={themeMode}
                   segments={[
-                    { value: comingBranchStats.dt.count, color: '#722ED1', label: 'Đ.Thám' },
-                    { value: comingBranchStats.ep.count, color: '#13C2C2', label: 'Estella' },
-                    { value: comingBranchStats.pxl.count, color: '#EB2F96', label: 'PXL' },
+                    { value: comingStatusStats.done.count, color: '#52C41A', label: 'Done' },
+                    { value: comingStatusStats.serving.count, color: '#13C2C2', label: 'Đang làm' },
+                    { value: comingStatusStats.late.count, color: '#FF4D4F', label: 'Muộn' },
+                    { value: comingStatusStats.pending.count, color: '#FAAD14', label: 'Chờ' },
                   ]}
                 />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, overflow: 'hidden' }}>
                   <div
-                    style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}
-                    title={`Đề Thám: ${comingBranchStats.dt.count} khách • ${comingBranchStats.dt.price.toLocaleString('vi-VN')} đ`}
+                    style={{ fontSize: '11px', whiteSpace: 'nowrap' }}
+                    title={`Hoàn thành: ${comingStatusStats.done.count} khách • ${comingStatusStats.done.price.toLocaleString('vi-VN')} đ`}
                   >
                     <span
                       style={{
                         display: 'inline-block',
                         width: '6px',
                         height: '6px',
-                        backgroundColor: '#722ED1',
+                        backgroundColor: '#52C41A',
                         borderRadius: '50%',
                         marginRight: '4px',
                       }}
                     />
-                    DT: <strong className="tabular-nums">{comingBranchStats.dt.count}</strong>{' '}
-                    <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>
-                      ({formatCenterRevenue(comingBranchStats.dt.price)})
+                    Done: <strong className="tabular-nums">{comingStatusStats.done.count}</strong>{' '}
+                    <span style={{ fontSize: '9px', color: token.colorTextDescription }}>
+                      ({formatCenterRevenue(comingStatusStats.done.price)})
                     </span>
                   </div>
                   <div
-                    style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}
-                    title={`Estella: ${comingBranchStats.ep.count} khách • ${comingBranchStats.ep.price.toLocaleString('vi-VN')} đ`}
+                    style={{ fontSize: '11px', whiteSpace: 'nowrap' }}
+                    title={`Đang làm: ${comingStatusStats.serving.count} khách • ${comingStatusStats.serving.price.toLocaleString('vi-VN')} đ`}
                   >
                     <span
                       style={{
@@ -647,29 +687,42 @@ export default function TodayStats({
                         marginRight: '4px',
                       }}
                     />
-                    EP: <strong className="tabular-nums">{comingBranchStats.ep.count}</strong>{' '}
-                    <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>
-                      ({formatCenterRevenue(comingBranchStats.ep.price)})
+                    Đang làm: <strong className="tabular-nums">{comingStatusStats.serving.count}</strong>{' '}
+                    <span style={{ fontSize: '9px', color: token.colorTextDescription }}>
+                      ({formatCenterRevenue(comingStatusStats.serving.price)})
                     </span>
                   </div>
                   <div
-                    style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}
-                    title={`Phan Xích Long: ${comingBranchStats.pxl.count} khách • ${comingBranchStats.pxl.price.toLocaleString('vi-VN')} đ`}
+                    style={{ fontSize: '11px', whiteSpace: 'nowrap' }}
+                    title={`Đến muộn: ${comingStatusStats.late.count} khách`}
                   >
                     <span
                       style={{
                         display: 'inline-block',
                         width: '6px',
                         height: '6px',
-                        backgroundColor: '#EB2F96',
+                        backgroundColor: '#FF4D4F',
                         borderRadius: '50%',
                         marginRight: '4px',
                       }}
                     />
-                    PXL: <strong className="tabular-nums">{comingBranchStats.pxl.count}</strong>{' '}
-                    <span style={{ fontSize: '9.5px', color: token.colorTextDescription }}>
-                      ({formatCenterRevenue(comingBranchStats.pxl.price)})
-                    </span>
+                    Muộn: <strong className="tabular-nums">{comingStatusStats.late.count}</strong>
+                  </div>
+                  <div
+                    style={{ fontSize: '11px', whiteSpace: 'nowrap' }}
+                    title={`Chờ đến: ${comingStatusStats.pending.count} khách`}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#FAAD14',
+                        borderRadius: '50%',
+                        marginRight: '4px',
+                      }}
+                    />
+                    Chờ: <strong className="tabular-nums">{comingStatusStats.pending.count}</strong>
                   </div>
                 </div>
               </div>
