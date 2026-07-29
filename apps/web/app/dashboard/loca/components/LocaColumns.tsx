@@ -26,6 +26,8 @@ interface LocaColumnsOptions {
   handleOpenSmsModal?: (record: Customer) => void;
   addingIds?: number[];
   sortField?: string;
+  currentPage?: number;
+  pageSize?: number;
 }
 
 export const getLocaColumns = ({
@@ -40,8 +42,21 @@ export const getLocaColumns = ({
   handleOpenSmsModal,
   addingIds = [],
   sortField = 'daysSinceLastVisit_asc',
+  currentPage = 1,
+  pageSize = 20,
 }: LocaColumnsOptions) => {
   return [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: SafeAny, __: Customer, index: number) => (
+        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+          {(currentPage - 1) * pageSize + index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Mã KH',
       dataIndex: 'id',
@@ -353,8 +368,21 @@ export const getNewLocaColumns = ({
   handleOpenSmsModal,
   addingIds = [],
   sortField = 'id_desc',
+  currentPage = 1,
+  pageSize = 20,
 }: LocaColumnsOptions) => {
   return [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: SafeAny, __: Customer, index: number) => (
+        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+          {(currentPage - 1) * pageSize + index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Mã KH',
       dataIndex: 'id',

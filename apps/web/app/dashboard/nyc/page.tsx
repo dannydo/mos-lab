@@ -258,6 +258,8 @@ export default function NycCampaignPage() {
     handleOpenSmsModal,
     addingIds,
     sortField,
+    currentPage,
+    pageSize,
   });
 
   const {

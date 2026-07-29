@@ -274,6 +274,8 @@ export default function LocaCampaignPage() {
     handleOpenSmsModal,
     addingIds,
     sortField,
+    currentPage,
+    pageSize,
   });
 
   const newLocaColumns = getNewLocaColumns({
@@ -288,6 +290,8 @@ export default function LocaCampaignPage() {
     handleOpenSmsModal,
     addingIds,
     sortField,
+    currentPage,
+    pageSize,
   });
 
   const {

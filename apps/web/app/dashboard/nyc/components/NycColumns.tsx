@@ -33,6 +33,8 @@ interface NycColumnsOptions {
   handleOpenSmsModal?: (record: Customer) => void;
   addingIds?: number[];
   sortField?: string;
+  currentPage?: number;
+  pageSize?: number;
 }
 
 export const getNycColumns = ({
@@ -47,8 +49,21 @@ export const getNycColumns = ({
   handleOpenSmsModal,
   addingIds = [],
   sortField = 'daysSinceLastVisit_asc',
+  currentPage = 1,
+  pageSize = 20,
 }: NycColumnsOptions) => {
   return [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: SafeAny, __: Customer, index: number) => (
+        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+          {(currentPage - 1) * pageSize + index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Mã KH',
       dataIndex: 'id',
