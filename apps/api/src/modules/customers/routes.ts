@@ -4351,30 +4351,60 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền xem lịch sử phân bổ.' });
     }
 
-    const { page = '1', limit = '10' } = request.query as { page?: string; limit?: string };
+    const {
+      page = '1',
+      limit = '10',
+      search,
+      actionType,
+    } = request.query as {
+      page?: string;
+      limit?: string;
+      search?: string;
+      actionType?: string;
+    };
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 10;
     const skip = (pageNum - 1) * limitNum;
 
     try {
-      const distinctHistory = await fastify.prisma.crm.crmAssignmentHistory.findMany({
-        distinct: ['batchId'],
-        orderBy: { assignedAt: 'desc' },
-        skip,
-        take: limitNum,
-        include: {
-          newStaff: { select: { displayName: true } },
-          prevStaff: { select: { displayName: true } },
-          assigner: { select: { displayName: true } },
-        },
-      });
+      // Build filter conditions for search and action type
+      const whereConditions: SafeAny[] = [];
 
-      const allBatches = await fastify.prisma.crm.crmAssignmentHistory.groupBy({
+      if (actionType === 'ASSIGN') {
+        whereConditions.push({ actionType: 'ASSIGN', isUndone: false });
+      } else if (actionType === 'REVOKE') {
+        whereConditions.push({ actionType: 'REVOKE' });
+      } else if (actionType === 'TRANSFER') {
+        whereConditions.push({ actionType: 'TRANSFER' });
+      } else if (actionType === 'RANDOM') {
+        whereConditions.push({ actionType: 'RANDOM_SELECT' });
+      } else if (actionType === 'UNDONE') {
+        whereConditions.push({ isUndone: true });
+      }
+
+      if (search && search.trim()) {
+        const q = search.trim();
+        whereConditions.push({
+          OR: [
+            { newStaff: { displayName: { contains: q } } },
+            { prevStaff: { displayName: { contains: q } } },
+            { assigner: { displayName: { contains: q } } },
+            { sourceFilterSummary: { contains: q } },
+            { reason: { contains: q } },
+          ],
+        });
+      }
+
+      const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
+
+      // 1. Fetch total count of distinct matching batches
+      const totalGroups = await fastify.prisma.crm.crmAssignmentHistory.groupBy({
         by: ['batchId'],
+        where,
       });
-      const total = allBatches.length;
+      const total = totalGroups.length;
 
-      if (distinctHistory.length === 0) {
+      if (total === 0) {
         return {
           data: [],
           pagination: {
@@ -4386,7 +4416,39 @@ export async function customerRoutes(fastify: FastifyInstance) {
         };
       }
 
-      const batchIds = distinctHistory.map((h) => h.batchId);
+      // 2. Fetch distinct batch IDs for current page ordered by assignedAt desc
+      const pageGroups = await fastify.prisma.crm.crmAssignmentHistory.groupBy({
+        by: ['batchId'],
+        where,
+        _max: {
+          assignedAt: true,
+          id: true,
+        },
+        orderBy: {
+          _max: {
+            assignedAt: 'desc',
+          },
+        },
+        skip,
+        take: limitNum,
+      });
+      const batchIds = pageGroups.map((g) => g.batchId);
+
+      // 3. Fetch one representative history row for each batch ID in page
+      const representativeRows = await fastify.prisma.crm.crmAssignmentHistory.findMany({
+        where: {
+          batchId: { in: batchIds },
+        },
+        distinct: ['batchId'],
+        include: {
+          newStaff: { select: { displayName: true } },
+          prevStaff: { select: { displayName: true } },
+          assigner: { select: { displayName: true } },
+        },
+      });
+      const repMap = new Map(representativeRows.map((r) => [r.batchId, r]));
+
+      // 4. Fetch stats (customer count & isUndone) for each batch ID in page
       const batchStats = await fastify.prisma.crm.crmAssignmentHistory.groupBy({
         by: ['batchId', 'isUndone'],
         where: { batchId: { in: batchIds } },
@@ -4407,25 +4469,30 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       });
 
-      const data = distinctHistory.map((h) => {
-        const stat = statsMap.get(h.batchId) || { count: 0, isUndone: false };
-        return {
-          batchId: h.batchId,
-          assignedAt: h.assignedAt,
-          assignedBy: h.assigner?.displayName || 'Hệ thống',
-          newStaffName: h.newStaff?.displayName || null,
-          prevStaffName: h.prevStaff?.displayName || null,
-          customerCount: stat.count,
-          isUndone: !!h.isUndone || stat.isUndone,
-          undoneAt: h.undoneAt,
-          expiresAt: h.expiresAt,
-          sourceType: h.sourceType,
-          sourceFilterSummary: h.sourceFilterSummary,
-          sourceFilterJson: h.sourceFilterJson,
-          actionType: h.actionType,
-          reason: h.reason,
-        };
-      });
+      // 5. Map results preserving batchIds order
+      const data = batchIds
+        .map((bId) => {
+          const h = repMap.get(bId);
+          if (!h) return null;
+          const stat = statsMap.get(bId) || { count: 0, isUndone: false };
+          return {
+            batchId: h.batchId,
+            assignedAt: h.assignedAt,
+            assignedBy: h.assigner?.displayName || 'Hệ thống',
+            newStaffName: h.newStaff?.displayName || null,
+            prevStaffName: h.prevStaff?.displayName || null,
+            customerCount: stat.count,
+            isUndone: !!h.isUndone || stat.isUndone,
+            undoneAt: h.undoneAt,
+            expiresAt: h.expiresAt,
+            sourceType: h.sourceType,
+            sourceFilterSummary: h.sourceFilterSummary,
+            sourceFilterJson: h.sourceFilterJson,
+            actionType: h.actionType,
+            reason: h.reason,
+          };
+        })
+        .filter(Boolean);
 
       return {
         data,

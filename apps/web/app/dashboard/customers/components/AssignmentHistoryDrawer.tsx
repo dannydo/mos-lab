@@ -34,7 +34,7 @@ interface AssignmentHistoryDrawerProps {
   batchDetails: SafeAny[];
   undoingBatchId: string | null;
   revokingBatchId?: string | null;
-  fetchAssignmentHistory: (page: number) => Promise<void>;
+  fetchAssignmentHistory: (page?: number, search?: string, actionType?: string) => Promise<void>;
   fetchBatchDetails: (batchId: string) => Promise<void>;
   setExpandedBatchId: (batchId: string | null) => void;
   setBatchDetails: (details: SafeAny[]) => void;
@@ -69,31 +69,20 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
 }) => {
   const [filterAction, setFilterAction] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const searchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Filter history items locally for fast UX feedback
-  const filteredHistory = useMemo(() => {
-    return historyData.filter((item) => {
-      // Filter by action status
-      if (filterAction === 'ASSIGN' && (item.isUndone || item.actionType !== 'ASSIGN')) return false;
-      if (filterAction === 'REVOKE' && item.actionType !== 'REVOKE') return false;
-      if (filterAction === 'TRANSFER' && item.actionType !== 'TRANSFER') return false;
-      if (filterAction === 'RANDOM' && item.actionType !== 'RANDOM_SELECT') return false;
-      if (filterAction === 'UNDONE' && !item.isUndone) return false;
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      fetchAssignmentHistory(1, val, filterAction);
+    }, 350);
+  };
 
-      // Filter by text search
-      if (searchQuery.trim()) {
-        const q = removeVietnameseTones(searchQuery);
-        const matchStaff =
-          removeVietnameseTones(item.newStaffName).includes(q) || removeVietnameseTones(item.prevStaffName).includes(q);
-        const matchPerformer = removeVietnameseTones(item.assignedBy).includes(q);
-        const matchFormula = removeVietnameseTones(item.sourceFilterSummary).includes(q);
-        const matchReason = removeVietnameseTones(item.reason).includes(q);
-        return matchStaff || matchPerformer || matchFormula || matchReason;
-      }
-
-      return true;
-    });
-  }, [historyData, filterAction, searchQuery]);
+  const handleFilterChange = (val: string) => {
+    setFilterAction(val);
+    fetchAssignmentHistory(1, searchQuery, val);
+  };
 
   const nowTimestamp = useMemo(() => Date.now(), []);
 
@@ -149,7 +138,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
             <Button
               type="text"
               icon={<ReloadOutlined spin={historyLoading} />}
-              onClick={() => fetchAssignmentHistory(historyPage)}
+              onClick={() => fetchAssignmentHistory(historyPage, searchQuery, filterAction)}
             />
           </Tooltip>
         </div>
@@ -190,7 +179,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
             placeholder="Tìm theo tên Booker, người thực hiện, công thức, lý do..."
             prefix={<SearchOutlined style={{ color: token.colorTextDescription }} />}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             allowClear
             size="middle"
             style={{ borderRadius: '6px' }}
@@ -201,7 +190,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
           >
             <Radio.Group
               value={filterAction}
-              onChange={(e) => setFilterAction(e.target.value)}
+              onChange={(e) => handleFilterChange(e.target.value)}
               size="small"
               buttonStyle="solid"
             >
@@ -214,7 +203,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
             </Radio.Group>
 
             <Text type="secondary" style={{ fontSize: '12px' }}>
-              Hiển thị: <strong>{filteredHistory.length}</strong> đợt
+              Hiển thị: <strong>{historyData.length}</strong> đợt
             </Text>
           </div>
         </div>
@@ -222,7 +211,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
 
       {/* HISTORY CARDS LIST */}
       <Spin spinning={historyLoading && historyData.length === 0}>
-        {filteredHistory.length === 0 ? (
+        {historyData.length === 0 ? (
           <div
             style={{
               textAlign: 'center',
@@ -238,7 +227,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {filteredHistory.map((batch) => {
+            {historyData.map((batch) => {
               const isExpanded = expandedBatchId === batch.batchId;
               const formattedDate = new Date(batch.assignedAt).toLocaleString('vi-VN');
               const formattedExpire = batch.expiresAt ? new Date(batch.expiresAt).toLocaleString('vi-VN') : null;
@@ -631,7 +620,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
             current={historyPage}
             pageSize={10}
             total={historyTotal}
-            onChange={(page) => fetchAssignmentHistory(page)}
+            onChange={(page) => fetchAssignmentHistory(page, searchQuery, filterAction)}
             showSizeChanger={false}
             showTotal={(total) => `Tổng ${total} đợt`}
           />

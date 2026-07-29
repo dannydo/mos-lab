@@ -13,10 +13,14 @@ export const useAssignmentHistory = (optionsRef: React.MutableRefObject<SafeAny>
   const [undoingBatchId, setUndoingBatchId] = useState<string | null>(null);
 
   const fetchAssignmentHistory = useCallback(
-    async (page = 1) => {
+    async (page = 1, search?: string, actionType?: string) => {
       setHistoryLoading(true);
       try {
-        const data = await apiClient.customers.getAssignmentHistory({ page, limit: 10 });
+        const params: Record<string, unknown> = { page, limit: 10 };
+        if (search && search.trim()) params.search = search.trim();
+        if (actionType && actionType !== 'ALL') params.actionType = actionType;
+
+        const data = await apiClient.customers.getAssignmentHistory(params);
         setHistoryData(data.data);
         setHistoryTotal(data.pagination.total);
         setHistoryPage(page);
