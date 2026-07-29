@@ -142,25 +142,11 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
       const cvNormalized = cvName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
       const dateStr = current.format('YYYY-MM-DD');
-      const possibleDates = [
-        dateStr,
-        current.add(7, 'hour').format('YYYY-MM-DD'),
-        current.add(12, 'hour').format('YYYY-MM-DD'),
-        current.subtract(7, 'hour').format('YYYY-MM-DD'),
-      ];
 
       if (cvNormalized.includes('cam tien') || !cv) {
         const dayOfWeek = current.day();
         const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
-        if (
-          dbDayStr === '2' ||
-          possibleDates.includes('2026-07-27') ||
-          possibleDates.includes('2026-07-26') ||
-          current.isSame(dayjs('2026-07-27'), 'day') ||
-          current.isSame(dayjs('2026-07-26'), 'day') ||
-          current.date() === 27 ||
-          current.date() === 26
-        ) {
+        if (dbDayStr === '2' || dateStr === '2026-07-27' || dateStr === '2026-07-26') {
           return true;
         }
       }
@@ -185,7 +171,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
         ])
       );
 
-      if (possibleDates.some((dStr) => allApprovedOffDates.includes(dStr))) {
+      if (allApprovedOffDates.includes(dateStr)) {
         return true;
       }
 
@@ -194,11 +180,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
       );
 
       if (allOffDays.length > 0) {
-        const dayOfWeek1 = current.day();
-        const dayOfWeek2 = current.add(7, 'hour').day();
-        const dbDayStr1 = dayOfWeek1 === 0 ? '7' : String(dayOfWeek1);
-        const dbDayStr2 = dayOfWeek2 === 0 ? '7' : String(dayOfWeek2);
-        if (allOffDays.includes(dbDayStr1) || allOffDays.includes(dbDayStr2)) {
+        const dayOfWeek = current.day();
+        const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
+        if (allOffDays.includes(dbDayStr)) {
           return true;
         }
       }
@@ -257,7 +241,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     const rDay = result.day();
     const dStr = result.format('YYYY-MM-DD');
     if (rDate === 27 || rDate === 26 || rDay === 2 || dStr === '2026-07-27' || dStr === '2026-07-26') {
-      return dayjs('2026-07-29');
+      return getNextAvailableDate(dayjs(), checkCV);
     }
     return result;
   }, [bookingDate, selectedCV, staffList, getNextAvailableDate]);
@@ -335,10 +319,10 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     setLeadPhone('');
     const checkCV =
       selectedCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
-    const initialAvailable = getNextAvailableDate(dayjs().add(1, 'day'), checkCV);
+    const initialAvailable = getNextAvailableDate(dayjs(), checkCV);
     const safeInitial =
       initialAvailable.date() === 27 || initialAvailable.date() === 26 || initialAvailable.day() === 2
-        ? dayjs('2026-07-29')
+        ? getNextAvailableDate(dayjs(), checkCV)
         : initialAvailable;
     setRawBookingDate(safeInitial);
     setBookingChannel('FB');
@@ -404,7 +388,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
       const adjustedDate = getNextAvailableDate(bookingDate, checkCV);
       const finalDate =
         adjustedDate.date() === 27 || adjustedDate.date() === 26 || adjustedDate.day() === 2
-          ? dayjs('2026-07-29')
+          ? getNextAvailableDate(dayjs(), checkCV)
           : adjustedDate;
       setRawBookingDate(finalDate);
       setPickerNonce((prev) => prev + 1);

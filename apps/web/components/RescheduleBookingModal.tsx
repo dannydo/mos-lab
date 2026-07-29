@@ -107,14 +107,14 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       setSelectedCN(matchedStore);
 
       // Set date & note & slot
-      setBookingDate(booking.bookingDate ? dayjs(booking.bookingDate) : dayjs().add(1, 'day'));
+      setBookingDate(booking.bookingDate ? dayjs(booking.bookingDate) : dayjs());
       setBookingNote(booking.bookingNote || '');
       setSelectedSlot(booking.bookingTime || null);
 
       // Fetch staff directory
       const dateStr = booking.bookingDate
         ? dayjs(booking.bookingDate).format('YYYY-MM-DD')
-        : dayjs().add(1, 'day').format('YYYY-MM-DD');
+        : dayjs().format('YYYY-MM-DD');
 
       setLoadingStaff(true);
       apiClient.customers
@@ -167,52 +167,46 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     const cvName = (targetCV.displayName || '').trim().toLowerCase();
     const cvNormalized = cvName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-    const possibleDates = [
-      current.format('YYYY-MM-DD'),
-      current.add(7, 'hour').format('YYYY-MM-DD'),
-      current.add(12, 'hour').format('YYYY-MM-DD'),
-      current.subtract(7, 'hour').format('YYYY-MM-DD'),
-    ];
+    const dateStr = current.format('YYYY-MM-DD');
 
     if (cvNormalized.includes('cam tien')) {
-      if (
-        possibleDates.includes('2026-07-27') ||
-        possibleDates.includes('2026-07-26') ||
-        current.isSame(dayjs('2026-07-27'), 'day') ||
-        current.isSame(dayjs('2026-07-26'), 'day')
-      ) {
+      const dayOfWeek = current.day();
+      const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
+      if (dbDayStr === '2' || dateStr === '2026-07-27' || dateStr === '2026-07-26') {
         return true;
       }
     }
 
-    const matchedStaffs = (staffList || []).filter(
-      (s: SafeAny) => s.id === cv.id || (s.displayName && s.displayName.trim().toLowerCase() === cvName)
-    );
+    const matchedStaffs = targetCV
+      ? (staffList || []).filter(
+          (s: SafeAny) =>
+            (s.id && targetCV.id && s.id === targetCV.id) ||
+            (s.displayName && s.displayName.trim().toLowerCase() === cvName)
+        )
+      : [];
 
     const fallbackOffDates = HARDCODED_OFF_DATES[cvName] || HARDCODED_OFF_DATES[cvNormalized] || [];
 
     const allApprovedOffDates: string[] = Array.from(
       new Set([
-        ...(cv.approvedOffDates || []),
+        ...(targetCV.approvedOffDates || []),
         ...matchedStaffs.flatMap((s: SafeAny) => s.approvedOffDates || []),
         ...fallbackOffDates,
       ])
     );
 
-    const allOffDays: string[] = Array.from(
-      new Set([...(cv.offDays || []), ...matchedStaffs.flatMap((s: SafeAny) => s.offDays || [])])
-    );
-
-    if (possibleDates.some((dStr) => allApprovedOffDates.includes(dStr))) {
+    if (allApprovedOffDates.includes(dateStr)) {
       return true;
     }
 
+    const allOffDays: string[] = Array.from(
+      new Set([...(targetCV.offDays || []), ...matchedStaffs.flatMap((s: SafeAny) => s.offDays || [])])
+    );
+
     if (allOffDays.length > 0) {
-      const dayOfWeek1 = current.day();
-      const dayOfWeek2 = current.add(7, 'hour').day();
-      const dbDayStr1 = dayOfWeek1 === 0 ? '7' : String(dayOfWeek1);
-      const dbDayStr2 = dayOfWeek2 === 0 ? '7' : String(dayOfWeek2);
-      if (allOffDays.includes(dbDayStr1) || allOffDays.includes(dbDayStr2)) {
+      const dayOfWeek = current.day();
+      const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
+      if (allOffDays.includes(dbDayStr)) {
         return true;
       }
     }
@@ -482,13 +476,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                     if (!current) return false;
                     if (current.isBefore(dayjs().startOf('day'))) return true;
                     const dStr = current.format('YYYY-MM-DD');
-                    const dStr7 = current.add(7, 'hour').format('YYYY-MM-DD');
-                    if (
-                      dStr === '2026-07-27' ||
-                      dStr === '2026-07-26' ||
-                      dStr7 === '2026-07-27' ||
-                      dStr7 === '2026-07-26'
-                    ) {
+                    if (dStr === '2026-07-27' || dStr === '2026-07-26') {
                       return true;
                     }
                     return isDateDisabledForCV(current, selectedCV);

@@ -1079,6 +1079,7 @@ export default function AppointmentsPage() {
           open={detailModalVisible}
           customerId={selectedCustomer?.id || null}
           onClose={() => setDetailModalVisible(false)}
+          onUpdate={fetchAppointments}
           onBookAppointment={(cust) => {
             setDetailModalVisible(false);
             setBookingInitialCustomer({

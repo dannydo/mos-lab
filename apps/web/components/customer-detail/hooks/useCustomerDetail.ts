@@ -9,6 +9,7 @@ interface UseCustomerDetailProps {
   customerId: number | null;
   onClose: () => void;
   onDeleteSuccess?: () => void;
+  onUpdate?: () => void;
   editForm: SafeAny;
   onSuccess?: (msg: string) => void;
   onError?: (msg: string) => void;
@@ -231,7 +232,12 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
 
   const refreshAllDetails = useCallback(async () => {
     await fetchDetails();
-    await fetchTabData('bookings', 1, false, true);
+    await Promise.all([
+      fetchTabData('bookings', 1, false, true),
+      fetchTabData('notes', 1, false, true),
+      fetchTabData('calls', 1, false, true),
+    ]);
+    optionsRef.current?.onUpdate?.();
   }, [fetchDetails, fetchTabData]);
 
   const handleTabChange = useCallback(
@@ -526,7 +532,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
 
       optionsRef.current?.onSuccess?.('Cập nhật thông tin khách hàng thành công!');
       setIsEditModalOpen(false);
-      fetchDetails();
+      await refreshAllDetails();
     } catch (err) {
       console.error('Update customer failed:', err);
       optionsRef.current?.onError?.(
@@ -577,7 +583,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     try {
       await apiClient.customers.deleteBooking(orderId);
       optionsRef.current?.onSuccess?.('Hủy lịch hẹn thành công!');
-      fetchDetails();
+      await refreshAllDetails();
     } catch (err) {
       console.error('[Cancel] Failed to cancel booking:', err);
       optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi hủy lịch hẹn.');
@@ -591,7 +597,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     try {
       const res = await apiClient.customers.unpinNote(customerId, noteId);
       optionsRef.current?.onSuccess?.(res.message || 'Bỏ ghim ghi chú thành công!');
-      fetchDetails();
+      await refreshAllDetails();
     } catch (err) {
       console.error('Failed to unpin note:', err);
       optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể bỏ ghim ghi chú.');
@@ -612,7 +618,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
         const res = await apiClient.customers.pinNote(customerId, noteId);
         optionsRef.current?.onSuccess?.(res.message || 'Ghim ghi chú thành công!');
       }
-      fetchDetails();
+      await refreshAllDetails();
     } catch (err) {
       console.error('Failed to toggle pin state:', err);
       optionsRef.current?.onError?.(

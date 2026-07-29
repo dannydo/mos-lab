@@ -618,6 +618,7 @@ function CustomersPageContent() {
         onClose={() => data.setModalVisible(false)}
         onBookAppointment={handleBookAppointment}
         onDeleteSuccess={handleDeleteSuccess}
+        onUpdate={data.refreshListAndStats}
       />
 
       {/* BOOKING WIZARD DRAWER WITH SLOTS MATRIX */}

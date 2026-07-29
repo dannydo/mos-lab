@@ -2,11 +2,7 @@ import { useState, useCallback } from 'react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
 
-export const useSlotMatrix = (
-  selectedCN: SafeAny,
-  selectedCV: SafeAny,
-  initialDate: dayjs.Dayjs = dayjs().add(1, 'day')
-) => {
+export const useSlotMatrix = (selectedCN: SafeAny, selectedCV: SafeAny, initialDate: dayjs.Dayjs = dayjs()) => {
   const getNextAvailableDate = useCallback((baseDate: dayjs.Dayjs, cv: SafeAny) => {
     let target = baseDate;
     const cvName = ((cv && cv.displayName) || 'cẩm tiên').trim().toLowerCase();
@@ -14,25 +10,14 @@ export const useSlotMatrix = (
 
     for (let i = 0; i < 14; i++) {
       const dateStr = target.format('YYYY-MM-DD');
-      const dateStr2 = target.add(7, 'hour').format('YYYY-MM-DD');
-      const dateStr3 = target.subtract(7, 'hour').format('YYYY-MM-DD');
       const dayOfWeek = target.day();
       const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
 
       const is27or26 =
-        target.date() === 27 ||
-        target.date() === 26 ||
-        dateStr === '2026-07-27' ||
-        dateStr === '2026-07-26' ||
-        dateStr2 === '2026-07-27' ||
-        dateStr2 === '2026-07-26' ||
-        dateStr3 === '2026-07-27' ||
-        dateStr3 === '2026-07-26';
+        target.date() === 27 || target.date() === 26 || dateStr === '2026-07-27' || dateStr === '2026-07-26';
 
       const isApprovedOff =
-        (cv &&
-          cv.approvedOffDates &&
-          cv.approvedOffDates.some((d: string) => d === dateStr || d === dateStr2 || d === dateStr3)) ||
+        (cv && cv.approvedOffDates && cv.approvedOffDates.some((d: string) => d === dateStr)) ||
         (isCamTien && is27or26);
 
       const isWeeklyOff = (cv && cv.offDays && cv.offDays.includes(dbDayStr)) || (isCamTien && dbDayStr === '2');

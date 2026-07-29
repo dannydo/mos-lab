@@ -518,6 +518,7 @@ export default function TodayDashboard() {
         open={data.drawerVisible}
         customerId={data.selectedCustomer?.customerId || null}
         onClose={() => data.setDrawerVisible(false)}
+        onUpdate={data.handleRefresh}
       />
 
       {/* Booker Team Config Modal */}

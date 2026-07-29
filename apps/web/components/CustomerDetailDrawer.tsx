@@ -67,6 +67,7 @@ interface CustomerDetailDrawerProps {
   onClose: () => void;
   onBookAppointment?: (customer: SafeAny) => void;
   onDeleteSuccess?: () => void;
+  onUpdate?: () => void;
 }
 
 const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
@@ -75,6 +76,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   onClose,
   onBookAppointment,
   onDeleteSuccess,
+  onUpdate,
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
@@ -156,6 +158,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     customerId,
     onClose,
     onDeleteSuccess,
+    onUpdate,
     editForm,
   });
 
@@ -788,7 +791,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
           setSelectedBookingForReschedule(null);
         }}
         onSuccess={() => {
-          fetchDetails();
+          refreshAllDetails();
         }}
       />
 
@@ -842,7 +845,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         onCancel={() => setIsNoteModalOpen(false)}
         onSuccess={() => {
           setIsNoteModalOpen(false);
-          fetchDetails();
+          refreshAllDetails();
         }}
       />
 
@@ -852,7 +855,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
           onClose={() => setBookingWizardOpen(false)}
           onSuccess={() => {
             setBookingWizardOpen(false);
-            fetchDetails();
+            refreshAllDetails();
           }}
           initialCustomer={{
             id: customer.id,

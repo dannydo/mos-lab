@@ -856,6 +856,7 @@ export default function NycCampaignPage() {
           customerId={selectedCustomer.id}
           onClose={handleDetailClose}
           onDeleteSuccess={handleDetailDeleteSuccess}
+          onUpdate={fetchCustomerList}
         />
       )}
 

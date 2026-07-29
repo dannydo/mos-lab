@@ -1022,6 +1022,7 @@ export default function LocaCampaignPage() {
           customerId={selectedCustomer.id}
           onClose={handleDetailClose}
           onDeleteSuccess={handleDetailDeleteSuccess}
+          onUpdate={fetchCustomerList}
         />
       )}
 
