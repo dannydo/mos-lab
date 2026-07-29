@@ -1,8 +1,8 @@
-# Execution Progress — SMS Action Feature for "Chạm 17 (ngày)" (LoCa / NYC)
+# Execution Progress — Booker Customer Allocation System Upgrade
 
 ## Current Status
 
-Last visited: 2026-07-29T14:50:05+07:00
+Last visited: 2026-07-29T16:37:00+07:00
 
 ## Iteration Status
 
@@ -11,21 +11,25 @@ Current iteration: 1 / 32
 ## Milestone Progress
 
 - [x] **M1: Exploration & Architecture Audit**
-  - [x] Audit customer care views in `apps/web/app/dashboard/loca` and `apps/web/app/dashboard/nyc` ("Chạm 17 (ngày)" tab).
-  - [x] Audit legacy DB schema `user_sms`, `crm_call_logs`, `crm_config`, and existing Fastify backend SMS routes.
-  - [x] Identify dynamic variable tags (`{ten_khach}`, `{han_dung}`, `{so_ngay_dam}`, `{ten_combo}`, `{sdt_cua_hang}`, etc.) and template structure.
-- [x] **M2: SMS Feature Implementation**
-  - [x] Implement shared SMS DTOs in `@mos-lab/shared`.
-  - [x] Implement Fastify backend routes `/api/sms/templates`, `/api/sms/send`, `/api/sms/history`.
+  - [x] Audit existing customer allocation routes/services in `apps/api`.
+  - [x] Audit Prisma schema (`apps/api/prisma/crm.prisma` / `legacy.prisma`) and DB models.
+  - [x] Audit Booker customer management frontend views in `apps/web`.
+  - [x] Design Prisma model extensions / DB tables for `AllocationBatch` & `AllocationBatchItem`.
+  - [x] Define shared DTOs & types in `packages/shared/src/types/allocation.ts`.
+- [x] **M2: System Implementation & Integration**
+  - [x] Implement shared DTOs in `@mos-lab/shared` (`packages/shared/src/types/allocation.ts`).
+  - [x] Update Prisma schema in `apps/api/prisma/crm.prisma` and generate Prisma clients (`CrmAllocationBatch`, `CrmAllocationBatchItem`).
+  - [x] Implement Fastify backend routes `/api/allocation/*` (`batch`, `pending`, `accept`, `decline`, `recall`, `check-expired`, `history`, `audit-stats`).
   - [x] Update `apiClient` in `apps/web/lib/api-client.ts`.
-  - [x] Build SMS Modal UI component (`SMSModal.tsx`) with dual-pane layout (History on left, Template Editor + Variables + Live Preview + Admin save on right).
-  - [x] Integrate "Gửi SMS" button/icon in "Thao tác" column of "Chạm 17 (ngày)" tab in both LoCa & NYC views.
+  - [x] Build Booker Batch Verification Modal UI (24h countdown timer, customer list preview, accept/decline actions).
+  - [x] Build 30-Day Allocation History Screen (30-day countdown badge, status tags, decline reasons).
+  - [x] Build Admin Allocation Audit Dashboard (acceptance/decline/expired rates, decline reasons, Recall Batch button).
   - [x] Run build verification (`pnpm build`).
 - [x] **M3: Review & Adversarial Challenge**
-  - [x] Conduct independent code review by 2 Reviewers.
-  - [x] Conduct adversarial stress testing by 2 Challengers.
-  - [x] Remediate all 5 identified bugs and re-verify cleanly with `pnpm build`.
+  - [x] Independent code review by 2 Reviewers (`reviewer_alloc_m3_1`, `reviewer_alloc_m3_2`) — BOTH APPROVED.
+  - [x] Empirical stress testing by 2 Challengers (`challenger_alloc_m3_1`, `challenger_alloc_m3_2`) — 4 edge cases identified.
+  - [x] Remediate all 4 identified edge cases by `worker_alloc_m3_remediation` — verified 15/15 PASS and `pnpm build` clean.
 - [x] **M4: Forensic Integrity Audit**
-  - [x] Independent forensic audit by `teamwork_preview_auditor`. (Verdict: **CLEAN**)
+  - [x] Independent forensic audit by `teamwork_preview_auditor` — Verdict: **CLEAN**.
 - [x] **M5: Synthesis & Reporting**
-  - [x] Synthesize findings, verify all tests & audit verdict, report completion.
+  - [x] Synthesize findings, verify all tests & audit verdict, deliver completion report.

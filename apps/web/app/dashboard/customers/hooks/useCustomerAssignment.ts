@@ -38,16 +38,13 @@ export const useCustomerAssignment = (
         // Ensure clean JSON string without circular references
         const sourceFilterJson = JSON.stringify(currentCriteria || {});
 
-        await apiClient.customers.assign({
+        await apiClient.allocation.createBatch({
+          bookerId: targetStaffId,
           customerIds: selectedRowKeys.map((k) => Number(k)),
-          staffId: targetStaffId,
-          durationDays,
-          sourceType,
-          sourceFilterSummary,
-          sourceFilterJson,
-          parentBatchId: randomBatchId || undefined,
         });
-        optionsRef.current?.onSuccess?.(`Đã phân bổ thành công ${selectedRowKeys.length} khách hàng!`);
+        optionsRef.current?.onSuccess?.(
+          `Đã tạo đợt phân bổ thành công cho Booker! (${selectedRowKeys.length} KH) - Chờ Booker xác nhận 24h.`
+        );
         setSelectedRowKeys([]);
         clearRandomSelection();
         setAssignModalVisible(false);

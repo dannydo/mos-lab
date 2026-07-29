@@ -13,6 +13,8 @@ import {
   DollarOutlined,
   WalletOutlined,
   SettingOutlined,
+  ClockCircleOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -60,6 +62,29 @@ const BkThuNhapTab = dynamic(() => import('./components/BkThuNhapTab'), {
     </div>
   ),
 });
+
+const AllocationHistoryScreen = dynamic(
+  () => import('../../../components/allocation/AllocationHistoryScreen').then((m) => m.AllocationHistoryScreen),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-8 text-center">
+        <Spin />
+      </div>
+    ),
+  }
+);
+const AllocationAuditDashboard = dynamic(
+  () => import('../../../components/allocation/AllocationAuditDashboard').then((m) => m.AllocationAuditDashboard),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-8 text-center">
+        <Spin />
+      </div>
+    ),
+  }
+);
 
 const BkConfigDrawer = dynamic(() => import('./components/BkConfigDrawer'), { ssr: false });
 
@@ -185,6 +210,18 @@ export default function BkDashboardPage() {
         activeTab === 'thunhap' ? (
           <BkThuNhapTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
         ) : null,
+    },
+    {
+      key: 'history-30d',
+      icon: <ClockCircleOutlined />,
+      label: 'Lịch Sử 30 Ngày',
+      children: activeTab === 'history-30d' ? <AllocationHistoryScreen /> : null,
+    },
+    {
+      key: 'alloc-audit',
+      icon: <BarChartOutlined />,
+      label: 'Audit Phân Bổ Data',
+      children: activeTab === 'alloc-audit' ? <AllocationAuditDashboard /> : null,
     },
   ];
 

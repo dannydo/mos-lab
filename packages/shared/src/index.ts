@@ -17,3 +17,4 @@ export * from './types/team';
 export * from './types/revenue-hourly';
 export * from './types/sms';
 export * from './utils/search';
+export * from './types/allocation';

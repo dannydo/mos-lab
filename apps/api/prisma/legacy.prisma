@@ -337,3 +337,28 @@ model user_sms {
   date_created         DateTime  @default(now()) @db.DateTime(0)
 }
 
+model user_url {
+  id                   BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  client_id            BigInt    @default(11) @db.UnsignedBigInt
+  client_business_id   BigInt    @default(1) @db.UnsignedBigInt
+  created_staff_id     BigInt?   @db.UnsignedBigInt
+  approved_staff_id    BigInt?   @db.UnsignedBigInt
+  notify_staff_id      BigInt?   @db.UnsignedBigInt
+  referrer_user_id     BigInt?   @db.UnsignedBigInt
+  assigned_user_id     BigInt?   @db.UnsignedBigInt
+  user_url_type        String    @default("booking_easy") @db.VarChar(30)
+  promotion_id         BigInt?   @db.UnsignedBigInt
+  order_id             BigInt?   @db.UnsignedBigInt
+  user_url_key         String    @db.VarChar(30)
+  shorten_url          String    @db.VarChar(255)
+  tracking_key         String?   @db.VarChar(255)
+  click_count          BigInt    @default(0) @db.UnsignedBigInt
+  reload_count         BigInt    @default(0) @db.UnsignedBigInt
+  use_count            BigInt    @default(0) @db.UnsignedBigInt
+  limit_use_count      BigInt    @default(1) @db.UnsignedBigInt
+  order_count          BigInt    @default(0) @db.UnsignedBigInt
+  limit_order_count    BigInt    @default(1) @db.UnsignedBigInt
+  is_disabled          Int       @default(0) @db.TinyInt
+  date_created         DateTime  @default(now()) @db.DateTime(0)
+}
+

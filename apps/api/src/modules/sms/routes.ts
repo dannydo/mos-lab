@@ -262,6 +262,31 @@ export async function smsRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/sms/user-url/:customerId
+  fastify.get('/sms/user-url/:customerId', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { customerId } = request.params as { customerId: string };
+    const legacyUserId = Number(customerId);
+    if (isNaN(legacyUserId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customerId' });
+    }
+
+    try {
+      const profile = await fastify.prisma.legacy.user_profile.findFirst({
+        where: { user_id: legacyUserId },
+        select: { client_id: true, client_business_id: true },
+      });
+      const clientId = profile?.client_id || 11;
+      const clientBusinessId = profile?.client_business_id || 1;
+
+      const bookingUrl = await getOrCreateCustomerUserUrl(fastify, legacyUserId, clientId, clientBusinessId);
+
+      return { bookingUrl };
+    } catch (error) {
+      fastify.log.error(error as Error, 'Get customer user_url error:');
+      return { bookingUrl: 'https://s.wingslashes.com/Urc5SCIJ' };
+    }
+  });
+
   // POST /api/sms/send
   fastify.post(
     '/sms/send',
@@ -305,6 +330,18 @@ export async function smsRoutes(fastify: FastifyInstance) {
         const clientId = profile?.client_id || 11;
         const clientBusinessId = profile?.client_business_id || 1;
 
+        // Auto-replace {url_dat_lich} tag if present
+        let finalBody = body.trim();
+        if (finalBody.includes('{url_dat_lich}')) {
+          const bookingUrl = await getOrCreateCustomerUserUrl(
+            fastify,
+            Number(legacyUserId),
+            clientId,
+            clientBusinessId
+          );
+          finalBody = finalBody.replace(/\{url_dat_lich\}/g, bookingUrl);
+        }
+
         // 1. Save record to user_sms in legacy DB
         const smsRecord = await fastify.prisma.legacy.user_sms.create({
           data: {
@@ -314,7 +351,7 @@ export async function smsRoutes(fastify: FastifyInstance) {
             from_phone_number: 'WINGS',
             to_phone_number: toPhoneNumber.trim(),
             to_user_id: Number(legacyUserId),
-            body: body.trim(),
+            body: finalBody,
             template_id: numericTemplateId,
             title: stringTitle,
             post_param: '{}',
@@ -333,7 +370,7 @@ export async function smsRoutes(fastify: FastifyInstance) {
               staffId: user?.id || 1,
               callType: 'SMS',
               callResult: 'ANSWERED',
-              note: body.trim(),
+              note: finalBody,
               outcome: null,
             },
           });
@@ -371,4 +408,78 @@ export async function smsRoutes(fastify: FastifyInstance) {
       }
     }
   );
+}
+
+function generateRandomAlphaNumeric(length: number): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+async function getOrCreateCustomerUserUrl(
+  fastify: FastifyInstance,
+  legacyUserId: number,
+  clientId = 11,
+  clientBusinessId = 1
+): Promise<string> {
+  if (!legacyUserId) return 'https://s.wingslashes.com/Urc5SCIJ';
+
+  try {
+    const userIdBigInt = BigInt(legacyUserId);
+    // 1. Check existing user_url specifically for booking / profile / referrer links
+    const existing = await fastify.prisma.legacy.user_url.findFirst({
+      where: {
+        OR: [{ referrer_user_id: userIdBigInt }, { assigned_user_id: userIdBigInt }],
+        user_url_type: { in: ['booking_easy', 'user_profile', 'referrer'] },
+        is_disabled: 0,
+      },
+      orderBy: { id: 'desc' },
+      select: { shorten_url: true, user_url_key: true },
+    });
+
+    if (existing) {
+      if (existing.shorten_url && existing.shorten_url.trim() !== '') {
+        return existing.shorten_url;
+      }
+      if (existing.user_url_key && existing.user_url_key.trim() !== '') {
+        return `https://s.wingslashes.com/${existing.user_url_key}`;
+      }
+    }
+
+    // 2. Generate new key if no existing url
+    let key = generateRandomAlphaNumeric(8);
+    let collision = await fastify.prisma.legacy.user_url.findFirst({
+      where: { user_url_key: key },
+    });
+    while (collision) {
+      key = generateRandomAlphaNumeric(8);
+      collision = await fastify.prisma.legacy.user_url.findFirst({
+        where: { user_url_key: key },
+      });
+    }
+
+    const shortenUrl = `https://s.wingslashes.com/${key}`;
+
+    await fastify.prisma.legacy.user_url.create({
+      data: {
+        client_id: BigInt(clientId),
+        client_business_id: BigInt(clientBusinessId),
+        referrer_user_id: userIdBigInt,
+        user_url_type: 'booking_easy',
+        user_url_key: key,
+        shorten_url: shortenUrl,
+        limit_use_count: 0,
+        limit_order_count: 0,
+        is_disabled: 0,
+        date_created: new Date(),
+      },
+    });
+
+    return shortenUrl;
+  } catch (_e) {
+    return 'https://s.wingslashes.com/Urc5SCIJ';
+  }
 }

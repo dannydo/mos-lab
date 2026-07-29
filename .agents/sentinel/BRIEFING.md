@@ -1,15 +1,15 @@
-# BRIEFING — 2026-07-29T14:40:00+07:00
+# BRIEFING — 2026-07-29T16:37:35+07:00
 
 ## Mission
 
-Record user request, spawn orchestrator to implement SMS Action feature for Cham 17 (days) tab in CRM Customer Management (LoCa/NYC), set up monitoring crons, and verify victory audit upon completion.
+Record user request, spawn orchestrator to implement Booker Customer Allocation Batch Pending Accept Flow, strict deduplication, 30-day history timer, and Allocation Audit Dashboard, set up monitoring crons, and verify victory audit upon completion.
 
 ## 🔒 My Identity
 
 - Archetype: sentinel
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/sentinel
-- Orchestrator: 4c6eb061-9916-414f-80ff-2f233bc9429f
-- Victory Auditor: df69ed28-8538-4351-9b4d-e90640893b7d
+- Orchestrator: f0e90aed-c1d0-44ca-a2f9-41c7953d1359
+- Victory Auditor: f2f35638-ed78-4fbb-b4ff-f7e046e0ba0f
 
 ## 🔒 Key Constraints
 
@@ -18,20 +18,21 @@ Record user request, spawn orchestrator to implement SMS Action feature for Cham
 
 ## User Context
 
-- **Last user request**: Add SMS action for Cham 17 (days) in CRM / Customer Care system (LoCa/NYC), with system templates management, live preview variable substitution, user_sms legacy table logging, and crm_call_logs integration.
+- **Last user request**: Nâng cấp hệ thống phân bổ khách hàng cho Booker trong mos-lab: Batch Pending Accept Flow (`PENDING_ACCEPT`), tăng chính xác N+10 không trùng lặp, 30-day history countdown timer, Allocation Audit Dashboard & Recall Batch.
 - **Pending clarifications**: none
-- Delivered results: SMS Action feature for Cham 17 (LoCa/NYC) implemented, audited, and VICTORY CONFIRMED by independent Victory Auditor.
+- **Delivered results**: Orchestrator completed task; Victory Auditor (`f2f35638-ed78-4fbb-b4ff-f7e046e0ba0f`) spawned for mandatory audit.
 
 ## Project Status
 
-- **Phase**: complete (VICTORY CONFIRMED)
+- **Phase**: auditing
 
 ## Victory Audit Status
 
 - **Triggered**: yes
-- **Verdict**: VICTORY CONFIRMED
+- **Verdict**: pending
 - **Retry count**: 0
 
 ## Artifact Index
 
 - /Users/dannydo/projects/mos-lab/.agents/ORIGINAL_REQUEST.md — Verbatim user request record
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/handoff.md — Orchestrator handoff report

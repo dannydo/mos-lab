@@ -104,5 +104,22 @@ Requirements Summary:
 3. R3: Backend Fastify & Legacy SMS System Integration (Figure 2 style):
    - Build/Update Fastify backend routes `/api/sms/send` and `/api/sms/templates`.
    - On sending SMS: save new record to legacy DB `user_sms` (`to_phone_number`, `body`, `template_id`, `created_staff_id`, `date_created`, ...), auto-log customer contact in `crm_call_logs` with `call_type = 'SMS'`.
-   - Display customer's SMS history (from `user_sms`) on the left side of the SMS Modal, and legacy templates list (e.g. `Reminder 17 - Single`) / template editor on the right side.
-4. Ensure 100% compliance with all project rules in `AGENTS.md` (shared types in `@mos-lab/shared`, `apiClient` in `apps/web/lib/api-client.ts`, Fastify backend routes, Light/Dark theme, Vietnamese tone-insensitive search helper if applicable, etc.).
+
+## Follow-up — 2026-07-29T16:13:39+07:00
+
+You are the Project Orchestrator for mos-lab.
+
+Your task is to orchestrate and implement the Booker Customer Allocation System upgrade based on the latest request in `/Users/dannydo/projects/mos-lab/.agents/ORIGINAL_REQUEST.md`.
+
+Working directory for orchestrator metadata: `/Users/dannydo/projects/mos-lab/.agents/orchestrator`
+Project Root: `/Users/dannydo/projects/mos-lab`
+
+Key Requirements to satisfy:
+
+1. R1: Batch Pending Accept Flow (`PENDING_ACCEPT` status with 24h countdown timer; customers remain unassigned/pending during 24h; Booker verification modal; "Chấp nhận toàn bộ" -> `ACCEPTED` & assigns customers; "Từ chối toàn bộ" -> `DECLINED` with required reason & returns customers to pool; auto expiration after 24h -> `EXPIRED` & returns customers to pool).
+2. R2: Strict Deduplication & Database Transaction (Prisma `$transaction` and unique constraints; filter out existing active/pending customers; exact $+N$ customer increase for Booker upon acceptance).
+3. R3: 30-Day History & Countdown Timer (Allocation History tab/screen for Booker & Admin/Manager; records batch info, assigner, recipient, count, status, decline reason; 30-day countdown badge).
+4. R4: Allocation Audit Dashboard for Admin/Manager (Overview dashboard for Admin/Manager to monitor acceptance/decline/expired rates per Booker, decline reasons; "Recall Batch" button to recall `PENDING_ACCEPT` batches -> `RECALLED` and return customers to pool).
+
+Please create/update `plan.md`, `progress.md`, and `context.md` in `/Users/dannydo/projects/mos-lab/.agents/orchestrator/`.
+Decompose the project into clear milestones, spawn specialist subagents as needed, monitor progress, ensure build integrity (`pnpm build` passes with zero type errors), and report completion when done.

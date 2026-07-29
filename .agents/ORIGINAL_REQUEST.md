@@ -211,3 +211,63 @@ Hiển thị nút/icon gửi SMS ngay tại cột Thao tác của từng dòng k
 - [ ] Admin có nút "Lưu Template Mẫu" ghi vào Backend DB cho toàn hệ thống.
 - [ ] Booker có thể chèn thẻ biến, chỉnh sửa nội dung tin nhắn và xem trước (Live Preview) chuẩn xác tên khách, ngày dặm, hạn dùng trước khi gửi.
 - [ ] Khi bấm Gửi SMS, hệ thống gọi API `/api/sms/send`, lưu bản ghi vào `user_sms` legacy DB, tự động ghi log `crm_call_logs` và hiển thị thông báo thành công.
+
+## Follow-up — 2026-07-29T09:13:07Z
+
+Nâng cấp hệ thống phân bổ khách hàng cho Booker trong mos-lab: Chuyển đổi sang quy trình Kiểm chứng & Chấp nhận theo Batch (`PENDING_ACCEPT`), đảm bảo tăng chính xác $N+10$ không trùng lặp, lưu vết lịch sử 30 ngày có đếm ngược countdown, và cung cấp Bảng Điều khiển Phân bổ (Allocation Audit Dashboard) cho Admin/Manager kiểm tra chéo công bằng.
+
+Working directory: /Users/dannydo/projects/mos-lab
+Integrity mode: development
+
+## Requirements
+
+### R1. Quy trình Kiểm chứng & Chấp nhận Phân bổ theo Batch (Batch Pending Accept Flow)
+
+- Khi Admin/Manager phân bổ $N$ khách hàng cho Booker, hệ thống tạo đợt phân bổ ở trạng thái `PENDING_ACCEPT` kèm thời hạn đếm ngược 24 giờ.
+- Trong thời gian 24h chờ duyệt, khách hàng chưa xuất hiện trong danh sách hoạt động chính thức của Booker.
+- Booker nhận thông báo/modal kiểm chứng danh sách khách hàng trong Batch (tên, thông tin tóm tắt, nguồn khách, lịch sử chăm sóc).
+- Booker bấm **"Chấp nhận toàn bộ"**: Batch chuyển sang `ACCEPTED`, toàn bộ $N$ khách hàng được gán chính thức cho Booker.
+- Booker bấm **"Từ chối toàn bộ"**: Batch chuyển sang `DECLINED`, bắt buộc nhập lý do từ chối. Toàn bộ batch lập tức hoàn trả về pool phân bổ của Admin/Manager.
+- Nếu quá 24h Booker không thao tác: Batch tự động chuyển sang `EXPIRED`, khách hàng tự động hoàn trả về Admin.
+
+### R2. Đảm bảo Độc quyền, Không trùng lặp & Tăng chính xác $N + 10$ (Strict Deduplication & DB Transaction)
+
+- Lọc trùng ở Backend & Database: Hệ thống tự động loại bỏ các khách hàng đã thuộc quyền sở hữu của Booker hiện tại hoặc đang ở batch `PENDING_ACCEPT` khác trước khi tạo batch.
+- Sử dụng Prisma `$transaction` và Unique Constraint trên DB: Đảm bảo khi Booker nhấn "Chấp nhận" batch $N$ khách hàng, tổng số khách hàng của Booker tăng chính xác đúng $+N$ (ví dụ ban đầu có $n$, sau khi nhận 10 khách sẽ là đúng $n+10$), không bị trùng lặp ID hay sai lệch số lượng.
+
+### R3. Lịch sử Phân bổ 30 ngày & Đồng hồ Đếm ngược Countdown (30-Day History & Timer)
+
+- Xây dựng tab/màn hình Lịch sử Phân bổ (Allocation History) hiển thị danh sách các đợt phân bổ trong 30 ngày gần nhất cho cả Booker và Admin/Manager.
+- Mỗi bản ghi lịch sử lưu giữ thông tin: Đợt phân bổ, Người phân bổ, Booker nhận, Số lượng khách, Trạng thái (`PENDING_ACCEPT`, `ACCEPTED`, `DECLINED`, `EXPIRED`), Lý do từ chối (nếu có).
+- Mỗi bản ghi hiển thị đồng hồ đếm ngược (countdown badge 30 ngày) cho biết thời gian còn lại trước khi bản ghi lịch sử hết hạn/tự động ẩn.
+
+### R4. Bảng Điều khiển Phân bổ & Kiểm tra Chéo cho Admin/Manager (Allocation Audit Dashboard)
+
+- Cung cấp màn hình Bảng Điều khiển Phân bổ Toàn bộ cho Admin và Manager để theo dõi bức tranh phân bổ minh bạch.
+- Thống kê tỷ lệ chấp nhận/từ chối/quá hạn của từng Booker, hiển thị lý do từ chối để Admin/Manager đánh giá và phân bổ công bằng.
+- Cung cấp nút **"Thu hồi Batch" (Recall Batch)** cho Admin/Manager để chủ động thu hồi các đợt phân bổ ở trạng thái `PENDING_ACCEPT` nếu phát hiện lỡ gán nhầm trước khi Booker bấm chấp nhận.
+
+## Acceptance Criteria
+
+### Verification & Confirmation
+
+- [ ] Khi Admin phân bổ 10 khách hàng cho Booker, batch được tạo ở trạng thái `PENDING_ACCEPT` với timer 24h.
+- [ ] Booker nhận thông báo và xem được danh sách khách hàng trong batch để kiểm chứng.
+- [ ] Khi Booker bấm "Chấp nhận", batch chuyển `ACCEPTED`, danh sách khách hàng chính thức của Booker tăng đúng +10, không trùng lặp ID.
+- [ ] Khi Booker bấm "Từ chối" kèm lý do, batch chuyển `DECLINED` và 10 khách hàng quay lại pool phân bổ của Admin.
+- [ ] Nếu quá 24h không duyệt, batch tự chuyển `EXPIRED` và hoàn trả khách về Admin.
+
+### Deduplication & Database Integrity
+
+- [ ] Thao tác gán khách hàng đảm bảo tính nguyên tố ($transaction): nếu giao 10 khách thì total count của Booker tăng đúng $n+10$.
+- [ ] Không thể tạo batch phân bổ trùng khách hàng đang `PENDING_ACCEPT` hoặc đã active.
+
+### 30-Day History & Countdown Timer
+
+- [ ] Booker và Manager xem được lịch sử phân bổ trong 30 ngày.
+- [ ] Mỗi dòng lịch sử có badge đếm ngược countdown (ví dụ: `29 ngày 18 giờ`) và tự động lưu trữ sau 30 ngày.
+
+### Admin/Manager Audit & Recall
+
+- [ ] Admin/Manager xem được Bảng Điều khiển Phân bổ toàn bộ Booker kèm chỉ số tỷ lệ nhận/từ chối và lý do từ chối.
+- [ ] Admin/Manager bấm "Thu hồi Batch" đối với batch `PENDING_ACCEPT` thành công, batch chuyển sang `RECALLED` và khách hàng trả lại pool.

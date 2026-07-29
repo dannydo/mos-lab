@@ -68,6 +68,7 @@ export const SMSModal: React.FC<SMSModalProps> = ({
   const [selectedPhone, setSelectedPhone] = useState<string>('');
   const [messageBody, setMessageBody] = useState<string>('');
   const [sending, setSending] = useState<boolean>(false);
+  const [customerBookingUrl, setCustomerBookingUrl] = useState<string>('https://s.wingslashes.com/Urc5SCIJ');
 
   // Modal Resizing & Width Persistence State
   const [modalWidth, setModalWidth] = useState<number>(880);
@@ -140,11 +141,7 @@ export const SMSModal: React.FC<SMSModalProps> = ({
     if (!isModalOpen || !customer) return;
 
     // Set default selected phone
-    if (customer.phone) {
-      setSelectedPhone(customer.phone);
-    } else {
-      setSelectedPhone('');
-    }
+    setSelectedPhone(customer.phone || '');
 
     // Reset fields
     setMessageBody('');
@@ -177,6 +174,18 @@ export const SMSModal: React.FC<SMSModalProps> = ({
         console.error('Failed to fetch SMS history:', err);
       })
       .finally(() => setLoadingHistory(false));
+
+    // Fetch Customer Booking Short URL
+    apiClient.sms
+      .getUserUrl(customer.id)
+      .then((res) => {
+        if (res?.bookingUrl) {
+          setCustomerBookingUrl(res.bookingUrl);
+        }
+      })
+      .catch(() => {
+        setCustomerBookingUrl('https://s.wingslashes.com/Urc5SCIJ');
+      });
   }, [isModalOpen, customer]);
 
   const reloadHistory = () => {
@@ -239,8 +248,9 @@ export const SMSModal: React.FC<SMSModalProps> = ({
       '{so_ngay_dam}': `${totalRemaining} ngày`,
       '{ten_combo}': comboNameStr,
       '{sdt_cua_hang}': '0987654321',
+      '{url_dat_lich}': customerBookingUrl || 'https://s.wingslashes.com/Urc5SCIJ',
     };
-  }, [customer, selectedPhone]);
+  }, [customer, selectedPhone, customerBookingUrl]);
 
   // Live preview text calculation
   const livePreview = useMemo(() => {

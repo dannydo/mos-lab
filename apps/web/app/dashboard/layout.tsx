@@ -28,6 +28,10 @@ import { useTheme } from '../../context/ThemeContext';
 const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
 const DailyCallsDrawer = dynamic(() => import('../../components/DailyCallsDrawer'), { ssr: false });
 const CallLogModal = dynamic(() => import('../../components/CallLogModal'), { ssr: false });
+const PendingAllocationModal = dynamic(
+  () => import('../../components/allocation/PendingAllocationModal').then((m) => m.PendingAllocationModal),
+  { ssr: false }
+);
 import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
 import { OmiCallProvider } from '../../context/OmiCallContext';
@@ -176,6 +180,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<SafeAny>(null);
   const [loading, setLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState(false);
+
+  const [isPendingAllocationOpen, setIsPendingAllocationOpen] = useState(false);
+  const [pendingAllocationCount, setPendingAllocationCount] = useState(0);
+
+  const fetchPendingAllocationsCount = useCallback(async () => {
+    try {
+      const list = await apiClient.allocation.getPendingBatches();
+      setPendingAllocationCount(list?.length || 0);
+    } catch (err) {
+      console.error('Fetch pending allocations error:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    fetchPendingAllocationsCount();
+    const interval = setInterval(fetchPendingAllocationsCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchPendingAllocationsCount, loading, user]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -534,6 +557,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               )}
 
+              {pendingAllocationCount > 0 && (
+                <Badge count={pendingAllocationCount} offset={[-8, 2]} size="small">
+                  <Button
+                    type="text"
+                    aria-label="Xác nhận data mới"
+                    icon={<ClockCircleOutlined style={{ color: '#F59E0B' }} />}
+                    onClick={() => setIsPendingAllocationOpen(true)}
+                    style={{
+                      fontSize: '16px',
+                      marginRight: '16px',
+                      color: token.colorText,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    title="Đợt phân bổ data chờ xác nhận 24h"
+                  >
+                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400 ml-1">
+                      {pendingAllocationCount} đợt data
+                    </span>
+                  </Button>
+                </Badge>
+              )}
+
               <Badge count={dailyCallsCount} offset={[-8, 2]} size="small" showZero={false}>
                 <Button
                   type="text"
@@ -618,6 +665,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             setIsDailyCallsOpen(false);
             fetchDailyCallsCount();
           }}
+        />
+
+        <PendingAllocationModal
+          open={isPendingAllocationOpen}
+          onClose={() => setIsPendingAllocationOpen(false)}
+          onSuccessRefresh={fetchPendingAllocationsCount}
         />
 
         <style jsx global>{`

@@ -70,4 +70,10 @@ export const DEFAULT_SMS_VARIABLE_TAGS: SmsVariableTagDefinition[] = [
     exampleValue: 'Combo Eyelash Premium',
   },
   { tag: '{sdt_cua_hang}', label: 'SDT cửa hàng', description: 'Số hotline chăm sóc tiệm', exampleValue: '0987654321' },
+  {
+    tag: '{url_dat_lich}',
+    label: 'URL đặt lịch',
+    description: 'Link đặt lịch web tự động cho khách hàng',
+    exampleValue: 'https://s.wingslashes.com/Urc5SCIJ',
+  },
 ];

@@ -95,6 +95,14 @@ import {
   SendSmsRequest,
   SendSmsResponse,
   CustomerSmsHistoryItem,
+  CustomerAllocationBatch,
+  CustomerAllocationItem,
+  CreateAllocationBatchDto,
+  DeclineAllocationBatchDto,
+  RecallAllocationBatchDto,
+  AllocationHistoryQueryParams,
+  AllocationAuditQueryParams,
+  AllocationAuditStatsResponse,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -1015,6 +1023,59 @@ export const apiClient = {
     },
     sendSms: async (data: SendSmsRequest): Promise<SendSmsResponse> => {
       const response = await api.post('/sms/send', data);
+      return response.data;
+    },
+    getUserUrl: async (customerId: number): Promise<{ bookingUrl: string }> => {
+      const response = await api.get(`/sms/user-url/${customerId}`);
+      return response.data;
+    },
+  },
+
+  allocation: {
+    createBatch: async (data: CreateAllocationBatchDto): Promise<CustomerAllocationBatch> => {
+      const response = await api.post('/allocation/batch', data);
+      return response.data;
+    },
+    getPendingBatches: async (): Promise<CustomerAllocationBatch[]> => {
+      const response = await api.get('/allocation/pending');
+      return response.data;
+    },
+    getBatchDetails: async (
+      batchId: number
+    ): Promise<{ batch: CustomerAllocationBatch; items: CustomerAllocationItem[] }> => {
+      const response = await api.get(`/allocation/batches/${batchId}`);
+      return response.data;
+    },
+    acceptBatch: async (batchId: number): Promise<{ success: boolean; message: string; count: number }> => {
+      const response = await api.post(`/allocation/batches/${batchId}/accept`);
+      return response.data;
+    },
+    declineBatch: async (
+      batchId: number,
+      data: DeclineAllocationBatchDto
+    ): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post(`/allocation/batches/${batchId}/decline`, data);
+      return response.data;
+    },
+    recallBatch: async (
+      batchId: number,
+      data: RecallAllocationBatchDto
+    ): Promise<{ success: boolean; message: string; count: number }> => {
+      const response = await api.post(`/allocation/batches/${batchId}/recall`, data);
+      return response.data;
+    },
+    checkExpired: async (): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/allocation/check-expired');
+      return response.data;
+    },
+    get30DayHistory: async (
+      params?: AllocationHistoryQueryParams
+    ): Promise<{ items: CustomerAllocationBatch[]; total: number }> => {
+      const response = await api.get('/allocation/history', { params });
+      return response.data;
+    },
+    getAuditStats: async (params?: AllocationAuditQueryParams): Promise<AllocationAuditStatsResponse> => {
+      const response = await api.get('/allocation/audit-stats', { params });
       return response.data;
     },
   },

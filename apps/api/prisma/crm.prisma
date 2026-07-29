@@ -40,6 +40,8 @@ model CrmStaff {
   prevHistory         CrmAssignmentHistory[] @relation("PrevStaffHistory")
   newHistory          CrmAssignmentHistory[] @relation("NewStaffHistory")
   assignedHistory     CrmAssignmentHistory[] @relation("AssignerHistory")
+  assignedBatches     CrmAllocationBatch[]   @relation("BatchAssigner")
+  receivedBatches     CrmAllocationBatch[]   @relation("BatchBooker")
 
   @@map("crm_staff")
 }
@@ -333,6 +335,59 @@ model CrmBookingLog {
   @@index([isCrossAction])
   @@index([dateCreated])
   @@map("crm_booking_logs")
+}
+
+// ═══════════════════════════════════════════
+// Customer Allocation System — 2-step verification, 24h countdown, 30-day retention
+// ═══════════════════════════════════════════
+model CrmAllocationBatch {
+  id                 Int       @id @default(autoincrement())
+  batchCode          String    @unique @map("batch_code") @db.VarChar(50)
+  assignerId         Int       @map("assigner_id")
+  bookerId           Int       @map("booker_id")
+  totalCount         Int       @map("total_count")
+  status             String    @default("PENDING_ACCEPT") @db.VarChar(20) // PENDING_ACCEPT | ACCEPTED | DECLINED | EXPIRED | RECALLED
+  declineReason      String?   @map("decline_reason") @db.Text
+  declineCategory    String?   @map("decline_category") @db.VarChar(100)
+  declineNote        String?   @map("decline_note") @db.Text
+  expiresAt          DateTime  @map("expires_at") @db.DateTime(0) // 24h countdown target
+  acceptedAt         DateTime? @map("accepted_at") @db.DateTime(0)
+  declinedAt         DateTime? @map("declined_at") @db.DateTime(0)
+  recalledAt         DateTime? @map("recalled_at") @db.DateTime(0)
+  retentionExpiresAt DateTime? @map("retention_expires_at") @db.DateTime(0) // 30-day countdown target
+  createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  assigner CrmStaff                 @relation("BatchAssigner", fields: [assignerId], references: [id], onDelete: Cascade)
+  booker   CrmStaff                 @relation("BatchBooker", fields: [bookerId], references: [id], onDelete: Cascade)
+  items    CrmAllocationBatchItem[]
+
+  @@index([bookerId])
+  @@index([assignerId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("crm_allocation_batches")
+}
+
+model CrmAllocationBatchItem {
+  id                 Int      @id @default(autoincrement())
+  batchId            Int      @map("batch_id")
+  customerId         Int      @map("customer_id")
+  customerName       String?  @map("customer_name") @db.VarChar(100)
+  customerPhone      String?  @map("customer_phone") @db.VarChar(20)
+  bucket             String?  @db.VarChar(50)
+  daysSinceLastVisit Int?     @map("days_since_last_visit")
+  totalSpent         Float?   @map("total_spent")
+  status             String   @default("PENDING_ACCEPT") @db.VarChar(20)
+  createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  batch CrmAllocationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, customerId], name: "batchId_customerId")
+  @@index([customerId])
+  @@index([batchId])
+  @@index([status])
+  @@map("crm_allocation_batch_items")
 }
 
 
