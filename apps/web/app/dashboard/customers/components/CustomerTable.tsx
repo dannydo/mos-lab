@@ -91,6 +91,13 @@ const CustomerTable = React.memo(
     const columns = React.useMemo(
       () => [
         {
+          title: 'STT',
+          key: 'stt',
+          width: 60,
+          align: 'center' as const,
+          render: (_: any, __: any, index: number) => (currentPage - 1) * pageSize + index + 1,
+        },
+        {
           title: 'Mã KH',
           dataIndex: 'id',
           key: 'id',
@@ -315,7 +322,7 @@ const CustomerTable = React.memo(
           ),
         },
       ],
-      [themeMode, token, makeCall, openDetailModal]
+      [themeMode, token, makeCall, openDetailModal, currentPage, pageSize]
     );
 
     const staticColumns = React.useMemo(() => {
