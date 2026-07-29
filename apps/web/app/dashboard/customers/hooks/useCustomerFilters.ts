@@ -42,6 +42,8 @@ export const useCustomerFilters = (
   const [assignedStaffId, setAssignedStaffId] = useState<string>(() => {
     return scopeParam || (currentUser?.role === 'telesales' ? 'me' : 'all');
   });
+  const [assignedDaysMin, setAssignedDaysMin] = useState<number | undefined>(undefined);
+  const [assignedDaysMax, setAssignedDaysMax] = useState<number | undefined>(undefined);
 
   const prevScopeRef = useRef<string | null>(scopeParam);
   const prevUserRoleRef = useRef<string | undefined>(currentUser?.role);
@@ -114,6 +116,8 @@ export const useCustomerFilters = (
       setReferralCountMin(criteria.referralCountMin);
       setReferralCountMax(criteria.referralCountMax);
       setAssignedStaffId(criteria.assignedStaffId || (currentUser?.role === 'telesales' ? 'me' : 'all'));
+      setAssignedDaysMin(criteria.assignedDaysMin);
+      setAssignedDaysMax(criteria.assignedDaysMax);
 
       optionsRef.current?.onSuccess?.(`Đã áp dụng bộ lọc "${filter.name}"`);
     },
@@ -145,6 +149,8 @@ export const useCustomerFilters = (
         setReferralCountMin(criteria.referralCountMin);
         setReferralCountMax(criteria.referralCountMax);
         setAssignedStaffId(criteria.assignedStaffId || 'all');
+        setAssignedDaysMin(criteria.assignedDaysMin);
+        setAssignedDaysMax(criteria.assignedDaysMax);
 
         optionsRef.current?.onSuccess?.('Đã tải lại bộ lọc đợt phân bổ thành công!');
       } catch (e) {
@@ -172,6 +178,8 @@ export const useCustomerFilters = (
       referralCountMin,
       referralCountMax,
       assignedStaffId,
+      assignedDaysMin,
+      assignedDaysMax,
     };
   }, [
     activeTab,
@@ -189,6 +197,8 @@ export const useCustomerFilters = (
     referralCountMin,
     referralCountMax,
     assignedStaffId,
+    assignedDaysMin,
+    assignedDaysMax,
   ]);
 
   const buildFilterSummary = useCallback(
@@ -219,6 +229,16 @@ export const useCustomerFilters = (
         parts.push(`Đã phân bổ`);
       }
 
+      if (assignedDaysMax !== undefined) {
+        if (assignedDaysMin !== undefined) {
+          parts.push(`Phân bổ: ${assignedDaysMin}-${assignedDaysMax} ngày`);
+        } else {
+          parts.push(`Phân bổ: <= ${assignedDaysMax} ngày`);
+        }
+      } else if (assignedDaysMin !== undefined) {
+        parts.push(`Phân bổ: >= ${assignedDaysMin} ngày`);
+      }
+
       if (retainedOnly) {
         parts.push('📌 Chỉ Data đã giữ');
       }
@@ -234,6 +254,8 @@ export const useCustomerFilters = (
       daysSinceLastVisitMin,
       daysSinceLastVisitMax,
       assignedStaffId,
+      assignedDaysMin,
+      assignedDaysMax,
       totalSpentMin,
       totalSpentMax,
       retainedOnly,
@@ -259,6 +281,8 @@ export const useCustomerFilters = (
     setReferralCountMin(undefined);
     setReferralCountMax(undefined);
     setAssignedStaffId(currentUser?.role === 'telesales' ? 'me' : 'all');
+    setAssignedDaysMin(undefined);
+    setAssignedDaysMax(undefined);
     setRetainedOnly(false);
 
     if (onFiltersReset) {
@@ -288,6 +312,8 @@ export const useCustomerFilters = (
       referralCountMin,
       referralCountMax,
       assignedStaffId,
+      assignedDaysMin,
+      assignedDaysMax,
     };
 
     try {
@@ -320,6 +346,8 @@ export const useCustomerFilters = (
     referralCountMin,
     referralCountMax,
     assignedStaffId,
+    assignedDaysMin,
+    assignedDaysMax,
     fetchSavedFilters,
   ]);
 
@@ -360,6 +388,8 @@ export const useCustomerFilters = (
       referralCountMin,
       referralCountMax,
       assignedStaffId,
+      assignedDaysMin,
+      assignedDaysMax,
       retainedOnly: retainedOnly ? 'true' : undefined,
     }),
     [
@@ -380,6 +410,8 @@ export const useCustomerFilters = (
       referralCountMin,
       referralCountMax,
       assignedStaffId,
+      assignedDaysMin,
+      assignedDaysMax,
       retainedOnly,
     ]
   );
@@ -420,6 +452,10 @@ export const useCustomerFilters = (
     setReferralCountMax,
     assignedStaffId,
     setAssignedStaffId,
+    assignedDaysMin,
+    setAssignedDaysMin,
+    assignedDaysMax,
+    setAssignedDaysMax,
     retainedOnly,
     setRetainedOnly,
 

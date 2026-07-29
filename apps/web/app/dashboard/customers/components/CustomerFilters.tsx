@@ -59,6 +59,10 @@ interface CustomerFiltersProps {
   setReferralCountMax: (val: number | undefined) => void;
   assignedStaffId: string;
   setAssignedStaffId: (val: string) => void;
+  assignedDaysMin?: number | undefined;
+  setAssignedDaysMin?: (val: number | undefined) => void;
+  assignedDaysMax?: number | undefined;
+  setAssignedDaysMax?: (val: number | undefined) => void;
   retainedOnly?: boolean;
   setRetainedOnly?: (val: boolean) => void;
   setActiveFilterId: (id: string | null) => void;
@@ -108,6 +112,10 @@ const CustomerFilters = React.memo(function CustomerFilters({
   setReferralCountMax,
   assignedStaffId,
   setAssignedStaffId,
+  assignedDaysMin,
+  setAssignedDaysMin,
+  assignedDaysMax,
+  setAssignedDaysMax,
   retainedOnly,
   setRetainedOnly,
   setActiveFilterId,
@@ -134,6 +142,8 @@ const CustomerFilters = React.memo(function CustomerFilters({
     referralCountMin,
     referralCountMax,
     assignedStaffId,
+    assignedDaysMin,
+    assignedDaysMax,
   };
 
   const onClearFilter = (key: string) => {
@@ -176,6 +186,12 @@ const CustomerFilters = React.memo(function CustomerFilters({
         break;
       case 'assignedStaffId':
         setAssignedStaffId(currentUser?.role === 'telesales' ? 'me' : 'all');
+        break;
+      case 'assignedDaysMin':
+        if (setAssignedDaysMin) setAssignedDaysMin(undefined);
+        break;
+      case 'assignedDaysMax':
+        if (setAssignedDaysMax) setAssignedDaysMax(undefined);
         break;
       case 'retainedOnly':
         if (setRetainedOnly) setRetainedOnly(false);
@@ -527,6 +543,24 @@ const CustomerFilters = React.memo(function CustomerFilters({
                   ]}
                 />
               </Form.Item>
+
+              <RangeFilterField
+                minLabel="Đã phân bổ tối thiểu"
+                maxLabel="Đã phân bổ tối đa"
+                minPlaceholder="VD: 5 ngày"
+                maxPlaceholder="VD: 30 ngày"
+                minValue={assignedDaysMin}
+                maxValue={assignedDaysMax}
+                onChangeMin={(val: number | undefined) => {
+                  if (setAssignedDaysMin) setAssignedDaysMin(val);
+                  setActiveFilterId(null);
+                }}
+                onChangeMax={(val: number | undefined) => {
+                  if (setAssignedDaysMax) setAssignedDaysMax(val);
+                  setActiveFilterId(null);
+                }}
+                themeMode={themeMode}
+              />
             </div>
           )}
 

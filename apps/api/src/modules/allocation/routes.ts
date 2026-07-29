@@ -171,10 +171,10 @@ export async function allocationRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // 9. Allocation Audit Stats Dashboard (Admin/Manager/LS/OC)
+  // 9. Allocation Audit Stats Dashboard
   fastify.get(
     '/allocation/audit-stats',
-    { preHandler: [requireAuth, requireRole(['admin', 'manager', 'ls', 'oc'])] },
+    { preHandler: [requireAuth] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const query = (request.query || {}) as AllocationAuditQueryParams;

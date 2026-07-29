@@ -108,6 +108,8 @@ export interface ListCustomersParams {
   referralCountMin?: number | string;
   referralCountMax?: number | string;
   assignedStaffId?: string;
+  assignedDaysMin?: number | string;
+  assignedDaysMax?: number | string;
   trash?: string | boolean;
   ids?: string;
 }

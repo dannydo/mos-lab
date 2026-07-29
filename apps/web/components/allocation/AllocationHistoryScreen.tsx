@@ -29,6 +29,80 @@ export const AllocationHistoryScreen: React.FC = () => {
   const [selectedBatch, setSelectedBatch] = useState<CustomerAllocationBatch | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState<boolean>(false);
 
+  // Detail Modal Pagination state with localStorage persistence
+  const [detailPageSize, setDetailPageSize] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('allocation_history_detail_page_size');
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if ([5, 10, 20, 50, 100].includes(parsed)) return parsed;
+      }
+    }
+    return 5;
+  });
+  const [detailCurrentPage, setDetailCurrentPage] = useState<number>(1);
+
+  // Resizable Detail Modal Width state with localStorage persistence
+  const [detailModalWidth, setDetailModalWidth] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('allocation_history_detail_modal_width');
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 500 && parsed <= 1600) return parsed;
+      }
+    }
+    return 750;
+  });
+
+  const handleDetailPageSizeChange = (current: number, size: number) => {
+    setDetailPageSize(size);
+    setDetailCurrentPage(current);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('allocation_history_detail_page_size', size.toString());
+    }
+  };
+
+  const handleDetailWidthChange = (newWidth: number) => {
+    const clamped = Math.min(1600, Math.max(500, newWidth));
+    setDetailModalWidth(clamped);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('allocation_history_detail_modal_width', clamped.toString());
+    }
+  };
+
+  // Reset detail page to 1 when selected batch changes
+  useEffect(() => {
+    setDetailCurrentPage(1);
+  }, [selectedBatch]);
+
+  // Mouse drag handler for custom right edge resizing
+  const startDetailResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = detailModalWidth;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const calculatedWidth = startWidth + deltaX * 2;
+      const clamped = Math.min(1600, Math.max(500, calculatedWidth));
+      setDetailModalWidth(clamped);
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      if (typeof window !== 'undefined') {
+        setDetailModalWidth((currentW) => {
+          localStorage.setItem('allocation_history_detail_modal_width', currentW.toString());
+          return currentW;
+        });
+      }
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
   const fetchHistory = async () => {
     setLoading(true);
     try {
@@ -189,7 +263,7 @@ export const AllocationHistoryScreen: React.FC = () => {
       title: 'STT',
       key: 'idx',
       width: 60,
-      render: (_: any, __: any, index: number) => index + 1,
+      render: (_: any, __: any, index: number) => (detailCurrentPage - 1) * detailPageSize + index + 1,
     },
     {
       title: 'ID Khách hàng',
@@ -290,14 +364,37 @@ export const AllocationHistoryScreen: React.FC = () => {
       {/* Batch Customer Detail Preview Modal */}
       <Modal
         title={
-          <div className="flex items-center gap-2">
-            <span>🔍</span>
-            <span>Chi Tiết Đợt Phân Bổ {selectedBatch?.batchCode}</span>
+          <div className="flex flex-wrap items-center justify-between pr-8 gap-2">
+            <div className="flex items-center gap-2">
+              <span>🔍</span>
+              <span className="font-bold text-lg text-slate-800 dark:text-slate-100">
+                Chi Tiết Đợt Phân Bổ {selectedBatch?.batchCode}
+              </span>
+            </div>
+
+            {/* Quick Detail Modal Width Presets */}
+            <div className="flex items-center gap-1.5 text-xs font-normal">
+              <span className="text-slate-400 font-medium">Khung xem:</span>
+              {[750, 950, 1200].map((w) => (
+                <button
+                  key={w}
+                  type="button"
+                  onClick={() => handleDetailWidthChange(w)}
+                  className={`px-2 py-0.5 rounded text-xs transition-all ${
+                    detailModalWidth === w
+                      ? 'bg-indigo-600 text-white font-bold shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {w}px
+                </button>
+              ))}
+            </div>
           </div>
         }
         open={detailModalOpen}
         onCancel={() => setDetailModalOpen(false)}
-        width={700}
+        width={detailModalWidth}
         footer={[
           <Button key="close" onClick={() => setDetailModalOpen(false)}>
             Đóng
@@ -305,41 +402,65 @@ export const AllocationHistoryScreen: React.FC = () => {
         ]}
         className={themeMode === 'dark' ? 'dark-theme-modal' : ''}
       >
-        {selectedBatch && (
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg text-xs">
-              <div>
-                <span className="text-slate-500">Người phân bổ:</span>{' '}
-                <span className="font-semibold text-slate-800 dark:text-slate-100">{selectedBatch.assignerName}</span>
-              </div>
-              <div>
-                <span className="text-slate-500">Booker nhận:</span>{' '}
-                <span className="font-semibold text-slate-800 dark:text-slate-100">{selectedBatch.bookerName}</span>
-              </div>
-              <div>
-                <span className="text-slate-500">Thời gian tạo:</span>{' '}
-                <span>{new Date(selectedBatch.createdAt).toLocaleString('vi-VN')}</span>
-              </div>
-              <div>
-                <span className="text-slate-500">Tổng số KH:</span>{' '}
-                <span className="font-bold">{selectedBatch.totalCount} KH</span>
-              </div>
-              {selectedBatch.declineReason && (
-                <div className="col-span-2 text-rose-600 dark:text-rose-400 font-medium">
-                  Lý do / Phản hồi: {selectedBatch.declineReason}
-                </div>
-              )}
-            </div>
-
-            <Table
-              dataSource={selectedBatch.items || []}
-              columns={detailColumns}
-              rowKey="id"
-              pagination={{ pageSize: 5 }}
-              size="small"
-            />
+        <div className="relative">
+          {/* Right-edge drag handle for modal width resizing */}
+          <div
+            onMouseDown={startDetailResizing}
+            title="Kéo để chỉnh rộng / hẹp modal"
+            className="absolute -top-4 -right-4 -bottom-4 w-4 cursor-ew-resize hover:bg-indigo-400/20 flex items-center justify-center transition-colors rounded-r group z-50"
+          >
+            <div className="w-1 h-10 bg-slate-300 dark:bg-slate-600 group-hover:bg-indigo-500 rounded-full transition-colors" />
           </div>
-        )}
+
+          {selectedBatch && (
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg text-xs">
+                <div>
+                  <span className="text-slate-500">Người phân bổ:</span>{' '}
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{selectedBatch.assignerName}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Booker nhận:</span>{' '}
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{selectedBatch.bookerName}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Thời gian tạo:</span>{' '}
+                  <span>{new Date(selectedBatch.createdAt).toLocaleString('vi-VN')}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Tổng số KH:</span>{' '}
+                  <span className="font-bold">{selectedBatch.totalCount} KH</span>
+                </div>
+                {selectedBatch.declineReason && (
+                  <div className="col-span-2 text-rose-600 dark:text-rose-400 font-medium">
+                    Lý do / Phản hồi: {selectedBatch.declineReason}
+                  </div>
+                )}
+              </div>
+
+              <Table
+                dataSource={selectedBatch.items || []}
+                columns={detailColumns}
+                rowKey="id"
+                pagination={{
+                  current: detailCurrentPage,
+                  pageSize: detailPageSize,
+                  onChange: (p, sz) => {
+                    setDetailCurrentPage(p);
+                    if (sz !== detailPageSize) {
+                      handleDetailPageSizeChange(p, sz);
+                    }
+                  },
+                  onShowSizeChange: (p, sz) => handleDetailPageSizeChange(p, sz),
+                  showSizeChanger: true,
+                  pageSizeOptions: ['5', '10', '20', '50', '100'],
+                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} khách hàng`,
+                }}
+                size="small"
+              />
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   );

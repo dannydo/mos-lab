@@ -65,6 +65,10 @@ export const useCustomerList = (
         if (filterParams.assignedStaffId && filterParams.assignedStaffId !== 'all') {
           params.assignedStaffId = filterParams.assignedStaffId;
         }
+        if (filterParams.assignedDaysMin !== undefined)
+          params.assignedDaysMin = filterParams.assignedDaysMin.toString();
+        if (filterParams.assignedDaysMax !== undefined)
+          params.assignedDaysMax = filterParams.assignedDaysMax.toString();
         if (filterParams.retainedOnly) {
           params.retainedOnly = filterParams.retainedOnly;
         }
@@ -129,6 +133,10 @@ export const useCustomerList = (
         if (filterParams.assignedStaffId && filterParams.assignedStaffId !== 'all') {
           params.assignedStaffId = filterParams.assignedStaffId;
         }
+        if (filterParams.assignedDaysMin !== undefined)
+          params.assignedDaysMin = filterParams.assignedDaysMin.toString();
+        if (filterParams.assignedDaysMax !== undefined)
+          params.assignedDaysMax = filterParams.assignedDaysMax.toString();
         if (filterParams.retainedOnly) {
           params.retainedOnly = filterParams.retainedOnly;
         }

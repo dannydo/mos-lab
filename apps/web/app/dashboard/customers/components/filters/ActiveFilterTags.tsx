@@ -32,6 +32,8 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
     referralCountMin,
     referralCountMax,
     assignedStaffId,
+    assignedDaysMin,
+    assignedDaysMax,
     retainedOnly,
   } = filterParams;
 
@@ -67,6 +69,18 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
         <Text style={{ fontSize: '12px', color: token.colorTextDescription }}>Đang lọc:</Text>
 
         {renderAssignedTag()}
+
+        {assignedDaysMin !== undefined && (
+          <Tag color="orange" closable onClose={() => onClearFilter('assignedDaysMin')}>
+            Đã phân bổ &gt;= {assignedDaysMin} ngày
+          </Tag>
+        )}
+
+        {assignedDaysMax !== undefined && (
+          <Tag color="orange" closable onClose={() => onClearFilter('assignedDaysMax')}>
+            Đã phân bổ &lt;= {assignedDaysMax} ngày
+          </Tag>
+        )}
 
         {retainedOnly === 'true' && (
           <Tag color="gold" closable onClose={() => onClearFilter('retainedOnly')}>

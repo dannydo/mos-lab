@@ -42,6 +42,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMin,
       referralCountMax,
       assignedStaffId,
+      assignedDaysMin,
+      assignedDaysMax,
       trash,
       ids,
       hsd30,
@@ -74,6 +76,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMin?: string;
       referralCountMax?: string;
       assignedStaffId?: string;
+      assignedDaysMin?: string;
+      assignedDaysMax?: string;
       trash?: string;
       ids?: string;
       hsd30?: string;
@@ -147,34 +151,66 @@ export async function customerRoutes(fastify: FastifyInstance) {
           .split(',')
           .map(Number)
           .filter((n) => !isNaN(n));
-      } else if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') {
+      }
+
+      if (
+        (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') ||
+        (assignedDaysMin !== undefined && assignedDaysMin !== '') ||
+        (assignedDaysMax !== undefined && assignedDaysMax !== '')
+      ) {
         if (effectiveAssignedStaffId === 'unassigned') {
           const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
             select: { legacyUserId: true },
           });
           excludedUserIds = allAssignments.map((a) => a.legacyUserId);
-        } else {
-          let targetStaffId = adminUser.id;
-          if (effectiveAssignedStaffId !== 'me') {
-            targetStaffId = parseInt(effectiveAssignedStaffId, 10);
+          if (allowedUserIds !== null && excludedUserIds.length > 0) {
+            const exSet = new Set(excludedUserIds);
+            allowedUserIds = allowedUserIds.filter((id) => !exSet.has(id));
           }
-          if (!isNaN(targetStaffId)) {
-            const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-              where: { staffId: targetStaffId },
-              select: { legacyUserId: true },
-            });
-            allowedUserIds = assignments.map((a) => a.legacyUserId);
-            if (allowedUserIds.length === 0) {
-              return {
-                data: [],
-                pagination: {
-                  total: 0,
-                  page: pageNum,
-                  limit: limitNum,
-                  pages: 0,
-                },
-              };
+        } else {
+          const assignedWhere: SafeAny = {};
+          if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') {
+            let targetStaffId = adminUser.id;
+            if (effectiveAssignedStaffId !== 'me') {
+              targetStaffId = parseInt(effectiveAssignedStaffId, 10);
             }
+            if (!isNaN(targetStaffId)) {
+              assignedWhere.staffId = targetStaffId;
+            }
+          } else {
+            assignedWhere.staffId = { not: null };
+          }
+          if (assignedDaysMin !== undefined && assignedDaysMin !== '') {
+            const minDays = parseInt(assignedDaysMin, 10);
+            if (!isNaN(minDays)) {
+              const maxDate = new Date();
+              maxDate.setDate(maxDate.getDate() - minDays);
+              maxDate.setHours(23, 59, 59, 999);
+              if (!assignedWhere.assignedAt) assignedWhere.assignedAt = {};
+              assignedWhere.assignedAt.lte = maxDate;
+            }
+          }
+          if (assignedDaysMax !== undefined && assignedDaysMax !== '') {
+            const maxDays = parseInt(assignedDaysMax, 10);
+            if (!isNaN(maxDays)) {
+              const minDate = new Date();
+              minDate.setDate(minDate.getDate() - maxDays);
+              minDate.setHours(0, 0, 0, 0);
+              if (!assignedWhere.assignedAt) assignedWhere.assignedAt = {};
+              assignedWhere.assignedAt.gte = minDate;
+            }
+          }
+
+          const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+            where: assignedWhere,
+            select: { legacyUserId: true },
+          });
+          const filterUserIds = assignments.map((a) => a.legacyUserId);
+          if (allowedUserIds !== null) {
+            const filterSet = new Set(filterUserIds);
+            allowedUserIds = allowedUserIds.filter((id) => filterSet.has(id));
+          } else {
+            allowedUserIds = filterUserIds;
           }
         }
       }
@@ -186,21 +222,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
         const retainedUserIds = retainedAssignments.map((a) => a.legacyUserId);
         if (allowedUserIds !== null) {
-          allowedUserIds = allowedUserIds.filter((id) => retainedUserIds.includes(id));
+          const retSet = new Set(retainedUserIds);
+          allowedUserIds = allowedUserIds.filter((id) => retSet.has(id));
         } else {
           allowedUserIds = retainedUserIds;
         }
-        if (allowedUserIds.length === 0) {
-          return {
-            data: [],
-            pagination: {
-              total: 0,
-              page: pageNum,
-              limit: limitNum,
-              pages: 0,
-            },
-          };
-        }
+      }
+
+      if (allowedUserIds !== null && allowedUserIds.length === 0) {
+        return {
+          data: [],
+          pagination: {
+            total: 0,
+            page: pageNum,
+            limit: limitNum,
+            pages: 0,
+          },
+        };
       }
 
       if (bucket === 'NEW_LOCA') {
@@ -1202,6 +1240,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMin,
       referralCountMax,
       assignedStaffId,
+      assignedDaysMin,
+      assignedDaysMax,
       trash,
       hsd30,
       lsd1,
@@ -1230,6 +1270,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralCountMin?: string;
       referralCountMax?: string;
       assignedStaffId?: string;
+      assignedDaysMin?: string;
+      assignedDaysMax?: string;
       trash?: string;
       hsd30?: string;
       lsd1?: string;
@@ -1331,31 +1373,66 @@ export async function customerRoutes(fastify: FastifyInstance) {
           .split(',')
           .map(Number)
           .filter((n) => !isNaN(n));
-      } else if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') {
+      }
+
+      if (
+        (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') ||
+        (assignedDaysMin !== undefined && assignedDaysMin !== '') ||
+        (assignedDaysMax !== undefined && assignedDaysMax !== '')
+      ) {
         if (effectiveAssignedStaffId === 'unassigned') {
           const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
             select: { legacyUserId: true },
           });
           excludedUserIds = allAssignments.map((a) => a.legacyUserId);
-        } else {
-          let targetStaffId = adminUser.id;
-          if (effectiveAssignedStaffId !== 'me') {
-            targetStaffId = parseInt(effectiveAssignedStaffId, 10);
+          if (allowedUserIds !== null && excludedUserIds.length > 0) {
+            const exSet = new Set(excludedUserIds);
+            allowedUserIds = allowedUserIds.filter((id) => !exSet.has(id));
           }
-          if (!isNaN(targetStaffId)) {
-            const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-              where: { staffId: targetStaffId },
-              select: { legacyUserId: true },
-            });
-            allowedUserIds = assignments.map((a) => a.legacyUserId);
-            if (allowedUserIds.length === 0) {
-              return {
-                total: 0,
-                comboLive: 0,
-                comboDead: 0,
-                single: 0,
-              };
+        } else {
+          const assignedWhere: SafeAny = {};
+          if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') {
+            let targetStaffId = adminUser.id;
+            if (effectiveAssignedStaffId !== 'me') {
+              targetStaffId = parseInt(effectiveAssignedStaffId, 10);
             }
+            if (!isNaN(targetStaffId)) {
+              assignedWhere.staffId = targetStaffId;
+            }
+          } else {
+            assignedWhere.staffId = { not: null };
+          }
+          if (assignedDaysMin !== undefined && assignedDaysMin !== '') {
+            const minDays = parseInt(assignedDaysMin, 10);
+            if (!isNaN(minDays)) {
+              const maxDate = new Date();
+              maxDate.setDate(maxDate.getDate() - minDays);
+              maxDate.setHours(23, 59, 59, 999);
+              if (!assignedWhere.assignedAt) assignedWhere.assignedAt = {};
+              assignedWhere.assignedAt.lte = maxDate;
+            }
+          }
+          if (assignedDaysMax !== undefined && assignedDaysMax !== '') {
+            const maxDays = parseInt(assignedDaysMax, 10);
+            if (!isNaN(maxDays)) {
+              const minDate = new Date();
+              minDate.setDate(minDate.getDate() - maxDays);
+              minDate.setHours(0, 0, 0, 0);
+              if (!assignedWhere.assignedAt) assignedWhere.assignedAt = {};
+              assignedWhere.assignedAt.gte = minDate;
+            }
+          }
+
+          const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+            where: assignedWhere,
+            select: { legacyUserId: true },
+          });
+          const filterUserIds = assignments.map((a) => a.legacyUserId);
+          if (allowedUserIds !== null) {
+            const filterSet = new Set(filterUserIds);
+            allowedUserIds = allowedUserIds.filter((id) => filterSet.has(id));
+          } else {
+            allowedUserIds = filterUserIds;
           }
         }
       }
@@ -1367,19 +1444,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
         const retainedUserIds = retainedAssignments.map((a) => a.legacyUserId);
         if (allowedUserIds !== null) {
-          allowedUserIds = allowedUserIds.filter((id) => retainedUserIds.includes(id));
+          const retSet = new Set(retainedUserIds);
+          allowedUserIds = allowedUserIds.filter((id) => retSet.has(id));
         } else {
           allowedUserIds = retainedUserIds;
         }
-        if (allowedUserIds.length === 0) {
-          return {
-            total: 0,
-            comboLive: 0,
-            comboDead: 0,
-            single: 0,
-            notComboLive: 0,
-          };
-        }
+      }
+
+      if (allowedUserIds !== null && allowedUserIds.length === 0) {
+        return {
+          total: 0,
+          comboLive: 0,
+          comboDead: 0,
+          single: 0,
+          notComboLive: 0,
+        };
       }
 
       const innerWhereClauses: string[] = [];
@@ -2065,6 +2144,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       referralUsed,
       referralCountMin,
       referralCountMax,
+      assignedStaffId,
+      assignedDaysMin,
+      assignedDaysMax,
+      retainedOnly,
       excludeAssigned = 'true',
       excludeFutureBooking = 'true',
       hasFutureBooking,
@@ -2137,7 +2220,73 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const innerWhereClauses: string[] = [];
       const innerParams: SafeAny[] = [];
 
-      if (excludeAssigned === 'true') {
+      const currentUser = (request as SafeAny).user;
+      const adminUser = await fastify.prisma.crm.crmStaff.findFirst({
+        where: {
+          OR: [{ username: currentUser?.username }, { email: currentUser?.email }],
+        },
+      });
+
+      const effectiveAssignedStaffId = currentUser?.role === 'telesales' && adminUser ? 'me' : assignedStaffId;
+
+      if (
+        (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') ||
+        (assignedDaysMin !== undefined && assignedDaysMin !== '') ||
+        (assignedDaysMax !== undefined && assignedDaysMax !== '')
+      ) {
+        if (effectiveAssignedStaffId === 'unassigned') {
+          const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+            select: { legacyUserId: true },
+          });
+          const excludedUserIds = allAssignments.map((a) => a.legacyUserId);
+          if (excludedUserIds.length > 0) {
+            innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
+          }
+        } else {
+          const assignedWhere: SafeAny = {};
+          if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') {
+            let targetStaffId = adminUser ? adminUser.id : 0;
+            if (effectiveAssignedStaffId !== 'me') {
+              targetStaffId = parseInt(effectiveAssignedStaffId, 10);
+            }
+            if (!isNaN(targetStaffId)) {
+              assignedWhere.staffId = targetStaffId;
+            }
+          } else {
+            assignedWhere.staffId = { not: null };
+          }
+          if (assignedDaysMin !== undefined && assignedDaysMin !== '') {
+            const minDays = parseInt(assignedDaysMin, 10);
+            if (!isNaN(minDays)) {
+              const maxDate = new Date();
+              maxDate.setDate(maxDate.getDate() - minDays);
+              maxDate.setHours(23, 59, 59, 999);
+              if (!assignedWhere.assignedAt) assignedWhere.assignedAt = {};
+              assignedWhere.assignedAt.lte = maxDate;
+            }
+          }
+          if (assignedDaysMax !== undefined && assignedDaysMax !== '') {
+            const maxDays = parseInt(assignedDaysMax, 10);
+            if (!isNaN(maxDays)) {
+              const minDate = new Date();
+              minDate.setDate(minDate.getDate() - maxDays);
+              minDate.setHours(0, 0, 0, 0);
+              if (!assignedWhere.assignedAt) assignedWhere.assignedAt = {};
+              assignedWhere.assignedAt.gte = minDate;
+            }
+          }
+
+          const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+            where: assignedWhere,
+            select: { legacyUserId: true },
+          });
+          const filterUserIds = assignments.map((a) => a.legacyUserId);
+          if (filterUserIds.length === 0) {
+            return { ids: [], batchId: `rand_${Date.now()}` };
+          }
+          innerWhereClauses.push(`u.id IN (${filterUserIds.join(',')})`);
+        }
+      } else if (excludeAssigned === 'true') {
         const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
           where: {
             staffId: { not: null },
@@ -2149,6 +2298,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (excludedUserIds.length > 0) {
           innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
         }
+      }
+
+      if (retainedOnly === 'true') {
+        const retainedAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+          where: { isRetained: true },
+          select: { legacyUserId: true },
+        });
+        const retainedUserIds = retainedAssignments.map((a) => a.legacyUserId);
+        if (retainedUserIds.length === 0) {
+          return { ids: [], batchId: `rand_${Date.now()}` };
+        }
+        innerWhereClauses.push(`u.id IN (${retainedUserIds.join(',')})`);
       }
 
       if (excludeFutureBooking === 'true' || hasFutureBooking === 'false') {
@@ -2254,7 +2415,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(query, ...innerParams);
       const ids = rows.map((r) => Number(r.id));
 
-      const adminUser = request.user as { id: number; role: string };
+      const actingUser = request.user as { id: number; role: string };
       const batchId = `rand_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const filterSummaryParts: string[] = [`${ids.length} KH`];
       if (excludeAssigned === 'true') filterSummaryParts.push('Chưa phân bổ');
@@ -2262,14 +2423,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (search && search.trim() !== '') filterSummaryParts.push(`Từ khóa: ${search.trim()}`);
       const sourceFilterSummary = `Chọn ngẫu nhiên ${filterSummaryParts.join(' | ')}`;
 
-      if (ids.length > 0 && adminUser?.id) {
+      if (ids.length > 0 && actingUser?.id) {
         await fastify.prisma.crm.crmAssignmentHistory.createMany({
           data: ids.map((cid) => ({
             batchId,
             legacyUserId: cid,
             prevStaffId: null,
             newStaffId: null,
-            assignedBy: adminUser.id,
+            assignedBy: actingUser.id,
             assignedAt: new Date(),
             sourceType: 'RANDOM',
             sourceFilterJson: JSON.stringify(request.query),

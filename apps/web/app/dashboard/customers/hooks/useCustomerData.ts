@@ -150,6 +150,8 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     filterParams.referralCountMin !== undefined ||
     filterParams.referralCountMax !== undefined ||
     (filterParams.assignedStaffId && filterParams.assignedStaffId !== defaultAssignedStaff) ||
+    filterParams.assignedDaysMin !== undefined ||
+    filterParams.assignedDaysMax !== undefined ||
     filterParams.retainedOnly === 'true' ||
     filtersHook.activeFilterId !== null;
 
@@ -181,6 +183,8 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     referralCountMax: filtersHook.referralCountMax,
     currentUser,
     assignedStaffId: filtersHook.assignedStaffId,
+    assignedDaysMin: filtersHook.assignedDaysMin,
+    assignedDaysMax: filtersHook.assignedDaysMax,
     retainedOnly: filtersHook.retainedOnly,
     staffList,
     selectedRowKeys: assignmentHook.selectedRowKeys,
@@ -241,6 +245,8 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     setReferralCountMin: filtersHook.setReferralCountMin,
     setReferralCountMax: filtersHook.setReferralCountMax,
     setAssignedStaffId: filtersHook.setAssignedStaffId,
+    setAssignedDaysMin: filtersHook.setAssignedDaysMin,
+    setAssignedDaysMax: filtersHook.setAssignedDaysMax,
     setRetainedOnly: filtersHook.setRetainedOnly,
     setSelectedRowKeys: assignmentHook.setSelectedRowKeys,
     setAssignModalVisible: assignmentHook.setAssignModalVisible,

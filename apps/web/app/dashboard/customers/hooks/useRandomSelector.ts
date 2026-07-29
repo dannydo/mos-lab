@@ -35,6 +35,9 @@ export const useRandomSelector = (
         referralCountMin: filterParams.referralCountMin?.toString(),
         referralCountMax: filterParams.referralCountMax?.toString(),
         assignedStaffId: filterParams.assignedStaffId !== 'all' ? filterParams.assignedStaffId : undefined,
+        assignedDaysMin: filterParams.assignedDaysMin?.toString(),
+        assignedDaysMax: filterParams.assignedDaysMax?.toString(),
+        retainedOnly: filterParams.retainedOnly ? 'true' : undefined,
         excludeAssigned: excludeAssigned ? 'true' : 'false',
         excludeFutureBooking: excludeFutureBooking ? 'true' : 'false',
       };

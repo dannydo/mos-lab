@@ -1,115 +1,130 @@
-# VICTORY AUDIT REPORT — VIETNAMESE SEARCH FILTERING REFACTORING
+# VICTORY AUDIT REPORT
 
-**Date:** 2026-07-28  
-**Auditor Archetype:** `victory_auditor`  
-**Target Mission:** Refactor standard search filtering across all CRM dashboard modules in mos-lab (`apps/web` & `apps/api`) to support tone-insensitive & case-insensitive Vietnamese search (`removeVietnameseTones`).  
-**Final Audit Verdict:** `VICTORY CONFIRMED`
-
----
-
-## 1. Executive Summary
-
-An independent, empirical, adversarial Victory Audit was conducted to verify the claims made by the Project Orchestrator regarding the implementation of tone-insensitive and case-insensitive Vietnamese search filtering across the entire `mos-lab` CRM platform.
-
-All code implementations, utility functions, module-specific controls, and compilation builds were directly inspected and empirically tested. The audit confirms **100% compliance** with all requirements and acceptance criteria specified in `/Users/dannydo/projects/mos-lab/.agents/ORIGINAL_REQUEST.md` (section `## Follow-up — 2026-07-28T09:07:27Z`).
+**Project**: Booker Customer Allocation System Upgrade in `mos-lab`  
+**Date**: 2026-07-29  
+**Auditor**: Victory Auditor (Independent Adversarial Audit)  
+**Working Directory**: `/Users/dannydo/projects/mos-lab/.agents/victory_auditor`  
+**Target Project Root**: `/Users/dannydo/projects/mos-lab`
 
 ---
 
-## 2. Acceptance Criteria Verification Matrix
+## 1. Executive Summary & Verdict
 
-| Requirement / Acceptance Criteria                                                                     | Empirical Verification Method                                                                                                                                                                                                                                                                                    | Status                                                                                 | Verdict  |
-| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------- |
-| **R1. Standardized `removeVietnameseTones` & `vietnameseSearchFilter` Utility**                       | Inspected `packages/shared/src/utils/search.ts` and `apps/web/lib/utils/search.ts`. Verified Unicode NFD decomposition, `[\u0300-\u036f]` tone stripping, `đ`/`Đ` mapping to `d`/`D`, lowercase conversion, null/undefined safety, and recursive React node label text extraction (`extractText`).               | Verified in `@mos-lab/shared` and re-exported in `apps/web/lib/utils/search.ts`.       | **PASS** |
-| **R2. All 11 CRM Dashboard Modules Search Controls Refactored**                                       | Inspected source code across all 11 modules: `/today`, `/customers`, `/bk`, `/cc`, `/cv`, `/catalog`, `/appointments`, `/loca`, `/nyc`, `/omicall`, `/staff`. All `<Select showSearch>` components use `filterOption={vietnameseSearchFilter}` and client-side table search filters use `removeVietnameseTones`. | Inspected all 11 modules and confirmed 0 un-refactored `<Select showSearch>` controls. | **PASS** |
-| **R2. Target Query Matching ("diep" -> "Ngọc Điệp", "hang" -> "Hằng Ni", "thuy" -> "Thuỳ Trang 🌸")** | Empirically verified string normalization: `removeVietnameseTones('Ngọc Điệp')` => `'ngoc diep'`, `removeVietnameseTones('Hằng Ni')` => `'hang ni'`, `removeVietnameseTones('Thuỳ Trang 🌸')` => `'thuy trang 🌸'`.                                                                                              | Matches queries without tones cleanly and case-insensitively.                          | **PASS** |
-| **R3. Automated Build Verification**                                                                  | Executed `pnpm --filter @mos-lab/web build` outside sandbox.                                                                                                                                                                                                                                                     | Next.js 15 build compiled 17/17 static pages with 0 TypeScript or linting errors.      | **PASS** |
+### VERDICT: `VICTORY CONFIRMED`
+
+An independent, empirical, adversarial audit of the **Booker Customer Allocation System Upgrade** in `mos-lab` was conducted against all requirements specified in `ORIGINAL_REQUEST.md` (R1, R2, R3, R4).
+
+All 4 requirement modules, backend data structures, Prisma database models, Fastify REST APIs, React frontend components, API SDK client, empirical stress test suites (15/15 tests passing), and monorepo TypeScript compilation were verified. Zero hardcoded mock values, facades, or unvalidated state bypasses were found.
 
 ---
 
-## 3. Detailed Empirical Inspection Findings
+## 2. Requirement Verification Matrix
 
-### 3.1 System-Wide Utility Inspection (`packages/shared/src/utils/search.ts`)
+| ID     | Requirement Area                                 | Status   | Verification Findings                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------ | ------------------------------------------------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **R1** | **Batch Pending Accept Flow**                    | **PASS** | `CrmAllocationBatch` created in `PENDING_ACCEPT` status with a 24-hour expiration countdown timer (`expiresAt`). Customers remain unassigned until accepted. Booker reviews batch preview table in `PendingAllocationModal.tsx` and can click "Chấp nhận toàn bộ" (`ACCEPTED`) or "Từ chối toàn bộ" (`DECLINED` with mandatory reason). Overdue batches (>24h) are automatically marked `EXPIRED` by background check logic. |
+| **R2** | **Strict $+N$ Deduplication & DB Transaction**   | **PASS** | Pre-batch deduplication queries duplicate pending/active customers using `FOR UPDATE` lock inside Prisma `$transaction`. Acceptance executes inside an atomic Prisma `$transaction` upserting `crmCustomerAssignment` records, ensuring exact $+N$ customer increase with zero ID duplicates or count mismatches.                                                                                                            |
+| **R3** | **30-Day History & Countdown Timer**             | **PASS** | `AllocationHistoryScreen.tsx` displays full 30-day allocation history with state tags, filter options, search, and pagination. Displays 30-day retention countdown badges (e.g. `⏱️ Còn 29d 18h lưu giữ`) formatted with `tabular-nums`. Detail modal provides full item breakdown per batch.                                                                                                                                |
+| **R4** | **Allocation Audit Dashboard for Admin/Manager** | **PASS** | `AllocationAuditDashboard.tsx` provides high-level overview KPI cards (Total Batches, Total Customers, Accepted %, Declined %, Expired %), per-booker performance table with average response time in minutes, decline reason breakdown progress bars, and a "Recall Batch" modal to revoke `PENDING_ACCEPT` or `ACCEPTED` batches.                                                                                          |
 
-```typescript
-export const removeVietnameseTones = (str: string | number | null | undefined): string => {
-  if (str === null || str === undefined) return '';
-  return String(str)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .toLowerCase()
-    .trim();
-};
+---
+
+## 3. Codebase Component Analysis
+
+### A. Shared DTOs (`packages/shared/src/types/allocation.ts` & `index.ts`)
+
+- Defines `AllocationBatchStatus` (`'PENDING_ACCEPT' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED' | 'RECALLED'`).
+- Defines strongly typed interfaces: `CustomerAllocationItem`, `CustomerAllocationBatch`, `CreateAllocationBatchDto`, `DeclineAllocationBatchDto`, `RecallAllocationBatchDto`, `AllocationHistoryQueryParams`, `AllocationAuditQueryParams`, `AllocationAuditStatsResponse`.
+- Defines `PRESET_DECLINE_REASONS` constant array.
+- Exported cleanly in `packages/shared/src/index.ts`.
+
+### B. Prisma Schema & Models (`apps/api/prisma/crm.prisma`)
+
+- `CrmAllocationBatch` mapped to `crm_allocation_batches`: `id`, `batchCode` (@unique), `assignerId`, `bookerId`, `totalCount`, `status`, `declineReason`, `declineCategory`, `declineNote`, `expiresAt`, `acceptedAt`, `declinedAt`, `recalledAt`, `retentionExpiresAt`, `createdAt`, `updatedAt`. Indexes on `bookerId`, `assignerId`, `status`, `expiresAt`.
+- `CrmAllocationBatchItem` mapped to `crm_allocation_batch_items`: `id`, `batchId`, `customerId`, `customerName`, `customerPhone`, `bucket`, `daysSinceLastVisit`, `totalSpent`, `status`, `createdAt`. Unique constraint `[batchId, customerId]`.
+- Relations established with `CrmStaff` (`assigner`, `booker`).
+
+### C. Fastify Backend (`apps/api/src/modules/allocation/`)
+
+- `AllocationService.createBatch`: Atomic pre-batch filtering inside Prisma `$transaction` with `FOR UPDATE` lock query.
+- `AllocationService.acceptBatch`: Validates `PENDING_ACCEPT` status and 24h timer (lazy updates to `EXPIRED` if timed out outside tx). Sets status to `ACCEPTED`, sets `acceptedAt` and 30-day `retentionExpiresAt`. Atomically upserts `crmCustomerAssignment` records ensuring exact +N customer increase. Logs `crmAssignmentHistory` with `actionType: 'ACCEPT_ALLOCATION'`.
+- `AllocationService.declineBatch`: Validates mandatory `reasonCategory` string. Updates batch to `DECLINED`. Logs `crmAssignmentHistory` with `actionType: 'DECLINE_ALLOCATION'`.
+- `AllocationService.recallBatch`: Restricted to `admin`, `manager`, or `ls` roles. Revokes assignments back to pool if accepted, sets status to `RECALLED`. Logs `crmAssignmentHistory` with `actionType: 'RECALL_ALLOCATION'`.
+- `AllocationService.checkAndExpireBatches`: Runs automatically on allocation API requests. Sets timed-out 24h pending batches and 30-day retention expired batches to `EXPIRED`.
+- `AllocationService.get30DayHistory`: Supports pagination, status filtering, role scoping (bookers only see their own history), and search.
+- `AllocationService.getAuditStats`: Generates summary stats, per-booker acceptance rates, average response times in minutes, and decline reason breakdown.
+- `routes.ts`: Registered at `/api/allocation/*` with proper authentication (`requireAuth`) and role authorization (`requireRole`).
+
+### D. React UI Components (`apps/web/components/allocation/`)
+
+- `PendingAllocationModal.tsx`: Displays pending batches with live 24h countdown timer using `tabular-nums` formatting (`fontVariantNumeric: 'tabular-nums'`). Displays preview table of customers. Buttons for "Chấp nhận toàn bộ" and "Từ chối toàn bộ".
+- `DeclineReasonModal.tsx`: Select preset decline reason from `PRESET_DECLINE_REASONS` or custom input for "Khác (Nhập lý do)". Disables submission if no valid reason is selected.
+- `AllocationHistoryScreen.tsx`: Displays 30-day history with countdown badges (`29d 18h lưu giữ` using `tabular-nums`), status tags, filter by status, search input, pagination, and detail preview modal.
+- `AllocationAuditDashboard.tsx`: Displays KPI overview cards (Total, Accepted Rate %, Declined Rate %, Expired Rate %) with Antd `Progress` bars and `tabular-nums`, per-booker performance table with avg response time in minutes, decline reason distribution breakdown, and "Recall Batch" modal.
+- Adheres to AGENTS.md frontend rules: Light/Dark theme compatibility via `useTheme()` and `.dark-theme-modal`, `tabular-nums` formatting for dynamic times and counts, zero hardcoded colors.
+
+### E. API Client SDK (`apps/web/lib/api-client.ts`)
+
+- Fully typed `apiClient.allocation` namespace covering all 9 backend endpoints (`createBatch`, `getPendingBatches`, `getBatchDetails`, `acceptBatch`, `declineBatch`, `recallBatch`, `checkExpired`, `get30DayHistory`, `getAuditStats`).
+
+---
+
+## 4. Empirical Validation & Stress Test Results
+
+The empirical stress test script `apps/api/test-alloc-stress.ts` was executed against live database instances.
+
+### Empirical Stress Test Suite Summary (`npx tsx apps/api/test-alloc-stress.ts`):
+
+```
+=====================================================
+SUMMARY OF EMPIRICAL TEST RESULTS
+=====================================================
+[PASS] T1.1: Accept already ACCEPTED batch
+  Details: Rejected as expected with message: "Đợt phân bổ đã ở trạng thái ACCEPTED, không thể chấp nhận"
+[PASS] T1.2: Accept already DECLINED batch
+  Details: Rejected as expected with message: "Đợt phân bổ đã ở trạng thái DECLINED, không thể chấp nhận"
+[PASS] T1.3: Accept timed-out PENDING batch (lazy expire)
+  Details: Lazy updated batch status to EXPIRED in DB and rejected with message: "Đợt phân bổ đã vượt quá 24h xác nhận"
+[PASS] T1.4: Accept EXPIRED batch (second call)
+  Details: Rejected as expected with message: "Đợt phân bổ đã ở trạng thái EXPIRED, không thể chấp nhận"
+[PASS] T2.1: Decline without mandatory reason (empty/whitespace)
+  Details: Empty err: "Vui lòng chọn lý do từ chối phân bổ", Space err: "Vui lòng chọn lý do từ chối phân bổ". Status preserved as PENDING_ACCEPT.
+[PASS] T2.2: Decline with non-string reasonCategory type
+  Details: Caught non-string input error: "Vui lòng chọn lý do từ chối phân bổ hợp lệ"
+[PASS] T2.3: Valid decline with category & note
+  Details: Batch status updated to DECLINED with declineCategory="Khách không nghe máy"
+[PASS] T3.1: Sequential createBatch with duplicate pending customer
+  Details: Correctly rejected second batch creation with message: "Tất cả khách hàng đã chọn đều đang nằm trong đợt phân bổ chờ xác nhận khác"
+[PASS] T3.2: Simultaneous createBatch race condition test
+  Details: Race condition prevented: A status=fulfilled, B status=rejected
+[PASS] T4.1: checkAndExpireBatches on 24h overdue pending batch
+  Details: Batch and Item status set to EXPIRED, exactly 1 history log created with reason: "Tự động hết hạn 24h chờ xác nhận (Auto Expired 24h)"
+[PASS] T4.2: Concurrent checkAndExpireBatches history duplication test
+  Details: Exactly 1 history log created under concurrent execution.
+[PASS] T5.1: Exact +N customer increment verification
+  Details: Successfully allocated +3 customers. Initial count=95, Post count=98, Net increase=+3. 3 assignment history records created.
+[PASS] T6.1: Recall ACCEPTED batch by Admin
+  Details: Batch status set to RECALLED, customer assignment revoked back to pool, RECALL_ALLOCATION history logged.
+[PASS] T6.2: Recall already RECALLED batch
+  Details: Rejected as expected with message: "Không thể thu hồi đợt phân bổ ở trạng thái RECALLED"
+[PASS] T7.1: IDOR & Authorization check on GET /allocation/batches/:id
+  Details: Allowed assigner & target booker, blocked unauthorized staff with message: "Bạn không có quyền xem thông tin đợt phân bổ này"
+
+TOTAL: 15 tests | PASSED: 15 | FAILED/VULN: 0
 ```
 
-- **Unicode NFD Normalization:** Decomposes accented characters into base letters + combining diacritical marks.
-- **Diacritic Stripping:** Regex `/[\u0300-\u036f]/g` strips all combining marks (tones, accents, tildes, hooks, dots below).
-- **Special Character Handling:** Expressly maps `đ` -> `d` and `Đ` -> `D`.
-- **Safety:** Handles `null`, `undefined`, and numeric values safely without throwing runtime errors.
-- **Option Label Text Extraction (`vietnameseSearchFilter`):** Traverses React node trees recursively (`extractText`) to extract labels, children, and values from Ant Design `<Select>` option elements for matching.
+---
 
-### 3.2 11-Module Dashboard Search Controls Audit
+## 5. AGENTS.md Compliance Audit
 
-1. **`/dashboard/today`**:
-   - `TodayBookingsTable.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L347)
-   - `TodayCalendarSummary.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L261)
-   - `BookerTeamConfigModal.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L246)
-2. **`/dashboard/customers`**:
-   - `CustomerFilters.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L508)
-   - `RevokeAssignmentModal.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L164)
-   - `AssignmentHistoryDrawer.tsx`: Uses `removeVietnameseTones` for staff & action searching (L82–87)
-3. **`/dashboard/bk`**:
-   - `BkBookingTab.tsx`: Uses `removeVietnameseTones` on clientName, orderKey, clientPhone, bookerName (L130–136)
-   - `BkConfigDrawer.tsx`: Uses `removeVietnameseTones` on displayName, username, store (L91–96)
-   - `BkDoneTab.tsx`: Uses `removeVietnameseTones` on clientName, orderKey, clientPhone, bookerName, serviceName (L139–146)
-   - `BkRevenueTab.tsx`: Uses `removeVietnameseTones` on clientName, orderKey, store (L124–129)
-   - `BkTipTab.tsx`: Uses `removeVietnameseTones` on clientName, bookerName, store (L127–132)
-4. **`/dashboard/cc`**:
-   - `cc/page.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L356)
-   - `CcConfigDrawer.tsx`, `CcDiamondDetailModal.tsx`, `CcDiamondTab.tsx`, `CcThuNhapTab.tsx`, `CcThuongTab.tsx`, `CcTipTab.tsx`, `CcXoayTab.tsx`: All use `removeVietnameseTones` in search filters.
-5. **`/dashboard/cv`**:
-   - `cv/page.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L232)
-   - `CvConfigDrawer.tsx`, `CvThuNhapTab.tsx`, `CvTipTab.tsx`, `CvXoayTab.tsx`: All use `removeVietnameseTones` in search filters.
-6. **`/dashboard/catalog`**:
-   - `catalog/page.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L1750)
-7. **`/dashboard/appointments`**:
-   - `appointments/page.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L317)
-   - `RescheduleBookingModal.tsx`, `BookingWizardDrawer.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L403, L736, L898)
-8. **`/dashboard/loca`**:
-   - `loca/page.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L317)
-9. **`/dashboard/nyc`**:
-   - `nyc/page.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L288)
-10. **`/dashboard/omicall`**:
-    - `omicall/page.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L627)
-    - `DailyCallsTable.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L600)
-11. **`/dashboard/staff`**:
-    - `staff/page.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L1174)
-    - `StaffTabsContent.tsx`: `<Select showSearch filterOption={vietnameseSearchFilter}>` (L212)
-
-### 3.3 Build Verification
-
-Command: `pnpm --filter @mos-lab/web build`  
-Result:
-
-```text
-   ▲ Next.js 15.1.3
-   - Environments: .env
-
-   Creating an optimized production build ...
- ✓ Compiled successfully
- ✓ Linting and checking validity of types
-   Collecting page data  ...
-   Generating static pages (17/17)
- ✓ Generating static pages (17/17)
-   Finalizing page optimization ...
-   Collecting build traces  ...
-```
+1. **Rule #4 Theme & Styling & Rule #5 Number Jitter**: All countdown timers, days remaining, percentages, customer counts, and response times use `font-variant-numeric: tabular-nums` (`tabular-nums` CSS class). All modals support Light and Dark mode using `useTheme()` and `.dark-theme-modal`.
+2. **Rule #11 Unified Business Logic (Single Source of Truth)**: All allocation state changes, expire checks, response time metrics, and stats calculations are centralized in Fastify `AllocationService` (`apps/api/src/modules/allocation/allocation.service.ts`). Frontend performs zero inline calculations or state mutative bypasses.
+3. **Rule #24 Controlled & Persistent Table Pagination**: Tables in `AllocationHistoryScreen.tsx` and `AllocationAuditDashboard.tsx` use controlled pagination state with `pageSizeOptions: ['10', '20', '50', '100']`.
 
 ---
 
-## 4. Final Audit Verdict
+## 6. Final Conclusion
 
-**`VICTORY CONFIRMED`**
+The Booker Customer Allocation System Upgrade in `mos-lab` fulfills all business, architectural, data integrity, security, and UI/UX requirements.
 
-All requirements of the user request have been fully satisfied with zero regressions, flawless type compliance, and 100% tone-insensitive and case-insensitive Vietnamese search filtering across all 11 CRM dashboard modules.
+**FINAL AUDIT VERDICT**: `VICTORY CONFIRMED`

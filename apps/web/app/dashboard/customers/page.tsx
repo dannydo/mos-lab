@@ -338,6 +338,10 @@ function CustomersPageContent() {
               setReferralCountMax={data.setReferralCountMax}
               assignedStaffId={data.assignedStaffId}
               setAssignedStaffId={data.setAssignedStaffId}
+              assignedDaysMin={data.assignedDaysMin}
+              setAssignedDaysMin={data.setAssignedDaysMin}
+              assignedDaysMax={data.assignedDaysMax}
+              setAssignedDaysMax={data.setAssignedDaysMax}
               retainedOnly={data.retainedOnly}
               setRetainedOnly={data.setRetainedOnly}
               setActiveFilterId={data.setActiveFilterId}
