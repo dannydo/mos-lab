@@ -1,43 +1,45 @@
-## 2026-07-26T11:00:11Z
+## 2026-07-29T07:43:30Z
 
-You are teamwork_preview_worker (Role: Performance Report Generator).
-Working directory: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker
+You are the Implementation Worker for Milestone 2 of the SMS Action feature in mos-lab.
 
-Your task:
-Create the final comparative performance report file `performance_report_comparison.md` at `/Users/dannydo/projects/mos-lab/performance_report_comparison.md`.
+MANDATORY INTEGRITY WARNING:
+DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
-Read and aggregate data from the following source files:
+Your task is to implement the full SMS Action feature according to the specs from Milestone 1:
 
-- Pre-optimization baseline: `/Users/dannydo/projects/mos-lab/performance_report.md`
-- Post-optimization frontend sweep: `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/frontend_benchmark.md`
-- Backend API & DB verification: `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m2_1/backend_verification.md`
-- Tabular-Nums & A11y verification: `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m3_1/a11y_verification.md`
+1. **Shared DTOs (`packages/shared/src/types/sms.ts`)**:
+   - Create `packages/shared/src/types/sms.ts` and re-export in `packages/shared/src/index.ts`.
+   - Define interfaces: `SmsTemplate`, `SaveSmsTemplateInput`, `SendSmsRequest`, `SendSmsResponse`, `CustomerSmsHistoryItem`, `SmsVariableTagDefinition`.
+   - Run build: `pnpm --filter @mos-lab/shared build`
 
-Requirements for `performance_report_comparison.md`:
+2. **Prisma Model & Backend Fastify Routes (`apps/api`)**:
+   - Update `apps/api/prisma/legacy.prisma`: add model `user_sms` mapping to `user_sms` table in legacy DB (`id`, `to_phone_number`, `body`, `template_id`, `created_staff_id`, `date_created`).
+   - Run `pnpm --filter @mos-lab/api prisma:generate`.
+   - Create `apps/api/src/modules/sms/routes.ts` and register in `apps/api/src/server.ts`. Note: Relative imports MUST end with `.js`.
+   - Routes:
+     - `GET /api/sms/templates`: Return system templates from `crm_config` (key `SMS_TEMPLATES_CONFIG`) plus default legacy templates (`Reminder 17 - Single`).
+     - `POST /api/sms/templates`: Save/update system templates in `crm_config`. Protected by `requireRole(['admin'])`.
+     - `DELETE /api/sms/templates/:id`: Remove system template from `crm_config`. Protected by `requireRole(['admin'])`.
+     - `GET /api/sms/history/:customerId`: Query customer's SMS history from `fastify.prisma.legacy.user_sms` matching phone number.
+     - `POST /api/sms/send`: Save record to `user_sms` (legacy) AND create log in `crm_call_logs` (`call_type = 'SMS'`). Return `{ success: true, smsId, callLogId }`.
 
-1. Executive Summary & Key Achievements:
-   - Cold compilation / initial page load reduction (>99.4% across cold routes).
-   - TTI acceleration (83.0% - 97.5% speedup, all 26 routes rendering in 1.6s - 2.4s).
-   - Critical API payload spike elimination (`GET /api/customers/referrals` reduced from 3,932.49 kB (3.93 MB) to 45.80 kB (-98.8% reduction), CC/CV sub-tabs reduced from 2.84 MB - 3.69 MB to 28.50 kB (-99.2% reduction)).
-   - API calls on mount reduced by 54.5% - 81.5% (from 18-38 down to 5-10 calls).
-   - Missing tabular-nums reduced from 475+ to 0 errors.
-   - Accessibility & WCAG AA contrast compliance: 100% compliant (h1 landmark, nav aria-label, focus-visible styling, --color-gold #9e7118 in Light Theme with 4.58:1-4.77:1 contrast ratio).
+3. **Web SDK Client (`apps/web/lib/api-client.ts`)**:
+   - Add `apiClient.sms` object with methods: `getTemplates`, `saveTemplate`, `deleteTemplate`, `getHistory`, `sendSms`.
 
-2. Complete Side-by-Side 26 Route Benchmark Comparison Matrix Table:
-   Include columns for:
-   - # | Page / Sub-Tab Route
-   - Baseline Init Load (ms) | Post-Opt Init Load (ms) | Init Load Improvement (%)
-   - Baseline TTI (ms) | Post-Opt TTI (ms) | TTI Improvement (%)
-   - Baseline API Calls | Post-Opt API Calls | Call Reduction (%)
-   - Baseline API Payload | Post-Opt API Payload | Payload Reduction (%)
-   - Baseline Tabular-Nums Missing | Post-Opt Tabular-Nums Missing
-   - A11y & Contrast Status
+4. **SMS Modal Component (`apps/web/components/sms/SMSModal.tsx`)**:
+   - Build dual-pane SMS Modal adhering to `CopyComboModal` standards.
+   - Left Pane: Scrollable list of customer's SMS history (from `user_sms`).
+   - Right Pane: Template selector dropdown, Variable Tag clickable chips (`{ten_khach}`, `{sdt_khach}`, `{han_dung}`, `{so_ngay_dam}`, `{ten_combo}`, `{sdt_cua_hang}`, etc.), custom message editor, Live Preview box with dynamic variable substitution, character & SMS segment counter (using `tabular-nums`), Admin "Lưu Template Mẫu" button, and Primary "Gửi SMS" button.
+   - Light/Dark theme compatibility (`themeMode` or Antd `theme.useToken()`).
 
-3. Detailed Breakdown Sections:
-   - API Payload Reductions & Pagination Verification
-   - Fastify Backend SQL Optimizations & 10 Composite Database Indexes
-   - Tabular-Nums & Accessibility (WCAG AA) Compliance Verification
+5. **Customer Management Views Integration (`LoCa` & `NYC`)**:
+   - In `apps/web/app/dashboard/loca` and `apps/web/app/dashboard/nyc`:
+   - Update "Thao tác" column width to 180px-200px.
+   - Add "Gửi SMS" button with `MessageOutlined` icon next to "Lên lịch gọi" in the "Chạm 17 (ngày)" tab table.
+   - Wire `smsModalVisible` and `selectedCustomer` state, and render `<SMSModal>` component.
 
-4. Conclusion and Report Verification Metadata.
+6. **Build Verification**:
+   - Run `pnpm build` (or `pnpm --filter @mos-lab/shared build`, `pnpm --filter @mos-lab/api build`, `pnpm --filter @mos-lab/web build`) and verify 100% clean compilation.
 
-Write the file directly to `/Users/dannydo/projects/mos-lab/performance_report_comparison.md`. When done, deliver your completion report via send_message to the orchestrator (conversation ID: 1637e593-c5dd-44c8-bdd8-336ba0ce826a).
+Working directory: `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker`
+Document your implementation and build results in `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker/handoff.md`. Communicate status via `send_message`.

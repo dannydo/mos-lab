@@ -2,7 +2,14 @@
 
 import React from 'react';
 import { Space, Avatar, Typography, Tag, Tooltip, Button } from 'antd';
-import { UserOutlined, PhoneOutlined, EyeOutlined, CheckCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  PhoneOutlined,
+  EyeOutlined,
+  CheckCircleOutlined,
+  PlusOutlined,
+  MessageOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
 
@@ -23,6 +30,7 @@ interface NycColumnsOptions {
     avatar?: string,
     planId?: number
   ) => Promise<void> | void;
+  handleOpenSmsModal?: (record: Customer) => void;
   addingIds?: number[];
   sortField?: string;
 }
@@ -36,6 +44,7 @@ export const getNycColumns = ({
   dailyPlanList,
   handleAddToPlan,
   makeCall,
+  handleOpenSmsModal,
   addingIds = [],
   sortField = 'daysSinceLastVisit_asc',
 }: NycColumnsOptions) => {
@@ -273,7 +282,7 @@ export const getNycColumns = ({
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 110,
+      width: 200,
       render: (_: SafeAny, record: Customer) => {
         const isPlanned = dailyPlanList.includes(record.id);
         const isAdding = addingIds.includes(record.id);
@@ -297,6 +306,18 @@ export const getNycColumns = ({
               disabled={isPlanned || isAdding}
             >
               {isPlanned ? 'Đã lên lịch' : 'Lên lịch gọi'}
+            </Button>
+            <Button
+              type="default"
+              size="small"
+              icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
+              onClick={() => handleOpenSmsModal?.(record)}
+              style={{
+                borderColor: '#D4A84B',
+                color: '#D4A84B',
+              }}
+            >
+              Gửi SMS
             </Button>
           </Space>
         );

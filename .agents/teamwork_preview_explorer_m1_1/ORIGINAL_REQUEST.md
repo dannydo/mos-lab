@@ -1,20 +1,13 @@
-## 2026-07-28T02:09:14Z
+## 2026-07-29T07:41:22Z
 
-Audit and inventory all Ant Design `<Select showSearch>` components, table filters, and text search input fields across the following CRM modules:
+You are Explorer 1 for Milestone 1 of the SMS Action feature in mos-lab.
 
-1. `/dashboard/today` (or `apps/web/app/dashboard/today/` and related components)
-2. `/dashboard/customers` (or `apps/web/app/dashboard/customers/` and related components)
-3. `/dashboard/bk` (or `apps/web/app/dashboard/bk/` and related components)
-4. `/dashboard/cc` (or `apps/web/app/dashboard/cc/` and related components)
+Your task:
 
-Tasks:
+1. Audit the Web Frontend Customer Care Views in `apps/web/app/dashboard/loca` and `apps/web/app/dashboard/nyc`, specifically looking at the "Chạm 17 (ngày)" tab and table columns (the "Thao tác" column).
+2. Examine how customer row data is structured in both LoCa and NYC tabs (customer name `{ten_khach}`, phone number, expiration date `{han_dung}`, days to retouch `{so_ngay_dam}`, combo name `{ten_combo}`, store hotline `{sdt_cua_hang}`, customer ID, etc.).
+3. Check existing Modals (e.g., Combo Copy Modal or Call Modal) in `apps/web/components` or `apps/web/app/dashboard/` to identify UI design patterns, dual-pane layouts, theme variables (`.light-theme`, `.dark-theme`), Ant Design 5 components, and Tailwind v4 usage.
+4. Document exact file locations, component hierarchy, table column definitions, and recommendations for integrating the "Gửi SMS" button and opening the SMS Modal.
 
-- Locate every single `<Select showSearch>`, `<Select filterOption=...>`, Table filter (`filterDropdown`, `onFilter`), and custom search Input in these modules.
-- Check their current filtering implementation (e.g. default AntD filter, `option.children`, `option.label`, case-sensitivity, tone sensitivity).
-- Document exact file paths, line numbers, component names, and current `filterOption` logic for each control.
-- Formulate the exact refactoring needed for each control using `removeVietnameseTones`.
-
-Output Requirements:
-
-- Write your comprehensive audit report and handoff file to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/handoff.md`.
-- Send a message back to the orchestrator (conversation ID: 7699a38e-37d6-4763-8f97-08686a3bc0b6) when finished.
+Working directory: `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1`
+Write your findings to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/analysis.md` and deliver a self-contained `handoff.md`. Communicate your progress via `send_message`.

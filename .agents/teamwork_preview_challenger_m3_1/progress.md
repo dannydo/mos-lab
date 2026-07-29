@@ -1,11 +1,13 @@
-# Progress Log - challenger_m3_1
+# Progress Log
 
-Last visited: 2026-07-28T09:21:22+07:00
+Last visited: 2026-07-29T14:49:34+07:00
 
-- [x] Initialized workspace and recorded original request in `ORIGINAL_REQUEST.md`.
-- [x] Created `BRIEFING.md`.
-- [x] Write standalone empirical test harness `test-harness.ts` in workspace.
-- [x] Run test harness and capture output (22 test cases).
-- [x] Stress-test edge cases and surface failure modes (discovered Array `children` bug in `vietnameseSearchFilter`).
-- [x] Write detailed `handoff.md` with 5-component report.
-- [ ] Send completion message to parent.
+- [x] Workspace initialization (ORIGINAL_REQUEST.md, BRIEFING.md, progress.md)
+- [x] Codebase discovery: Located SMS implementation files, utilities, schemas, and API routes in `mos-lab`
+- [x] Construct empirical test harness / scripts for:
+  - Variable tag substitution & null/undefined fallback handling (`test_tag_substitution.ts`)
+  - Character count & GSM 7-bit vs Unicode segment calculation logic (`test_segment_calculation.ts`)
+  - Fastify `/api/sms/*` endpoint payload validation & error responses (`test_api_validation.ts`)
+- [x] Execute empirical tests (35 tests total executed via `run_all_tests.ts`)
+- [x] Document findings, bugs, edge cases, and mitigations in `handoff.md`
+- [x] Send handoff message to parent

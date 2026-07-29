@@ -1,50 +1,52 @@
-# BRIEFING — 2026-07-28T02:11:15Z
+# BRIEFING — 2026-07-29T14:42:30+07:00
 
 ## Mission
 
-Audit and inventory all Ant Design `<Select showSearch>`, `<Select filterOption=...>`, Table filters, and text search input fields across CRM modules (/dashboard/today, /dashboard/customers, /dashboard/bk, /dashboard/cc).
+Audit Web Frontend Customer Care Views (LoCa & NYC) for SMS Action feature Milestone 1.
 
 ## 🔒 My Identity
 
-- Archetype: explorer
-- Roles: explorer_m1_1
+- Archetype: Explorer 1
+- Roles: Read-only investigation, UI/UX audit, data model mapping, component hierarchy analysis
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1
-- Original parent: b443607f-5adc-4cf6-b4eb-a237d405d7f4
-- Milestone: milestone_1
+- Original parent: 4c6eb061-9916-414f-80ff-2f233bc9429f
+- Milestone: Milestone 1 - SMS Action Feature
 
 ## 🔒 Key Constraints
 
-- Read-only investigation — do NOT implement code changes in apps/ or packages/
-- Target modules: apps/web/app/dashboard/today, customers, bk, cc and related components
+- Read-only investigation — do NOT implement code changes in app source code
+- Follow system prompt and project rules (AGENTS.md)
+- Focus on LoCa and NYC tabs, "Chạm 17 (ngày)" tab, "Thao tác" column, customer row data, existing modals/design patterns
 
 ## Current Parent
 
-- Conversation ID: b443607f-5adc-4cf6-b4eb-a237d405d7f4
-- Orchestrator ID: 7699a38e-37d6-4763-8f97-08686a3bc0b6
-- Updated: 2026-07-28T02:11:15Z
+- Conversation ID: 4c6eb061-9916-414f-80ff-2f233bc9429f
+- Updated: 2026-07-29T14:42:30+07:00
 
 ## Investigation State
 
 - **Explored paths**:
-  - `apps/web/app/dashboard/today/` (and components)
-  - `apps/web/app/dashboard/customers/` (and components)
-  - `apps/web/app/dashboard/bk/` (and components)
-  - `apps/web/app/dashboard/cc/` (and components)
+  - `apps/web/app/dashboard/loca/page.tsx`, `LocaColumns.tsx`, `useLocaData.ts`
+  - `apps/web/app/dashboard/nyc/page.tsx`, `NycColumns.tsx`, `useNycData.ts`
+  - `packages/shared/src/types/customer.ts` (`Customer` model)
+  - `apps/web/components/customer-detail/components/CopyComboModal.tsx`
+  - `apps/web/components/CallLogModal.tsx`
+  - `apps/web/components/CustomerDetailDrawer.tsx`
 - **Key findings**:
-  - Total 19 search, select, and filter controls inventoried across 16 files.
-  - 2 controls already use `removeVietnameseTones`.
-  - 4 Select controls need `showSearch` / `filterOption` refactoring with `removeVietnameseTones`.
-  - 13 custom text search `<Input>` controls use `.toLowerCase().includes()` and require `removeVietnameseTones` refactoring.
-- **Unexplored areas**: None in assigned modules.
+  - Audited LoCa & NYC campaign pages and touchpoints ("Chạm 17 (ngày)" touchpoint `key: '17'`).
+  - Mapped all SMS template placeholders (`{ten_khach}`, `{sdt_khach}`, `{han_dung}`, `{so_ngay_dam}`, `{ten_combo}`, `{sdt_cua_hang}`, `Customer ID`) to `Customer` interface attributes.
+  - Identified `CopyComboModal.tsx` as gold standard for dual-pane SMS modal design (variable tag chips, live preview, character counter, theme compliance, resizability, localStorage persistence).
+  - Defined exact architectural recommendations for expanding "Thao tác" column width (180px-200px) and integrating `SmsModal`.
+- **Unexplored areas**: None (Milestone 1 audit complete).
 
 ## Key Decisions Made
 
-- Audited all files in assigned 4 modules thoroughly.
-- Formulated exact refactoring code blocks for each control.
-- Generated full report at `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/handoff.md`.
+- Audited views, column definitions, data structures, and modal UI patterns.
+- Created `analysis.md` and `handoff.md` in working directory.
 
 ## Artifact Index
 
-- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/ORIGINAL_REQUEST.md — Original task prompt
-- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/progress.md — Progress log
-- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/handoff.md — Final audit report
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/ORIGINAL_REQUEST.md` — Initial task request
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/BRIEFING.md` — Working state index
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/analysis.md` — Detailed analysis report
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_1/handoff.md` — 5-component handoff report

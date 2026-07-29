@@ -1,77 +1,88 @@
-# Handoff Report — teamwork_preview_worker
-
-**Role:** Performance Report Generator (`teamwork_preview_worker`)  
-**Task:** Create final comparative performance report `performance_report_comparison.md`  
-**Target Path:** `/Users/dannydo/projects/mos-lab/performance_report_comparison.md`  
-**Date:** July 26, 2026
-
----
+# Handoff Report: Milestone 2 — SMS Action Feature Implementation
 
 ## 1. Observation
 
-1. **Baseline State (`performance_report.md`):**
-   - 26 total page/sub-tab route combinations audited.
-   - Cold compilation load latency on heavy routes: 37.7s to 90.0s (with bundler timeouts on `/dashboard/plans` and `/dashboard/calls`).
-   - Time-to-Interactive (TTI): 12.2s to 70.5s.
-   - API payload spikes: 3.93 MB on `/dashboard/customers (Referrals)`, 2.84 MB - 3.69 MB on `/dashboard/cc` and `/dashboard/cv` sub-tabs.
-   - API calls on mount: 18 to 38 calls per route.
-   - Tabular-nums errors: 475+ missing instances across KPI, CC, CV, Appointments, Today, Call Timers, Audio Timeline.
-   - Accessibility: Lacked top-level `<h1>`, sidebar `<nav>`, control `aria-label`s, `:focus-visible` styling, and WCAG AA contrast (light theme gold contrast ratio 2.36:1).
+- **Shared DTOs**:
+  - File created: `packages/shared/src/types/sms.ts` defining `SmsTemplate`, `SaveSmsTemplateInput`, `SendSmsRequest`, `SendSmsResponse`, `CustomerSmsHistoryItem`, `SmsVariableTagDefinition`, and `DEFAULT_SMS_VARIABLE_TAGS`.
+  - Re-exported in `packages/shared/src/index.ts` line 18: `export * from './types/sms';`.
+  - Build command `pnpm --filter @mos-lab/shared build` completed with exit code 0.
 
-2. **Post-Optimization Frontend State (`frontend_benchmark.md`):**
-   - Initial load duration: 170ms to 232ms across all 26 routes (>99.4% reduction).
-   - TTI across all 26 routes: 1.6s to 2.4s (83.0% - 97.5% speedup).
-   - Referrals payload: 45.80 kB (-98.8% reduction).
-   - CC/CV summary sub-tab payload: 28.50 kB (-99.2% reduction).
-   - API calls on mount: 5 to 10 calls per page (-54.5% to -81.5% reduction).
+- **Prisma Model & Backend API Routes (`apps/api`)**:
+  - File updated: `apps/api/prisma/legacy.prisma` adding model `user_sms`:
+    ```prisma
+    model user_sms {
+      id               Int      @id @default(autoincrement()) @db.UnsignedInt
+      to_phone_number  String   @db.VarChar(50)
+      body             String   @db.Text
+      template_id      Int?     @db.UnsignedInt
+      created_staff_id Int?     @db.UnsignedInt
+      date_created     DateTime @default(now()) @db.DateTime(0)
+    }
+    ```
+  - Executed `pnpm --filter @mos-lab/api prisma:generate` which successfully generated both legacy and CRM clients.
+  - File created: `apps/api/src/modules/sms/routes.ts` implementing `GET /api/sms/templates`, `POST /api/sms/templates` (Admin), `DELETE /api/sms/templates/:id` (Admin), `GET /api/sms/history/:customerId`, and `POST /api/sms/send`. Relative imports use `.js` extension (`../../middlewares/auth.js`).
+  - Registered in `apps/api/src/server.ts` line 21 (`import { smsRoutes } from './modules/sms/routes.js';`) and line 170 (`await server.register(smsRoutes, { prefix: '/api' });`).
+  - Build command `pnpm --filter @mos-lab/api build` completed with 0 errors.
 
-3. **Backend & DB Verification (`backend_verification.md`):**
-   - Verified server-side pagination `page=1&pageSize=20` on `GET /api/customers/referrals`.
-   - Verified SQL subquery scope injection in `GET /api/customers` and `stats`.
-   - Verified `DATEDIFF` refactoring to date range comparisons in `GET /api/plans/suggest`.
-   - Verified replacement of correlated scalar subqueries with explicit `LEFT JOIN`s in `GET /api/kpi/cc-leaderboard`.
-   - Verified 10 composite DB indexes in `scripts/create_legacy_indexes.sql`.
+- **Web SDK Client (`apps/web/lib/api-client.ts`)**:
+  - Imported SMS DTOs from `@mos-lab/shared`.
+  - Added `apiClient.sms` object with `getTemplates()`, `saveTemplate()`, `deleteTemplate()`, `getHistory()`, and `sendSms()` methods.
 
-4. **Tabular-Nums & A11y Verification (`a11y_verification.md`):**
-   - Verified 0 missing `tabular-nums` errors.
-   - Verified `h1.sr-only` landmark in `layout.tsx`.
-   - Verified `<nav aria-label="Main Navigation">` around sidebar menu.
-   - Verified dynamic `aria-label` and `title` attributes on theme toggle & sidebar collapse buttons.
-   - Verified `:focus-visible` outline styling with 2px gold border and 2px offset in `globals.css`.
-   - Verified Light Theme `--color-gold: #9e7118` contrast ratio of 4.58:1 to 4.77:1 on light backgrounds.
+- **SMS Modal Component (`apps/web/components/sms/SMSModal.tsx`)**:
+  - Dual-pane modal built following `CopyComboModal` standards.
+  - Left pane: Scrollable SMS history list with badges, timestamp, staff name, recipient phone, and message snippet.
+  - Right pane: Recipient phone selector, template dropdown, variable tag chips (`{ten_khach}`, `{sdt_khach}`, `{han_dung}`, `{so_ngay_dam}`, `{ten_combo}`, `{sdt_cua_hang}`), custom message editor, dynamic live preview box, character & SMS segment counter (`tabular-nums`), Admin "Lưu Template Mẫu" button & modal, and Primary "Gửi SMS" button.
+  - Supports both `open` and `visible` props for full component compatibility.
+  - Supports themeMode (Light & Dark theme) and Ant Design tokens.
 
----
+- **LoCa & NYC Dashboard Views Integration**:
+  - `apps/web/app/dashboard/loca/components/LocaColumns.tsx`: Expanded `actions` column width from `120` to `200` in both `getLocaColumns` and `getNewLocaColumns`, added "Gửi SMS" button with `MessageOutlined` icon next to "Lên lịch gọi".
+  - `apps/web/app/dashboard/loca/page.tsx`: Dynamically imported `SMSModal`, added `smsModalVisible` state, `handleOpenSmsModal` handler, passed to column getters, and rendered `<SMSModal>`.
+  - `apps/web/app/dashboard/nyc/components/NycColumns.tsx`: Expanded `actions` column width from `110` to `200`, added "Gửi SMS" button with `MessageOutlined` icon.
+  - `apps/web/app/dashboard/nyc/page.tsx`: Dynamically imported `SMSModal`, added `smsModalVisible` state, `handleOpenSmsModal` handler, passed to `getNycColumns`, and rendered `<SMSModal>`.
+
+- **Full Monorepo Build Verification**:
+  - Executed `pnpm build`: 4 of 4 packages (`@mos-lab/shared`, `@mos-lab/api`, `@mos-lab/ads-portal`, `@mos-lab/web`) built 100% clean with 0 TypeScript/compilation errors.
 
 ## 2. Logic Chain
 
-1. Aggregated exact metrics across all 4 source files (`performance_report.md`, `frontend_benchmark.md`, `backend_verification.md`, `a11y_verification.md`).
-2. Structured `performance_report_comparison.md` into 4 primary sections:
-   - Section 1: Executive Summary & Key Achievements.
-   - Section 2: Complete Side-by-Side 26 Route Benchmark Comparison Matrix Table (including init load, TTI, API calls, API payloads, tabular-nums, and a11y status).
-   - Section 3: Detailed Technical Breakdown Sections (API payloads, Fastify SQL & 10 DB indexes, Tabular-nums & WCAG AA a11y compliance).
-   - Section 4: Conclusion & Report Verification Metadata.
-3. Verified all data points match source audit artifacts with 100% precision.
-
----
+1. **Step 1 (DTOs)**: Defining standardized interfaces in `@mos-lab/shared` ensures single-source-of-truth type safety across Fastify API endpoints and Next.js frontend SDK.
+2. **Step 2 (Prisma & API)**: Adding `user_sms` model to `legacy.prisma` maps directly to legacy DB tables. Implementing `/api/sms/*` endpoints allows fetching/saving system templates in `crm_config`, querying customer SMS history, and recording sent SMS to `user_sms` while creating linked `crm_call_logs` (`call_type = 'SMS'`).
+3. **Step 3 (SDK)**: Extending `apiClient.sms` provides clean, strongly-typed frontend method calls (`apiClient.sms.sendSms(...)`, `apiClient.sms.getHistory(...)`) avoiding raw HTTP string calls.
+4. **Step 4 (SMSModal UI)**: Dual-pane component enables telesales staff to view past customer communication history on the left while composing new SMS messages on the right with real-time variable tag substitution, segment count tracking, and template selection.
+5. **Step 5 (Views Integration)**: Wiring "Gửi SMS" into LoCa and NYC "Chạm 17 (ngày)" and touchpoint tables allows instant 1-click access to SMS actions directly from customer care workflows.
 
 ## 3. Caveats
 
-- Development environment metrics reflect dev bundler performance on Next.js 15 + Fastify 5 API. Production build environment static rendering will yield even faster TTI metrics (< 500ms).
-
----
+- No caveats. The implementation covers all backend API, shared types, SDK, modal UI, and dashboard view integration specs from Milestone 1.
 
 ## 4. Conclusion
 
-The comparative performance report file `/Users/dannydo/projects/mos-lab/performance_report_comparison.md` has been successfully created and verified. All performance, API payload, SQL optimization, database indexing, tabular-nums formatting, and WCAG AA accessibility requirements are met.
-
----
+The SMS Action feature (Milestone 2) is fully implemented, strongly-typed, theme-compatible, and integrated into mos-lab monorepo with 100% clean compilation (`pnpm build`).
 
 ## 5. Verification Method
 
-To verify the generated comparative performance report:
+To verify the implementation independently:
 
-1. Inspect the file:
+1. **Shared Build**:
    ```bash
-   cat /Users/dannydo/projects/mos-lab/performance_report_comparison.md
+   pnpm --filter @mos-lab/shared build
    ```
-2. Confirm matrix table includes all 26 page/sub-tab routes with baseline vs. post-optimization metrics.
+2. **API Generation & Build**:
+   ```bash
+   pnpm --filter @mos-lab/api build
+   ```
+3. **Monorepo Build**:
+   ```bash
+   pnpm build
+   ```
+4. **Inspect Files**:
+   - `packages/shared/src/types/sms.ts`
+   - `apps/api/prisma/legacy.prisma`
+   - `apps/api/src/modules/sms/routes.ts`
+   - `apps/web/lib/api-client.ts`
+   - `apps/web/components/sms/SMSModal.tsx`
+   - `apps/web/app/dashboard/loca/components/LocaColumns.tsx`
+   - `apps/web/app/dashboard/loca/page.tsx`
+   - `apps/web/app/dashboard/nyc/components/NycColumns.tsx`
+   - `apps/web/app/dashboard/nyc/page.tsx`

@@ -173,3 +173,41 @@ Integrity mode: development
 - [ ] Searching "hang" matches "Hằng Ni" and "thuy" matches "Thuỳ Trang 🌸".
 - [ ] All <Select showSearch> components in /dashboard/* use removeVietnameseTones.
 - [ ] pnpm --filter @mos-lab/web build passes with zero type errors.
+
+## Follow-up — 2026-07-29T07:39:58Z
+
+Thêm action gửi tin nhắn cho Chạm 17 (ngày) trong hệ thống CRM / Chăm sóc khách hàng.
+
+- Nút action Gửi SMS được hiển thị ngay tại cột thao tác của tab **Chạm 17 (ngày)** trong màn hình quản lý khách hàng (LoCa/NYC).
+- Hình 1: Cho phép Admin tùy chỉnh tin nhắn mẫu linh hoạt (tương tự modal copy tin nhắn mẫu Combo: hỗ trợ chèn thẻ biến `{ten_khach}`, `{han_dung}`, ..., xem trước live preview). Mẫu chuẩn hệ thống do Admin lưu vào Backend DB để dùng chung toàn công ty.
+- Hình 2: Sử dụng hệ thống cũ để lưu lịch sử tin nhắn SMS và tạo tin nhắn mẫu (Backwards Compatible 100% với bảng `user_sms` và hệ thống legacy).
+
+Working directory: /Users/dannydo/projects/mos-lab
+Integrity mode: development
+
+## Requirements
+
+### R1. Vị trí Nút Action Gửi SMS tại Tab Chạm 17 (ngày)
+
+Hiển thị nút/icon gửi SMS ngay tại cột Thao tác của từng dòng khách hàng trong tab Chạm 17 (ngày). Khi nhấp vào sẽ mở Modal Gửi SMS / Chỉnh Template.
+
+### R2. Cấu hình & Quản lý Template Tin nhắn Mẫu (Hình 1)
+
+- Admin có quyền lưu/cập nhật Template chuẩn hệ thống vào Backend DB (`crm_config` hoặc bảng template).
+- Booker/Staff khi gửi SMS có thể chọn template chuẩn, chèn các thẻ biến (`{ten_khach}`, `{han_dung}`, `{so_ngay_dam}`, `{ten_combo}`, `{sdt_cua_hang}`, ...), tùy chỉnh thêm nội dung và xem trước (live preview) nội dung thực tế trước khi gửi.
+
+### R3. Tích hợp Backend Fastify & Hệ thống SMS Cũ (Hình 2)
+
+- Xây dựng/Cập nhật API backend Fastify `/api/sms/send` và `/api/sms/templates`.
+- Khi bấm Gửi SMS, hệ thống ghi bản ghi mới vào CSDL legacy bảng `user_sms` (`to_phone_number`, `body`, `template_id`, `created_staff_id`, `date_created`, ...), đồng thời tự động cập nhật nhật ký liên hệ của khách hàng (`crm_call_logs` với `call_type = 'SMS'`).
+- Hiển thị danh sách Lịch sử SMS đã gửi của khách hàng và danh sách các Template SMS legacy (như `Reminder 17 - Single`) theo giao diện hệ thống cũ (Hình 2).
+
+## Acceptance Criteria
+
+### Chức năng Gửi SMS & Template
+
+- [ ] Tại tab Chạm 17 (ngày), cột Thao tác hiển thị nút Gửi SMS.
+- [ ] Mở Modal SMS gồm 2 phần: Bên trái hiển thị Lịch sử SMS đã gửi (từ `user_sms`), Bên phải là trình soạn thảo Template (kiểu Combo Copy Modal) + Danh sách Mẫu SMS hệ thống.
+- [ ] Admin có nút "Lưu Template Mẫu" ghi vào Backend DB cho toàn hệ thống.
+- [ ] Booker có thể chèn thẻ biến, chỉnh sửa nội dung tin nhắn và xem trước (Live Preview) chuẩn xác tên khách, ngày dặm, hạn dùng trước khi gửi.
+- [ ] Khi bấm Gửi SMS, hệ thống gọi API `/api/sms/send`, lưu bản ghi vào `user_sms` legacy DB, tự động ghi log `crm_call_logs` và hiển thị thông báo thành công.

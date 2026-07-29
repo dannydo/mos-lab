@@ -1,23 +1,30 @@
-# Project: mos-lab Tone-Insensitive & Case-Insensitive Vietnamese Search Refactoring
+# Project: mos-lab SMS Action Feature for "Chạm 17 (ngày)" (LoCa / NYC)
 
 ## Architecture
 
-- Utility Package: `@mos-lab/shared` or `apps/web/lib/utils/search.ts` providing `removeVietnameseTones(str: string): string` and `vietnameseSearchFilter(input: string, option: any): boolean`.
-- Scope: All CRM dashboard modules (`apps/web/app/dashboard/*` and relevant components/tables across `/today`, `/customers`, `/bk`, `/cc`, `/cv`, `/catalog`, `/appointments`, `/loca`, `/nyc`, `/omicall`, `/staff`).
-- Ant Design Integration: `<Select showSearch>` filterOption, Table `onFilter` / `filterDropdown`, and custom Input search handlers.
+- Frontend: Next.js 15 + Ant Design 5 + Tailwind v4 (`apps/web`).
+  - Customer Management: `apps/web/app/dashboard/loca` and `apps/web/app/dashboard/nyc` ("Chạm 17 (ngày)" tab).
+  - Component: SMS Action Modal (`apps/web/components/sms/SMSModal.tsx` or similar) featuring dual-pane layout: Left pane for customer SMS history from `user_sms`, Right pane for Template selection, Variable Tag buttons (`{ten_khach}`, `{han_dung}`, `{so_ngay_dam}`, `{ten_combo}`, `{sdt_cua_hang}`), Custom Editor, Live Preview, Admin template save, and Send SMS.
+  - SDK: `apiClient` in `apps/web/lib/api-client.ts`.
+- Backend: Fastify 5 + TypeScript (`apps/api`).
+  - Routes: `/api/sms/templates` (GET/POST for template management), `/api/sms/send` (POST for sending SMS, logging to legacy `user_sms` & `crm_call_logs`), `/api/sms/history/:customerId` (GET for customer SMS history).
+  - Database: Legacy DB `management` (`user_sms` table) & CRM DB `mos_lab` (`crm_config` or template storage & `crm_call_logs`).
+- Shared Types: `@mos-lab/shared` (`packages/shared/src/types/sms.ts`).
 
 ## Milestones
 
-| #   | Name                                | Scope                                                                                                                                                                                          | Dependencies | Status |
-| --- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------ |
-| 1   | M1_search_exploration_and_utility   | Explore existing `<Select showSearch>`, table filters, and search inputs across all 11 dashboard modules; establish clean `removeVietnameseTones` utility & helper functions.                  | None         | DONE   |
-| 2   | M2_dashboard_search_refactoring     | Refactor all search controls in all 11 dashboard modules to use `removeVietnameseTones` for tone-insensitive and case-insensitive matching. Verify build (`pnpm --filter @mos-lab/web build`). | M1           | DONE   |
-| 3   | M3_review_and_adversarial_challenge | Independent review by 2 Reviewers & adversarial challenge by 2 Challengers for Vietnamese search coverage ("diep" -> "Ngọc Điệp", "hang" -> "Hằng Ni", "thuy" -> "Thuỳ Trang 🌸").             | M2           | DONE   |
-| 4   | M4_forensic_integrity_audit         | Forensic integrity verification by `teamwork_preview_auditor` to ensure authentic implementation without hardcoding or test bypasses.                                                          | M3           | DONE   |
-| 5   | M5_synthesis_and_reporting          | Final synthesis of refactoring results, verification confirmation, and victory completion report to Sentinel/User.                                                                             | M4           | DONE   |
+| #   | Name                                | Scope                                                                                                                                                                                                  | Dependencies | Status |
+| --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ | ------ |
+| 1   | M1_sms_exploration_and_architecture | Audit customer care tables (LoCa/NYC "Chạm 17"), legacy `user_sms` & `crm_call_logs` DB schemas, template storage in `crm_config`, and existing modal/component architecture.                          | None         | DONE   |
+| 2   | M2_sms_feature_implementation       | Implement shared types, Fastify backend routes (`/api/sms/templates`, `/api/sms/send`, `/api/sms/history`), web `apiClient`, SMS Modal UI, and "Gửi SMS" button in "Chạm 17 (ngày)" tab. Verify build. | M1           | DONE   |
+| 3   | M3_review_and_adversarial_challenge | Independent review by 2 Reviewers & empirical stress testing by 2 Challengers for template variable replacement, SMS sending, history logging, and UI theme compliance.                                | M2           | DONE   |
+| 4   | M4_forensic_integrity_audit         | Forensic integrity verification by `teamwork_preview_auditor` to ensure authentic DB reads/writes (`user_sms`, `crm_call_logs`) without hardcoding or test bypasses.                                   | M3           | DONE   |
+| 5   | M5_synthesis_and_reporting          | Final synthesis of implementation results, verification confirmation, build confirmation, and completion report.                                                                                       | M4           | DONE   |
 
 ## Code Layout
 
-- `@mos-lab/shared/src/utils/search.ts` / `apps/web/lib/utils/search.ts`: `removeVietnameseTones` utility and `includesVietnamese` / `vietnameseFilterOption`.
-- `apps/web/app/dashboard/`: Dashboard pages & sub-modules (`today`, `customers`, `bk`, `cc`, `cv`, `catalog`, `appointments`, `loca`, `nyc`, `omicall`, `staff`).
-- `apps/web/components/`: Dashboard modals, drawers, table filters, and search selectors.
+- `packages/shared/src/types/sms.ts`: Shared DTOs for SMS templates, variable tags, send request/response, history.
+- `apps/api/src/modules/sms/`: Fastify SMS routes and services.
+- `apps/web/lib/api-client.ts`: Web API Client methods for SMS.
+- `apps/web/components/sms/`: SMS Modal UI components.
+- `apps/web/app/dashboard/loca/` & `apps/web/app/dashboard/nyc/`: Customer management views with "Chạm 17 (ngày)" tab action column integration.

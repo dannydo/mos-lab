@@ -15,4 +15,5 @@ export * from './types/catalog';
 export * from './types/omicall';
 export * from './types/team';
 export * from './types/revenue-hourly';
+export * from './types/sms';
 export * from './utils/search';

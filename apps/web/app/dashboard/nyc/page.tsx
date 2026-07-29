@@ -50,6 +50,7 @@ const TableConfigDrawer = dynamic(
   () => import('../../../components/TableConfigDrawer').then((m) => m.TableConfigDrawer),
   { ssr: false }
 );
+const SMSModal = dynamic(() => import('../../../components/sms/SMSModal').then((m) => m.SMSModal), { ssr: false });
 import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
 import { useTableConfig } from '../../../hooks/useTableConfig';
 import { Customer, CALL_RESULT_LABELS, vietnameseSearchFilter } from '@mos-lab/shared';
@@ -127,6 +128,16 @@ export default function NycCampaignPage() {
     onError: (msg) => message.error(msg),
     onWarning: (msg) => message.warning(msg),
   });
+
+  const [smsModalVisible, setSmsModalVisible] = useState<boolean>(false);
+
+  const handleOpenSmsModal = React.useCallback(
+    (customer: Customer) => {
+      setSelectedCustomer(customer);
+      setSmsModalVisible(true);
+    },
+    [setSelectedCustomer]
+  );
 
   const handleDetailClose = React.useCallback(() => {
     setDetailModalVisible(false);
@@ -244,6 +255,7 @@ export default function NycCampaignPage() {
     dailyPlanList,
     handleAddToPlan,
     makeCall,
+    handleOpenSmsModal,
     addingIds,
     sortField,
   });
@@ -875,6 +887,13 @@ export default function NycCampaignPage() {
         columns={nycRawConfig}
         onSave={saveNycConfig}
         onReset={resetNycConfig}
+      />
+
+      <SMSModal
+        open={smsModalVisible}
+        onClose={() => setSmsModalVisible(false)}
+        customer={selectedCustomer}
+        onSuccess={fetchCustomerList}
       />
 
       <style jsx global>{`

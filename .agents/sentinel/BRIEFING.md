@@ -1,15 +1,15 @@
-# BRIEFING — 2026-07-28T09:08:00+07:00
+# BRIEFING — 2026-07-29T14:40:00+07:00
 
 ## Mission
 
-Record user request, spawn orchestrator to refactor standard search filtering across all CRM dashboard modules in mos-lab to support tone-insensitive & case-insensitive Vietnamese search (removeVietnameseTones), set up crons, and trigger victory audit upon completion.
+Record user request, spawn orchestrator to implement SMS Action feature for Cham 17 (days) tab in CRM Customer Management (LoCa/NYC), set up monitoring crons, and verify victory audit upon completion.
 
 ## 🔒 My Identity
 
 - Archetype: sentinel
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/sentinel
-- Orchestrator: b443607f-5adc-4cf6-b4eb-a237d405d7f4
-- Victory Auditor: e0e60c71-a58d-4bfa-8250-e302e207b55b
+- Orchestrator: 4c6eb061-9916-414f-80ff-2f233bc9429f
+- Victory Auditor: df69ed28-8538-4351-9b4d-e90640893b7d
 
 ## 🔒 Key Constraints
 
@@ -18,13 +18,13 @@ Record user request, spawn orchestrator to refactor standard search filtering ac
 
 ## User Context
 
-- **Last user request**: Refactor standard search filtering across all CRM dashboard modules in mos-lab (apps/web & apps/api) to support tone-insensitive & case-insensitive Vietnamese search (removeVietnameseTones).
+- **Last user request**: Add SMS action for Cham 17 (days) in CRM / Customer Care system (LoCa/NYC), with system templates management, live preview variable substitution, user_sms legacy table logging, and crm_call_logs integration.
 - **Pending clarifications**: none
-- **Delivered results**: Orchestrator completed task; Victory Auditor spawned for mandatory audit.
+- Delivered results: SMS Action feature for Cham 17 (LoCa/NYC) implemented, audited, and VICTORY CONFIRMED by independent Victory Auditor.
 
 ## Project Status
 
-- **Phase**: complete (Victory Audit CONFIRMED)
+- **Phase**: complete (VICTORY CONFIRMED)
 
 ## Victory Audit Status
 

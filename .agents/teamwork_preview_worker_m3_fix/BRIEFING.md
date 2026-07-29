@@ -1,69 +1,52 @@
-# BRIEFING — 2026-07-28T09:32:30Z
+# BRIEFING — 2026-07-29T14:53:00Z
 
 ## Mission
 
-Enhance `vietnameseSearchFilter` in `packages/shared/src/utils/search.ts` to handle Array label/children/value nodes, and apply `removeVietnameseTones` to client filter inputs in `AppointmentsAuditDrawer.tsx` and `referrals/page.tsx`.
+Fix 5 critical/high/medium bugs identified by Challenger 1 and 2 in SMS Action feature (Milestone 3) and verify build.
 
 ## 🔒 My Identity
 
-- Archetype: worker_m3_fix
+- Archetype: implementer, qa, specialist
 - Roles: implementer, qa, specialist
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m3_fix
-- Original parent: 7699a38e-37d6-4763-8f97-08686a3bc0b6
-- Milestone: M3 vietnameseSearchFilter & tone removal enhancements
+- Original parent: 4c6eb061-9916-414f-80ff-2f233bc9429f
+- Milestone: Milestone 3 - SMS Action Bug Fixes
 
 ## 🔒 Key Constraints
 
-- Follow minimal change principle
-- Handle Array/React node children safely in `vietnameseSearchFilter`
-- Rebuild shared package and web app to verify build/type errors
+- Minimal change principle.
+- No hardcoded test results / facade implementations.
+- Verify build with `pnpm build`.
+- Document findings and verification in handoff.md and send_message to parent.
 
 ## Current Parent
 
-- Conversation ID: 7699a38e-37d6-4763-8f97-08686a3bc0b6
-- Updated: 2026-07-28T09:32:30Z
+- Conversation ID: 4c6eb061-9916-414f-80ff-2f233bc9429f
+- Updated: 2026-07-29T14:53:00Z
 
 ## Task Summary
 
 - **What to build**:
-  1. Updated `vietnameseSearchFilter` with recursive `extractText` helper to process strings, numbers, Arrays, and nested React node props (`children`).
-  2. Rebuilt `@mos-lab/shared` with `pnpm --filter @mos-lab/shared build`.
-  3. Applied `removeVietnameseTones` to `apps/web/app/dashboard/kpi/components/AppointmentsAuditDrawer.tsx` and `apps/web/app/dashboard/referrals/page.tsx`.
-  4. Rebuilt `@mos-lab/web` with `pnpm --filter @mos-lab/web build` (0 type errors, 21 static routes rendered).
-- **Success criteria**:
-  - `vietnameseSearchFilter` safely converts Array or React element nodes in `label` / `children` / `value`.
-  - Filter inputs in `AppointmentsAuditDrawer.tsx` and `referrals/page.tsx` use `removeVietnameseTones`.
-  - Builds pass cleanly with zero errors.
-- **Interface contracts**: `packages/shared/src/utils/search.ts`
+  1. Fix UCS-2 vs GSM-7 SMS Segment Calculation in `apps/web/components/sms/SMSModal.tsx` [DONE].
+  2. Fix `templateId` String Storage in `apps/api/src/modules/sms/routes.ts` & `legacy.prisma` [DONE].
+  3. Fix `legacyUserId = 0` Validation in `apps/api/src/modules/sms/routes.ts` [DONE].
+  4. Fix Date Formatting & Variable Replacement Fallbacks in `apps/web/components/sms/SMSModal.tsx` [DONE].
+  5. Safeguard System Templates in `apps/api/src/modules/sms/routes.ts` [DONE].
+  6. Run `pnpm build` and ensure clean compilation [IN PROGRESS].
+- **Success criteria**: All 5 bugs fixed cleanly, 0 build errors across monorepo packages.
 
 ## Key Decisions Made
 
-- Added `extractText(node: unknown): string` in `packages/shared/src/utils/search.ts` to safely convert any node representation to plain text.
-- Integrated `removeVietnameseTones` into `AppointmentsAuditDrawer.tsx` search text filter (`drillSearchText`).
-- Integrated `removeVietnameseTones` into `referrals/page.tsx` search text filter (`searchText`).
+- Updated `user_sms.template_id` in `legacy.prisma` to `String? @db.VarChar(100)` and re-generated Prisma clients so string template IDs like `"tpl_reminder_17"` are preserved directly in the DB.
+- Replaced hardcoded GSM-7 segment limits in `SMSModal.tsx` with dynamic detection of Unicode characters (`/[^\x00-\x7F]/`), using UCS-2 limits (70 single / 67 multi-part) when Unicode is present.
+- Updated `legacyUserId` check in `routes.ts` to `legacyUserId === undefined || legacyUserId === null` to allow integer `0`.
+- Added safe date formatting helper `formatSafeDate` with `dayjs(val).isValid()` checks for `{han_dung}` and `{ngay_lam_near}`.
+- Added deletion protection in `DELETE /api/sms/templates/:id` returning `400 Bad Request` if template ID is built-in system template.
+- Added dual-DB compensating rollback when `crmCallLog.create` fails.
 
 ## Artifact Index
 
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m3_fix/BRIEFING.md` — Agent working memory
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m3_fix/progress.md` — Progress tracker
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m3_fix/verify-search.ts` — Empirical verification test script
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m3_fix/handoff.md` — Handoff report
-
-## Change Tracker
-
-- **Files modified**:
-  - `packages/shared/src/utils/search.ts`: Added `extractText` and updated `vietnameseSearchFilter`.
-  - `apps/web/app/dashboard/kpi/components/AppointmentsAuditDrawer.tsx`: Imported and applied `removeVietnameseTones`.
-  - `apps/web/app/dashboard/referrals/page.tsx`: Imported and applied `removeVietnameseTones`.
-- **Build status**: Pass (@mos-lab/shared and @mos-lab/web)
-- **Pending issues**: None
-
-## Quality Status
-
-- **Build/test result**: Pass (100% clean Next.js 16 build + 100% empirical verification test pass)
-- **Lint status**: Pass
-- **Tests added/modified**: `verify-search.ts` (9 test cases passed)
-
-## Loaded Skills
-
-- None
+- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m3_fix/ORIGINAL_REQUEST.md — Original User/Parent Request
+- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m3_fix/BRIEFING.md — Working briefing index
+- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m3_fix/progress.md — Liveness heartbeat
+- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_m3_fix/handoff.md — Handoff report

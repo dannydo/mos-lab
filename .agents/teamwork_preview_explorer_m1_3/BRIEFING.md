@@ -1,52 +1,44 @@
-# BRIEFING — 2026-07-28T09:10:00Z
+# BRIEFING — 2026-07-29T07:43:00Z
 
 ## Mission
 
-Audit and inventory Ant Design Select showSearch, Table filters, and search inputs in NYC, OmiCall, and Staff modules, as well as shared search utilities.
+Audit shared types and SDK client for Milestone 1 SMS Action feature in mos-lab, design required DTOs, variable tags, apiClient extensions, and system rule compliance checklist.
 
 ## 🔒 My Identity
 
-- Archetype: explorer
-- Roles: explorer_m1_3
+- Archetype: Teamwork explorer
+- Roles: Read-only investigator / Analyzer
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_3
-- Original parent: b443607f-5adc-4cf6-b4eb-a237d405d7f4
-- Milestone: m1_3
+- Original parent: 4c6eb061-9916-414f-80ff-2f233bc9429f
+- Milestone: Milestone 1 - SMS Action Feature Shared Types & SDK Client Design
 
 ## 🔒 Key Constraints
 
-- Read-only investigation — do NOT implement
-- Operational scope: /dashboard/nyc, /dashboard/omicall, /dashboard/staff, and shared search utilities
+- Read-only investigation — do NOT implement production code modifications
+- Write findings and reports to working directory: `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_3/`
+- Communicate progress and final report via `send_message` to parent (`4c6eb061-9916-414f-80ff-2f233bc9429f`)
 
 ## Current Parent
 
-- Conversation ID: b443607f-5adc-4cf6-b4eb-a237d405d7f4
-- Updated: 2026-07-28T09:10:00Z
+- Conversation ID: 4c6eb061-9916-414f-80ff-2f233bc9429f
+- Updated: 2026-07-29T07:43:00Z
 
 ## Investigation State
 
-- **Explored paths**:
-  - `apps/web/app/dashboard/nyc/` (`page.tsx`, `NycColumns.tsx`, `useNycData.ts`)
-  - `apps/web/app/dashboard/omicall/` (`page.tsx`)
-  - `apps/web/app/dashboard/staff/` (`page.tsx`, `StaffColumns.tsx`, `StaffTabsContent.tsx`, `useStaffData.ts`)
-  - `apps/web/components/` (`BookingWizardDrawer.tsx`, `RescheduleBookingModal.tsx`, `DailyCallsTable.tsx`, `CallLogModal.tsx`, `TelesalesConfigPanel.tsx`)
-  - `apps/web/app/dashboard/today/components/BookerTeamConfigModal.tsx` (existing `removeVietnameseTones` reference)
-  - `packages/shared/` & `apps/web/lib/` (utility package locations)
-- **Key findings**:
-  - Existing `removeVietnameseTones` function exists locally in `BookerTeamConfigModal.tsx` and is imported by `TodayCalendarSummary.tsx`.
-  - Omicall module (`page.tsx` line 626) currently uses tone-sensitive `filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}`.
-  - Staff module (`StaffTabsContent.tsx` line 211) uses `showSearch` and `optionFilterProp="children"` without tone removal.
-  - Shared modals (`BookingWizardDrawer.tsx` lines 735 & 897, `RescheduleBookingModal.tsx` line 402) use tone-sensitive `(option?.label ?? '').toLowerCase()`.
-  - NYC module (`page.tsx` line 286) has staff selector without `showSearch`.
-  - No unified `removeVietnameseTones` or `vietnameseSearchFilter` utility currently exists in `packages/shared` or `apps/web/lib/utils/search.ts`.
-- **Unexplored areas**: None, all scope files audited.
+- **Explored paths**: `packages/shared/src/types/`, `apps/web/lib/api-client.ts`, `apps/api/src/modules/calls/routes.ts`, `apps/api/prisma/`
+- **Key findings**: Shared DTOs layout specified in `packages/shared/src/types/sms.ts`, `apiClient.sms` SDK extension designed, variable tag mappings defined, compliance rules verified (Fastify `.js` relative imports, `apiClient` SDK, RBAC `admin` vs staff roles, Light/Dark theme + `tabular-nums`).
+- **Unexplored areas**: None for M1 scope.
 
 ## Key Decisions Made
 
-- Formulated the standard `removeVietnameseTones` and `vietnameseSearchFilter` specification for `@mos-lab/shared/src/utils/search.ts` and `apps/web/lib/utils/search.ts`.
-- Documented exact file paths, line numbers, current logic, and proposed refactoring for all controls.
+- DTO layout designed in `packages/shared/src/types/sms.ts` and re-exported via `packages/shared/src/index.ts`.
+- `apiClient.sms` methods defined for templates, send, history, and preview.
+- Dynamic variable tags mapped to customer fields with fallbacks and SMS segment length specs.
 
 ## Artifact Index
 
-- ORIGINAL_REQUEST.md — Original mission description
-- BRIEFING.md — Persistent state index
-- handoff.md — Final audit and handoff report
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_3/ORIGINAL_REQUEST.md` — Original request log
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_3/BRIEFING.md` — Agent working memory
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_3/progress.md` — Heartbeat and step log
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_3/analysis.md` — Detailed analysis report
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_m1_3/handoff.md` — Self-contained 5-component handoff report

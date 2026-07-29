@@ -309,3 +309,31 @@ model product_price {
   currency_id      Int   @db.UnsignedInt
   product_price    Float
 }
+
+model user_sms {
+  id                   Int       @id @default(autoincrement()) @db.UnsignedInt
+  client_id            Int       @default(1) @db.UnsignedInt
+  client_business_id   Int       @default(1) @db.UnsignedInt
+  created_staff_id     Int?      @db.UnsignedInt
+  from_phone_number    String    @default("WINGS") @db.VarChar(20)
+  to_phone_number      String    @db.VarChar(50)
+  from_user_contact_id Int?      @db.UnsignedInt
+  to_user_contact_id   Int?      @db.UnsignedInt
+  from_user_id         Int?      @db.UnsignedInt
+  to_user_id           Int?      @db.UnsignedInt
+  to_language_id       Int?      @db.UnsignedInt
+  template_id          Int?      @db.UnsignedInt
+  order_id             Int?      @db.UnsignedInt
+  sales_lead_id        Int?      @db.UnsignedInt
+  provider             String?   @db.VarChar(30)
+  title                String?   @db.VarChar(255)
+  body                 String    @db.Text
+  data                 String?   @db.VarChar(255)
+  post_param           String    @default("{}") @db.Text
+  message_id           String?   @db.VarChar(100)
+  sent_result          String?   @db.VarChar(255)
+  ip_address           String    @default("127.0.0.1") @db.VarChar(100)
+  date_sent            DateTime? @db.DateTime(0)
+  date_created         DateTime  @default(now()) @db.DateTime(0)
+}
+

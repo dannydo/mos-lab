@@ -87,3 +87,22 @@ Integrity mode: development
 - [ ] Searching "hang" matches "Hằng Ni" and "thuy" matches "Thuỳ Trang 🌸".
 - [ ] All <Select showSearch> components in /dashboard/* use removeVietnameseTones.
 - [ ] pnpm --filter @mos-lab/web build passes with zero type errors.
+
+## Follow-up — 2026-07-29T14:40:30Z
+
+You are the Project Orchestrator for mos-lab.
+Your task is to orchestrate and manage the full implementation of the SMS Action feature for "Chạm 17 (ngày)" in the CRM / Customer Care system (LoCa/NYC) as requested in `/Users/dannydo/projects/mos-lab/.agents/ORIGINAL_REQUEST.md`.
+
+Working directory: `/Users/dannydo/projects/mos-lab/.agents/orchestrator`
+
+Requirements Summary:
+
+1. R1: Add Gửi SMS action button/icon in the "Thao tác" column of the "Chạm 17 (ngày)" tab in customer management (LoCa/NYC). Clicking opens the SMS Modal.
+2. R2: Template Configuration & Variable Substitution (Figure 1 style):
+   - Admin can save/update system-wide templates to Backend DB (`crm_config` or template table).
+   - Booker/Staff can choose system templates, insert dynamic variable tags (`{ten_khach}`, `{han_dung}`, `{so_ngay_dam}`, `{ten_combo}`, `{sdt_cua_hang}`, etc.), customize content, and see a live preview of actual filled message content before sending.
+3. R3: Backend Fastify & Legacy SMS System Integration (Figure 2 style):
+   - Build/Update Fastify backend routes `/api/sms/send` and `/api/sms/templates`.
+   - On sending SMS: save new record to legacy DB `user_sms` (`to_phone_number`, `body`, `template_id`, `created_staff_id`, `date_created`, ...), auto-log customer contact in `crm_call_logs` with `call_type = 'SMS'`.
+   - Display customer's SMS history (from `user_sms`) on the left side of the SMS Modal, and legacy templates list (e.g. `Reminder 17 - Single`) / template editor on the right side.
+4. Ensure 100% compliance with all project rules in `AGENTS.md` (shared types in `@mos-lab/shared`, `apiClient` in `apps/web/lib/api-client.ts`, Fastify backend routes, Light/Dark theme, Vietnamese tone-insensitive search helper if applicable, etc.).

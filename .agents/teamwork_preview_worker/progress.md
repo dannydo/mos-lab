@@ -1,11 +1,11 @@
-# Progress Log — teamwork_preview_worker
+# Progress Log - SMS Action Feature (Milestone 2)
 
-Last visited: 2026-07-26T11:00:40Z
+Last visited: 2026-07-29T14:46:30Z
 
-- [x] Read baseline performance report (`performance_report.md`).
-- [x] Read post-optimization frontend benchmark report (`frontend_benchmark.md`).
-- [x] Read backend DB & SQL verification report (`backend_verification.md`).
-- [x] Read tabular-nums & accessibility verification report (`a11y_verification.md`).
-- [x] Draft and generate `/Users/dannydo/projects/mos-lab/performance_report_comparison.md`.
-- [x] Write `handoff.md`.
-- [x] Send completion message to parent orchestrator (`1637e593-c5dd-44c8-bdd8-336ba0ce826a`).
+- [x] Initialized task briefing and workspace context
+- [x] Task 1: Create shared DTOs (`packages/shared/src/types/sms.ts`) and build shared package
+- [x] Task 2: Add `user_sms` model to `apps/api/prisma/legacy.prisma`, run `prisma:generate`, create SMS API routes (`apps/api/src/modules/sms/routes.ts`), register routes in `server.ts`
+- [x] Task 3: Add `apiClient.sms` SDK methods in `apps/web/lib/api-client.ts`
+- [x] Task 4: Build dual-pane `SMSModal.tsx` component in `apps/web/components/sms/SMSModal.tsx`
+- [x] Task 5: Integrate `SMSModal` into LoCa and NYC dashboard views ("Chạm 17 (ngày)" tab)
+- [x] Task 6: Build verification (`pnpm build`) and handoff report creation

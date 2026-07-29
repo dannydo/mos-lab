@@ -1,21 +1,14 @@
-## 2026-07-28T02:20:28Z
+## 2026-07-29T07:47:06Z
 
-You are challenger_m3_2. Your working directory is /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_2.
+You are Challenger 2 for Milestone 3 of the SMS Action feature in mos-lab.
 
-Mission:
-Adversarial scan and build verification across all 11 CRM dashboard modules in `apps/web/app/dashboard/` and `apps/web/components/`.
+Your task:
 
-Tasks:
+1. Conduct adversarial codebase audit and full build verification across the entire monorepo:
+   - Run `pnpm build` to compile shared, api, and web packages.
+   - Verify that all new exports in `@mos-lab/shared` are properly re-exported and resolve cleanly.
+   - Verify DB transaction integrity between `user_sms` (legacy) and `crm_call_logs` (CRM).
+   - Check for any orphan files, unused variables, broken types, or theme contrast issues.
+2. Document build logs, compilation status, and adversarial verification report in `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_2/handoff.md`. Communicate via `send_message`.
 
-1. Perform a full static scan across `apps/web/app/dashboard/` and `apps/web/components/` for any remaining `<Select showSearch>` components or search controls that use raw `.toLowerCase().includes()` or default `optionFilterProp="children"` without Vietnamese tone normalization.
-2. Execute `pnpm --filter @mos-lab/web build` and record total build time, exit code, and zero-type-error confirmation.
-3. Validate that 100% of acceptance criteria are satisfied:
-   - Searching "diep" matches "Ngọc Điệp" in staff/booker/customer search inputs across all modules.
-   - Searching "hang" matches "Hằng Ni" and "thuy" matches "Thuỳ Trang 🌸".
-   - All `<Select showSearch>` components in `/dashboard/*` use `removeVietnameseTones`.
-   - `pnpm --filter @mos-lab/web build` passes with zero type errors.
-
-Output Requirements:
-
-- Write your scan and verification report to `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_2/handoff.md`.
-- Send a message to orchestrator (ID: 7699a38e-37d6-4763-8f97-08686a3bc0b6) upon completion.
+Working directory: `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_2`

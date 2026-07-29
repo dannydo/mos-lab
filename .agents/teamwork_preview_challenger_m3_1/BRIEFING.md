@@ -1,54 +1,60 @@
-# BRIEFING — 2026-07-28T09:21:20+07:00
+# BRIEFING — 2026-07-29T14:49:33+07:00
 
 ## Mission
 
-Empirically test and stress-verify `removeVietnameseTones` and `vietnameseSearchFilter` against all user acceptance criteria and edge cases.
+Stress-test SMS Action feature (Milestone 3): variable substitution logic, SMS segment calculation (GSM vs Unicode), and Fastify API endpoints validation/error responses.
 
 ## 🔒 My Identity
 
-- Archetype: critic / specialist
+- Archetype: empirical_challenger
 - Roles: critic, specialist
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1
-- Original parent: 7699a38e-37d6-4763-8f97-08686a3bc0b6
-- Milestone: M3_testing_and_verification
+- Original parent: 4c6eb061-9916-414f-80ff-2f233bc9429f
+- Milestone: Milestone 3 SMS Action
 - Instance: 1 of 1
 
 ## 🔒 Key Constraints
 
-- Review-only — do NOT modify implementation code (report findings in handoff report, do NOT fix code directly)
-- Empirical verification required: must run test harness script and report exact results
+- Review-only & Empirical testing — do NOT modify implementation code (report findings as bugs/recommendations).
+- Run verification code empirically; do not trust unverified claims.
 
 ## Current Parent
 
-- Conversation ID: 7699a38e-37d6-4763-8f97-08686a3bc0b6
-- Updated: 2026-07-28T09:21:20+07:00
+- Conversation ID: 4c6eb061-9916-414f-80ff-2f233bc9429f
+- Updated: 2026-07-29T14:49:33+07:00
 
 ## Review Scope
 
-- **Files to review**: `packages/shared/src/utils/search.ts`, `apps/web/lib/utils/search.ts`
-- **Interface contracts**: `removeVietnameseTones`, `vietnameseSearchFilter`
-- **Review criteria**: Tone-insensitive & case-insensitive matching, handling of null, undefined, 0, numbers, emojis, uppercase, whitespace, array children in option objects.
+- **Files to review**: `apps/api/src/modules/sms/*`, `apps/web/components/sms/*`, `packages/shared/src/types/sms.ts`
+- **Interface contracts**: Fastify SMS routes `/api/sms/send`, `/api/sms/templates`, helper/utility functions for SMS formatting & segment calculation
+- **Review criteria**: Tag substitution fallback robustness, GSM/Unicode segment calculation accuracy, input validation & error handling
 
 ## Key Decisions Made
 
-- Built standalone Node.js test runner script `test-harness.ts` in workspace directory to execute unit test suite against `removeVietnameseTones` and `vietnameseSearchFilter`.
-- Identified empirical failure mode in `vietnameseSearchFilter` when handling Array `children` (e.g. `{ children: ['Thuỳ Trang ', '🌸'] }`).
+- Executed 35 empirical tests across 3 automated test scripts (`test_tag_substitution.ts`, `test_segment_calculation.ts`, `test_api_validation.ts`).
+- Discovered 3 Critical/High bugs and 2 Medium bugs in tag substitution, segment calculation, and Fastify route handling.
 
 ## Artifact Index
 
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1/ORIGINAL_REQUEST.md` — User request copy
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1/test-harness.ts` — Verification test harness
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1/handoff.md` — Handoff and empirical test report
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1/ORIGINAL_REQUEST.md` — Original Request
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1/BRIEFING.md` — Agent Briefing
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1/progress.md` — Progress tracker
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1/test-harness/run_all_tests.ts` — Test Runner
+- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_m3_1/handoff.md` — Final Handoff Report
 
 ## Attack Surface
 
 - **Hypotheses tested**:
-  - `removeVietnameseTones` handles Vietnamese diacritics removal, uppercase conversion, whitespace trimming, numbers, null, undefined, emojis. (CONFIRMED PASS)
-  - `vietnameseSearchFilter` handles option object formats: `{ label: string }`, `{ children: string }`, `{ children: Array }`, `{ value: number, label: string }`. (ARRAY CHILDREN FAILED)
+  1. Tag substitution gracefully handles null/undefined values and invalid dates. (Result: Failed - invalid dates output "Invalid Date", count tag mislabelled as days).
+  2. Character counting handles GSM-7 vs Unicode (UCS-2) segment calculation. (Result: Failed - UI under-estimates Unicode SMS segments by up to 50%).
+  3. Fastify endpoints properly validate inputs and error responses. (Result: Failed - `legacyUserId = 0` rejected, string template IDs coerced to null, empty string titles allowed).
 - **Vulnerabilities found**:
-  - `vietnameseSearchFilter` returns `false` when option `children` or `label` is an Array of strings/elements because `typeof` checks exclude Arrays.
-- **Untested angles**:
-  - Deeply nested React element trees.
+  - SMS segment count under-estimation for Vietnamese text.
+  - Template ID lost in DB when sending SMS with string template IDs (e.g. `"tpl_reminder_17"`).
+  - `legacyUserId = 0` rejected due to `!legacyUserId` falsy check.
+  - `{so_ngay_dam}` formats remaining service count as "X ngày".
+  - Missing date check causes `"Invalid Date"` in SMS body.
+- **Untested angles**: Hardware SMS modem latency & Telco gateway Webhook status callbacks.
 
 ## Loaded Skills
 

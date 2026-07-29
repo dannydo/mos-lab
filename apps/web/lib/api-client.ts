@@ -90,6 +90,11 @@ import {
   MissedSummaryStats,
   SaveMissedLogInput,
   MissedLog,
+  SmsTemplate,
+  SaveSmsTemplateInput,
+  SendSmsRequest,
+  SendSmsResponse,
+  CustomerSmsHistoryItem,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -985,6 +990,31 @@ export const apiClient = {
     },
     rescheduleBooking: async (id: number, data: Record<string, any>) => {
       const response = await api.put(`/customers/booking/${id}`, data);
+      return response.data;
+    },
+  },
+
+  sms: {
+    getTemplates: async (): Promise<SmsTemplate[]> => {
+      const response = await api.get('/sms/templates');
+      return response.data;
+    },
+    saveTemplate: async (
+      data: SaveSmsTemplateInput
+    ): Promise<{ success: boolean; template: SmsTemplate; templates: SmsTemplate[] }> => {
+      const response = await api.post('/sms/templates', data);
+      return response.data;
+    },
+    deleteTemplate: async (id: string): Promise<{ success: boolean; templates: SmsTemplate[] }> => {
+      const response = await api.delete(`/sms/templates/${id}`);
+      return response.data;
+    },
+    getHistory: async (customerId: number): Promise<CustomerSmsHistoryItem[]> => {
+      const response = await api.get(`/sms/history/${customerId}`);
+      return response.data;
+    },
+    sendSms: async (data: SendSmsRequest): Promise<SendSmsResponse> => {
+      const response = await api.post('/sms/send', data);
       return response.data;
     },
   },
