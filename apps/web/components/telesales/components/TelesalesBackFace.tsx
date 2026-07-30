@@ -187,12 +187,22 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
         {/* Timeline */}
         <div className="mt-5 w-full py-4 relative">
           <div className="relative flex items-center justify-center py-6 h-20">
+            {/* Timeline Track Line */}
             <div
-              className={`absolute top-1/2 left-[4%] right-[4%] h-[2px] z-0 ${
+              className={`absolute left-[4%] right-[4%] h-[2px] z-0 ${
                 themeMode === 'dark' ? 'bg-slate-800/80' : 'bg-slate-200/80'
               }`}
-              style={{ transform: 'translateY(-50%)' }}
-            ></div>
+              style={{
+                position: 'absolute',
+                left: '4%',
+                right: '4%',
+                top: '50%',
+                height: '2px',
+                WebkitTransform: 'translateY(-50%)',
+                transform: 'translateY(-50%)',
+                zIndex: 0,
+              }}
+            />
 
             {/* Crosshair target orb select */}
             <div

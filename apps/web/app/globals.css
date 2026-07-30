@@ -152,24 +152,24 @@
 }
 
 .translate-x-full {
-  transform: translateX(100%) !important;
-  -webkit-transform: translateX(100%) !important;
+  transform: translateX(100%);
+  -webkit-transform: translateX(100%);
 }
 .translate-x-0 {
-  transform: translateX(0%) !important;
-  -webkit-transform: translateX(0%) !important;
+  transform: translateX(0%);
+  -webkit-transform: translateX(0%);
 }
 .-translate-x-full {
-  transform: translateX(-100%) !important;
-  -webkit-transform: translateX(-100%) !important;
+  transform: translateX(-100%);
+  -webkit-transform: translateX(-100%);
 }
 .-translate-x-1\/2 {
-  transform: translateX(-50%) !important;
-  -webkit-transform: translateX(-50%) !important;
+  transform: translateX(-50%);
+  -webkit-transform: translateX(-50%);
 }
 .-translate-y-1\/2 {
-  transform: translateY(-50%) !important;
-  -webkit-transform: translateY(-50%) !important;
+  transform: translateY(-50%);
+  -webkit-transform: translateY(-50%);
 }
 
 .overflow-hidden {

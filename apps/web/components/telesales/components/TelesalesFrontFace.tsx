@@ -81,14 +81,31 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
 
   return (
     <div
-      className={`absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-2xl border shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden transition-all duration-300 ${
+      className={`absolute inset-0 w-full h-full rounded-2xl border shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden transition-all duration-300 ${
         themeMode === 'dark'
           ? 'bg-[#121212] border-neutral-800/80 text-white'
           : 'bg-white border-slate-100 text-slate-800'
       }`}
       style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: themeMode === 'dark' ? '#121212' : '#ffffff',
+        border: `1px solid ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
+        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
         WebkitBackfaceVisibility: 'hidden',
         backfaceVisibility: 'hidden',
+        WebkitTransform: 'rotateY(0deg)',
+        transform: 'rotateY(0deg)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        borderRadius: '16px',
+        boxSizing: 'border-box',
       }}
     >
       {/* Header */}
@@ -177,11 +194,20 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
           <div className="relative flex items-center justify-center py-6 h-20">
             {/* Timeline Track Line */}
             <div
-              className={`absolute top-1/2 left-[4%] right-[4%] h-[2px] z-0 ${
+              className={`absolute left-[4%] right-[4%] h-[2px] z-0 ${
                 themeMode === 'dark' ? 'bg-slate-800/80' : 'bg-slate-200/80'
               }`}
-              style={{ transform: 'translateY(-50%)' }}
-            ></div>
+              style={{
+                position: 'absolute',
+                left: '4%',
+                right: '4%',
+                top: '50%',
+                height: '2px',
+                WebkitTransform: 'translateY(-50%)',
+                transform: 'translateY(-50%)',
+                zIndex: 0,
+              }}
+            />
 
             {/* Center target quick select orb */}
             <div
@@ -319,7 +345,16 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
                   <div
                     key={p.id}
                     className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center cursor-pointer select-none"
-                    style={{ left: leftPos }}
+                    style={{
+                      left: leftPos,
+                      position: 'absolute',
+                      top: '50%',
+                      WebkitTransform: 'translate(-50%, -50%)',
+                      transform: 'translate(-50%, -50%)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                    }}
                     onClick={() => setCurrentPeriodId(p.id)}
                   >
                     <div
