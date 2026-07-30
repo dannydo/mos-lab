@@ -154,6 +154,10 @@ export default function TelesalesDashboardModal({
         }`}
         style={{
           position: 'relative',
+          backgroundColor: themeMode === 'dark' ? '#121212' : '#ffffff',
+          borderRadius: '16px',
+          border: `1px solid ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0'}`,
+          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7)',
           WebkitPerspective: '1500px',
           perspective: '1500px',
           resize: 'both',

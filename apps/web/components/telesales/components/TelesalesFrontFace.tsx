@@ -197,7 +197,15 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
               className={`absolute top-1/2 left-[4%] right-[4%] h-[2px] z-0 ${
                 themeMode === 'dark' ? 'bg-slate-800/80' : 'bg-slate-200/80'
               }`}
-              style={{ transform: 'translateY(-50%)' }}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '4%',
+                right: '4%',
+                height: '2px',
+                WebkitTransform: 'translateY(-50%)',
+                transform: 'translateY(-50%)',
+              }}
             ></div>
 
             {/* Center target quick select orb */}
@@ -205,6 +213,17 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
               className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${
                 isRadialOpen ? 'z-[9999]' : 'z-30'
               }`}
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                WebkitTransform: 'translate(-50%, -50%)',
+                transform: 'translate(-50%, -50%)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
               <div className={`w-[2px] h-[10px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
 
