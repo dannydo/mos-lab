@@ -43,6 +43,22 @@ export async function allocationRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // 2b. Get My Active/Accepted Batches for logged-in Booker
+  fastify.get(
+    '/allocation/my-batches',
+    { preHandler: [requireAuth] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const user = request.user;
+        const batches = await AllocationService.getMyBatchesForBooker(fastify, user.id);
+        return reply.send(batches);
+      } catch (err: any) {
+        request.log.error('Failed to fetch my allocation batches:', err);
+        return reply.status(500).send({ error: 'Internal Server Error', message: err.message });
+      }
+    }
+  );
+
   // 3. Get Single Batch Details
   fastify.get(
     '/allocation/batches/:id',

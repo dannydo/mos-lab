@@ -72,6 +72,9 @@ export const useCustomerList = (
         if (filterParams.retainedOnly) {
           params.retainedOnly = filterParams.retainedOnly;
         }
+        if (filterParams.allocationBatchId) {
+          params.allocationBatchId = filterParams.allocationBatchId;
+        }
 
         const data = await apiClient.customers.getStats(params);
         setStats(data);
@@ -103,8 +106,11 @@ export const useCustomerList = (
           params.ids = idsToUse.join(',');
         }
 
-        if (filterParams.activeTab !== 'ALL') {
+        if (filterParams.activeTab !== 'ALL' && filterParams.activeTab !== 'ALLOCATION') {
           params.bucket = filterParams.activeTab;
+        }
+        if (filterParams.allocationBatchId) {
+          params.allocationBatchId = filterParams.allocationBatchId;
         }
         if (filterParams.searchQuery && filterParams.searchQuery.trim() !== '') {
           params.search = filterParams.searchQuery;
@@ -188,9 +194,8 @@ export const useCustomerList = (
 
   const sentinelRef = useCallback(() => {}, []);
 
-  const refreshListAndStats = useCallback(() => {
-    fetchCustomers(1, pageSize);
-    fetchStats();
+  const refreshListAndStats = useCallback(async () => {
+    await Promise.all([fetchCustomers(1, pageSize), fetchStats()]);
   }, [fetchCustomers, fetchStats, pageSize]);
 
   return {

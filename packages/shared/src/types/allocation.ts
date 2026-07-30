@@ -103,3 +103,19 @@ export const PRESET_DECLINE_REASONS = [
   'Không liên hệ được / Data ảo',
   'Khác (Nhập lý do)',
 ] as const;
+
+export interface BookerAllocationBatchSummary {
+  id: number;
+  batchCode: string;
+  assignerId: number;
+  assignerName?: string | null;
+  bookerId: number;
+  bookerName?: string | null;
+  totalCount: number;
+  calledCount: number;
+  status: AllocationBatchStatus;
+  createdAt: string;
+  acceptedAt?: string | null;
+  expiresAt: string;
+  retentionExpiresAt?: string | null;
+}

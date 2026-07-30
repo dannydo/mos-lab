@@ -58,6 +58,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       dateFrom,
       dateTo,
       retainedOnly,
+      allocationBatchId,
     } = request.query as {
       bucket?: BucketType | 'ALL' | 'NEW_LOCA';
       search?: string;
@@ -92,6 +93,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       dateFrom?: string;
       dateTo?: string;
       retainedOnly?: string;
+      allocationBatchId?: string;
     };
 
     let limitNum = parseInt(limit, 10) || 20;
@@ -228,6 +230,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
           allowedUserIds = allowedUserIds.filter((id) => retSet.has(id));
         } else {
           allowedUserIds = retainedUserIds;
+        }
+      }
+
+      if (allocationBatchId && allocationBatchId.trim() !== '') {
+        const bId = parseInt(allocationBatchId, 10);
+        if (!isNaN(bId)) {
+          const batchItems = await fastify.prisma.crm.crmAllocationBatchItem.findMany({
+            where: { batchId: bId },
+            select: { customerId: true },
+          });
+          const batchUserIds = batchItems.map((i) => i.customerId);
+          if (allowedUserIds !== null) {
+            const bSet = new Set(batchUserIds);
+            allowedUserIds = allowedUserIds.filter((id) => bSet.has(id));
+          } else {
+            allowedUserIds = batchUserIds;
+          }
         }
       }
 
@@ -1284,6 +1303,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       dateFrom,
       dateTo,
       retainedOnly,
+      allocationBatchId,
     } = request.query as {
       bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE' | 'NEW_LOCA';
       search?: string;
@@ -1314,6 +1334,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       dateFrom?: string;
       dateTo?: string;
       retainedOnly?: string;
+      allocationBatchId?: string;
     };
 
     const adminUser = request.user as { id: number; role: string };
@@ -1479,6 +1500,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
           allowedUserIds = allowedUserIds.filter((id) => retSet.has(id));
         } else {
           allowedUserIds = retainedUserIds;
+        }
+      }
+
+      if (allocationBatchId && allocationBatchId.trim() !== '') {
+        const bId = parseInt(allocationBatchId, 10);
+        if (!isNaN(bId)) {
+          const batchItems = await fastify.prisma.crm.crmAllocationBatchItem.findMany({
+            where: { batchId: bId },
+            select: { customerId: true },
+          });
+          const batchUserIds = batchItems.map((i) => i.customerId);
+          if (allowedUserIds !== null) {
+            const bSet = new Set(batchUserIds);
+            allowedUserIds = allowedUserIds.filter((id) => bSet.has(id));
+          } else {
+            allowedUserIds = batchUserIds;
+          }
         }
       }
 

@@ -103,6 +103,7 @@ import {
   AllocationHistoryQueryParams,
   AllocationAuditQueryParams,
   AllocationAuditStatsResponse,
+  BookerAllocationBatchSummary,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -1048,6 +1049,10 @@ export const apiClient = {
     },
     getPendingBatches: async (): Promise<CustomerAllocationBatch[]> => {
       const response = await api.get('/allocation/pending');
+      return response.data;
+    },
+    getMyBatches: async (): Promise<BookerAllocationBatchSummary[]> => {
+      const response = await api.get('/allocation/my-batches');
       return response.data;
     },
     getBatchDetails: async (

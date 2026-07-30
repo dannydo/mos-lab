@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiClient } from '../../../../lib/api-client';
-import { Customer, Staff } from '@mos-lab/shared';
+import { Customer, Staff, BookerAllocationBatchSummary } from '@mos-lab/shared';
 
 // Import sub-hooks
 import { useCustomerFilters } from './useCustomerFilters';
@@ -118,6 +118,39 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     }
   }, [currentUser]);
 
+  // Booker Allocation Batches state & auto-select latest batch
+  const [myBatches, setMyBatches] = useState<BookerAllocationBatchSummary[]>([]);
+  const [myBatchesLoading, setMyBatchesLoading] = useState(false);
+
+  const activeTab = filtersHook.activeTab;
+  const selectedBatchId = filtersHook.selectedBatchId;
+  const setSelectedBatchId = filtersHook.setSelectedBatchId;
+
+  const fetchMyBatches = useCallback(async () => {
+    if (!currentUser) return;
+    setMyBatchesLoading(true);
+    try {
+      const data = await apiClient.allocation.getMyBatches();
+      setMyBatches(data);
+    } catch (err) {
+      console.error('Failed to load my allocation batches:', err);
+    } finally {
+      setMyBatchesLoading(false);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchMyBatches();
+    }
+  }, [currentUser, fetchMyBatches]);
+
+  useEffect(() => {
+    if (activeTab === 'ALLOCATION' && !selectedBatchId && myBatches.length > 0) {
+      setSelectedBatchId(myBatches[0].id);
+    }
+  }, [activeTab, selectedBatchId, myBatches, setSelectedBatchId]);
+
   const openDetailModal = async (customer: Customer) => {
     setSelectedCustomer(customer);
     setModalVisible(true);
@@ -165,6 +198,11 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     bulkDeleteLoading: assignmentHook.bulkDeleteLoading,
     sentinelRef: listHook.sentinelRef,
     activeTab: filtersHook.activeTab,
+    selectedBatchId: filtersHook.selectedBatchId,
+    setSelectedBatchId: filtersHook.setSelectedBatchId,
+    myBatches,
+    myBatchesLoading,
+    fetchMyBatches,
     searchQuery: filtersHook.searchQuery,
     showTrash: filtersHook.showTrash,
     sortField: filtersHook.sortField,

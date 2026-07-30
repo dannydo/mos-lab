@@ -28,6 +28,7 @@ import CustomerFilters from './components/CustomerFilters';
 import CustomerBulkActions from './components/CustomerBulkActions';
 import CustomerTable from './components/CustomerTable';
 import { RetainDataButton } from './components/RetainDataButton';
+import AllocationBatchHeader from './components/AllocationBatchHeader';
 
 const UndoReasonModal = dynamic(() => import('./components/UndoReasonModal').then((m) => m.UndoReasonModal), {
   ssr: false,
@@ -471,8 +472,43 @@ function CustomersPageContent() {
             key: 'SINGLE',
             label: getTabLabel('SINGLE', 'Single', data.stats.single),
           },
+          {
+            key: 'ALLOCATION',
+            label: (
+              <Space>
+                <span>⚡ Đợt phân bổ</span>
+                {data.myBatches && data.myBatches.length > 0 && (
+                  <Badge
+                    count={
+                      data.myBatches.find((b) => b.id === data.selectedBatchId)?.totalCount ||
+                      data.myBatches[0].totalCount
+                    }
+                    overflowCount={99999}
+                    style={{ backgroundColor: '#FA8C16', color: '#fff' }}
+                  />
+                )}
+              </Space>
+            ),
+          },
         ]}
       />
+
+      {data.activeTab === 'ALLOCATION' && (
+        <AllocationBatchHeader
+          themeMode={themeMode}
+          token={token}
+          batches={data.myBatches}
+          loading={data.myBatchesLoading}
+          selectedBatchId={data.selectedBatchId}
+          onSelectBatch={(bId) => {
+            data.setSelectedBatchId(bId);
+            data.setCurrentPage(1);
+          }}
+          onRefresh={async () => {
+            await Promise.all([data.fetchMyBatches(), data.refreshListAndStats()]);
+          }}
+        />
+      )}
 
       {data.randomSelectedIds && data.randomSelectedIds.length > 0 && (
         <div

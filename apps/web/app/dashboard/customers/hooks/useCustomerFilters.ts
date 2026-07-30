@@ -10,13 +10,24 @@ export const useCustomerFilters = (
 ) => {
   const searchParams = useSearchParams();
   const scopeParam = searchParams?.get('assignedStaffId');
+  const tabParam = searchParams?.get('tab');
+  const batchIdParam = searchParams?.get('batchId');
 
   const [activeTab, setActiveTab] = useState<string>(() => {
+    if (tabParam) return tabParam;
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('mos_customers_active_tab');
       return stored || 'ALL';
     }
     return 'ALL';
+  });
+
+  const [selectedBatchId, setSelectedBatchId] = useState<number | undefined>(() => {
+    if (batchIdParam) {
+      const parsed = parseInt(batchIdParam, 10);
+      if (!isNaN(parsed)) return parsed;
+    }
+    return undefined;
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [showTrash, setShowTrash] = useState(false);
@@ -64,6 +75,39 @@ export const useCustomerFilters = (
       }
     }
   }, [currentUser?.role, scopeParam]);
+
+  // Keep URL parameters synced with activeTab and selectedBatchId for F5 persistence
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    let changed = false;
+
+    if (activeTab && activeTab !== 'ALL') {
+      if (params.get('tab') !== activeTab) {
+        params.set('tab', activeTab);
+        changed = true;
+      }
+    } else if (params.has('tab')) {
+      params.delete('tab');
+      changed = true;
+    }
+
+    if (selectedBatchId && activeTab === 'ALLOCATION') {
+      if (params.get('batchId') !== String(selectedBatchId)) {
+        params.set('batchId', String(selectedBatchId));
+        changed = true;
+      }
+    } else if (params.has('batchId')) {
+      params.delete('batchId');
+      changed = true;
+    }
+
+    if (changed) {
+      const queryStr = params.toString();
+      const newUrl = queryStr ? `${window.location.pathname}?${queryStr}` : window.location.pathname;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [activeTab, selectedBatchId]);
 
   // Saved Filters preset state
   const [savedFilters, setSavedFilters] = useState<SafeAny[]>([]);
@@ -391,6 +435,7 @@ export const useCustomerFilters = (
       assignedDaysMin,
       assignedDaysMax,
       retainedOnly: retainedOnly ? 'true' : undefined,
+      allocationBatchId: activeTab === 'ALLOCATION' && selectedBatchId ? String(selectedBatchId) : undefined,
     }),
     [
       activeTab,
@@ -413,6 +458,7 @@ export const useCustomerFilters = (
       assignedDaysMin,
       assignedDaysMax,
       retainedOnly,
+      selectedBatchId,
     ]
   );
 
@@ -420,6 +466,8 @@ export const useCustomerFilters = (
     filterParams,
     activeTab,
     setActiveTab,
+    selectedBatchId,
+    setSelectedBatchId,
     searchQuery,
     setSearchQuery,
     showTrash,

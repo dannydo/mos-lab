@@ -10,6 +10,7 @@ import {
   CustomerAllocationBatch,
   CustomerAllocationItem,
   AllocationBatchStatus,
+  BookerAllocationBatchSummary,
 } from '@mos-lab/shared';
 
 export class AllocationService {
@@ -256,6 +257,70 @@ export class AllocationService {
     });
 
     return batches.map((b) => this.mapBatchToDto(b));
+  }
+
+  /**
+   * Retrieves all accepted or active allocation batches for a specific Booker,
+   * enriched with real-time called count.
+   */
+  static async getMyBatchesForBooker(
+    fastify: FastifyInstance,
+    bookerId: number
+  ): Promise<BookerAllocationBatchSummary[]> {
+    await this.checkAndExpireBatches(fastify);
+
+    const batches = await fastify.prisma.crm.crmAllocationBatch.findMany({
+      where: {
+        bookerId,
+        status: { in: ['ACCEPTED', 'PENDING_ACCEPT'] },
+      },
+      include: {
+        assigner: { select: { id: true, displayName: true, username: true } },
+        booker: { select: { id: true, displayName: true, username: true } },
+        items: { select: { customerId: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    if (batches.length === 0) return [];
+
+    const batchSummaries: BookerAllocationBatchSummary[] = [];
+
+    for (const batch of batches) {
+      const customerIds = batch.items.map((i) => i.customerId);
+      let calledCount = 0;
+
+      if (customerIds.length > 0) {
+        const calledRaw = await fastify.prisma.crm.crmCallLog.findMany({
+          where: {
+            legacyUserId: { in: customerIds },
+            createdAt: { gte: batch.acceptedAt || batch.createdAt },
+          },
+          select: { legacyUserId: true },
+          distinct: ['legacyUserId'],
+        });
+        calledCount = calledRaw.length;
+      }
+
+      batchSummaries.push({
+        id: batch.id,
+        batchCode: batch.batchCode,
+        assignerId: batch.assignerId,
+        assignerName: batch.assigner?.displayName || batch.assigner?.username || `Admin #${batch.assignerId}`,
+        bookerId: batch.bookerId,
+        bookerName: batch.booker?.displayName || batch.booker?.username || `Staff #${batch.bookerId}`,
+        totalCount: batch.totalCount,
+        calledCount,
+        status: batch.status as AllocationBatchStatus,
+        createdAt: batch.createdAt.toISOString(),
+        acceptedAt: batch.acceptedAt ? batch.acceptedAt.toISOString() : null,
+        expiresAt: batch.expiresAt.toISOString(),
+        retentionExpiresAt: batch.retentionExpiresAt ? batch.retentionExpiresAt.toISOString() : null,
+      });
+    }
+
+    return batchSummaries;
   }
 
   /**

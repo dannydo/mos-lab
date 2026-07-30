@@ -307,18 +307,62 @@ const CustomerTable = React.memo(
           },
         },
         {
+          title: 'Trạng thái gọi',
+          key: 'callStatus',
+          width: 140,
+          render: (_: SafeAny, record: Customer) => {
+            const lastCall = record.lastCall;
+            if (!lastCall) {
+              return <Tag color="default">Chưa gọi</Tag>;
+            }
+            const res = lastCall.callResult;
+            let color = 'blue';
+            let label = res || 'Đã tương tác';
+            if (res === 'NO_ANSWER' || res === 'BUSY' || res === 'FAILED') {
+              color = 'error';
+              label = res === 'BUSY' ? 'Máy bận' : 'Không nhấc máy';
+            } else if (res === 'ANSWERED' || res === 'SUCCESS' || res === 'COMPLETED') {
+              color = 'success';
+              label = 'Đã nghe máy';
+            } else if (res === 'CALLBACK') {
+              color = 'warning';
+              label = 'Hẹn gọi lại';
+            }
+            const callTime = lastCall.createdAt ? dayjs(lastCall.createdAt).format('HH:mm DD/MM') : '';
+            return (
+              <Tooltip title={lastCall.note ? `${label} (${callTime}): ${lastCall.note}` : `Gần nhất: ${callTime}`}>
+                <Tag color={color}>{label}</Tag>
+              </Tooltip>
+            );
+          },
+        },
+        {
           title: 'Thao tác',
           key: 'action',
-          width: 80,
+          width: 110,
           render: (_: SafeAny, record: Customer) => (
-            <Tooltip title="Chi tiết khách hàng">
-              <Button
-                type="text"
-                shape="circle"
-                icon={<EyeOutlined style={{ color: '#D4A84B' }} />}
-                onClick={() => openDetailModal(record)}
-              />
-            </Tooltip>
+            <Space size={4}>
+              {record.phone && (
+                <Tooltip title={`Gọi OmiCall cho ${record.name || 'khách hàng'}`}>
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    size="small"
+                    icon={<PhoneOutlined />}
+                    style={{ backgroundColor: '#10B981', borderColor: '#10B981' }}
+                    onClick={() => makeCall(record.phone, record.name || `KH #${record.id}`)}
+                  />
+                </Tooltip>
+              )}
+              <Tooltip title="Chi tiết khách hàng">
+                <Button
+                  type="text"
+                  shape="circle"
+                  icon={<EyeOutlined style={{ color: '#D4A84B' }} />}
+                  onClick={() => openDetailModal(record)}
+                />
+              </Tooltip>
+            </Space>
           ),
         },
       ],
