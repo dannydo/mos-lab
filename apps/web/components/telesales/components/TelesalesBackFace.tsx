@@ -495,7 +495,16 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
         </div>
 
         {/* Legend Row */}
-        <div className="grid grid-cols-5 gap-2 mt-1 flex-shrink-0">
+        <div
+          className="grid grid-cols-5 gap-2 mt-1 flex-shrink-0"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+            gap: '8px',
+            marginTop: '4px',
+            flexShrink: 0,
+          }}
+        >
           {metricConfigs.map((mc) => {
             const val = activePerformance?.[mc.key] || 0;
             const target = activeMemberTargets?.[mc.key] || 0;

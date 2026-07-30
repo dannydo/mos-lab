@@ -114,6 +114,56 @@
   right: 0px !important;
 }
 
+.grid {
+  display: grid !important;
+}
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+.grid-cols-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+.gap-1 {
+  gap: 4px !important;
+}
+.gap-1\.5 {
+  gap: 6px !important;
+}
+.gap-2 {
+  gap: 8px !important;
+}
+.gap-2\.5 {
+  gap: 10px !important;
+}
+.gap-3 {
+  gap: 12px !important;
+}
+.gap-4 {
+  gap: 16px !important;
+}
+
+.translate-x-full {
+  transform: translateX(100%) !important;
+  -webkit-transform: translateX(100%) !important;
+}
+.translate-x-0 {
+  transform: translateX(0%) !important;
+  -webkit-transform: translateX(0%) !important;
+}
+.-translate-x-full {
+  transform: translateX(-100%) !important;
+  -webkit-transform: translateX(-100%) !important;
+}
+
 .overflow-hidden {
   overflow: hidden !important;
 }

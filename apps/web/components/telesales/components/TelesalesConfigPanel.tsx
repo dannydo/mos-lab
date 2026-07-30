@@ -66,7 +66,21 @@ export default function TelesalesConfigPanel({
     <div
       className={`absolute top-0 right-0 h-full w-[280px] border-l flex flex-col z-30 transition-transform duration-300 ${
         themeMode === 'dark' ? 'bg-[#141414] border-white/10' : 'bg-white border-slate-200'
-      } ${isConfigOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      }`}
+      style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        height: '100%',
+        width: '280px',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: 30,
+        WebkitTransform: isConfigOpen ? 'translateX(0%)' : 'translateX(100%)',
+        transform: isConfigOpen ? 'translateX(0%)' : 'translateX(100%)',
+        transition: 'transform 0.3s ease-in-out',
+        boxSizing: 'border-box',
+      }}
     >
       <div
         className={`flex items-center justify-between px-4 py-3 border-b ${themeMode === 'dark' ? 'border-white/5' : 'border-gray-200'}`}
