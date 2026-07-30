@@ -536,56 +536,87 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {onlineMembers.map((m, idx) => (
                     <div
                       key={m.id}
-                      onClick={() => {
-                        setSelectedMemberId(m.id || m.initials);
-                        setIsDashboardVisible(true);
-                      }}
-                      className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 cursor-pointer hover:scale-110 hover:z-30 transition-all shadow-sm avatar-breath shrink-0 flex-shrink-0 select-none overflow-hidden"
                       style={{
+                        position: 'relative',
                         width: '32px',
                         height: '32px',
                         minWidth: '32px',
                         minHeight: '32px',
                         maxWidth: '32px',
                         maxHeight: '32px',
-                        borderRadius: '50%',
-                        overflow: 'hidden',
-                        position: 'relative',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: m.color,
-                        zIndex: 20 - idx,
+                        flexShrink: 0,
                         marginLeft: idx > 0 ? '-10px' : '0',
-                        borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
-                        borderWidth: '2px',
-                        borderStyle: 'solid',
-                        boxSizing: 'border-box',
+                        zIndex: 20 - idx,
                       }}
-                      title={m.name}
                     >
-                      {m.avatarUrl ? (
-                        <img
-                          src={m.avatarUrl}
-                          alt={m.name}
-                          className="w-full h-full object-cover rounded-full"
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            borderRadius: '50%',
-                            display: 'block',
-                          }}
-                        />
-                      ) : (
-                        m.initials
-                      )}
-                      <span
-                        className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 flex items-center justify-center z-10"
-                        style={{ borderColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}
+                      <div
+                        onClick={() => {
+                          setSelectedMemberId(m.id || m.initials);
+                          setIsDashboardVisible(true);
+                        }}
+                        className="avatar-breath cursor-pointer hover:scale-110 transition-all select-none"
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          minWidth: '32px',
+                          minHeight: '32px',
+                          maxWidth: '32px',
+                          maxHeight: '32px',
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+                          maskImage: 'radial-gradient(white, black)',
+                          WebkitTransform: 'translateZ(0)',
+                          transform: 'translateZ(0)',
+                          position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          color: '#ffffff',
+                          background: m.color,
+                          borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
+                          borderWidth: '2px',
+                          borderStyle: 'solid',
+                          boxSizing: 'border-box',
+                        }}
+                        title={m.name}
                       >
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      </span>
+                        {m.avatarUrl ? (
+                          <img
+                            src={m.avatarUrl}
+                            alt={m.name}
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              minWidth: '32px',
+                              minHeight: '32px',
+                              maxWidth: '32px',
+                              maxHeight: '32px',
+                              objectFit: 'cover',
+                              borderRadius: '50%',
+                              display: 'block',
+                            }}
+                          />
+                        ) : (
+                          m.initials
+                        )}
+                      </div>
+                      <span
+                        style={{
+                          position: 'absolute',
+                          bottom: '0px',
+                          right: '0px',
+                          width: '8px',
+                          height: '8px',
+                          backgroundColor: '#22c55e',
+                          borderRadius: '50%',
+                          border: `2px solid ${themeMode === 'dark' ? '#000000' : '#ffffff'}`,
+                          zIndex: 10,
+                          pointerEvents: 'none',
+                        }}
+                      />
                     </div>
                   ))}
                 </div>
