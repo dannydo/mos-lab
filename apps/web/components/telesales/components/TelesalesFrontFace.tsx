@@ -81,11 +81,29 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
 
   return (
     <div
-      className={`absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-2xl border shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden transition-all duration-300 ${
+      className={`absolute inset-0 w-full h-full rounded-2xl border shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden transition-all duration-300 ${
         themeMode === 'dark'
           ? 'bg-[#121212] border-neutral-800/80 text-white'
           : 'bg-white border-slate-100 text-slate-800'
       }`}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        WebkitBackfaceVisibility: 'hidden',
+        backfaceVisibility: 'hidden',
+        WebkitTransform: 'rotateY(0deg)',
+        transform: 'rotateY(0deg)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        borderRadius: '16px',
+        boxSizing: 'border-box',
+      }}
     >
       {/* Header */}
       <div
