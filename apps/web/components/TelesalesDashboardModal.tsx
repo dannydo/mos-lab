@@ -127,24 +127,6 @@ export default function TelesalesDashboardModal({
   return (
     <div
       className="fixed inset-0 z-[1010] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300"
-      style={{
-        position: 'fixed',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        zIndex: 1010,
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        WebkitBackdropFilter: 'blur(4px)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        boxSizing: 'border-box',
-      }}
       onClick={onClose}
     >
       <div
@@ -153,12 +135,6 @@ export default function TelesalesDashboardModal({
           modalSize ? 'w-auto h-auto' : 'w-full max-w-[780px] h-[92vh] min-h-[820px] max-h-[920px]'
         }`}
         style={{
-          position: 'relative',
-          backgroundColor: themeMode === 'dark' ? '#121212' : '#ffffff',
-          borderRadius: '16px',
-          border: `1px solid ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0'}`,
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7)',
-          WebkitPerspective: '1500px',
           perspective: '1500px',
           resize: 'both',
           overflow: 'hidden',
@@ -172,17 +148,10 @@ export default function TelesalesDashboardModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="relative w-full h-full transition-transform duration-700 ease-in-out"
-          style={{
-            position: 'relative',
-            width: '100%',
-            height: '100%',
-            WebkitTransformStyle: 'preserve-3d',
-            transformStyle: 'preserve-3d',
-            WebkitTransform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-            transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-            transition: 'transform 0.7s ease-in-out',
-          }}
+          className={`relative w-full h-full transition-transform duration-700 ease-in-out ${
+            isFlipped ? '[transform:rotateY(180deg)]' : ''
+          }`}
+          style={{ transformStyle: 'preserve-3d' }}
         >
           {/* ============================== FRONT FACE (DONUT VIEW) ============================== */}
           <TelesalesFrontFace
