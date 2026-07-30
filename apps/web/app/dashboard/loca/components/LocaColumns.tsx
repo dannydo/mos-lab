@@ -422,6 +422,7 @@ export const getLocaColumns = ({
       title: 'Tổng Chi Tiêu',
       dataIndex: 'totalSpent',
       key: 'totalSpent',
+      width: 130,
       sorter: true,
       sortOrder:
         sortField === 'totalSpent_asc'
@@ -429,7 +430,11 @@ export const getLocaColumns = ({
           : sortField === 'totalSpent_desc'
             ? ('descend' as const)
             : null,
-      render: (val: number) => <span className="tabular-nums">{formatVND(val)}</span>,
+      render: (val: number) => (
+        <span className="tabular-nums font-semibold" style={{ whiteSpace: 'nowrap' }}>
+          {formatVND(val)}
+        </span>
+      ),
     },
     {
       title: 'Đã phân bổ',
@@ -438,7 +443,11 @@ export const getLocaColumns = ({
       render: (_: SafeAny, record: Customer) => {
         const assignedAt = record.assignedStaff?.assignedAt || record.assignedAt || record.lastAllocation?.assignedAt;
         if (!assignedAt) {
-          return <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)' }}>Chưa từng phân bổ</span>;
+          return (
+            <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)', whiteSpace: 'nowrap' }}>
+              Chưa từng phân bổ
+            </span>
+          );
         }
         const assignedDate = dayjs(assignedAt);
         const today = dayjs();
@@ -456,6 +465,7 @@ export const getLocaColumns = ({
               style={{
                 opacity: isCurrentlyAssigned ? 1 : 0.7,
                 fontVariantNumeric: 'tabular-nums',
+                whiteSpace: 'nowrap',
               }}
             >
               {diffDays} ngày
@@ -468,27 +478,36 @@ export const getLocaColumns = ({
       title: 'Booker phụ trách',
       dataIndex: 'assignedStaff',
       key: 'assignedStaff',
+      width: 140,
       render: (staff: SafeAny) =>
         staff ? (
-          <Tag color="cyan">{staff.displayName}</Tag>
+          <Tag color="cyan" style={{ whiteSpace: 'nowrap' }}>
+            {staff.displayName}
+          </Tag>
         ) : (
-          <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)' }}>Chưa phân bổ</span>
+          <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)', whiteSpace: 'nowrap' }}>
+            Chưa phân bổ
+          </span>
         ),
     },
     {
       title: 'Ngày gọi gần nhất',
       key: 'lastCallDate',
+      width: 140,
       render: (_: SafeAny, record: Customer) => {
         if (!record.lastCall?.createdAt) return '-';
-        return dayjs(record.lastCall.createdAt).format('DD/MM/YYYY HH:mm');
+        return (
+          <span style={{ whiteSpace: 'nowrap' }}>{dayjs(record.lastCall.createdAt).format('DD/MM/YYYY HH:mm')}</span>
+        );
       },
     },
     {
       title: 'Thời lượng',
       key: 'lastCallDuration',
+      width: 95,
       render: (_: SafeAny, record: Customer) => {
         if (record.lastCall?.durationSec === undefined || record.lastCall?.durationSec === null) return '-';
-        return formatDuration(record.lastCall.durationSec);
+        return <span style={{ whiteSpace: 'nowrap' }}>{formatDuration(record.lastCall.durationSec)}</span>;
       },
     },
     {
@@ -639,6 +658,7 @@ export const getNewLocaColumns = ({
       title: 'Khách Hàng',
       dataIndex: 'name',
       key: 'name',
+      width: 170,
       sorter: true,
       sortOrder:
         sortField === 'name_asc' ? ('ascend' as const) : sortField === 'name_desc' ? ('descend' as const) : null,
@@ -694,6 +714,7 @@ export const getNewLocaColumns = ({
     {
       title: 'Combo Mới & Doanh Thu',
       key: 'comboDetails',
+      width: 170,
       render: (_: SafeAny, record: Customer) => {
         const details = record.newComboDetails;
         if (!details) return <Text type="secondary">Không có thông tin</Text>;
@@ -718,6 +739,7 @@ export const getNewLocaColumns = ({
     {
       title: 'Booker (BK)',
       key: 'booker',
+      width: 130,
       render: (_: SafeAny, record: Customer) => {
         const booker = record.newComboDetails?.bookerName || record.assignedStaff?.displayName;
         return booker ? (
@@ -730,6 +752,7 @@ export const getNewLocaColumns = ({
     {
       title: 'CC In / CC Out',
       key: 'ccInOut',
+      width: 140,
       render: (_: SafeAny, record: Customer) => {
         const details = record.newComboDetails;
         return (
@@ -753,6 +776,7 @@ export const getNewLocaColumns = ({
     {
       title: 'Chuyên Viên (CV)',
       key: 'cv',
+      width: 130,
       render: (_: SafeAny, record: Customer) => {
         const cv = record.newComboDetails?.cvName;
         return cv && cv !== 'Chưa phân công' ? (
@@ -765,10 +789,11 @@ export const getNewLocaColumns = ({
     {
       title: 'Ngày Mua',
       key: 'purchaseDate',
+      width: 140,
       render: (_: SafeAny, record: Customer) => {
         const date = record.newComboDetails?.purchaseDate;
         return date ? (
-          <span style={{ fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"' }}>
+          <span style={{ fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', whiteSpace: 'nowrap' }}>
             {dayjs(date).format('DD/MM/YYYY HH:mm')}
           </span>
         ) : (

@@ -232,6 +232,12 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
 
         if (config) {
           const colIcon = config.icon !== undefined && config.icon !== '' ? config.icon : getDefaultIcon(key);
+          const effectiveWidth =
+            config.width !== undefined && config.width >= 40
+              ? config.width
+              : staticCol.width !== undefined
+                ? staticCol.width
+                : 120;
           return {
             ...staticCol,
             title: React.createElement(
@@ -240,7 +246,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
               colIcon !== 'none' ? renderIconHelper(colIcon) : null,
               React.createElement('span', null, config.title || (staticCol.title as React.ReactNode))
             ),
-            width: config.width !== undefined ? config.width : staticCol.width,
+            width: effectiveWidth,
             visible: config.visible,
             orderIndex: isActions ? 99999 : config.index,
             onHeaderCell: (column: TableColumnType<T>) => ({

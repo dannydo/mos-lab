@@ -832,7 +832,7 @@ export default function LocaCampaignPage() {
         rowKey="id"
         loading={loading}
         className="antd-custom-table"
-        scroll={{ x: 1650 }}
+        scroll={{ x: 'max-content' }}
         onChange={(pagination, filters, sorter: SafeAny) => {
           if (sorter && sorter.field) {
             const field = sorter.field;
