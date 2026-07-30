@@ -2263,6 +2263,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       retainedOnly,
       excludeAssigned = 'true',
       excludeFutureBooking = 'true',
+      excludeUnconfirmedAllocation = 'true',
       hasFutureBooking,
     } = request.query as SafeAny;
 
@@ -2410,6 +2411,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const excludedUserIds = allAssignments.map((a) => a.legacyUserId);
         if (excludedUserIds.length > 0) {
           innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
+        }
+      }
+
+      if (excludeUnconfirmedAllocation === 'true') {
+        const pendingBatchItems = await fastify.prisma.crm.crmAllocationBatchItem.findMany({
+          where: {
+            status: 'PENDING_ACCEPT',
+            batch: {
+              status: 'PENDING_ACCEPT',
+            },
+          },
+          select: { customerId: true },
+        });
+        const pendingCustomerIds = Array.from(new Set(pendingBatchItems.map((i) => i.customerId)));
+        if (pendingCustomerIds.length > 0) {
+          innerWhereClauses.push(`u.id NOT IN (${pendingCustomerIds.join(',')})`);
         }
       }
 

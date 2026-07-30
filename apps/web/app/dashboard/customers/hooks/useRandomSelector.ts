@@ -13,6 +13,7 @@ export const useRandomSelector = (
   const [randomBatchId, setRandomBatchId] = useState<string | null>(null);
   const [excludeAssigned, setExcludeAssigned] = useState<boolean>(true);
   const [excludeFutureBooking, setExcludeFutureBooking] = useState<boolean>(true);
+  const [excludeUnconfirmedAllocation, setExcludeUnconfirmedAllocation] = useState<boolean>(true);
 
   const handleRandomSelect = useCallback(async () => {
     setRandomLoading(true);
@@ -40,6 +41,7 @@ export const useRandomSelector = (
         retainedOnly: filterParams.retainedOnly ? 'true' : undefined,
         excludeAssigned: excludeAssigned ? 'true' : 'false',
         excludeFutureBooking: excludeFutureBooking ? 'true' : 'false',
+        excludeUnconfirmedAllocation: excludeUnconfirmedAllocation ? 'true' : 'false',
       };
 
       const data = await apiClient.customers.getRandomIds(params);
@@ -61,7 +63,15 @@ export const useRandomSelector = (
     } finally {
       setRandomLoading(false);
     }
-  }, [randomCount, excludeAssigned, excludeFutureBooking, filterParams, onSelected, optionsRef]);
+  }, [
+    randomCount,
+    excludeAssigned,
+    excludeFutureBooking,
+    excludeUnconfirmedAllocation,
+    filterParams,
+    onSelected,
+    optionsRef,
+  ]);
 
   return {
     randomModalVisible,
@@ -77,6 +87,8 @@ export const useRandomSelector = (
     setExcludeAssigned,
     excludeFutureBooking,
     setExcludeFutureBooking,
+    excludeUnconfirmedAllocation,
+    setExcludeUnconfirmedAllocation,
     handleRandomSelect,
   };
 };
