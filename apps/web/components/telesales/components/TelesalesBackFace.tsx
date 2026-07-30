@@ -309,7 +309,19 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
             </div>
 
             {/* Time Capsule Nodes */}
-            <div className="absolute inset-0 w-full h-full pointer-events-none">
+            <div
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+              }}
+            >
               {periods.map((p) => {
                 const isActive = p.id === currentPeriodId;
                 const leftPos = periodPositions[p.id];
@@ -337,8 +349,18 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
                 return (
                   <div
                     key={p.id}
-                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center cursor-pointer select-none"
-                    style={{ left: leftPos }}
+                    className="pointer-events-auto flex flex-col items-center cursor-pointer select-none"
+                    style={{
+                      left: leftPos,
+                      position: 'absolute',
+                      top: '50%',
+                      WebkitTransform: 'translate(-50%, -50%)',
+                      transform: 'translate(-50%, -50%)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      zIndex: isActive ? 20 : 10,
+                    }}
                     onClick={() => setCurrentPeriodId(p.id)}
                   >
                     <div
