@@ -11,7 +11,7 @@
 * Toàn bộ các quy tắc ghi đè màu sắc của thư viện (như `ant-table`, `ant-drawer`, `ant-tabs`) phải được phân vùng rõ ràng theo cấu trúc phân cấp dưới class theme của thẻ gốc:
   
   ```css
-  /* Ghi đè màu sắc chỉ áp dụng cho Dark Theme */
+  /* Ghi đè màu sắc chỉ áp dụng for Dark Theme */
   .dark-theme .antd-custom-table .ant-table {
     background: #141414 !important;
     color: #ccc !important;
@@ -399,6 +399,37 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
      removeVietnameseTones(String(option?.label || '')).includes(removeVietnameseTones(input))
    }
    ```
+
+---
+
+# 🎯 LoCa Campaign Customer Care Touchpoint Schedule Rules (Quy tắc Mốc Chạm CSKH LoCa)
+
+1. **Mục tiêu chiến dịch LoCa**: Chăm sóc đặc biệt dành cho khách hàng đã mua Combo Live để hỗ trợ họ sử dụng hết các lượt nối/dặm trong gói và tiếp tục tái sử dụng dịch vụ tại salon.
+2. **Quy tắc 8 Mốc Chạm CSKH chuẩn**:
+   - `Chạm 24h`: Đảm bảo khách hàng hài lòng 100% với bộ mi sau lần làm dịch vụ gần nhất.
+   - `Chạm 17n`: Nhắc lịch dặm mi cho khách hàng (thời hạn dặm mi tối ưu là trong 21 ngày).
+   - `Chạm 19n`: Nếu đến ngày 17 khách vẫn chưa đặt lịch dặm, chạm lần 2 để hỗ trợ đặt lịch trong chu kỳ 21 ngày.
+   - `Chạm 21n`: Ngày cuối cùng để đặt lịch dặm 21 ngày (đối với khách lẻ, đây là ngày cuối cùng nhận giá dặm ưu đãi).
+   - `Chạm 23n`: Khách hàng mua combo có tới 25 ngày để dặm mi và được trừ lượt dặm mi trong gói.
+   - `Chạm 25n`: Ngày cuối cùng cho khách combo sử dụng lượt dặm mi đã mua trong gói.
+   - `Chạm 30n`: Đã trễ 5 ngày so với hạn dặm 25 ngày, bắt buộc sử dụng lượt nối mi mới trong gói combo.
+   - `Chạm 30n+`: Hỗ trợ khách hàng dùng hết các lượt nối mới còn lại trong gói trước khi HSD gói hết hạn.
+3. **Tương tác 1-Click & Popover Ghi Chú (`LocaTouchpointCell.tsx`)**: Bấm vào ô Chạm tự động đánh dấu cờ và mở ngay `<Popover>` điền phản hồi của khách, thiết kế dạng nút High-Contrast (Vàng Gold `#D4A84B`, Emerald `#059669`, Red dashed `#EF4444`).
+
+---
+
+# 📐 Table Explicit Width & Responsive Tablet Layout Rules (Quy tắc Độ rộng Cột Bảng & Hiển thị trên iPad/Tablet)
+
+1. **Bắt buộc khai báo numeric `width` cho 100% các cột**: Tất cả các định nghĩa cột trong `<Table>` Ant Design (đặc biệt khi sử dụng `scroll={{ x: 'max-content' }}`) bắt buộc phải có thuộc tính `width` số cụ thể (ví dụ: `width: 95` đến `width: 170`). Tuyệt đối không để `width: undefined`.
+2. **Ngăn ngừa co chữ theo chiều dọc (`white-space: nowrap`)**: Tất cả các cell hiển thị văn bản, số tiền VND, số điện thoại, ngày giờ hoặc nhãn trạng thái bắt buộc sử dụng `white-space: nowrap` để tránh hiện tượng rớt dòng từng ký tự theo chiều dọc (`3 \n . \n 6 \n 6...`) trên các thiết bị iPad/Tablet (màn hình 1024px – 1366px).
+3. **Cơ chế Dự phòng trong `useTableConfig.ts`**: Hook quản lý cấu hình bảng phải bọc `effectiveWidth` (`width >= 40 ? config.width : staticCol.width || 120`) để tự động khắc phục các dữ liệu cấu hình lưu trong CSDL bị thiếu `width`.
+
+---
+
+# ⚡ Allocation Batch Query Intersecting Rules (Quy tắc Giao Tập Khách Hàng Đợt Phân Bổ)
+
+1. **Đồng bộ Listing & Stats Query (`bStr` & `bStrStats`)**: Khi nhận `allocationBatchId`, Fastify Backend API (`GET /api/customers` và `/stats`) bắt buộc truy vấn danh sách `customerId` từ `crmAllocationBatchItem` (`where: { batchId }`) và thực hiện giao tập (Intersect) với `allowedUserIds` bằng `Set` (`bSet.has(id)`). Tuyệt đối không thay thế hay ghi đè hoàn toàn danh sách phân quyền `allowedUserIds` của Booker.
+
 
 
 

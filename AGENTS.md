@@ -240,10 +240,39 @@ mos-lab/
     }
     ```
 
+### 33. Custom Hook Dependency Stability & Infinite Loop Prevention Rule
+- **Tuyệt đối KHÔNG truyền object hook rác/tổng thể vào dependency array**: Khi gọi `useCallback` hoặc `useEffect`, không truyền nguyên object trả về từ custom hook (ví dụ `filtersHook`) vào mảng dependency `[currentUser, filtersHook]`. Do object này bị khởi tạo lại ở mỗi lượt render, việc này sẽ gây ra vòng lặp re-render vô tận và nút bấm bị treo trạng thái `loading` liên tục.
+- **Bóc tách primitive value**: Bắt buộc bóc tách các biến primitive/nguyên thủy (như `const activeTab = filtersHook.activeTab; const selectedBatchId = filtersHook.selectedBatchId;`) trước khi đưa vào dependency array.
 
+### 34. UI Tab vs. Database Bucket Query Alignment Rule
+- **Phân biệt Tab Giao diện (UI Tab) & Bucket CSDL (Database Bucket)**: Các Tab giao diện như `'ALLOCATION'` (Đợt phân bổ) chỉ đại diện cho chế độ hiển thị trên Frontend, không phải là phân loại bucket dữ liệu trong CSDL (như `COMBO_LIVE`, `NOT_COMBO_LIVE`, `SINGLE`).
+- **Bảo đảm truyền đúng parameter trong `useCustomerList.ts`**: Khi chuyển đổi `filterParams` sang tham số gọi API (`apiClient.customers.list` và `getStats`), tuyệt đối **KHÔNG** gán `params.bucket = 'ALLOCATION'`. Thay vào đó, kiểm tra `filterParams.activeTab !== 'ALL' && filterParams.activeTab !== 'ALLOCATION'` và bắt buộc gắn trực tiếp `params.allocationBatchId = filterParams.allocationBatchId` để Fastify Backend nhận diện và lọc chính xác 100% danh sách khách hàng trong đợt.
 
+### 35. Booker Allocation Batch Workflow & Productivity Invariants (Quy tắc Nghiệp vụ Đợt phân bổ Booker)
+- **Tự động chọn đợt mới nhất (Auto-Select Latest Batch)**: Khi Booker mở trang Danh sách Khách hàng (`/dashboard/customers?assignedStaffId=me`) và chuyển sang Tab `⚡ Đợt phân bổ`, hệ thống bắt buộc tự động chọn đợt phân bổ mới nhất (hoặc đợt trong ngày) để Booker có thể bắt đầu làm việc ngay mà không cần thao tác chọn thủ công.
+- **Tiến độ làm việc real-time (Real-time Call Progress Tracking)**:
+  - Tiến độ đợt phân bổ được tính theo công thức: $\text{Tỷ lệ \% hoàn thành} = \frac{\text{Số KH đã có tương tác/cuộc gọi}}{\text{Tổng số KH trong đợt}} \times 100\%$.
+  - Hiển thị rõ ràng: `Đã gọi: X KH | Còn lại: Y KH (Tổng Z KH)`. Cuộc gọi được tính cho các KH có log phát sinh từ thời điểm đợt được tiếp nhận (`acceptedAt`/`createdAt`).
+- **Lưu trạng thái trên URL (F5 Persistence Invariant)**: Trạng thái Tab làm việc và đợt phân bổ phải được đồng bộ 1:1 lên thanh địa chỉ URL dưới dạng `?tab=ALLOCATION&batchId=<ID>&assignedStaffId=me` bằng `window.history.replaceState`. Khi Booker nhấn F5 tải lại trang, giao diện phải khôi phục 100% chính xác đợt phân bổ đang làm việc.
+- **Hiển thị nhãn trạng thái cuộc gọi (Call Outcome Badging)**: Mỗi dòng khách hàng trong danh sách đợt phân bổ bắt buộc hiển thị nhãn trạng thái cuộc gọi gần nhất (`Chưa gọi`, `Đã nghe máy`, `Không nhấc máy` / `Máy bận`, `Hẹn gọi lại`) và cung cấp nút 1-click gọi nhanh OmiCall.
 
+### 36. LoCa Campaign Customer Care Touchpoint Schedule Rules (Quy tắc Mốc Chạm CSKH LoCa)
+- **Mục tiêu chiến dịch LoCa**: Chăm sóc đặc biệt dành cho khách hàng đã mua Combo Live để hỗ trợ họ sử dụng hết các lượt nối/dặm trong gói và tái sử dụng dịch vụ tại salon.
+- **Quy tắc 8 Mốc Chạm CSKH chuẩn**:
+  1. `Chạm 24h`: Đảm bảo khách hàng hài lòng 100% với bộ mi sau lần làm dịch vụ gần nhất.
+  2. `Chạm 17n`: Nhắc lịch dặm mi cho khách hàng (thời hạn dặm mi tối ưu là trong 21 ngày).
+  3. `Chạm 19n`: Nếu đến ngày 17 khách vẫn chưa đặt lịch dặm, chạm lần 2 để hỗ trợ đặt lịch trong chu kỳ 21 ngày.
+  4. `Chạm 21n`: Ngày cuối cùng để đặt lịch dặm 21 ngày (đối với khách lẻ, đây là ngày cuối cùng nhận giá dặm ưu đãi).
+  5. `Chạm 23n`: Khách hàng mua combo có tới 25 ngày để dặm mi và được trừ lượt dặm mi trong gói.
+  6. `Chạm 25n`: Ngày cuối cùng cho khách combo sử dụng lượt dặm mi đã mua trong gói.
+  7. `Chạm 30n`: Đã trễ 5 ngày so với hạn dặm 25 ngày, bắt buộc sử dụng lượt nối mi mới trong gói combo.
+  8. `Chạm 30n+`: Hỗ trợ khách hàng dùng hết các lượt nối mới còn lại trong gói trước khi HSD gói hết hạn.
+- **Tương tác 1-Click & Popover Ghi Chú (`LocaTouchpointCell.tsx`)**: Bấm vào ô Chạm tự động đánh dấu cờ và mở ngay `<Popover>` điền phản hồi của khách, thiết kế dạng nút High-Contrast (Vàng Gold `#D4A84B`, Emerald `#059669`, Red dashed `#EF4444`).
 
+### 37. Table Explicit Width & Responsive Tablet Layout Rules (Quy tắc Độ rộng Cột Bảng & Hiển thị trên iPad/Tablet)
+- **Bắt buộc khai báo numeric `width` cho 100% các cột**: Tất cả các định nghĩa cột trong `<Table>` Ant Design (đặc biệt khi sử dụng `scroll={{ x: 'max-content' }}`) bắt buộc phải có thuộc tính `width` số cụ thể (ví dụ: `width: 95` đến `width: 170`). Tuyệt đối không để `width: undefined`.
+- **Ngăn ngừa co chữ theo chiều dọc (`white-space: nowrap`)**: Tất cả các cell hiển thị văn bản, số tiền VND, số điện thoại, ngày giờ hoặc nhãn trạng thái bắt buộc sử dụng `white-space: nowrap` để tránh hiện tượng rớt dòng từng ký tự theo chiều dọc (`3 \n . \n 6 \n 6...`) trên các thiết bị iPad/Tablet (màn hình 1024px – 1366px).
+- **Cơ chế Dự phòng trong `useTableConfig.ts`**: Hook quản lý cấu hình bảng phải bọc `effectiveWidth` (`width >= 40 ? config.width : staticCol.width || 120`) để tự động khắc phục các dữ liệu cấu hình lưu trong CSDL bị thiếu `width`.
 
-
-
+### 38. Allocation Batch Query Intersecting Rule (Quy tắc Giao Tập Khách Hàng Đợt Phân Bổ)
+- **Đồng bộ Listing & Stats Query (`bStr` & `bStrStats`)**: Khi nhận `allocationBatchId`, Fastify Backend API (`GET /api/customers` và `/stats`) bắt buộc truy vấn danh sách `customerId` từ `crmAllocationBatchItem` (`where: { batchId }`) và thực hiện giao tập (Intersect) với `allowedUserIds` bằng `Set` (`bSet.has(id)`). Tuyệt đối không thay thế hay ghi đè hoàn toàn danh sách phân quyền `allowedUserIds` của Booker.
