@@ -94,6 +94,9 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
         bottom: 0,
         width: '100%',
         height: '100%',
+        backgroundColor: themeMode === 'dark' ? '#121212' : '#ffffff',
+        border: `1px solid ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
+        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
         WebkitBackfaceVisibility: 'hidden',
         backfaceVisibility: 'hidden',
         WebkitTransform: 'rotateY(0deg)',
@@ -333,7 +336,16 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
                   <div
                     key={p.id}
                     className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center cursor-pointer select-none"
-                    style={{ left: leftPos }}
+                    style={{
+                      left: leftPos,
+                      position: 'absolute',
+                      top: '50%',
+                      WebkitTransform: 'translate(-50%, -50%)',
+                      transform: 'translate(-50%, -50%)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                    }}
                     onClick={() => setCurrentPeriodId(p.id)}
                   >
                     <div
