@@ -176,6 +176,25 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
     }
   }, [selectedDate, scope, selectedStaffId, fetchDailyCalls, isReady]);
 
+  // Instantly refresh calls table when popup/modal updates data
+  useEffect(() => {
+    const handleDataChanged = () => {
+      if (isReady) {
+        fetchDailyCalls(selectedDate, scope, selectedStaffId);
+      }
+    };
+    window.addEventListener('mos-data-updated', handleDataChanged);
+    window.addEventListener('mos-call-log-saved', handleDataChanged);
+    window.addEventListener('mos-customer-updated', handleDataChanged);
+    window.addEventListener('mos-booking-updated', handleDataChanged);
+    return () => {
+      window.removeEventListener('mos-data-updated', handleDataChanged);
+      window.removeEventListener('mos-call-log-saved', handleDataChanged);
+      window.removeEventListener('mos-customer-updated', handleDataChanged);
+      window.removeEventListener('mos-booking-updated', handleDataChanged);
+    };
+  }, [selectedDate, scope, selectedStaffId, fetchDailyCalls, isReady]);
+
   const handlePrevDay = () => {
     setSelectedDate((prev) => {
       const next = prev.subtract(1, 'day');

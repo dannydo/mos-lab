@@ -500,6 +500,10 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
 
       await apiClient.customers.createBooking(payload);
       message.success(`Đặt lịch thành công cho khách hàng ${isNewLead ? leadName : selectedCustomer.name}!`);
+      window.dispatchEvent(new CustomEvent('mos-booking-updated'));
+      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      window.dispatchEvent(new CustomEvent('mos-call-log-saved'));
+      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'booking' } }));
       onSuccess();
       onClose();
     } catch (err) {

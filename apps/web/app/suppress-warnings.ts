@@ -15,6 +15,8 @@ console.warn = (...args: SafeAny[]) => {
       args[0].includes('bodyStyle') ||
       args[0].includes('index` parameter of `rowKey` function is deprecated') ||
       args[0].includes('`tip` only work in nest') ||
+      args[0].includes('There may be circular references') ||
+      args[0].includes('circular references') ||
       args[0].includes('registering a cleanup function after unmount'))
   ) {
     return;
@@ -41,6 +43,8 @@ console.error = (...args: SafeAny[]) => {
       args[0].includes('`tip` only work in nest') ||
       args[0].includes('destroyOnClose') ||
       args[0].includes('destroyOnHidden') ||
+      args[0].includes('There may be circular references') ||
+      args[0].includes('circular references') ||
       args[0].includes('registering a cleanup function after unmount'))
   ) {
     return;

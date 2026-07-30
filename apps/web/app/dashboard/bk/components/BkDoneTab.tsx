@@ -116,6 +116,24 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
     fetchDetails();
   }, [dateRange, selectedStore, selectedBookerId, filterStatus]);
 
+  // Instantly refresh BK Done Leaderboard & Details when calls/bookings are saved
+  useEffect(() => {
+    const handleDataChanged = () => {
+      fetchLeaderboard();
+      fetchDetails();
+    };
+    window.addEventListener('mos-data-updated', handleDataChanged);
+    window.addEventListener('mos-call-log-saved', handleDataChanged);
+    window.addEventListener('mos-customer-updated', handleDataChanged);
+    window.addEventListener('mos-booking-updated', handleDataChanged);
+    return () => {
+      window.removeEventListener('mos-data-updated', handleDataChanged);
+      window.removeEventListener('mos-call-log-saved', handleDataChanged);
+      window.removeEventListener('mos-customer-updated', handleDataChanged);
+      window.removeEventListener('mos-booking-updated', handleDataChanged);
+    };
+  }, [dateRange, selectedStore, selectedBookerId, filterStatus]);
+
   const handleSelectBooker = (bookerId: string, bookerName?: string) => {
     if (selectedBookerId === bookerId) {
       setSelectedBookerId(null);

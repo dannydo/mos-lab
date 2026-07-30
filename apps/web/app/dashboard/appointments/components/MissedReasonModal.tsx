@@ -117,6 +117,9 @@ export default function MissedReasonModal({
 
       await apiClient.customers.saveMissedLog(input);
       message.success('Đã lưu lý do & qui trách nhiệm Missed thành công!');
+      window.dispatchEvent(new CustomEvent('mos-booking-updated'));
+      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'missed-reason' } }));
       if (onSuccess) {
         onSuccess(values.followUpStatus);
       }

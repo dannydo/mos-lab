@@ -252,6 +252,23 @@ export function useAppointmentsData(options?: UseAppointmentsDataOptions) {
     [pageSize, fetchAppointments]
   );
 
+  // Instantly refresh appointments table when popup/modal updates data
+  useEffect(() => {
+    const handleDataChanged = () => {
+      fetchAppointments();
+    };
+    window.addEventListener('mos-data-updated', handleDataChanged);
+    window.addEventListener('mos-call-log-saved', handleDataChanged);
+    window.addEventListener('mos-customer-updated', handleDataChanged);
+    window.addEventListener('mos-booking-updated', handleDataChanged);
+    return () => {
+      window.removeEventListener('mos-data-updated', handleDataChanged);
+      window.removeEventListener('mos-call-log-saved', handleDataChanged);
+      window.removeEventListener('mos-customer-updated', handleDataChanged);
+      window.removeEventListener('mos-booking-updated', handleDataChanged);
+    };
+  }, [fetchAppointments]);
+
   const handleCancelBooking = async (orderId: number) => {
     try {
       await apiClient.customers.deleteBooking(orderId);

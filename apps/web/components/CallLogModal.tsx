@@ -71,24 +71,27 @@ export default function CallLogModal({
   const onSuccess = propOnSuccess || (() => {});
 
   // Resolve target customer details
-  const activeCall = callState === 'wrapup' ? currentCall : null;
-  const customer = activeCall
-    ? {
-        legacyUserId: activeCall.legacyUserId || 0,
-        customerName: activeCall.name || 'Khách hàng',
-        planId: activeCall.planId || null,
-      }
-    : propLegacyUserId !== undefined
+  const activeCall = currentCall || (callState === 'wrapup' ? currentCall : null);
+  const customer =
+    activeCall && (activeCall.legacyUserId || activeCall.name)
       ? {
-          legacyUserId: propLegacyUserId,
-          customerName: propCustomerName || '',
-          planId: propPlanId || null,
+          legacyUserId: activeCall.legacyUserId || 0,
+          customerName: activeCall.name || 'Khách hàng',
+          planId: activeCall.planId || null,
         }
-      : callLogCustomerInfo;
+      : propLegacyUserId !== undefined && propLegacyUserId > 0
+        ? {
+            legacyUserId: propLegacyUserId,
+            customerName: propCustomerName || '',
+            planId: propPlanId || null,
+          }
+        : callLogCustomerInfo;
 
-  const legacyUserId = customer?.legacyUserId || 0;
-  const customerName = customer?.customerName || '';
-  const planId = customer?.planId || null;
+  const legacyUserId =
+    customer?.legacyUserId || currentCall?.legacyUserId || callLogCustomerInfo?.legacyUserId || propLegacyUserId || 0;
+  const customerName =
+    customer?.customerName || currentCall?.name || callLogCustomerInfo?.customerName || propCustomerName || '';
+  const planId = customer?.planId || currentCall?.planId || callLogCustomerInfo?.planId || propPlanId || null;
 
   // 1. Initial defaults on mount
   useEffect(() => {
@@ -157,22 +160,44 @@ export default function CallLogModal({
       }
 
       if (!form.isFieldTouched('callResult')) {
-        form.setFieldValue('callResult', newResult);
+        form.setFieldsValue({ callResult: newResult });
         setCallResult(newResult);
       }
       if (newNote && !form.isFieldTouched('note') && !form.getFieldValue('note')) {
-        form.setFieldValue('note', newNote);
+        form.setFieldsValue({ note: newNote });
       }
     }
   }, [visible, activeCall, resolvedLog, form]);
 
+  const resolveTargetUserId = async (): Promise<number | null> => {
+    if (legacyUserId && legacyUserId > 0) return legacyUserId;
+    const phoneToLookup = activeCall?.phone || currentCall?.phone;
+    if (phoneToLookup) {
+      try {
+        const found = await apiClient.customers.list({ search: phoneToLookup, limit: '1' });
+        if (found?.data && found.data.length > 0) {
+          return found.data[0].id;
+        }
+      } catch (err) {
+        console.error('Lookup customer by phone failed:', err);
+      }
+    }
+    return null;
+  };
+
   const handleQuickAction = async (actionType: 'NO_ANSWER' | 'CALL_BACK' | 'BOOKED' | 'RENEWED') => {
-    if (!legacyUserId) return;
     setLoading(true);
     try {
+      const targetUserId = await resolveTargetUserId();
+      if (!targetUserId) {
+        message.error('Không tìm thấy thông tin khách hàng để lưu nhật ký. Vui lòng thử lại!');
+        setLoading(false);
+        return;
+      }
+
       const data: SafeAny = {
         planId: planId || undefined,
-        legacyUserId,
+        legacyUserId: targetUserId,
         callType: activeCall
           ? activeCall.direction === 'outbound'
             ? ('OUTBOUND' as const)
@@ -208,6 +233,9 @@ export default function CallLogModal({
       await apiClient.calls.create(data);
       message.success('Ghi nhận cuộc gọi nhanh thành công!');
       window.dispatchEvent(new CustomEvent('mos-call-log-saved'));
+      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      window.dispatchEvent(new CustomEvent('mos-booking-updated'));
+      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'call-log' } }));
       onSuccess();
       onCancel();
     } catch (error) {
@@ -219,12 +247,18 @@ export default function CallLogModal({
   };
 
   const handleFinish = async (values: SafeAny) => {
-    if (!legacyUserId) return;
     setLoading(true);
     try {
+      const targetUserId = await resolveTargetUserId();
+      if (!targetUserId) {
+        message.error('Không tìm thấy thông tin khách hàng để lưu nhật ký. Vui lòng thử lại!');
+        setLoading(false);
+        return;
+      }
+
       const data = {
         planId: planId || undefined,
-        legacyUserId,
+        legacyUserId: targetUserId,
         callType: activeCall
           ? activeCall.direction === 'outbound'
             ? ('OUTBOUND' as const)
@@ -242,6 +276,9 @@ export default function CallLogModal({
       await apiClient.calls.create(data);
       message.success('Ghi nhận lịch sử cuộc gọi thành công!');
       window.dispatchEvent(new CustomEvent('mos-call-log-saved'));
+      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      window.dispatchEvent(new CustomEvent('mos-booking-updated'));
+      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'call-log' } }));
       onSuccess();
       onCancel();
     } catch (error) {

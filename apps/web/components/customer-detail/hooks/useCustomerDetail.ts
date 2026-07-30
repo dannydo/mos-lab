@@ -240,6 +240,25 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     optionsRef.current?.onUpdate?.();
   }, [fetchDetails, fetchTabData]);
 
+  // Instantly refresh customer detail drawer when calls/bookings/customer data are updated
+  useEffect(() => {
+    const handleDataChanged = () => {
+      if (open && customerId) {
+        refreshAllDetails();
+      }
+    };
+    window.addEventListener('mos-data-updated', handleDataChanged);
+    window.addEventListener('mos-call-log-saved', handleDataChanged);
+    window.addEventListener('mos-customer-updated', handleDataChanged);
+    window.addEventListener('mos-booking-updated', handleDataChanged);
+    return () => {
+      window.removeEventListener('mos-data-updated', handleDataChanged);
+      window.removeEventListener('mos-call-log-saved', handleDataChanged);
+      window.removeEventListener('mos-customer-updated', handleDataChanged);
+      window.removeEventListener('mos-booking-updated', handleDataChanged);
+    };
+  }, [open, customerId, refreshAllDetails]);
+
   const handleTabChange = useCallback(
     (key: string) => {
       setActiveTab(key);
@@ -532,6 +551,8 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
 
       optionsRef.current?.onSuccess?.('Cập nhật thông tin khách hàng thành công!');
       setIsEditModalOpen(false);
+      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'customer-edit' } }));
       await refreshAllDetails();
     } catch (err) {
       console.error('Update customer failed:', err);
@@ -550,6 +571,8 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     try {
       await apiClient.customers.delete(customerId);
       optionsRef.current?.onSuccess?.('Xóa khách hàng thành công!');
+      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'customer-delete' } }));
       if (onDeleteSuccess) {
         onDeleteSuccess();
       }
@@ -567,6 +590,8 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     try {
       await apiClient.customers.restore(customerId);
       optionsRef.current?.onSuccess?.('Khôi phục khách hàng thành công!');
+      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'customer-restore' } }));
       if (onDeleteSuccess) {
         onDeleteSuccess();
       }
@@ -583,6 +608,9 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     try {
       await apiClient.customers.deleteBooking(orderId);
       optionsRef.current?.onSuccess?.('Hủy lịch hẹn thành công!');
+      window.dispatchEvent(new CustomEvent('mos-booking-updated'));
+      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'cancel-booking' } }));
       await refreshAllDetails();
     } catch (err) {
       console.error('[Cancel] Failed to cancel booking:', err);
@@ -597,6 +625,8 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     try {
       const res = await apiClient.customers.unpinNote(customerId, noteId);
       optionsRef.current?.onSuccess?.(res.message || 'Bỏ ghim ghi chú thành công!');
+      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'unpin-note' } }));
       await refreshAllDetails();
     } catch (err) {
       console.error('Failed to unpin note:', err);

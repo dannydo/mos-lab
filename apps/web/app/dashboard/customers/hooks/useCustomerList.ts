@@ -202,6 +202,23 @@ export const useCustomerList = (
     await Promise.all([fetchCustomers(1, pageSize), fetchStats()]);
   }, [fetchCustomers, fetchStats, pageSize]);
 
+  // Instantly refresh customer table when popup/modal updates data
+  useEffect(() => {
+    const handleDataChanged = () => {
+      refreshListAndStats();
+    };
+    window.addEventListener('mos-data-updated', handleDataChanged);
+    window.addEventListener('mos-call-log-saved', handleDataChanged);
+    window.addEventListener('mos-customer-updated', handleDataChanged);
+    window.addEventListener('mos-booking-updated', handleDataChanged);
+    return () => {
+      window.removeEventListener('mos-data-updated', handleDataChanged);
+      window.removeEventListener('mos-call-log-saved', handleDataChanged);
+      window.removeEventListener('mos-customer-updated', handleDataChanged);
+      window.removeEventListener('mos-booking-updated', handleDataChanged);
+    };
+  }, [refreshListAndStats]);
+
   return {
     customers,
     setCustomers,

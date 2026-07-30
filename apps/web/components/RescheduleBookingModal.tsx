@@ -261,6 +261,10 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
       await apiClient.customers.updateBooking(booking.id, payload);
       message.success('Dời lịch hẹn thành công!');
+      window.dispatchEvent(new CustomEvent('mos-booking-updated'));
+      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      window.dispatchEvent(new CustomEvent('mos-call-log-saved'));
+      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'reschedule' } }));
       onSuccess();
       onClose();
     } catch (err) {

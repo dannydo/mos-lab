@@ -1197,7 +1197,7 @@ export default function TodayCalendarSummary({
                       <Button
                         size="small"
                         icon={<PhoneOutlined />}
-                        onClick={() => makeCall(item.phone)}
+                        onClick={() => makeCall(item.phone, item.customer, item.customerId)}
                         title="Gọi OmiCall"
                       />
                       <Button

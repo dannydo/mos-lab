@@ -405,9 +405,15 @@ export function useLocaData(options?: UseLocaDataOptions) {
       fetchOverallStats();
       fetchCustomerList();
     };
+    window.addEventListener('mos-data-updated', handleLogSaved);
     window.addEventListener('mos-call-log-saved', handleLogSaved);
+    window.addEventListener('mos-customer-updated', handleLogSaved);
+    window.addEventListener('mos-booking-updated', handleLogSaved);
     return () => {
+      window.removeEventListener('mos-data-updated', handleLogSaved);
       window.removeEventListener('mos-call-log-saved', handleLogSaved);
+      window.removeEventListener('mos-customer-updated', handleLogSaved);
+      window.removeEventListener('mos-booking-updated', handleLogSaved);
     };
   }, [fetchOverallStats, fetchCustomerList]);
 

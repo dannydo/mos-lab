@@ -351,7 +351,9 @@ const CustomerTable = React.memo(
                     size="small"
                     icon={<PhoneOutlined />}
                     style={{ backgroundColor: '#10B981', borderColor: '#10B981' }}
-                    onClick={() => makeCall(record.phone, record.name || `KH #${record.id}`)}
+                    onClick={() =>
+                      makeCall(record.phone, record.name || `KH #${record.id}`, record.id, record.avatar || undefined)
+                    }
                   />
                 </Tooltip>
               )}

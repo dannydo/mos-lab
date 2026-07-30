@@ -319,6 +319,25 @@ export function useTodayData(options?: UseTodayDataOptions) {
     }
   }, [selectedDate, dateRangeMode, bookingBranch, selectedBooker, fetchDashboardData]);
 
+  // Instantly refresh today dashboard tables when popup/modal updates data
+  useEffect(() => {
+    const handleDataChanged = () => {
+      if (selectedDate) {
+        fetchDashboardData(selectedDate, dateRangeMode, true);
+      }
+    };
+    window.addEventListener('mos-data-updated', handleDataChanged);
+    window.addEventListener('mos-call-log-saved', handleDataChanged);
+    window.addEventListener('mos-customer-updated', handleDataChanged);
+    window.addEventListener('mos-booking-updated', handleDataChanged);
+    return () => {
+      window.removeEventListener('mos-data-updated', handleDataChanged);
+      window.removeEventListener('mos-call-log-saved', handleDataChanged);
+      window.removeEventListener('mos-customer-updated', handleDataChanged);
+      window.removeEventListener('mos-booking-updated', handleDataChanged);
+    };
+  }, [selectedDate, dateRangeMode, fetchDashboardData]);
+
   const dateBounds = useMemo(() => {
     if (!selectedDate) {
       const todayStr = dayjs().format('YYYY-MM-DD');
