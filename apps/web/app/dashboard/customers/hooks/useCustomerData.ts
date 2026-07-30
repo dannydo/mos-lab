@@ -157,7 +157,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
           setSelectedBatchId(myBatches[0].id);
         }
       } else {
-        setSelectedBatchId(null);
+        setSelectedBatchId(undefined);
       }
     }
   }, [activeTab, selectedBatchId, myBatches, setSelectedBatchId]);
