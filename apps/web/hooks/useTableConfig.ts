@@ -244,7 +244,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
               'span',
               { style: { display: 'inline-flex', alignItems: 'center' } },
               colIcon !== 'none' ? renderIconHelper(colIcon) : null,
-              React.createElement('span', null, config.title || (staticCol.title as React.ReactNode))
+              React.createElement('span', null, (staticCol.title as React.ReactNode) || config.title)
             ),
             width: effectiveWidth,
             visible: config.visible,

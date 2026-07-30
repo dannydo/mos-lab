@@ -154,7 +154,7 @@ export const getLocaColumns = ({
       },
     },
     {
-      title: 'Hạn Sử Dụng (HSD)',
+      title: 'HSD',
       key: 'expiryDate',
       width: 130,
       render: (_: SafeAny, record: Customer) => {
@@ -176,7 +176,7 @@ export const getLocaColumns = ({
       },
     },
     {
-      title: 'Chưa tới tiệm (Ngày)',
+      title: 'Last Visited',
       dataIndex: 'daysSinceLastVisit',
       key: 'daysSinceLastVisit',
       width: 160,
@@ -419,7 +419,7 @@ export const getLocaColumns = ({
     },
 
     {
-      title: 'Tổng Chi Tiêu',
+      title: 'LTV',
       dataIndex: 'totalSpent',
       key: 'totalSpent',
       width: 130,
@@ -475,7 +475,7 @@ export const getLocaColumns = ({
       },
     },
     {
-      title: 'Booker phụ trách',
+      title: 'BK Assigned',
       dataIndex: 'assignedStaff',
       key: 'assignedStaff',
       width: 140,
@@ -491,7 +491,7 @@ export const getLocaColumns = ({
         ),
     },
     {
-      title: 'Ngày gọi gần nhất',
+      title: 'Last Called',
       key: 'lastCallDate',
       width: 140,
       render: (_: SafeAny, record: Customer) => {
@@ -511,7 +511,7 @@ export const getLocaColumns = ({
       },
     },
     {
-      title: 'Trạng thái cuộc gọi',
+      title: 'Call Status',
       key: 'lastCallResult',
       width: 130,
       render: (_: SafeAny, record: Customer) => {
@@ -547,7 +547,7 @@ export const getLocaColumns = ({
       },
     },
     {
-      title: 'Ghi chú cuộc gọi',
+      title: 'Call Notes',
       key: 'lastCallNote',
       width: 150,
       render: (_: SafeAny, record: Customer) => {
@@ -572,7 +572,7 @@ export const getLocaColumns = ({
       },
     },
     {
-      title: 'Thao tác',
+      title: 'Action',
       key: 'actions',
       width: 95,
       align: 'center' as const,
@@ -802,7 +802,7 @@ export const getNewLocaColumns = ({
       },
     },
     {
-      title: 'Thao tác',
+      title: 'Action',
       key: 'actions',
       width: 95,
       align: 'center' as const,
