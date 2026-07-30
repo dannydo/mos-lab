@@ -28,36 +28,101 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
 
   // 1. Initial Column Metadata Constructor
   const createDefaultConfigFromStatic = useCallback((staticCols: TableColumnType<T>[]): ColumnConfig[] => {
-    return staticCols.map((col) => {
-      const key = String(col.key || col.dataIndex || '');
-      const titleText = typeof col.title === 'string' ? col.title : String(col.key || col.dataIndex || 'Cột');
-      return {
-        key,
-        title: titleText,
-        originalTitle: titleText,
-        width: typeof col.width === 'number' ? col.width : undefined,
-        visible: true,
-        icon: '', // empty means fallback to getDefaultIcon
-      };
-    });
+    const list: ColumnConfig[] = [];
+    const extractCols = (col: TableColumnType<T>) => {
+      if ((col as SafeAny).children && Array.isArray((col as SafeAny).children)) {
+        (col as SafeAny).children.forEach(extractCols);
+      } else {
+        const key = String(col.key || col.dataIndex || '');
+        if (!key) return;
+
+        let titleText = '';
+        if (typeof col.title === 'string') {
+          titleText = col.title;
+        } else if (React.isValidElement(col.title)) {
+          const props = (col.title as SafeAny).props;
+          if (props && props.title && typeof props.title === 'string') {
+            titleText = props.title;
+          } else if (props && props.children && typeof props.children === 'string') {
+            titleText = props.children;
+          } else if (props && props.children && Array.isArray(props.children)) {
+            const strChild = props.children.find((c: SafeAny) => typeof c === 'string');
+            titleText = strChild || key;
+          } else {
+            titleText = key;
+          }
+        } else {
+          titleText = key;
+        }
+
+        // Clean titles for touchpoints
+        if (key.startsWith('tp_')) {
+          const subKey = key.replace('tp_', '');
+          if (subKey === '24h') titleText = 'Chạm 24h';
+          else if (subKey === '30plus') titleText = 'Chạm 30n+';
+          else titleText = `Chạm ${subKey}n`;
+        }
+
+        list.push({
+          key,
+          title: titleText,
+          originalTitle: titleText,
+          width: typeof col.width === 'number' ? col.width : undefined,
+          visible: true,
+          icon: '',
+        });
+      }
+    };
+
+    staticCols.forEach(extractCols);
+    return list;
   }, []);
 
   // 2. Fetch and merge table configurations
   const loadConfig = useCallback(async () => {
     setLoading(true);
     try {
+      const staticDefaults = createDefaultConfigFromStatic(staticColsRef.current);
+      const staticMap = new Map(staticDefaults.map((c) => [c.key, c]));
       const res = await apiClient.tableConfig.get(tableId);
+
+      let fetchedConfig: ColumnConfig[] = [];
       if (res.userConfig && res.userConfig.length > 0) {
-        setRawConfig(res.userConfig);
+        fetchedConfig = res.userConfig;
       } else if (res.defaultConfig && res.defaultConfig.length > 0) {
-        setRawConfig(res.defaultConfig);
+        fetchedConfig = res.defaultConfig;
+      }
+
+      if (fetchedConfig.length > 0) {
+        const existingKeys = new Set(fetchedConfig.map((c) => c.key));
+        const updatedConfig = fetchedConfig.map((col) => {
+          const staticDef = staticMap.get(col.key);
+          if (staticDef) {
+            const width =
+              col.key === 'actions' && col.width === 200 ? 95 : col.width !== undefined ? col.width : staticDef.width;
+            return {
+              ...col,
+              title: col.title || staticDef.title,
+              originalTitle: staticDef.originalTitle,
+              width,
+            };
+          }
+          return col;
+        });
+
+        // Append missing static columns from code that are not yet in DB
+        staticDefaults.forEach((staticDef) => {
+          if (!existingKeys.has(staticDef.key)) {
+            updatedConfig.push(staticDef);
+          }
+        });
+
+        setRawConfig(updatedConfig);
       } else {
-        // Fallback to static columns
-        setRawConfig(createDefaultConfigFromStatic(staticColsRef.current));
+        setRawConfig(staticDefaults);
       }
     } catch (error) {
       console.error('Failed to load table config:', error);
-      // Fallback to static columns
       setRawConfig(createDefaultConfigFromStatic(staticColsRef.current));
     } finally {
       setLoading(false);
@@ -91,7 +156,6 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
       const res = await apiClient.tableConfig.reset(tableId);
       if (res.success) {
         message.success(res.message);
-        // Reload settings
         await loadConfig();
       }
     } catch (error) {
@@ -112,7 +176,6 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
           return col;
         });
 
-        // Save to server asynchronously without blocking/loading state
         apiClient.tableConfig.save(tableId, updated, false).catch((err) => {
           console.error('Failed to auto-save column width:', err);
         });
@@ -133,8 +196,39 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
 
     const merged = staticColumns
       .map((staticCol) => {
+        if ((staticCol as SafeAny).children && Array.isArray((staticCol as SafeAny).children)) {
+          const visibleChildren = (staticCol as SafeAny).children
+            .map((child: TableColumnType<T>) => {
+              const childKey = String(child.key || child.dataIndex || '');
+              const childConfig = configMap.get(childKey);
+              if (childConfig) {
+                return {
+                  ...child,
+                  width: childConfig.width !== undefined ? childConfig.width : child.width,
+                  visible: childConfig.visible,
+                  orderIndex: childConfig.index,
+                };
+              }
+              return { ...child, visible: true, orderIndex: 9999 };
+            })
+            .filter((c: SafeAny) => c.visible !== false)
+            .sort((a: SafeAny, b: SafeAny) => (a.orderIndex ?? 9999) - (b.orderIndex ?? 9999));
+
+          if (visibleChildren.length === 0) {
+            return { ...staticCol, visible: false };
+          }
+          const firstChildIndex = (visibleChildren[0] as SafeAny)?.orderIndex;
+          return {
+            ...staticCol,
+            children: visibleChildren,
+            visible: true,
+            orderIndex: typeof firstChildIndex === 'number' ? firstChildIndex : 8000,
+          };
+        }
+
         const key = (staticCol.key || staticCol.dataIndex) as string;
         const config = configMap.get(key);
+        const isActions = key === 'actions';
 
         if (config) {
           const colIcon = config.icon !== undefined && config.icon !== '' ? config.icon : getDefaultIcon(key);
@@ -148,7 +242,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
             ),
             width: config.width !== undefined ? config.width : staticCol.width,
             visible: config.visible,
-            orderIndex: config.index,
+            orderIndex: isActions ? 99999 : config.index,
             onHeaderCell: (column: TableColumnType<T>) => ({
               width: column.width as number,
               onResize: (newWidth: number) => handleColumnResize(key, newWidth),
@@ -167,7 +261,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
             React.createElement('span', null, staticCol.title as React.ReactNode)
           ),
           visible: true,
-          orderIndex: 9999,
+          orderIndex: isActions ? 99999 : 9999,
           onHeaderCell: (column: TableColumnType<T>) => ({
             width: column.width as number,
             onResize: (newWidth: number) => handleColumnResize(key, newWidth),
@@ -175,7 +269,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
         };
       })
       .filter((col) => col.visible !== false)
-      .sort((a, b) => (a.orderIndex ?? 9999) - (b.orderIndex ?? 9999));
+      .sort((a, b) => ((a as SafeAny).orderIndex ?? 9999) - ((b as SafeAny).orderIndex ?? 9999));
 
     return merged as TableColumnType<T>[];
   }, [rawConfig, staticColumns, handleColumnResize]);

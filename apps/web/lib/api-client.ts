@@ -273,6 +273,16 @@ export const apiClient = {
       const response = await api.get(`/customers/${id}`);
       return response.data;
     },
+    toggleTouchpoint: async (data: {
+      customerId: number;
+      touchpointKey: string;
+      isChecked: boolean;
+      note?: string;
+      cycleDate?: string;
+    }): Promise<{ success: boolean; touchpoint: SafeAny }> => {
+      const response = await api.post('/customers/loca-touchpoint', data);
+      return response.data;
+    },
     getHistory: async (id: number): Promise<CustomerHistoryEntry[]> => {
       const response = await api.get(`/customers/${id}/history`);
       return response.data;

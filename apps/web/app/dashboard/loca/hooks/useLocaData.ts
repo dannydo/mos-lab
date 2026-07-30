@@ -76,7 +76,17 @@ export function useLocaData(options?: UseLocaDataOptions) {
   });
 
   // Main UI States
-  const [activeTab, setActiveTab] = useState<string>('NEW_LOCA');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTab = urlParams.get('tab') || urlParams.get('activeTab');
+      const savedTab = urlTab || localStorage.getItem('mos_loca_activeTab');
+      if (savedTab && TAB_KEYS.some((t) => t.id === savedTab)) {
+        return savedTab;
+      }
+    }
+    return 'LOCA_ALL';
+  });
   const [activeTouchpointKey, setActiveTouchpointKey] = useState<string>('ALL');
   const [contactSubTab, setContactSubTab] = useState<'ALL' | 'CALL' | 'TEXT'>('ALL');
 
@@ -89,6 +99,9 @@ export function useLocaData(options?: UseLocaDataOptions) {
   const [sortField, setSortField] = useState('daysSinceLastVisit');
   const [assignedStaffId, setAssignedStaffId] = useState<string | number>('ALL');
   const [bookingStatusFilter, setBookingStatusFilterState] = useState<'ALL' | 'BOOKED' | 'NOT_BOOKED'>('ALL');
+
+  // Request ID Guard to prevent out-of-order API responses from overwriting data
+  const lastRequestIdRef = useRef(0);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -152,17 +165,6 @@ export function useLocaData(options?: UseLocaDataOptions) {
       console.error('Failed to load staff list:', err);
     }
   }, [currentUser]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlTab = urlParams.get('tab') || urlParams.get('activeTab');
-      const savedTab = urlTab || localStorage.getItem('mos_loca_activeTab');
-      if (savedTab && TAB_KEYS.some((t) => t.id === savedTab)) {
-        setActiveTab(savedTab);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     fetchConfigs();
@@ -280,6 +282,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
   }, [configs, searchQuery, assignedStaffId, fetchTouchpointCounts]);
 
   const fetchCustomerList = useCallback(async () => {
+    const requestId = ++lastRequestIdRef.current;
     setLoading(true);
     try {
       const activeTabConfig = configs['LOCA_ALL'] || [];
@@ -325,13 +328,19 @@ export function useLocaData(options?: UseLocaDataOptions) {
       }
 
       const data = await apiClient.customers.list(params);
-      setCustomers(data.data);
-      setTotal(data.pagination.total);
+      if (requestId === lastRequestIdRef.current) {
+        setCustomers(data.data);
+        setTotal(data.pagination.total);
+      }
     } catch (err) {
-      console.error('Failed to load customer list:', err);
-      optionsRef.current?.onError?.('Không thể tải danh sách khách hàng LoCa.');
+      if (requestId === lastRequestIdRef.current) {
+        console.error('Failed to load customer list:', err);
+        optionsRef.current?.onError?.('Không thể tải danh sách khách hàng LoCa.');
+      }
     } finally {
-      setLoading(false);
+      if (requestId === lastRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [
     currentPage,
@@ -490,6 +499,51 @@ export function useLocaData(options?: UseLocaDataOptions) {
     return '';
   };
 
+  const handleToggleTouchpoint = useCallback(
+    async (customerId: number, touchpointKey: string, isChecked: boolean, note?: string) => {
+      // 1. Optimistically update local customer state
+      setCustomers((prevCustomers) =>
+        prevCustomers.map((cust) => {
+          if (cust.id === customerId) {
+            const currentTps = cust.touchpoints || {};
+            const staffName = currentUser?.displayName || currentUser?.username || 'Staff';
+            return {
+              ...cust,
+              touchpoints: {
+                ...currentTps,
+                [touchpointKey]: {
+                  isChecked,
+                  checkedAt: isChecked ? new Date().toISOString() : currentTps[touchpointKey]?.checkedAt || null,
+                  checkedByStaffId: isChecked
+                    ? currentUser?.id || null
+                    : currentTps[touchpointKey]?.checkedByStaffId || null,
+                  checkedByStaffName: isChecked ? staffName : currentTps[touchpointKey]?.checkedByStaffName || null,
+                  note: note !== undefined ? note : currentTps[touchpointKey]?.note || null,
+                },
+              },
+            };
+          }
+          return cust;
+        })
+      );
+
+      // 2. Call API endpoint
+      try {
+        await apiClient.customers.toggleTouchpoint({
+          customerId,
+          touchpointKey,
+          isChecked,
+          note,
+        });
+      } catch (err) {
+        console.error('Failed to toggle touchpoint:', err);
+        optionsRef.current?.onError?.('Không thể lưu trạng thái Chạm. Vui lòng thử lại.');
+        fetchCustomerList();
+      }
+    },
+    [currentUser, fetchCustomerList]
+  );
+
   const changeActiveTab = useCallback((tab: string) => {
     setActiveTab(tab);
     if (typeof window !== 'undefined') {
@@ -560,6 +614,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
     handleSaveConfig,
     resetConfigDefaults,
     handleAssignTelesales,
+    handleToggleTouchpoint,
     getRowClassName,
   };
 }

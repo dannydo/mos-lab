@@ -261,7 +261,8 @@ export const AVAILABLE_ICONS = [
   { value: 'none', label: 'Không có icon' },
 ];
 
-export const getDefaultIcon = (key: string): string => {
+export const getDefaultIcon = (key?: string): string => {
+  if (!key || typeof key !== 'string') return '';
   const k = key.toLowerCase();
   if (k.includes('index') || k === 'stt') return 'OrderedListOutlined';
   if (k.includes('time') || k.includes('date') || k === 'bookingdatetime') return 'CalendarOutlined';

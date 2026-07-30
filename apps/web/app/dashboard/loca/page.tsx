@@ -137,6 +137,7 @@ export default function LocaCampaignPage() {
     handleSaveConfig,
     resetConfigDefaults,
     handleAssignTelesales,
+    handleToggleTouchpoint,
     getRowClassName,
   } = useLocaData({
     settingsForm,
@@ -272,6 +273,7 @@ export default function LocaCampaignPage() {
     handleAddToPlan,
     makeCall,
     handleOpenSmsModal,
+    handleToggleTouchpoint,
     addingIds,
     sortField,
     currentPage,
@@ -830,6 +832,7 @@ export default function LocaCampaignPage() {
         rowKey="id"
         loading={loading}
         className="antd-custom-table"
+        scroll={{ x: 1650 }}
         onChange={(pagination, filters, sorter: SafeAny) => {
           if (sorter && sorter.field) {
             const field = sorter.field;

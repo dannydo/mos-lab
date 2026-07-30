@@ -390,8 +390,25 @@ model CrmAllocationBatchItem {
   @@map("crm_allocation_batch_items")
 }
 
+// ═══════════════════════════════════════════
+// LoCa Customer Touchpoint Tracking (24h, 17, 19, 21, 23, 25, 30, 30+)
+// ═══════════════════════════════════════════
+model CrmLocaTouchpoint {
+  id                 Int       @id @default(autoincrement())
+  legacyUserId       Int       @map("legacy_user_id")
+  touchpointKey      String    @map("touchpoint_key") @db.VarChar(20) // '24h', '17', '19', '21', '23', '25', '30', '30plus'
+  isChecked          Boolean   @default(false) @map("is_checked") @db.TinyInt
+  checkedAt          DateTime? @map("checked_at") @db.DateTime(0)
+  checkedByStaffId   Int?      @map("checked_by_staff_id")
+  checkedByStaffName String?   @map("checked_by_staff_name") @db.VarChar(100)
+  note               String?   @db.Text
+  cycleDate          DateTime? @map("cycle_date") @db.Date
+  createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
-
-
-
-
+  @@unique([legacyUserId, cycleDate, touchpointKey], name: "legacyUserId_cycleDate_touchpointKey")
+  @@index([legacyUserId])
+  @@index([touchpointKey])
+  @@index([cycleDate])
+  @@map("crm_loca_touchpoints")
+}

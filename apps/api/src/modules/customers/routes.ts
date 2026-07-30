@@ -7,6 +7,7 @@ import { getBkPaystubData } from '../kpi/services/bk-salary.service.js';
 import { registerDashboardRoutes } from './routes/dashboard.routes.js';
 import { bookingAuditRoutes } from './routes/booking-audit.routes.js';
 import { BookingAuditService } from './services/booking-audit.service.js';
+import { registerLocaTouchpointRoutes } from './routes/loca-touchpoint.routes.js';
 
 export async function customerRoutes(fastify: FastifyInstance) {
   // Start automated allocation expiration cronjob
@@ -15,6 +16,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // Register dashboard sub-routes (revenue-hourly, revenue-detail)
   await registerDashboardRoutes(fastify);
   await bookingAuditRoutes(fastify);
+  await registerLocaTouchpointRoutes(fastify);
 
   const getNewLocaUserIds = async (dFrom?: string, dTo?: string): Promise<number[]> => {
     return ComboRecognitionService.getNewLoCaCustomerIds(fastify, dFrom, dTo);
@@ -1147,6 +1149,33 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
       }
 
+      // Fetch latest touchpoints for the returned customers
+      const touchpointsList =
+        customerIds.length > 0
+          ? await fastify.prisma.crm.crmLocaTouchpoint.findMany({
+              where: { legacyUserId: { in: customerIds } },
+              orderBy: { updatedAt: 'desc' },
+            })
+          : [];
+
+      const touchpointsMap = new Map<number, Record<string, SafeAny>>();
+      touchpointsList.forEach((tp) => {
+        const uid = tp.legacyUserId;
+        if (!touchpointsMap.has(uid)) {
+          touchpointsMap.set(uid, {});
+        }
+        const userTps = touchpointsMap.get(uid)!;
+        if (!userTps[tp.touchpointKey]) {
+          userTps[tp.touchpointKey] = {
+            isChecked: tp.isChecked,
+            checkedAt: tp.checkedAt ? tp.checkedAt.toISOString() : null,
+            checkedByStaffId: tp.checkedByStaffId,
+            checkedByStaffName: tp.checkedByStaffName,
+            note: tp.note,
+          };
+        }
+      });
+
       // Map raw SQL outputs to clean Customer interface types
       const customers = dataResult.map((row: SafeAny) => {
         const assigned = assignmentMap.get(Number(row.id)) || null;
@@ -1154,6 +1183,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const callbackDateVal = callbackMap.get(Number(row.id)) || null;
         const lastCallVal = latestCallMap.get(Number(row.id)) || null;
         const newComboDetails = newComboMap.get(Number(row.id)) || null;
+        const userTouchpoints = touchpointsMap.get(Number(row.id)) || {};
 
         const historyInfo = historyMap.get(Number(row.id)) || null;
         const lastAllocation = historyInfo
@@ -1198,6 +1228,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           lastBookingDate: booking && booking.bookingDate ? new Date(booking.bookingDate).toISOString() : null,
           callbackDate: callbackDateVal ? new Date(callbackDateVal).toISOString().split('T')[0] : null,
           lastCall: lastCallVal,
+          touchpoints: userTouchpoints,
           newComboDetails,
         };
       });

@@ -5,6 +5,7 @@ import { Space, Avatar, Typography, Tag, Tooltip, Button } from 'antd';
 import { UserOutlined, PhoneOutlined, CheckCircleOutlined, PlusOutlined, MessageOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
+import { LocaTouchpointCell } from './LocaTouchpointCell';
 
 const { Text } = Typography;
 
@@ -24,6 +25,12 @@ interface LocaColumnsOptions {
     planId?: number
   ) => Promise<void> | void;
   handleOpenSmsModal?: (record: Customer) => void;
+  handleToggleTouchpoint?: (
+    customerId: number,
+    touchpointKey: string,
+    isChecked: boolean,
+    note?: string
+  ) => Promise<void>;
   addingIds?: number[];
   sortField?: string;
   currentPage?: number;
@@ -40,6 +47,7 @@ export const getLocaColumns = ({
   handleAddToPlan,
   makeCall,
   handleOpenSmsModal,
+  handleToggleTouchpoint,
   addingIds = [],
   sortField = 'daysSinceLastVisit_asc',
   currentPage = 1,
@@ -49,8 +57,9 @@ export const getLocaColumns = ({
     {
       title: 'STT',
       key: 'stt',
-      width: 60,
+      width: 55,
       align: 'center' as const,
+      fixed: 'left' as const,
       render: (_: SafeAny, __: Customer, index: number) => (
         <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
           {(currentPage - 1) * pageSize + index + 1}
@@ -61,7 +70,8 @@ export const getLocaColumns = ({
       title: 'Mã KH',
       dataIndex: 'id',
       key: 'id',
-      width: 90,
+      width: 80,
+      fixed: 'left' as const,
       sorter: true,
       sortOrder: sortField === 'id_asc' ? ('ascend' as const) : sortField === 'id_desc' ? ('descend' as const) : null,
     },
@@ -69,6 +79,8 @@ export const getLocaColumns = ({
       title: 'Khách Hàng',
       dataIndex: 'name',
       key: 'name',
+      width: 170,
+      fixed: 'left' as const,
       sorter: true,
       sortOrder:
         sortField === 'name_asc' ? ('ascend' as const) : sortField === 'name_desc' ? ('descend' as const) : null,
@@ -96,7 +108,7 @@ export const getLocaColumns = ({
             </div>
             {record.phone && (
               <div
-                style={{ fontSize: '12px', color: '#D4A84B', fontWeight: '500' }}
+                style={{ fontSize: '12px', color: themeMode === 'dark' ? '#fbbf24' : '#d97706', fontWeight: '600' }}
                 className="hover:underline cursor-pointer flex items-center gap-1 mt-0.5"
                 role="button"
                 tabIndex={0}
@@ -124,7 +136,8 @@ export const getLocaColumns = ({
     {
       title: 'Số Dư Combo',
       key: 'comboBalance',
-      width: 140,
+      width: 130,
+      fixed: 'left' as const,
       render: (_: SafeAny, record: Customer) => {
         if (!record.comboBalance) return <Text type="secondary">Không có</Text>;
         const totalRemaining = (record.comboBalance.normalCount || 0) + (record.comboBalance.retainCount || 0);
@@ -143,7 +156,7 @@ export const getLocaColumns = ({
     {
       title: 'Hạn Sử Dụng (HSD)',
       key: 'expiryDate',
-      width: 140,
+      width: 130,
       render: (_: SafeAny, record: Customer) => {
         if (!record.comboBalance?.expiryDate) return <Text type="secondary">-</Text>;
         const expDate = dayjs(record.comboBalance.expiryDate);
@@ -166,7 +179,7 @@ export const getLocaColumns = ({
       title: 'Chưa tới tiệm (Ngày)',
       dataIndex: 'daysSinceLastVisit',
       key: 'daysSinceLastVisit',
-      width: 180,
+      width: 160,
       sorter: true,
       sortOrder:
         sortField === 'daysSinceLastVisit_asc'
@@ -208,6 +221,203 @@ export const getLocaColumns = ({
         );
       },
     },
+    {
+      key: 'touchpointGroup',
+      title: (
+        <div
+          style={{
+            textAlign: 'center',
+            fontWeight: 'bold',
+            color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
+            fontSize: '13px',
+            background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.12)' : 'rgba(212, 168, 75, 0.08)',
+            padding: '2px 8px',
+            borderRadius: '4px',
+          }}
+        >
+          ✨ Tiến Trình Chạm CSKH
+        </div>
+      ),
+      children: [
+        {
+          title: (
+            <Tooltip title="Chạm 24h: Đảm bảo khách hài lòng với bộ mi">
+              <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
+                24h
+              </span>
+            </Tooltip>
+          ),
+          key: 'tp_24h',
+          width: 50,
+          align: 'center' as const,
+          render: (_: SafeAny, record: Customer) => (
+            <LocaTouchpointCell
+              customer={record}
+              touchpointKey="24h"
+              label="Chạm 24h"
+              targetDays={1}
+              themeMode={themeMode}
+              onToggle={handleToggleTouchpoint || (async () => {})}
+            />
+          ),
+        },
+        {
+          title: (
+            <Tooltip title="Chạm 17n: Nhắc lịch dặm trong 21 ngày">
+              <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
+                17
+              </span>
+            </Tooltip>
+          ),
+          key: 'tp_17',
+          width: 50,
+          align: 'center' as const,
+          render: (_: SafeAny, record: Customer) => (
+            <LocaTouchpointCell
+              customer={record}
+              touchpointKey="17"
+              label="Chạm 17n"
+              targetDays={17}
+              themeMode={themeMode}
+              onToggle={handleToggleTouchpoint || (async () => {})}
+            />
+          ),
+        },
+        {
+          title: (
+            <Tooltip title="Chạm 19n: Nhắc dặm lần 2">
+              <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
+                19
+              </span>
+            </Tooltip>
+          ),
+          key: 'tp_19',
+          width: 50,
+          align: 'center' as const,
+          render: (_: SafeAny, record: Customer) => (
+            <LocaTouchpointCell
+              customer={record}
+              touchpointKey="19"
+              label="Chạm 19n"
+              targetDays={19}
+              themeMode={themeMode}
+              onToggle={handleToggleTouchpoint || (async () => {})}
+            />
+          ),
+        },
+        {
+          title: (
+            <Tooltip title="Chạm 21n: Hạn cuối chu kỳ dặm 21 ngày (Khách lẻ)">
+              <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
+                21
+              </span>
+            </Tooltip>
+          ),
+          key: 'tp_21',
+          width: 50,
+          align: 'center' as const,
+          render: (_: SafeAny, record: Customer) => (
+            <LocaTouchpointCell
+              customer={record}
+              touchpointKey="21"
+              label="Chạm 21n"
+              targetDays={21}
+              themeMode={themeMode}
+              onToggle={handleToggleTouchpoint || (async () => {})}
+            />
+          ),
+        },
+        {
+          title: (
+            <Tooltip title="Chạm 23n: Khách combo có 25 ngày dặm">
+              <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
+                23
+              </span>
+            </Tooltip>
+          ),
+          key: 'tp_23',
+          width: 50,
+          align: 'center' as const,
+          render: (_: SafeAny, record: Customer) => (
+            <LocaTouchpointCell
+              customer={record}
+              touchpointKey="23"
+              label="Chạm 23n"
+              targetDays={23}
+              themeMode={themeMode}
+              onToggle={handleToggleTouchpoint || (async () => {})}
+            />
+          ),
+        },
+        {
+          title: (
+            <Tooltip title="Chạm 25n: Ngày cuối dặm trong gói Combo">
+              <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
+                25
+              </span>
+            </Tooltip>
+          ),
+          key: 'tp_25',
+          width: 50,
+          align: 'center' as const,
+          render: (_: SafeAny, record: Customer) => (
+            <LocaTouchpointCell
+              customer={record}
+              touchpointKey="25"
+              label="Chạm 25n"
+              targetDays={25}
+              themeMode={themeMode}
+              onToggle={handleToggleTouchpoint || (async () => {})}
+            />
+          ),
+        },
+        {
+          title: (
+            <Tooltip title="Chạm 30n: Trễ 5 ngày, bắt buộc dùng nối mới trong gói">
+              <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
+                30
+              </span>
+            </Tooltip>
+          ),
+          key: 'tp_30',
+          width: 50,
+          align: 'center' as const,
+          render: (_: SafeAny, record: Customer) => (
+            <LocaTouchpointCell
+              customer={record}
+              touchpointKey="30"
+              label="Chạm 30n"
+              targetDays={30}
+              themeMode={themeMode}
+              onToggle={handleToggleTouchpoint || (async () => {})}
+            />
+          ),
+        },
+        {
+          title: (
+            <Tooltip title="Chạm 30n+: Nhắc dùng hết các lần nối mới trong gói trước khi HSD hết hạn">
+              <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
+                30+
+              </span>
+            </Tooltip>
+          ),
+          key: 'tp_30plus',
+          width: 50,
+          align: 'center' as const,
+          render: (_: SafeAny, record: Customer) => (
+            <LocaTouchpointCell
+              customer={record}
+              touchpointKey="30plus"
+              label="Chạm 30n+"
+              targetDays={31}
+              themeMode={themeMode}
+              onToggle={handleToggleTouchpoint || (async () => {})}
+            />
+          ),
+        },
+      ],
+    },
+
     {
       title: 'Tổng Chi Tiêu',
       dataIndex: 'totalSpent',
@@ -284,28 +494,60 @@ export const getLocaColumns = ({
     {
       title: 'Trạng thái cuộc gọi',
       key: 'lastCallResult',
+      width: 130,
       render: (_: SafeAny, record: Customer) => {
         if (!record.lastCall?.callResult) return '-';
         const result = record.lastCall.callResult;
-        const label = CALL_RESULT_LABELS[result as keyof typeof CALL_RESULT_LABELS] || result;
+        const rawLabel = CALL_RESULT_LABELS[result as keyof typeof CALL_RESULT_LABELS] || result;
+        const cleanLabel = rawLabel.includes('|') ? rawLabel.split('|')[0].trim() : rawLabel;
+        const displayLabel = cleanLabel.length > 14 ? `${cleanLabel.substring(0, 14)}...` : cleanLabel;
+
         let color = 'default';
-        if (result === 'ANSWERED') color = 'success';
-        else if (result === 'NO_ANSWER') color = 'warning';
-        else if (result === 'BUSY') color = 'orange';
+        if (result === 'ANSWERED' || cleanLabel.includes('Thành công')) color = 'success';
+        else if (result === 'NO_ANSWER' || cleanLabel.includes('Không nghe máy') || cleanLabel.includes('Lỡ'))
+          color = 'error';
+        else if (result === 'BUSY' || cleanLabel.includes('Máy bận')) color = 'warning';
         else if (result === 'FAILED' || result === 'WRONG_NUMBER') color = 'error';
-        return <Tag color={color}>{label}</Tag>;
+
+        return (
+          <Tooltip title={rawLabel}>
+            <Tag
+              color={color}
+              style={{
+                maxWidth: '120px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                marginRight: 0,
+              }}
+            >
+              {displayLabel}
+            </Tag>
+          </Tooltip>
+        );
       },
     },
     {
       title: 'Ghi chú cuộc gọi',
       key: 'lastCallNote',
+      width: 150,
       render: (_: SafeAny, record: Customer) => {
         if (!record.lastCall?.note) return '-';
         const note = record.lastCall.note;
-        const compactNote = note.length > 25 ? `${note.substring(0, 25)}...` : note;
+        const compactNote = note.length > 20 ? `${note.substring(0, 20)}...` : note;
         return (
           <Tooltip title={note}>
-            <span style={{ cursor: 'pointer' }}>{compactNote}</span>
+            <div
+              style={{
+                maxWidth: '140px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+              }}
+            >
+              {compactNote}
+            </div>
           </Tooltip>
         );
       },
@@ -313,43 +555,45 @@ export const getLocaColumns = ({
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 200,
+      width: 95,
+      align: 'center' as const,
+      fixed: 'right' as const,
       render: (_: SafeAny, record: Customer) => {
         const isPlanned = dailyPlanList.includes(record.id);
         const isAdding = addingIds.includes(record.id);
         return (
-          <Space size="small">
-            <Button
-              type={isPlanned ? 'dashed' : 'primary'}
-              ghost={!isPlanned}
-              size="small"
-              loading={isAdding}
-              icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
-              onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
-              style={
-                !isPlanned
-                  ? {
-                      borderColor: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                      color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                    }
-                  : {}
-              }
-              disabled={isPlanned || isAdding}
-            >
-              {isPlanned ? 'Đã lên lịch' : 'Lên lịch gọi'}
-            </Button>
-            <Button
-              type="default"
-              size="small"
-              icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
-              onClick={() => handleOpenSmsModal?.(record)}
-              style={{
-                borderColor: '#D4A84B',
-                color: '#D4A84B',
-              }}
-            >
-              Gửi SMS
-            </Button>
+          <Space size={4} align="center" style={{ justifyContent: 'center' }}>
+            <Tooltip title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi vào KH ngày'}>
+              <Button
+                type={isPlanned ? 'dashed' : 'primary'}
+                ghost={!isPlanned}
+                size="small"
+                loading={isAdding}
+                icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
+                onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
+                style={
+                  !isPlanned
+                    ? {
+                        borderColor: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                        color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                      }
+                    : {}
+                }
+                disabled={isPlanned || isAdding}
+              />
+            </Tooltip>
+            <Tooltip title="Gửi tin nhắn SMS">
+              <Button
+                type="default"
+                size="small"
+                icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
+                onClick={() => handleOpenSmsModal?.(record)}
+                style={{
+                  borderColor: '#D4A84B',
+                  color: '#D4A84B',
+                }}
+              />
+            </Tooltip>
           </Space>
         );
       },
@@ -535,43 +779,45 @@ export const getNewLocaColumns = ({
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 200,
+      width: 95,
+      align: 'center' as const,
+      fixed: 'right' as const,
       render: (_: SafeAny, record: Customer) => {
         const isPlanned = dailyPlanList.includes(record.id);
         const isAdding = addingIds.includes(record.id);
         return (
-          <Space size="small">
-            <Button
-              type={isPlanned ? 'dashed' : 'primary'}
-              ghost={!isPlanned}
-              size="small"
-              loading={isAdding}
-              icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
-              onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
-              style={
-                !isPlanned
-                  ? {
-                      borderColor: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                      color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                    }
-                  : {}
-              }
-              disabled={isPlanned || isAdding}
-            >
-              {isPlanned ? 'Đã lên lịch' : 'Lên lịch gọi'}
-            </Button>
-            <Button
-              type="default"
-              size="small"
-              icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
-              onClick={() => handleOpenSmsModal?.(record)}
-              style={{
-                borderColor: '#D4A84B',
-                color: '#D4A84B',
-              }}
-            >
-              Gửi SMS
-            </Button>
+          <Space size={4} align="center" style={{ justifyContent: 'center' }}>
+            <Tooltip title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi vào KH ngày'}>
+              <Button
+                type={isPlanned ? 'dashed' : 'primary'}
+                ghost={!isPlanned}
+                size="small"
+                loading={isAdding}
+                icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
+                onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
+                style={
+                  !isPlanned
+                    ? {
+                        borderColor: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                        color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                      }
+                    : {}
+                }
+                disabled={isPlanned || isAdding}
+              />
+            </Tooltip>
+            <Tooltip title="Gửi tin nhắn SMS">
+              <Button
+                type="default"
+                size="small"
+                icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
+                onClick={() => handleOpenSmsModal?.(record)}
+                style={{
+                  borderColor: '#D4A84B',
+                  color: '#D4A84B',
+                }}
+              />
+            </Tooltip>
           </Space>
         );
       },

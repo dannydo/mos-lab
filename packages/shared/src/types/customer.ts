@@ -2,6 +2,14 @@ import { CallLog } from './call';
 
 export type BucketType = 'COMBO_LIVE' | 'COMBO_DEAD' | 'SINGLE';
 
+export interface LocaTouchpointState {
+  isChecked: boolean;
+  checkedAt: string | null;
+  checkedByStaffId: number | null;
+  checkedByStaffName: string | null;
+  note: string | null;
+}
+
 export interface Customer {
   id: number;
   name: string;
@@ -53,6 +61,7 @@ export interface Customer {
     callResult: string | null;
     note: string | null;
   } | null;
+  touchpoints?: Record<string, LocaTouchpointState>;
   newComboDetails?: {
     comboName?: string;
     comboPrice?: number;
