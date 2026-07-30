@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { safeStorage } from './safe-storage';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api',
@@ -7,11 +8,11 @@ const api = axios.create({
   },
 });
 
-// Auto attach token if available in localStorage (client-side only)
+// Auto attach token if available in storage (client-side only)
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('mos_token');
+      const token = safeStorage.getItem('mos_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -29,11 +30,11 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('mos_token');
-        localStorage.removeItem('mos_user');
-        localStorage.removeItem('mos_omicall_auto_init');
-        localStorage.removeItem('mos_original_token');
-        localStorage.removeItem('mos_original_user');
+        safeStorage.removeItem('mos_token');
+        safeStorage.removeItem('mos_user');
+        safeStorage.removeItem('mos_omicall_auto_init');
+        safeStorage.removeItem('mos_original_token');
+        safeStorage.removeItem('mos_original_user');
         if (!window.location.pathname.startsWith('/login')) {
           window.location.href = '/login';
         }

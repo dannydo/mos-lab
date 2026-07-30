@@ -51,3 +51,31 @@ console.error = (...args: SafeAny[]) => {
   }
   originalError(...args);
 };
+
+// Lightweight polyfills for older Chromebook / Chromium browsers (< Chrome 95)
+if (typeof window !== 'undefined') {
+  if (!(Array.prototype as SafeAny).at) {
+    (Array.prototype as SafeAny).at = function (this: SafeAny[], n: number) {
+      n = Math.trunc(n) || 0;
+      if (n < 0) n += this.length;
+      if (n < 0 || n >= this.length) return undefined;
+      return this[n];
+    };
+  }
+
+  if (!(Object as SafeAny).hasOwn) {
+    (Object as SafeAny).hasOwn = function (object: object, property: PropertyKey) {
+      return Object.prototype.hasOwnProperty.call(object, property);
+    };
+  }
+
+  if (typeof (window as SafeAny).structuredClone !== 'function') {
+    (window as SafeAny).structuredClone = function <T>(obj: T): T {
+      try {
+        return JSON.parse(JSON.stringify(obj));
+      } catch (_) {
+        return obj;
+      }
+    };
+  }
+}

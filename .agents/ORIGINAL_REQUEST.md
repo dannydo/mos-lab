@@ -271,3 +271,33 @@ Integrity mode: development
 
 - [ ] Admin/Manager xem được Bảng Điều khiển Phân bổ toàn bộ Booker kèm chỉ số tỷ lệ nhận/từ chối và lý do từ chối.
 - [ ] Admin/Manager bấm "Thu hồi Batch" đối với batch `PENDING_ACCEPT` thành công, batch chuyển sang `RECALLED` và khách hàng trả lại pool.
+
+## Follow-up — 2026-07-30T13:08:31Z
+
+Chạy Proof-of-Concept (PoC) thử nghiệm cài đặt và đánh giá Graphify (hoặc giải pháp kiến trúc knowledge graph tương đương) trên monorepo `mos-lab` (Next.js 15 web + Fastify 5 api + shared package), đồng thời tạo script tự động sinh báo cáo sơ đồ đồ thị phụ thuộc (`graph.html`, `GRAPH_REPORT.md`).
+
+Working directory: /Users/dannydo/projects/mos-lab
+Integrity mode: development
+
+## Requirements
+
+### R1. Phân tích & So sánh Kiến trúc (Graphify vs Alternatives)
+
+Đánh giá chi tiết ưu/nhược điểm của `graphify` so với tính năng có sẵn `pnpm turbo graph` và các thư viện phân tích mã nguồn (`dependency-cruiser`, `madge`) trên codebase `mos-lab`. Focus vào khả năng trích xuất AST cho TypeScript, Prisma Schema, Fastify routes và hiệu quả hỗ trợ AI Agent context.
+
+### R2. Thử nghiệm PoC & Tạo Script Sinh Sơ Đồ Knowledge Graph
+
+Tạo script hoặc lệnh tích hợp trong monorepo (ví dụ: `pnpm graph` hoặc `scripts/generate_graph.sh`) để quét các workspace (`apps/api`, `apps/web`, `packages/shared`), tự động sinh ra các artifact đồ thị (`graph.html`, `GRAPH_REPORT.md` hoặc `graph.json`).
+
+### R3. An toàn Workspace & Không ảnh hưởng luồng Dev
+
+Đảm bảo các file đầu ra sinh ra được ghi vào thư mục tạm/báo cáo (hoặc `.gitignore`) và tuyệt đối không gây phá vỡ luồng `pnpm dev` hay `pnpm build` hiện tại của monorepo.
+
+## Acceptance Criteria
+
+### Tính năng & Báo cáo
+
+- [ ] Báo cáo đánh giá so sánh Graphify và giải pháp thay thế được tạo đầy đủ.
+- [ ] Script sinh kiến trúc đồ thị chạy thành công và tạo ra file trực quan hóa `graph.html` hoặc báo cáo chi tiết.
+- [ ] Tích hợp lệnh chạy thuận tiện (script npm/pnpm) trong dự án `mos-lab`.
+- [ ] Toàn bộ luồng build (`pnpm build`) và dev (`pnpm dev`) của dự án giữ nguyên 100% không bị ảnh hưởng.

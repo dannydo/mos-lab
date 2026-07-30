@@ -54,3 +54,10 @@ venv/
 *.pyc
 __pycache__/
 
+# Graphify Artifacts
+graph.html
+GRAPH_REPORT.md
+graph.json
+.graph/
+
+

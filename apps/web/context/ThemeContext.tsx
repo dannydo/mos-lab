@@ -4,6 +4,7 @@ import '../app/suppress-warnings';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ConfigProvider, theme as antdTheme } from 'antd';
 import viVN from 'antd/locale/vi_VN';
+import { safeStorage } from '../lib/safe-storage';
 
 type ThemeMode = 'light' | 'dark';
 
@@ -16,11 +17,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('mos_theme') as ThemeMode;
-      if (saved === 'light' || saved === 'dark') {
-        return saved;
-      }
+    const saved = safeStorage.getItem('mos_theme') as ThemeMode;
+    if (saved === 'light' || saved === 'dark') {
+      return saved;
     }
     return 'dark'; // Default to dark premium
   });
@@ -31,24 +30,26 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
-    const root = document.documentElement;
-    if (themeMode === 'light') {
-      root.classList.remove('dark-theme', 'dark');
-      root.classList.add('light-theme');
-    } else {
-      root.classList.remove('light-theme');
-      root.classList.add('dark-theme', 'dark');
-    }
+    if (typeof window === 'undefined') return;
+    try {
+      const root = document.documentElement;
+      if (themeMode === 'light') {
+        root.classList.remove('dark-theme', 'dark');
+        root.classList.add('light-theme');
+      } else {
+        root.classList.remove('light-theme');
+        root.classList.add('dark-theme', 'dark');
+      }
+    } catch (_) {}
   }, [themeMode, mounted]);
 
   const toggleTheme = () => {
     const nextTheme = themeMode === 'light' ? 'dark' : 'light';
     setThemeMode(nextTheme);
-    localStorage.setItem('mos_theme', nextTheme);
+    safeStorage.setItem('mos_theme', nextTheme);
   };
 
-  const isDark = !mounted || themeMode === 'dark';
+  const isDark = themeMode === 'dark';
 
   return (
     <ThemeContext.Provider value={{ themeMode, toggleTheme }}>
@@ -130,7 +131,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           },
         }}
       >
-        <div style={{ opacity: mounted ? 1 : 0 }}>{children}</div>
+        <div>{children}</div>
       </ConfigProvider>
     </ThemeContext.Provider>
   );

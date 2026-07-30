@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from '../context/ThemeContext';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 export default function RootLayout({
   children,
@@ -19,9 +20,11 @@ export default function RootLayout({
   return (
     <html lang="vi" className="h-full">
       <body className="h-full m-0 p-0 antialiased">
-        <AntdRegistry>
-          <ThemeProvider>{children}</ThemeProvider>
-        </AntdRegistry>
+        <ErrorBoundary>
+          <AntdRegistry>
+            <ThemeProvider>{children}</ThemeProvider>
+          </AntdRegistry>
+        </ErrorBoundary>
       </body>
     </html>
   );

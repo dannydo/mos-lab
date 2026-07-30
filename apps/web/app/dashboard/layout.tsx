@@ -85,6 +85,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
 
     if (pathname.includes('/dashboard/referrals')) return 'referrals';
     if (pathname.includes('/dashboard/catalog')) return 'catalog';
+    if (pathname.includes('/dashboard/architecture')) return 'architecture';
     return 'customers-all';
   };
 
@@ -147,6 +148,9 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     menuItems.push(createNavItem('staff', <SolutionOutlined />, 'Nhân sự (HR)', '/dashboard/staff'));
     menuItems.push(createNavItem('teams', <TeamOutlined />, 'Cấu hình Đội nhóm', '/dashboard/staff/teams'));
     menuItems.push(createNavItem('catalog', <ShopOutlined />, 'Quản lý Catalog', '/dashboard/catalog'));
+    menuItems.push(
+      createNavItem('architecture', <ShareAltOutlined />, 'Sơ đồ Kiến trúc AI', '/dashboard/architecture')
+    );
   }
 
   return (
