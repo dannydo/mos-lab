@@ -1,5 +1,178 @@
 @import 'tailwindcss';
 
+/* ==========================================================================
+   Chrome 91 & Legacy Browser Fallback Utilities (No @layer dependency)
+   ========================================================================== */
+.flex {
+  display: flex !important;
+}
+.inline-flex {
+  display: inline-flex !important;
+}
+.block {
+  display: block !important;
+}
+.inline-block {
+  display: inline-block !important;
+}
+.hidden {
+  display: none !important;
+}
+
+.flex-col {
+  flex-direction: column !important;
+}
+.flex-col-reverse {
+  flex-direction: column-reverse !important;
+}
+.flex-row {
+  flex-direction: row !important;
+}
+.flex-row-reverse {
+  flex-direction: row-reverse !important;
+}
+.flex-wrap {
+  flex-wrap: wrap !important;
+}
+.flex-nowrap {
+  flex-wrap: nowrap !important;
+}
+
+.items-center {
+  align-items: center !important;
+}
+.items-start {
+  align-items: flex-start !important;
+}
+.items-end {
+  align-items: flex-end !important;
+}
+.items-stretch {
+  align-items: stretch !important;
+}
+
+.justify-between {
+  justify-content: space-between !important;
+}
+.justify-center {
+  justify-content: center !important;
+}
+.justify-end {
+  justify-content: flex-end !important;
+}
+.justify-start {
+  justify-content: flex-start !important;
+}
+.justify-around {
+  justify-content: space-around !important;
+}
+
+.flex-1 {
+  flex: 1 1 0% !important;
+}
+.flex-auto {
+  flex: 1 1 auto !important;
+}
+.flex-initial {
+  flex: 0 1 auto !important;
+}
+.flex-none {
+  flex: none !important;
+}
+.shrink-0,
+.flex-shrink-0 {
+  flex-shrink: 0 !important;
+}
+.grow,
+.flex-grow {
+  flex-grow: 1 !important;
+}
+
+.relative {
+  position: relative !important;
+}
+.absolute {
+  position: absolute !important;
+}
+.fixed {
+  position: fixed !important;
+}
+.sticky {
+  position: sticky !important;
+}
+
+.top-0 {
+  top: 0px !important;
+}
+.bottom-0 {
+  bottom: 0px !important;
+}
+.left-0 {
+  left: 0px !important;
+}
+.right-0 {
+  right: 0px !important;
+}
+
+.overflow-hidden {
+  overflow: hidden !important;
+}
+.overflow-x-auto {
+  overflow-x: auto !important;
+}
+.overflow-y-auto {
+  overflow-y: auto !important;
+}
+.overflow-auto {
+  overflow: auto !important;
+}
+
+.w-full {
+  width: 100% !important;
+}
+.h-full {
+  height: 100% !important;
+}
+.w-screen {
+  width: 100vw !important;
+}
+.h-screen {
+  height: 100vh !important;
+}
+.min-w-0 {
+  min-width: 0px !important;
+}
+.min-h-0 {
+  min-height: 0px !important;
+}
+
+.rounded-full {
+  border-radius: 9999px !important;
+}
+.rounded-lg {
+  border-radius: 8px !important;
+}
+.rounded-xl {
+  border-radius: 12px !important;
+}
+.rounded-md {
+  border-radius: 6px !important;
+}
+.rounded-sm {
+  border-radius: 4px !important;
+}
+
+.object-cover {
+  object-fit: cover !important;
+}
+.object-contain {
+  object-fit: contain !important;
+}
+
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
 @variant dark (&:where(.dark, .dark *));
 
 :root {
