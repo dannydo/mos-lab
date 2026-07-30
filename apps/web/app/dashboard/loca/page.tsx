@@ -537,20 +537,35 @@ export default function LocaCampaignPage() {
             </div>
 
             <div
-              className={`p-2.5 rounded-xl flex items-center justify-between gap-1.5 overflow-x-auto min-h-[68px] border ${
+              className={`p-2.5 rounded-xl border ${
                 themeMode === 'dark' ? 'bg-[#1a1a1a] border-white/5' : 'bg-slate-50/50 border-slate-100'
               }`}
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '6px',
+                overflowX: 'auto',
+                minHeight: '68px',
+              }}
             >
               {/* All touchpoints capsule */}
               <div
                 onClick={() => setActiveTouchpointKey('ALL')}
-                className={`flex-1 min-w-[72px] px-2.5 py-1.5 rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
+                className={`rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
                   activeTouchpointKey === 'ALL'
                     ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
                     : themeMode === 'dark'
                       ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
                       : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
                 }`}
+                style={{
+                  flex: 1,
+                  minWidth: '72px',
+                  flexShrink: 0,
+                  padding: '6px 10px',
+                }}
               >
                 <div
                   style={{
@@ -596,13 +611,19 @@ export default function LocaCampaignPage() {
                     )}
                     <div
                       onClick={() => setActiveTouchpointKey(tp.key)}
-                      className={`flex-1 min-w-[68px] px-2 py-1.5 rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
+                      className={`rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
                         isSelected
                           ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
                           : themeMode === 'dark'
                             ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
                             : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
                       }`}
+                      style={{
+                        flex: 1,
+                        minWidth: '68px',
+                        flexShrink: 0,
+                        padding: '6px 8px',
+                      }}
                     >
                       <div
                         style={{
