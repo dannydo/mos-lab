@@ -506,3 +506,28 @@ body {
   font-weight: 700 !important;
   opacity: 1 !important;
 }
+
+/* Bulletproof Avatar fallback styles for legacy Chromebooks / Chrome 91 */
+.avatar-breath {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.avatar-breath img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+  display: block !important;
+}

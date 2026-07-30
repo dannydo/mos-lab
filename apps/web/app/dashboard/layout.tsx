@@ -542,15 +542,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       }}
                       className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 cursor-pointer hover:scale-110 hover:z-30 transition-all shadow-sm avatar-breath shrink-0 flex-shrink-0 select-none overflow-hidden"
                       style={{
+                        width: '32px',
+                        height: '32px',
+                        minWidth: '32px',
+                        minHeight: '32px',
+                        maxWidth: '32px',
+                        maxHeight: '32px',
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         background: m.color,
                         zIndex: 20 - idx,
                         marginLeft: idx > 0 ? '-10px' : '0',
                         borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
+                        borderWidth: '2px',
+                        borderStyle: 'solid',
+                        boxSizing: 'border-box',
                       }}
                       title={m.name}
                     >
                       {m.avatarUrl ? (
-                        <img src={m.avatarUrl} alt={m.name} className="w-full h-full object-cover rounded-full" />
+                        <img
+                          src={m.avatarUrl}
+                          alt={m.name}
+                          className="w-full h-full object-cover rounded-full"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            borderRadius: '50%',
+                            display: 'block',
+                          }}
+                        />
                       ) : (
                         m.initials
                       )}
