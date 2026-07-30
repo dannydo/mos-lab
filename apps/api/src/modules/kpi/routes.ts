@@ -793,7 +793,34 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       let totalHappy = 0;
 
       if (staffIds.length > 0) {
-        const callLogs = await fastify.prisma.crm.crmOmicallLog.findMany({
+        // 1. Query crmCallLog (CRM Call Logs)
+        const crmLogs = await fastify.prisma.crm.crmCallLog.findMany({
+          where: {
+            staffId: { in: staffIds },
+            createdAt: { gte: start, lte: end },
+          },
+          select: {
+            callResult: true,
+            outcome: true,
+          },
+        });
+
+        const crmCalled = crmLogs.length;
+        let crmAnswered = 0;
+        let crmHappy = 0;
+        crmLogs.forEach((c: SafeAny) => {
+          const res = String(c.callResult || '').toUpperCase();
+          if (res === 'ANSWERED' || res === 'ANSWER' || res === 'CONNECTED') {
+            crmAnswered++;
+          }
+          const out = String(c.outcome || '').toUpperCase();
+          if (out === 'HAPPY' || out === 'HAPPY_CALL' || out === 'APPROVED') {
+            crmHappy++;
+          }
+        });
+
+        // 2. Query crmOmicallLog (Raw OmiCall Webhook logs)
+        const omicallLogs = await fastify.prisma.crm.crmOmicallLog.findMany({
           where: {
             staffId: { in: staffIds },
             createdAt: { gte: start, lte: end },
@@ -805,15 +832,21 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           },
         });
 
-        totalCalled = callLogs.length;
-        callLogs.forEach((c: SafeAny) => {
-          if (c.status === 'ANSWER') {
-            totalAnswered++;
+        const omiCalled = omicallLogs.length;
+        let omiAnswered = 0;
+        let omiHappy = 0;
+        omicallLogs.forEach((c: SafeAny) => {
+          if (String(c.status).toUpperCase() === 'ANSWER') {
+            omiAnswered++;
           }
-          if (c.happyCallStatus === 'APPROVED') {
-            totalHappy++;
+          if (String(c.happyCallStatus).toUpperCase() === 'APPROVED') {
+            omiHappy++;
           }
         });
+
+        totalCalled = Math.max(crmCalled, omiCalled);
+        totalAnswered = Math.max(crmAnswered, omiAnswered);
+        totalHappy = Math.max(crmHappy, omiHappy);
       }
 
       let totalBooked = 0;
@@ -986,7 +1019,37 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       const callStatsMap = new Map<number, { totalCalled: number; totalAnswered: number; totalHappy: number }>();
 
       if (crmStaffIds.length > 0) {
-        const callLogs = await fastify.prisma.crm.crmOmicallLog.findMany({
+        // 1. Fetch from crmCallLog (CRM Call Logs)
+        const crmCallLogs = await fastify.prisma.crm.crmCallLog.findMany({
+          where: {
+            staffId: { in: crmStaffIds },
+            createdAt: { gte: start, lte: end },
+          },
+          select: {
+            staffId: true,
+            callResult: true,
+            outcome: true,
+          },
+        });
+
+        const crmStatsMap = new Map<number, { totalCalled: number; totalAnswered: number; totalHappy: number }>();
+        crmCallLogs.forEach((c: SafeAny) => {
+          const sid = Number(c.staffId);
+          const current = crmStatsMap.get(sid) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
+          current.totalCalled++;
+          const res = String(c.callResult || '').toUpperCase();
+          if (res === 'ANSWERED' || res === 'ANSWER' || res === 'CONNECTED') {
+            current.totalAnswered++;
+          }
+          const out = String(c.outcome || '').toUpperCase();
+          if (out === 'HAPPY' || out === 'HAPPY_CALL' || out === 'APPROVED') {
+            current.totalHappy++;
+          }
+          crmStatsMap.set(sid, current);
+        });
+
+        // 2. Fetch from crmOmicallLog (Raw OmiCall Webhook logs)
+        const omicallLogs = await fastify.prisma.crm.crmOmicallLog.findMany({
           where: {
             staffId: { in: crmStaffIds },
             createdAt: { gte: start, lte: end },
@@ -999,17 +1062,29 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           },
         });
 
-        callLogs.forEach((c: SafeAny) => {
+        const omiStatsMap = new Map<number, { totalCalled: number; totalAnswered: number; totalHappy: number }>();
+        omicallLogs.forEach((c: SafeAny) => {
           const sid = Number(c.staffId);
-          const current = callStatsMap.get(sid) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
+          const current = omiStatsMap.get(sid) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
           current.totalCalled++;
-          if (c.status === 'ANSWER') {
+          if (String(c.status).toUpperCase() === 'ANSWER') {
             current.totalAnswered++;
           }
-          if (c.happyCallStatus === 'APPROVED') {
+          if (String(c.happyCallStatus).toUpperCase() === 'APPROVED') {
             current.totalHappy++;
           }
-          callStatsMap.set(sid, current);
+          omiStatsMap.set(sid, current);
+        });
+
+        // 3. Combine with Math.max per staff ID
+        crmStaffIds.forEach((sid) => {
+          const crmStat = crmStatsMap.get(sid) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
+          const omiStat = omiStatsMap.get(sid) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
+          callStatsMap.set(sid, {
+            totalCalled: Math.max(crmStat.totalCalled, omiStat.totalCalled),
+            totalAnswered: Math.max(crmStat.totalAnswered, omiStat.totalAnswered),
+            totalHappy: Math.max(crmStat.totalHappy, omiStat.totalHappy),
+          });
         });
       }
 
