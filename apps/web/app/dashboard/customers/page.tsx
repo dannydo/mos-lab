@@ -636,12 +636,7 @@ function CustomersPageContent() {
             <div>
               <Checkbox
                 checked={data.excludeAssigned}
-                onChange={(e) => {
-                  data.setExcludeAssigned(e.target.checked);
-                  if (e.target.checked) {
-                    data.setExcludeUnconfirmedAllocation(false);
-                  }
-                }}
+                onChange={(e) => data.setExcludeAssigned(e.target.checked)}
                 style={{ color: token.colorText }}
               >
                 Chỉ chọn khách hàng chưa được phân bổ Booker
@@ -650,15 +645,10 @@ function CustomersPageContent() {
             <div>
               <Checkbox
                 checked={data.excludeUnconfirmedAllocation}
-                onChange={(e) => {
-                  data.setExcludeUnconfirmedAllocation(e.target.checked);
-                  if (e.target.checked) {
-                    data.setExcludeAssigned(false);
-                  }
-                }}
+                onChange={(e) => data.setExcludeUnconfirmedAllocation(e.target.checked)}
                 style={{ color: token.colorText }}
               >
-                Đã phân bổ, chưa xác nhận
+                Bỏ khách hàng đã phân bổ, chưa xác nhận
               </Checkbox>
             </div>
             <div>
