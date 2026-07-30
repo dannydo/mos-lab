@@ -38,7 +38,7 @@ interface AssignmentHistoryDrawerProps {
   fetchBatchDetails: (batchId: string) => Promise<void>;
   setExpandedBatchId: (batchId: string | null) => void;
   setBatchDetails: (details: SafeAny[]) => void;
-  applyFilterFromJson: (jsonStr: string) => void;
+  applyFilterFromJson: (jsonStr: string, batchId?: string) => void;
   onOpenUndoModal: (batchId: string, customerCount: number) => void;
   onOpenRevokeBatchModal?: (batchId: string, customerCount: number) => void;
   onOpenCustomerDetail?: (customerId: number) => void;
@@ -348,11 +348,10 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                         }
                       >
                         <div
-                          onClick={() => {
-                            if (batch.sourceFilterJson) {
-                              onClose();
-                              applyFilterFromJson(batch.sourceFilterJson);
-                            }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onClose();
+                            applyFilterFromJson(batch.sourceFilterJson || '{}', batch.batchId);
                           }}
                           style={{
                             display: 'inline-flex',

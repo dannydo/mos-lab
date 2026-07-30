@@ -297,7 +297,8 @@ const CustomerTable = React.memo(
           key: 'assignedStaff',
           render: (staff: SafeAny) => {
             if (staff) {
-              return <Tag color="cyan">{staff.displayName}</Tag>;
+              const isPending = staff.status === 'PENDING_ACCEPT' || staff.displayName?.includes('(Chờ xác nhận)');
+              return <Tag color={isPending ? 'gold' : 'cyan'}>{staff.displayName}</Tag>;
             }
             return (
               <Text type="secondary" style={{ fontStyle: 'italic' }}>
@@ -369,9 +370,15 @@ const CustomerTable = React.memo(
       [themeMode, token, makeCall, openDetailModal, currentPage, pageSize]
     );
 
+    const isManagerOrAdmin =
+      currentUser?.role === 'admin' ||
+      currentUser?.role === 'manager' ||
+      currentUser?.role?.toLowerCase() === 'admin' ||
+      currentUser?.role?.toLowerCase() === 'manager';
+
     const staticColumns = React.useMemo(() => {
-      return columns.filter((col) => col.key !== 'assignedStaff' || currentUser?.role === 'admin');
-    }, [columns, currentUser]);
+      return columns.filter((col) => col.key !== 'assignedStaff' || isManagerOrAdmin);
+    }, [columns, isManagerOrAdmin]);
 
     const {
       loading: configLoading,
@@ -398,7 +405,7 @@ const CustomerTable = React.memo(
           size="small"
           loading={loading || configLoading}
           rowSelection={
-            currentUser?.role === 'admin'
+            isManagerOrAdmin
               ? {
                   selectedRowKeys,
                   onChange: (newSelectedRowKeys) => {

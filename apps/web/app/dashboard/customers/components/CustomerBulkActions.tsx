@@ -70,7 +70,10 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
 
   const selectedNumericIds = selectedRowKeys.map((k) => Number(k));
 
-  if (selectedRowKeys.length === 0) {
+  const userRole = currentUser?.role ? String(currentUser.role).toLowerCase() : '';
+  const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
+
+  if (selectedRowKeys.length === 0 || !isManagerOrAdmin) {
     return null;
   }
 
@@ -115,7 +118,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
             Phân bổ Booker
           </Button>
 
-          {currentUser?.role === 'admin' && (
+          {isManagerOrAdmin && (
             <Button
               danger
               icon={<WarningOutlined />}
@@ -126,7 +129,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
             </Button>
           )}
 
-          {currentUser?.role === 'admin' && (
+          {isManagerOrAdmin && (
             <Popconfirm
               title={`Anh/chị có chắc chắn muốn xóa ${selectedRowKeys.length} khách hàng đã chọn không?`}
               onConfirm={handleBulkDeleteCustomers}

@@ -124,10 +124,14 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     children: customerChildren,
   });
 
-  // Other menus for both roles
+  const isLocaAllowed = ['admin', 'manager', 'oc', 'cc', 'cs', 'control'].includes(userRole?.toLowerCase() || '');
+
+  // Other menus
+  menuItems.push(createNavItem('nyc', <ClockCircleOutlined />, 'Chiến dịch NYC', '/dashboard/nyc'));
+  if (isLocaAllowed) {
+    menuItems.push(createNavItem('loca', <HeartOutlined />, 'Chiến dịch LoCa', '/dashboard/loca'));
+  }
   menuItems.push(
-    createNavItem('nyc', <ClockCircleOutlined />, 'Chiến dịch NYC', '/dashboard/nyc'),
-    createNavItem('loca', <HeartOutlined />, 'Chiến dịch LoCa', '/dashboard/loca'),
     createNavItem('my-appointments', <CalendarOutlined />, 'Lịch hẹn của tôi', '/dashboard/appointments'),
     createNavItem('plans', <CalendarOutlined />, 'Kế hoạch gọi', '/dashboard/plans'),
     createNavItem('calls', <PhoneOutlined />, 'Lịch sử cuộc gọi', '/dashboard/calls'),

@@ -50,7 +50,7 @@ export async function allocationRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const user = request.user;
-        const batches = await AllocationService.getMyBatchesForBooker(fastify, user.id);
+        const batches = await AllocationService.getMyBatchesForBooker(fastify, user.id, user.role);
         return reply.send(batches);
       } catch (err: any) {
         request.log.error('Failed to fetch my allocation batches:', err);

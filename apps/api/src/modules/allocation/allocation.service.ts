@@ -173,19 +173,33 @@ export class AllocationService {
 
     const createdBatch = await fastify.prisma.crm.$transaction(async (tx) => {
       // R2: Strict Deduplication & Pre-Batch Filtering INSIDE Prisma $transaction block with FOR UPDATE lock
-      const pendingItemsRaw = await tx.$queryRaw<{ customer_id: number }[]>`
-        SELECT customer_id FROM crm_allocation_batch_items 
+      const pendingItemsRaw = await tx.$queryRaw<{ id: number; batch_id: number; customer_id: number }[]>`
+        SELECT id, batch_id, customer_id FROM crm_allocation_batch_items 
         WHERE customer_id IN (${Prisma.join(uniqueCustomerIds)}) 
           AND status = 'PENDING_ACCEPT' 
         FOR UPDATE
       `;
-      const pendingCustomerIdsSet = new Set(pendingItemsRaw.map((i) => Number(i.customer_id)));
 
-      // Filter out already pending or invalid customers
-      const validCustomerIds = uniqueCustomerIds.filter((id) => !pendingCustomerIdsSet.has(id));
+      // If re-allocating customers currently in PENDING_ACCEPT status, recall old pending items so new allocation succeeds
+      if (pendingItemsRaw.length > 0) {
+        const pendingItemIds = pendingItemsRaw.map((i) => Number(i.id));
+        await tx.crmAllocationBatchItem.updateMany({
+          where: { id: { in: pendingItemIds } },
+          data: { status: 'RECALLED' },
+        });
 
-      if (validCustomerIds.length === 0) {
-        throw new Error('Tất cả khách hàng đã chọn đều đang nằm trong đợt phân bổ chờ xác nhận khác');
+        const affectedBatchIds = Array.from(new Set(pendingItemsRaw.map((i) => Number(i.batch_id))));
+        for (const pBatchId of affectedBatchIds) {
+          const remainingPendingCount = await tx.crmAllocationBatchItem.count({
+            where: { batchId: pBatchId, status: 'PENDING_ACCEPT' },
+          });
+          if (remainingPendingCount === 0) {
+            await tx.crmAllocationBatch.update({
+              where: { id: pBatchId },
+              data: { status: 'RECALLED', recalledAt: now },
+            });
+          }
+        }
       }
 
       const batch = await tx.crmAllocationBatch.create({
@@ -193,13 +207,15 @@ export class AllocationService {
           batchCode,
           assignerId,
           bookerId,
-          totalCount: validCustomerIds.length,
+          totalCount: uniqueCustomerIds.length,
           status: 'PENDING_ACCEPT',
           expiresAt,
+          sourceFilterSummary: dto.sourceFilterSummary || null,
+          sourceFilterJson: dto.sourceFilterJson || null,
         },
       });
 
-      const itemData = validCustomerIds.map((cId) => {
+      const itemData = uniqueCustomerIds.map((cId) => {
         const name = profileMap.get(cId) || `Khách hàng #${cId}`;
         const phone = phoneMap.get(cId) || null;
         return {
@@ -213,6 +229,24 @@ export class AllocationService {
 
       await tx.crmAllocationBatchItem.createMany({
         data: itemData,
+      });
+
+      // Write representative history records so batch appears in AssignmentHistoryDrawer
+      const historyData = uniqueCustomerIds.map((cId) => ({
+        batchId: String(batch.id),
+        legacyUserId: cId,
+        newStaffId: bookerId,
+        assignedBy: assignerId,
+        assignedAt: now,
+        expiresAt,
+        sourceType: dto.sourceType || 'MANUAL',
+        sourceFilterSummary: dto.sourceFilterSummary || null,
+        sourceFilterJson: dto.sourceFilterJson || null,
+        actionType: dto.sourceType === 'RANDOM' ? 'RANDOM_SELECT' : 'ASSIGN',
+      }));
+
+      await tx.crmAssignmentHistory.createMany({
+        data: historyData,
       });
 
       return tx.crmAllocationBatch.findUnique({
@@ -265,19 +299,20 @@ export class AllocationService {
    */
   static async getMyBatchesForBooker(
     fastify: FastifyInstance,
-    bookerId: number
+    bookerId: number,
+    userRole?: string
   ): Promise<BookerAllocationBatchSummary[]> {
     await this.checkAndExpireBatches(fastify);
 
+    const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
     const batches = await fastify.prisma.crm.crmAllocationBatch.findMany({
-      where: {
-        bookerId,
-        status: { in: ['ACCEPTED', 'PENDING_ACCEPT'] },
-      },
+      where: isManagerOrAdmin
+        ? { status: { in: ['ACCEPTED', 'PENDING_ACCEPT'] } }
+        : { bookerId, status: { in: ['ACCEPTED', 'PENDING_ACCEPT'] } },
       include: {
         assigner: { select: { id: true, displayName: true, username: true } },
         booker: { select: { id: true, displayName: true, username: true } },
-        items: { select: { customerId: true } },
+        items: { select: { customerId: true, status: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -288,7 +323,26 @@ export class AllocationService {
     const batchSummaries: BookerAllocationBatchSummary[] = [];
 
     for (const batch of batches) {
-      const customerIds = batch.items.map((i) => i.customerId);
+      // Strictly filter to active (non-recalled) batch items
+      const activeItems = batch.items.filter((i) => i.status !== 'RECALLED');
+      if (activeItems.length === 0) {
+        // Skip batches where all items were revoked, recalled, or undone
+        continue;
+      }
+
+      const rawCustomerIds = activeItems.map((i) => i.customerId);
+      const existingUsers = await fastify.prisma.legacy.user.findMany({
+        where: { id: { in: rawCustomerIds } },
+        select: { id: true },
+      });
+      const existingUserSet = new Set(existingUsers.map((u) => u.id));
+      const validActiveItems = activeItems.filter((i) => existingUserSet.has(i.customerId));
+
+      if (validActiveItems.length === 0) {
+        continue;
+      }
+
+      const customerIds = validActiveItems.map((i) => i.customerId);
       let calledCount = 0;
 
       if (customerIds.length > 0) {
@@ -310,7 +364,7 @@ export class AllocationService {
         assignerName: batch.assigner?.displayName || batch.assigner?.username || `Admin #${batch.assignerId}`,
         bookerId: batch.bookerId,
         bookerName: batch.booker?.displayName || batch.booker?.username || `Staff #${batch.bookerId}`,
-        totalCount: batch.totalCount,
+        totalCount: validActiveItems.length,
         calledCount,
         status: batch.status as AllocationBatchStatus,
         createdAt: batch.createdAt.toISOString(),
@@ -319,6 +373,8 @@ export class AllocationService {
         retentionExpiresAt: batch.retentionExpiresAt ? batch.retentionExpiresAt.toISOString() : null,
       });
     }
+
+    return batchSummaries;
 
     return batchSummaries;
   }
@@ -893,6 +949,8 @@ export class AllocationService {
       declinedAt: batch.declinedAt ? new Date(batch.declinedAt).toISOString() : null,
       recalledAt: batch.recalledAt ? new Date(batch.recalledAt).toISOString() : null,
       retentionExpiresAt: batch.retentionExpiresAt ? new Date(batch.retentionExpiresAt).toISOString() : null,
+      sourceFilterSummary: batch.sourceFilterSummary || null,
+      sourceFilterJson: batch.sourceFilterJson || null,
       createdAt: new Date(batch.createdAt).toISOString(),
       updatedAt: new Date(batch.updatedAt).toISOString(),
       items: (batch.items || []).map((i: any) => ({

@@ -164,7 +164,8 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
 
   const currentUser = useMemo(() => {
     if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('crm_user');
+      const userStr =
+        localStorage.getItem('mos_user') || localStorage.getItem('user') || localStorage.getItem('crm_user');
       if (userStr) {
         try {
           return JSON.parse(userStr);
@@ -175,6 +176,11 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     }
     return null;
   }, []);
+
+  const isManagerOrAdmin = useMemo(() => {
+    const role = currentUser?.role?.toLowerCase();
+    return role === 'admin' || role === 'manager';
+  }, [currentUser]);
 
   const [activeTabKey, setActiveTabKey] = useState<string>('bookings');
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -407,7 +413,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
               </div>
             </div>
             <Space>
-              {currentUser?.role === 'admin' &&
+              {isManagerOrAdmin &&
                 (customer.isDeleted ? (
                   <Popconfirm
                     title="Khôi phục khách hàng"
@@ -669,7 +675,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                                   Bởi: <strong>{n.staffName}</strong> ({formattedDate})
                                 </div>
                               </div>
-                              {currentUser?.role === 'admin' && (
+                              {isManagerOrAdmin && (
                                 <Tooltip title="Bỏ ghim ghi chú">
                                   <Button
                                     type="text"

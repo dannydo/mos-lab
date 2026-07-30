@@ -355,6 +355,8 @@ model CrmAllocationBatch {
   declinedAt         DateTime? @map("declined_at") @db.DateTime(0)
   recalledAt         DateTime? @map("recalled_at") @db.DateTime(0)
   retentionExpiresAt DateTime? @map("retention_expires_at") @db.DateTime(0) // 30-day countdown target
+  sourceFilterSummary String?  @map("source_filter_summary") @db.Text
+  sourceFilterJson    String?  @map("source_filter_json") @db.Text
   createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 

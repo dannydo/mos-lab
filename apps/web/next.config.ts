@@ -2,6 +2,8 @@ import type { NextConfig } from 'next';
 import withBundleAnalyzer from '@next/bundle-analyzer';
 
 const nextConfig: NextConfig = {
+  compress: true,
+  reactStrictMode: true,
   transpilePackages: ['@mos-lab/shared'],
   turbopack: {},
   experimental: {

@@ -26,7 +26,7 @@ export async function registerAssignmentRoutes(fastify: FastifyInstance) {
       const { customerIds, staffId } = request.body as { customerIds: number[]; staffId: number };
       const adminUser = request.user as { id: number; role: string };
 
-      if (adminUser.role !== 'admin') {
+      if (adminUser.role !== 'admin' && adminUser.role !== 'manager') {
         return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền phân bổ khách hàng.' });
       }
 
@@ -80,7 +80,7 @@ export async function registerAssignmentRoutes(fastify: FastifyInstance) {
     const { customerIds } = request.body as { customerIds: number[] };
     const adminUser = request.user as { id: number; role: string };
 
-    if (adminUser.role !== 'admin') {
+    if (adminUser.role !== 'admin' && adminUser.role !== 'manager') {
       return reply
         .status(403)
         .send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền hủy phân bổ khách hàng.' });
@@ -129,7 +129,7 @@ export async function registerAssignmentRoutes(fastify: FastifyInstance) {
   // Get history of allocations grouped by batchId
   fastify.get('/customers/assignment-history', { preHandler: [requireAuth] }, async (request, reply) => {
     const adminUser = request.user as { id: number; role: string };
-    if (adminUser.role !== 'admin') {
+    if (adminUser.role !== 'admin' && adminUser.role !== 'manager') {
       return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền xem lịch sử phân bổ.' });
     }
 
@@ -229,7 +229,7 @@ export async function registerAssignmentRoutes(fastify: FastifyInstance) {
     { preHandler: [requireAuth] },
     async (request, reply) => {
       const adminUser = request.user as { id: number; role: string };
-      if (adminUser.role !== 'admin') {
+      if (adminUser.role !== 'admin' && adminUser.role !== 'manager') {
         return reply
           .status(403)
           .send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền xem chi tiết phân bổ.' });
@@ -305,7 +305,7 @@ export async function registerAssignmentRoutes(fastify: FastifyInstance) {
   // Undo a batch of assignments
   fastify.post('/customers/assignment-history/undo', { preHandler: [requireAuth] }, async (request, reply) => {
     const adminUser = request.user as { id: number; role: string };
-    if (adminUser.role !== 'admin') {
+    if (adminUser.role !== 'admin' && adminUser.role !== 'manager') {
       return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền hoàn tác phân bổ.' });
     }
 

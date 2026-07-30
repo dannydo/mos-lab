@@ -3,6 +3,8 @@ import { useSearchParams } from 'next/navigation';
 import { apiClient } from '../../../../lib/api-client';
 import { Staff } from '@mos-lab/shared';
 
+import { useDebounce } from '../../../../hooks/useDebounce';
+
 export const useCustomerFilters = (
   currentUser: Staff | null,
   optionsRef: React.MutableRefObject<SafeAny>,
@@ -30,6 +32,7 @@ export const useCustomerFilters = (
     return undefined;
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [showTrash, setShowTrash] = useState(false);
   const [sortField, setSortField] = useState('id_desc');
 
@@ -49,6 +52,7 @@ export const useCustomerFilters = (
   const [referralCountMax, setReferralCountMax] = useState<number | undefined>(undefined);
 
   const [retainedOnly, setRetainedOnly] = useState<boolean>(false);
+  const [filterCustomerIds, setFilterCustomerIds] = useState<string | undefined>(undefined);
 
   const [assignedStaffId, setAssignedStaffId] = useState<string>(() => {
     return scopeParam || (currentUser?.role === 'telesales' ? 'me' : 'all');
@@ -169,9 +173,9 @@ export const useCustomerFilters = (
   );
 
   const applyFilterFromJson = useCallback(
-    (filterJsonStr: string) => {
+    async (filterJsonStr: SafeAny, batchId?: string | number, onSelectCustomerIds?: (keys: React.Key[]) => void) => {
       try {
-        const criteria = JSON.parse(filterJsonStr);
+        const criteria = typeof filterJsonStr === 'string' ? JSON.parse(filterJsonStr) : filterJsonStr || {};
         if (criteria.activeTab || criteria.bucket) {
           const tab = criteria.activeTab || criteria.bucket;
           setActiveTab(tab);
@@ -196,7 +200,37 @@ export const useCustomerFilters = (
         setAssignedDaysMin(criteria.assignedDaysMin);
         setAssignedDaysMax(criteria.assignedDaysMax);
 
-        optionsRef.current?.onSuccess?.('Đã tải lại bộ lọc đợt phân bổ thành công!');
+        let countText = '';
+        if (batchId && onSelectCustomerIds) {
+          try {
+            const strId = String(batchId);
+            const res = await apiClient.customers.getAssignmentHistoryDetails(strId);
+            if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+              const ids = res.data
+                .map((item: SafeAny) => Number(item.legacyUserId || item.customerId))
+                .filter((id: number) => !isNaN(id) && id > 0);
+              if (ids.length > 0) {
+                setFilterCustomerIds(ids.join(','));
+                onSelectCustomerIds(ids);
+                setTimeout(() => {
+                  onSelectCustomerIds(ids);
+                }, 300);
+                countText = ` & chọn ${ids.length} khách hàng`;
+              } else {
+                setFilterCustomerIds(undefined);
+              }
+            } else {
+              setFilterCustomerIds(undefined);
+            }
+          } catch (err) {
+            console.error('Failed to fetch batch customer details for selection:', err);
+            setFilterCustomerIds(undefined);
+          }
+        } else {
+          setFilterCustomerIds(undefined);
+        }
+
+        optionsRef.current?.onSuccess?.(`Đã tải lại bộ lọc đợt phân bổ${countText} thành công!`);
       } catch (e) {
         console.error('Failed to parse filter JSON:', e);
         optionsRef.current?.onError?.('Không thể tải bộ lọc từ đợt phân bổ');
@@ -328,6 +362,7 @@ export const useCustomerFilters = (
     setAssignedDaysMin(undefined);
     setAssignedDaysMax(undefined);
     setRetainedOnly(false);
+    setFilterCustomerIds(undefined);
 
     if (onFiltersReset) {
       onFiltersReset();
@@ -416,7 +451,7 @@ export const useCustomerFilters = (
   const filterParams = useMemo(
     () => ({
       activeTab,
-      searchQuery,
+      searchQuery: debouncedSearchQuery,
       showTrash,
       sortField,
       daysSinceLastVisitMin,
@@ -435,11 +470,12 @@ export const useCustomerFilters = (
       assignedDaysMin,
       assignedDaysMax,
       retainedOnly: retainedOnly ? 'true' : undefined,
-      allocationBatchId: activeTab === 'ALLOCATION' && selectedBatchId ? String(selectedBatchId) : undefined,
+      allocationBatchId: selectedBatchId,
+      ids: filterCustomerIds,
     }),
     [
       activeTab,
-      searchQuery,
+      debouncedSearchQuery,
       showTrash,
       sortField,
       daysSinceLastVisitMin,
@@ -459,6 +495,7 @@ export const useCustomerFilters = (
       assignedDaysMax,
       retainedOnly,
       selectedBatchId,
+      filterCustomerIds,
     ]
   );
 
@@ -506,6 +543,8 @@ export const useCustomerFilters = (
     setAssignedDaysMax,
     retainedOnly,
     setRetainedOnly,
+    filterCustomerIds,
+    setFilterCustomerIds,
 
     // UI Drawer state
     filterDrawerVisible,

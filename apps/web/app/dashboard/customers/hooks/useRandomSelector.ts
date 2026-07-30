@@ -52,9 +52,9 @@ export const useRandomSelector = (
         setRandomSelectedIds(selectedIds);
         setRandomBatchId(batchId);
         onSelected(selectedIds);
-        setRandomModalVisible(false);
         optionsRef.current?.onSuccess?.(`Đã chọn ngẫu nhiên ${selectedIds.length} khách hàng!`);
       }
+      setRandomModalVisible(false);
     } catch (err) {
       console.error('Random select error:', err);
       optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi chọn ngẫu nhiên.');

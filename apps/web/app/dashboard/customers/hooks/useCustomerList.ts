@@ -41,6 +41,8 @@ export const useCustomerList = (
         }
         if (randomSelectedIds && randomSelectedIds.length > 0) {
           params.ids = randomSelectedIds.join(',');
+        } else if (filterParams.ids) {
+          params.ids = filterParams.ids;
         }
         if (filterParams.daysSinceLastVisitMin !== undefined)
           params.daysSinceLastVisitMin = filterParams.daysSinceLastVisitMin.toString();
@@ -104,6 +106,8 @@ export const useCustomerList = (
         const idsToUse = overrideIds !== undefined ? overrideIds : randomSelectedIds;
         if (idsToUse && idsToUse.length > 0) {
           params.ids = idsToUse.join(',');
+        } else if (filterParams.ids) {
+          params.ids = filterParams.ids;
         }
 
         if (filterParams.activeTab !== 'ALL' && filterParams.activeTab !== 'ALLOCATION') {

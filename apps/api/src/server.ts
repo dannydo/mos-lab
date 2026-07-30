@@ -3,8 +3,10 @@ import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import compress from '@fastify/compress';
 import dotenv from 'dotenv';
 import prismaPlugin from './plugins/prisma.js';
+import cachePlugin from './plugins/cache.js';
 import { healthRoutes } from './modules/health/routes.js';
 import { authRoutes } from './modules/auth/routes.js';
 import { customerRoutes } from './modules/customers/routes.js';
@@ -70,6 +72,15 @@ const start = async () => {
     await server.register(swaggerUi, {
       routePrefix: '/documentation',
     });
+
+    // Register Compression (Gzip / Brotli)
+    await server.register(compress, {
+      threshold: 1024, // Only compress responses larger than 1KB
+      global: true,
+    });
+
+    // Register In-Memory Cache Plugin
+    await server.register(cachePlugin);
 
     // Register Prisma plugin
     await server.register(prismaPlugin);

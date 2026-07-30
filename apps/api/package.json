@@ -14,6 +14,7 @@
     "prisma:db:pull:legacy": "prisma db pull --schema=prisma/legacy.prisma"
   },
   "dependencies": {
+    "@fastify/compress": "^8.0.1",
     "@fastify/cors": "^10.0.1",
     "@fastify/jwt": "^9.0.1",
     "@fastify/swagger": "^9.8.1",

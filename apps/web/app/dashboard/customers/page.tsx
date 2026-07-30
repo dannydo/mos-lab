@@ -226,6 +226,9 @@ function CustomersPageContent() {
     batchId: null,
   });
 
+  const userRole = data.currentUser?.role ? String(data.currentUser.role).toLowerCase() : '';
+  const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
+
   return (
     <div>
       {contextHolder}
@@ -251,6 +254,7 @@ function CustomersPageContent() {
         customerIds={revokeBatchModalState.customerIds}
         staffList={data.staffList}
       />
+
       <div className="flex justify-between items-center mb-4" style={{ marginBottom: '16px' }}>
         <div>
           <Title level={3} style={{ color: token.colorPrimary, margin: 0, fontWeight: 700 }}>
@@ -353,7 +357,7 @@ function CustomersPageContent() {
               setNewFilterName={data.setNewFilterName}
               handleSaveFilter={data.handleSaveFilter}
               PRESET_FILTERS={PRESET_FILTERS}
-              onOpenRandomModal={() => data.setRandomModalVisible(true)}
+              onOpenRandomModal={isManagerOrAdmin ? () => data.setRandomModalVisible(true) : undefined}
             />
           </div>
 
@@ -365,7 +369,7 @@ function CustomersPageContent() {
               onToggleRetainedFilter={() => data.setRetainedOnly(!data.retainedOnly)}
             />
 
-            {data.currentUser?.role === 'admin' && (
+            {isManagerOrAdmin && (
               <Tooltip title="Lịch sử phân bổ data">
                 <Button
                   icon={<HistoryOutlined />}
@@ -375,7 +379,7 @@ function CustomersPageContent() {
               </Tooltip>
             )}
 
-            {data.currentUser?.role === 'admin' && (
+            {isManagerOrAdmin && (
               <Tooltip title={data.showTrash ? 'Đang xem thùng rác (Bấm để xem tất cả)' : 'Xem thùng rác khách hàng'}>
                 <Button
                   icon={<DeleteOutlined />}
@@ -688,7 +692,7 @@ function CustomersPageContent() {
         fetchBatchDetails={data.fetchBatchDetails}
         setExpandedBatchId={data.setExpandedBatchId}
         setBatchDetails={data.setBatchDetails}
-        applyFilterFromJson={data.applyFilterFromJson}
+        applyFilterFromJson={(jsonStr, batchId) => data.applyFilterFromJson(jsonStr, batchId, data.setSelectedRowKeys)}
         onOpenUndoModal={(batchId, customerCount) => {
           setUndoModalState({
             visible: true,

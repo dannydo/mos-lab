@@ -33,9 +33,13 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
   // Load user from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('mos_user');
+      const stored = localStorage.getItem('mos_user') || localStorage.getItem('user');
       if (stored) {
-        setCurrentUser(JSON.parse(stored));
+        try {
+          setCurrentUser(JSON.parse(stored));
+        } catch {
+          // ignore
+        }
       }
     }
   }, [scopeParam]);
@@ -146,8 +150,15 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
   }, [currentUser, fetchMyBatches]);
 
   useEffect(() => {
-    if (activeTab === 'ALLOCATION' && !selectedBatchId && myBatches.length > 0) {
-      setSelectedBatchId(myBatches[0].id);
+    if (activeTab === 'ALLOCATION') {
+      if (myBatches.length > 0) {
+        const batchStillExists = myBatches.some((b) => b.id === selectedBatchId);
+        if (!selectedBatchId || !batchStillExists) {
+          setSelectedBatchId(myBatches[0].id);
+        }
+      } else {
+        setSelectedBatchId(null);
+      }
     }
   }, [activeTab, selectedBatchId, myBatches, setSelectedBatchId]);
 
@@ -266,7 +277,10 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     setCustomers,
     setCurrentPage: listHook.setCurrentPage,
     setPageSize: listHook.setPageSize,
-    setActiveTab: filtersHook.setActiveTab,
+    setActiveTab: (tab: string) => {
+      filtersHook.setActiveTab(tab);
+      assignmentHook.setSelectedRowKeys([]);
+    },
     setSearchQuery: filtersHook.setSearchQuery,
     setShowTrash: filtersHook.setShowTrash,
     setSortField: filtersHook.setSortField,
@@ -315,6 +329,8 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     handleSearch: filtersHook.handleSearch,
     applyFilter: filtersHook.applyFilter,
     applyFilterFromJson: filtersHook.applyFilterFromJson,
+    filterCustomerIds: filtersHook.filterCustomerIds,
+    setFilterCustomerIds: filtersHook.setFilterCustomerIds,
     getCurrentFilterCriteria: filtersHook.getCurrentFilterCriteria,
     buildFilterSummary: filtersHook.buildFilterSummary,
     clearFilters: filtersHook.clearFilters,

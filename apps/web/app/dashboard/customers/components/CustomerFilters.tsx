@@ -128,6 +128,9 @@ const CustomerFilters = React.memo(function CustomerFilters({
   PRESET_FILTERS,
   onOpenRandomModal,
 }: CustomerFiltersProps) {
+  const userRole = currentUser?.role ? String(currentUser.role).toLowerCase() : '';
+  const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
+
   const filterParams = {
     daysSinceLastVisitMin,
     daysSinceLastVisitMax,
@@ -224,7 +227,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
           </Badge>
         </Tooltip>
 
-        {onOpenRandomModal && (
+        {onOpenRandomModal && isManagerOrAdmin && (
           <Tooltip title="Chọn ngẫu nhiên Booker">
             <Button icon={<TeamOutlined />} onClick={onOpenRandomModal} style={{ borderRadius: '6px' }} />
           </Tooltip>
@@ -504,7 +507,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
           </div>
 
           {/* SECTION 6: PHÂN BỔ BOOKER */}
-          {currentUser?.role === 'admin' && (
+          {isManagerOrAdmin && (
             <div style={{ marginBottom: '16px' }}>
               <FilterSectionHeader
                 icon={<TeamOutlined style={{ fontSize: '14px' }} />}

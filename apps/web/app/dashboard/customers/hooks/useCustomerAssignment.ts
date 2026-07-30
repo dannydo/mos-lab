@@ -41,6 +41,10 @@ export const useCustomerAssignment = (
         await apiClient.allocation.createBatch({
           bookerId: targetStaffId,
           customerIds: selectedRowKeys.map((k) => Number(k)),
+          sourceType,
+          sourceFilterSummary,
+          sourceFilterJson,
+          parentBatchId: randomBatchId || undefined,
         });
         optionsRef.current?.onSuccess?.(
           `Đã tạo đợt phân bổ thành công cho Booker! (${selectedRowKeys.length} KH) - Chờ Booker xác nhận 24h.`

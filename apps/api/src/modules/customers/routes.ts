@@ -8,6 +8,7 @@ import { registerDashboardRoutes } from './routes/dashboard.routes.js';
 import { bookingAuditRoutes } from './routes/booking-audit.routes.js';
 import { BookingAuditService } from './services/booking-audit.service.js';
 import { registerLocaTouchpointRoutes } from './routes/loca-touchpoint.routes.js';
+import { AllocationService } from '../allocation/allocation.service.js';
 
 export async function customerRoutes(fastify: FastifyInstance) {
   // Start automated allocation expiration cronjob
@@ -237,7 +238,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const bId = parseInt(allocationBatchId, 10);
         if (!isNaN(bId)) {
           const batchItems = await fastify.prisma.crm.crmAllocationBatchItem.findMany({
-            where: { batchId: bId },
+            where: {
+              batchId: bId,
+              status: { not: 'RECALLED' },
+            },
             select: { customerId: true },
           });
           const batchUserIds = batchItems.map((i) => i.customerId);
@@ -906,6 +910,36 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       });
 
+      // ALSO query active allocation batch items (status IN ('PENDING_ACCEPT', 'ACCEPTED'))
+      const activeBatchItems =
+        customerIds.length > 0
+          ? await fastify.prisma.crm.crmAllocationBatchItem.findMany({
+              where: {
+                customerId: { in: customerIds },
+                status: { in: ['PENDING_ACCEPT', 'ACCEPTED'] },
+              },
+              include: {
+                batch: {
+                  include: { booker: true },
+                },
+              },
+              orderBy: { id: 'desc' },
+            })
+          : [];
+
+      activeBatchItems.forEach((bi) => {
+        if (bi.batch && bi.batch.booker) {
+          const statusSuffix = bi.status === 'PENDING_ACCEPT' ? ' (Chờ xác nhận)' : '';
+          assignmentMap.set(bi.customerId, {
+            id: bi.batch.booker.id,
+            displayName: `${bi.batch.booker.displayName}${statusSuffix}`,
+            username: bi.batch.booker.username,
+            assignedAt: bi.createdAt ? bi.createdAt.toISOString() : null,
+            status: bi.status,
+          });
+        }
+      });
+
       // Fetch latest bookings for the returned customers
       const latestBookings =
         customerIds.length > 0
@@ -1339,6 +1373,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     const adminUser = request.user as { id: number; role: string };
 
+    const cacheKey = `cust_stats:${adminUser?.id || 0}:${adminUser?.role || ''}:${JSON.stringify(request.query)}`;
+    const cachedStats = fastify.cache.get(cacheKey);
+    if (cachedStats) {
+      return cachedStats;
+    }
+
     // Force telesales to only query stats for their own customers (except for LoCa campaign or when explicitly querying ALL)
     let effectiveAssignedStaffId = assignedStaffId;
     if (
@@ -1507,7 +1547,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const bId = parseInt(allocationBatchId, 10);
         if (!isNaN(bId)) {
           const batchItems = await fastify.prisma.crm.crmAllocationBatchItem.findMany({
-            where: { batchId: bId },
+            where: {
+              batchId: bId,
+              status: { not: 'RECALLED' },
+            },
             select: { customerId: true },
           });
           const batchUserIds = batchItems.map((i) => i.customerId);
@@ -1738,6 +1781,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       stats.notComboLive = stats.total - stats.comboLive;
 
+      fastify.cache.set(cacheKey, stats, 15000);
       return stats;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get customers stats error:');
@@ -4204,19 +4248,51 @@ export async function customerRoutes(fastify: FastifyInstance) {
         },
       });
 
-      const assignedCount = activeAssignments.length;
+      const activeBatchItems = await fastify.prisma.crm.crmAllocationBatchItem.findMany({
+        where: {
+          customerId: { in: customerIds },
+          status: { in: ['PENDING_ACCEPT', 'ACCEPTED'] },
+        },
+        include: {
+          batch: {
+            include: {
+              booker: { select: { id: true, displayName: true } },
+            },
+          },
+        },
+        orderBy: { id: 'desc' },
+      });
+
+      const assignedMap = new Map<number, { staffId: number; staffName: string }>();
+
+      for (const a of activeAssignments) {
+        if (a.staffId) {
+          assignedMap.set(a.legacyUserId, {
+            staffId: a.staffId,
+            staffName: a.staff?.displayName || `Booker #${a.staffId}`,
+          });
+        }
+      }
+
+      for (const bi of activeBatchItems) {
+        if (bi.batch?.bookerId) {
+          assignedMap.set(bi.customerId, {
+            staffId: bi.batch.bookerId,
+            staffName: bi.batch.booker?.displayName || `Booker #${bi.batch.bookerId}`,
+          });
+        }
+      }
+
+      const assignedCount = assignedMap.size;
       const unassignedCount = customerIds.length - assignedCount;
 
       const staffCountMap = new Map<number, { staffName: string; count: number }>();
-      for (const a of activeAssignments) {
-        if (a.staffId) {
-          const existing = staffCountMap.get(a.staffId);
-          const name = a.staff?.displayName || `Booker #${a.staffId}`;
-          if (existing) {
-            existing.count += 1;
-          } else {
-            staffCountMap.set(a.staffId, { staffName: name, count: 1 });
-          }
+      for (const info of assignedMap.values()) {
+        const existing = staffCountMap.get(info.staffId);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          staffCountMap.set(info.staffId, { staffName: info.staffName, count: 1 });
         }
       }
 
@@ -4271,7 +4347,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const cleanReason = reason.trim();
 
     try {
-      // Strictly filter to customers that actually have an active assignment
+      // 1. Fetch active assignments from crmCustomerAssignment
       const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
         where: {
           legacyUserId: { in: customerIds },
@@ -4279,7 +4355,31 @@ export async function customerRoutes(fastify: FastifyInstance) {
         },
       });
 
-      const toRevokeUserIds = currentAssignments.map((a) => a.legacyUserId);
+      // 2. Fetch active items from crmAllocationBatchItem
+      const currentBatchItems = await fastify.prisma.crm.crmAllocationBatchItem.findMany({
+        where: {
+          customerId: { in: customerIds },
+          status: { in: ['PENDING_ACCEPT', 'ACCEPTED'] },
+        },
+        include: {
+          batch: true,
+        },
+        orderBy: { id: 'desc' },
+      });
+
+      const assignmentMap = new Map<number, number>();
+      for (const a of currentAssignments) {
+        if (a.staffId) {
+          assignmentMap.set(a.legacyUserId, a.staffId);
+        }
+      }
+      for (const bi of currentBatchItems) {
+        if (bi.batch?.bookerId) {
+          assignmentMap.set(bi.customerId, bi.batch.bookerId);
+        }
+      }
+
+      const toRevokeUserIds = Array.from(assignmentMap.keys());
       const skippedUnassignedCount = customerIds.length - toRevokeUserIds.length;
 
       if (toRevokeUserIds.length === 0) {
@@ -4293,59 +4393,27 @@ export async function customerRoutes(fastify: FastifyInstance) {
         };
       }
 
-      const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
       const batchId = requestedBatchId || `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const now = new Date();
 
+      // Recall previous batch items for these customer IDs
+      await fastify.prisma.crm.crmAllocationBatchItem.updateMany({
+        where: {
+          customerId: { in: toRevokeUserIds },
+          status: { in: ['PENDING_ACCEPT', 'ACCEPTED'] },
+        },
+        data: { status: 'RECALLED' },
+      });
+
       if (targetStaffId) {
-        // Direct transfer to new Booker
-        await fastify.prisma.crm.$transaction([
-          ...toRevokeUserIds.map((cid) =>
-            fastify.prisma.crm.crmCustomerAssignment.upsert({
-              where: { legacyUserId: cid },
-              update: {
-                staffId: targetStaffId,
-                assignedBy: adminUser.id,
-                assignedAt: now,
-                isRetained: false,
-                retainedAt: null,
-              },
-              create: {
-                legacyUserId: cid,
-                staffId: targetStaffId,
-                assignedBy: adminUser.id,
-                assignedAt: now,
-                isRetained: false,
-              },
-            })
-          ),
-          ...toRevokeUserIds.map((cid) =>
-            fastify.prisma.crm.crmAssignmentHistory.create({
-              data: {
-                batchId,
-                legacyUserId: cid,
-                prevStaffId: assignmentMap.get(cid) ?? null,
-                newStaffId: targetStaffId,
-                assignedBy: adminUser.id,
-                assignedAt: now,
-                actionType: 'TRANSFER',
-                reason: parentBatchId ? `${cleanReason} (Nguồn: ${parentBatchId})` : cleanReason,
-              },
-            })
-          ),
-          ...(requestedBatchId
-            ? [
-                fastify.prisma.crm.crmAssignmentHistory.updateMany({
-                  where: { batchId: requestedBatchId },
-                  data: {
-                    isUndone: true,
-                    undoneAt: now,
-                    reason: cleanReason,
-                  },
-                }),
-              ]
-            : []),
-        ]);
+        // Direct transfer to new Booker using AllocationService.createBatch
+        await AllocationService.createBatch(fastify, adminUser.id, {
+          bookerId: targetStaffId,
+          customerIds: toRevokeUserIds,
+          sourceType: 'MANUAL',
+          sourceFilterSummary: `Chuyển giao cho Booker #${targetStaffId}`,
+          sourceFilterJson: JSON.stringify({ transferReason: cleanReason, parentBatchId }),
+        });
       } else {
         // Revoke back to pool
         await fastify.prisma.crm.$transaction(async (tx) => {
@@ -4769,6 +4837,29 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
 
         if (historyRecords.length === 0) {
+          const numericId = parseInt(batchId, 10);
+          if (!isNaN(numericId) && numericId > 0) {
+            const allocBatch = await fastify.prisma.crm.crmAllocationBatch.findUnique({
+              where: { id: numericId },
+              include: { booker: { select: { displayName: true } }, items: true },
+            });
+            if (allocBatch && allocBatch.items.length > 0) {
+              const data = allocBatch.items.map((item) => ({
+                id: item.id,
+                legacyUserId: item.customerId,
+                fullName: item.customerName || `Khách hàng #${item.customerId}`,
+                phone: item.customerPhone || 'N/A',
+                prevStaffName: 'Chưa phân bổ',
+                newStaffName: allocBatch.booker?.displayName || 'Booker',
+                isUndone: false,
+                undoneAt: null,
+                actionType: 'ASSIGN',
+                reason: null,
+                sourceFilterSummary: allocBatch.sourceFilterSummary,
+              }));
+              return { data };
+            }
+          }
           return { data: [] };
         }
 

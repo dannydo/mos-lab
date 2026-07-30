@@ -2,10 +2,23 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { SafeAny } from '@mos-lab/shared';
 
+function isLocaRoleAllowed(role?: string): boolean {
+  if (!role) return false;
+  const r = role.toLowerCase().trim();
+  return ['admin', 'manager', 'oc', 'cc', 'cs', 'control'].includes(r);
+}
+
 export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
   // POST /api/customers/loca-touchpoint
   fastify.post('/customers/loca-touchpoint', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { id: number; role: string; displayName?: string; username?: string };
+
+    if (!isLocaRoleAllowed(user?.role)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Bạn không có quyền truy cập Chiến dịch LoCa. Chỉ dành cho Admin, Manager, CS và Control.',
+      });
+    }
     const { customerId, touchpointKey, isChecked, note, cycleDate } = request.body as {
       customerId: number;
       touchpointKey: string;
@@ -106,6 +119,14 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
 
   // GET /api/customers/loca-touchpoints
   fastify.get('/customers/loca-touchpoints', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { id: number; role: string };
+    if (!isLocaRoleAllowed(user?.role)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Bạn không có quyền truy cập Chiến dịch LoCa. Chỉ dành cho Admin, Manager, CS và Control.',
+      });
+    }
+
     const { customerIds } = request.query as { customerIds?: string };
     if (!customerIds) {
       return reply.send({ touchpoints: {} });

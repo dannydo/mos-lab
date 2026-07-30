@@ -27,6 +27,7 @@ import {
   message,
   Segmented,
   DatePicker,
+  Result,
   ConfigProvider,
 } from 'antd';
 import {
@@ -145,6 +146,10 @@ export default function LocaCampaignPage() {
     onError: (msg) => message.error(msg),
     onWarning: (msg) => message.warning(msg),
   });
+
+  const isLocaAllowed = ['admin', 'manager', 'oc', 'cc', 'cs', 'control'].includes(
+    currentUser?.role?.toLowerCase() || ''
+  );
 
   const [smsModalVisible, setSmsModalVisible] = useState<boolean>(false);
 
@@ -308,6 +313,18 @@ export default function LocaCampaignPage() {
   } = useTableConfig('loca_campaign_table', columns);
 
   const activeTouchpointsList = configs['LOCA_ALL'] || [];
+
+  if (currentUser && !isLocaAllowed) {
+    return (
+      <Card style={{ marginTop: 24, textAlign: 'center', borderRadius: 8 }}>
+        <Result
+          status="403"
+          title="403 - Không Có Quyền Truy Cập"
+          subTitle="Chiến dịch LoCa chỉ dành cho Admin, Manager, CS (Customer Care) và Control (Operations Coordinator)."
+        />
+      </Card>
+    );
+  }
 
   return (
     <div>

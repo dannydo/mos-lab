@@ -30,6 +30,8 @@ export interface CustomerAllocationBatch {
   declinedAt?: string | null;
   recalledAt?: string | null;
   retentionExpiresAt?: string | null; // 30-day countdown expiry
+  sourceFilterSummary?: string | null;
+  sourceFilterJson?: string | null;
   createdAt: string;
   updatedAt: string;
   items?: CustomerAllocationItem[];
@@ -38,6 +40,10 @@ export interface CustomerAllocationBatch {
 export interface CreateAllocationBatchDto {
   bookerId: number;
   customerIds: number[];
+  sourceType?: string;
+  sourceFilterSummary?: string;
+  sourceFilterJson?: string;
+  parentBatchId?: string;
 }
 
 export interface DeclineAllocationBatchDto {
