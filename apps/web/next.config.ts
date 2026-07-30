@@ -4,7 +4,20 @@ import withBundleAnalyzer from '@next/bundle-analyzer';
 const nextConfig: NextConfig = {
   compress: true,
   reactStrictMode: true,
-  transpilePackages: ['@mos-lab/shared'],
+  transpilePackages: [
+    '@mos-lab/shared',
+    'antd',
+    '@ant-design/icons',
+    '@ant-design/cssinjs',
+    'rc-util',
+    'rc-pagination',
+    'rc-picker',
+    'rc-table',
+    'rc-tree',
+    'rc-select',
+    'dayjs',
+    'lucide-react',
+  ],
   turbopack: {},
   experimental: {
     optimizePackageImports: ['lucide-react', 'antd', '@ant-design/icons', 'dayjs'],

@@ -52,7 +52,7 @@ console.error = (...args: SafeAny[]) => {
   originalError(...args);
 };
 
-// Lightweight polyfills for older Chromebook / Chromium browsers (< Chrome 95)
+// Lightweight polyfills for older Chromebook / ChromeOS 91 (< Chrome 95)
 if (typeof window !== 'undefined') {
   if (!(Array.prototype as SafeAny).at) {
     (Array.prototype as SafeAny).at = function (this: SafeAny[], n: number) {
@@ -76,6 +76,65 @@ if (typeof window !== 'undefined') {
       } catch (_) {
         return obj;
       }
+    };
+  }
+
+  if (!(String.prototype as SafeAny).replaceAll) {
+    (String.prototype as SafeAny).replaceAll = function (this: string, str: string | RegExp, newSubstr: string) {
+      if (str instanceof RegExp) {
+        return this.replace(str, newSubstr);
+      }
+      return this.split(str).join(newSubstr);
+    };
+  }
+
+  if (typeof (Promise as SafeAny).any !== 'function') {
+    (Promise as SafeAny).any = function <T>(promises: Iterable<T | PromiseLike<T>>): Promise<T> {
+      return new Promise((resolve, reject) => {
+        const arr = Array.from(promises);
+        const errors: SafeAny[] = [];
+        let rejectedCount = 0;
+        if (arr.length === 0) {
+          reject(new Error('All promises were rejected'));
+          return;
+        }
+        arr.forEach((p, idx) => {
+          Promise.resolve(p).then(resolve, (err) => {
+            errors[idx] = err;
+            rejectedCount++;
+            if (rejectedCount === arr.length) {
+              reject(errors);
+            }
+          });
+        });
+      });
+    };
+  }
+
+  if (typeof (window as SafeAny).ResizeObserver !== 'function') {
+    (window as SafeAny).ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+  }
+
+  if (typeof (window as SafeAny).IntersectionObserver !== 'function') {
+    (window as SafeAny).IntersectionObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+  }
+
+  if (typeof (window as SafeAny).requestIdleCallback !== 'function') {
+    (window as SafeAny).requestIdleCallback = function (
+      cb: (info: { didTimeout: boolean; timeRemaining: () => number }) => void
+    ) {
+      return setTimeout(() => cb({ didTimeout: false, timeRemaining: () => 50 }), 1);
+    };
+    (window as SafeAny).cancelIdleCallback = function (id: number) {
+      clearTimeout(id);
     };
   }
 }
