@@ -211,12 +211,18 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
 
             {/* Center target quick select orb */}
             <div
-              className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${
+              className={`absolute left-1/2 top-1/2 flex items-center justify-center transition-all duration-300 ${
                 isRadialOpen ? 'z-[9999]' : 'z-30'
               }`}
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                WebkitTransform: 'translate(-50%, -50%)',
+                transform: 'translate(-50%, -50%)',
+                zIndex: isRadialOpen ? 9999 : 30,
+              }}
             >
-              <div className={`w-[2px] h-[10px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
-
               {isAdmin ? (
                 <div className="relative flex items-center justify-center">
                   {isRadialOpen && (
@@ -311,8 +317,6 @@ export const TelesalesFrontFace: React.FC<TelesalesFrontFaceProps> = ({
                   <span className="text-[32px] leading-none relative -top-[0.5px]">{activePreset?.emoji}</span>
                 </div>
               )}
-
-              <div className={`w-[2px] h-[10px] ${themeMode === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
             </div>
 
             {/* Time Capsule Nodes */}
