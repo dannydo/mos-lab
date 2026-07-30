@@ -715,7 +715,15 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
           </div>
 
           {/* Ranks 4-7 list */}
-          <div className="grid grid-cols-3 gap-2 mt-2">
+          <div
+            className="grid grid-cols-3 gap-2 mt-2"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: '8px',
+              marginTop: '8px',
+            }}
+          >
             {remainingBack.map((m, i) => {
               const memberTargets = getMemberTarget(m.id, currentPeriodId);
               const colors = ['#3b82f6', '#8B5CF6', '#F59E0B', '#F97316', '#10B981'];
