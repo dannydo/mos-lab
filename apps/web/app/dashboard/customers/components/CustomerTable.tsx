@@ -1,19 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Table, Avatar, Tag, Typography, Space, Tooltip, Button, Spin, theme } from 'antd';
-import { UserOutlined, PhoneOutlined, EyeOutlined, RocketOutlined } from '@ant-design/icons';
+import React from 'react';
+import { Table, Avatar, Tag, Typography, Space, Tooltip, Button, theme } from 'antd';
+import { UserOutlined, PhoneOutlined, CheckCircleOutlined, PlusOutlined, MessageOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useOmiCall } from '../../../../context/OmiCallContext';
-import { Customer, BucketType } from '@mos-lab/shared';
+import { Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
 import { formatVND } from '../../../../lib/format-utils';
 import { ResizableHeaderCell } from '../../../../components/ResizableHeaderCell';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
-import { AddToCampaignModal } from '../../../../components/campaign/AddToCampaignModal';
 
 const { Text } = Typography;
+
+const formatDuration = (secs?: number | null) => {
+  if (secs === undefined || secs === null) return '-';
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
 
 interface CustomerTableProps {
   customers: Customer[];
@@ -28,6 +34,10 @@ interface CustomerTableProps {
   currentUser: SafeAny;
   openDetailModal: (customer: Customer) => void;
   sentinelRef?: SafeAny;
+  dailyPlanList?: number[];
+  addingIds?: number[];
+  handleAddToPlan?: (customerId: number) => void;
+  handleOpenSmsModal?: (customer: Customer) => void;
 }
 
 const CustomerTable = React.memo(
@@ -44,14 +54,16 @@ const CustomerTable = React.memo(
       setSelectedRowKeys,
       currentUser,
       openDetailModal,
+      dailyPlanList = [],
+      addingIds = [],
+      handleAddToPlan,
+      handleOpenSmsModal,
     },
     ref
   ) {
     const { themeMode } = useTheme();
     const { token } = theme.useToken();
     const { makeCall } = useOmiCall();
-    const [singleCustomerForCampaign, setSingleCustomerForCampaign] = useState<Customer | null>(null);
-    const [singleModalVisible, setSingleModalVisible] = useState<boolean>(false);
 
     const getRowClassName = (record: Customer) => {
       // 1. check callback date ("có hẹn gọi lại -> màu hy vọng")
@@ -98,26 +110,23 @@ const CustomerTable = React.memo(
           key: 'stt',
           width: 60,
           align: 'center' as const,
-          render: (_: any, __: any, index: number) => (currentPage - 1) * pageSize + index + 1,
+          render: (_: SafeAny, __: Customer, index: number) => (
+            <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+              {(currentPage - 1) * pageSize + index + 1}
+            </span>
+          ),
         },
         {
-          title: 'Mã KH',
-          dataIndex: 'id',
-          key: 'id',
-          width: 100,
-        },
-        {
-          title: 'Tên Khách Hàng',
+          title: 'Khách Hàng',
           dataIndex: 'name',
           key: 'name',
+          sorter: (a: Customer, b: Customer) => (a.name || '').localeCompare(b.name || ''),
           render: (text: string, record: Customer) => (
             <Space
-              size="small"
               style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
               onClick={() => openDetailModal(record)}
             >
               <Avatar
-                size="small"
                 src={record.avatar || undefined}
                 icon={<UserOutlined />}
                 style={{
@@ -127,59 +136,46 @@ const CustomerTable = React.memo(
                   flexShrink: 0,
                 }}
               />
-              <span className="hover:underline" style={{ fontWeight: '600', color: token.colorText }}>
-                {text}
-              </span>
+              <div>
+                <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline transition-all">
+                  {text}
+                </div>
+                {record.phone && (
+                  <div
+                    style={{ fontSize: '12px', color: '#D4A84B', fontWeight: '500' }}
+                    className="hover:underline cursor-pointer flex items-center gap-1 mt-0.5 tabular-nums"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      makeCall(record.phone, record.name, record.id, record.avatar || undefined);
+                    }}
+                  >
+                    <PhoneOutlined style={{ fontSize: '10px' }} />
+                    <span>{record.phone}</span>
+                  </div>
+                )}
+              </div>
             </Space>
           ),
-        },
-        {
-          title: 'Số Điện Thoại',
-          dataIndex: 'phone',
-          key: 'phone',
-          render: (phone: string, record: Customer) =>
-            phone ? (
-              <span
-                className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text tabular-nums"
-                onClick={() => makeCall(phone, record.name, record.id, record.avatar || undefined)}
-                style={{ color: token.colorText, fontWeight: '600' }}
-              >
-                <PhoneOutlined style={{ color: '#D4A84B' }} />
-                <span>{phone}</span>
-              </span>
-            ) : (
-              <span style={{ color: token.colorTextDescription }}>-</span>
-            ),
-        },
-        {
-          title: 'Nhóm',
-          dataIndex: 'bucket',
-          key: 'bucket',
-          render: (bucket: BucketType) => {
-            if (bucket === 'COMBO_LIVE') return <Tag color="green">Live Combo</Tag>;
-            if (bucket === 'COMBO_DEAD') return <Tag color="red">Dead Combo</Tag>;
-            return <Tag color="warning">Single</Tag>;
-          },
         },
         {
           title: 'Chưa tới tiệm (Ngày)',
           dataIndex: 'daysSinceLastVisit',
           key: 'daysSinceLastVisit',
+          width: 180,
+          sorter: (a: Customer, b: Customer) => (a.daysSinceLastVisit ?? 0) - (b.daysSinceLastVisit ?? 0),
           render: (days: number | null, record: Customer) => {
-            // 1. check callback date ("có hẹn gọi lại")
             const hasCallback = record.callbackDate
               ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
               : false;
             if (hasCallback) {
               const callbackFormatted = dayjs(record.callbackDate).format('DD/MM/YYYY');
               return (
-                <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#d4b106', fontWeight: 'bold' }}>
+                <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#855b00', fontWeight: 'bold' }}>
                   🕒 Hẹn gọi lại: {callbackFormatted}
                 </span>
               );
             }
 
-            // 2. check future booking ("đã booked -> sẽ đến")
             const isBookingInFuture = record.lastBookingDate ? new Date(record.lastBookingDate) > new Date() : false;
             if (isBookingInFuture) {
               const state = record.lastBookingState;
@@ -187,14 +183,13 @@ const CustomerTable = React.memo(
               if (isBooked) {
                 const bookingFormatted = dayjs(record.lastBookingDate).format('DD/MM/YYYY');
                 return (
-                  <span style={{ color: themeMode === 'dark' ? '#73d13d' : '#389e0d', fontWeight: 'bold' }}>
+                  <span style={{ color: themeMode === 'dark' ? '#95de64' : '#237804', fontWeight: 'bold' }}>
                     📅 Booked: {bookingFormatted}
                   </span>
                 );
               }
             }
 
-            // 3. check missed booking ("đã booked mà chưa tới (missed)")
             const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
             if (isBookingInPast) {
               const state = record.lastBookingState;
@@ -223,7 +218,6 @@ const CustomerTable = React.memo(
               }
             }
 
-            // 4. normal daysSinceLastVisit ("số dương -> chưa ghé x days, bình thường")
             return days !== null ? (
               `${days} ngày`
             ) : (
@@ -232,24 +226,72 @@ const CustomerTable = React.memo(
           },
         },
         {
-          title: 'Chi tiêu',
+          title: 'Tổng Chi Tiêu',
           dataIndex: 'totalSpent',
           key: 'totalSpent',
-          render: (spent: number) => <span className="tabular-nums">{formatVND(spent)}</span>,
+          sorter: (a: Customer, b: Customer) => (a.totalSpent || 0) - (b.totalSpent || 0),
+          render: (val: number) => <span className="tabular-nums">{formatVND(val)}</span>,
         },
         {
-          title: 'Dùng Promo',
-          dataIndex: 'totalPromotionsUsed',
-          key: 'totalPromotionsUsed',
-          render: (count: number) =>
-            count > 0 ? <Tag color="blue">{count} lần</Tag> : <Text type="secondary">-</Text>,
+          title: 'Booker phụ trách',
+          dataIndex: 'assignedStaff',
+          key: 'assignedStaff',
+          render: (staff: SafeAny) => {
+            if (staff) {
+              const isPending = staff.status === 'PENDING_ACCEPT' || staff.displayName?.includes('(Chờ xác nhận)');
+              return <Tag color={isPending ? 'gold' : 'cyan'}>{staff.displayName}</Tag>;
+            }
+            return (
+              <Text type="secondary" style={{ fontStyle: 'italic' }}>
+                Chưa phân bổ
+              </Text>
+            );
+          },
         },
         {
-          title: 'Giới thiệu bạn',
-          dataIndex: 'totalReferrals',
-          key: 'totalReferrals',
-          render: (count: number) =>
-            count > 0 ? <Tag color="purple">{count} người</Tag> : <Text type="secondary">-</Text>,
+          title: 'Ngày gọi gần nhất',
+          key: 'lastCallDate',
+          render: (_: SafeAny, record: Customer) => {
+            if (!record.lastCall?.createdAt) return '-';
+            return dayjs(record.lastCall.createdAt).format('DD/MM/YYYY HH:mm');
+          },
+        },
+        {
+          title: 'Thời lượng',
+          key: 'lastCallDuration',
+          render: (_: SafeAny, record: Customer) => {
+            if (record.lastCall?.durationSec === undefined || record.lastCall?.durationSec === null) return '-';
+            return formatDuration(record.lastCall.durationSec);
+          },
+        },
+        {
+          title: 'Trạng thái cuộc gọi',
+          key: 'lastCallResult',
+          render: (_: SafeAny, record: Customer) => {
+            if (!record.lastCall?.callResult) return '-';
+            const result = record.lastCall.callResult;
+            const label = CALL_RESULT_LABELS[result as keyof typeof CALL_RESULT_LABELS] || result;
+            let color = 'default';
+            if (result === 'ANSWERED' || result === 'SUCCESS' || result === 'COMPLETED') color = 'success';
+            else if (result === 'NO_ANSWER') color = 'warning';
+            else if (result === 'BUSY') color = 'orange';
+            else if (result === 'FAILED' || result === 'WRONG_NUMBER') color = 'error';
+            return <Tag color={color}>{label}</Tag>;
+          },
+        },
+        {
+          title: 'Ghi chú cuộc gọi',
+          key: 'lastCallNote',
+          render: (_: SafeAny, record: Customer) => {
+            if (!record.lastCall?.note) return '-';
+            const note = record.lastCall.note;
+            const compactNote = note.length > 25 ? `${note.substring(0, 25)}...` : note;
+            return (
+              <Tooltip title={note}>
+                <span style={{ cursor: 'pointer' }}>{compactNote}</span>
+              </Tooltip>
+            );
+          },
         },
         {
           title: 'Đã phân bổ',
@@ -295,95 +337,63 @@ const CustomerTable = React.memo(
           },
         },
         {
-          title: 'Booker phụ trách',
-          dataIndex: 'assignedStaff',
-          key: 'assignedStaff',
-          render: (staff: SafeAny) => {
-            if (staff) {
-              const isPending = staff.status === 'PENDING_ACCEPT' || staff.displayName?.includes('(Chờ xác nhận)');
-              return <Tag color={isPending ? 'gold' : 'cyan'}>{staff.displayName}</Tag>;
-            }
-            return (
-              <Text type="secondary" style={{ fontStyle: 'italic' }}>
-                Chưa phân bổ
-              </Text>
-            );
-          },
-        },
-        {
-          title: 'Trạng thái gọi',
-          key: 'callStatus',
-          width: 140,
-          render: (_: SafeAny, record: Customer) => {
-            const lastCall = record.lastCall;
-            if (!lastCall) {
-              return <Tag color="default">Chưa gọi</Tag>;
-            }
-            const res = lastCall.callResult;
-            let color = 'blue';
-            let label = res || 'Đã tương tác';
-            if (res === 'NO_ANSWER' || res === 'BUSY' || res === 'FAILED') {
-              color = 'error';
-              label = res === 'BUSY' ? 'Máy bận' : 'Không nhấc máy';
-            } else if (res === 'ANSWERED' || res === 'SUCCESS' || res === 'COMPLETED') {
-              color = 'success';
-              label = 'Đã nghe máy';
-            } else if (res === 'CALLBACK') {
-              color = 'warning';
-              label = 'Hẹn gọi lại';
-            }
-            const callTime = lastCall.createdAt ? dayjs(lastCall.createdAt).format('HH:mm DD/MM') : '';
-            return (
-              <Tooltip title={lastCall.note ? `${label} (${callTime}): ${lastCall.note}` : `Gần nhất: ${callTime}`}>
-                <Tag color={color}>{label}</Tag>
-              </Tooltip>
-            );
-          },
-        },
-        {
           title: 'Thao tác',
-          key: 'action',
+          key: 'actions',
           width: 110,
-          render: (_: SafeAny, record: Customer) => (
-            <Space size={4}>
-              {record.phone && (
-                <Tooltip title={`Gọi OmiCall cho ${record.name || 'khách hàng'}`}>
+          align: 'center' as const,
+          render: (_: SafeAny, record: Customer) => {
+            const isPlanned = dailyPlanList.includes(record.id);
+            const isAdding = addingIds.includes(record.id);
+            return (
+              <Space size="small">
+                <Tooltip title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi'}>
                   <Button
-                    type="primary"
-                    shape="circle"
+                    type={isPlanned ? 'dashed' : 'primary'}
+                    ghost={!isPlanned}
                     size="small"
-                    icon={<PhoneOutlined />}
-                    style={{ backgroundColor: '#10B981', borderColor: '#10B981' }}
-                    onClick={() =>
-                      makeCall(record.phone, record.name || `KH #${record.id}`, record.id, record.avatar || undefined)
+                    loading={isAdding}
+                    icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
+                    onClick={() => !isPlanned && !isAdding && handleAddToPlan?.(record.id)}
+                    style={
+                      !isPlanned
+                        ? {
+                            borderColor: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                            color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                          }
+                        : {}
                     }
+                    disabled={isPlanned || isAdding}
                   />
                 </Tooltip>
-              )}
-              <Tooltip title="Chi tiết khách hàng">
-                <Button
-                  type="text"
-                  shape="circle"
-                  icon={<EyeOutlined style={{ color: '#D4A84B' }} />}
-                  onClick={() => openDetailModal(record)}
-                />
-              </Tooltip>
-              <Tooltip title="Thêm vào chiến dịch NYC">
-                <Button
-                  type="text"
-                  shape="circle"
-                  icon={<RocketOutlined style={{ color: '#10b981' }} />}
-                  onClick={() => {
-                    setSingleCustomerForCampaign(record);
-                    setSingleModalVisible(true);
-                  }}
-                />
-              </Tooltip>
-            </Space>
-          ),
+                <Tooltip title="Gửi SMS">
+                  <Button
+                    type="default"
+                    size="small"
+                    icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
+                    onClick={() => handleOpenSmsModal?.(record)}
+                    style={{
+                      borderColor: '#D4A84B',
+                      color: '#D4A84B',
+                    }}
+                  />
+                </Tooltip>
+              </Space>
+            );
+          },
         },
       ],
-      [themeMode, token, makeCall, openDetailModal, currentPage, pageSize]
+      [
+        themeMode,
+        token,
+        makeCall,
+        openDetailModal,
+        currentPage,
+        pageSize,
+        dailyPlanList,
+        addingIds,
+        handleAddToPlan,
+        handleOpenSmsModal,
+      ]
     );
 
     const isManagerOrAdmin =
@@ -468,20 +478,6 @@ const CustomerTable = React.memo(
           columns={rawConfig}
           onSave={saveConfig}
           onReset={resetConfig}
-        />
-
-        <AddToCampaignModal
-          visible={singleModalVisible}
-          onClose={() => {
-            setSingleModalVisible(false);
-            setSingleCustomerForCampaign(null);
-          }}
-          selectedCustomerIds={singleCustomerForCampaign ? [singleCustomerForCampaign.id] : []}
-          customerName={singleCustomerForCampaign?.name || undefined}
-          onSuccess={() => {
-            setSingleModalVisible(false);
-            setSingleCustomerForCampaign(null);
-          }}
         />
       </>
     );

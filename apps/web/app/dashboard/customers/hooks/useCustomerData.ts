@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
 import { Customer, Staff, BookerAllocationBatchSummary } from '@mos-lab/shared';
 
@@ -54,6 +55,49 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
 
   // Shared random selected IDs state
   const [activeRandomIds, setActiveRandomIds] = useState<number[] | null>(null);
+
+  // Daily plan state
+  const [dailyPlanList, setDailyPlanList] = useState<number[]>([]);
+  const [addingIds, setAddingIds] = useState<number[]>([]);
+
+  const fetchTodayPlans = useCallback(async () => {
+    try {
+      const response = await apiClient.plans.listToday();
+      if (response && Array.isArray(response)) {
+        setDailyPlanList(response.map((prog: SafeAny) => prog.legacyUserId));
+      }
+    } catch (err) {
+      console.error('Failed to load today call plans:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTodayPlans();
+  }, [fetchTodayPlans]);
+
+  const handleAddToPlan = useCallback(async (customerId: number) => {
+    setAddingIds((prev) => [...prev, customerId]);
+    try {
+      await apiClient.plans.create({
+        legacyUserId: customerId,
+        date: dayjs().format('YYYY-MM-DD'),
+      });
+      optionsRef.current?.onSuccess?.('Đã thêm khách hàng vào kế hoạch gọi hôm nay!');
+      setDailyPlanList((prev) => [...prev, customerId]);
+    } catch (err) {
+      console.error('Failed to add to call plan:', err);
+      if ((err as SafeAny).response?.status === 409) {
+        optionsRef.current?.onWarning?.(
+          (err as SafeAny).response?.data?.message || 'Khách hàng này đã có trong kế hoạch gọi.'
+        );
+        setDailyPlanList((prev) => [...prev, customerId]);
+      } else {
+        optionsRef.current?.onError?.((err as SafeAny).response?.data?.message || 'Không thể thêm khách hàng.');
+      }
+    } finally {
+      setAddingIds((prev) => prev.filter((id) => id !== customerId));
+    }
+  }, []);
 
   // Dynamic filters hook
   const filtersHook = useCustomerFilters(currentUser, optionsRef, () => {
@@ -322,6 +366,10 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     setHistoryPage: historyHook.setHistoryPage,
     setExpandedBatchId: historyHook.setExpandedBatchId,
     setBatchDetails: historyHook.setBatchDetails,
+
+    dailyPlanList,
+    addingIds,
+    handleAddToPlan,
 
     // Operations
     fetchCustomers: listHook.fetchCustomers,

@@ -37,6 +37,7 @@ const RevokeAssignmentModal = dynamic(
   () => import('./components/RevokeAssignmentModal').then((m) => m.RevokeAssignmentModal),
   { ssr: false }
 );
+const SMSModal = dynamic(() => import('../../../components/sms/SMSModal').then((m) => m.SMSModal), { ssr: false });
 const AssignmentHistoryDrawer = dynamic(
   () => import('./components/AssignmentHistoryDrawer').then((m) => m.AssignmentHistoryDrawer),
   { ssr: false }
@@ -116,7 +117,17 @@ function CustomersPageContent() {
     bookingInitialCustomer,
     modalVisible,
     selectedCustomer,
+    setSelectedCustomer,
   } = data;
+
+  const [smsModalVisible, setSmsModalVisible] = React.useState<boolean>(false);
+  const handleOpenSmsModal = React.useCallback(
+    (customer: SafeAny) => {
+      setSelectedCustomer(customer);
+      setSmsModalVisible(true);
+    },
+    [setSelectedCustomer]
+  );
 
   const handleBookAppointment = React.useCallback(
     (cust: SafeAny) => {
@@ -558,6 +569,10 @@ function CustomersPageContent() {
         currentUser={data.currentUser}
         openDetailModal={data.openDetailModal}
         sentinelRef={data.sentinelRef}
+        dailyPlanList={data.dailyPlanList}
+        addingIds={data.addingIds}
+        handleAddToPlan={data.handleAddToPlan}
+        handleOpenSmsModal={handleOpenSmsModal}
       />
 
       {/* RANDOM SELECTOR MODAL */}
@@ -734,9 +749,9 @@ function CustomersPageContent() {
           color: #0f172a !important;
         }
         .dark-theme .antd-custom-table .ant-table-thead > tr > th {
-          background: #1e293b !important;
-          color: #d4a84b !important;
-          border-bottom: 1px solid #334155 !important;
+          background: #0b0f19 !important;
+          color: #94a3b8 !important;
+          border-bottom: 1px solid #1e293b !important;
         }
         .light-theme .antd-custom-table .ant-table-thead > tr > th {
           background: #f8fafc !important;
@@ -814,6 +829,9 @@ function CustomersPageContent() {
           line-height: 1.25 !important;
         }
       `}</style>
+
+      {/* SMS MODAL */}
+      <SMSModal open={smsModalVisible} onClose={() => setSmsModalVisible(false)} customer={data.selectedCustomer} />
     </div>
   );
 }

@@ -94,26 +94,27 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
       }
 
       if (fetchedConfig.length > 0) {
-        const existingKeys = new Set(fetchedConfig.map((c) => c.key));
-        const updatedConfig = fetchedConfig.map((col) => {
-          const staticDef = staticMap.get(col.key);
-          if (staticDef) {
-            const width =
-              col.key === 'actions' && col.width === 200 ? 95 : col.width !== undefined ? col.width : staticDef.width;
-            return {
-              ...col,
-              title: col.title || staticDef.title,
-              originalTitle: staticDef.originalTitle,
-              width,
-            };
-          }
-          return col;
+        // Filter out stale keys that are no longer in staticColumns
+        const activeFetchedConfig = fetchedConfig.filter((col) => staticMap.has(col.key));
+        const existingKeys = new Set(activeFetchedConfig.map((c) => c.key));
+
+        const updatedConfig: ColumnConfig[] = activeFetchedConfig.map((col) => {
+          const staticDef = staticMap.get(col.key)!;
+          const width =
+            col.key === 'actions' && col.width === 200 ? 95 : col.width !== undefined ? col.width : staticDef.width;
+          return {
+            ...col,
+            title: col.title || staticDef.title,
+            originalTitle: staticDef.originalTitle,
+            width,
+          };
         });
 
-        // Append missing static columns from code that are not yet in DB
-        staticDefaults.forEach((staticDef) => {
+        // Insert missing static columns in their natural staticDefaults index order
+        staticDefaults.forEach((staticDef, targetIndex) => {
           if (!existingKeys.has(staticDef.key)) {
-            updatedConfig.push(staticDef);
+            const insertIndex = Math.min(targetIndex, updatedConfig.length);
+            updatedConfig.splice(insertIndex, 0, staticDef);
           }
         });
 

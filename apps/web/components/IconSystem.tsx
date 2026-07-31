@@ -265,17 +265,25 @@ export const getDefaultIcon = (key?: string): string => {
   if (!key || typeof key !== 'string') return '';
   const k = key.toLowerCase();
   if (k.includes('index') || k === 'stt') return 'OrderedListOutlined';
-  if (k.includes('time') || k.includes('date') || k === 'bookingdatetime') return 'CalendarOutlined';
+  if (k === 'name' || k.includes('customer') || k === 'client') return 'UserOutlined';
+  if (k.includes('dayssincelastvisit') || k.includes('visit') || k.includes('time') || k === 'bookingdatetime')
+    return 'CalendarOutlined';
+  if (k.includes('totalspent') || k.includes('spent') || k.includes('money') || k.includes('cost'))
+    return 'DollarOutlined';
+  if (k.includes('assignedstaff') || k.includes('booker') || k.includes('staff')) return 'UserOutlined';
+  if (k.includes('lastcalldate')) return 'PhoneOutlined';
+  if (k.includes('lastcallduration') || k.includes('duration')) return 'ClockCircleOutlined';
+  if (k.includes('lastcallresult')) return 'PhoneOutlined';
+  if (k.includes('lastcallnote') || k.includes('note') || k.includes('notes')) return 'MessageOutlined';
+  if (k.includes('allocateddays') || k.includes('allocated')) return 'CheckCircleOutlined';
+  if (k.includes('date')) return 'CalendarOutlined';
   if (k.includes('create')) return 'ClockCircleOutlined';
-  if (k.includes('booker')) return 'UserOutlined';
-  if (k.includes('customer') || k === 'client') return 'UserOutlined';
   if (k.includes('phone') || k === 'sđt') return 'PhoneOutlined';
   if (k.includes('branch') || k === 'chinhanh') return 'ShopOutlined';
   if (k.includes('group') || k === 'nhom') return 'ClusterOutlined';
   if (k.includes('channel')) return 'ShareAltOutlined';
   if (k.includes('promo')) return 'GiftOutlined';
   if (k.includes('cv')) return 'SolutionOutlined';
-  if (k.includes('note') || k.includes('notes')) return 'MessageOutlined';
   if (k.includes('status') || k.includes('trangthai')) return 'InfoCircleOutlined';
   if (k.includes('action')) return 'SettingOutlined';
   if (k === 'cc') return 'CustomerServiceOutlined';
