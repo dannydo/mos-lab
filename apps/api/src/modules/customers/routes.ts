@@ -6084,9 +6084,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const allOrderIds = Array.from(
         new Set([...bookingsRaw.map((b) => Number(b.id)), ...completedOrders.map((o) => Number(o.id))])
       );
-      const orderServicesDetails =
+
+      const [orderServicesDetails, auditLogCounts] = await Promise.all([
         allOrderIds.length > 0
-          ? await fastify.prisma.legacy.order_service.findMany({
+          ? fastify.prisma.legacy.order_service.findMany({
               where: { order_id: { in: allOrderIds } },
               select: {
                 order_id: true,
@@ -6095,7 +6096,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 check_out_staff_id: true,
               },
             })
-          : [];
+          : Promise.resolve([]),
+        allOrderIds.length > 0
+          ? fastify.prisma.crm.crmBookingLog.groupBy({
+              by: ['orderId'],
+              _count: { id: true },
+              where: { orderId: { in: allOrderIds } },
+            })
+          : Promise.resolve([]),
+      ]);
+
+      const auditCountMap = new Map<number, number>(auditLogCounts.map((item) => [item.orderId, item._count.id]));
 
       const staffUserIds = new Set<number>();
       for (const b of bookingsRaw) {
@@ -6204,6 +6215,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           technicianId: firstCvStaffId ? Number(firstCvStaffId) : null,
           storeId: b.storeId ? Number(b.storeId) : null,
           services: servicesByOrderId.get(Number(b.id)) || [],
+          auditLogCount: auditCountMap.get(Number(b.id)) || 0,
         };
       });
 
@@ -6750,9 +6762,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const bookingIds = bookingsRaw.map((b) => Number(b.id));
       const servicesByOrderId = new Map<number, string[]>();
       let orderServicesDetails: SafeAny[] = [];
+      let auditLogCounts: SafeAny[] = [];
 
       if (bookingIds.length > 0) {
-        const [servicesRaw, osDetails] = await Promise.all([
+        const [servicesRaw, osDetails, logsRes] = await Promise.all([
           fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
             SELECT os.order_id as orderId, COALESCE(sl.service_name, s.service_key) as serviceName
             FROM order_service os
@@ -6769,15 +6782,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
               check_out_staff_id: true,
             },
           }),
+          fastify.prisma.crm.crmBookingLog.groupBy({
+            by: ['orderId'],
+            _count: { id: true },
+            where: { orderId: { in: bookingIds } },
+          }),
         ]);
 
         orderServicesDetails = osDetails;
+        auditLogCounts = logsRes;
         for (const s of servicesRaw) {
           const list = servicesByOrderId.get(Number(s.orderId)) || [];
           list.push(s.serviceName);
           servicesByOrderId.set(Number(s.orderId), list);
         }
       }
+
+      const auditCountMap = new Map<number, number>(auditLogCounts.map((item) => [item.orderId, item._count.id]));
 
       // Collect staff IDs for name lookup
       const staffUserIds = new Set<number>();
@@ -6857,6 +6878,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           bookerName,
           branchName: b.branchName,
           services: servicesByOrderId.get(Number(b.id)) || [],
+          auditLogCount: auditCountMap.get(Number(b.id)) || 0,
         };
       });
 

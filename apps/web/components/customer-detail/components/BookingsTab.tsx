@@ -450,12 +450,13 @@ export const BookingsTab: React.FC<
                     size="small"
                     icon={<HistoryOutlined />}
                     style={{ borderRadius: '4px', fontSize: '12px' }}
+                    className="tabular-nums"
                     onClick={() => {
                       setSelectedOrderIdForAudit({ id: b.id, key: b.orderKey });
                       setAuditDrawerOpen(true);
                     }}
                   >
-                    Nhật ký thao tác
+                    Nhật ký thao tác{b.auditLogCount !== undefined ? ` (${b.auditLogCount})` : ''}
                   </Button>
 
                   {!isCompleted && b.orderState !== 'Cancelled' && (
