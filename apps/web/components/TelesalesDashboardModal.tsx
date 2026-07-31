@@ -150,7 +150,7 @@ export default function TelesalesDashboardModal({
       <div
         ref={modalContainerRef}
         className={`relative transition-transform duration-500 ${
-          modalSize ? 'w-auto h-auto' : 'w-full max-w-[780px] h-[92vh] min-h-[820px] max-h-[920px]'
+          modalSize ? '' : 'w-full max-w-[780px] h-[92vh] min-h-[820px] max-h-[920px]'
         }`}
         style={{
           position: 'relative',

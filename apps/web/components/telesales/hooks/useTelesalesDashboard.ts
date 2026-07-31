@@ -285,7 +285,14 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
       const savedWidth = localStorage.getItem('telesales_modal_width');
       const savedHeight = localStorage.getItem('telesales_modal_height');
       if (savedWidth && savedHeight) {
-        setModalSize({ width: savedWidth, height: savedHeight });
+        const parsedW = parseInt(savedWidth, 10);
+        const parsedH = parseInt(savedHeight, 10);
+        if (!isNaN(parsedW) && !isNaN(parsedH) && parsedW >= 600 && parsedH >= 700) {
+          setModalSize({ width: `${parsedW}px`, height: `${parsedH}px` });
+        } else {
+          localStorage.removeItem('telesales_modal_width');
+          localStorage.removeItem('telesales_modal_height');
+        }
       }
       const savedPeriod = localStorage.getItem('telesales_dashboard_period_id');
       if (savedPeriod) {
@@ -316,7 +323,7 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
 
   // ResizeObserver logic
   const handleResize = useCallback((width: number, height: number) => {
-    if (width > 0 && height > 0) {
+    if (width >= 600 && height >= 700) {
       const wStr = `${width}px`;
       const hStr = `${height}px`;
       localStorage.setItem('telesales_modal_width', wStr);
