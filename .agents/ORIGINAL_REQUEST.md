@@ -301,3 +301,206 @@ Tạo script hoặc lệnh tích hợp trong monorepo (ví dụ: `pnpm graph` ho
 - [ ] Script sinh kiến trúc đồ thị chạy thành công và tạo ra file trực quan hóa `graph.html` hoặc báo cáo chi tiết.
 - [ ] Tích hợp lệnh chạy thuận tiện (script npm/pnpm) trong dự án `mos-lab`.
 - [ ] Toàn bộ luồng build (`pnpm build`) và dev (`pnpm dev`) của dự án giữ nguyên 100% không bị ảnh hưởng.
+
+## Follow-up — 2026-07-31T03:53:06Z
+
+Build a Custom Campaign System under the existing NYC (Người Yêu Cũ / Not Combo Live) campaign in the mos-lab CRM monorepo. Admin can create named sub-campaigns (e.g. "Kiều Nữ"), add NYC customers exclusively into them, assign customers to Bookers via batch allocation, configure custom touchpoint pipelines, attach flexible promotions, and let CC/Booker staff operate on those customers with the same workflow tools (call, SMS, booking, detail view).
+
+Working directory: /Users/dannydo/projects/mos-lab
+Integrity mode: development
+
+## Requirements
+
+### R1. Custom Campaign CRUD (Admin-only)
+
+Admin can Create, Read, Update, Delete custom campaigns. Each campaign has: a unique name, description, start date, end date, and status (active/ended/archived). Campaigns are always children of the NYC parent campaign. Only users with role === 'admin' (or username admin / danhdo@gmail.com) can manage campaigns. When a campaign ends (passes its end date), the system should return unbooked customers back to the NYC main pool and mark the campaign as ended — while preserving participation history logs.
+
+Database: Create new CRM Prisma tables:
+
+- crm_custom_campaigns — stores campaign metadata (id, name, slug, description, startDate, endDate, status, createdBy, createdAt, updatedAt)
+- crm_campaign_customers — many-to-many linking customers to campaigns (id, campaignId, legacyUserId, addedAt, removedAt, removedReason)
+- crm_campaign_touchpoints — custom touchpoint config per campaign (id, campaignId, key, label, daysMin, daysMax, color, sortOrder)
+- crm_campaign_promotions — promotions attached to a campaign (id, campaignId, name, type: 'PERCENT_DISCOUNT' | 'FIXED_DISCOUNT' | 'FREE_SERVICE' | 'FREE_PRODUCT', value, description, isActive, createdAt)
+- crm_campaign_touchpoint_logs — checkbox tracking per customer per touchpoint (id, campaignCustomerId, touchpointId, completedAt, completedByStaffId)
+
+### R2. Customer Selection & Exclusive Assignment
+
+Admin can filter and select customers from the NYC pool only (bucket NOT_COMBO_LIVE) and add them to a custom campaign. Once added, the customer is exclusively removed from the NYC main listing (the existing /api/customers?bucket=NOT_COMBO_LIVE query must exclude customers who are currently in any active custom campaign). A customer can only belong to one active custom campaign at a time. Admin can also remove individual customers from a campaign, returning them to NYC main.
+
+Backend changes needed:
+
+- Modify the existing NYC customer listing query in apps/api/src/modules/customers/routes.ts to add a LEFT JOIN crm_campaign_customers exclusion filter: AND cc.id IS NULL (where cc has no removedAt and campaign is active).
+- Modify the existing NYC stats query similarly to keep counts consistent (Dual-Query Alignment rule).
+- New API endpoints under /api/campaigns/:campaignId/customers for adding/removing customers.
+
+### R3. Custom Touchpoint Pipeline with Tracking
+
+Each custom campaign has its own touchpoint pipeline defined by Admin. Touchpoints are based on daysSinceAdded (days since the customer was added to the campaign). The system:
+
+1. Automatically classifies customers into touchpoint buckets based on DATEDIFF(NOW(), crm_campaign_customers.addedAt).
+2. Provides checkbox tracking — staff can mark a customer as "touched" at each touchpoint milestone (stored in crm_campaign_touchpoint_logs).
+3. Default state: just "Tất cả chạm" (All). Admin adds custom touchpoints as needed.
+
+The touchpoint capsule filter UI should match the existing NYC touchpoint pipeline design (colored capsule badges with counts).
+
+### R4. Campaign Page UI & Navigation
+
+- Sidebar: Convert the existing "Chiến dịch NYC" menu item into a collapsible submenu with children: "NYC Chính" (links to existing /dashboard/nyc) + one link per active custom campaign (/dashboard/nyc/campaigns/:slug).
+- Campaign page (apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx): A new page that reuses the NYC page design pattern but simplified:
+  - No NYC 30/60/90 tabs — just a single flat customer list.
+  - Header metrics cards: Total customers, Booked Rate, Touchpoint Progress, Calls Today, Campaign Revenue.
+  - Touchpoint pipeline capsules (custom per campaign).
+  - Booker filter (Admin-only): Dropdown to filter by assigned Booker or view all. Booker users automatically see only their assigned customers.
+  - Customer table with actions: Call (OmiCall), SMS, View Detail, Book Appointment. Table shows assigned Booker column.
+  - Batch assignment action (Admin-only): Select multiple customers → "Assign to Booker" button opens batch allocation modal (reuse existing allocation UI pattern).
+  - Campaign info banner showing name, date range, active promotions, and a manage button for Admin.
+- Campaign Management page (apps/web/app/dashboard/nyc/campaigns/page.tsx): Lists all custom campaigns with their status, customer count, and quick actions (edit, view, end campaign).
+
+### R5. Flexible Promotion System
+
+Admin can attach multiple promotions to a campaign. Promotion types:
+
+- Percentage discount (e.g., 20% off)
+- Fixed amount discount (e.g., 100,000đ off)
+- Free service (e.g., free eyelash cleaning)
+- Free product (e.g., free mascara)
+
+Promotions are exclusive to campaign customers — only customers currently in the campaign can have these promotions applied. When staff creates a booking via BookingWizardDrawer for a campaign customer, the available campaign promotions appear as selectable options (dropdown/checkbox). The promotion selection is stored with the booking for reporting.
+
+### R6. Shared Types & API Client
+
+- Define all new TypeScript types in packages/shared/src/types/campaign.ts (Campaign, CampaignCustomer, CampaignTouchpoint, CampaignPromotion, etc.)
+- Add all new API endpoints to the apiClient SDK in apps/web/lib/api-client.ts under apiClient.campaigns.*
+- Backend routes must use .js file extensions for imports (NodeNext rule)
+
+### R7. Booker Assignment via Batch Allocation
+
+Admin can assign campaign customers to Bookers using the existing batch allocation system (crm_allocation_batches + crm_allocation_batch_items), extended with a campaignId field to track campaign context.
+
+Workflow (2-step process):
+
+1. Step 1 — Add customers: Admin adds customers from NYC pool into the campaign (they are now in campaign but unassigned).
+2. Step 2 — Assign to Booker: Admin selects unassigned campaign customers → creates a batch allocation → Booker has 24h to Accept/Decline → on Accept, 30-day retention begins.
+
+Key rules:
+
+- Retention expiry: retentionExpiresAt = min(now + 30 days, campaign.endDate) — assignment never outlasts the campaign.
+- Visibility: Booker can only see customers assigned to them within the campaign. Admin sees all customers and can filter by Booker.
+- Existing allocation infrastructure: Reuse AllocationService (apps/api/src/modules/allocation/allocation.service.ts), allocation routes, and allocation-cron.service.ts. Add optional campaignId field to crm_allocation_batches and filter logic.
+- Campaign expiry cascade: When a campaign ends, all active assignments for that campaign are also expired (deleted from crm_customer_assignments with history log).
+
+Database changes:
+
+- Add campaignId Int? @map("campaign_id") to CrmAllocationBatch model with relation to CrmCustomCampaign.
+- Add campaignId filter to allocation queries so campaign-specific batches are scoped correctly.
+
+## Acceptance Criteria
+
+### Campaign CRUD
+
+- [ ] Admin can create a campaign with name, description, start/end dates from a form
+- [ ] Campaign appears as a submenu item under "Chiến dịch NYC" in sidebar
+- [ ] Admin can edit campaign details and end/archive a campaign
+- [ ] When campaign ends, unbooked customers return to NYC main pool
+- [ ] Non-admin users cannot access campaign management (create/edit/delete) APIs
+
+### Customer Management
+
+- [ ] Admin can search/filter NYC customers and add them to a campaign (batch or individual)
+- [ ] Added customers no longer appear in the NYC main customer listing
+- [ ] NYC main stats (tab counts) are updated to exclude campaign customers
+- [ ] Admin can remove customers from campaign, returning them to NYC
+- [ ] A customer cannot be added to two active campaigns simultaneously
+
+### Booker Assignment
+
+- [ ] Admin can select unassigned campaign customers and create a batch allocation to a Booker
+- [ ] Booker receives pending batch notification with 24h accept/decline window
+- [ ] On accept, retention expiry is set to min(now + 30d, campaign.endDate)
+- [ ] Booker can only see customers assigned to them on the campaign page
+- [ ] Admin sees all customers with a Booker filter dropdown
+- [ ] When campaign ends, all active campaign assignments are auto-expired with history log
+- [ ] crm_allocation_batches has new optional campaignId field correctly linked
+
+### Touchpoint Pipeline
+
+- [ ] Admin can configure custom touchpoints per campaign
+- [ ] Customers are automatically classified by daysSinceAdded
+- [ ] Staff can mark touchpoint completion (checkbox) per customer
+- [ ] Touchpoint capsule UI shows correct counts and highlights
+
+### Campaign Page
+
+- [ ] Page loads showing campaign info, metrics cards, touchpoint pipeline, and customer table
+- [ ] Customer table supports: Call, SMS, View Detail, Book Appointment actions
+- [ ] Metrics are accurate: total customers, booked rate, touchpoint progress, calls today, revenue
+- [ ] Page follows existing dark/light theme correctly
+
+### Promotions
+
+- [ ] Admin can create/edit/delete promotions attached to a campaign
+- [ ] Only campaign customers see available promotions when booking
+- [ ] Promotion type supports: % discount, fixed discount, free service, free product
+- [ ] Promotion selection is recorded with the booking
+
+### Technical Quality
+
+- [ ] All new backend imports use .js extensions
+- [ ] Shared types defined in @mos-lab/shared
+- [ ] API client SDK updated with all new endpoints
+- [ ] Prisma migration runs without errors
+- [ ] pnpm build passes without errors
+- [ ] Theme support works correctly (light + dark)
+- [ ] Follows Monday-first week rule, VND rounding rules, and other AGENTS.md coding guidelines
+
+## Follow-up — 2026-07-31T15:48:52Z
+
+Implement complete unification of batch allocation (crm_allocation_batches, crm_allocation_batch_items) and allocation history tracking (crm_assignment_histories) for Custom Campaign customers in mos-lab.
+
+Working directory: /Users/dannydo/projects/mos-lab
+Integrity mode: development
+
+## Requirements
+
+### R1. Unified Customer ID Identification (legacyUserId)
+
+Ensure all campaign customer allocation operations use the true legacyUserId (e.g. 982962666) instead of internal join table record IDs (crm_campaign_customers.id). Table rowKey and selection keys in custom campaign pages must evaluate to record.legacyUserId || record.customerId || record.id.
+
+### R2. Complete Batch Allocation & 24h Booker Acceptance Workflow
+
+When Admin selects campaign customers and clicks "Phân bổ Booker", the system must call AllocationService.createBatch with:
+
+- bookerId: Target Booker ID
+- customerIds: Array of true legacyUserIds
+- campaignId: Custom Campaign ID
+- sourceType: 'MANUAL'
+- sourceFilterSummary: Chiến dịch [Tên] ([X] KH)
+
+This generates:
+
+1. crm_allocation_batches with campaignId set
+2. crm_allocation_batch_items for each customer
+3. crm_assignment_histories entries linked by legacyUserId with actionType = 'ASSIGN'
+4. Pending 24-hour notification for the target Booker to Accept/Decline.
+
+### R3. Full Traceability in Allocation History & Customer Detail Drawer
+
+- On Booker accept, update crm_customer_assignments and log actionType = 'ACCEPT' in crm_assignment_histories.
+- All campaign allocation actions, transfers, accepts, declines, and expirations must be 100% visible in:
+  - Customer Detail Drawer -> Lịch sử Phân bổ (Allocation History tab)
+  - Global Allocation History log tables (/dashboard/customers/history or drawer logs)
+  - Campaign Customer Table ("Đã phân bổ" status column)
+
+### R4. Campaign Expiration & Assignment Clean-up
+
+When a campaign is ended or archived, active campaign assignments should log an EXPIRED action in crm_assignment_histories and return unbooked customers back to the main NYC pool.
+
+## Acceptance Criteria
+
+### Batch Allocation & Traceability
+
+- [x] Selecting customers in Custom Campaign page uses legacyUserId
+- [x] Creating a batch allocation creates records in crm_allocation_batches, crm_allocation_batch_items, and crm_assignment_histories
+- [x] Booker receives 24h pending allocation notification
+- [x] Allocation history tab in Customer Detail Drawer displays all campaign allocation logs with timestamp, assigner, target booker, and campaign name summary
+- [x] pnpm build compiles with 0 errors across all monorepo packages

@@ -1,27 +1,26 @@
-# BRIEFING — 2026-07-30T13:27:00Z
+# BRIEFING — 2026-07-31T15:49:00+07:00
 
 ## Mission
 
-Chạy Proof-of-Concept (PoC) thử nghiệm cài đặt và đánh giá Graphify (hoặc giải pháp kiến trúc knowledge graph tương đương) trên monorepo `mos-lab` (Next.js 15 web + Fastify 5 api + shared package), đồng thời tạo script tự động sinh báo cáo sơ đồ đồ thị phụ thuộc (`graph.html`, `GRAPH_REPORT.md`).
+Record user request, spawn Project Orchestrator to implement complete unification of batch allocation (crm_allocation_batches, crm_allocation_batch_items) and allocation history tracking (crm_assignment_histories) for Custom Campaign customers in mos-lab, configure monitoring crons, and perform victory audit upon completion.
 
 ## 🔒 My Identity
 
 - Archetype: sentinel
 - Working directory: /Users/dannydo/projects/mos-lab/.agents
-- Orchestrator: e3b5e76f-616b-4fdd-afc1-dcd3bb29c1f3
-- Victory Auditor: 9f2a91f0-1b9b-4932-90e9-4b2a33a7be88
+- Orchestrator: dcddda93-d187-4155-9a51-1373e84b8675
+- Victory Auditor: c65e8951-e179-4282-859b-6ea246652da8
 
 ## 🔒 Key Constraints
 
 - No technical decisions — relay only
 - Victory Audit is MANDATORY before reporting completion
-- Audit report must follow all requirements R1-R3 and Acceptance Criteria
 
 ## User Context
 
-- **Last user request**: PoC installation & evaluation of Graphify / knowledge graph architecture on mos-lab monorepo, generating `graph.html` and `GRAPH_REPORT.md`.
+- **Last user request**: Implement complete unification of batch allocation and allocation history tracking for Custom Campaign customers (R1: legacyUserId identification, R2: complete batch allocation & 24h booker acceptance workflow, R3: full traceability in allocation history & customer detail drawer, R4: campaign expiration & assignment clean-up).
 - **Pending clarifications**: none
-- **Delivered results**: Proof-of-Concept Graphify Knowledge Graph Generator implemented and audited with VICTORY CONFIRMED verdict.
+- **Delivered results**: Complete unification of batch allocation and allocation history tracking for Custom Campaign customers with VICTORY CONFIRMED verdict.
 
 ## Project Status
 
@@ -35,9 +34,7 @@ Chạy Proof-of-Concept (PoC) thử nghiệm cài đặt và đánh giá Graphif
 
 ## Artifact Index
 
-- /Users/dannydo/projects/mos-lab/.agents/ORIGINAL_REQUEST.md — Original User Request
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/BRIEFING.md — Orchestrator Victory Claim
-- /Users/dannydo/projects/mos-lab/scripts/generate-graph.ts — Graph Generator Script
-- /Users/dannydo/projects/mos-lab/graph.html — Standalone Interactive Graph Visualization
-- /Users/dannydo/projects/mos-lab/GRAPH_REPORT.md — Knowledge Graph Architecture Report
-- /Users/dannydo/projects/mos-lab/graph.json — Knowledge Graph Data Export
+- /Users/dannydo/projects/mos-lab/.agents/ORIGINAL_REQUEST.md — Verbatim user request record
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/handoff.md — Orchestrator handoff report
+- /Users/dannydo/projects/mos-lab/.agents/victory_auditor/handoff.md — Victory Auditor report (VICTORY CONFIRMED)
+- /Users/dannydo/projects/mos-lab/.agents/sentinel/handoff.md — Sentinel summary report

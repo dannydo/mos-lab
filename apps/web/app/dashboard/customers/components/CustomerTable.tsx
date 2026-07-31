@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, Avatar, Tag, Typography, Space, Tooltip, Button, Spin, theme } from 'antd';
-import { UserOutlined, PhoneOutlined, EyeOutlined } from '@ant-design/icons';
+import { UserOutlined, PhoneOutlined, EyeOutlined, RocketOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useOmiCall } from '../../../../context/OmiCallContext';
@@ -11,6 +11,7 @@ import { formatVND } from '../../../../lib/format-utils';
 import { ResizableHeaderCell } from '../../../../components/ResizableHeaderCell';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
+import { AddToCampaignModal } from '../../../../components/campaign/AddToCampaignModal';
 
 const { Text } = Typography;
 
@@ -49,6 +50,8 @@ const CustomerTable = React.memo(
     const { themeMode } = useTheme();
     const { token } = theme.useToken();
     const { makeCall } = useOmiCall();
+    const [singleCustomerForCampaign, setSingleCustomerForCampaign] = useState<Customer | null>(null);
+    const [singleModalVisible, setSingleModalVisible] = useState<boolean>(false);
 
     const getRowClassName = (record: Customer) => {
       // 1. check callback date ("có hẹn gọi lại -> màu hy vọng")
@@ -365,6 +368,17 @@ const CustomerTable = React.memo(
                   onClick={() => openDetailModal(record)}
                 />
               </Tooltip>
+              <Tooltip title="Thêm vào chiến dịch NYC">
+                <Button
+                  type="text"
+                  shape="circle"
+                  icon={<RocketOutlined style={{ color: '#10b981' }} />}
+                  onClick={() => {
+                    setSingleCustomerForCampaign(record);
+                    setSingleModalVisible(true);
+                  }}
+                />
+              </Tooltip>
             </Space>
           ),
         },
@@ -454,6 +468,20 @@ const CustomerTable = React.memo(
           columns={rawConfig}
           onSave={saveConfig}
           onReset={resetConfig}
+        />
+
+        <AddToCampaignModal
+          visible={singleModalVisible}
+          onClose={() => {
+            setSingleModalVisible(false);
+            setSingleCustomerForCampaign(null);
+          }}
+          selectedCustomerIds={singleCustomerForCampaign ? [singleCustomerForCampaign.id] : []}
+          customerName={singleCustomerForCampaign?.name || undefined}
+          onSuccess={() => {
+            setSingleModalVisible(false);
+            setSingleCustomerForCampaign(null);
+          }}
         />
       </>
     );

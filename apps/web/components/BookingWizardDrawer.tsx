@@ -2,11 +2,18 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Drawer, Steps, Button, Select, DatePicker, Radio, Input, theme, message, Card, Tag } from 'antd';
-import { PhoneOutlined, UserOutlined, HomeOutlined, CalendarOutlined, InboxOutlined } from '@ant-design/icons';
+import {
+  PhoneOutlined,
+  UserOutlined,
+  HomeOutlined,
+  CalendarOutlined,
+  InboxOutlined,
+  GiftOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../lib/api-client';
-import { vietnameseSearchFilter } from '@mos-lab/shared';
+import { vietnameseSearchFilter, CustomerCampaignPromotionInfo, CustomerCampaignPromotionItem } from '@mos-lab/shared';
 
 // Shared modules
 import { STORES, FALLBACK_SERVICES, CHANNELS } from './booking/constants';
@@ -44,6 +51,13 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
   const [promotions, setPromotions] = useState<SafeAny[]>([]);
   const [selectedPromotion, setSelectedPromotion] = useState<SafeAny>(null);
   const [referralPhone, setReferralPhone] = useState('');
+
+  // Campaign Promotion states
+  const [customerCampaignPromotions, setCustomerCampaignPromotions] = useState<CustomerCampaignPromotionInfo[]>([]);
+  const [selectedCampaignPromotion, setSelectedCampaignPromotion] = useState<CustomerCampaignPromotionItem | null>(
+    null
+  );
+  const [loadingCampaignPromotions, setLoadingCampaignPromotions] = useState(false);
 
   // Custom lead fields for new customer
   const [isNewLead, setIsNewLead] = useState(false);
@@ -328,8 +342,37 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     setBookingChannel('FB');
     setBookingNote('');
     setSelectedPromotion(null);
+    setCustomerCampaignPromotions([]);
+    setSelectedCampaignPromotion(null);
     setReferralPhone('');
   };
+
+  const fetchCustomerCampaignPromotions = useCallback(async (customerId: number) => {
+    if (!customerId) {
+      setCustomerCampaignPromotions([]);
+      setSelectedCampaignPromotion(null);
+      return;
+    }
+    setLoadingCampaignPromotions(true);
+    try {
+      const data = await apiClient.campaigns.getCustomerActivePromotions(customerId);
+      setCustomerCampaignPromotions(data || []);
+    } catch (err) {
+      console.error('[BookingWizard] Failed to fetch customer campaign promotions:', err);
+      setCustomerCampaignPromotions([]);
+    } finally {
+      setLoadingCampaignPromotions(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open && selectedCustomer && selectedCustomer.id && !isNewLead) {
+      fetchCustomerCampaignPromotions(selectedCustomer.id);
+    } else {
+      setCustomerCampaignPromotions([]);
+      setSelectedCampaignPromotion(null);
+    }
+  }, [selectedCustomer, isNewLead, open, fetchCustomerCampaignPromotions]);
 
   const fetchPromotions = async () => {
     try {
@@ -495,6 +538,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
         bookingChannel,
         bookingNote: checkAndAppendLowerLashNote(bookingNote, comboBalances),
         promotionId: selectedPromotion?.id || null,
+        campaignPromotionId: selectedCampaignPromotion?.id || null,
         referralPhone: referralPhone ? referralPhone.trim() : null,
       };
 
@@ -530,7 +574,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     return () => clearInterval(interval);
   }, [safeBookingDate, pickerNonce]);
 
-  const priceInfo = getCalculatedPrice(selectedService, selectedPromotion);
+  const priceInfo = getCalculatedPrice(selectedService, selectedPromotion, selectedCampaignPromotion);
 
   return (
     <Drawer
@@ -876,6 +920,122 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
             )}
           </div>
 
+          {/* Campaign Promotion Section (Ưu đãi chiến dịch) */}
+          {customerCampaignPromotions.length > 0 && (
+            <div
+              style={{
+                padding: '14px',
+                borderRadius: '10px',
+                background: themeMode === 'dark' ? 'rgba(124, 58, 237, 0.12)' : '#f3e8ff',
+                border: `1.5px solid ${themeMode === 'dark' ? '#7c3aed' : '#c084fc'}`,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <GiftOutlined style={{ color: '#9333ea', fontSize: '16px' }} />
+                  <span
+                    style={{
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      color: themeMode === 'dark' ? '#d8b4fe' : '#7e22ce',
+                    }}
+                  >
+                    ƯU ĐÃI CHIẾN DỊCH (CAMPAIGN PROMOTION)
+                  </span>
+                </div>
+                {selectedCampaignPromotion && (
+                  <Button
+                    type="link"
+                    size="small"
+                    danger
+                    onClick={() => setSelectedCampaignPromotion(null)}
+                    style={{ padding: 0, height: 'auto', fontSize: '12px' }}
+                  >
+                    Bỏ chọn ưu đãi
+                  </Button>
+                )}
+              </div>
+
+              {customerCampaignPromotions.map((camp) => (
+                <div key={camp.campaignId} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Tag color="purple" style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}>
+                      🎯 Chiến dịch: {camp.campaignName}
+                    </Tag>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {camp.promotions.map((promo) => {
+                      const isSelected = selectedCampaignPromotion?.id === promo.id;
+                      let badgeColor = 'purple';
+                      if (promo.type === 'PERCENT_DISCOUNT' || promo.type === 'FIXED_DISCOUNT') {
+                        badgeColor = 'red';
+                      } else if (promo.type === 'FREE_SERVICE') {
+                        badgeColor = 'cyan';
+                      } else if (promo.type === 'FREE_PRODUCT') {
+                        badgeColor = 'green';
+                      }
+
+                      return (
+                        <div
+                          key={promo.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedCampaignPromotion(null);
+                            } else {
+                              setSelectedCampaignPromotion(promo);
+                              setSelectedPromotion(null);
+                            }
+                          }}
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            background: isSelected
+                              ? themeMode === 'dark'
+                                ? '#581c87'
+                                : '#e9d5ff'
+                              : themeMode === 'dark'
+                                ? '#1e1b4b'
+                                : '#ffffff',
+                            border: `1.5px solid ${isSelected ? '#9333ea' : themeMode === 'dark' ? '#3730a3' : '#e9d5ff'}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                            <Tag color={badgeColor} style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}>
+                              {promo.label}
+                            </Tag>
+                            <span
+                              style={{
+                                fontSize: '12.5px',
+                                fontWeight: isSelected ? 'bold' : 'normal',
+                                color: token.colorText,
+                              }}
+                            >
+                              {promo.name}
+                            </span>
+                          </div>
+                          {isSelected && (
+                            <Tag color="success" style={{ margin: 0, fontSize: '10px', fontWeight: 'bold' }}>
+                              ✓ Đã chọn
+                            </Tag>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Promotion & Referral Section */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
@@ -1125,6 +1285,16 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
                   <span style={{ color: '#888' }}>({selectedService?.price.toLocaleString('vi-VN')}đ)</span>
                 )}
               </div>
+              {selectedCampaignPromotion && (
+                <div>
+                  <span style={{ color: '#888' }}>Ưu đãi chiến dịch:</span>{' '}
+                  <Tag color="purple">{selectedCampaignPromotion.label}</Tag>{' '}
+                  <strong>{selectedCampaignPromotion.name}</strong>
+                  {priceInfo.discount > 0 && (
+                    <span style={{ color: '#fa8c16' }}> (-{priceInfo.discount.toLocaleString('vi-VN')}đ)</span>
+                  )}
+                </div>
+              )}
               {selectedPromotion && (
                 <div>
                   <span style={{ color: '#888' }}>Khuyến mãi:</span> <strong>{selectedPromotion.name}</strong>

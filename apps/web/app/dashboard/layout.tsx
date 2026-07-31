@@ -20,6 +20,7 @@ import {
   ShareAltOutlined,
   AudioOutlined,
   ShopOutlined,
+  RocketOutlined,
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
@@ -46,18 +47,57 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
   const assignedStaffId = searchParams.get('assignedStaffId');
 
   const [openKeys, setOpenKeys] = useState<string[]>([]);
+  const [activeCampaigns, setActiveCampaigns] = useState<SafeAny[]>([]);
+
+  const [showCustomCampaigns, setShowCustomCampaigns] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mos_sidebar_show_custom_campaigns');
+      return saved !== null ? saved === 'true' : true;
+    }
+    return true;
+  });
+
+  const fetchActiveCampaigns = useCallback(() => {
+    apiClient.campaigns
+      .list({ status: 'ACTIVE' })
+      .then((res: SafeAny) => {
+        const list = Array.isArray(res) ? res : res?.items || res?.data || [];
+        setActiveCampaigns(list);
+      })
+      .catch((err) => {
+        console.error('Fetch active campaigns for sidebar error:', err);
+      });
+  }, []);
+
+  useEffect(() => {
+    const handleToggle = () => {
+      const saved = localStorage.getItem('mos_sidebar_show_custom_campaigns');
+      setShowCustomCampaigns(saved !== null ? saved === 'true' : true);
+      fetchActiveCampaigns();
+    };
+
+    window.addEventListener('storage', handleToggle);
+    window.addEventListener('mos_sidebar_toggle', handleToggle);
+    return () => {
+      window.removeEventListener('storage', handleToggle);
+      window.removeEventListener('mos_sidebar_toggle', handleToggle);
+    };
+  }, [fetchActiveCampaigns]);
+
+  useEffect(() => {
+    fetchActiveCampaigns();
+  }, [fetchActiveCampaigns]);
 
   useEffect(() => {
     const savedOpenKeys = localStorage.getItem('mos_menu_openKeys');
-    if (savedOpenKeys) {
-      setOpenKeys(JSON.parse(savedOpenKeys));
-    } else {
-      // Default to open 'customers-parent' if currently on a sub-route
-      const isCustomerRoute = pathname.includes('/dashboard/customers') || pathname.includes('/dashboard/referrals');
-      if (isCustomerRoute) {
-        setOpenKeys(['customers-parent']);
-      }
+    let keys: string[] = savedOpenKeys ? JSON.parse(savedOpenKeys) : [];
+    if (pathname.includes('/dashboard/customers') || pathname.includes('/dashboard/referrals')) {
+      if (!keys.includes('customers-parent')) keys.push('customers-parent');
     }
+    if (pathname.includes('/dashboard/nyc')) {
+      if (!keys.includes('nyc-parent')) keys.push('nyc-parent');
+    }
+    setOpenKeys(keys);
   }, [pathname]);
 
   const handleOpenChange = (keys: string[]) => {
@@ -70,7 +110,13 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     if (pathname.includes('/dashboard/customers')) {
       return assignedStaffId === 'me' ? 'my-customers' : 'customers-all';
     }
-    if (pathname.includes('/dashboard/nyc')) return 'nyc';
+    if (pathname === '/dashboard/nyc') return 'nyc-main';
+    if (pathname === '/dashboard/nyc/campaigns') return 'nyc-campaigns-mgmt';
+    if (pathname.startsWith('/dashboard/nyc/campaigns/')) {
+      const slug = pathname.replace('/dashboard/nyc/campaigns/', '');
+      return `nyc-campaign-${slug}`;
+    }
+    if (pathname.includes('/dashboard/nyc')) return 'nyc-parent';
     if (pathname.includes('/dashboard/loca')) return 'loca';
     if (pathname.includes('/dashboard/appointments')) return 'my-appointments';
     if (pathname.includes('/dashboard/plans')) return 'plans';
@@ -89,7 +135,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     return 'customers-all';
   };
 
-  const createNavItem = (key: string, icon: React.ReactNode | null, labelText: string, path: string) => ({
+  const createNavItem = (key: string, icon: React.ReactNode | null, labelText: React.ReactNode, path: string) => ({
     key,
     icon,
     label: (
@@ -127,8 +173,42 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
 
   const isLocaAllowed = ['admin', 'manager', 'oc', 'cc', 'cs', 'control'].includes(userRole?.toLowerCase() || '');
 
-  // Other menus
-  menuItems.push(createNavItem('nyc', <ClockCircleOutlined />, 'Chiến dịch NYC', '/dashboard/nyc'));
+  // NYC SubMenu
+  const nycChildren: SafeAny[] = [createNavItem('nyc-main', null, 'NYC Chính', '/dashboard/nyc')];
+
+  if (showCustomCampaigns && activeCampaigns && activeCampaigns.length > 0) {
+    activeCampaigns.forEach((c: SafeAny) => {
+      nycChildren.push(
+        createNavItem(
+          `nyc-campaign-${c.slug}`,
+          <RocketOutlined style={{ color: '#10b981', fontSize: '12px' }} />,
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <span>{c.name}</span>
+            <span
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: '#10b981',
+                marginLeft: '6px',
+              }}
+            />
+          </span>,
+          `/dashboard/nyc/campaigns/${c.slug}`
+        )
+      );
+    });
+  }
+
+  nycChildren.push(createNavItem('nyc-campaigns-mgmt', null, 'Quản lý Chiến dịch', '/dashboard/nyc/campaigns'));
+
+  menuItems.push({
+    key: 'nyc-parent',
+    icon: <ClockCircleOutlined />,
+    label: 'Chiến dịch NYC',
+    children: nycChildren,
+  });
+
   if (isLocaAllowed) {
     menuItems.push(createNavItem('loca', <HeartOutlined />, 'Chiến dịch LoCa', '/dashboard/loca'));
   }

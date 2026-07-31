@@ -1,30 +1,33 @@
-# Handoff Report — Project Sentinel
+# Sentinel Handoff Report: Custom Campaign Allocation Unification
 
 ## Observation
 
-- The Implementation Plan for Catalog Management (Services, Combos & Products CRUD for Admin) in `mos-lab` was reviewed across 5 requirement domains (R1: Schema Correctness Audit, R2: API Design & Completeness, R3: Business Logic Gaps & Edge Cases, R4: Security & Data Integrity, R5: Frontend UX & AGENTS.md Compliance).
-- A total of 17 findings (3 Critical, 6 High, 5 Medium, 3 Low) were identified, analyzed, and paired with concrete proposed fixes.
-- The comprehensive audit report was produced at `/Users/dannydo/projects/mos-lab/.agents/orchestrator/catalog_audit_report.md`.
-- An independent Victory Audit was conducted by subagent `b452037b-c438-45ae-8f46-a35c00ad4fac` and returned **VICTORY CONFIRMED**.
+All requirements (R1, R2, R3, R4) specified by the user for Custom Campaign Batch Allocation and Allocation History Tracking Unification have been implemented and verified.
+
+- **R1 (Unified Customer ID Identification)**: Updated custom campaign page table `rowKey` to `record.legacyUserId || record.customerId || record.id`. `handleBatchAllocate` extracts true numeric `legacyUserId`s.
+- **R2 (Batch Allocation & 24h Booker Acceptance Workflow)**: `AllocationService.createBatch` receives `bookerId`, array of numeric `legacyUserId`s, `campaignId`, `sourceType: 'MANUAL'`, and `sourceFilterSummary: 'Chiến dịch [Tên] ([X] KH)'`, creating batch entries and pending 24h notifications within a Prisma `$transaction`.
+- **R3 (Full Traceability in Drawers & Tables)**: Booker acceptance logs `actionType = 'ACCEPT_ALLOCATION'` (normalized with `'ACCEPT'`). Full history is tracked and displayed in Customer Detail Drawer (Allocation History tab), Global Allocation History log tables, and Campaign Customer Table ("Đã phân bổ" status column).
+- **R4 (Campaign Expiration Clean-up)**: `endCampaign` and `deleteCampaign` perform atomic multi-table transaction cleanups, logging `EXPIRED` actions in `crm_assignment_histories` and returning unbooked customers to the main NYC pool.
+- **Verification**: `pnpm build` passed with 0 errors across all monorepo packages. Empirical test suite passed 7/7 tests. Victory Auditor confirmed victory with verdict `VICTORY CONFIRMED`.
 
 ## Logic Chain
 
-1. User request captured in `.agents/ORIGINAL_REQUEST.md`.
-2. Project Orchestrator dispatched to coordinate specialist reviews.
-3. Deep-dive technical analyses conducted comparing WingsLashes PHP models, `legacy.prisma`, `@mos-lab/shared`, and `AGENTS.md` system rules.
-4. Comprehensive audit report synthesized with risk ratings and proposed fixes.
-5. Independent Victory Auditor verified all claims against 6 audit categories and confirmed zero discrepancies.
+1. Project Orchestrator was dispatched to manage code updates and test execution.
+2. Code updates were applied to `apps/api/src/modules/campaigns/campaign.service.ts`, `apps/api/src/modules/allocation/allocation.service.ts`, `apps/api/src/modules/customers/routes.ts`, `apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx`, `CustomerAssignmentTimeline.tsx`, and `AssignmentHistoryDrawer.tsx`.
+3. An independent Victory Auditor (`victory_auditor`) was spawned upon victory claim to audit codebase and build output independently.
+4. Victory Auditor verified all 5 criteria with 0 errors and issued `VICTORY CONFIRMED`.
 
 ## Caveats
 
-- Legacy DB `management` modifications require applying the Master Metadata Catalog Exception Framework in `AGENTS.md` (or creating a designated backend DB migration) to maintain audit compliance.
-- Fastify relative imports in backend modules must strictly end with `.js` per NodeNext requirements.
+- Real-time pending batch notification uses 30-second polling against `/api/allocation/pending`.
+- Automatic batch expiration after 24h and 30-day history countdown retention are managed by background cron services.
 
 ## Conclusion
 
-The Catalog Management Implementation Plan review is 100% complete and verified. The full audit report is available at `/Users/dannydo/projects/mos-lab/.agents/orchestrator/catalog_audit_report.md`.
+Project completion is verified and confirmed (`VICTORY CONFIRMED`).
 
 ## Verification Method
 
-- Independent Victory Audit report: `/Users/dannydo/projects/mos-lab/.agents/victory_auditor/audit_report.md` (Verdict: VICTORY CONFIRMED).
-- Workspace lint check: `pnpm lint` passed with 0 errors.
+- Monorepo compilation: `pnpm build` (Pass, 0 errors).
+- Empirical test suite: `apps/api/test-r1-r4-empirical.ts` (7/7 passed).
+- Mandatory Independent Victory Audit: Verdict `VICTORY CONFIRMED`.

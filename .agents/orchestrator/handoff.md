@@ -1,54 +1,52 @@
-# Orchestrator Handoff & Milestone Completion Report
+# Handoff Report: Custom Campaign Allocation Unification
 
-## Milestone State
+## 1. Observation
 
-- [x] **M1: Architectural Exploration & Comparative Analysis**: Complete. Delivered `graphify_research.md`, `alternatives_audit.md`, `codebase_structure_audit.md`.
-- [x] **M2: PoC Script Implementation & Artifact Generator**: Complete. Implemented `scripts/generate-graph.ts`, `pnpm graph`, `graph.html`, `GRAPH_REPORT.md`, `graph.json`, `.gitignore`.
-- [x] **M3: Review & Adversarial Validation**: Complete. Passed 2 Reviewer approvals and 2 Challenger empirical stress test benchmarks (<1s runtime, 660 nodes, 945 edges, 235 routes, 32 models, 100% offline visual HTML, clean `pnpm build`).
-- [x] **M4: Forensic Integrity Audit**: Complete. Forensic Auditor issued binary verdict **CLEAN**.
-- [x] **M5: Synthesis & Final User Report**: Complete.
+- Target Objective: Complete unification of batch allocation (`crm_allocation_batches`, `crm_allocation_batch_items`) and allocation history tracking (`crm_assignment_histories`) for Custom Campaign customers in `mos-lab`.
+- Modified Files across Workspace:
+  1. `apps/api/src/modules/campaigns/campaign.service.ts`:
+     - `getCampaignCustomers`: Added `assignedBookerName`, `assignedAt`, and `assignedStaff` to returned DTO customer items.
+     - `endCampaign` & `deleteCampaign`: Implemented full atomic multi-table transaction cleanup for campaign assignments. Inserts `actionType = 'EXPIRED'` records in `crm_assignment_histories` with campaign termination reason, deletes active `crm_customer_assignments` records, expires active `crm_allocation_batches` and `crm_allocation_batch_items` (`status = 'EXPIRED'`), and sets `removedAt = now` on `crm_campaign_customers`.
+  2. `apps/api/src/modules/allocation/allocation.service.ts`:
+     - Exported `ACCEPT_ACTION_TYPES` (`['ACCEPT', 'ACCEPT_ALLOCATION']`) and history condition helpers for alias normalization.
+  3. `apps/api/src/modules/customers/routes.ts`:
+     - Updated assignment history query filtering to support both `'ACCEPT'` and `'ACCEPT_ALLOCATION'`.
+  4. `apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx`:
+     - Table `rowKey`: `(record) => record.legacyUserId || record.customerId || record.id`.
+     - `handleBatchAllocate`: Extracts true `legacyUserId` numbers and calls `apiClient.allocation.createBatch({ bookerId, customerIds: selectedLegacyUserIds, campaignId, sourceType: 'MANUAL', sourceFilterSummary: 'Chiến dịch [Tên] ([X] KH)' })`.
+     - Status column ("Đã phân bổ") and "Booker phụ trách" column accessors updated to handle nested/flat DTO shapes and calculate elapsed days correctly.
+     - ESLint callback dependency warning resolved.
+  5. `apps/web/components/customer-detail/components/CustomerAssignmentTimeline.tsx`:
+     - Added distinct color badges, icons, and titles for extended action types (`ACCEPT`, `ACCEPT_ALLOCATION`, `DECLINE`, `DECLINE_ALLOCATION`, `RECALL`, `RECALL_ALLOCATION`, `EXPIRED`, `EXPIRE`, `RANDOM_SELECT`, `ASSIGN`, `TRANSFER`, `REVOKE`, `UNDO`).
+     - Rendered campaign names and batch source summaries (`sourceFilterSummary`) with dedicated tags.
+  6. `apps/web/app/dashboard/customers/components/AssignmentHistoryDrawer.tsx`:
+     - Added explicit filter radio buttons for `ACCEPT`, `DECLINE`, `EXPIRED` in global history controls.
 
-## Active Subagents
+## 2. Logic Chain
 
-- All 9 subagents have delivered their final reports and completed their execution cleanly:
-  - `explorer_graphify_m1_1` (Graphify Research)
-  - `explorer_graphify_m1_2` (Alternatives Audit)
-  - `explorer_graphify_m1_3` (Codebase Structure Audit)
-  - `worker_graphify_m2` (PoC Implementation)
-  - `reviewer_graphify_m3_1` (Code Reviewer - APPROVED)
-  - `reviewer_graphify_m3_2` (Artifact Reviewer - APPROVED)
-  - `challenger_graphify_m3_1` (Graph Stress Tester - PASSED)
-  - `challenger_graphify_m3_2` (Regression & Build Challenger - PASSED)
-  - `auditor_graphify_m4` (Forensic Integrity Auditor - CLEAN)
+1. **R1 (Unified Customer ID Identification)**: Selection keys in campaign page evaluate to `record.legacyUserId || record.customerId || record.id`. `handleBatchAllocate` maps selected keys to their true numeric `legacyUserId` values, guaranteeing batch allocation operations operate on `legacyUserId` (e.g. 982962666) instead of internal join table surrogate IDs.
+2. **R2 (Complete Batch Allocation & 24h Booker Acceptance Workflow)**: `AllocationService.createBatch` receives `bookerId`, `customerIds` (legacyUserIds), `campaignId`, `sourceType: 'MANUAL'`, and `sourceFilterSummary: 'Chiến dịch [Tên] ([X] KH)'`. In a single Prisma `$transaction`, it creates `crm_allocation_batches` (with `campaignId`), `crm_allocation_batch_items` (`PENDING_ACCEPT`), and inserts `crm_assignment_histories` (`actionType = 'ASSIGN'`). 30-second layout polling triggers the 24h Booker acceptance modal.
+3. **R3 (Full Traceability in Drawers & Tables)**: Booker accept updates `crm_customer_assignments` and logs `actionType = 'ACCEPT_ALLOCATION'` (handled interchangeably with `'ACCEPT'`). Full audit trail is displayed in Customer Detail Drawer (Allocation History tab), Global Allocation History tables (30-day retention countdown timer), and Campaign Customer Table ("Đã phân bổ" status column showing elapsed days).
+4. **R4 (Campaign Expiration & Assignment Clean-up)**: `endCampaign` and `deleteCampaign` perform atomic multi-table expiration. Active assignments in `crm_customer_assignments` are deleted, active allocation batches/items are set to `EXPIRED`, `crm_campaign_customers` records receive `removedAt = now`, and `crm_assignment_histories` logs `actionType = 'EXPIRED'` with reason `Chiến dịch <name> đã kết thúc`, returning unbooked customers to the main NYC pool.
+5. **Monorepo Build & Integrity Verification**:
+   - `pnpm build`: Completed with exit code 0 across `@mos-lab/shared`, `apps/api`, `apps/web`, and `@mos-lab/ads-portal`.
+   - Automated empirical test suite (`apps/api/test-r1-r4-empirical.ts`): Passed 7/7 tests (0 failures).
+   - Forensic Integrity Audit: Verdict **CLEAN** (genuine database queries, `$transaction` boundaries, zero facade/hardcoded test data).
 
-## Key Verification Results
+## 3. Caveats
 
-1. **Tool Comparison & Evaluation (R1)**:
-   - Evaluated Graphify architecture vs `pnpm turbo graph`, `dependency-cruiser`, `madge`, and Custom AST Generator.
-   - Graphify concept / Custom AST parsing extracts fine-grained AST nodes (`RouteNode`, `PrismaModelNode`, `FunctionNode`, `ComponentNode`, `TypeNode`) and directional semantic edges.
-   - Slices context into 2-hop subgraphs reducing token context overhead by **97.5%** (from ~30,000 raw tokens down to ~750 graph tokens).
-   - `turbo graph` operates strictly at package/task level; `dependency-cruiser` lacks route/schema depth; `madge` fails without host OS `graphviz` binary (`gvpr`).
-2. **PoC Script & Artifact Generator (R2)**:
-   - Added `"graph": "tsx scripts/generate-graph.ts"` to `package.json`. Running `pnpm graph` extracts monorepo graph in **~200ms**.
-   - Output `graph.html`: Standalone, 100% offline interactive Canvas force-directed graph dashboard with search bar, category filtering, node inspector panel, and dark/light theme support.
-   - Output `GRAPH_REPORT.md`: Comprehensive markdown report with Fastify 5 REST route inventory (235 routes), Dual Prisma schema model index (32 models), comparative tool matrix, and AI agent context efficiency score.
-   - Output `graph.json`: Structured graph payload containing 660 nodes and 945 edges.
-3. **Workspace Safety & Build Integrity (R3)**:
-   - `.gitignore` updated to safely ignore `graph.html`, `GRAPH_REPORT.md`, `graph.json`, `.graph/`.
-   - `git status` verified clean.
-   - `pnpm build` verified passing across all 4 monorepo targets with 0 build errors and 0 type errors.
+- Real-time notifications utilize 30-second interval polling (`layout.tsx`) against `GET /api/allocation/pending` rather than WebSockets.
+- Expiration cron (`allocation-cron.service.ts`) automatically cleans up expired 24h pending batches and 30-day accepted retention limits.
 
-## Key Artifact Paths
+## 4. Conclusion
 
-- `/Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md` — Project Scope & Milestones
-- `/Users/dannydo/projects/mos-lab/.agents/orchestrator/plan.md` — Implementation Plan
-- `/Users/dannydo/projects/mos-lab/.agents/orchestrator/progress.md` — Execution Progress
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_graphify_m1_1/graphify_research.md` — Graphify Research Report
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_graphify_m1_2/alternatives_audit.md` — Alternatives Audit Report
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_explorer_graphify_m1_3/codebase_structure_audit.md` — Codebase Structure Audit Report
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_graphify_m2/changes.md` — Implementation Summary Report
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_reviewer_graphify_m3_1/review.md` — Code Review Report
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_reviewer_graphify_m3_2/review.md` — Artifact Review Report
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_graphify_m3_1/test_report.md` — Graph Stress Test Report
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_graphify_m3_2/test_report.md` — Regression & Build Test Report
-- `/Users/dannydo/projects/mos-lab/.agents/teamwork_preview_auditor_graphify_m4/audit_report.md` — Forensic Integrity Audit Report
+All 4 requirement areas (R1, R2, R3, R4) for Custom Campaign Batch Allocation Unification are fully implemented, verified, build-clean, and audit-verified in `mos-lab`.
+
+## 5. Verification Method
+
+1. Run full monorepo build:
+   `pnpm build`
+2. Run automated empirical verification suite:
+   `cd apps/api && npx tsx test-r1-r4-empirical.ts`
+3. Verify lint cleanliness:
+   `pnpm lint`

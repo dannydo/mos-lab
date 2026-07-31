@@ -906,12 +906,16 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   const rejectCall = () => {
     const activeCall = (window as SafeAny).activeCall;
     const callForCleanup = activeCall || currentCallRef.current;
-    if (activeCall && typeof activeCall.decline === 'function') {
-      activeCall.decline();
-    } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).decline === 'function') {
-      (window.OMICallSDK as SafeAny).decline();
-    } else {
-      console.warn('[OmiCallContext] rejectCall method not found');
+    try {
+      if (activeCall && typeof activeCall.decline === 'function') {
+        activeCall.decline();
+      } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).decline === 'function') {
+        (window.OMICallSDK as SafeAny).decline();
+      } else {
+        console.warn('[OmiCallContext] rejectCall method not found');
+      }
+    } catch (err: any) {
+      console.warn('[OmiCallContext] Safely caught rejectCall PeerConnection exception:', err?.message || err);
     }
     setCallState('idle');
     setCurrentCall(null);
@@ -942,12 +946,16 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
     const activeCall = (window as SafeAny).activeCall;
     const callForCleanup = activeCall || currentCallRef.current;
-    if (activeCall && typeof activeCall.end === 'function') {
-      activeCall.end();
-    } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).hangup === 'function') {
-      (window.OMICallSDK as SafeAny).hangup();
-    } else {
-      console.warn('[OmiCallContext] hangUp method not found');
+    try {
+      if (activeCall && typeof activeCall.end === 'function') {
+        activeCall.end();
+      } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).hangup === 'function') {
+        (window.OMICallSDK as SafeAny).hangup();
+      } else {
+        console.warn('[OmiCallContext] hangUp method not found');
+      }
+    } catch (err: any) {
+      console.warn('[OmiCallContext] Safely caught hangUp PeerConnection exception:', err?.message || err);
     }
     setCallState('wrapup');
     stopRingback();
@@ -956,18 +964,23 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
   const toggleMute = () => {
     const activeCall = (window as SafeAny).activeCall;
-    if (activeCall && typeof activeCall.mute === 'function') {
-      activeCall.mute((audioEnabled: boolean) => {
-        const muted = !audioEnabled;
-        activeCall.__mosUserMuted = muted;
-        setIsMuted(muted);
-        void recordOmiCallAudioDiagnostics(activeCall, muted ? 'muted' : 'unmuted');
-      });
-    } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).mute === 'function') {
-      (window.OMICallSDK as SafeAny).mute((audioEnabled: boolean) => {
-        setIsMuted(!audioEnabled);
-      });
-    } else {
+    try {
+      if (activeCall && typeof activeCall.mute === 'function') {
+        activeCall.mute((audioEnabled: boolean) => {
+          const muted = !audioEnabled;
+          activeCall.__mosUserMuted = muted;
+          setIsMuted(muted);
+          void recordOmiCallAudioDiagnostics(activeCall, muted ? 'muted' : 'unmuted');
+        });
+      } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).mute === 'function') {
+        (window.OMICallSDK as SafeAny).mute((audioEnabled: boolean) => {
+          setIsMuted(!audioEnabled);
+        });
+      } else {
+        setIsMuted((prev) => !prev);
+      }
+    } catch (err: any) {
+      console.warn('[OmiCallContext] Safely caught toggleMute PeerConnection exception:', err?.message || err);
       setIsMuted((prev) => !prev);
     }
   };
@@ -975,13 +988,18 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   const toggleHold = () => {
     const nextHold = !isHeld;
     const activeCall = (window as SafeAny).activeCall;
-    if (activeCall && typeof activeCall.hold === 'function') {
-      activeCall.hold(nextHold);
-      setIsHeld(nextHold);
-    } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).hold === 'function') {
-      (window.OMICallSDK as SafeAny).hold(nextHold);
-      setIsHeld(nextHold);
-    } else {
+    try {
+      if (activeCall && typeof activeCall.hold === 'function') {
+        activeCall.hold(nextHold);
+        setIsHeld(nextHold);
+      } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).hold === 'function') {
+        (window.OMICallSDK as SafeAny).hold(nextHold);
+        setIsHeld(nextHold);
+      } else {
+        setIsHeld(nextHold);
+      }
+    } catch (err: any) {
+      console.warn('[OmiCallContext] Safely caught toggleHold PeerConnection exception:', err?.message || err);
       setIsHeld(nextHold);
     }
   };

@@ -13,6 +13,17 @@ import {
   BookerAllocationBatchSummary,
 } from '@mos-lab/shared';
 
+export const ACCEPT_ACTION_TYPES = ['ACCEPT', 'ACCEPT_ALLOCATION'];
+
+export function isAcceptActionType(actionType?: string | null): boolean {
+  if (!actionType) return false;
+  return ACCEPT_ACTION_TYPES.includes(actionType);
+}
+
+export function getHistoryAcceptWhereCondition() {
+  return { actionType: { in: ACCEPT_ACTION_TYPES } };
+}
+
 export class AllocationService {
   /**
    * Automatic background check to expire 24h pending verification batches
@@ -205,6 +216,7 @@ export class AllocationService {
       const batch = await tx.crmAllocationBatch.create({
         data: {
           batchCode,
+          campaignId: dto.campaignId || null,
           assignerId,
           bookerId,
           totalCount: uniqueCustomerIds.length,
@@ -254,6 +266,7 @@ export class AllocationService {
         include: {
           assigner: { select: { id: true, displayName: true, username: true } },
           booker: { select: { id: true, displayName: true, username: true } },
+          campaign: { select: { id: true, name: true, slug: true } },
           items: true,
         },
       });
@@ -285,6 +298,7 @@ export class AllocationService {
       include: {
         assigner: { select: { id: true, displayName: true, username: true } },
         booker: { select: { id: true, displayName: true, username: true } },
+        campaign: { select: { id: true, name: true, slug: true } },
         items: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -312,6 +326,7 @@ export class AllocationService {
       include: {
         assigner: { select: { id: true, displayName: true, username: true } },
         booker: { select: { id: true, displayName: true, username: true } },
+        campaign: { select: { id: true, name: true, slug: true } },
         items: { select: { customerId: true, status: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -360,6 +375,10 @@ export class AllocationService {
       batchSummaries.push({
         id: batch.id,
         batchCode: batch.batchCode,
+        campaignId: batch.campaignId || null,
+        campaign: batch.campaign
+          ? { id: batch.campaign.id, name: batch.campaign.name, slug: batch.campaign.slug }
+          : null,
         assignerId: batch.assignerId,
         assignerName: batch.assigner?.displayName || batch.assigner?.username || `Admin #${batch.assignerId}`,
         bookerId: batch.bookerId,
@@ -373,8 +392,6 @@ export class AllocationService {
         retentionExpiresAt: batch.retentionExpiresAt ? batch.retentionExpiresAt.toISOString() : null,
       });
     }
-
-    return batchSummaries;
 
     return batchSummaries;
   }
@@ -473,7 +490,7 @@ export class AllocationService {
     return fastify.prisma.crm.$transaction(async (tx) => {
       const batch = await tx.crmAllocationBatch.findUnique({
         where: { id: batchId },
-        include: { items: true },
+        include: { items: true, campaign: true },
       });
 
       if (!batch) {
@@ -493,7 +510,13 @@ export class AllocationService {
         throw new Error('Đợt phân bổ đã vượt quá 24h xác nhận');
       }
 
-      const retentionExpiresAt = new Date(txNow.getTime() + 30 * 24 * 60 * 60 * 1000); // 30-Day Retention Countdown
+      let retentionExpiresAt = new Date(txNow.getTime() + 30 * 24 * 60 * 60 * 1000); // 30-Day Retention Countdown
+      if (batch.campaignId && batch.campaign && batch.campaign.endDate) {
+        const campaignEnd = new Date(batch.campaign.endDate);
+        if (campaignEnd < retentionExpiresAt) {
+          retentionExpiresAt = campaignEnd;
+        }
+      }
 
       // Update Batch Status
       await tx.crmAllocationBatch.update({
@@ -767,6 +790,7 @@ export class AllocationService {
         include: {
           assigner: { select: { id: true, displayName: true, username: true } },
           booker: { select: { id: true, displayName: true, username: true } },
+          campaign: { select: { id: true, name: true, slug: true } },
           items: true,
         },
       }),
@@ -935,6 +959,8 @@ export class AllocationService {
     return {
       id: batch.id,
       batchCode: batch.batchCode,
+      campaignId: batch.campaignId || null,
+      campaign: batch.campaign ? { id: batch.campaign.id, name: batch.campaign.name, slug: batch.campaign.slug } : null,
       assignerId: batch.assignerId,
       assignerName: batch.assigner?.displayName || `Manager #${batch.assignerId}`,
       bookerId: batch.bookerId,

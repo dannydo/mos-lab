@@ -585,7 +585,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         } else if (bStr === 'COMBO_DEAD') {
           innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
         } else if (bStr === 'NOT_COMBO_LIVE') {
-          innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          innerWhereClauses.push(
+            "(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0) AND NOT EXISTS (SELECT 1 FROM mos_lab.crm_campaign_customers cc_cust JOIN mos_lab.crm_custom_campaigns cc ON cc.id = cc_cust.campaign_id WHERE cc_cust.legacy_user_id = u.id AND cc_cust.removed_at IS NULL AND cc.status = 'ACTIVE')"
+          );
         } else if (bStr === 'NEW_LOCA') {
           const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
           if (newLocaUserIds.length === 0) {
@@ -1613,7 +1615,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         } else if (bStrStats === 'COMBO_DEAD') {
           innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
         } else if (bStrStats === 'NOT_COMBO_LIVE') {
-          innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          innerWhereClauses.push(
+            "(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0) AND NOT EXISTS (SELECT 1 FROM mos_lab.crm_campaign_customers cc_cust JOIN mos_lab.crm_custom_campaigns cc ON cc.id = cc_cust.campaign_id WHERE cc_cust.legacy_user_id = u.id AND cc_cust.removed_at IS NULL AND cc.status = 'ACTIVE')"
+          );
         } else if (bStrStats === 'NEW_LOCA') {
           const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
           if (newLocaUserIds.length === 0) {
@@ -3128,6 +3132,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       bookingChannel,
       bookingNote,
       promotionId,
+      campaignPromotionId,
       referralPhone,
     } = request.body as SafeAny;
 
@@ -3302,6 +3307,46 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
+      // Calculate custom campaign promotion discount / note if campaignPromotionId is provided
+      let campaignPromotionTag = '';
+      if (campaignPromotionId) {
+        const campaignPromo = await fastify.prisma.crm.crmCampaignPromotion.findUnique({
+          where: { id: Number(campaignPromotionId) },
+          include: { campaign: true },
+        });
+
+        if (campaignPromo && campaignPromo.isActive) {
+          let campaignPromoDiscount = 0;
+          let promoLabel = campaignPromo.name;
+
+          if (campaignPromo.type === 'PERCENT_DISCOUNT') {
+            promoLabel = campaignPromo.value > 0 ? `Giảm ${campaignPromo.value}%` : campaignPromo.name;
+            campaignPromoDiscount = Math.round((srvPrice * campaignPromo.value) / 100);
+          } else if (campaignPromo.type === 'FIXED_DISCOUNT') {
+            promoLabel =
+              campaignPromo.value > 0 ? `Giảm ${campaignPromo.value.toLocaleString('vi-VN')}đ` : campaignPromo.name;
+            campaignPromoDiscount = Math.round(campaignPromo.value);
+          } else if (campaignPromo.type === 'FREE_SERVICE') {
+            promoLabel =
+              campaignPromo.description && campaignPromo.description.trim()
+                ? campaignPromo.description
+                : `Tặng dịch vụ ${campaignPromo.name}`;
+          } else if (campaignPromo.type === 'FREE_PRODUCT') {
+            promoLabel =
+              campaignPromo.description && campaignPromo.description.trim()
+                ? campaignPromo.description
+                : `Tặng sản phẩm ${campaignPromo.name}`;
+          }
+
+          if (campaignPromoDiscount > 0) {
+            discountAmount = Math.max(discountAmount, campaignPromoDiscount);
+            finalPrice = Math.max(0, srvPrice - discountAmount);
+          }
+
+          campaignPromotionTag = `[Ưu đãi chiến dịch ${campaignPromo.campaign.name}: ${campaignPromo.name} (${promoLabel})]`;
+        }
+      }
+
       // 4. Calculate booking date start & end
       const startStr = `${bookingDate} ${bookingTime}:00`;
       const startDate = new Date(startStr);
@@ -3327,7 +3372,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const finalBookingNote = (bookingNote || '').trim();
+      let finalBookingNote = (bookingNote || '').trim();
+      if (campaignPromotionTag && !finalBookingNote.includes(campaignPromotionTag)) {
+        finalBookingNote = finalBookingNote ? `${finalBookingNote}\n${campaignPromotionTag}` : campaignPromotionTag;
+      }
 
       // 6. Create the booking order
       const orderKey = 'booking_' + Math.random().toString(36).substring(2, 12);
@@ -3456,6 +3504,72 @@ export async function customerRoutes(fastify: FastifyInstance) {
               assignedBy: user.id,
             },
           });
+        }
+      }
+
+      // 8. Record campaign touchpoint log and call log for accounting & reporting if campaignPromotionId was selected
+      if (campaignPromotionId) {
+        try {
+          const campaignPromo = await fastify.prisma.crm.crmCampaignPromotion.findUnique({
+            where: { id: Number(campaignPromotionId) },
+            include: { campaign: true },
+          });
+
+          if (campaignPromo) {
+            const campaignCustomer = await fastify.prisma.crm.crmCampaignCustomer.findFirst({
+              where: {
+                campaignId: campaignPromo.campaignId,
+                legacyUserId: finalCustomerId,
+                removedAt: null,
+              },
+            });
+
+            if (campaignCustomer) {
+              const firstTouchpoint = await fastify.prisma.crm.crmCampaignTouchpoint.findFirst({
+                where: { campaignId: campaignPromo.campaignId },
+                orderBy: { sortOrder: 'asc' },
+              });
+
+              if (firstTouchpoint) {
+                await fastify.prisma.crm.crmCampaignTouchpointLog.upsert({
+                  where: {
+                    campaignCustomerId_touchpointId: {
+                      campaignCustomerId: campaignCustomer.id,
+                      touchpointId: firstTouchpoint.id,
+                    },
+                  },
+                  create: {
+                    campaignCustomerId: campaignCustomer.id,
+                    touchpointId: firstTouchpoint.id,
+                    isChecked: true,
+                    completedAt: new Date(),
+                    completedByStaffId: user.id,
+                    completedByStaffName: user.displayName || `Staff #${user.id}`,
+                    note: `Đặt lịch thành công - Ưu đãi: ${campaignPromo.name}`,
+                  },
+                  update: {
+                    isChecked: true,
+                    completedAt: new Date(),
+                    completedByStaffId: user.id,
+                    completedByStaffName: user.displayName || `Staff #${user.id}`,
+                    note: `Đặt lịch thành công - Ưu đãi: ${campaignPromo.name}`,
+                  },
+                });
+              }
+            }
+
+            await fastify.prisma.crm.crmCallLog.create({
+              data: {
+                legacyUserId: finalCustomerId,
+                staffId: user.id,
+                callType: 'CAMPAIGN_BOOKING',
+                callResult: 'BOOKED',
+                note: `Tạo lịch thành công kèm ưu đãi chiến dịch ${campaignPromo.campaign.name}: ${campaignPromo.name}`,
+              },
+            });
+          }
+        } catch (logErr) {
+          fastify.log.warn({ err: logErr }, 'Failed to record campaign touchpoint/call log');
         }
       }
 
@@ -4687,6 +4801,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       if (actionType === 'ASSIGN') {
         whereConditions.push({ actionType: 'ASSIGN', isUndone: false });
+      } else if (actionType === 'ACCEPT' || actionType === 'ACCEPT_ALLOCATION') {
+        whereConditions.push({ actionType: { in: ['ACCEPT', 'ACCEPT_ALLOCATION'] } });
       } else if (actionType === 'REVOKE') {
         whereConditions.push({ actionType: 'REVOKE' });
       } else if (actionType === 'TRANSFER') {
@@ -5377,10 +5493,33 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
 
+    let resolvedCustomerId = customerId;
+
     try {
+      // 0. Resolve legacyUserId if customerId is a campaign or assignment record ID
+      const userDirect = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT id FROM \`user\` WHERE id = ? LIMIT 1`,
+        customerId
+      );
+      if (userDirect.length === 0) {
+        const campCust = await fastify.prisma.crm.crmCampaignCustomer.findUnique({
+          where: { id: customerId },
+        });
+        if (campCust?.legacyUserId) {
+          resolvedCustomerId = campCust.legacyUserId;
+        } else {
+          const assignCust = await fastify.prisma.crm.crmCustomerAssignment.findUnique({
+            where: { id: customerId },
+          });
+          if (assignCust?.legacyUserId) {
+            resolvedCustomerId = assignCust.legacyUserId;
+          }
+        }
+      }
+
       // 1. Authorization check & Fetch CRM Assignment for Online Consultant
       const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
-        where: { legacyUserId: customerId },
+        where: { legacyUserId: resolvedCustomerId },
         include: { staff: true },
       });
       const onlineConsultantName = assigned?.staff?.displayName || 'Chưa phân bổ';
@@ -5421,7 +5560,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE u.id = ?
         LIMIT 1
       `;
-      const customerResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(customerSql, customerId);
+      const customerResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(customerSql, resolvedCustomerId);
       if (customerResult.length === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Customer not found' });
       }
@@ -5429,7 +5568,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // Fetch all phone numbers associated with the customer
       const userContacts = await fastify.prisma.legacy.user_contact.findMany({
-        where: { user_id: customerId },
+        where: { user_id: resolvedCustomerId },
       });
 
       // 3. Fetch Completed Orders for financial and frequency metrics
@@ -6084,7 +6223,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE un.user_id = ? AND (un.is_disabled = 0 OR un.note_field_key = 'order_note')
         ORDER BY un.date_created DESC
       `;
-      const notesRaw = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(notesSql, customerId);
+      const notesRaw = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(notesSql, resolvedCustomerId);
       const formattedNotes = notesRaw.map((n) => {
         let safeIsoDate: string | null = null;
         if (n.dateCreated) {
@@ -6112,7 +6251,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // 8. Fetch CRM Call Logs
       const logs = await fastify.prisma.crm.crmCallLog.findMany({
-        where: { legacyUserId: customerId },
+        where: { legacyUserId: resolvedCustomerId },
         orderBy: { createdAt: 'desc' },
       });
       const staffIds = Array.from(new Set(logs.map((l) => l.staffId)));

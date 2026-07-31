@@ -1,7 +1,7 @@
 'use client';
 
 import '../../suppress-warnings';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Table,
   Avatar,
@@ -130,6 +130,21 @@ export default function NycCampaignPage() {
   });
 
   const [smsModalVisible, setSmsModalVisible] = useState<boolean>(false);
+
+  const bookerStaffList = useMemo(() => {
+    const seenNames = new Set<string>();
+    return (staffList || [])
+      .filter((s: any) => {
+        const role = (s.role || s.staff_role || '').toLowerCase();
+        return role === 'telesales' || role === 'booker';
+      })
+      .filter((s: any) => {
+        const nameKey = (s.displayName || s.name || s.username || '').trim().toLowerCase();
+        if (!nameKey || seenNames.has(nameKey)) return false;
+        seenNames.add(nameKey);
+        return true;
+      });
+  }, [staffList]);
 
   const handleOpenSmsModal = React.useCallback(
     (customer: Customer) => {
@@ -277,171 +292,205 @@ export default function NycCampaignPage() {
 
   return (
     <div>
-      {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div>
-          <Title
-            level={2}
-            style={{
-              color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-              margin: 0,
-              fontWeight: 'bold',
-              letterSpacing: '0.5px',
-            }}
-          >
-            <ClockCircleOutlined /> CHIẾN DỊCH KHÁCH HÀNG NYC
-          </Title>
-          <Text style={{ color: themeMode === 'dark' ? token.colorTextDescription : '#555555' }}>
-            Hệ thống chăm sóc đặc biệt dành cho khách hàng chưa mua gói Combo (Single/Combo hết hạn).
-          </Text>
-        </div>
-        <Space wrap>
-          {currentUser?.role === 'admin' && (
-            <Select
-              showSearch
-              filterOption={vietnameseSearchFilter}
-              placeholder="Chọn Booker/Telesales"
-              value={assignedStaffId}
-              onChange={(val) => setAssignedStaffId(val)}
-              style={{ width: 200 }}
-              options={[
-                { value: 'ALL', label: 'All Bookers' },
-                { value: 'unassigned', label: 'Chưa phân bổ' },
-                ...staffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),
-              ]}
-            />
-          )}
-          <Tooltip title="Đặt lịch mới">
-            <Button
-              type="primary"
-              icon={<CalendarOutlined />}
-              style={{
-                backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
-                borderColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
-                fontWeight: 'bold',
-              }}
-              onClick={() => {
-                setBookingInitialCustomer(null);
-                setBookingWizardVisible(true);
-              }}
-            />
-          </Tooltip>
-          {currentUser?.role === 'admin' && (
-            <Tooltip title="Cấu hình Quy trình">
-              <Button
-                type="primary"
-                icon={<SettingOutlined />}
-                onClick={handleOpenSettings}
-                style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}
-              />
-            </Tooltip>
-          )}
-        </Space>
-      </div>
+      {/* MINIMALIST COMPACT EXECUTIVE HEADER BANNER */}
+      <div
+        className={`p-4 rounded-xl mb-5 border transition-all duration-300 ${
+          themeMode === 'dark'
+            ? 'bg-gradient-to-r from-[#141a29]/90 via-[#111827]/95 to-[#192238]/90 border-gold/20 shadow-lg shadow-black/40'
+            : 'bg-gradient-to-r from-white via-amber-50/30 to-slate-50 border-amber-200/60 shadow-sm'
+        }`}
+      >
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          {/* Title & Subtitle */}
+          <div>
+            <div className="flex items-center gap-2">
+              <Title
+                level={3}
+                style={{
+                  color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                  margin: 0,
+                  fontWeight: '800',
+                  letterSpacing: '0.3px',
+                  fontSize: '20px',
+                }}
+              >
+                <ClockCircleOutlined className="mr-1.5" /> CHIẾN DỊCH KHÁCH HÀNG NYC
+              </Title>
+              <Tag
+                style={{
+                  backgroundColor: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#fffbe6',
+                  borderColor: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.3)' : '#ffe58f',
+                  color: themeMode === 'dark' ? '#D4A84B' : '#87640a',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                }}
+              >
+                Single / Combo Hết Hạn
+              </Tag>
+            </div>
+            <Text style={{ fontSize: '12px', color: themeMode === 'dark' ? token.colorTextDescription : '#666' }}>
+              Quy trình chăm sóc đặc biệt dành cho khách hàng chưa mua gói Combo
+            </Text>
+          </div>
 
-      {/* METRICS CARDS */}
-      <Row gutter={[16, 16]} className="mb-6">
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            bordered={false}
-            style={{
-              background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fff',
-              border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#e8e8e8'}`,
-              borderRadius: '8px',
-            }}
-          >
-            <Text type="secondary" style={{ fontSize: '13px' }}>
-              Tổng Khách Hàng NYC
-            </Text>
-            <div style={{ fontSize: '26px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}>
-              {Object.values(tabCounts).reduce((sum, val) => sum + val, 0)}{' '}
-              <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>khách</span>
+          {/* Inline Compact KPIs & Action Bar */}
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+            {/* Inline Stats Badge Chips */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Stat 1: Total NYC */}
+              <div
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+                  themeMode === 'dark' ? 'bg-white/[0.03] border-white/10' : 'bg-white border-slate-200'
+                }`}
+              >
+                <UserOutlined style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b', fontSize: '14px' }} />
+                <div>
+                  <div style={{ fontSize: '10px', color: token.colorTextDescription, lineHeight: 1 }}>Tổng KH</div>
+                  <div
+                    style={{ fontSize: '15px', fontWeight: '800', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}
+                  >
+                    {Object.values(tabCounts).reduce((sum, val) => sum + val, 0)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Stat 2: NYC 30 */}
+              <div
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+                  themeMode === 'dark' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-200'
+                }`}
+              >
+                <ClockCircleOutlined
+                  style={{ color: themeMode === 'dark' ? '#D4A84B' : '#87640a', fontSize: '14px' }}
+                />
+                <div>
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      color: themeMode === 'dark' ? '#D4A84B' : '#87640a',
+                      fontWeight: '600',
+                      lineHeight: 1,
+                    }}
+                  >
+                    NYC 30
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '15px',
+                      fontWeight: '800',
+                      color: themeMode === 'dark' ? '#D4A84B' : '#87640a',
+                      fontVariantNumeric: 'tabular-nums',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {tabCounts['NYC_30'] || 0}
+                  </div>
+                </div>
+              </div>
+
+              {/* Stat 3: Booked Rate */}
+              <div
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+                  themeMode === 'dark' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'
+                }`}
+              >
+                <CheckCircleOutlined style={{ color: '#22c55e', fontSize: '14px' }} />
+                <div>
+                  <div style={{ fontSize: '10px', color: '#22c55e', fontWeight: '600', lineHeight: 1 }}>
+                    Đã đặt lịch
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '15px',
+                      fontWeight: '800',
+                      color: '#22c55e',
+                      fontVariantNumeric: 'tabular-nums',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {overallStats.totalCalledToday > 0
+                      ? Math.round((overallStats.totalBookedToday / overallStats.totalCalledToday) * 100)
+                      : 0}
+                    %
+                  </div>
+                </div>
+              </div>
+
+              {/* Stat 4: Calls Today */}
+              <div
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+                  themeMode === 'dark' ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-200'
+                }`}
+              >
+                <PhoneOutlined style={{ color: '#3b82f6', fontSize: '14px' }} />
+                <div>
+                  <div style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '600', lineHeight: 1 }}>
+                    Đã gọi hôm nay
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '15px',
+                      fontWeight: '800',
+                      color: '#3b82f6',
+                      fontVariantNumeric: 'tabular-nums',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {overallStats.totalCalledToday}
+                  </div>
+                </div>
+              </div>
             </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            bordered={false}
-            style={{
-              background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fff',
-              border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#e8e8e8'}`,
-              borderRadius: '8px',
-            }}
-          >
-            <Text type="secondary" style={{ fontSize: '13px' }}>
-              NYC 30 (Quan trọng nhất)
-            </Text>
-            <div
-              style={{
-                fontSize: '26px',
-                fontWeight: 'bold',
-                color: themeMode === 'dark' ? '#D4A84B' : '#87640a',
-                marginTop: '4px',
-              }}
-            >
-              {tabCounts['NYC_30'] || 0}{' '}
-              <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>khách</span>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            bordered={false}
-            style={{
-              background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fff',
-              border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#e8e8e8'}`,
-              borderRadius: '8px',
-            }}
-          >
-            <Text type="secondary" style={{ fontSize: '13px' }}>
-              Hiệu suất Đặt Lịch (Booked Rate)
-            </Text>
-            <div
-              style={{
-                fontSize: '26px',
-                fontWeight: 'bold',
-                color: themeMode === 'dark' ? '#52C41A' : '#237804',
-                marginTop: '4px',
-              }}
-            >
-              {overallStats.totalCalledToday > 0
-                ? Math.round((overallStats.totalBookedToday / overallStats.totalCalledToday) * 100)
-                : 0}
-              %{' '}
-              <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
-                đặt lịch
-              </span>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            bordered={false}
-            style={{
-              background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fff',
-              border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#e8e8e8'}`,
-              borderRadius: '8px',
-            }}
-          >
-            <Text type="secondary" style={{ fontSize: '13px' }}>
-              Đã gọi hôm nay
-            </Text>
-            <div
-              style={{
-                fontSize: '26px',
-                fontWeight: 'bold',
-                color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                marginTop: '4px',
-              }}
-            >
-              {overallStats.totalCalledToday}{' '}
-              <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
-                cuộc gọi
-              </span>
-            </div>
-          </Card>
-        </Col>
-      </Row>
+
+            {/* Booker Filter & Action Buttons */}
+            <Space wrap size="small">
+              {currentUser?.role === 'admin' && (
+                <Select
+                  showSearch
+                  filterOption={vietnameseSearchFilter}
+                  placeholder="Chọn Booker"
+                  value={assignedStaffId}
+                  onChange={(val) => setAssignedStaffId(val)}
+                  style={{ width: 160 }}
+                  size="middle"
+                  options={[
+                    { value: 'ALL', label: 'Tất cả Booker' },
+                    { value: 'unassigned', label: 'Chưa phân bổ' },
+                    ...bookerStaffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),
+                  ]}
+                />
+              )}
+              <Tooltip title="Đặt lịch mới">
+                <Button
+                  type="primary"
+                  icon={<CalendarOutlined />}
+                  size="middle"
+                  style={{
+                    backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
+                    borderColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
+                    fontWeight: 'bold',
+                  }}
+                  onClick={() => {
+                    setBookingInitialCustomer(null);
+                    setBookingWizardVisible(true);
+                  }}
+                />
+              </Tooltip>
+              {currentUser?.role === 'admin' && (
+                <Tooltip title="Cấu hình Quy trình">
+                  <Button
+                    type="primary"
+                    size="middle"
+                    icon={<SettingOutlined />}
+                    onClick={handleOpenSettings}
+                    style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}
+                  />
+                </Tooltip>
+              )}
+            </Space>
+          </div>
+        </div>
+      </div>
 
       {/* TABS CONTAINER */}
       <Tabs
@@ -451,7 +500,7 @@ export default function NycCampaignPage() {
           setActiveTouchpointKey('ALL');
         }}
         type="card"
-        style={{ marginBottom: '16px' }}
+        style={{ marginBottom: '12px' }}
         items={TAB_KEYS.map((tab) => ({
           key: tab.id,
           label: (
@@ -470,215 +519,120 @@ export default function NycCampaignPage() {
         }))}
       />
 
-      {/* FILTER & PIPELINE SECTION */}
-      <Card
-        style={{
-          background: themeMode === 'dark' ? '#111827' : '#ffffff',
-          border: `1px solid ${token.colorBorderSecondary}`,
-          marginBottom: '24px',
-          borderRadius: '8px',
-        }}
+      {/* UNIFIED MINIMALIST TOOLBAR CARD (PIPELINE + FILTERS) */}
+      <div
+        className={`p-3 rounded-xl mb-4 border transition-all duration-300 ${
+          themeMode === 'dark' ? 'bg-[#111827] border-white/10' : 'bg-white border-slate-200 shadow-sm'
+        }`}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* TOUCHPOINTS PIPELINE TIMELINE */}
-          <div>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '16px',
-              }}
-            >
-              <Text style={{ fontWeight: '600', color: token.colorText }}>QUY TRÌNH CHĂM SÓC THEO CHẠM</Text>
-              {activeTouchpointKey !== 'ALL' && (
-                <Button type="link" size="small" onClick={() => setActiveTouchpointKey('ALL')}>
-                  Xem tất cả khách hàng
-                </Button>
-              )}
-            </div>
-
-            <div
-              className={`p-2.5 rounded-xl border ${
-                themeMode === 'dark' ? 'bg-[#1a1a1a] border-white/5' : 'bg-slate-50/50 border-slate-100'
+        <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+          {/* TOUCHPOINTS PIPELINE (Minimalist Segment Pills) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto py-1 custom-scrollbar min-w-0 flex-1">
+            {/* All touchpoints pill */}
+            <button
+              type="button"
+              onClick={() => setActiveTouchpointKey('ALL')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 select-none whitespace-nowrap border ${
+                activeTouchpointKey === 'ALL'
+                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-500 font-bold shadow-sm'
+                  : themeMode === 'dark'
+                    ? 'bg-white/[0.02] border-white/5 text-slate-400 hover:bg-white/[0.05] hover:text-slate-200'
+                    : 'bg-slate-100/70 border-slate-200/60 text-slate-600 hover:bg-slate-200/60'
               }`}
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '6px',
-                overflowX: 'auto',
-                minHeight: '68px',
-              }}
             >
-              {/* All touchpoints capsule */}
-              <div
-                onClick={() => setActiveTouchpointKey('ALL')}
-                className={`rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
+              <span>Tất cả chạm</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
                   activeTouchpointKey === 'ALL'
-                    ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
+                    ? 'bg-amber-500 text-black'
                     : themeMode === 'dark'
-                      ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
-                      : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
+                      ? 'bg-white/10 text-slate-300'
+                      : 'bg-slate-200 text-slate-700'
                 }`}
-                style={{
-                  flex: 1,
-                  minWidth: '72px',
-                  flexShrink: 0,
-                  padding: '6px 10px',
-                }}
               >
-                <div
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    color: '#888',
-                    textTransform: 'uppercase',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Tất cả chạm
-                </div>
-                <div
-                  style={{
-                    fontSize: '15px',
-                    fontWeight: '900',
-                    marginTop: '1px',
-                    fontVariantNumeric: 'tabular-nums',
-                    fontFeatureSettings: '"tnum"',
-                    color:
-                      activeTouchpointKey === 'ALL' ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
-                  }}
-                >
-                  {tabCounts[activeTab] || 0}
-                </div>
-              </div>
+                {tabCounts[activeTab] || 0}
+              </span>
+            </button>
 
-              {/* Individual touchpoints */}
-              {activeTouchpointsList.map((tp, idx) => {
-                const isSelected = activeTouchpointKey === tp.key;
-                const count = touchpointCounts[tp.key] || 0;
-                return (
-                  <React.Fragment key={tp.key}>
-                    {idx > 0 && (
-                      <div
-                        style={{
-                          width: '6px',
-                          height: '2px',
-                          backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                          flexShrink: 0,
-                        }}
-                      />
-                    )}
-                    <div
-                      onClick={() => setActiveTouchpointKey(tp.key)}
-                      className={`rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
-                        isSelected
-                          ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
-                          : themeMode === 'dark'
-                            ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
-                            : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
-                      }`}
-                      style={{
-                        flex: 1,
-                        minWidth: '68px',
-                        flexShrink: 0,
-                        padding: '6px 8px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: '800',
-                          whiteSpace: 'nowrap',
-                          color:
-                            tp.color === 'red'
-                              ? themeMode === 'dark'
-                                ? '#ff4d4f'
-                                : '#d9363e'
-                              : tp.color === 'orange'
-                                ? themeMode === 'dark'
-                                  ? '#fa8c16'
-                                  : '#d46b08'
-                                : tp.color === 'green'
-                                  ? themeMode === 'dark'
-                                    ? '#52c41a'
-                                    : '#389e0d'
-                                  : themeMode === 'dark'
-                                    ? '#1890ff'
-                                    : '#096dd9',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {tp.label}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: '15px',
-                          fontWeight: '900',
-                          marginTop: '1px',
-                          fontVariantNumeric: 'tabular-nums',
-                          fontFeatureSettings: '"tnum"',
-                          color: isSelected ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
-                        }}
-                      >
-                        {count}
-                      </div>
-                      <div style={{ fontSize: '8.5px', color: '#888', marginTop: '1px' }}>
-                        {tp.daysMin === tp.daysMax ? `${tp.daysMin}d` : `${tp.daysMin}-${tp.daysMax}d`}
-                      </div>
-                    </div>
-                  </React.Fragment>
-                );
-              })}
-            </div>
+            {/* Individual touchpoint pills */}
+            {activeTouchpointsList.map((tp) => {
+              const isSelected = activeTouchpointKey === tp.key;
+              const count = touchpointCounts[tp.key] || 0;
+              const isRed = tp.color === 'red';
+              const isOrange = tp.color === 'orange';
+              const isGreen = tp.color === 'green';
+
+              return (
+                <button
+                  key={tp.key}
+                  type="button"
+                  onClick={() => setActiveTouchpointKey(tp.key)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 select-none whitespace-nowrap border ${
+                    isSelected
+                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-500 font-bold shadow-sm'
+                      : themeMode === 'dark'
+                        ? 'bg-white/[0.02] border-white/5 text-slate-300 hover:bg-white/[0.05]'
+                        : 'bg-slate-100/70 border-slate-200/60 text-slate-700 hover:bg-slate-200/60'
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      isRed ? 'bg-rose-500' : isOrange ? 'bg-amber-500' : isGreen ? 'bg-emerald-500' : 'bg-sky-500'
+                    }`}
+                  />
+                  <span>{tp.label}</span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
+                      isSelected
+                        ? 'bg-amber-500 text-black'
+                        : isRed
+                          ? 'bg-rose-500/20 text-rose-400'
+                          : isOrange
+                            ? 'bg-amber-500/20 text-amber-400'
+                            : isGreen
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : themeMode === 'dark'
+                                ? 'bg-sky-500/20 text-sky-400'
+                                : 'bg-sky-100 text-sky-700'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
-          <Divider style={{ margin: 0, opacity: 0.5 }} />
-
-          {/* SEARCH & FILTERS BAR */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '16px',
-            }}
-          >
-            <Space wrap className="w-full md:w-auto">
-              <Input
-                placeholder="Tìm khách hàng (Tên, SĐT, ID)..."
-                prefix={<SearchOutlined style={{ color: '#aaa' }} />}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                allowClear
-                style={{ width: 280 }}
-              />
-              <Select
-                value={sortField}
-                onChange={(val) => setSortField(val)}
-                style={{ width: 220 }}
-                options={[
-                  { value: 'daysSinceLastVisit_asc', label: 'Chưa ghé tăng dần' },
-                  { value: 'daysSinceLastVisit_desc', label: 'Chưa ghé giảm dần' },
-                  { value: 'totalSpent_desc', label: 'Doanh thu LTV lớn nhất' },
-                  { value: 'lastCallDate_desc', label: 'Gọi gần nhất' },
-                  { value: 'lastCallDate_asc', label: 'Gọi lâu nhất' },
-                ]}
-              />
-            </Space>
-            <Space>
-              <Tooltip title="Cấu hình cột bảng">
-                <Button icon={<SettingOutlined />} onClick={openNycConfig} />
-              </Tooltip>
-            </Space>
+          {/* SEARCH & SORT TOOLBAR CONTROLS */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Input
+              placeholder="Tìm khách hàng (Tên, SĐT, ID)..."
+              prefix={<SearchOutlined style={{ color: '#aaa' }} />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              allowClear
+              size="middle"
+              style={{ width: 220 }}
+            />
+            <Select
+              value={sortField}
+              onChange={(val) => setSortField(val)}
+              size="middle"
+              style={{ width: 170 }}
+              options={[
+                { value: 'daysSinceLastVisit_asc', label: 'Chưa ghé ↑' },
+                { value: 'daysSinceLastVisit_desc', label: 'Chưa ghé ↓' },
+                { value: 'totalSpent_desc', label: 'Doanh thu LTV ↓' },
+                { value: 'lastCallDate_desc', label: 'Gọi gần nhất' },
+                { value: 'lastCallDate_asc', label: 'Gọi lâu nhất' },
+              ]}
+            />
+            <Tooltip title="Cấu hình cột bảng">
+              <Button icon={<SettingOutlined />} size="middle" onClick={openNycConfig} />
+            </Tooltip>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* CUSTOMERS DATA TABLE */}
       <Table

@@ -1,37 +1,30 @@
-# Implementation Plan: Graphify PoC & Knowledge Graph Generator
+# Plan: Custom Campaign Batch Allocation & History Unification
 
-## Objectives
+## Objective
 
-1. Audit and compare Graphify (and graphify-code / knowledge graph concepts) vs existing tools (`pnpm turbo graph`, `dependency-cruiser`, `madge`, custom AST parsers) for `mos-lab`.
-2. Implement PoC graph generator script accessible via `pnpm graph`.
-3. Auto-generate visual interactive graph `graph.html` and structured markdown report `GRAPH_REPORT.md`.
-4. Ensure zero side-effects on monorepo build (`pnpm build`) and dev server (`pnpm dev`).
+Unify custom campaign customer allocation with the global batch allocation (`crm_allocation_batches`, `crm_allocation_batch_items`) and allocation history tracking (`crm_assignment_histories`) systems in `mos-lab`. Ensure true `legacyUserId` usage, 24h Booker acceptance workflow, full traceability in drawers/tables, and proper campaign expiration cleanup.
 
-## Phase Breakdown
+## Tasks Breakdown
 
-### Phase 1: Exploration & Comparative Analysis (M1)
+### Task 1: Comprehensive Codebase Audit (Exploration)
 
-- Dispatch 3 parallel Explorers:
-  - Explorer 1: Evaluate `graphify` / `graphify-code` concept & package availability, python vs TS tools, AST graph capabilities for TS, Fastify routes, Prisma schemas, AI Agent context optimization.
-  - Explorer 2: Audit `pnpm turbo graph`, `dependency-cruiser`, `madge` on `mos-lab` monorepo, test their outputs, performance, limitations.
-  - Explorer 3: Audit `mos-lab` codebase structure (`apps/web`, `apps/api`, `packages/shared`, Prisma schemas, Fastify routes) to map all node types and edge relations needed for graph extraction.
+- Explore `apps/api/src/modules/allocation/allocation.service.ts`, campaign routes in `apps/api/src/modules/campaigns/routes.ts`, customer routes, and Prisma schema.
+- Explore frontend campaign tables (`apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx`), customer detail drawer allocation history tab, and batch allocation modals.
+- Identify discrepancies between `crm_campaign_customers.id` and `legacyUserId`.
 
-### Phase 2: PoC Implementation (M2)
+### Task 2: Backend Unification & API Implementation
 
-- Worker implements graph generator script in `scripts/generate-graph.ts` (or `scripts/generate_graph.sh`) and adds `"graph"` script to root `package.json`.
-- Script scans TypeScript imports across monorepo, Fastify route registrations, Prisma models, and workspace package links.
-- Script outputs interactive HTML visualization `graph.html` and Markdown report `GRAPH_REPORT.md`.
-- Ensures output files are properly gitignored or stored cleanly.
+- Ensure `AllocationService.createBatch` supports `campaignId`, uses `legacyUserId`, creates `crm_allocation_batches`, `crm_allocation_batch_items`, and records `crm_assignment_histories` entries with `actionType = 'ASSIGN'`.
+- Ensure Booker accept/decline action updates `crm_customer_assignments` and records `crm_assignment_histories` with `actionType = 'ACCEPT'` / `'DECLINE'`.
+- Implement or verify campaign expiration cleanup logging `actionType = 'EXPIRED'` in `crm_assignment_histories` and releasing customers back to NYC pool when a campaign ends/archives.
 
-### Phase 3: Review & Adversarial Validation (M3)
+### Task 3: Frontend Unification & Traceability UI
 
-- Reviewers inspect code cleanliness, typing, error handling, HTML self-containment, and report accuracy.
-- Challengers test execution of `pnpm graph`, `pnpm build`, and `pnpm dev` to guarantee 100% build pass and zero side effects.
+- Update Campaign customer table selection key to `record.legacyUserId || record.customerId || record.id`.
+- Update batch allocation action on Campaign page to invoke `apiClient.allocation.createBatch` with `legacyUserId`s and `campaignId`.
+- Ensure Allocation History tab in Customer Detail Drawer and Global History tables query and display campaign allocation events accurately.
 
-### Phase 4: Forensic Integrity Audit (M4)
+### Task 4: Expiration Cleanup & Monorepo Build Verification
 
-- Forensic Auditor verifies genuine graph parsing and absence of hardcoded dummy outputs.
-
-### Phase 5: Synthesis & Reporting (M5)
-
-- Aggregate all results and present the comprehensive summary report to the user.
+- Test campaign expiration flow.
+- Execute full monorepo build (`pnpm build`) across all packages (`@mos-lab/shared`, `apps/api`, `apps/web`).

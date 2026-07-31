@@ -16,6 +16,12 @@ export interface CustomerAllocationItem {
 export interface CustomerAllocationBatch {
   id: number;
   batchCode: string;
+  campaignId?: number | null;
+  campaign?: {
+    id: number;
+    name: string;
+    slug: string;
+  } | null;
   assignerId: number;
   assignerName?: string | null;
   bookerId: number;
@@ -40,6 +46,7 @@ export interface CustomerAllocationBatch {
 export interface CreateAllocationBatchDto {
   bookerId: number;
   customerIds: number[];
+  campaignId?: number;
   sourceType?: string;
   sourceFilterSummary?: string;
   sourceFilterJson?: string;
@@ -113,6 +120,12 @@ export const PRESET_DECLINE_REASONS = [
 export interface BookerAllocationBatchSummary {
   id: number;
   batchCode: string;
+  campaignId?: number | null;
+  campaign?: {
+    id: number;
+    name: string;
+    slug: string;
+  } | null;
   assignerId: number;
   assignerName?: string | null;
   bookerId: number;

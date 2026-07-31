@@ -10,6 +10,10 @@ import {
   UndoOutlined,
   FilterOutlined,
   PushpinFilled,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  RollbackOutlined,
+  GiftOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../lib/api-client';
@@ -66,7 +70,40 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
   }
 
   const getActionTag = (item: CustomerAssignmentTimelineItem) => {
-    switch (item.actionType) {
+    const action = item.actionType?.toUpperCase();
+    switch (action) {
+      case 'ACCEPT':
+      case 'ACCEPT_ALLOCATION':
+        return (
+          <Tag color="green">
+            <CheckCircleOutlined style={{ marginRight: 4 }} />
+            Chấp nhận
+          </Tag>
+        );
+      case 'DECLINE':
+      case 'DECLINE_ALLOCATION':
+        return (
+          <Tag color="red">
+            <CloseCircleOutlined style={{ marginRight: 4 }} />
+            Từ chối
+          </Tag>
+        );
+      case 'RECALL':
+      case 'RECALL_ALLOCATION':
+        return (
+          <Tag color="volcano">
+            <RollbackOutlined style={{ marginRight: 4 }} />
+            Thu hồi phân bổ
+          </Tag>
+        );
+      case 'EXPIRE':
+      case 'EXPIRED':
+        return (
+          <Tag color="orange">
+            <ClockCircleOutlined style={{ marginRight: 4 }} />
+            Hết hạn tự động
+          </Tag>
+        );
       case 'RANDOM_SELECT':
         return (
           <Tag color="purple">
@@ -76,7 +113,7 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
         );
       case 'ASSIGN':
         return (
-          <Tag color="green">
+          <Tag color="blue">
             <UserOutlined style={{ marginRight: 4 }} />
             Phân bổ mới
           </Tag>
@@ -95,13 +132,6 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
             Thu hồi về Pool
           </Tag>
         );
-      case 'EXPIRE':
-        return (
-          <Tag color="red">
-            <ClockCircleOutlined style={{ marginRight: 4 }} />
-            Hết hạn tự động
-          </Tag>
-        );
       case 'UNDO':
         return (
           <Tag color="warning">
@@ -114,22 +144,79 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
     }
   };
 
+  const getTimelineColor = (actionType: string) => {
+    const action = actionType?.toUpperCase();
+    switch (action) {
+      case 'ACCEPT':
+      case 'ACCEPT_ALLOCATION':
+        return 'green';
+      case 'DECLINE':
+      case 'DECLINE_ALLOCATION':
+        return 'red';
+      case 'RECALL':
+      case 'RECALL_ALLOCATION':
+      case 'REVOKE':
+        return 'volcano';
+      case 'EXPIRE':
+      case 'EXPIRED':
+        return 'orange';
+      case 'RANDOM_SELECT':
+        return 'purple';
+      case 'ASSIGN':
+        return 'green';
+      case 'TRANSFER':
+        return 'blue';
+      case 'UNDO':
+        return 'gold';
+      default:
+        return 'blue';
+    }
+  };
+
+  const getActionTitle = (item: CustomerAssignmentTimelineItem) => {
+    const action = item.actionType?.toUpperCase();
+    switch (action) {
+      case 'ACCEPT':
+      case 'ACCEPT_ALLOCATION':
+        return item.staffName ? `${item.staffName} đã chấp nhận nhận data` : 'Đã chấp nhận nhận data';
+      case 'DECLINE':
+      case 'DECLINE_ALLOCATION':
+        return item.prevStaffName || item.staffName
+          ? `${item.prevStaffName || item.staffName} từ chối nhận data`
+          : 'Từ chối nhận data';
+      case 'RECALL':
+      case 'RECALL_ALLOCATION':
+        return item.prevStaffName ? `Thu hồi data từ ${item.prevStaffName}` : 'Thu hồi đợt phân bổ';
+      case 'EXPIRE':
+      case 'EXPIRED':
+        return item.prevStaffName ? `Hết hạn phân bổ của ${item.prevStaffName}` : 'Hết hạn phân bổ';
+      case 'RANDOM_SELECT':
+        return 'Được chọn ngẫu nhiên trong đợt lọc';
+      case 'ASSIGN':
+        return item.staffName ? `Phân bổ cho: ${item.staffName}` : 'Phân bổ mới';
+      case 'TRANSFER':
+        return item.staffName ? `Chuyển sang cho: ${item.staffName}` : 'Chuyển Booker';
+      case 'REVOKE':
+        return item.prevStaffName ? `Thu hồi từ: ${item.prevStaffName}` : 'Thu hồi về Pool';
+      case 'UNDO':
+        return 'Đã hoàn tác đợt phân bổ';
+      default:
+        return item.staffName
+          ? `Phân bổ cho: ${item.staffName}`
+          : item.prevStaffName
+            ? `Thu hồi từ: ${item.prevStaffName}`
+            : 'Hủy phân bổ';
+    }
+  };
+
   const items = timelineItems.map((item) => {
     const formattedDate = dayjs(item.assignedAt).format('DD/MM/YYYY HH:mm');
     const formattedExpire = item.expiresAt ? dayjs(item.expiresAt).format('DD/MM/YYYY HH:mm') : null;
+    const campaignName = (item as SafeAny).campaignName;
 
     return {
       key: item.id,
-      color:
-        item.actionType === 'RANDOM_SELECT'
-          ? 'purple'
-          : item.actionType === 'ASSIGN'
-            ? 'green'
-            : item.actionType === 'TRANSFER'
-              ? 'blue'
-              : item.actionType === 'EXPIRE' || item.actionType === 'REVOKE'
-                ? 'red'
-                : 'orange',
+      color: getTimelineColor(item.actionType),
       children: (
         <div
           style={{
@@ -151,13 +238,7 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
             <Space>
               {getActionTag(item)}
               <Text strong style={{ color: themeMode === 'dark' ? '#fff' : '#141414' }}>
-                {item.actionType === 'RANDOM_SELECT'
-                  ? 'Được chọn ngẫu nhiên trong đợt lọc'
-                  : item.staffName
-                    ? `Phân bổ cho: ${item.staffName}`
-                    : item.prevStaffName
-                      ? `Thu hồi từ: ${item.prevStaffName}`
-                      : 'Hủy phân bổ'}
+                {getActionTitle(item)}
               </Text>
               {item.isRetained && (
                 <Tag color="gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -176,12 +257,21 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
               <Text style={{ fontWeight: 600 }}>{item.assignedBy}</Text>
             </div>
 
-            {item.sourceFilterSummary && (
+            {(campaignName || item.sourceFilterSummary) && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <Text type="secondary">
-                  <FilterOutlined /> Công thức / Nguồn lọc:{' '}
-                </Text>
-                <Tag color="cyan">{item.sourceFilterSummary}</Tag>
+                <Text type="secondary">Chiến dịch / Nguồn lọc: </Text>
+                {campaignName && (
+                  <Tag color="gold">
+                    <GiftOutlined style={{ marginRight: 4 }} />
+                    {campaignName}
+                  </Tag>
+                )}
+                {item.sourceFilterSummary && (
+                  <Tag color="cyan">
+                    <FilterOutlined style={{ marginRight: 4 }} />
+                    {item.sourceFilterSummary}
+                  </Tag>
+                )}
               </div>
             )}
 

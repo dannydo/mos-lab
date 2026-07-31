@@ -91,3 +91,27 @@ export async function requireCatalogAdmin(request: FastifyRequest, reply: Fastif
     });
   }
 }
+
+export async function requireCampaignAdmin(request: FastifyRequest, reply: FastifyReply) {
+  const user = request.user as JwtUserPayload | undefined;
+
+  if (!user) {
+    return reply.status(401).send({ error: 'Unauthorized', message: 'Authentication required' });
+  }
+
+  const isAuthorized =
+    user.role === 'admin' ||
+    user.role === 'manager' ||
+    user.role === 'oc' ||
+    user.role === 'ls' ||
+    user.username?.toLowerCase() === 'admin' ||
+    user.username?.toLowerCase() === 'danhdo@gmail.com' ||
+    user.email?.toLowerCase() === 'danhdo@gmail.com';
+
+  if (!isAuthorized) {
+    return reply.status(403).send({
+      error: 'Forbidden',
+      message: 'Chỉ có tài khoản Admin / Quản lý mới có quyền quản lý Chiến dịch',
+    });
+  }
+}

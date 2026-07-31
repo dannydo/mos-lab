@@ -309,7 +309,9 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
           } else if (bucket === 'COMBO_DEAD') {
             innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
           } else if (bucket === 'NOT_COMBO_LIVE') {
-            innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+            innerWhereClauses.push(
+              "(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0) AND NOT EXISTS (SELECT 1 FROM mos_lab.crm_campaign_customers cc_cust JOIN mos_lab.crm_custom_campaigns cc ON cc.id = cc_cust.campaign_id WHERE cc_cust.legacy_user_id = u.id AND cc_cust.removed_at IS NULL AND cc.status = 'ACTIVE')"
+            );
           }
         }
 

@@ -103,7 +103,7 @@ export function useNycData(options?: UseNycDataOptions) {
   const fetchStaffList = useCallback(async () => {
     if (!currentUser || currentUser.role !== 'admin') return;
     try {
-      const data = await apiClient.customers.getStaff();
+      const data = await apiClient.customers.getStaff({ role: 'telesales' });
       setStaffList(data);
     } catch (err) {
       console.error('Failed to load staff list:', err);

@@ -104,6 +104,23 @@ import {
   AllocationAuditQueryParams,
   AllocationAuditStatsResponse,
   BookerAllocationBatchSummary,
+  Campaign,
+  CampaignCustomer,
+  CampaignTouchpoint,
+  CampaignPromotion,
+  CampaignTouchpointLog,
+  CreateCampaignDto,
+  UpdateCampaignDto,
+  AddCampaignCustomersDto,
+  RemoveCampaignCustomerDto,
+  CreateCampaignTouchpointDto,
+  UpdateCampaignTouchpointDto,
+  CreateCampaignPromotionDto,
+  UpdateCampaignPromotionDto,
+  ToggleCampaignTouchpointLogDto,
+  CustomerCampaignPromotionInfo,
+  CampaignStatsResponse,
+  ListCampaignsParams,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -919,6 +936,10 @@ export const apiClient = {
   },
 
   bk: {
+    create: async (data: Record<string, unknown>): Promise<unknown> => {
+      const response = await api.post('/customers/booking', data);
+      return response.data;
+    },
     getBookingLeaderboard: async (params?: Record<string, unknown>): Promise<BkBookingLeaderboardResponse> => {
       const response = await api.get('/kpi/bk/booking/leaderboard', { params });
       return response.data;
@@ -1091,6 +1112,84 @@ export const apiClient = {
     },
     getAuditStats: async (params?: AllocationAuditQueryParams): Promise<AllocationAuditStatsResponse> => {
       const response = await api.get('/allocation/audit-stats', { params });
+      return response.data;
+    },
+  },
+
+  campaigns: {
+    list: async (params?: ListCampaignsParams) => {
+      const response = await api.get('/campaigns', { params });
+      return response.data;
+    },
+    getById: async (id: number) => {
+      const response = await api.get(`/campaigns/${id}`);
+      return response.data;
+    },
+    getBySlug: async (slug: string) => {
+      const response = await api.get(`/campaigns/slug/${slug}`);
+      return response.data;
+    },
+    create: async (dto: CreateCampaignDto) => {
+      const response = await api.post('/campaigns', dto);
+      return response.data;
+    },
+    update: async (id: number, dto: UpdateCampaignDto) => {
+      const response = await api.put(`/campaigns/${id}`, dto);
+      return response.data;
+    },
+    delete: async (id: number) => {
+      const response = await api.delete(`/campaigns/${id}`);
+      return response.data;
+    },
+    endCampaign: async (id: number) => {
+      const response = await api.post(`/campaigns/${id}/end`);
+      return response.data;
+    },
+    getCustomers: async (campaignId: number, params?: Record<string, unknown>) => {
+      const response = await api.get(`/campaigns/${campaignId}/customers`, { params });
+      return response.data;
+    },
+    addCustomers: async (campaignId: number, dto: AddCampaignCustomersDto) => {
+      const response = await api.post(`/campaigns/${campaignId}/customers`, dto);
+      return response.data;
+    },
+    removeCustomer: async (campaignId: number, customerId: number, dto?: RemoveCampaignCustomerDto) => {
+      const response = await api.delete(
+        `/campaigns/${campaignId}/customers/${customerId}`,
+        dto ? { data: dto } : undefined
+      );
+      return response.data;
+    },
+    toggleTouchpointLog: async (
+      campaignId: number,
+      customerId: number,
+      touchpointId: number,
+      dto: ToggleCampaignTouchpointLogDto
+    ) => {
+      const response = await api.post(
+        `/campaigns/${campaignId}/customers/${customerId}/touchpoints/${touchpointId}`,
+        dto
+      );
+      return response.data;
+    },
+    getPromotions: async (campaignId: number) => {
+      const response = await api.get(`/campaigns/${campaignId}/promotions`);
+      return response.data;
+    },
+    createPromotion: async (campaignId: number, dto: CreateCampaignPromotionDto) => {
+      const response = await api.post(`/campaigns/${campaignId}/promotions`, dto);
+      return response.data;
+    },
+    deletePromotion: async (campaignId: number, promotionId: number) => {
+      const response = await api.delete(`/campaigns/${campaignId}/promotions/${promotionId}`);
+      return response.data;
+    },
+    getStats: async (campaignId: number) => {
+      const response = await api.get(`/campaigns/${campaignId}/stats`);
+      return response.data;
+    },
+    getCustomerActivePromotions: async (customerId: number): Promise<CustomerCampaignPromotionInfo[]> => {
+      const response = await api.get(`/campaigns/customer/${customerId}/active-promotions`);
       return response.data;
     },
   },

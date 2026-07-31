@@ -42,6 +42,7 @@ model CrmStaff {
   assignedHistory     CrmAssignmentHistory[] @relation("AssignerHistory")
   assignedBatches     CrmAllocationBatch[]   @relation("BatchAssigner")
   receivedBatches     CrmAllocationBatch[]   @relation("BatchBooker")
+  createdCampaigns    CrmCustomCampaign[]    @relation("CampaignCreator")
 
   @@map("crm_staff")
 }
@@ -343,6 +344,7 @@ model CrmBookingLog {
 model CrmAllocationBatch {
   id                 Int       @id @default(autoincrement())
   batchCode          String    @unique @map("batch_code") @db.VarChar(50)
+  campaignId         Int?      @map("campaign_id")
   assignerId         Int       @map("assigner_id")
   bookerId           Int       @map("booker_id")
   totalCount         Int       @map("total_count")
@@ -360,10 +362,12 @@ model CrmAllocationBatch {
   createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
+  campaign CrmCustomCampaign?       @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   assigner CrmStaff                 @relation("BatchAssigner", fields: [assignerId], references: [id], onDelete: Cascade)
   booker   CrmStaff                 @relation("BatchBooker", fields: [bookerId], references: [id], onDelete: Cascade)
   items    CrmAllocationBatchItem[]
 
+  @@index([campaignId])
   @@index([bookerId])
   @@index([assignerId])
   @@index([status])
@@ -413,4 +417,110 @@ model CrmLocaTouchpoint {
   @@index([touchpointKey])
   @@index([cycleDate])
   @@map("crm_loca_touchpoints")
+}
+
+// ═══════════════════════════════════════════
+// Custom Sub-Campaign Models (NYC Sub-Campaign System)
+// ═══════════════════════════════════════════
+
+model CrmCustomCampaign {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(100)
+  slug        String    @unique @db.VarChar(100)
+  description String?   @db.Text
+  startDate   DateTime? @map("start_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  status      String    @default("ACTIVE") @db.VarChar(20) // ACTIVE | ENDED | ARCHIVED
+  createdBy   Int?      @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  creator           CrmStaff?               @relation("CampaignCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  customers         CrmCampaignCustomer[]
+  touchpoints       CrmCampaignTouchpoint[]
+  promotions        CrmCampaignPromotion[]
+  allocationBatches CrmAllocationBatch[]
+
+  @@index([status])
+  @@index([createdBy])
+  @@map("crm_custom_campaigns")
+}
+
+model CrmCampaignCustomer {
+  id            Int       @id @default(autoincrement())
+  campaignId    Int       @map("campaign_id")
+  legacyUserId  Int       @map("legacy_user_id")
+  addedAt       DateTime  @default(now()) @map("added_at") @db.DateTime(0)
+  addedBy       Int?      @map("added_by")
+  removedAt     DateTime? @map("removed_at") @db.DateTime(0)
+  removedReason String?   @map("removed_reason") @db.Text
+  removedBy     Int?      @map("removed_by")
+
+  campaign       CrmCustomCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  touchpointLogs CrmCampaignTouchpointLog[]
+
+  @@index([campaignId])
+  @@index([legacyUserId])
+  @@index([removedAt])
+  @@index([legacyUserId, removedAt])
+  @@index([campaignId, removedAt])
+  @@map("crm_campaign_customers")
+}
+
+model CrmCampaignTouchpoint {
+  id         Int      @id @default(autoincrement())
+  campaignId Int      @map("campaign_id")
+  key        String   @db.VarChar(50)
+  label      String   @db.VarChar(100)
+  daysMin    Int      @map("days_min")
+  daysMax    Int?     @map("days_max")
+  color      String?  @db.VarChar(30)
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  campaign CrmCustomCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  logs     CrmCampaignTouchpointLog[]
+
+  @@unique([campaignId, key], name: "campaignId_key")
+  @@index([campaignId])
+  @@map("crm_campaign_touchpoints")
+}
+
+model CrmCampaignPromotion {
+  id          Int      @id @default(autoincrement())
+  campaignId  Int      @map("campaign_id")
+  name        String   @db.VarChar(150)
+  code        String?  @db.VarChar(50)
+  type        String   @db.VarChar(30) // PERCENT_DISCOUNT | FIXED_DISCOUNT | FREE_SERVICE | FREE_PRODUCT
+  value       Float    @default(0)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active") @db.TinyInt
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  campaign CrmCustomCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([isActive])
+  @@map("crm_campaign_promotions")
+}
+
+model CrmCampaignTouchpointLog {
+  id                  Int      @id @default(autoincrement())
+  campaignCustomerId  Int      @map("campaign_customer_id")
+  touchpointId        Int      @map("touchpoint_id")
+  isChecked           Boolean  @default(true) @map("is_checked") @db.TinyInt
+  completedAt         DateTime @default(now()) @map("completed_at") @db.DateTime(0)
+  completedByStaffId  Int?     @map("completed_by_staff_id")
+  completedByStaffName String? @map("completed_by_staff_name") @db.VarChar(100)
+  note                String?  @db.Text
+
+  campaignCustomer CrmCampaignCustomer   @relation(fields: [campaignCustomerId], references: [id], onDelete: Cascade)
+  touchpoint       CrmCampaignTouchpoint @relation(fields: [touchpointId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignCustomerId, touchpointId], name: "campaignCustomerId_touchpointId")
+  @@index([campaignCustomerId])
+  @@index([touchpointId])
+  @@map("crm_campaign_touchpoint_logs")
 }

@@ -297,43 +297,44 @@ export const getNycColumns = ({
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 200,
+      width: 110,
+      align: 'center' as const,
       render: (_: SafeAny, record: Customer) => {
         const isPlanned = dailyPlanList.includes(record.id);
         const isAdding = addingIds.includes(record.id);
         return (
           <Space size="small">
-            <Button
-              type={isPlanned ? 'dashed' : 'primary'}
-              ghost={!isPlanned}
-              size="small"
-              loading={isAdding}
-              icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
-              onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
-              style={
-                !isPlanned
-                  ? {
-                      borderColor: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                      color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                    }
-                  : {}
-              }
-              disabled={isPlanned || isAdding}
-            >
-              {isPlanned ? 'Đã lên lịch' : 'Lên lịch gọi'}
-            </Button>
-            <Button
-              type="default"
-              size="small"
-              icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
-              onClick={() => handleOpenSmsModal?.(record)}
-              style={{
-                borderColor: '#D4A84B',
-                color: '#D4A84B',
-              }}
-            >
-              Gửi SMS
-            </Button>
+            <Tooltip title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi'}>
+              <Button
+                type={isPlanned ? 'dashed' : 'primary'}
+                ghost={!isPlanned}
+                size="small"
+                loading={isAdding}
+                icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
+                onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
+                style={
+                  !isPlanned
+                    ? {
+                        borderColor: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                        color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                      }
+                    : {}
+                }
+                disabled={isPlanned || isAdding}
+              />
+            </Tooltip>
+            <Tooltip title="Gửi SMS">
+              <Button
+                type="default"
+                size="small"
+                icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
+                onClick={() => handleOpenSmsModal?.(record)}
+                style={{
+                  borderColor: '#D4A84B',
+                  color: '#D4A84B',
+                }}
+              />
+            </Tooltip>
           </Space>
         );
       },

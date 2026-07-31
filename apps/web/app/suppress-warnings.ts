@@ -17,6 +17,9 @@ console.warn = (...args: SafeAny[]) => {
       args[0].includes('`tip` only work in nest') ||
       args[0].includes('There may be circular references') ||
       args[0].includes('circular references') ||
+      args[0].includes('Peer connection closed') ||
+      args[0].includes('Peer connection undefined') ||
+      args[0].includes('SessionDescriptionHandler') ||
       args[0].includes('registering a cleanup function after unmount'))
   ) {
     return;
@@ -45,6 +48,9 @@ console.error = (...args: SafeAny[]) => {
       args[0].includes('destroyOnHidden') ||
       args[0].includes('There may be circular references') ||
       args[0].includes('circular references') ||
+      args[0].includes('Peer connection closed') ||
+      args[0].includes('Peer connection undefined') ||
+      args[0].includes('SessionDescriptionHandler') ||
       args[0].includes('registering a cleanup function after unmount'))
   ) {
     return;
@@ -52,8 +58,32 @@ console.error = (...args: SafeAny[]) => {
   originalError(...args);
 };
 
-// Lightweight polyfills for older Chromebook / ChromeOS 91 (< Chrome 95)
+// Lightweight polyfills & global error suppression for OmiCall WebRTC & older browsers
 if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    const msg = typeof reason === 'string' ? reason : reason?.message || String(reason || '');
+    if (
+      msg.includes('Peer connection closed') ||
+      msg.includes('Peer connection undefined') ||
+      msg.includes('SessionDescriptionHandler')
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  });
+
+  window.addEventListener('error', (event) => {
+    const msg = event.message || event.error?.message || String(event.error || '');
+    if (
+      msg.includes('Peer connection closed') ||
+      msg.includes('Peer connection undefined') ||
+      msg.includes('SessionDescriptionHandler')
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  });
   if (!(Array.prototype as SafeAny).at) {
     (Array.prototype as SafeAny).at = function (this: SafeAny[], n: number) {
       n = Math.trunc(n) || 0;

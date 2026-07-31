@@ -45,6 +45,7 @@ stop-servers.sh
 logs/
 AGENTS.md
 .agents/skills/
+.agents/teamwork_preview_*
 docs/wiki/
 
 # Python virtual environments

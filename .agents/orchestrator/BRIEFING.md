@@ -1,77 +1,73 @@
-# BRIEFING — 2026-07-30T20:24:40+07:00
+# BRIEFING — 2026-07-31T15:49:00Z
 
 ## Mission
 
-Chạy Proof-of-Concept (PoC) thử nghiệm cài đặt và đánh giá Graphify (hoặc giải pháp kiến trúc knowledge graph tương đương) trên monorepo `mos-lab` (Next.js 15 web + Fastify 5 api + shared package), đồng thời tạo script tự động sinh báo cáo sơ đồ đồ thị phụ thuộc (`graph.html`, `GRAPH_REPORT.md`).
+Implement complete unification of batch allocation (crm_allocation_batches, crm_allocation_batch_items) and allocation history tracking (crm_assignment_histories) for Custom Campaign customers in mos-lab.
 
 ## 🔒 My Identity
 
-- Archetype: orchestrator
+- Archetype: teamwork_preview_orchestrator
 - Roles: orchestrator, user_liaison, human_reporter, successor
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/orchestrator
-- Original parent: parent
-- Original parent conversation ID: 4fbaf9e2-e075-44b3-b0e8-862dfa23be3f
+- Original parent: top-level
+- Original parent conversation ID: 915e37cf-6079-4c81-953b-ec764558a385
 
 ## 🔒 My Workflow
 
-- **Pattern**: Project / Canonical
+- **Pattern**: Project Pattern
 - **Scope document**: /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md
 
-1. **Decompose**: Decomposed into 5 milestones:
-   - M1: Architectural Exploration & Comparative Analysis (Graphify vs Alternatives) [done]
-   - M2: PoC Script Implementation & Artifact Generator (`pnpm graph`, `graph.html`, `GRAPH_REPORT.md`) [done]
-   - M3: Review & Adversarial Validation (Verification of script execution, HTML graph, zero dev/build regression) [done]
-   - M4: Forensic Integrity Audit (Authenticity check by Forensic Auditor) [done: CLEAN verdict]
-   - M5: Synthesis & Final Reporting [in-progress]
-2. **Dispatch & Execute**:
-   - M1: Exploration [done]
-   - M2: Implementation [done]
-   - M3: Review & Challenge [done]
-   - M4: Forensic Audit [done]
-   - M5: Synthesis & Reporting [in-progress]
-3. **On failure**: Retry / Replace / Skip / Redistribute / Redesign.
-4. **Succession**: Self-succeed if spawn count >= 16.
+1. **Decompose**: Scope broken into 4 implementation milestones + 1 E2E testing / build verification milestone.
+2. **Dispatch & Execute**: Direct iteration loop per milestone (Explorer -> Worker -> Reviewer -> Challenger -> Auditor gate).
+3. **On failure**: Retry -> Replace -> Skip -> Redistribute -> Redesign -> Escalate.
+4. **Succession**: Threshold at 16 spawns, write handoff.md, spawn successor.
 
 - **Work items**:
-  1. M1: Architectural Exploration & Comparative Analysis [done]
-  2. M2: PoC Script Implementation & Artifact Generator [done]
-  3. M3: Review & Adversarial Validation [done]
-  4. M4: Forensic Integrity Audit [done]
-  5. M5: Synthesis & Final Reporting [in-progress]
-- **Current phase**: 5 (M5 Synthesis & Final Reporting)
-- **Current focus**: Synthesizing all findings and delivering final completion report.
+  1. Milestone 1: Exploration & Codebase Audit (R1, R2, R3, R4) [pending]
+  2. Milestone 2: Backend Unification & API Updates (R1, R2, R3, R4) [pending]
+  3. Milestone 3: Frontend Unification & Drawer/Table Integration (R1, R2, R3) [pending]
+  4. Milestone 4: Campaign Expiration Clean-up & Verification (R4, Monorepo Build) [pending]
+- **Current phase**: 1
+- **Current focus**: Milestone 1 - Exploration & Codebase Audit
+  1. Milestone 1: Exploration & Codebase Audit (R1, R2, R3, R4) [completed]
+  2. Milestone 2: Backend Unification & API Updates (R1, R2, R3, R4) [completed]
+  3. Milestone 3: Frontend Unification & Drawer/Table Integration (R1, R2, R3) [completed]
+  4. Milestone 4: Campaign Expiration Clean-up & Verification (R4, Monorepo Build) [completed]
+- **Current phase**: 4
+- **Current focus**: Complete & Verified
 
 ## 🔒 Key Constraints
 
-- NEVER write, modify, or create source code files directly.
-- MAY use file-editing tools ONLY for metadata/state files (.md) in .agents/ folder.
-- Require workers to run builds (`pnpm build`) and tests.
-- Forensic Auditor verdict is a BINARY VETO — violation means failure.
-- Zero impact on existing `pnpm dev` and `pnpm build` workflows (R3).
-- Generated artifacts safely gitignored or stored in reports folder.
+- Never write or modify source code files directly (DISPATCH-ONLY).
+- Never run build/test commands directly.
+- File-editing tools permitted ONLY for metadata/state files (.md) in .agents/ folder.
+- Never reuse a subagent after handoff.
+- Mandatory Forensic Auditor check before milestone completion.
 
 ## Current Parent
 
-- Conversation ID: 4fbaf9e2-e075-44b3-b0e8-862dfa23be3f
-- Updated: 2026-07-30T20:24:40+07:00
+- Conversation ID: 915e37cf-6079-4c81-953b-ec764558a385
+- Updated: 2026-07-31T15:59:46+07:00
 
 ## Key Decisions Made
 
-- Milestone 4 passed: Forensic Auditor certified implementation as CLEAN (zero hardcoded facade data, 100% genuine dynamic AST parsing, 0 CDN leaks, git status clean).
+- Use Project Pattern with explicit milestone breakdown.
+- Execute direct iteration loop per milestone.
+- Perform empirical verification & forensic integrity audit (Verdict: CLEAN).
 
 ## Team Roster
 
-| Agent                    | Type                        | Work Item                                                      | Status               | Conv ID                              |
-| ------------------------ | --------------------------- | -------------------------------------------------------------- | -------------------- | ------------------------------------ |
-| explorer_graphify_m1_1   | teamwork_preview_explorer   | Graphify research & architecture analysis                      | completed            | d21daf0a-d6a5-4d68-8b49-7733b6bd20db |
-| explorer_graphify_m1_2   | teamwork_preview_explorer   | Alternatives audit (turbo graph, depcruise, madge, AST)        | completed            | 7c06a885-bbd4-41b6-8768-6c13d5c80839 |
-| explorer_graphify_m1_3   | teamwork_preview_explorer   | Codebase structure audit & graph schema design                 | completed            | 1e68c23c-658f-4135-96c6-43ba465ee213 |
-| worker_graphify_m2       | teamwork_preview_worker     | Implement `scripts/generate-graph.ts`, `pnpm graph`, artifacts | completed            | 5ac75f23-c8c5-4e59-9e68-f032cf66dcf1 |
-| reviewer_graphify_m3_1   | teamwork_preview_reviewer   | Code Review of `scripts/generate-graph.ts` & config            | completed (APPROVED) | 04451cc9-e32d-418a-a286-6cc891e643d4 |
-| reviewer_graphify_m3_2   | teamwork_preview_reviewer   | Artifact Review of `graph.html`, `GRAPH_REPORT.md`             | completed (APPROVED) | 20d0b939-76ec-4c9c-9503-9164a94972ea |
-| challenger_graphify_m3_1 | teamwork_preview_challenger | Empirical stress test harness for `pnpm graph`                 | completed (PASSED)   | a3e6d4e2-1425-480f-8a72-78d777de004b |
-| challenger_graphify_m3_2 | teamwork_preview_challenger | Regression & build safety verification (`pnpm build`)          | completed (PASSED)   | f0da181a-a6d0-49e4-bea3-5f94328e7c2b |
-| auditor_graphify_m4      | teamwork_preview_auditor    | Forensic Integrity Audit                                       | completed (CLEAN)    | 33aa2bc8-f152-4d35-881a-dd8bbdcb4133 |
+| Agent        | Type                        | Work Item                        | Status    | Conv ID                              |
+| ------------ | --------------------------- | -------------------------------- | --------- | ------------------------------------ |
+| Explorer 1   | teamwork_preview_explorer   | Backend Allocation Audit         | completed | 070f7af4-e622-4bb9-8118-3da2e23d19bf |
+| Explorer 2   | teamwork_preview_explorer   | Frontend Campaign Audit          | completed | 8c3adc5f-9f08-47a3-8cec-075bf7cdb388 |
+| Explorer 3   | teamwork_preview_explorer   | Traceability & Expiration Audit  | completed | 028eccc5-b775-456b-95ef-0556fcddcc93 |
+| Worker 1     | teamwork_preview_worker     | Backend Allocation Unification   | completed | 8f232570-ada0-4492-bb5e-a9ce266d785c |
+| Worker 2     | teamwork_preview_worker     | Frontend Campaign UI Unification | completed | 48bae431-c67b-40d0-9f18-337b1aeae3eb |
+| Challenger 1 | teamwork_preview_challenger | Monorepo Build Verification      | completed | 58c00ee3-0584-4739-b2b5-10ee44bbe2bb |
+| Challenger 2 | teamwork_preview_challenger | Requirements Logic Verification  | completed | 47c7ea48-6320-4c0f-b520-b81c2baf5bb6 |
+| Auditor 1    | teamwork_preview_auditor    | Forensic Integrity Audit         | completed | 3fd339ca-4b5a-4694-b0f4-bae8aacb6d16 |
+| Worker 3     | teamwork_preview_worker     | Lint Cleanup                     | completed | 472d2b87-c68c-4679-89da-a3e968400173 |
 
 ## Succession Status
 
@@ -83,19 +79,12 @@ Chạy Proof-of-Concept (PoC) thử nghiệm cài đặt và đánh giá Graphif
 
 ## Active Timers
 
-- Heartbeat cron: task-7 (running)
+- Heartbeat cron: terminated
 - Safety timer: none
 
 ## Artifact Index
 
-- /Users/dannydo/projects/mos-lab/.agents/ORIGINAL_REQUEST.md — Original User Request
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md — Project Scope & Milestones
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/plan.md — Detailed Implementation Plan
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/progress.md — Execution Progress
-- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_graphify_m2/changes.md — Implementation Summary Report
-- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_worker_graphify_m2/handoff.md — Worker M2 Handoff
-- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_reviewer_graphify_m3_1/review.md — Code Review Report
-- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_reviewer_graphify_m3_2/review.md — Artifact Review Report
-- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_graphify_m3_1/test_report.md — Graph Stress Test Report
-- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_challenger_graphify_m3_2/test_report.md — Regression & Build Test Report
-- /Users/dannydo/projects/mos-lab/.agents/teamwork_preview_auditor_graphify_m4/audit_report.md — Forensic Integrity Audit Report
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/ORIGINAL_REQUEST.md — User request record
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/BRIEFING.md — Persistent briefing index
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/progress.md — Liveness & status checkpoint
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md — Architecture & Milestone breakdown

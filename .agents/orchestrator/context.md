@@ -1,40 +1,26 @@
-# Context Memory — Booker Customer Allocation System Upgrade
+# Context: Campaign Allocation Unification
 
-## Overview
+## Background
 
-This document records key context, findings, file locations, and decisions during the Booker Customer Allocation System upgrade for `mos-lab`.
+In `mos-lab`, custom campaigns under the NYC pool allow Admin to create sub-campaigns, assign customers to campaigns, and distribute campaign customers to Bookers.
+Currently, campaign customer management was partially operating using join table IDs (`crm_campaign_customers.id`) instead of the central `legacyUserId` (e.g. `982962666`), or missing complete integration with the global allocation batching (`crm_allocation_batches`, `crm_allocation_batch_items`) and allocation history tracking (`crm_assignment_histories`).
 
-## Key Requirements
+## Key Requirements (from ORIGINAL_REQUEST.md follow-up 2026-07-31T15:48:52Z):
 
-1. **R1: Batch Pending Accept Flow**:
-   - `PENDING_ACCEPT` status with 24h countdown timer.
-   - Customers remain unassigned/pending during 24h period.
-   - Booker verification modal showing customer details (name, phone, source, care history).
-   - "Chấp nhận toàn bộ" -> status `ACCEPTED`, assigns customers officially to Booker.
-   - "Từ chối toàn bộ" -> status `DECLINED` with mandatory decline reason, returns customers to allocation pool.
-   - Auto-expiration after 24h without action -> status `EXPIRED`, returns customers to allocation pool.
+1. **R1. Unified Customer ID Identification (`legacyUserId`)**: Ensure all campaign customer allocation operations use true `legacyUserId` instead of join table IDs (`crm_campaign_customers.id`). Table `rowKey` and selection keys must evaluate to `record.legacyUserId || record.customerId || record.id`.
+2. **R2. Complete Batch Allocation & 24h Booker Acceptance Workflow**: Admin batch allocation must call `AllocationService.createBatch` with `bookerId`, `customerIds` (legacyUserIds), `campaignId`, `sourceType: 'MANUAL'`, `sourceFilterSummary: 'Chiến dịch [Tên] ([X] KH)'`. Generates `crm_allocation_batches`, `crm_allocation_batch_items`, `crm_assignment_histories` (`actionType = 'ASSIGN'`), and 24h pending notification.
+3. **R3. Full Traceability**: Booker accept updates `crm_customer_assignments` and logs `ACCEPT` in `crm_assignment_histories`. All events must be visible in Customer Detail Drawer -> Lịch sử Phân bổ, Global Allocation History, and Campaign Customer Table ("Đã phân bổ" status).
+4. **R4. Campaign Expiration & Clean-up**: Ending or archiving a campaign logs `EXPIRED` in `crm_assignment_histories` for active campaign assignments and returns unbooked customers back to main NYC pool.
+5. **Build Verification**: `pnpm build` across all monorepo packages.
 
-2. **R2: Strict Deduplication & Database Transaction**:
-   - Backend & DB filtering: filter out customers already owned by Booker or currently in another `PENDING_ACCEPT` batch.
-   - Prisma `$transaction` and unique constraints: exact $+N$ customer increase for Booker upon acceptance without duplicate IDs or count mismatches.
+## Key Files to Examine/Modify:
 
-3. **R3: 30-Day History & Countdown Timer**:
-   - Allocation History tab/screen for Booker & Admin/Manager.
-   - Records batch ID, assigner (Admin/Manager), recipient (Booker), customer count, status (`PENDING_ACCEPT`, `ACCEPTED`, `DECLINED`, `EXPIRED`, `RECALLED`), decline reason, timestamp.
-   - 30-day countdown badge on history records showing remaining retention time.
-
-4. **R4: Allocation Audit Dashboard for Admin/Manager**:
-   - Overview dashboard for Admin/Manager to monitor acceptance/decline/expired rates per Booker, decline reasons.
-   - "Recall Batch" button for Admin/Manager to recall `PENDING_ACCEPT` batches -> `RECALLED` and return customers to allocation pool.
-
-5. **Build Integrity**:
-   - Ensure `pnpm build` passes with zero type errors.
-
-## Key Workspace Locations
-
-- Project Root: `/Users/dannydo/projects/mos-lab`
-- Fastify API Routes: `/Users/dannydo/projects/mos-lab/apps/api/src/modules/`
-- Prisma Schemas: `/Users/dannydo/projects/mos-lab/apps/api/prisma/`
-- Frontend Pages & Components: `/Users/dannydo/projects/mos-lab/apps/web/app/dashboard/`, `/Users/dannydo/projects/mos-lab/apps/web/components/`
-- Frontend Lib & Shared Types: `/Users/dannydo/projects/mos-lab/apps/web/lib/`, `/Users/dannydo/projects/mos-lab/packages/shared/`
-- Guidelines & Rules: `/Users/dannydo/projects/mos-lab/.agents/AGENTS.md`, `/Users/dannydo/projects/mos-lab/AGENTS.md`
+- `apps/api/src/modules/allocation/allocation.service.ts`
+- `apps/api/src/modules/campaigns/routes.ts`
+- `apps/api/src/modules/campaigns/campaign.service.ts` (if any)
+- `apps/api/src/modules/customers/routes.ts`
+- `apps/api/prisma/crm.prisma` (schema reference)
+- `packages/shared/src/types/campaign.ts` / `allocation.ts`
+- `apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx`
+- `apps/web/components/customers/CustomerDetailDrawer.tsx` (or AllocationHistoryTab component)
+- `apps/web/lib/api-client.ts`

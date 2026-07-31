@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { Space, Button, Typography, Popconfirm, Modal, Select, InputNumber, Radio } from 'antd';
-import { TeamOutlined, DeleteOutlined, WarningOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { TeamOutlined, DeleteOutlined, WarningOutlined, ClockCircleOutlined, RocketOutlined } from '@ant-design/icons';
 import { RevokeAssignmentModal } from './RevokeAssignmentModal';
 import { RetainDataButton } from './RetainDataButton';
+import { AddToCampaignModal } from '../../../../components/campaign/AddToCampaignModal';
 import { SafeAny, Staff } from '@mos-lab/shared';
 
 const { Text } = Typography;
@@ -65,6 +66,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
   randomBatchId,
 }: CustomerBulkActionsProps) {
   const [revokeModalVisible, setRevokeModalVisible] = useState(false);
+  const [addToCampaignModalVisible, setAddToCampaignModalVisible] = useState(false);
   const [customDays, setCustomDays] = useState<number | undefined>(undefined);
   const [isCustomMode, setIsCustomMode] = useState(false);
 
@@ -118,6 +120,15 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
             Phân bổ Booker
           </Button>
 
+          <Button
+            type="primary"
+            icon={<RocketOutlined />}
+            onClick={() => setAddToCampaignModalVisible(true)}
+            style={{ background: '#10b981', borderColor: '#10b981', borderRadius: '6px', fontWeight: 600 }}
+          >
+            Thêm vào chiến dịch
+          </Button>
+
           {isManagerOrAdmin && (
             <Button
               danger
@@ -151,110 +162,6 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
         </Space>
       </div>
 
-      {/* ASSIGN BOOKER MODAL WITH EXPIRATION PRESETS */}
-      <Modal
-        title={<span style={{ color: '#D4A84B', fontWeight: 'bold' }}>Phân bổ khách hàng cho Booker</span>}
-        open={assignModalVisible}
-        onCancel={() => setAssignModalVisible(false)}
-        footer={[
-          <Button
-            key="unassign"
-            danger
-            type="dashed"
-            loading={unassigning}
-            onClick={handleUnassignCustomers}
-            style={{ float: 'left' }}
-          >
-            Hủy phân bổ (Gỡ Booker)
-          </Button>,
-          <Button key="cancel" onClick={() => setAssignModalVisible(false)}>
-            Hủy
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={assigning}
-            onClick={() => handleAssignCustomers(undefined, randomBatchId)}
-            style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000' }}
-          >
-            Xác nhận phân bổ
-          </Button>,
-        ]}
-      >
-        <div style={{ marginTop: '12px' }}>
-          <Text>
-            Chọn Booker phụ trách cho{' '}
-            <span style={{ fontWeight: 'bold', color: '#D4A84B' }}>{selectedRowKeys.length}</span> khách hàng đã chọn:
-          </Text>
-
-          <div style={{ marginTop: '16px' }}>
-            <Text strong>Booker nhận data:</Text>
-            <Select
-              style={{ width: '100%', marginTop: '6px' }}
-              placeholder="Chọn nhân viên Booker"
-              value={targetStaffId}
-              onChange={(val) => setTargetStaffId(val)}
-              options={staffList
-                .filter((s) => ['telesales', 'booker'].includes(s.role?.toLowerCase() || ''))
-                .map((s) => ({ value: s.id, label: `${s.displayName} (${s.username})` }))}
-            />
-          </div>
-
-          <div style={{ marginTop: '20px' }}>
-            <Text strong>
-              <ClockCircleOutlined style={{ marginRight: 6 }} />
-              Thời hạn phân bổ data:
-            </Text>
-            <div style={{ marginTop: '8px' }}>
-              <Radio.Group
-                value={isCustomMode ? 'CUSTOM' : durationDays}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === 'CUSTOM') {
-                    setIsCustomMode(true);
-                  } else {
-                    setIsCustomMode(false);
-                    if (setDurationDays) setDurationDays(Number(val));
-                  }
-                }}
-                buttonStyle="solid"
-              >
-                {DURATION_PRESETS.map((p) => (
-                  <Radio.Button key={p.value} value={p.value}>
-                    {p.label}
-                  </Radio.Button>
-                ))}
-                <Radio.Button value="CUSTOM">Tùy chỉnh...</Radio.Button>
-              </Radio.Group>
-
-              {isCustomMode && (
-                <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Text>Nhập số ngày:</Text>
-                  <InputNumber
-                    min={1}
-                    max={365}
-                    value={customDays}
-                    onChange={(val) => {
-                      setCustomDays(val || undefined);
-                      if (val && setDurationDays) setDurationDays(val);
-                    }}
-                    placeholder="Số ngày..."
-                    style={{ width: 120 }}
-                  />
-                  <Text type="secondary">ngày</Text>
-                </div>
-              )}
-            </div>
-            <div style={{ marginTop: '8px' }}>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                * Hết thời hạn, data tự động quay về Pool tổng nếu Booker không chọn giữ lại data.
-              </Text>
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      {/* REVOKE ASSIGNMENT MODAL */}
       <RevokeAssignmentModal
         visible={revokeModalVisible}
         onClose={() => setRevokeModalVisible(false)}
@@ -266,6 +173,94 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
         staffList={staffList}
         parentBatchId={randomBatchId}
       />
+
+      <AddToCampaignModal
+        visible={addToCampaignModalVisible}
+        onClose={() => setAddToCampaignModalVisible(false)}
+        selectedCustomerIds={selectedNumericIds}
+        onSuccess={() => {
+          setSelectedRowKeys([]);
+          if (onRefresh) onRefresh();
+        }}
+      />
+
+      {/* MODAL PHÂN BỔ BOOKER */}
+      <Modal
+        title={`Phân bổ ${selectedRowKeys.length} khách hàng cho Booker`}
+        open={assignModalVisible}
+        onOk={() => handleAssignCustomers(undefined, randomBatchId)}
+        onCancel={() => setAssignModalVisible(false)}
+        confirmLoading={assigning}
+        okText="Xác nhận Phân bổ"
+        cancelText="Hủy"
+        okButtonProps={{ disabled: !targetStaffId, style: { background: '#D4A84B', borderColor: '#D4A84B' } }}
+      >
+        <div style={{ margin: '16px 0' }}>
+          <p style={{ marginBottom: '8px' }}>Chọn Booker nhận phân bổ:</p>
+          <Select
+            showSearch
+            style={{ width: '100%', marginBottom: '16px' }}
+            placeholder="Tìm và chọn Booker..."
+            optionFilterProp="children"
+            value={targetStaffId}
+            onChange={(value) => setTargetStaffId(value)}
+            filterOption={(input, option) =>
+              (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
+            }
+            options={staffList.map((staff) => ({
+              value: staff.id,
+              label: `${staff.displayName || staff.username} (ID: ${staff.id})`,
+            }))}
+          />
+
+          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #303030' }}>
+            <p style={{ marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <ClockCircleOutlined style={{ color: '#D4A84B' }} /> Thời hạn tự động thu hồi (Retention Days):
+            </p>
+            <Radio.Group
+              value={isCustomMode ? 'custom' : durationDays}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'custom') {
+                  setIsCustomMode(true);
+                  if (setDurationDays && customDays !== undefined) setDurationDays(customDays);
+                } else {
+                  setIsCustomMode(false);
+                  if (setDurationDays) setDurationDays(Number(val));
+                }
+              }}
+              style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}
+            >
+              {DURATION_PRESETS.map((preset) => (
+                <Radio.Button key={preset.value} value={preset.value}>
+                  {preset.label}
+                </Radio.Button>
+              ))}
+              <Radio.Button value="custom">Tùy chỉnh...</Radio.Button>
+            </Radio.Group>
+
+            {isCustomMode && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                <span>Nhập số ngày:</span>
+                <InputNumber
+                  min={1}
+                  max={365}
+                  value={customDays}
+                  onChange={(val) => {
+                    setCustomDays(val ?? undefined);
+                    if (setDurationDays && val !== null && val !== undefined) {
+                      setDurationDays(val);
+                    }
+                  }}
+                  placeholder="Ví dụ: 10"
+                  style={{ width: '120px' }}
+                />
+                <span>ngày</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
     </>
   );
 });

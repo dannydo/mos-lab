@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Tag, Button, Skeleton } from 'antd';
+import { Tag, Button, Skeleton, Tooltip } from 'antd';
 import { CloseCircleOutlined, CalendarOutlined, CheckOutlined, HistoryOutlined } from '@ant-design/icons';
 import { CancelBookingModal } from '../../booking/CancelBookingModal';
 import { BookingAuditLogDrawer } from '../../booking/BookingAuditLogDrawer';
@@ -15,6 +15,39 @@ interface BookingsTabProps {
   setSelectedBookingForReschedule: (b: SafeAny) => void;
   setRescheduleModalVisible: (visible: boolean) => void;
 }
+
+const parseBookingPromoInfo = (rawBookingNote?: string | null, promotionName?: string | null) => {
+  let promoTitle: string | null = null;
+  let fullPromoText: string | null = null;
+  let cleanBookingNote: string = (rawBookingNote || '').trim();
+
+  // Pattern 1: [Ưu đãi chiến dịch Kiều Nữ: Giảm 50% Dịch vụ Nối mi (Giảm 50%)]
+  // Pattern 2: [Khuyến mãi...]
+  // Pattern 3: [Ưu đãi...]
+  const bracketMatch = cleanBookingNote.match(/\[(Ưu đãi|Khuyến mãi|Promo|Mã giảm giá)[^\]]+\]/i);
+  if (bracketMatch) {
+    fullPromoText = bracketMatch[0].slice(1, -1).trim();
+    cleanBookingNote = cleanBookingNote.replace(bracketMatch[0], '').trim();
+  } else if (promotionName && promotionName.trim() !== '') {
+    fullPromoText = promotionName.trim();
+  }
+
+  if (fullPromoText) {
+    let title = fullPromoText;
+    if (title.includes(':')) {
+      title = title.split(':').slice(1).join(':').trim();
+    }
+    title = title.replace(/\([^)]*\)$/, '').trim();
+    title = title.replace(/^(Ưu đãi|Khuyến mãi|Mã)\s*/i, '').trim();
+    promoTitle = title || fullPromoText;
+  }
+
+  return {
+    promoTitle,
+    fullPromoText,
+    cleanBookingNote,
+  };
+};
 
 const getDaysDiffText = (bookingDate: string | Date) => {
   if (!bookingDate) return '';
@@ -135,7 +168,11 @@ export const BookingsTab: React.FC<
 
             const attachedNotes = notesByBookingMap.get(String(b.id)) || [];
             const bookerAuthorName = b.bookerStaffName || b.bookerName || 'Đặt trực tuyến';
-            const hasBookingNote = Boolean(b.bookingNote && b.bookingNote.trim() !== '');
+
+            // Parse promotion info and clean bookingNote
+            const promoInfo = parseBookingPromoInfo(b.bookingNote, b.promotionName || b.campaignPromotion);
+            const cleanNoteText = promoInfo.cleanBookingNote;
+            const hasBookingNote = Boolean(cleanNoteText && cleanNoteText.trim() !== '');
             const hasAttachedNotes = attachedNotes.length > 0;
 
             return (
@@ -170,7 +207,30 @@ export const BookingsTab: React.FC<
                   <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
                     {b.services && b.services.length > 0 ? b.services.join(', ') : 'Dịch vụ'}
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    {promoInfo.promoTitle && (
+                      <Tooltip title={promoInfo.fullPromoText || promoInfo.promoTitle}>
+                        <span
+                          className="tabular-nums"
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            background: themeMode === 'dark' ? 'rgba(168, 85, 247, 0.18)' : '#faf5ff',
+                            color: themeMode === 'dark' ? '#c084fc' : '#7e22ce',
+                            border: `1px solid ${themeMode === 'dark' ? 'rgba(192, 132, 252, 0.35)' : '#e9d5ff'}`,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                          }}
+                        >
+                          <span>🎁</span>
+                          <span>{promoInfo.promoTitle}</span>
+                        </span>
+                      </Tooltip>
+                    )}
                     <span style={{ fontSize: '12px', color: '#888' }}>{formattedDate}</span>
                     {b.bookingDate && (
                       <span
@@ -280,7 +340,7 @@ export const BookingsTab: React.FC<
                               color: themeMode === 'dark' ? '#e2e8f0' : '#334155',
                             }}
                           >
-                            {b.bookingNote}
+                            {cleanNoteText}
                           </div>
                         </div>
                       </div>

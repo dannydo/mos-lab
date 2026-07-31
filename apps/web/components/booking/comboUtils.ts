@@ -39,11 +39,21 @@ export const checkAndAppendLowerLashNote = (note: string, balances: SafeAny[]) =
   return note;
 };
 
-export const getCalculatedPrice = (selectedService: SafeAny, selectedPromotion: SafeAny) => {
+export const getCalculatedPrice = (
+  selectedService: SafeAny,
+  selectedPromotion: SafeAny,
+  selectedCampaignPromotion?: SafeAny
+) => {
   if (!selectedService) return { original: 0, discount: 0, final: 0 };
   const original = selectedService.price || 0;
   let discount = 0;
-  if (selectedPromotion) {
+  if (selectedCampaignPromotion) {
+    if (selectedCampaignPromotion.type === 'PERCENT_DISCOUNT') {
+      discount = Math.round((original * (selectedCampaignPromotion.value || 0)) / 100);
+    } else if (selectedCampaignPromotion.type === 'FIXED_DISCOUNT') {
+      discount = Math.round(selectedCampaignPromotion.value || 0);
+    }
+  } else if (selectedPromotion) {
     if (selectedPromotion.discountPercentage > 0) {
       discount = Math.round((original * selectedPromotion.discountPercentage) / 100);
     } else if (selectedPromotion.discountAmount > 0) {

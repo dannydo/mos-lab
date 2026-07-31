@@ -90,15 +90,26 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
     if (item.isUndone) {
       return { label: 'Đã hoàn tác', color: 'default', borderLeft: '#8c8c8c' };
     }
-    switch (item.actionType) {
-      case 'RANDOM_SELECT':
-        return { label: 'Chọn ngẫu nhiên', color: 'purple', borderLeft: '#722ed1' };
-      case 'TRANSFER':
-        return { label: 'Chuyển Booker', color: 'blue', borderLeft: '#1890ff' };
+    const action = item.actionType?.toUpperCase();
+    switch (action) {
+      case 'ACCEPT':
+      case 'ACCEPT_ALLOCATION':
+        return { label: 'Chấp nhận', color: 'green', borderLeft: '#52c41a' };
+      case 'DECLINE':
+      case 'DECLINE_ALLOCATION':
+        return { label: 'Từ chối', color: 'red', borderLeft: '#ff4d4f' };
+      case 'EXPIRE':
+      case 'EXPIRED':
+        return { label: 'Hết hạn', color: 'orange', borderLeft: '#fa8c16' };
+      case 'RECALL':
+      case 'RECALL_ALLOCATION':
       case 'REVOKE':
         return { label: 'Thu hồi', color: 'volcano', borderLeft: '#ff4d4f' };
-      case 'EXPIRE':
-        return { label: 'Hết hạn', color: 'magenta', borderLeft: '#eb2f96' };
+      case 'TRANSFER':
+        return { label: 'Chuyển Booker', color: 'blue', borderLeft: '#1890ff' };
+      case 'RANDOM_SELECT':
+      case 'RANDOM':
+        return { label: 'Chọn ngẫu nhiên', color: 'purple', borderLeft: '#722ed1' };
       case 'ASSIGN':
       default:
         return { label: 'Phân bổ', color: 'green', borderLeft: '#52c41a' };
@@ -193,12 +204,16 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
               onChange={(e) => handleFilterChange(e.target.value)}
               size="small"
               buttonStyle="solid"
+              style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}
             >
               <Radio.Button value="ALL">Tất cả</Radio.Button>
-              <Radio.Button value="RANDOM">🟣 Chọn ngẫu nhiên</Radio.Button>
               <Radio.Button value="ASSIGN">🟢 Phân bổ</Radio.Button>
+              <Radio.Button value="ACCEPT">🟢 Chấp nhận</Radio.Button>
+              <Radio.Button value="DECLINE">🔴 Từ chối</Radio.Button>
+              <Radio.Button value="EXPIRED">🟠 Hết hạn</Radio.Button>
               <Radio.Button value="REVOKE">🔴 Thu hồi</Radio.Button>
               <Radio.Button value="TRANSFER">🔵 Chuyển</Radio.Button>
+              <Radio.Button value="RANDOM">🟣 Chọn ngẫu nhiên</Radio.Button>
               <Radio.Button value="UNDONE">⚪ Đã hoàn tác</Radio.Button>
             </Radio.Group>
 
