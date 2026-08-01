@@ -6,7 +6,8 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "turbo build",
+    "build": "pnpm --filter @mos-lab/shared build && pnpm --filter @mos-lab/web build",
+    "build:all": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "clean": "turbo clean && rm -rf node_modules",
