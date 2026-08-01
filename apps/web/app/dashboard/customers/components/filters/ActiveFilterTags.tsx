@@ -35,9 +35,20 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
     assignedDaysMin,
     assignedDaysMax,
     retainedOnly,
+    dobMonth,
+    birthdayPreset,
+    ageMin,
+    ageMax,
   } = filterParams;
 
-  if (!hasActiveFilters) return null;
+  const isAnyActive =
+    hasActiveFilters ||
+    dobMonth !== undefined ||
+    birthdayPreset !== undefined ||
+    ageMin !== undefined ||
+    ageMax !== undefined;
+
+  if (!isAnyActive) return null;
 
   const renderAssignedTag = () => {
     if (!assignedStaffId || assignedStaffId === 'all') return null;
@@ -157,6 +168,35 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
         {referralCountMax !== undefined && (
           <Tag color="magenta" closable onClose={() => onClearFilter('referralCountMax')}>
             Giới thiệu &lt;= {referralCountMax} người
+          </Tag>
+        )}
+
+        {dobMonth !== undefined && (
+          <Tag color="purple" closable onClose={() => onClearFilter('dobMonth')}>
+            Sinh nhật: Tháng {dobMonth} 🎂
+          </Tag>
+        )}
+
+        {birthdayPreset && (
+          <Tag color="purple" closable onClose={() => onClearFilter('birthdayPreset')}>
+            Sinh nhật:{' '}
+            {birthdayPreset === 'today'
+              ? 'Hôm nay 🎂'
+              : birthdayPreset === 'this_month'
+                ? 'Tháng này 🎉'
+                : 'Tháng sau 🎁'}
+          </Tag>
+        )}
+
+        {ageMin !== undefined && (
+          <Tag color="geekblue" closable onClose={() => onClearFilter('ageMin')}>
+            Tuổi &gt;= {ageMin}
+          </Tag>
+        )}
+
+        {ageMax !== undefined && (
+          <Tag color="geekblue" closable onClose={() => onClearFilter('ageMax')}>
+            Tuổi &lt;= {ageMax}
           </Tag>
         )}
       </Space>

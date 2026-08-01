@@ -31,7 +31,21 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ customer
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#888' }}>Ngày sinh:</span>
-          <span style={{ fontWeight: 'bold' }}>{customer.dob || 'N/A'}</span>
+          <span style={{ fontWeight: 'bold' }}>
+            {(() => {
+              if (!customer.dob) return 'N/A';
+              const d = new Date(customer.dob);
+              if (isNaN(d.getTime())) return 'N/A';
+              const year = d.getFullYear();
+              const formattedDate =
+                year >= 2024
+                  ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+                  : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${year}`;
+              return customer.age !== undefined && customer.age !== null
+                ? `${formattedDate} (${customer.age} tuổi)`
+                : formattedDate;
+            })()}
+          </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#888' }}>Nhóm phân loại:</span>

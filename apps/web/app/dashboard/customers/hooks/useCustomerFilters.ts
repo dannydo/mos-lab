@@ -60,6 +60,12 @@ export const useCustomerFilters = (
   const [assignedDaysMin, setAssignedDaysMin] = useState<number | undefined>(undefined);
   const [assignedDaysMax, setAssignedDaysMax] = useState<number | undefined>(undefined);
 
+  // Birthday & Age filters state
+  const [dobMonth, setDobMonth] = useState<number | string | undefined>(undefined);
+  const [birthdayPreset, setBirthdayPreset] = useState<'today' | 'this_month' | 'next_month' | undefined>(undefined);
+  const [ageMin, setAgeMin] = useState<number | undefined>(undefined);
+  const [ageMax, setAgeMax] = useState<number | undefined>(undefined);
+
   const prevScopeRef = useRef<string | null>(scopeParam);
   const prevUserRoleRef = useRef<string | undefined>(currentUser?.role);
 
@@ -361,6 +367,10 @@ export const useCustomerFilters = (
     setAssignedStaffId(currentUser?.role === 'telesales' ? 'me' : 'all');
     setAssignedDaysMin(undefined);
     setAssignedDaysMax(undefined);
+    setDobMonth(undefined);
+    setBirthdayPreset(undefined);
+    setAgeMin(undefined);
+    setAgeMax(undefined);
     setRetainedOnly(false);
     setFilterCustomerIds(undefined);
 
@@ -472,6 +482,10 @@ export const useCustomerFilters = (
       retainedOnly: retainedOnly ? 'true' : undefined,
       allocationBatchId: selectedBatchId,
       ids: filterCustomerIds,
+      dobMonth,
+      birthdayPreset,
+      ageMin,
+      ageMax,
     }),
     [
       activeTab,
@@ -496,6 +510,10 @@ export const useCustomerFilters = (
       retainedOnly,
       selectedBatchId,
       filterCustomerIds,
+      dobMonth,
+      birthdayPreset,
+      ageMin,
+      ageMax,
     ]
   );
 
@@ -545,6 +563,16 @@ export const useCustomerFilters = (
     setRetainedOnly,
     filterCustomerIds,
     setFilterCustomerIds,
+
+    // Birthday & Age filters
+    dobMonth,
+    setDobMonth,
+    birthdayPreset,
+    setBirthdayPreset,
+    ageMin,
+    setAgeMin,
+    ageMax,
+    setAgeMax,
 
     // UI Drawer state
     filterDrawerVisible,

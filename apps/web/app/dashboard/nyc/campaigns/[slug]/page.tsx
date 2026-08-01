@@ -237,6 +237,9 @@ export default function CampaignDetailPage() {
   const [targetBookerId, setTargetBookerId] = useState<number | undefined>(undefined);
   const [allocating, setAllocating] = useState<boolean>(false);
 
+  // Modal confirm hook
+  const [modal, modalContextHolder] = Modal.useModal();
+
   // Edit Campaign Modal state
   const [editCampaignModalVisible, setEditCampaignModalVisible] = useState<boolean>(false);
   const [editForm] = Form.useForm();
@@ -342,7 +345,13 @@ export default function CampaignDetailPage() {
       .catch(console.error);
   }, []);
 
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin =
+    currentUser?.role === 'admin' ||
+    currentUser?.role === 'manager' ||
+    currentUser?.role === 'oc' ||
+    currentUser?.role === 'ls' ||
+    currentUser?.username?.toLowerCase() === 'admin' ||
+    currentUser?.username?.toLowerCase() === 'danhdo@gmail.com';
 
   // Fetch Campaign Data
   const fetchCampaignData = useCallback(async () => {
@@ -548,9 +557,9 @@ export default function CampaignDetailPage() {
   // Remove Customer from Campaign
   const handleRemoveCustomer = (customerId: number, customerName: string) => {
     if (!campaign?.id) return;
-    Modal.confirm({
+    modal.confirm({
       title: 'Xóa khỏi chiến dịch',
-      content: `Bạn có chắc chắn muốn xóa khách hàng "${customerName}" khỏi chiến dịch này?`,
+      content: `Bạn có chắc chắn muốn xóa khách hàng "${customerName}" khỏi chiến dịch này và trả về Pool NYC?`,
       okText: 'Xóa',
       okType: 'danger',
       cancelText: 'Hủy',
@@ -558,10 +567,50 @@ export default function CampaignDetailPage() {
         try {
           await apiClient.campaigns.removeCustomer(campaign.id, customerId);
           message.success('Đã xóa khách hàng khỏi chiến dịch');
+          setCustomers((prev) =>
+            prev.filter((c: any) => {
+              const id = Number(c.legacyUserId || c.customerId || c.id);
+              return id !== Number(customerId) && c.id !== Number(customerId);
+            })
+          );
           fetchCampaignCustomers();
-        } catch (err) {
+          apiClient.campaigns.getStats(campaign.id).then(setStats).catch(console.error);
+        } catch (err: any) {
           console.error('Remove customer error:', err);
-          message.error('Không thể xóa khách hàng');
+          message.error(err?.response?.data?.message || err?.message || 'Không thể xóa khách hàng');
+        }
+      },
+    });
+  };
+
+  // Batch Remove Customers from Campaign
+  const handleBatchRemoveCustomers = () => {
+    if (!campaign?.id || selectedRowKeys.length === 0) return;
+    const count = selectedRowKeys.length;
+    modal.confirm({
+      title: 'Xóa hàng loạt khỏi chiến dịch',
+      content: `Bạn có chắc chắn muốn xóa ${count} khách hàng đã chọn khỏi chiến dịch này và thu hồi phân bổ Booker?`,
+      okText: `Xóa ${count} khách hàng`,
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          const customerIds = selectedRowKeys.map((key) => Number(key)).filter((id) => !isNaN(id));
+          const res = await apiClient.campaigns.removeCustomersBatch(campaign.id, { customerIds });
+          message.success(res.message || `Đã xóa ${count} khách hàng khỏi chiến dịch`);
+          const targetSet = new Set(customerIds);
+          setCustomers((prev) =>
+            prev.filter((c: any) => {
+              const cId = Number(c.legacyUserId || c.customerId || c.id);
+              return !targetSet.has(cId) && !targetSet.has(Number(c.id));
+            })
+          );
+          setSelectedRowKeys([]);
+          fetchCampaignCustomers();
+          apiClient.campaigns.getStats(campaign.id).then(setStats).catch(console.error);
+        } catch (err: any) {
+          console.error('Batch remove customers error:', err);
+          message.error(err?.response?.data?.message || err?.message || 'Không thể xóa hàng loạt khách hàng');
         }
       },
     });
@@ -1249,6 +1298,7 @@ export default function CampaignDetailPage() {
 
   return (
     <div>
+      {modalContextHolder}
       {/* UNIFIED MINIMALIST CAMPAIGN HEADER (1 SINGLE ROW WITH ICON+TOOLTIP KPIs) */}
       <div
         className={`p-3 rounded-2xl mb-3 flex flex-wrap items-center justify-between gap-3 border shadow-sm transition-all ${
@@ -1487,17 +1537,29 @@ export default function CampaignDetailPage() {
             </Tag>
           )}
 
-          {/* Batch Allocation Action Button */}
+          {/* Batch Actions */}
           {isAdmin && selectedRowKeys.length > 0 && (
-            <Button
-              type="primary"
-              size="middle"
-              icon={<TeamOutlined />}
-              onClick={() => setBatchAllocationModalVisible(true)}
-              style={{ fontWeight: 'bold' }}
-            >
-              Phân bổ Booker ({selectedRowKeys.length})
-            </Button>
+            <Space>
+              <Button
+                type="primary"
+                size="middle"
+                icon={<TeamOutlined />}
+                onClick={() => setBatchAllocationModalVisible(true)}
+                style={{ fontWeight: 'bold' }}
+              >
+                Phân bổ Booker ({selectedRowKeys.length})
+              </Button>
+              <Button
+                danger
+                type="primary"
+                size="middle"
+                icon={<DeleteOutlined />}
+                onClick={handleBatchRemoveCustomers}
+                style={{ fontWeight: 'bold' }}
+              >
+                Xóa khỏi chiến dịch ({selectedRowKeys.length})
+              </Button>
+            </Space>
           )}
         </div>
       </div>

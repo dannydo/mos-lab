@@ -153,6 +153,40 @@ const CustomerTable = React.memo(
                     <span>{record.phone}</span>
                   </div>
                 )}
+                {record.dob && (
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      color: themeMode === 'dark' ? '#8c8c8c' : '#595959',
+                      marginTop: '2px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                    className="tabular-nums"
+                  >
+                    <span>
+                      🎂{' '}
+                      {dayjs(record.dob).year() >= 2024
+                        ? dayjs(record.dob).format('DD/MM')
+                        : dayjs(record.dob).format('DD/MM/YYYY')}
+                    </span>
+                    {record.age !== undefined && record.age !== null && dayjs(record.dob).year() < 2024 && (
+                      <span
+                        style={{
+                          background: themeMode === 'dark' ? '#262626' : '#e6f7ff',
+                          color: themeMode === 'dark' ? '#1890ff' : '#096dd9',
+                          padding: '0 4px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {record.age} tuổi
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </Space>
           ),

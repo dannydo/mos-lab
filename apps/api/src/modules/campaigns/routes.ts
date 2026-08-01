@@ -6,6 +6,7 @@ import {
   UpdateCampaignDto,
   AddCampaignCustomersDto,
   RemoveCampaignCustomerDto,
+  BatchRemoveCampaignCustomersDto,
   ToggleCampaignTouchpointLogDto,
   CreateCampaignPromotionDto,
   ListCampaignsParams,
@@ -216,6 +217,34 @@ export async function campaignRoutes(fastify: FastifyInstance) {
         return reply.send(result);
       } catch (err: any) {
         request.log.error('Failed to remove customer from campaign:', err);
+        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 10b. Batch Remove Customers from Campaign (Admin only)
+  fastify.post(
+    '/campaigns/:id/customers/batch-remove',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const campaignId = parseInt(params.id, 10);
+        if (isNaN(campaignId)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'Campaign ID không hợp lệ' });
+        }
+        const user = request.user;
+        const dto = request.body as BatchRemoveCampaignCustomersDto;
+        const result = await CampaignService.removeCustomersFromCampaignBatch(
+          fastify,
+          campaignId,
+          dto.customerIds || [],
+          dto.reason,
+          user.id
+        );
+        return reply.send(result);
+      } catch (err: any) {
+        request.log.error('Failed to batch remove customers from campaign:', err);
         return reply.status(400).send({ error: 'Bad Request', message: err.message });
       }
     }

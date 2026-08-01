@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
+import dayjs from 'dayjs';
 import { Drawer, Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message } from 'antd';
 import {
   PhoneOutlined,
@@ -409,6 +410,25 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     </a>
                   </Tooltip>
                   {customer.email && <span>Email: {customer.email}</span>}
+                  {customer.dob && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      🎂 {dayjs(customer.dob).format('DD/MM/YYYY')}
+                      {customer.age !== undefined && customer.age !== null && (
+                        <span
+                          style={{
+                            background: themeMode === 'dark' ? '#262626' : '#e6f7ff',
+                            color: themeMode === 'dark' ? '#1890ff' : '#096dd9',
+                            padding: '0 6px',
+                            borderRadius: '10px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {customer.age} tuổi
+                        </span>
+                      )}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

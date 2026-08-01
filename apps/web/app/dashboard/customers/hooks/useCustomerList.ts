@@ -77,6 +77,18 @@ export const useCustomerList = (
         if (filterParams.allocationBatchId) {
           params.allocationBatchId = filterParams.allocationBatchId;
         }
+        if (filterParams.dobMonth !== undefined) {
+          params.dobMonth = filterParams.dobMonth.toString();
+        }
+        if (filterParams.birthdayPreset) {
+          params.birthdayPreset = filterParams.birthdayPreset;
+        }
+        if (filterParams.ageMin !== undefined) {
+          params.ageMin = filterParams.ageMin.toString();
+        }
+        if (filterParams.ageMax !== undefined) {
+          params.ageMax = filterParams.ageMax.toString();
+        }
 
         const data = await apiClient.customers.getStats(params);
         setStats(data);
@@ -149,6 +161,18 @@ export const useCustomerList = (
           params.assignedDaysMax = filterParams.assignedDaysMax.toString();
         if (filterParams.retainedOnly) {
           params.retainedOnly = filterParams.retainedOnly;
+        }
+        if (filterParams.dobMonth !== undefined) {
+          params.dobMonth = filterParams.dobMonth.toString();
+        }
+        if (filterParams.birthdayPreset) {
+          params.birthdayPreset = filterParams.birthdayPreset;
+        }
+        if (filterParams.ageMin !== undefined) {
+          params.ageMin = filterParams.ageMin.toString();
+        }
+        if (filterParams.ageMax !== undefined) {
+          params.ageMax = filterParams.ageMax.toString();
         }
 
         const data = await apiClient.customers.list(params);

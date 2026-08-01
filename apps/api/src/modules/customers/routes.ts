@@ -60,6 +60,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       dateTo,
       retainedOnly,
       allocationBatchId,
+      dobMonth,
+      birthdayPreset,
+      ageMin,
+      ageMax,
     } = request.query as {
       bucket?: BucketType | 'ALL' | 'NEW_LOCA';
       search?: string;
@@ -95,6 +99,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       dateTo?: string;
       retainedOnly?: string;
       allocationBatchId?: string;
+      dobMonth?: string;
+      birthdayPreset?: 'today' | 'this_month' | 'next_month';
+      ageMin?: string;
+      ageMax?: string;
     };
 
     let limitNum = parseInt(limit, 10) || 20;
@@ -656,6 +664,33 @@ export async function customerRoutes(fastify: FastifyInstance) {
         innerParams.push(parseInt(referralCountMax, 10));
       }
 
+      // Birthday & Age Filters
+      if (dobMonth !== undefined && dobMonth !== '' && dobMonth !== 'ALL') {
+        innerWhereClauses.push('u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = ?');
+        innerParams.push(parseInt(String(dobMonth), 10));
+      }
+
+      if (birthdayPreset === 'today') {
+        innerWhereClauses.push(
+          'u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(CURDATE()) AND DAY(u.date_of_birth) = DAY(CURDATE())'
+        );
+      } else if (birthdayPreset === 'this_month') {
+        innerWhereClauses.push('u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(CURDATE())');
+      } else if (birthdayPreset === 'next_month') {
+        innerWhereClauses.push(
+          'u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(ADDDATE(CURDATE(), INTERVAL 1 MONTH))'
+        );
+      }
+
+      if (ageMin !== undefined && ageMin !== '') {
+        innerWhereClauses.push('u.date_of_birth IS NOT NULL AND TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) >= ?');
+        innerParams.push(parseInt(String(ageMin), 10));
+      }
+      if (ageMax !== undefined && ageMax !== '') {
+        innerWhereClauses.push('u.date_of_birth IS NOT NULL AND TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) <= ?');
+        innerParams.push(parseInt(String(ageMax), 10));
+      }
+
       // LoCa Campaign Filters
       if (hsd30 === 'true') {
         innerWhereClauses.push(
@@ -786,6 +821,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           u.email,
           u.gender,
           u.date_of_birth as dob,
+          TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) as age,
           up.last_order_booking as lastVisit,
           DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
           COALESCE(order_counts.totalSpent, 0) as totalSpent,
@@ -1261,6 +1297,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           email: row.email,
           gender: row.gender,
           dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
+          age: row.age !== null && row.age !== undefined ? Number(row.age) : null,
           lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
           daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
           totalSpent: Number(row.totalSpent || 0),
@@ -1341,6 +1378,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       dateTo,
       retainedOnly,
       allocationBatchId,
+      dobMonth,
+      birthdayPreset,
+      ageMin,
+      ageMax,
     } = request.query as {
       bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE' | 'NEW_LOCA';
       search?: string;
@@ -1372,6 +1413,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       dateTo?: string;
       retainedOnly?: string;
       allocationBatchId?: string;
+      dobMonth?: string;
+      birthdayPreset?: 'today' | 'this_month' | 'next_month';
+      ageMin?: string;
+      ageMax?: string;
     };
 
     const adminUser = request.user as { id: number; role: string };
@@ -1685,6 +1730,37 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (referralCountMax !== undefined && referralCountMax !== '') {
         innerWhereClauses.push('COALESCE(ref_counts.totalReferrals, 0) <= ?');
         innerParams.push(parseInt(referralCountMax, 10));
+      }
+
+      // Birthday & Age Filters
+      if (dobMonth !== undefined && dobMonth !== '' && dobMonth !== 'ALL') {
+        innerWhereClauses.push('u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = ?');
+        innerParams.push(parseInt(String(dobMonth), 10));
+      }
+
+      if (birthdayPreset === 'today') {
+        innerWhereClauses.push(
+          'u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(CURDATE()) AND DAY(u.date_of_birth) = DAY(CURDATE())'
+        );
+      } else if (birthdayPreset === 'this_month') {
+        innerWhereClauses.push('u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(CURDATE())');
+      } else if (birthdayPreset === 'next_month') {
+        innerWhereClauses.push(
+          'u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(ADDDATE(CURDATE(), INTERVAL 1 MONTH))'
+        );
+      }
+
+      if (ageMin !== undefined && ageMin !== '') {
+        innerWhereClauses.push(
+          'u.date_of_birth IS NOT NULL AND YEAR(u.date_of_birth) <= YEAR(CURDATE()) - 10 AND TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) >= ?'
+        );
+        innerParams.push(parseInt(String(ageMin), 10));
+      }
+      if (ageMax !== undefined && ageMax !== '') {
+        innerWhereClauses.push(
+          'u.date_of_birth IS NOT NULL AND YEAR(u.date_of_birth) <= YEAR(CURDATE()) - 10 AND TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) <= ?'
+        );
+        innerParams.push(parseInt(String(ageMax), 10));
       }
 
       // LoCa Campaign Filters

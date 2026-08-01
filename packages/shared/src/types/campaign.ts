@@ -133,6 +133,11 @@ export interface RemoveCampaignCustomerDto {
   reason?: string;
 }
 
+export interface BatchRemoveCampaignCustomersDto {
+  customerIds: number[];
+  reason?: string;
+}
+
 export interface ToggleCampaignTouchpointLogDto {
   isChecked: boolean;
   status?: TouchpointStatus | null;

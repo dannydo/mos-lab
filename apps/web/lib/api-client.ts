@@ -114,6 +114,7 @@ import {
   UpdateCampaignDto,
   AddCampaignCustomersDto,
   RemoveCampaignCustomerDto,
+  BatchRemoveCampaignCustomersDto,
   CreateCampaignTouchpointDto,
   UpdateCampaignTouchpointDto,
   CreateCampaignPromotionDto,
@@ -1161,6 +1162,10 @@ export const apiClient = {
         `/campaigns/${campaignId}/customers/${customerId}`,
         dto ? { data: dto } : undefined
       );
+      return response.data;
+    },
+    removeCustomersBatch: async (campaignId: number, dto: BatchRemoveCampaignCustomersDto) => {
+      const response = await api.post(`/campaigns/${campaignId}/customers/batch-remove`, dto);
       return response.data;
     },
     toggleTouchpointLog: async (

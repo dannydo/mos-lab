@@ -1115,18 +1115,84 @@ export class CampaignService {
     }
 
     const now = new Date();
-    await fastify.prisma.crm.crmCampaignCustomer.update({
-      where: { id: record.id },
-      data: {
-        removedAt: now,
-        removedReason: reason || 'Quản lý gỡ khỏi chiến dịch',
-        removedBy: staffId,
-      },
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmCampaignCustomer.update({
+        where: { id: record.id },
+        data: {
+          removedAt: now,
+          removedReason: reason || 'Quản lý gỡ khỏi chiến dịch',
+          removedBy: staffId,
+        },
+      });
+
+      // Clear Booker assignment so customer returns to unassigned NYC main pool
+      await tx.crmCustomerAssignment.deleteMany({
+        where: { legacyUserId: record.legacyUserId },
+      });
     });
 
     return {
       success: true,
       message: 'Đã gỡ khách hàng khỏi chiến dịch và trả về pool NYC',
+    };
+  }
+
+  /**
+   * Batch remove customers from campaign (set removedAt = NOW() and unassign Booker).
+   */
+  static async removeCustomersFromCampaignBatch(
+    fastify: FastifyInstance,
+    campaignId: number,
+    customerIds: number[],
+    reason: string | undefined,
+    staffId: number
+  ): Promise<{ success: boolean; removedCount: number; message: string }> {
+    if (!Array.isArray(customerIds) || customerIds.length === 0) {
+      throw new Error('Danh sách ID khách hàng không được để trống');
+    }
+
+    const records = await fastify.prisma.crm.crmCampaignCustomer.findMany({
+      where: {
+        campaignId,
+        OR: [{ legacyUserId: { in: customerIds } }, { id: { in: customerIds } }],
+        removedAt: null,
+      },
+    });
+
+    if (records.length === 0) {
+      return {
+        success: true,
+        removedCount: 0,
+        message: 'Không tìm thấy khách hàng hợp lệ để gỡ khỏi chiến dịch',
+      };
+    }
+
+    const recordIds = records.map((r) => r.id);
+    const legacyUserIds = Array.from(new Set(records.map((r) => r.legacyUserId)));
+    const now = new Date();
+
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmCampaignCustomer.updateMany({
+        where: { id: { in: recordIds } },
+        data: {
+          removedAt: now,
+          removedReason: reason || 'Quản lý gỡ hàng loạt khỏi chiến dịch',
+          removedBy: staffId,
+        },
+      });
+
+      // Clear Booker assignments so customers return to unassigned NYC main pool
+      if (legacyUserIds.length > 0) {
+        await tx.crmCustomerAssignment.deleteMany({
+          where: { legacyUserId: { in: legacyUserIds } },
+        });
+      }
+    });
+
+    return {
+      success: true,
+      removedCount: recordIds.length,
+      message: `Đã gỡ ${recordIds.length} khách hàng khỏi chiến dịch và trả về pool NYC`,
     };
   }
 

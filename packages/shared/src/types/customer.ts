@@ -26,6 +26,7 @@ export interface Customer {
   email: string | null;
   gender: string | null;
   dob: string | null;
+  age?: number | null;
   lastVisit: string | null; // ISO Date String
   daysSinceLastVisit: number | null;
   totalSpent: number;
@@ -128,6 +129,10 @@ export interface ListCustomersParams {
   assignedStaffId?: string;
   assignedDaysMin?: number | string;
   assignedDaysMax?: number | string;
+  dobMonth?: number | string;
+  birthdayPreset?: 'today' | 'this_month' | 'next_month';
+  ageMin?: number | string;
+  ageMax?: number | string;
   trash?: string | boolean;
   ids?: string;
 }

@@ -241,6 +241,10 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     filterParams.assignedDaysMin !== undefined ||
     filterParams.assignedDaysMax !== undefined ||
     filterParams.retainedOnly === 'true' ||
+    filterParams.dobMonth !== undefined ||
+    filterParams.birthdayPreset !== undefined ||
+    filterParams.ageMin !== undefined ||
+    filterParams.ageMax !== undefined ||
     filtersHook.activeFilterId !== null;
 
   return {
@@ -279,6 +283,10 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     assignedDaysMin: filtersHook.assignedDaysMin,
     assignedDaysMax: filtersHook.assignedDaysMax,
     retainedOnly: filtersHook.retainedOnly,
+    dobMonth: filtersHook.dobMonth,
+    birthdayPreset: filtersHook.birthdayPreset,
+    ageMin: filtersHook.ageMin,
+    ageMax: filtersHook.ageMax,
     staffList,
     selectedRowKeys: assignmentHook.selectedRowKeys,
     assignModalVisible: assignmentHook.assignModalVisible,
@@ -345,6 +353,10 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     setAssignedDaysMin: filtersHook.setAssignedDaysMin,
     setAssignedDaysMax: filtersHook.setAssignedDaysMax,
     setRetainedOnly: filtersHook.setRetainedOnly,
+    setDobMonth: filtersHook.setDobMonth,
+    setBirthdayPreset: filtersHook.setBirthdayPreset,
+    setAgeMin: filtersHook.setAgeMin,
+    setAgeMax: filtersHook.setAgeMax,
     setSelectedRowKeys: assignmentHook.setSelectedRowKeys,
     setAssignModalVisible: assignmentHook.setAssignModalVisible,
     setTargetStaffId: assignmentHook.setTargetStaffId,

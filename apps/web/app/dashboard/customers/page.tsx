@@ -368,6 +368,14 @@ function CustomersPageContent() {
               setAssignedDaysMax={data.setAssignedDaysMax}
               retainedOnly={data.retainedOnly}
               setRetainedOnly={data.setRetainedOnly}
+              dobMonth={data.dobMonth}
+              setDobMonth={data.setDobMonth}
+              birthdayPreset={data.birthdayPreset}
+              setBirthdayPreset={data.setBirthdayPreset}
+              ageMin={data.ageMin}
+              setAgeMin={data.setAgeMin}
+              ageMax={data.ageMax}
+              setAgeMax={data.setAgeMax}
               setActiveFilterId={data.setActiveFilterId}
               staffList={data.staffList}
               saveFilterModalVisible={data.saveFilterModalVisible}

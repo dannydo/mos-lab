@@ -66,6 +66,14 @@ interface CustomerFiltersProps {
   setAssignedDaysMax?: (val: number | undefined) => void;
   retainedOnly?: boolean;
   setRetainedOnly?: (val: boolean) => void;
+  dobMonth?: number | string | undefined;
+  setDobMonth?: (val: number | string | undefined) => void;
+  birthdayPreset?: 'today' | 'this_month' | 'next_month' | undefined;
+  setBirthdayPreset?: (val: 'today' | 'this_month' | 'next_month' | undefined) => void;
+  ageMin?: number | undefined;
+  setAgeMin?: (val: number | undefined) => void;
+  ageMax?: number | undefined;
+  setAgeMax?: (val: number | undefined) => void;
   setActiveFilterId: (id: string | null) => void;
   staffList: SafeAny[];
   saveFilterModalVisible: boolean;
@@ -119,6 +127,14 @@ const CustomerFilters = React.memo(function CustomerFilters({
   setAssignedDaysMax,
   retainedOnly,
   setRetainedOnly,
+  dobMonth,
+  setDobMonth,
+  birthdayPreset,
+  setBirthdayPreset,
+  ageMin,
+  setAgeMin,
+  ageMax,
+  setAgeMax,
   setActiveFilterId,
   staffList,
   saveFilterModalVisible,
@@ -148,6 +164,11 @@ const CustomerFilters = React.memo(function CustomerFilters({
     assignedStaffId,
     assignedDaysMin,
     assignedDaysMax,
+    retainedOnly: retainedOnly ? 'true' : undefined,
+    dobMonth,
+    birthdayPreset,
+    ageMin,
+    ageMax,
   };
 
   const onClearFilter = (key: string) => {
@@ -199,6 +220,18 @@ const CustomerFilters = React.memo(function CustomerFilters({
         break;
       case 'retainedOnly':
         if (setRetainedOnly) setRetainedOnly(false);
+        break;
+      case 'dobMonth':
+        if (setDobMonth) setDobMonth(undefined);
+        break;
+      case 'birthdayPreset':
+        if (setBirthdayPreset) setBirthdayPreset(undefined);
+        break;
+      case 'ageMin':
+        if (setAgeMin) setAgeMin(undefined);
+        break;
+      case 'ageMax':
+        if (setAgeMax) setAgeMax(undefined);
         break;
     }
     setActiveFilterId(null);
@@ -285,6 +318,146 @@ const CustomerFilters = React.memo(function CustomerFilters({
         }}
       >
         <Form layout="vertical">
+          {/* SECTION 0: THÔNG TIN CÁ NHÂN (SINH NHẬT & ĐỘ TUỔI) */}
+          <div style={{ marginBottom: '24px' }}>
+            <FilterSectionHeader
+              icon={<GiftOutlined style={{ fontSize: '14px' }} />}
+              title="Thông tin cá nhân (Sinh nhật & Độ tuổi)"
+              themeMode={themeMode}
+            />
+
+            {/* Birthday Month & Presets */}
+            <div style={{ marginBottom: '16px' }}>
+              <div
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  marginBottom: '6px',
+                  color: themeMode === 'dark' ? '#aaa' : '#666',
+                }}
+              >
+                Sinh nhật khách hàng
+              </div>
+              <Select
+                allowClear
+                placeholder="Chọn Tháng sinh nhật"
+                value={dobMonth ? String(dobMonth) : undefined}
+                onChange={(val) => {
+                  setDobMonth?.(val ? parseInt(val, 10) : undefined);
+                  setBirthdayPreset?.(undefined);
+                  setActiveFilterId(null);
+                }}
+                style={{ width: '100%', marginBottom: '8px' }}
+                options={[
+                  { label: 'Tháng 1', value: '1' },
+                  { label: 'Tháng 2', value: '2' },
+                  { label: 'Tháng 3', value: '3' },
+                  { label: 'Tháng 4', value: '4' },
+                  { label: 'Tháng 5', value: '5' },
+                  { label: 'Tháng 6', value: '6' },
+                  { label: 'Tháng 7', value: '7' },
+                  { label: 'Tháng 8', value: '8' },
+                  { label: 'Tháng 9', value: '9' },
+                  { label: 'Tháng 10', value: '10' },
+                  { label: 'Tháng 11', value: '11' },
+                  { label: 'Tháng 12', value: '12' },
+                ]}
+              />
+
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Hôm nay 🎂', value: 'today' },
+                  { label: 'Tháng này 🎉', value: 'this_month' },
+                  { label: 'Tháng sau 🎁', value: 'next_month' },
+                ].map((preset) => (
+                  <Button
+                    key={preset.value}
+                    size="small"
+                    type={birthdayPreset === preset.value ? 'primary' : 'default'}
+                    onClick={() => {
+                      if (birthdayPreset === preset.value) {
+                        setBirthdayPreset?.(undefined);
+                      } else {
+                        setBirthdayPreset?.(preset.value as any);
+                        setDobMonth?.(undefined);
+                      }
+                      setActiveFilterId(null);
+                    }}
+                    style={{ fontSize: '11px', borderRadius: '12px' }}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Age Range & Presets */}
+            <div>
+              <div
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  marginBottom: '6px',
+                  color: themeMode === 'dark' ? '#aaa' : '#666',
+                }}
+              >
+                Độ tuổi khách hàng
+              </div>
+              <RangeFilterField
+                minLabel="Tuổi tối thiểu"
+                maxLabel="Tuổi tối đa"
+                minPlaceholder="VD: 18"
+                maxPlaceholder="VD: 35"
+                minValue={ageMin}
+                maxValue={ageMax}
+                onChangeMin={(val: number | undefined) => {
+                  setAgeMin?.(val);
+                  setActiveFilterId(null);
+                }}
+                onChangeMax={(val: number | undefined) => {
+                  setAgeMax?.(val);
+                  setActiveFilterId(null);
+                }}
+                themeMode={themeMode}
+              />
+
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                {[
+                  { label: '< 25 tuổi', min: undefined, max: 24 },
+                  { label: '25 - 35 tuổi', min: 25, max: 35 },
+                  { label: '36 - 50 tuổi', min: 36, max: 50 },
+                  { label: '> 50 tuổi', min: 51, max: undefined },
+                ].map((preset, idx) => {
+                  const isSelected = ageMin === preset.min && ageMax === preset.max;
+                  return (
+                    <Button
+                      key={idx}
+                      size="small"
+                      type={isSelected ? 'primary' : 'default'}
+                      onClick={() => {
+                        if (isSelected) {
+                          setAgeMin?.(undefined);
+                          setAgeMax?.(undefined);
+                        } else {
+                          setAgeMin?.(preset.min);
+                          setAgeMax?.(preset.max);
+                        }
+                        setActiveFilterId(null);
+                      }}
+                      style={{ fontSize: '11px', borderRadius: '12px' }}
+                    >
+                      {preset.label}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div
+              style={{ height: '1px', background: themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0', marginTop: '16px' }}
+            />
+          </div>
+
           {/* SECTION 1: VÒNG ĐỜI & GHÉ TIỆM */}
           <div style={{ marginBottom: '24px' }}>
             <FilterSectionHeader
