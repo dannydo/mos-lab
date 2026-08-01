@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
-import { Customer, Staff, LASH_TOUCHUP_SYSTEM_CONFIG } from '@mos-lab/shared';
+import { Customer, Staff, TouchpointStatus, LASH_TOUCHUP_SYSTEM_CONFIG } from '@mos-lab/shared';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 
 export interface Touchpoint {
@@ -518,7 +518,13 @@ export function useLocaData(options?: UseLocaDataOptions) {
   };
 
   const handleToggleTouchpoint = useCallback(
-    async (customerId: number, touchpointKey: string, isChecked: boolean, note?: string) => {
+    async (
+      customerId: number,
+      touchpointKey: string,
+      isChecked: boolean,
+      note?: string,
+      status?: TouchpointStatus | null
+    ) => {
       // 1. Optimistically update local customer state
       setCustomers((prevCustomers) =>
         prevCustomers.map((cust) => {
@@ -531,6 +537,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
                 ...currentTps,
                 [touchpointKey]: {
                   isChecked,
+                  status: status !== undefined ? status : isChecked ? 'SUCCESS' : null,
                   checkedAt: isChecked ? new Date().toISOString() : currentTps[touchpointKey]?.checkedAt || null,
                   checkedByStaffId: isChecked
                     ? currentUser?.id || null
@@ -551,6 +558,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
           customerId,
           touchpointKey,
           isChecked,
+          status,
           note,
         });
       } catch (err) {

@@ -1,6 +1,7 @@
 import api from './api';
 import {
   Customer,
+  TouchpointStatus,
   ListCustomersParams,
   ListCustomersResponse,
   CustomerStatsResponse,
@@ -295,6 +296,7 @@ export const apiClient = {
       customerId: number;
       touchpointKey: string;
       isChecked: boolean;
+      status?: TouchpointStatus | null;
       note?: string;
       cycleDate?: string;
     }): Promise<{ success: boolean; touchpoint: SafeAny }> => {

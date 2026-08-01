@@ -56,11 +56,14 @@ export interface CampaignPromotion {
   createdAt: string;
 }
 
+import { TouchpointStatus } from './customer';
+
 export interface CampaignTouchpointLog {
   id: number;
   campaignCustomerId: number;
   touchpointId: number;
   isChecked: boolean;
+  status?: TouchpointStatus | null;
   completedAt: string | null;
   completedByStaffId: number | null;
   completedByStaffName: string | null;
@@ -132,6 +135,7 @@ export interface RemoveCampaignCustomerDto {
 
 export interface ToggleCampaignTouchpointLogDto {
   isChecked: boolean;
+  status?: TouchpointStatus | null;
   note?: string;
 }
 

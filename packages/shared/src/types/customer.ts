@@ -2,12 +2,21 @@ import { CallLog } from './call';
 
 export type BucketType = 'COMBO_LIVE' | 'COMBO_DEAD' | 'SINGLE';
 
+export type TouchpointStatus = 'SUCCESS' | 'FAILED' | 'LOST' | 'PENDING' | 'DUE_TODAY' | 'BOOKED' | 'DONE';
+
 export interface LocaTouchpointState {
   isChecked: boolean;
+  status?: TouchpointStatus | null;
   checkedAt: string | null;
   checkedByStaffId: number | null;
   checkedByStaffName: string | null;
   note: string | null;
+  conversionDetails?: {
+    convertedAt: string;
+    orderId?: number;
+    orderState?: string;
+    touchpointKey?: string;
+  } | null;
 }
 
 export interface Customer {

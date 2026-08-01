@@ -19,10 +19,11 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
         message: 'Bạn không có quyền truy cập Chiến dịch LoCa. Chỉ dành cho Admin, Manager, CS và Control.',
       });
     }
-    const { customerId, touchpointKey, isChecked, note, cycleDate } = request.body as {
+    const { customerId, touchpointKey, isChecked, status, note, cycleDate } = request.body as {
       customerId: number;
       touchpointKey: string;
       isChecked: boolean;
+      status?: string | null;
       note?: string;
       cycleDate?: string;
     };
@@ -61,6 +62,10 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
       });
       const staffName = crmStaff?.displayName || crmStaff?.username || user.displayName || user.username || 'Staff';
 
+      // Determine boolean isChecked and status string
+      const finalStatus = status === null || status === '' ? null : status || (isChecked ? 'SUCCESS' : null);
+      const finalIsChecked = finalStatus !== null || isChecked;
+
       // Upsert touchpoint record
       const existing = await fastify.prisma.crm.crmLocaTouchpoint.findFirst({
         where: {
@@ -75,10 +80,11 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
         updated = await fastify.prisma.crm.crmLocaTouchpoint.update({
           where: { id: existing.id },
           data: {
-            isChecked,
-            checkedAt: isChecked ? new Date() : existing.checkedAt,
-            checkedByStaffId: isChecked ? user.id : existing.checkedByStaffId,
-            checkedByStaffName: isChecked ? staffName : existing.checkedByStaffName,
+            isChecked: finalIsChecked,
+            status: finalStatus,
+            checkedAt: finalIsChecked ? new Date() : null,
+            checkedByStaffId: finalIsChecked ? user.id : null,
+            checkedByStaffName: finalIsChecked ? staffName : null,
             note: note !== undefined ? note : existing.note,
           },
         });
@@ -87,10 +93,11 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
           data: {
             legacyUserId: customerId,
             touchpointKey,
-            isChecked,
-            checkedAt: isChecked ? new Date() : null,
-            checkedByStaffId: isChecked ? user.id : null,
-            checkedByStaffName: isChecked ? staffName : null,
+            isChecked: finalIsChecked,
+            status: finalStatus,
+            checkedAt: finalIsChecked ? new Date() : null,
+            checkedByStaffId: finalIsChecked ? user.id : null,
+            checkedByStaffName: finalIsChecked ? staffName : null,
             note: note || null,
             cycleDate: new Date(cycleDateStr),
           },
@@ -104,6 +111,7 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
           legacyUserId: updated.legacyUserId,
           touchpointKey: updated.touchpointKey,
           isChecked: updated.isChecked,
+          status: updated.status || (updated.isChecked ? 'SUCCESS' : null),
           checkedAt: updated.checkedAt ? updated.checkedAt.toISOString() : null,
           checkedByStaffId: updated.checkedByStaffId,
           checkedByStaffName: updated.checkedByStaffName,
@@ -155,6 +163,7 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
         if (!touchpointsMap[tp.legacyUserId][tp.touchpointKey]) {
           touchpointsMap[tp.legacyUserId][tp.touchpointKey] = {
             isChecked: tp.isChecked,
+            status: tp.status || (tp.isChecked ? 'SUCCESS' : null),
             checkedAt: tp.checkedAt ? tp.checkedAt.toISOString() : null,
             checkedByStaffId: tp.checkedByStaffId,
             checkedByStaffName: tp.checkedByStaffName,

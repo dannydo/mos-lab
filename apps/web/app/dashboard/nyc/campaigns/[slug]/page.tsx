@@ -54,10 +54,45 @@ import { apiClient } from '../../../../../lib/api-client';
 import { removeVietnameseTones } from '../../../../../lib/utils/search';
 import { formatVND, formatDuration } from '../../../../../lib/format-utils';
 import { useOmiCall } from '../../../../../context/OmiCallContext';
+import { TouchpointStatus } from '@mos-lab/shared';
+import {
+  Smile,
+  Handshake,
+  Sparkles,
+  Heart,
+  BedDouble,
+  Calendar,
+  Clock,
+  Bell,
+  UserPlus,
+  MessageCircle,
+} from 'lucide-react';
 import {
   CampaignTouchpointCell,
   CampaignTouchpointItem,
 } from '../../../../../components/campaign/CampaignTouchpointCell';
+
+const KissIcon: React.FC<{ size?: number; style?: React.CSSProperties; className?: string }> = ({
+  size = 16,
+  style,
+  className,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={style}
+    className={className}
+  >
+    <path d="M4.5 12.5C6.5 9.5 9.5 8.5 12 11C14.5 8.5 17.5 9.5 19.5 12.5C16.5 16.5 13.5 17.5 12 14.5C10.5 17.5 7.5 16.5 4.5 12.5Z" />
+    <path d="M7 11.5C9 10 11 10.5 12 11.5C13 10.5 15 10 17 11.5" />
+  </svg>
+);
 import {
   Campaign,
   CampaignTouchpoint,
@@ -454,7 +489,8 @@ export default function CampaignDetailPage() {
     customerId: number,
     touchpointId: number,
     isChecked: boolean,
-    note?: string
+    note?: string,
+    status?: TouchpointStatus | null
   ) => {
     if (!campaign?.id) return;
 
@@ -472,6 +508,7 @@ export default function CampaignDetailPage() {
             newLogs[existingIdx] = {
               ...newLogs[existingIdx],
               isChecked,
+              status: status !== undefined ? status : isChecked ? 'SUCCESS' : null,
               completedAt: isChecked ? new Date().toISOString() : newLogs[existingIdx].completedAt,
               completedByStaffName: isChecked ? staffName : newLogs[existingIdx].completedByStaffName,
               note: note !== undefined ? note : newLogs[existingIdx].note,
@@ -482,6 +519,7 @@ export default function CampaignDetailPage() {
               {
                 touchpointId,
                 isChecked,
+                status: status !== undefined ? status : isChecked ? 'SUCCESS' : null,
                 completedAt: isChecked ? new Date().toISOString() : null,
                 completedByStaffName: isChecked ? staffName : null,
                 note: note || null,
@@ -495,8 +533,8 @@ export default function CampaignDetailPage() {
     );
 
     try {
-      await apiClient.campaigns.toggleTouchpointLog(campaign.id, customerId, touchpointId, { isChecked, note });
-      message.success(isChecked ? 'Đã đánh dấu hoàn thành điểm chạm' : 'Đã bỏ chọn điểm chạm');
+      await apiClient.campaigns.toggleTouchpointLog(campaign.id, customerId, touchpointId, { isChecked, status, note });
+      message.success(isChecked ? 'Đã cập nhật trạng thái điểm chạm' : 'Đã bỏ chọn điểm chạm');
       if (campaign.id) {
         apiClient.campaigns.getStats(campaign.id).then(setStats).catch(console.error);
       }
@@ -939,13 +977,16 @@ export default function CampaignDetailPage() {
           ✨ Tiến Trình Chạm CSKH
         </div>
       ),
-      children: displayTouchpoints.map((tp) => {
+      children: displayTouchpoints.map((tp, tpIndex) => {
         const rawLabel = (tp.label || tp.key).replace(/^Chạm\s*/i, '').replace(/^Chăm sóc\s*/i, '');
         let displayLabel = rawLabel.replace(/n$/i, '');
         if (tp.key === '24h' || rawLabel === '24h') displayLabel = '24h';
         else if (tp.key === '30plus' || rawLabel === '30+' || rawLabel === '30n+') displayLabel = '30+';
 
-        let fullTooltipText = `Chạm ${displayLabel}`;
+        let fullTooltipText =
+          tp.daysMin !== undefined
+            ? `${tp.label} (Ngày ${tp.daysMin}${tp.daysMax ? `-${tp.daysMax}` : '+'})`
+            : `Chạm ${displayLabel}`;
         if (tp.key === '24h' || displayLabel === '24h')
           fullTooltipText = 'Chạm 24h: Đảm bảo khách hài lòng với bộ mi (24 giờ sau làm)';
         else if (tp.key === '17' || displayLabel === '17')
@@ -963,16 +1004,51 @@ export default function CampaignDetailPage() {
         else if (tp.key === '30plus' || displayLabel === '30+')
           fullTooltipText = 'Chạm 30n+: Quá 30 ngày - Khách cần tư vấn làm bộ mi mới';
 
+        // Select sleek Lucide icon for header
+        let HeaderIcon: React.ComponentType<any> = Smile;
+        const lowLabel = (tp.label || '').toLowerCase();
+        if (lowLabel.includes('😂') || lowLabel.includes('cười')) HeaderIcon = Smile;
+        else if (lowLabel.includes('🤝') || lowLabel.includes('nắm tay')) HeaderIcon = Handshake;
+        else if (lowLabel.includes('😚') || lowLabel.includes('má')) HeaderIcon = KissIcon;
+        else if (lowLabel.includes('😘') || lowLabel.includes('môi')) HeaderIcon = Heart;
+        else if (lowLabel.includes('🛏️') || lowLabel.includes('giường')) HeaderIcon = BedDouble;
+        else if (tp.key === '24h' || displayLabel === '24h') HeaderIcon = Sparkles;
+        else if (tp.key === '17' || displayLabel === '17') HeaderIcon = Calendar;
+        else if (tp.key === '19' || displayLabel === '19') HeaderIcon = Clock;
+        else if (tp.key === '21' || displayLabel === '21') HeaderIcon = Bell;
+        else if (tp.key === '23' || displayLabel === '23') HeaderIcon = Heart;
+        else if (tp.key === '25' || displayLabel === '25') HeaderIcon = Heart;
+        else if (tp.key === '30' || displayLabel === '30') HeaderIcon = Calendar;
+        else if (tp.key === '30plus' || displayLabel === '30+') HeaderIcon = UserPlus;
+        else {
+          // Sequential fallback by touchpoint index for custom campaign touchpoints
+          const rawSortOrder = (tp as any).sortOrder;
+          const idx = typeof rawSortOrder === 'number' ? rawSortOrder - 1 : tpIndex;
+          if (idx === 0) HeaderIcon = Smile;
+          else if (idx === 1) HeaderIcon = Handshake;
+          else if (idx === 2) HeaderIcon = KissIcon;
+          else if (idx === 3) HeaderIcon = Heart;
+          else HeaderIcon = BedDouble;
+        }
+
         return {
           title: (
             <Tooltip title={fullTooltipText}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
-                {displayLabel}
-              </span>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <HeaderIcon size={16} style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569' }} />
+              </div>
             </Tooltip>
           ),
           key: `tp_${tp.key || tp.id}`,
-          width: 38,
+          width: 44,
           align: 'center' as const,
           render: (_: any, record: any) => (
             <CampaignTouchpointCell
@@ -980,6 +1056,10 @@ export default function CampaignDetailPage() {
               touchpoint={tp}
               themeMode={themeMode}
               onToggle={handleToggleTouchpoint}
+              onOpenBooking={(cust: any) => {
+                setBookingInitialCustomer(cust);
+                setBookingWizardVisible(true);
+              }}
             />
           ),
         };

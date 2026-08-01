@@ -146,8 +146,17 @@ export async function campaignRoutes(fastify: FastifyInstance) {
           return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
         }
         const query = request.query as any;
+        const rawBooker = query.bookerId || query.assignedStaffId;
+        let bookerId: number | undefined = undefined;
+        if (rawBooker && rawBooker !== 'ALL') {
+          const parsed = parseInt(rawBooker, 10);
+          if (!isNaN(parsed) && parsed > 0) {
+            bookerId = parsed;
+          }
+        }
+
         const result = await CampaignService.getCampaignCustomers(fastify, id, {
-          bookerId: query.bookerId ? parseInt(query.bookerId, 10) : undefined,
+          bookerId,
           search: query.search,
           touchpointKey: query.touchpointKey,
           page: query.page ? parseInt(query.page, 10) : 1,

@@ -756,7 +756,14 @@ export class CampaignService {
       return { items: [], total: 0, page: pageNum, pageSize: limitNum, pages: 0 };
     }
 
-    const legacyUserIds = campaignCustomers.map((cc) => cc.legacyUserId);
+    const legacyUserIds = Array.from(
+      new Set(campaignCustomers.map((cc) => Number(cc.legacyUserId)).filter((id) => !isNaN(id) && id > 0))
+    );
+
+    if (legacyUserIds.length === 0) {
+      return { items: [], total: 0, page: pageNum, pageSize: limitNum, pages: 0 };
+    }
+
     const idListStr = legacyUserIds.join(',');
 
     // Fetch customer profiles, contacts, assignments, pending allocation batch items, recent call logs, order stats, and visit dates
@@ -972,6 +979,7 @@ export class CampaignService {
           touchpointKey: log.touchpoint?.key,
           touchpointLabel: log.touchpoint?.label,
           isChecked: log.isChecked,
+          status: (log as any).status || (log.isChecked ? 'SUCCESS' : null),
           completedAt: log.completedAt ? log.completedAt.toISOString() : null,
           completedByStaffId: log.completedByStaffId,
           completedByStaffName: log.completedByStaffName,
@@ -1148,6 +1156,10 @@ export class CampaignService {
 
     const now = new Date();
 
+    const finalStatus =
+      dto.status === null || (dto.status as any) === '' ? null : dto.status || (dto.isChecked ? 'SUCCESS' : null);
+    const finalIsChecked = finalStatus !== null || dto.isChecked;
+
     const log = await fastify.prisma.crm.crmCampaignTouchpointLog.upsert({
       where: {
         campaignCustomerId_touchpointId: {
@@ -1156,7 +1168,8 @@ export class CampaignService {
         },
       },
       update: {
-        isChecked: dto.isChecked,
+        isChecked: finalIsChecked,
+        status: finalStatus,
         completedAt: now,
         completedByStaffId: staffId,
         completedByStaffName: staffName,
@@ -1165,7 +1178,8 @@ export class CampaignService {
       create: {
         campaignCustomerId: campaignCustomer.id,
         touchpointId,
-        isChecked: dto.isChecked,
+        isChecked: finalIsChecked,
+        status: finalStatus,
         completedAt: now,
         completedByStaffId: staffId,
         completedByStaffName: staffName,
@@ -1178,6 +1192,7 @@ export class CampaignService {
       campaignCustomerId: log.campaignCustomerId,
       touchpointId: log.touchpointId,
       isChecked: log.isChecked,
+      status: (log.status as any) || (log.isChecked ? 'SUCCESS' : null),
       completedAt: log.completedAt ? log.completedAt.toISOString() : null,
       completedByStaffId: log.completedByStaffId,
       completedByStaffName: log.completedByStaffName,

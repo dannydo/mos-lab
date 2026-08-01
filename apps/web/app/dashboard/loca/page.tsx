@@ -279,6 +279,10 @@ export default function LocaCampaignPage() {
     handleAddToPlan,
     makeCall,
     handleOpenSmsModal,
+    handleOpenBookingWizard: (cust: any) => {
+      setBookingInitialCustomer(cust);
+      setBookingWizardVisible(true);
+    },
     handleToggleTouchpoint,
     addingIds,
     sortField,

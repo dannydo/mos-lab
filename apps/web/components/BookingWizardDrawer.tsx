@@ -322,8 +322,18 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     setSelectedCV(null);
     setSelectedCN(null);
     if (initialCustomer) {
-      setSelectedCustomer(initialCustomer);
-      setCustomerList([initialCustomer]);
+      const normalizedCust = {
+        ...initialCustomer,
+        id: initialCustomer.legacyUserId || initialCustomer.customerId || initialCustomer.id,
+        name:
+          initialCustomer.name ||
+          initialCustomer.customerName ||
+          initialCustomer.user_name ||
+          `Khách hàng #${initialCustomer.id}`,
+        phone: initialCustomer.phone || initialCustomer.customerPhone || initialCustomer.user_phone || '',
+      };
+      setSelectedCustomer(normalizedCust);
+      setCustomerList([normalizedCust]);
       setIsNewLead(false);
     } else {
       setSelectedCustomer(null);
@@ -356,7 +366,13 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     setLoadingCampaignPromotions(true);
     try {
       const data = await apiClient.campaigns.getCustomerActivePromotions(customerId);
-      setCustomerCampaignPromotions(data || []);
+      const campPromos = data || [];
+      setCustomerCampaignPromotions(campPromos);
+
+      if (campPromos.length > 0 && campPromos[0].promotions && campPromos[0].promotions.length > 0) {
+        setSelectedCampaignPromotion(campPromos[0].promotions[0]);
+        setSelectedPromotion(null);
+      }
     } catch (err) {
       console.error('[BookingWizard] Failed to fetch customer campaign promotions:', err);
       setCustomerCampaignPromotions([]);
@@ -366,8 +382,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
   }, []);
 
   useEffect(() => {
-    if (open && selectedCustomer && selectedCustomer.id && !isNewLead) {
-      fetchCustomerCampaignPromotions(selectedCustomer.id);
+    const targetCustId = selectedCustomer?.legacyUserId || selectedCustomer?.id;
+    if (open && selectedCustomer && targetCustId && !isNewLead) {
+      fetchCustomerCampaignPromotions(targetCustId);
     } else {
       setCustomerCampaignPromotions([]);
       setSelectedCampaignPromotion(null);
@@ -524,7 +541,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
 
     try {
       const payload = {
-        customerId: isNewLead ? null : selectedCustomer.id,
+        customerId: isNewLead ? null : selectedCustomer.legacyUserId || selectedCustomer.id,
         newCustomerName: isNewLead ? leadName : null,
         newCustomerPhone: isNewLead ? leadPhone : null,
         storeId: selectedCN.id,
@@ -543,7 +560,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
       };
 
       await apiClient.customers.createBooking(payload);
-      message.success(`Đặt lịch thành công cho khách hàng ${isNewLead ? leadName : selectedCustomer.name}!`);
+      message.success(
+        `Đặt lịch thành công cho khách hàng ${isNewLead ? leadName : selectedCustomer.name || selectedCustomer.customerName}!`
+      );
       window.dispatchEvent(new CustomEvent('mos-booking-updated'));
       window.dispatchEvent(new CustomEvent('mos-customer-updated'));
       window.dispatchEvent(new CustomEvent('mos-call-log-saved'));
@@ -1046,20 +1065,55 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
                 filterOption={vietnameseSearchFilter}
                 style={{ width: '100%' }}
                 placeholder="Chọn chương trình khuyến mãi (nếu có)..."
-                value={selectedPromotion?.id}
+                value={selectedCampaignPromotion ? `CAMP_${selectedCampaignPromotion.id}` : selectedPromotion?.id}
                 onChange={(val) => {
-                  const promo = promotions.find((p) => p.id === val);
-                  setSelectedPromotion(promo || null);
+                  if (!val) {
+                    setSelectedPromotion(null);
+                    setSelectedCampaignPromotion(null);
+                    return;
+                  }
+                  if (typeof val === 'string' && val.startsWith('CAMP_')) {
+                    const campPromoId = parseInt(val.replace('CAMP_', ''), 10);
+                    let foundCampPromo: CustomerCampaignPromotionItem | null = null;
+                    for (const camp of customerCampaignPromotions) {
+                      const match = camp.promotions.find((p) => p.id === campPromoId);
+                      if (match) {
+                        foundCampPromo = match;
+                        break;
+                      }
+                    }
+                    if (foundCampPromo) {
+                      setSelectedCampaignPromotion(foundCampPromo);
+                      setSelectedPromotion(null);
+                    }
+                  } else {
+                    const promo = promotions.find((p) => p.id === val);
+                    setSelectedPromotion(promo || null);
+                    setSelectedCampaignPromotion(null);
+                  }
                 }}
-                options={promotions.map((p) => ({
-                  value: p.id,
-                  label:
-                    p.discountPercentage > 0
-                      ? `${p.name} (Giảm ${p.discountPercentage}%)`
-                      : p.discountAmount > 0
-                        ? `${p.name} (Giảm ${p.discountAmount.toLocaleString('vi-VN')}đ)`
-                        : p.name,
-                }))}
+                options={[
+                  ...customerCampaignPromotions.flatMap((camp) =>
+                    camp.promotions.map((p) => {
+                      let valText = '';
+                      if (p.type === 'PERCENT_DISCOUNT') valText = ` (Giảm ${p.value}%)`;
+                      else if (p.type === 'FIXED_DISCOUNT') valText = ` (Giảm ${p.value.toLocaleString('vi-VN')}đ)`;
+                      return {
+                        value: `CAMP_${p.id}`,
+                        label: `🎯 [Ưu đãi Chiến dịch: ${camp.campaignName}] ${p.label}${valText}`,
+                      };
+                    })
+                  ),
+                  ...promotions.map((p) => ({
+                    value: p.id,
+                    label:
+                      p.discountPercentage > 0
+                        ? `${p.name} (Giảm ${p.discountPercentage}%)`
+                        : p.discountAmount > 0
+                          ? `${p.name} (Giảm ${p.discountAmount.toLocaleString('vi-VN')}đ)`
+                          : p.name,
+                  })),
+                ]}
               />
             </div>
 
@@ -1097,7 +1151,13 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
               </div>
               {priceInfo.discount > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fa8c16' }}>
-                  <span>Giảm giá ({selectedPromotion?.name}):</span>
+                  <span>
+                    Giảm giá (
+                    {selectedCampaignPromotion
+                      ? `${selectedCampaignPromotion.name} - ${selectedCampaignPromotion.label}`
+                      : selectedPromotion?.name}
+                    ):
+                  </span>
                   <span style={{ fontVariantNumeric: 'tabular-nums' }}>
                     -{priceInfo.discount.toLocaleString('vi-VN')}đ
                   </span>
@@ -1269,8 +1329,14 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13.5px' }}>
               <div>
                 <span style={{ color: '#888' }}>Khách hàng:</span>{' '}
-                <strong>{isNewLead ? `${leadName} (Khách mới)` : selectedCustomer?.name}</strong>{' '}
-                {isNewLead ? `(${leadPhone})` : `(${selectedCustomer?.phone})`}
+                <strong>
+                  {isNewLead
+                    ? `${leadName} (Khách mới)`
+                    : selectedCustomer?.name ||
+                      selectedCustomer?.customerName ||
+                      `Khách hàng #${selectedCustomer?.id || selectedCustomer?.legacyUserId}`}
+                </strong>{' '}
+                {isNewLead ? `(${leadPhone})` : `(${selectedCustomer?.phone || selectedCustomer?.customerPhone || ''})`}
               </div>
               <div>
                 <span style={{ color: '#888' }}>Chi nhánh:</span> <strong>{selectedCN?.name}</strong>

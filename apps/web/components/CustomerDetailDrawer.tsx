@@ -705,9 +705,9 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   const activeNotes = tabDataMap['notes']?.items || notes || [];
                   const activeCalls = tabDataMap['calls']?.items || calls || [];
 
-                  const bCount = counts?.bookingCount ?? activeBookings.length;
-                  const nCount = counts?.noteCount ?? activeNotes.length;
-                  const cCount = counts?.callCount ?? activeCalls.length;
+                  const bCount = Math.max(counts?.bookingCount ?? 0, activeBookings.length);
+                  const nCount = Math.max(counts?.noteCount ?? 0, activeNotes.length);
+                  const cCount = Math.max(counts?.callCount ?? 0, activeCalls.length);
 
                   return (
                     <Tabs

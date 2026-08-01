@@ -404,6 +404,7 @@ model CrmLocaTouchpoint {
   legacyUserId       Int       @map("legacy_user_id")
   touchpointKey      String    @map("touchpoint_key") @db.VarChar(20) // '24h', '17', '19', '21', '23', '25', '30', '30plus'
   isChecked          Boolean   @default(false) @map("is_checked") @db.TinyInt
+  status             String?   @db.VarChar(30) // SUCCESS | FAILED | LOST
   checkedAt          DateTime? @map("checked_at") @db.DateTime(0)
   checkedByStaffId   Int?      @map("checked_by_staff_id")
   checkedByStaffName String?   @map("checked_by_staff_name") @db.VarChar(100)
@@ -507,14 +508,15 @@ model CrmCampaignPromotion {
 }
 
 model CrmCampaignTouchpointLog {
-  id                  Int      @id @default(autoincrement())
-  campaignCustomerId  Int      @map("campaign_customer_id")
-  touchpointId        Int      @map("touchpoint_id")
-  isChecked           Boolean  @default(true) @map("is_checked") @db.TinyInt
-  completedAt         DateTime @default(now()) @map("completed_at") @db.DateTime(0)
-  completedByStaffId  Int?     @map("completed_by_staff_id")
-  completedByStaffName String? @map("completed_by_staff_name") @db.VarChar(100)
-  note                String?  @db.Text
+  id                   Int      @id @default(autoincrement())
+  campaignCustomerId   Int      @map("campaign_customer_id")
+  touchpointId         Int      @map("touchpoint_id")
+  isChecked            Boolean  @default(true) @map("is_checked") @db.TinyInt
+  status               String?  @db.VarChar(30) // SUCCESS | FAILED | LOST
+  completedAt          DateTime @default(now()) @map("completed_at") @db.DateTime(0)
+  completedByStaffId   Int?     @map("completed_by_staff_id")
+  completedByStaffName String?  @map("completed_by_staff_name") @db.VarChar(100)
+  note                 String?  @db.Text
 
   campaignCustomer CrmCampaignCustomer   @relation(fields: [campaignCustomerId], references: [id], onDelete: Cascade)
   touchpoint       CrmCampaignTouchpoint @relation(fields: [touchpointId], references: [id], onDelete: Cascade)

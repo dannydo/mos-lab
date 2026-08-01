@@ -8,7 +8,6 @@ import {
   DollarOutlined,
   SearchOutlined,
   ReloadOutlined,
-  DownloadOutlined,
   InfoCircleOutlined,
   CrownOutlined,
   EyeOutlined,
@@ -88,13 +87,6 @@ export default function CcDiamondTab({
   // Format currency
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
-
-  // Export CSV
-  const handleExportCsv = () => {
-    const month = dateRange ? dateRange[0].format('YYYY-MM') : dayjs().format('YYYY-MM');
-    const url = `http://localhost:4001/api/kpi/export-diamond?key=FDC0D0A177694777A&month=${month}&format=csv`;
-    window.open(url, '_blank');
-  };
 
   const columns = [
     {
@@ -329,74 +321,78 @@ export default function CcDiamondTab({
         </Col>
       </Row>
 
-      {/* Program Bonus Rules Banner */}
-      <Card className="shadow-sm border border-cyan-200 dark:border-cyan-900 bg-cyan-50/50 dark:bg-cyan-950/20 rounded-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <Title level={5} className="m-0 text-cyan-800 dark:text-cyan-300 flex items-center gap-2">
-              💎 Biểu Phí Thưởng Khách Giới Thiệu (CT Kim Cương)
-            </Title>
-            <div className="flex items-center gap-2 mt-1">
-              <Text className="text-xs text-slate-600 dark:text-slate-400">
-                Thưởng lũy tiến theo mốc khách giới thiệu đạt được.
-              </Text>
-              <Tag color="volcano" className="rounded-md font-bold text-xs m-0">
-                ⚠️ Điều kiện: Tỷ lệ (💎/Tổng khách) phải đạt ≥ 3.0%
-              </Tag>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs">
-            <Tag color="blue" className="rounded-md tabular-nums font-semibold px-2 py-1">
-              Khách 1: 5k
-            </Tag>
-            <Tag color="blue" className="rounded-md tabular-nums font-semibold px-2 py-1">
-              Khách 2: 10k
-            </Tag>
-            <Tag color="blue" className="rounded-md tabular-nums font-semibold px-2 py-1">
-              Khách 3: 20k
-            </Tag>
-            <Tag color="blue" className="rounded-md tabular-nums font-semibold px-2 py-1">
-              Khách 4: 30k
-            </Tag>
-            <Tag color="blue" className="rounded-md tabular-nums font-semibold px-2 py-1">
-              Khách 5: 40k
-            </Tag>
-            <Tag color="cyan" className="rounded-md tabular-nums font-bold px-2 py-1">
-              Khách 6+: 50k / khách
-            </Tag>
-          </div>
-        </div>
-      </Card>
-
-      {/* Main Table Card */}
+      {/* Main Integrated Table Card */}
       <Card
-        className="full-bleed-card shadow-sm rounded-xl"
+        className="full-bleed-card shadow-sm rounded-xl overflow-hidden"
         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
         styles={{ body: { padding: 0 } }}
       >
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-          <Input
-            placeholder="Tìm kiếm tư vấn viên..."
-            prefix={<SearchOutlined className="text-slate-400" />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="w-full sm:w-72 rounded-lg"
-            allowClear
-          />
+        {/* INTEGRATED HEADER: RULES BANNER & TOOLBAR */}
+        <div className="p-4 bg-cyan-950/10 dark:bg-cyan-950/20 border-b border-slate-200 dark:border-slate-800">
+          {/* ROW 1: RULES BANNER & STEP PROGRESSION */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-200/80 dark:border-slate-800/80">
+            {/* LEFT: TITLE & CONDITION */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-base">💎</span>
+                <span className="font-semibold text-sm tracking-wide text-cyan-800 dark:text-cyan-300">
+                  Biểu Phí Thưởng Khách Giới Thiệu (Kim Cương)
+                </span>
+              </div>
+              <span className="hidden sm:inline text-slate-400 opacity-30">•</span>
+              <div className="flex items-center gap-1.5 text-xs text-amber-500/90 dark:text-amber-400/90 font-medium px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 shrink-0 w-fit">
+                <span>⚠️ Tỷ lệ (💎/Tổng khách) ≥ 3.0%</span>
+              </div>
+            </div>
 
-          <Space>
+            {/* RIGHT: STEP PROGRESSION LINE */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 text-xs tabular-nums">
+              {[
+                { k: '1', v: '5k' },
+                { k: '2', v: '10k' },
+                { k: '3', v: '20k' },
+                { k: '4', v: '30k' },
+                { k: '5', v: '40k' },
+                { k: '6+', v: '50k/khách', max: true },
+              ].map((tier, idx, arr) => (
+                <React.Fragment key={tier.k}>
+                  <div
+                    className={`flex items-center gap-1 px-2.5 py-0.5 rounded-md transition-all duration-200 whitespace-nowrap ${
+                      tier.max
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
+                        : 'bg-slate-800/40 dark:bg-slate-800/60 text-slate-300 border border-slate-700/40 hover:border-cyan-500/30'
+                    }`}
+                  >
+                    <span className="opacity-60 font-mono text-[11px]">K{tier.k}:</span>
+                    <span className={tier.max ? 'text-cyan-300' : 'text-cyan-400 font-semibold'}>{tier.v}</span>
+                  </div>
+                  {idx < arr.length - 1 && (
+                    <span className="text-slate-600 dark:text-slate-600 font-mono text-[10px] shrink-0">→</span>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          {/* ROW 2: SEARCH INPUT & REFRESH BUTTON */}
+          <div className="flex items-center justify-between gap-3">
+            <Input
+              placeholder="Tìm kiếm tư vấn viên..."
+              prefix={<SearchOutlined className="text-slate-400" />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="w-full sm:w-80 rounded-lg text-xs"
+              allowClear
+            />
             <Tooltip title="Làm mới dữ liệu">
-              <Button icon={<ReloadOutlined />} onClick={fetchDiamondData} loading={loading} className="rounded-lg" />
+              <Button
+                icon={<ReloadOutlined className={loading ? 'animate-spin' : ''} />}
+                onClick={fetchDiamondData}
+                loading={loading}
+                className="rounded-lg shrink-0"
+              />
             </Tooltip>
-            <Button
-              type="primary"
-              icon={<DownloadOutlined />}
-              onClick={handleExportCsv}
-              className="rounded-lg bg-cyan-600 hover:bg-cyan-500 border-none"
-            >
-              Xuất CSV (Google Sheets)
-            </Button>
-          </Space>
+          </div>
         </div>
 
         <Table

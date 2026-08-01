@@ -1223,6 +1223,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (!userTps[tp.touchpointKey]) {
           userTps[tp.touchpointKey] = {
             isChecked: tp.isChecked,
+            status: tp.status || (tp.isChecked ? 'SUCCESS' : null),
             checkedAt: tp.checkedAt ? tp.checkedAt.toISOString() : null,
             checkedByStaffId: tp.checkedByStaffId,
             checkedByStaffName: tp.checkedByStaffName,
