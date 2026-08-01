@@ -1,6 +1,6 @@
-import { BucketType } from '../types/customer';
-import { UserRole } from '../types/auth';
-import { CallOutcome, CallResult } from '../types/call';
+import { BucketType } from '../types/customer.js';
+import { UserRole } from '../types/auth.js';
+import { CallOutcome, CallResult } from '../types/call.js';
 
 export const BUCKET_DETAILS: Record<BucketType, { label: string; color: string; description: string }> = {
   COMBO_LIVE: {
@@ -75,4 +75,4 @@ export const CALL_OUTCOME_LABELS: Record<CallOutcome, string> = {
   PENDING: 'Đang suy nghĩ/Chưa chốt',
 };
 
-export * from './system-constants';
+export * from './system-constants.js';
