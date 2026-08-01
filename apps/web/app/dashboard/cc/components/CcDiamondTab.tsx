@@ -328,11 +328,11 @@ export default function CcDiamondTab({
         styles={{ body: { padding: 0 } }}
       >
         {/* INTEGRATED HEADER: RULES BANNER & TOOLBAR */}
-        <div className="p-4 bg-cyan-950/10 dark:bg-cyan-950/20 border-b border-slate-200 dark:border-slate-800">
+        <div className="p-4 bg-slate-900/40 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 backdrop-blur-md">
           {/* ROW 1: RULES BANNER & STEP PROGRESSION */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-200/80 dark:border-slate-800/80">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-200/80 dark:border-slate-800/80">
             {/* LEFT: TITLE & CONDITION */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-base">💎</span>
                 <span className="font-semibold text-sm tracking-wide text-cyan-800 dark:text-cyan-300">
@@ -340,13 +340,13 @@ export default function CcDiamondTab({
                 </span>
               </div>
               <span className="hidden sm:inline text-slate-400 opacity-30">•</span>
-              <div className="flex items-center gap-1.5 text-xs text-amber-500/90 dark:text-amber-400/90 font-medium px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 shrink-0 w-fit">
+              <div className="flex items-center gap-1.5 text-xs text-amber-500 dark:text-amber-400 font-medium px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 shrink-0">
                 <span>⚠️ Tỷ lệ (💎/Tổng khách) ≥ 3.0%</span>
               </div>
             </div>
 
             {/* RIGHT: STEP PROGRESSION LINE */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 text-xs tabular-nums">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 xl:pb-0 text-xs tabular-nums">
               {[
                 { k: '1', v: '5k' },
                 { k: '2', v: '10k' },
@@ -357,17 +357,17 @@ export default function CcDiamondTab({
               ].map((tier, idx, arr) => (
                 <React.Fragment key={tier.k}>
                   <div
-                    className={`flex items-center gap-1 px-2.5 py-0.5 rounded-md transition-all duration-200 whitespace-nowrap ${
+                    className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full transition-all duration-200 whitespace-nowrap text-xs ${
                       tier.max
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
-                        : 'bg-slate-800/40 dark:bg-slate-800/60 text-slate-300 border border-slate-700/40 hover:border-cyan-500/30'
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold shadow-sm'
+                        : 'bg-slate-800/40 dark:bg-slate-800/60 text-slate-300 border border-slate-700/50 hover:border-cyan-500/40'
                     }`}
                   >
                     <span className="opacity-60 font-mono text-[11px]">K{tier.k}:</span>
                     <span className={tier.max ? 'text-cyan-300' : 'text-cyan-400 font-semibold'}>{tier.v}</span>
                   </div>
                   {idx < arr.length - 1 && (
-                    <span className="text-slate-600 dark:text-slate-600 font-mono text-[10px] shrink-0">→</span>
+                    <span className="text-slate-500 dark:text-slate-600 font-mono text-[10px] shrink-0">→</span>
                   )}
                 </React.Fragment>
               ))}
@@ -378,10 +378,15 @@ export default function CcDiamondTab({
           <div className="flex items-center justify-between gap-3">
             <Input
               placeholder="Tìm kiếm tư vấn viên..."
-              prefix={<SearchOutlined className="text-slate-400" />}
+              prefix={<SearchOutlined className="text-slate-400 text-xs" />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              className="w-full sm:w-80 rounded-lg text-xs"
+              style={{
+                maxWidth: '280px',
+                borderRadius: '8px',
+                borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
+              }}
+              size="middle"
               allowClear
             />
             <Tooltip title="Làm mới dữ liệu">
@@ -389,7 +394,16 @@ export default function CcDiamondTab({
                 icon={<ReloadOutlined className={loading ? 'animate-spin' : ''} />}
                 onClick={fetchDiamondData}
                 loading={loading}
-                className="rounded-lg shrink-0"
+                style={{
+                  borderRadius: '8px',
+                  width: '36px',
+                  height: '36px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
+                }}
+                className="shrink-0"
               />
             </Tooltip>
           </div>

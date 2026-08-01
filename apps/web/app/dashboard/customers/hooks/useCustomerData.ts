@@ -259,6 +259,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     activeTab: filtersHook.activeTab,
     selectedBatchId: filtersHook.selectedBatchId,
     setSelectedBatchId: filtersHook.setSelectedBatchId,
+    exitBatchMode: filtersHook.exitBatchMode,
     myBatches,
     myBatchesLoading,
     fetchMyBatches,

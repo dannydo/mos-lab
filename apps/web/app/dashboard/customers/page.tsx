@@ -283,21 +283,25 @@ function CustomersPageContent() {
             Quản lý phân loại & phân bổ data real-time
           </Text>
         </div>
-        <Button
-          type="primary"
-          icon={<CalendarPlusIcon fontSize={16} />}
-          style={{
-            backgroundColor: '#D4A84B',
-            borderColor: '#D4A84B',
-            height: '36px',
-            borderRadius: '8px',
-            fontWeight: 600,
-            boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
-          }}
-          onClick={() => data.setBookingWizardVisible(true)}
-        >
-          Đặt lịch mới
-        </Button>
+        <Tooltip title="Đặt lịch mới">
+          <Button
+            type="primary"
+            icon={<CalendarPlusIcon fontSize={18} />}
+            style={{
+              backgroundColor: '#D4A84B',
+              borderColor: '#D4A84B',
+              height: '36px',
+              width: '36px',
+              padding: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
+            }}
+            onClick={() => data.setBookingWizardVisible(true)}
+          />
+        </Tooltip>
       </div>
 
       {/* MINIMALIST CONTROL BAR */}
@@ -538,6 +542,7 @@ function CustomersPageContent() {
           onRefresh={async () => {
             await Promise.all([data.fetchMyBatches(), data.refreshListAndStats()]);
           }}
+          onExitBatch={data.exitBatchMode}
         />
       )}
 

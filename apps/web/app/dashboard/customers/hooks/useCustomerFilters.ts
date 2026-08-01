@@ -346,11 +346,32 @@ export const useCustomerFilters = (
     ]
   );
 
-  const clearFilters = useCallback(() => {
-    setActiveFilterId(null);
+  const exitBatchMode = useCallback(() => {
+    setSelectedBatchId(undefined);
     setActiveTab('ALL');
     if (typeof window !== 'undefined') {
       localStorage.setItem('mos_customers_active_tab', 'ALL');
+      const params = new URLSearchParams(window.location.search);
+      params.delete('batchId');
+      params.delete('tab');
+      const queryStr = params.toString();
+      const newUrl = queryStr ? `${window.location.pathname}?${queryStr}` : window.location.pathname;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setActiveFilterId(null);
+    setActiveTab('ALL');
+    setSelectedBatchId(undefined);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mos_customers_active_tab', 'ALL');
+      const params = new URLSearchParams(window.location.search);
+      params.delete('batchId');
+      params.delete('tab');
+      const queryStr = params.toString();
+      const newUrl = queryStr ? `${window.location.pathname}?${queryStr}` : window.location.pathname;
+      window.history.replaceState(null, '', newUrl);
     }
     setDaysSinceLastVisitMin(undefined);
     setDaysSinceLastVisitMax(undefined);
@@ -480,7 +501,7 @@ export const useCustomerFilters = (
       assignedDaysMin,
       assignedDaysMax,
       retainedOnly: retainedOnly ? 'true' : undefined,
-      allocationBatchId: selectedBatchId,
+      allocationBatchId: activeTab === 'ALLOCATION' ? selectedBatchId : undefined,
       ids: filterCustomerIds,
       dobMonth,
       birthdayPreset,
@@ -593,6 +614,7 @@ export const useCustomerFilters = (
     getCurrentFilterCriteria,
     buildFilterSummary,
     clearFilters,
+    exitBatchMode,
     handleSaveFilter,
     handleDeleteFilter,
   };

@@ -760,9 +760,9 @@ body {
 
 /* Antd Table Customization in Dark & Light Themes for High Contrast & Visual Depth */
 .dark-theme .ant-table {
-  background: #111827 !important;
-  color: #cbd5e1 !important;
-  border-color: #1f2937 !important;
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #1e293b !important;
 }
 
 .light-theme .ant-table {
@@ -773,26 +773,29 @@ body {
 
 .dark-theme .ant-table-thead > tr > th {
   background: #1e293b !important;
-  color: #f8fafc !important;
+  color: #cbd5e1 !important;
   border-bottom: 1px solid #334155 !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.2px !important;
 }
 
 .light-theme .ant-table-thead > tr > th {
   background: #f8fafc !important;
-  color: #0f172a !important;
-  border-bottom: 1px solid #e2e8f0 !important;
-  font-weight: 600 !important;
+  color: #1e293b !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
 }
 
 .dark-theme .ant-table-tbody > tr > td {
-  border-bottom: 1px solid #1f2937 !important;
-  color: #cbd5e1 !important;
+  border-bottom: 1px solid #1e293b !important;
+  color: #f1f5f9 !important;
 }
 
 .light-theme .ant-table-tbody > tr > td {
   border-bottom: 1px solid #e2e8f0 !important;
-  color: #334155 !important;
+  color: #1e293b !important;
 }
 
 .dark-theme .ant-table-row:hover > td {
@@ -804,11 +807,32 @@ body {
 }
 
 .dark-theme .ant-table-cell {
-  border-color: #1f2937 !important;
+  border-color: #1e293b !important;
 }
 
 .light-theme .ant-table-cell {
   border-color: #e2e8f0 !important;
+}
+
+/* Pagination High-Contrast Rules */
+.dark-theme .ant-pagination-item {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+.dark-theme .ant-pagination-item a {
+  color: #cbd5e1 !important;
+}
+.dark-theme .ant-pagination-item-active {
+  background: #d4a84b !important;
+  border-color: #d4a84b !important;
+}
+.dark-theme .ant-pagination-item-active a {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+.dark-theme .ant-pagination-total-text,
+.dark-theme .ant-pagination-options {
+  color: #94a3b8 !important;
 }
 
 /* Custom styles for Drawer and Cards in Dark & Light Themes */

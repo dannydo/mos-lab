@@ -2,7 +2,13 @@
 
 import React from 'react';
 import { Select, Typography, Button, Tooltip } from 'antd';
-import { ReloadOutlined, ThunderboltOutlined, UserOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import {
+  ReloadOutlined,
+  ThunderboltOutlined,
+  UserOutlined,
+  ClockCircleOutlined,
+  CloseOutlined,
+} from '@ant-design/icons';
 import { BookerAllocationBatchSummary, SafeAny } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 
@@ -16,6 +22,7 @@ interface AllocationBatchHeaderProps {
   selectedBatchId?: number;
   onSelectBatch: (batchId: number) => void;
   onRefresh: () => void;
+  onExitBatch?: () => void;
 }
 
 export const AllocationBatchHeader: React.FC<AllocationBatchHeaderProps> = ({
@@ -26,6 +33,7 @@ export const AllocationBatchHeader: React.FC<AllocationBatchHeaderProps> = ({
   selectedBatchId,
   onSelectBatch,
   onRefresh,
+  onExitBatch,
 }) => {
   const [refreshing, setRefreshing] = React.useState(false);
   const currentBatch = batches?.find((b) => b.id === selectedBatchId) || batches?.[0];
@@ -170,7 +178,7 @@ export const AllocationBatchHeader: React.FC<AllocationBatchHeaderProps> = ({
               />
             </div>
 
-            {/* MINIMALIST REFRESH BUTTON */}
+            {/* MINIMALIST REFRESH & EXIT BUTTONS */}
             <Button
               icon={<ReloadOutlined className={refreshing ? 'animate-spin' : ''} />}
               onClick={handleRefresh}
@@ -180,6 +188,20 @@ export const AllocationBatchHeader: React.FC<AllocationBatchHeaderProps> = ({
               className="text-xs text-slate-400 hover:text-amber-400 px-1.5"
               title="Làm mới đợt phân bổ"
             />
+            {onExitBatch && (
+              <Tooltip title="Thoát đợt phân bổ (Xem tất cả KH)">
+                <Button
+                  icon={<CloseOutlined />}
+                  onClick={onExitBatch}
+                  size="small"
+                  type="text"
+                  danger
+                  className="text-xs px-1.5 font-medium hover:bg-rose-500/10"
+                >
+                  <span className="hidden sm:inline">Thoát</span>
+                </Button>
+              </Tooltip>
+            )}
           </div>
         )}
       </div>

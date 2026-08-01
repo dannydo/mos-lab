@@ -157,7 +157,7 @@ const CustomerTable = React.memo(
                   <div
                     style={{
                       fontSize: '11px',
-                      color: themeMode === 'dark' ? '#8c8c8c' : '#595959',
+                      color: themeMode === 'dark' ? '#cbd5e1' : '#475569',
                       marginTop: '2px',
                       display: 'flex',
                       alignItems: 'center',
@@ -174,12 +174,13 @@ const CustomerTable = React.memo(
                     {record.age !== undefined && record.age !== null && dayjs(record.dob).year() < 2024 && (
                       <span
                         style={{
-                          background: themeMode === 'dark' ? '#262626' : '#e6f7ff',
-                          color: themeMode === 'dark' ? '#1890ff' : '#096dd9',
-                          padding: '0 4px',
+                          background: themeMode === 'dark' ? 'rgba(56, 189, 248, 0.15)' : '#e0f2fe',
+                          color: themeMode === 'dark' ? '#38bdf8' : '#0369a1',
+                          border: `1px solid ${themeMode === 'dark' ? 'rgba(56, 189, 248, 0.3)' : '#bae6fd'}`,
+                          padding: '0 6px',
                           borderRadius: '4px',
                           fontSize: '10px',
-                          fontWeight: 500,
+                          fontWeight: 600,
                         }}
                       >
                         {record.age} tuổi
@@ -204,7 +205,7 @@ const CustomerTable = React.memo(
             if (hasCallback) {
               const callbackFormatted = dayjs(record.callbackDate).format('DD/MM/YYYY');
               return (
-                <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#855b00', fontWeight: 'bold' }}>
+                <span style={{ color: themeMode === 'dark' ? '#fbbf24' : '#d97706', fontWeight: 'bold' }}>
                   🕒 Hẹn gọi lại: {callbackFormatted}
                 </span>
               );
@@ -217,7 +218,7 @@ const CustomerTable = React.memo(
               if (isBooked) {
                 const bookingFormatted = dayjs(record.lastBookingDate).format('DD/MM/YYYY');
                 return (
-                  <span style={{ color: themeMode === 'dark' ? '#95de64' : '#237804', fontWeight: 'bold' }}>
+                  <span style={{ color: themeMode === 'dark' ? '#4ade80' : '#16a34a', fontWeight: 'bold' }}>
                     📅 Booked: {bookingFormatted}
                   </span>
                 );
@@ -245,7 +246,17 @@ const CustomerTable = React.memo(
                   missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
                 }
                 return (
-                  <span style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold' }}>
+                  <span
+                    style={{
+                      background: themeMode === 'dark' ? 'rgba(244, 63, 94, 0.18)' : '#ffe4e6',
+                      color: themeMode === 'dark' ? '#f43f5e' : '#e11d48',
+                      border: `1px solid ${themeMode === 'dark' ? 'rgba(244, 63, 94, 0.35)' : '#fecdd3'}`,
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                    }}
+                  >
                     ⚠️ Missed: {missedDays} ngày
                   </span>
                 );
@@ -255,7 +266,7 @@ const CustomerTable = React.memo(
             return days !== null ? (
               `${days} ngày`
             ) : (
-              <Text style={{ color: token.colorTextDescription }}>Chưa từng đến</Text>
+              <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Chưa từng đến</span>
             );
           },
         },
@@ -276,9 +287,9 @@ const CustomerTable = React.memo(
               return <Tag color={isPending ? 'gold' : 'cyan'}>{staff.displayName}</Tag>;
             }
             return (
-              <Text type="secondary" style={{ fontStyle: 'italic' }}>
+              <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b', fontStyle: 'italic' }}>
                 Chưa phân bổ
-              </Text>
+              </span>
             );
           },
         },
@@ -337,9 +348,9 @@ const CustomerTable = React.memo(
 
             if (!assignedAt) {
               return (
-                <Text type="secondary" style={{ fontStyle: 'italic' }}>
+                <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b', fontStyle: 'italic' }}>
                   Chưa từng phân bổ
-                </Text>
+                </span>
               );
             }
 
