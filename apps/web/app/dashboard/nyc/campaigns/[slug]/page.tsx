@@ -44,6 +44,7 @@ import {
   DollarOutlined,
   EditOutlined,
   MinusCircleOutlined,
+  AimOutlined,
 } from '@ant-design/icons';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -53,6 +54,10 @@ import { apiClient } from '../../../../../lib/api-client';
 import { removeVietnameseTones } from '../../../../../lib/utils/search';
 import { formatVND, formatDuration } from '../../../../../lib/format-utils';
 import { useOmiCall } from '../../../../../context/OmiCallContext';
+import {
+  CampaignTouchpointCell,
+  CampaignTouchpointItem,
+} from '../../../../../components/campaign/CampaignTouchpointCell';
 import {
   Campaign,
   CampaignTouchpoint,
@@ -130,6 +135,15 @@ export default function CampaignDetailPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedBookerId, setSelectedBookerId] = useState<string>('ALL');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  // Random Selector Modal State
+  const [randomModalVisible, setRandomModalVisible] = useState<boolean>(false);
+  const [randomCount, setRandomCount] = useState<number | ''>(20);
+  const [randomLoading, setRandomLoading] = useState<boolean>(false);
+  const [excludeAssigned, setExcludeAssigned] = useState<boolean>(true);
+  const [excludeUnconfirmedAllocation, setExcludeUnconfirmedAllocation] = useState<boolean>(true);
+  const [excludeFutureBooking, setExcludeFutureBooking] = useState<boolean>(true);
+  const [showSelectedOnly, setShowSelectedOnly] = useState<boolean>(false);
 
   // Controlled & Persistent Pagination State (AGENTS.md Rule 24)
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -402,6 +416,11 @@ export default function CampaignDetailPage() {
   // Filter Customers
   const filteredCustomers = useMemo(() => {
     return customers.filter((c) => {
+      // Show selected only filter
+      if (showSelectedOnly && selectedRowKeys.length > 0) {
+        const cId = c.legacyUserId || c.customerId || c.id;
+        if (!selectedRowKeys.includes(cId)) return false;
+      }
       // Booker filter
       if (selectedBookerId !== 'ALL') {
         const bId = Number(selectedBookerId);
@@ -428,21 +447,63 @@ export default function CampaignDetailPage() {
       }
       return true;
     });
-  }, [customers, selectedBookerId, selectedTouchpointKey, touchpoints, searchQuery]);
+  }, [customers, selectedBookerId, selectedTouchpointKey, touchpoints, searchQuery, showSelectedOnly, selectedRowKeys]);
 
   // Toggle Touchpoint Log
-  const handleToggleTouchpoint = async (customerId: number, touchpointId: number, isChecked: boolean) => {
+  const handleToggleTouchpoint = async (
+    customerId: number,
+    touchpointId: number,
+    isChecked: boolean,
+    note?: string
+  ) => {
     if (!campaign?.id) return;
+
+    // Optimistically update customers state
+    setCustomers((prevCustomers) =>
+      prevCustomers.map((cust: any) => {
+        const cId = cust.legacyUserId || cust.id;
+        if (cId === customerId || cust.id === customerId) {
+          const logs = cust.touchpointLogs || [];
+          const existingIdx = logs.findIndex((l: any) => l.touchpointId === touchpointId);
+          const staffName = currentUser?.displayName || currentUser?.username || 'Staff';
+          let newLogs;
+          if (existingIdx >= 0) {
+            newLogs = [...logs];
+            newLogs[existingIdx] = {
+              ...newLogs[existingIdx],
+              isChecked,
+              completedAt: isChecked ? new Date().toISOString() : newLogs[existingIdx].completedAt,
+              completedByStaffName: isChecked ? staffName : newLogs[existingIdx].completedByStaffName,
+              note: note !== undefined ? note : newLogs[existingIdx].note,
+            };
+          } else {
+            newLogs = [
+              ...logs,
+              {
+                touchpointId,
+                isChecked,
+                completedAt: isChecked ? new Date().toISOString() : null,
+                completedByStaffName: isChecked ? staffName : null,
+                note: note || null,
+              },
+            ];
+          }
+          return { ...cust, touchpointLogs: newLogs };
+        }
+        return cust;
+      })
+    );
+
     try {
-      await apiClient.campaigns.toggleTouchpointLog(campaign.id, customerId, touchpointId, { isChecked });
+      await apiClient.campaigns.toggleTouchpointLog(campaign.id, customerId, touchpointId, { isChecked, note });
       message.success(isChecked ? 'Đã đánh dấu hoàn thành điểm chạm' : 'Đã bỏ chọn điểm chạm');
-      fetchCampaignCustomers();
       if (campaign.id) {
         apiClient.campaigns.getStats(campaign.id).then(setStats).catch(console.error);
       }
     } catch (err) {
       console.error('Toggle touchpoint log error:', err);
       message.error('Không thể cập nhật trạng thái điểm chạm');
+      fetchCampaignCustomers();
     }
   };
 
@@ -466,6 +527,96 @@ export default function CampaignDetailPage() {
         }
       },
     });
+  };
+
+  // Handle Random Customer Selection
+  const handleRandomSelect = () => {
+    setRandomLoading(true);
+    const countNum = typeof randomCount === 'number' && randomCount > 0 ? randomCount : 20;
+
+    try {
+      // Base pool matching current toolbar filters (booker, touchpoint, search)
+      const basePool = customers.filter((c: any) => {
+        if (selectedBookerId !== 'ALL') {
+          const bId = Number(selectedBookerId);
+          const staffId = c.assignedStaff?.id || c.assignedBooker?.id;
+          if (staffId !== bId) return false;
+        }
+        if (selectedTouchpointKey !== 'ALL') {
+          const tp = touchpoints.find((t) => t.key === selectedTouchpointKey);
+          if (tp) {
+            const days = c.daysInCampaign ?? c.daysSinceAdded ?? 0;
+            const min = tp.daysMin;
+            const isMatch =
+              tp.daysMax !== null && tp.daysMax !== undefined ? days >= min && days <= tp.daysMax : days >= min;
+            if (!isMatch) return false;
+          }
+        }
+        if (searchQuery.trim()) {
+          const query = removeVietnameseTones(searchQuery.trim().toLowerCase());
+          const nameMatch = removeVietnameseTones((c.customerName || c.name || '').toLowerCase()).includes(query);
+          const phoneMatch = (c.customerPhone || c.phone || '').includes(query);
+          return nameMatch || phoneMatch;
+        }
+        return true;
+      });
+
+      // Filter candidates pool based on modal options
+      const candidates = basePool.filter((record: any) => {
+        // 1. Option: Exclude assigned bookers ("Chỉ chọn khách hàng chưa được phân bổ Booker")
+        if (excludeAssigned) {
+          const bookerName =
+            record.assignedBookerName || record.assignedBooker?.name || record.assignedStaff?.displayName;
+          if (bookerName) return false;
+        }
+
+        // 2. Option: Exclude unconfirmed allocation ("Bỏ khách hàng đã phân bổ, chưa xác nhận")
+        if (excludeUnconfirmedAllocation) {
+          if (record.isPendingAccept) return false;
+        }
+
+        // 3. Option: Exclude future bookings ("Bỏ khách hàng đã có lịch book tương lai")
+        if (excludeFutureBooking) {
+          const lastBookingDate = record.lastBookingDate || record.bookingDate;
+          const lastBookingState = record.lastBookingState || record.bookingState;
+          const isBookingInFuture = lastBookingDate ? new Date(lastBookingDate) > new Date() : false;
+          if (isBookingInFuture) {
+            const isBooked = lastBookingState === 'New' || lastBookingState === 'Confirmed';
+            if (isBooked) return false;
+          }
+        }
+
+        return true;
+      });
+
+      if (candidates.length === 0) {
+        message.warning('Không tìm thấy khách hàng nào phù hợp với các điều kiện đã chọn.');
+        setRandomLoading(false);
+        return;
+      }
+
+      // Shuffle candidates (Fisher-Yates algorithm)
+      const shuffled = [...candidates];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      // Take top countNum items
+      const selectedItems = shuffled.slice(0, countNum);
+      const selectedKeys = selectedItems.map((c: any) => c.legacyUserId || c.customerId || c.id);
+
+      setSelectedRowKeys(selectedKeys);
+      setShowSelectedOnly(true);
+      setCurrentPage(1);
+      setRandomModalVisible(false);
+      message.success(`Đã chọn ngẫu nhiên ${selectedKeys.length} khách hàng (Đã bật hiển thị duy nhất KH được chọn)!`);
+    } catch (err) {
+      console.error('Random select error:', err);
+      message.error('Có lỗi xảy ra khi chọn ngẫu nhiên.');
+    } finally {
+      setRandomLoading(false);
+    }
   };
 
   // Fetch NYC Candidate Customers (Unassigned NYC customers)
@@ -576,15 +727,41 @@ export default function CampaignDetailPage() {
       });
   }, [staffList]);
 
+  // Touchpoints to display in table (filter out 'all')
+  const DEFAULT_CAMPAIGN_TOUCHPOINTS: CampaignTouchpointItem[] = [
+    { id: 1, key: '24h', label: '24h', daysMin: 1, daysMax: 1 },
+    { id: 2, key: '17', label: '17n', daysMin: 17, daysMax: 17 },
+    { id: 3, key: '19', label: '19n', daysMin: 19, daysMax: 19 },
+    { id: 4, key: '21', label: '21n', daysMin: 21, daysMax: 21 },
+    { id: 5, key: '23', label: '23n', daysMin: 23, daysMax: 23 },
+    { id: 6, key: '25', label: '25n', daysMin: 25, daysMax: 25 },
+    { id: 7, key: '30', label: '30n', daysMin: 30, daysMax: 30 },
+    { id: 8, key: '30plus', label: '30n+', daysMin: 31, daysMax: null },
+  ];
+
+  const displayTouchpoints = useMemo(() => {
+    const filtered = touchpoints.filter((tp) => tp.key !== 'all');
+    if (filtered.length > 0) {
+      return filtered.map((tp) => ({
+        id: tp.id,
+        key: tp.key,
+        label: tp.label?.replace(/^Chạm\s*/i, '').replace(/^Chăm sóc\s*/i, '') || tp.key,
+        daysMin: tp.daysMin,
+        daysMax: tp.daysMax,
+      }));
+    }
+    return DEFAULT_CAMPAIGN_TOUCHPOINTS;
+  }, [touchpoints]);
+
   // Customer Table Columns (Matching NYC Main Table)
   const columns = [
     {
       title: 'STT',
       key: 'stt',
-      width: 60,
+      width: 45,
       align: 'center' as const,
       render: (_: any, __: any, index: number) => (
-        <span className="tabular-nums font-mono text-xs text-gray-500 font-medium">
+        <span className="tabular-nums font-mono text-[11px] text-gray-500 font-medium">
           {(currentPage - 1) * pageSize + index + 1}
         </span>
       ),
@@ -592,12 +769,13 @@ export default function CampaignDetailPage() {
     {
       title: 'Khách hàng',
       key: 'customer',
-      width: 200,
+      width: 160,
       render: (_: any, record: any) => {
         const name = record.customerName || record.name || 'Khách hàng';
         const phone = record.customerPhone || record.phone || record.phones?.[0]?.phone_number;
         return (
           <Space
+            size={6}
             style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => {
               setSelectedCustomer(record);
@@ -605,8 +783,9 @@ export default function CampaignDetailPage() {
             }}
           >
             <Avatar
+              size={24}
               src={record.avatar || undefined}
-              icon={<UserOutlined />}
+              icon={<UserOutlined style={{ fontSize: '12px' }} />}
               style={{
                 backgroundColor: '#1f1f1f',
                 color: '#D4A84B',
@@ -616,21 +795,26 @@ export default function CampaignDetailPage() {
             />
             <div>
               <div
-                style={{ fontWeight: '600', color: themeMode === 'dark' ? '#f3f4f6' : '#111827' }}
+                style={{
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: themeMode === 'dark' ? '#f3f4f6' : '#111827',
+                  lineHeight: '1.2',
+                }}
                 className="hover:underline transition-all"
               >
                 {name}
               </div>
               {phone && (
                 <div
-                  style={{ fontSize: '12px', color: '#D4A84B', fontWeight: '500' }}
+                  style={{ fontSize: '11px', color: '#D4A84B', fontWeight: '500', lineHeight: '1.2' }}
                   className="hover:underline cursor-pointer flex items-center gap-1 mt-0.5 tabular-nums font-mono"
                   onClick={(e) => {
                     e.stopPropagation();
                     makeCall(phone);
                   }}
                 >
-                  <PhoneOutlined style={{ fontSize: '10px' }} />
+                  <PhoneOutlined style={{ fontSize: '9px' }} />
                   <span>{phone}</span>
                 </div>
               )}
@@ -643,7 +827,7 @@ export default function CampaignDetailPage() {
       title: 'Chưa tới tiệm (Ngày)',
       dataIndex: 'daysSinceLastVisit',
       key: 'daysSinceLastVisit',
-      width: 180,
+      width: 130,
       render: (_: any, record: any) => {
         const hasCallback = record.callbackDate
           ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
@@ -651,8 +835,8 @@ export default function CampaignDetailPage() {
         if (hasCallback) {
           const callbackFormatted = dayjs(record.callbackDate).format('DD/MM/YYYY');
           return (
-            <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#855b00', fontWeight: 'bold' }}>
-              🕒 Hẹn gọi lại: {callbackFormatted}
+            <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#855b00', fontWeight: 'bold', fontSize: '11px' }}>
+              🕒 Hẹn gọi: {callbackFormatted}
             </span>
           );
         }
@@ -666,7 +850,9 @@ export default function CampaignDetailPage() {
           if (isBooked) {
             const bookingFormatted = dayjs(lastBookingDate).format('DD/MM/YYYY');
             return (
-              <span style={{ color: themeMode === 'dark' ? '#95de64' : '#237804', fontWeight: 'bold' }}>
+              <span
+                style={{ color: themeMode === 'dark' ? '#95de64' : '#237804', fontWeight: 'bold', fontSize: '11px' }}
+              >
                 📅 Booked: {bookingFormatted}
               </span>
             );
@@ -693,8 +879,10 @@ export default function CampaignDetailPage() {
               missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
             }
             return (
-              <span style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold' }}>
-                ⚠️ Missed: {missedDays} ngày
+              <span
+                style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold', fontSize: '11px' }}
+              >
+                ⚠️ Missed: {missedDays}n
               </span>
             );
           }
@@ -702,9 +890,9 @@ export default function CampaignDetailPage() {
 
         const days = record.daysSinceLastVisit ?? record.daysInCampaign ?? record.daysSinceAdded;
         return days !== null && days !== undefined ? (
-          <span className="tabular-nums font-semibold">{days} ngày</span>
+          <span className="tabular-nums font-semibold text-xs">{days} ngày</span>
         ) : (
-          <span className="text-gray-400 italic">Chưa từng đến</span>
+          <span className="text-gray-400 italic text-xs">Chưa tới</span>
         );
       },
     },
@@ -712,52 +900,90 @@ export default function CampaignDetailPage() {
       title: 'Tổng Chi Tiêu',
       dataIndex: 'totalSpent',
       key: 'totalSpent',
-      width: 140,
+      width: 110,
       render: (val: number, record: any) => {
         const spent = val ?? record.totalSpent ?? 0;
-        return <span className="tabular-nums font-medium">{formatVND(spent)}</span>;
+        return <span className="tabular-nums font-medium text-xs">{formatVND(spent)}</span>;
       },
     },
     {
       title: 'Booker phụ trách',
       key: 'booker',
-      width: 150,
+      width: 120,
       render: (_: any, record: any) => {
         const bookerName =
           record.assignedBookerName || record.assignedBooker?.name || record.assignedStaff?.displayName;
         return bookerName ? (
-          <Tag color="cyan" className="font-semibold">
+          <Tag color="cyan" className="font-semibold text-[11px] px-1.5 py-0 m-0">
             {bookerName}
           </Tag>
         ) : (
-          <span className="text-gray-400 italic">Chưa phân bổ</span>
+          <span className="text-gray-400 italic text-xs">Chưa phân bổ</span>
         );
       },
     },
     {
+      key: 'touchpointGroup',
+      title: (
+        <div
+          style={{
+            textAlign: 'center',
+            fontWeight: 'bold',
+            color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
+            fontSize: '12px',
+            background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.12)' : 'rgba(212, 168, 75, 0.08)',
+            padding: '1px 6px',
+            borderRadius: '4px',
+          }}
+        >
+          ✨ Tiến Trình Chạm CSKH
+        </div>
+      ),
+      children: displayTouchpoints.map((tp) => ({
+        title: (
+          <Tooltip title={`Chạm ${tp.label}`}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
+              {tp.label}
+            </span>
+          </Tooltip>
+        ),
+        key: `tp_${tp.key || tp.id}`,
+        width: 38,
+        align: 'center' as const,
+        render: (_: any, record: any) => (
+          <CampaignTouchpointCell
+            customer={record}
+            touchpoint={tp}
+            themeMode={themeMode}
+            onToggle={handleToggleTouchpoint}
+          />
+        ),
+      })),
+    },
+    {
       title: 'Ngày gọi gần nhất',
       key: 'lastCallDate',
-      width: 150,
+      width: 120,
       render: (_: any, record: any) => {
         const date = record.lastCallAt || record.lastCall?.createdAt;
         if (!date) return '-';
-        return <span className="tabular-nums text-xs">{dayjs(date).format('DD/MM/YYYY HH:mm')}</span>;
+        return <span className="tabular-nums text-[11px]">{dayjs(date).format('DD/MM HH:mm')}</span>;
       },
     },
     {
       title: 'Thời lượng',
       key: 'lastCallDuration',
-      width: 100,
+      width: 80,
       render: (_: any, record: any) => {
         const secs = record.lastCallDuration ?? record.lastCall?.durationSec;
         if (secs === undefined || secs === null) return '-';
-        return <span className="tabular-nums text-xs">{formatDuration(secs)}</span>;
+        return <span className="tabular-nums text-[11px]">{formatDuration(secs)}</span>;
       },
     },
     {
       title: 'Trạng thái cuộc gọi',
       key: 'lastCallResult',
-      width: 140,
+      width: 120,
       render: (_: any, record: any) => {
         const result = record.lastCallResult || record.lastCall?.callResult;
         if (!result) return '-';
@@ -767,20 +993,24 @@ export default function CampaignDetailPage() {
         else if (result === 'NO_ANSWER' || result === 'Không nghe máy') color = 'warning';
         else if (result === 'BUSY' || result === 'Bận') color = 'orange';
         else if (result === 'FAILED' || result === 'WRONG_NUMBER' || result === 'Sai số') color = 'error';
-        return <Tag color={color}>{label}</Tag>;
+        return (
+          <Tag color={color} className="text-[11px] px-1 m-0">
+            {label}
+          </Tag>
+        );
       },
     },
     {
       title: 'Ghi chú cuộc gọi',
       key: 'lastCallNote',
-      width: 160,
+      width: 130,
       render: (_: any, record: any) => {
         const note = record.lastCallNote || record.lastCall?.note;
         if (!note) return '-';
-        const compactNote = note.length > 25 ? `${note.substring(0, 25)}...` : note;
+        const compactNote = note.length > 20 ? `${note.substring(0, 20)}...` : note;
         return (
           <Tooltip title={note}>
-            <span className="cursor-pointer text-xs italic text-gray-300 line-clamp-1">{compactNote}</span>
+            <span className="cursor-pointer text-[11px] italic text-gray-300 line-clamp-1">{compactNote}</span>
           </Tooltip>
         );
       },
@@ -788,11 +1018,11 @@ export default function CampaignDetailPage() {
     {
       title: 'Đã phân bổ',
       key: 'allocatedDays',
-      width: 120,
+      width: 100,
       render: (_: any, record: any) => {
         const assignedAt = record.assignedAt || record.assignedStaff?.assignedAt || record.lastAllocation?.assignedAt;
         if (!assignedAt) {
-          return <span className="text-gray-400 italic">Chưa từng phân bổ</span>;
+          return <span className="text-gray-400 italic text-[11px]">Chưa phân bổ</span>;
         }
         const assignedDate = dayjs(assignedAt);
         const today = dayjs();
@@ -806,7 +1036,7 @@ export default function CampaignDetailPage() {
         const tooltipTitle = `Phân bổ cho: ${staffName || 'Booker'} (từ ${formattedDate})`;
         return (
           <Tooltip title={tooltipTitle}>
-            <span className="tabular-nums font-semibold text-xs">{diffDays} ngày</span>
+            <span className="tabular-nums font-semibold text-[11px]">{diffDays} ngày</span>
           </Tooltip>
         );
       },
@@ -814,7 +1044,7 @@ export default function CampaignDetailPage() {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 140,
+      width: 100,
       align: 'center' as const,
       render: (_: any, record: any) => {
         const phone = record.customerPhone || record.phone || record.phones?.[0]?.phone_number;
@@ -1105,6 +1335,53 @@ export default function CampaignDetailPage() {
             />
           )}
 
+          {/* Minimalist Random Select Button (Icon + Tooltip) */}
+          {isAdmin && (
+            <Tooltip title="Chọn ngẫu nhiên khách hàng theo bộ lọc">
+              <Button
+                size="middle"
+                icon={<AimOutlined />}
+                onClick={() => setRandomModalVisible(true)}
+                style={{
+                  borderColor: themeMode === 'dark' ? '#D4A84B' : '#d97706',
+                  color: themeMode === 'dark' ? '#D4A84B' : '#d97706',
+                }}
+              />
+            </Tooltip>
+          )}
+
+          {/* Show Selected Only Toggle Indicator */}
+          {selectedRowKeys.length > 0 && (
+            <Tag
+              color={showSelectedOnly ? 'gold' : 'default'}
+              style={{
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '600',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                margin: 0,
+              }}
+              onClick={() => setShowSelectedOnly((prev) => !prev)}
+            >
+              {showSelectedOnly ? (
+                <>
+                  <span>🎯 Chỉ hiện {selectedRowKeys.length} KH được chọn</span>
+                  <span style={{ marginLeft: 4, opacity: 0.8 }} title="Bấm để xem tất cả">
+                    (Xem tất cả)
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span>👁️ Xem riêng {selectedRowKeys.length} KH được chọn</span>
+                </>
+              )}
+            </Tag>
+          )}
+
           {/* Batch Allocation Action Button */}
           {isAdmin && selectedRowKeys.length > 0 && (
             <Button
@@ -1121,6 +1398,7 @@ export default function CampaignDetailPage() {
       </div>
 
       <Table
+        size="small"
         tableLayout="fixed"
         rowSelection={
           isAdmin
@@ -1398,6 +1676,97 @@ export default function CampaignDetailPage() {
             </Button>
           </div>
         </Form>
+      </Modal>
+
+      {/* RANDOM SELECTOR MODAL */}
+      <Modal
+        title={
+          <span style={{ color: '#D4A84B', fontSize: '18px', fontWeight: 'bold' }}>Chọn Ngẫu Nhiên Khách Hàng</span>
+        }
+        open={randomModalVisible}
+        onCancel={() => setRandomModalVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setRandomModalVisible(false)}>
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={randomLoading}
+            onClick={handleRandomSelect}
+            style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B', color: '#000', fontWeight: 'bold' }}
+          >
+            Chọn
+          </Button>,
+        ]}
+      >
+        <div style={{ margin: '16px 0' }}>
+          <p style={{ color: token.colorTextDescription, marginBottom: '16px', fontSize: '13px' }}>
+            Hệ thống sẽ tự động tìm kiếm và chọn ngẫu nhiên các khách hàng thỏa mãn bộ lọc hiện tại của anh/chị.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ color: token.colorText, fontWeight: 500 }}>Số lượng khách hàng:</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={1000}
+                  placeholder="Nhập số..."
+                  value={randomCount}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setRandomCount('');
+                    } else {
+                      const num = parseInt(val, 10);
+                      setRandomCount(isNaN(num) ? '' : num);
+                    }
+                  }}
+                  style={{ width: '110px', borderRadius: '6px' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                <span style={{ fontSize: '12px', color: token.colorTextDescription }}>Preset chọn nhanh:</span>
+                {[10, 20, 50, 100, 200].map((preset) => (
+                  <Tag.CheckableTag
+                    key={preset}
+                    checked={randomCount === preset}
+                    onChange={() => setRandomCount(preset)}
+                    style={{
+                      borderRadius: '12px',
+                      padding: '2px 10px',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      border: `1px solid ${
+                        randomCount === preset ? '#D4A84B' : themeMode === 'dark' ? '#434343' : '#d9d9d9'
+                      }`,
+                    }}
+                  >
+                    {preset} KH
+                  </Tag.CheckableTag>
+                ))}
+              </div>
+            </div>
+
+            <Divider style={{ margin: '8px 0' }} />
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <Checkbox checked={excludeAssigned} onChange={(e) => setExcludeAssigned(e.target.checked)}>
+                Chỉ chọn khách hàng chưa được phân bổ Booker
+              </Checkbox>
+              <Checkbox
+                checked={excludeUnconfirmedAllocation}
+                onChange={(e) => setExcludeUnconfirmedAllocation(e.target.checked)}
+              >
+                Bỏ khách hàng đã phân bổ, chưa xác nhận
+              </Checkbox>
+              <Checkbox checked={excludeFutureBooking} onChange={(e) => setExcludeFutureBooking(e.target.checked)}>
+                Bỏ khách hàng đã có lịch book tương lai
+              </Checkbox>
+            </div>
+          </div>
+        </div>
       </Modal>
     </div>
   );

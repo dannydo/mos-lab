@@ -187,6 +187,36 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
     [tableId]
   );
 
+  // Synchronize rawConfig when staticColumns change (e.g. assignedStaff added after mount)
+  useEffect(() => {
+    if (staticColumns.length === 0) return;
+    const staticDefaults = createDefaultConfigFromStatic(staticColumns);
+    const staticMap = new Map(staticDefaults.map((c) => [c.key, c]));
+
+    setRawConfig((prevConfig) => {
+      if (prevConfig.length === 0) return prevConfig;
+      let hasChanges = false;
+
+      // Filter out stale keys that no longer exist in staticColumns
+      const filtered = prevConfig.filter((c) => staticMap.has(c.key));
+      if (filtered.length !== prevConfig.length) hasChanges = true;
+
+      // Insert missing static columns
+      const existingKeys = new Set(filtered.map((c) => c.key));
+      const updated = [...filtered];
+
+      staticDefaults.forEach((staticDef, targetIndex) => {
+        if (!existingKeys.has(staticDef.key)) {
+          const insertIndex = Math.min(targetIndex, updated.length);
+          updated.splice(insertIndex, 0, staticDef);
+          hasChanges = true;
+        }
+      });
+
+      return hasChanges ? updated : prevConfig;
+    });
+  }, [staticColumns, createDefaultConfigFromStatic]);
+
   // 6. Merge rawConfig metadata with static column definitions (functions, renders, align)
   const mergedColumns = useMemo(() => {
     if (rawConfig.length === 0) {
@@ -203,8 +233,14 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
               const childKey = String(child.key || child.dataIndex || '');
               const childConfig = configMap.get(childKey);
               if (childConfig) {
+                const displayChildTitle =
+                  typeof childConfig.title === 'string' && childConfig.title.trim() !== ''
+                    ? childConfig.title
+                    : (child.title as React.ReactNode);
+
                 return {
                   ...child,
+                  title: displayChildTitle,
                   width: childConfig.width !== undefined ? childConfig.width : child.width,
                   visible: childConfig.visible,
                   orderIndex: childConfig.index,
@@ -229,7 +265,6 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
 
         const key = (staticCol.key || staticCol.dataIndex) as string;
         const config = configMap.get(key);
-        const isActions = key === 'actions';
 
         if (config) {
           const colIcon = config.icon !== undefined && config.icon !== '' ? config.icon : getDefaultIcon(key);
@@ -239,17 +274,23 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
               : staticCol.width !== undefined
                 ? staticCol.width
                 : 120;
+
+          const displayTitle =
+            typeof config.title === 'string' && config.title.trim() !== ''
+              ? config.title
+              : (staticCol.title as React.ReactNode);
+
           return {
             ...staticCol,
             title: React.createElement(
               'span',
               { style: { display: 'inline-flex', alignItems: 'center' } },
               colIcon !== 'none' ? renderIconHelper(colIcon) : null,
-              React.createElement('span', null, (staticCol.title as React.ReactNode) || config.title)
+              React.createElement('span', null, displayTitle)
             ),
             width: effectiveWidth,
             visible: config.visible,
-            orderIndex: isActions ? 99999 : config.index,
+            orderIndex: config.index,
             onHeaderCell: (column: TableColumnType<T>) => ({
               width: column.width as number,
               onResize: (newWidth: number) => handleColumnResize(key, newWidth),
@@ -268,7 +309,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
             React.createElement('span', null, staticCol.title as React.ReactNode)
           ),
           visible: true,
-          orderIndex: isActions ? 99999 : 9999,
+          orderIndex: 9999,
           onHeaderCell: (column: TableColumnType<T>) => ({
             width: column.width as number,
             onResize: (newWidth: number) => handleColumnResize(key, newWidth),

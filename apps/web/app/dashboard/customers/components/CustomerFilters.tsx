@@ -12,6 +12,7 @@ import {
   ClearOutlined,
   SaveOutlined,
   PushpinFilled,
+  AimOutlined,
 } from '@ant-design/icons';
 import { vietnameseSearchFilter } from '@mos-lab/shared';
 
@@ -228,8 +229,16 @@ const CustomerFilters = React.memo(function CustomerFilters({
         </Tooltip>
 
         {onOpenRandomModal && isManagerOrAdmin && (
-          <Tooltip title="Chọn ngẫu nhiên Booker">
-            <Button icon={<TeamOutlined />} onClick={onOpenRandomModal} style={{ borderRadius: '6px' }} />
+          <Tooltip title="Chọn ngẫu nhiên khách hàng theo bộ lọc">
+            <Button
+              icon={<AimOutlined />}
+              onClick={onOpenRandomModal}
+              style={{
+                borderColor: themeMode === 'dark' ? '#D4A84B' : '#d97706',
+                color: themeMode === 'dark' ? '#D4A84B' : '#d97706',
+                borderRadius: '6px',
+              }}
+            />
           </Tooltip>
         )}
 

@@ -815,9 +815,10 @@ export const apiClient = {
     >();
     return {
       get: async (
-        tableId: string
+        tableId: string,
+        forceRefresh = true
       ): Promise<{ userConfig: ColumnConfig[] | null; defaultConfig: ColumnConfig[] | null }> => {
-        if (tableCache.has(tableId)) {
+        if (!forceRefresh && tableCache.has(tableId)) {
           return tableCache.get(tableId)!;
         }
         const promise = api
