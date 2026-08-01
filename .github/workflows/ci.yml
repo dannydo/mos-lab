@@ -33,6 +33,9 @@ jobs:
       - name: Generate Prisma Clients
         run: pnpm --filter @mos-lab/api prisma:generate
 
+      - name: Build Shared
+        run: pnpm --filter @mos-lab/shared build
+
       - name: Type Check (API)
         run: pnpm --filter @mos-lab/api exec tsc --noEmit
 

@@ -209,7 +209,7 @@ export class CampaignService {
 
     // Deduplicate & sanitize touchpoint keys
     const usedKeys = new Set<string>();
-    const touchpointsInput = touchpointsRaw.map((tp, idx) => {
+    const touchpointsInput = touchpointsRaw.map((tp: any, idx: number) => {
       let rawKey = tp.key ? slugify(tp.key) : `tp_${idx + 1}`;
       if (!rawKey) rawKey = `tp_${idx + 1}`;
 
