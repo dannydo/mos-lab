@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { SafeAny } from '@mos-lab/shared';
+import { SafeAny, CC_GAMIFICATION_SYSTEM_CONFIG } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 
 export interface CcKpiFilters {
@@ -157,7 +157,7 @@ export class CcKpiService {
     }
 
     // Default fallback list of active CC staff IDs
-    return [37790, 34295, 46092, 48026, 51659];
+    return [...CC_GAMIFICATION_SYSTEM_CONFIG.FALLBACK_ACTIVE_CC_STAFF_IDS];
   }
 
   /**
@@ -165,7 +165,7 @@ export class CcKpiService {
    */
   public static calculateCcLevel(points: number): number {
     const validPts = Math.max(0, points || 0);
-    return Math.floor(validPts / 100) + 1;
+    return Math.floor(validPts / CC_GAMIFICATION_SYSTEM_CONFIG.POINTS_PER_LEVEL) + 1;
   }
 
   /**
@@ -173,7 +173,7 @@ export class CcKpiService {
    * If CC In != CC Out, CC Bonus is split 50/50.
    */
   public static calculateCcBonus(level: number, isSplit: boolean): number {
-    const fullBonus = level * 65;
+    const fullBonus = level * CC_GAMIFICATION_SYSTEM_CONFIG.BONUS_PER_LEVEL_VND;
     return isSplit ? Math.round(fullBonus / 2) : fullBonus;
   }
 

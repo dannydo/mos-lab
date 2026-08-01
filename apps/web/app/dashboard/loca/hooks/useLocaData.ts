@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
-import { Customer, Staff } from '@mos-lab/shared';
+import { Customer, Staff, LASH_TOUCHUP_SYSTEM_CONFIG } from '@mos-lab/shared';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 
 export interface Touchpoint {
@@ -41,9 +41,21 @@ const DEFAULT_LOCA_CONFIGS: TabConfigs = {
     { key: 'now', label: 'Hôm qua', daysMin: 1, daysMax: 1, color: '#10B981' },
     { key: '17', label: '17 ngày', daysMin: 17, daysMax: 17, color: '#3B82F6' },
     { key: '19', label: '19 ngày', daysMin: 19, daysMax: 19, color: '#6366F1' },
-    { key: '21', label: '21 ngày', daysMin: 21, daysMax: 21, color: '#8B5CF6' },
+    {
+      key: String(LASH_TOUCHUP_SYSTEM_CONFIG.SINGLE_CUSTOMER_MAX_DAYS),
+      label: `${LASH_TOUCHUP_SYSTEM_CONFIG.SINGLE_CUSTOMER_MAX_DAYS} ngày`,
+      daysMin: LASH_TOUCHUP_SYSTEM_CONFIG.SINGLE_CUSTOMER_MAX_DAYS,
+      daysMax: LASH_TOUCHUP_SYSTEM_CONFIG.SINGLE_CUSTOMER_MAX_DAYS,
+      color: '#8B5CF6',
+    },
     { key: '23', label: '23 ngày', daysMin: 23, daysMax: 23, color: '#EC4899' },
-    { key: '25', label: '25 ngày', daysMin: 25, daysMax: 25, color: '#F43F5E' },
+    {
+      key: String(LASH_TOUCHUP_SYSTEM_CONFIG.COMBO_CUSTOMER_MAX_DAYS),
+      label: `${LASH_TOUCHUP_SYSTEM_CONFIG.COMBO_CUSTOMER_MAX_DAYS} ngày`,
+      daysMin: LASH_TOUCHUP_SYSTEM_CONFIG.COMBO_CUSTOMER_MAX_DAYS,
+      daysMax: LASH_TOUCHUP_SYSTEM_CONFIG.COMBO_CUSTOMER_MAX_DAYS,
+      color: '#F43F5E',
+    },
     { key: '30', label: '30 ngày', daysMin: 30, daysMax: 30, color: '#EF4444' },
     { key: '35', label: '35 ngày', daysMin: 35, daysMax: 35, color: '#D97706' },
     { key: '40', label: '40 ngày', daysMin: 40, daysMax: 40, color: '#B45309' },

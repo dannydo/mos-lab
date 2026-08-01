@@ -5,6 +5,7 @@ import {
   DailySalesBonusConsultantRecord,
   DailySalesBonusTransaction,
   SafeAny,
+  calculateFractionToday,
 } from '@mos-lab/shared';
 import { TeamService } from '../teams/team.service.js';
 
@@ -499,14 +500,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         // Calculate Real-time Run-rate Elapsed Ratio (11:00 AM - 23:00 PM shift formula)
         const now = new Date();
         const currentHour = now.getHours();
-        let fractionToday = 0;
-        if (currentHour < 11) {
-          fractionToday = 0;
-        } else if (currentHour > 22) {
-          fractionToday = 1;
-        } else {
-          fractionToday = (currentHour - 11 + 1) / 12;
-        }
+        const fractionToday = calculateFractionToday(currentHour);
 
         const startDate = new Date(startStr);
         const endDate = new Date(endStr);

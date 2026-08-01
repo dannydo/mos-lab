@@ -55,12 +55,12 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
           titleText = key;
         }
 
-        // Clean titles for touchpoints
+        // Clean titles for touchpoints (removed "Chạm" and "n", keep 24h, 17, 19, 21, 23, 25, 30, 30+)
         if (key.startsWith('tp_')) {
           const subKey = key.replace('tp_', '');
-          if (subKey === '24h') titleText = 'Chạm 24h';
-          else if (subKey === '30plus') titleText = 'Chạm 30n+';
-          else titleText = `Chạm ${subKey}n`;
+          if (subKey === '24h') titleText = '24h';
+          else if (subKey === '30plus') titleText = '30+';
+          else titleText = subKey;
         }
 
         list.push({
@@ -233,10 +233,14 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
               const childKey = String(child.key || child.dataIndex || '');
               const childConfig = configMap.get(childKey);
               if (childConfig) {
-                const displayChildTitle =
+                let displayChildTitle =
                   typeof childConfig.title === 'string' && childConfig.title.trim() !== ''
                     ? childConfig.title
                     : (child.title as React.ReactNode);
+
+                if (childKey.startsWith('tp_')) {
+                  displayChildTitle = child.title as React.ReactNode;
+                }
 
                 return {
                   ...child,

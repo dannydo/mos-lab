@@ -53,6 +53,7 @@ import {
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
+import CalendarPlusIcon from '../../../components/icons/CalendarPlusIcon';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 const BookingWizardDrawer = dynamic(() => import('../../../components/BookingWizardDrawer'), { ssr: false });
@@ -328,8 +329,8 @@ export default function LocaCampaignPage() {
 
   return (
     <div>
-      {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      {/* HEADER SECTION (Compact Single-Line Layout) */}
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <div>
           <Title
             level={2}
@@ -346,48 +347,51 @@ export default function LocaCampaignPage() {
             Hệ thống chăm sóc đặc biệt dành cho khách hàng Combo Live (còn hạn, còn lần sử dụng).
           </Text>
         </div>
-        <Space wrap>
-          {currentUser?.role === 'admin' && (
-            <Select
-              showSearch
-              filterOption={vietnameseSearchFilter}
-              placeholder="Chọn Booker/Telesales"
-              value={assignedStaffId}
-              onChange={(val) => setAssignedStaffId(val)}
-              style={{ width: 200 }}
-              options={[
-                { value: 'ALL', label: 'All Bookers' },
-                { value: 'unassigned', label: 'Chưa phân bổ' },
-                ...staffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),
-              ]}
-            />
-          )}
-          <Tooltip title="Đặt lịch mới">
-            <Button
-              type="primary"
-              icon={<CalendarOutlined />}
-              style={{
-                backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
-                borderColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
-                fontWeight: 'bold',
-              }}
-              onClick={() => {
-                setBookingInitialCustomer(null);
-                setBookingWizardVisible(true);
-              }}
-            />
-          </Tooltip>
-          {currentUser?.role === 'admin' && (
-            <Tooltip title="Cấu hình Quy trình">
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <Space wrap>
+            {currentUser?.role === 'admin' && (
+              <Select
+                showSearch
+                filterOption={vietnameseSearchFilter}
+                placeholder="Chọn Booker/Telesales"
+                value={assignedStaffId}
+                onChange={(val) => setAssignedStaffId(val)}
+                style={{ width: 200 }}
+                options={[
+                  { value: 'ALL', label: 'All Bookers' },
+                  { value: 'unassigned', label: 'Chưa phân bổ' },
+                  ...staffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),
+                ]}
+              />
+            )}
+            <Tooltip title="Đặt lịch mới">
               <Button
                 type="primary"
-                icon={<SettingOutlined />}
-                onClick={handleOpenSettings}
-                style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}
+                icon={<CalendarPlusIcon fontSize={16} />}
+                style={{
+                  backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
+                  borderColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
+                  fontWeight: 'bold',
+                }}
+                onClick={() => {
+                  setBookingInitialCustomer(null);
+                  setBookingWizardVisible(true);
+                }}
               />
             </Tooltip>
-          )}
-        </Space>
+            {currentUser?.role === 'admin' && (
+              <Tooltip title="Cấu hình Quy trình">
+                <Button
+                  type="primary"
+                  icon={<SettingOutlined />}
+                  onClick={handleOpenSettings}
+                  style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}
+                />
+              </Tooltip>
+            )}
+          </Space>
+        </div>
       </div>
 
       {/* METRICS CARDS */}

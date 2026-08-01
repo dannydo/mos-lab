@@ -43,6 +43,7 @@ import {
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
+import CalendarPlusIcon from '../../../components/icons/CalendarPlusIcon';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 const BookingWizardDrawer = dynamic(() => import('../../../components/BookingWizardDrawer'), { ssr: false });
@@ -463,7 +464,7 @@ export default function NycCampaignPage() {
               <Tooltip title="Đặt lịch mới">
                 <Button
                   type="primary"
-                  icon={<CalendarOutlined />}
+                  icon={<CalendarPlusIcon fontSize={16} />}
                   size="middle"
                   style={{
                     backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',

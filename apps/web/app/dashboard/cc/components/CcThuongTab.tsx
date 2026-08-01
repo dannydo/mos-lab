@@ -38,6 +38,8 @@ import {
   DailySalesBonusConsultantRecord,
   DailySalesBonusLeaderboardEntry,
   removeVietnameseTones,
+  calculateFractionToday,
+  OPERATIONAL_SHIFT_SYSTEM_CONFIG,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -170,10 +172,7 @@ export default function CcThuongTab({
     if (summary?.elapsedRatioPercent !== undefined) return summary.elapsedRatioPercent;
     const now = dayjs();
     const currentHour = now.hour();
-    let fractionToday = 0;
-    if (currentHour < 11) fractionToday = 0;
-    else if (currentHour > 22) fractionToday = 1;
-    else fractionToday = (currentHour - 11 + 1) / 12;
+    const fractionToday = calculateFractionToday(currentHour);
 
     const start = dateRange ? dateRange[0] : dayjs().startOf('month');
     const end = dateRange ? dateRange[1] : dayjs().endOf('month');

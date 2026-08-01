@@ -30,7 +30,7 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CcTipLeaderboardEntry, CcTipRecord, removeVietnameseTones } from '@mos-lab/shared';
+import { CcTipLeaderboardEntry, CcTipRecord, removeVietnameseTones, calculateFractionToday } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import CcAvatar from './CcAvatar';
@@ -96,10 +96,7 @@ export default function CcTipTab({
   const elapsedRatioPercent = useMemo(() => {
     const now = dayjs();
     const currentHour = now.hour();
-    let fractionToday = 0;
-    if (currentHour < 11) fractionToday = 0;
-    else if (currentHour > 22) fractionToday = 1;
-    else fractionToday = (currentHour - 11 + 1) / 12;
+    const fractionToday = calculateFractionToday(currentHour);
 
     const start = dateRange ? dateRange[0] : dayjs().startOf('month');
     const end = dateRange ? dateRange[1] : dayjs().endOf('month');

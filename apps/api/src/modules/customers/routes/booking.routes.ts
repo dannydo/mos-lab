@@ -9,9 +9,6 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
   // Create a new booking (order and order_service) in the legacy core database
   fastify.post('/customers/booking', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
-    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
-    }
 
     const {
       customerId,
@@ -379,9 +376,6 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
   // Reschedule or update an existing booking
   fastify.put('/customers/booking/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
-    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
-    }
 
     const { id } = request.params as { id: string };
     const orderId = parseInt(id, 10);
@@ -621,9 +615,6 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
   // Cancel a booking (soft delete by setting order_state = 'Cancelled')
   fastify.delete('/customers/booking/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
-    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
-    }
 
     const { id } = request.params as { id: string };
     const orderId = parseInt(id, 10);

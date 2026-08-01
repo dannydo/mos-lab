@@ -276,3 +276,20 @@ mos-lab/
 
 ### 38. Allocation Batch Query Intersecting Rule (Quy tắc Giao Tập Khách Hàng Đợt Phân Bổ)
 - **Đồng bộ Listing & Stats Query (`bStr` & `bStrStats`)**: Khi nhận `allocationBatchId`, Fastify Backend API (`GET /api/customers` và `/stats`) bắt buộc truy vấn danh sách `customerId` từ `crmAllocationBatchItem` (`where: { batchId }`) và thực hiện giao tập (Intersect) với `allowedUserIds` bằng `Set` (`bSet.has(id)`). Tuyệt đối không thay thế hay ghi đè hoàn toàn danh sách phân quyền `allowedUserIds` của Booker.
+
+### 39. Creation & Addition Action Button Standard (Quy tắc Nút Thao Tác Thêm Mới Bắt Buộc Có Dấu `+`)
+- **Required Plus Icon (`+`) for Creation Actions**: Tất cả các nút bấm, icon button hoặc menu action đại diện cho thao tác **Thêm mới / Tạo mới / Đặt lịch mới** (ví dụ: *Đặt lịch mới*, *Tạo chiến dịch*, *Thêm mốc chạm*, *Tạo phân bổ*) **bắt buộc phải có biểu tượng dấu cộng (`+` / `<PlusOutlined />`)** đi kèm để người dùng dễ dàng nhận biết tính năng khởi tạo tại mọi vị trí giao diện.
+- **Compact Icon Button Visual Standard**: Đối với các nút icon bấm nhanh compact (ví dụ: nút Vàng kim *Đặt lịch mới* trên Toolbar LoCa/NYC/Tất cả KH), sử dụng icon `<PlusOutlined />` (hoặc kết hợp icon + nhãn Tooltip rõ ràng) để không bị nhầm lẫn với icon Lịch `[ 📅 ]` thông thường.
+- **Combined Icon Pattern for Text Buttons**: Đối với nút bấm có nhãn chữ (ví dụ `<Button icon={<PlusOutlined />}>Đặt lịch mới</Button>`), luôn đặt `<PlusOutlined />` làm icon mặc định.
+
+### 28. Centralized System Constants & AI Agent Lookup Protocol (Quy tắc Hằng Số Hệ Thống Tập Trung)
+- **Single Source of Truth**: Tất cả các con số số học, tỷ lệ %, mốc thời gian, ID CSDL trong toàn bộ dự án `mos-lab` bắt buộc phải được khai báo tập trung tại `@mos-lab/shared/src/constants/system-constants.ts` (export qua `@mos-lab/shared`).
+- **AI Agent Protocol**: Mọi AI Agent làm việc trên `mos-lab` bắt buộc tra cứu và sử dụng các đối tượng hằng số sau:
+  - `CC_GAMIFICATION_SYSTEM_CONFIG`: Points per level (`100`), bonus rate (`65`), tip percentage (`20%`/`10%`), staff bonus rule ID (`248`), daily sales tiers.
+  - `LASH_TOUCHUP_SYSTEM_CONFIG`: Touch-up max days Single (`21`) and Combo (`25`).
+  - `OPERATIONAL_SHIFT_SYSTEM_CONFIG`: Operational hours (`09:00 - 21:00`), cashflow tracking hours (`11:00 - 23:00`), duration (`12h`).
+  - `CATALOG_CURRENCY_SYSTEM_CONFIG`: Currency ID VND (`2`), Banana Points (`3`), Referral Template ID (`7`), Vietnamese Language ID (`1`).
+  - `UI_PAGINATION_SYSTEM_CONFIG`: Default page size options (`['10', '20', '50', '100']`), default page size (`20`).
+- **KTV Hourly Wage Invariant**: Tuyệt đối **KHÔNG** hardcode mức lương giờ KTV (CV) `21500` trên UI. Lương giờ KTV bắt buộc truy vấn 100% động từ CSDL `staff_payroll.working_hour_rate`.
+
+

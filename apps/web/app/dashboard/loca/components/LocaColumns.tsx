@@ -241,7 +241,7 @@ export const getLocaColumns = ({
       children: [
         {
           title: (
-            <Tooltip title="Chạm 24h: Đảm bảo khách hài lòng với bộ mi">
+            <Tooltip title="Chạm 24h: Đảm bảo khách hài lòng với bộ mi (24 giờ sau làm)">
               <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
                 24h
               </span>
@@ -263,7 +263,7 @@ export const getLocaColumns = ({
         },
         {
           title: (
-            <Tooltip title="Chạm 17n: Nhắc lịch dặm trong 21 ngày">
+            <Tooltip title="Chạm 17n: Nhắc lịch dặm mi (Ngày 17 sau khi làm mi)">
               <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
                 17
               </span>
@@ -285,7 +285,7 @@ export const getLocaColumns = ({
         },
         {
           title: (
-            <Tooltip title="Chạm 19n: Nhắc dặm lần 2">
+            <Tooltip title="Chạm 19n: Nhắc dặm mi lần 2 (Ngày 19 sau khi làm mi)">
               <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
                 19
               </span>
@@ -307,7 +307,7 @@ export const getLocaColumns = ({
         },
         {
           title: (
-            <Tooltip title="Chạm 21n: Hạn cuối chu kỳ dặm 21 ngày (Khách lẻ)">
+            <Tooltip title="Chạm 21n: Hạn cuối chu kỳ dặm mi 21 ngày cho Khách Lẻ">
               <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
                 21
               </span>
@@ -329,7 +329,7 @@ export const getLocaColumns = ({
         },
         {
           title: (
-            <Tooltip title="Chạm 23n: Khách combo có 25 ngày dặm">
+            <Tooltip title="Chạm 23n: Nhắc lịch dặm mi cho Khách mua gói Combo (Ngày 23)">
               <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
                 23
               </span>
@@ -351,7 +351,7 @@ export const getLocaColumns = ({
         },
         {
           title: (
-            <Tooltip title="Chạm 25n: Ngày cuối dặm trong gói Combo">
+            <Tooltip title="Chạm 25n: Hạn dặm mi tối đa 25 ngày cho Khách mua gói Combo">
               <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
                 25
               </span>
@@ -373,7 +373,7 @@ export const getLocaColumns = ({
         },
         {
           title: (
-            <Tooltip title="Chạm 30n: Trễ 5 ngày, bắt buộc dùng nối mới trong gói">
+            <Tooltip title="Chạm 30n: Nhắc lịch nối mi mới (Ngày 30 sau khi làm mi)">
               <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
                 30
               </span>
@@ -395,7 +395,7 @@ export const getLocaColumns = ({
         },
         {
           title: (
-            <Tooltip title="Chạm 30n+: Nhắc dùng hết các lần nối mới trong gói trước khi HSD hết hạn">
+            <Tooltip title="Chạm 30n+: Quá 30 ngày - Khách cần tư vấn làm bộ mi mới">
               <span style={{ fontSize: '12px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
                 30+
               </span>

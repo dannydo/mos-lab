@@ -208,7 +208,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
   const [workLogSummary, setWorkLogSummary] = useState({
     totalWorkDays: 0,
     totalWorkHours: 0,
-    hourlyRate: 21500,
+    hourlyRate: 0,
     totalWage: 0,
   });
 

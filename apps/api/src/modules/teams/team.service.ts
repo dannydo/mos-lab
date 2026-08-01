@@ -7,17 +7,43 @@ export class TeamService {
    */
   static async getActiveStaffIds(fastify: FastifyInstance, teamCode: string): Promise<number[] | null> {
     try {
-      const team = await fastify.prisma.crm.crmTeam.findUnique({
-        where: { code: teamCode },
-        include: {
-          members: {
-            where: { isActive: true },
+      if (teamCode === 'BK') {
+        const teams = await fastify.prisma.crm.crmTeam.findMany({
+          where: {
+            OR: [
+              { code: 'BK' },
+              { code: { in: ['BK_TELESALES', 'BK_CS', 'BK_CONTROL'] } },
+              { parent: { code: 'BK' }, code: { not: 'BK_OTHER' } },
+            ],
           },
-        },
-      });
+          include: {
+            members: {
+              where: { isActive: true },
+            },
+          },
+        });
 
-      if (team && team.members.length > 0) {
-        return team.members.map((m) => m.legacyStaffId);
+        const staffIds = new Set<number>();
+        teams.forEach((t) => {
+          t.members.forEach((m: SafeAny) => staffIds.add(m.legacyStaffId));
+        });
+
+        if (staffIds.size > 0) {
+          return Array.from(staffIds);
+        }
+      } else {
+        const team = await fastify.prisma.crm.crmTeam.findUnique({
+          where: { code: teamCode },
+          include: {
+            members: {
+              where: { isActive: true },
+            },
+          },
+        });
+
+        if (team && team.members.length > 0) {
+          return team.members.map((m) => m.legacyStaffId);
+        }
       }
     } catch (err) {
       fastify.log.error(err as SafeAny, `Error fetching active staff IDs for team ${teamCode}`);

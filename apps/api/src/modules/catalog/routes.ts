@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { CATALOG_CURRENCY_SYSTEM_CONFIG } from '@mos-lab/shared';
 import { Prisma } from '../../generated/legacy-client/index.js';
 import { requireAuth, requireCatalogAdmin } from '../../middlewares/auth.js';
 import { parseComboDateBounds } from '../customers/services/combo-recognition.service.js';
@@ -6,8 +7,8 @@ import { parseComboDateBounds } from '../customers/services/combo-recognition.se
 const CATALOG_DEFAULTS = {
   CLIENT_ID: 1,
   CLIENT_BUSINESS_ID: 1,
-  DEFAULT_CURRENCY_ID: 2, // VND (currency_id = 2 in legacy DB)
-  DEFAULT_LANGUAGE_ID: 1, // Vietnamese
+  DEFAULT_CURRENCY_ID: CATALOG_CURRENCY_SYSTEM_CONFIG.CURRENCY_ID_VND,
+  DEFAULT_LANGUAGE_ID: CATALOG_CURRENCY_SYSTEM_CONFIG.LANGUAGE_ID_VIETNAMESE,
 };
 
 // ─── DTO Helper Transformers ────────────────────────────────────────────────

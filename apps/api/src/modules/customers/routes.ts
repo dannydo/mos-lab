@@ -2688,10 +2688,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // GET /api/customers/services
   // Get list of active services from legacy core database
   fastify.get('/customers/services', { preHandler: [requireAuth] }, async (request, reply) => {
-    const user = request.user as { role: string };
-    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập danh sách dịch vụ.' });
-    }
     try {
       const query = `
         SELECT 
@@ -2737,12 +2733,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // GET /api/customers/staff
   // Get list of active staff members
   fastify.get('/customers/staff', { preHandler: [requireAuth] }, async (request, reply) => {
-    const user = request.user as { role: string };
-    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
-      return reply
-        .status(403)
-        .send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập danh sách nhân viên.' });
-    }
     const { role } = request.query as { date?: string; role?: string };
     try {
       // 1. Fetch CRM Staff
@@ -5216,19 +5206,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      if (user.role !== 'admin') {
-        const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
-          where: {
-            legacyUserId: customerId,
-            staffId: user.id,
-          },
-        });
-        if (!assigned) {
-          return reply
-            .status(403)
-            .send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin khách hàng này.' });
-        }
-      }
       const sql = `
         SELECT 
           u.id, 
@@ -5308,19 +5285,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      if (user.role !== 'admin') {
-        const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
-          where: {
-            legacyUserId: customerId,
-            staffId: user.id,
-          },
-        });
-        if (!assigned) {
-          return reply
-            .status(403)
-            .send({ error: 'Forbidden', message: 'Bạn không có quyền xem lịch sử của khách hàng này.' });
-        }
-      }
       // Query completed orders for the customer
       const sql = `
         SELECT 
@@ -5363,21 +5327,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.put('/customers/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const customerId = parseInt(id, 10);
-    const user = request.user as { id: number; role: string };
 
     if (isNaN(customerId)) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
-    }
-
-    const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
-      where: { legacyUserId: customerId },
-    });
-    if (user.role !== 'admin') {
-      if (!assigned || assigned.staffId !== user.id) {
-        return reply
-          .status(403)
-          .send({ error: 'Forbidden', message: 'Bạn không có quyền chỉnh sửa thông tin khách hàng này.' });
-      }
     }
 
     const { name, email, gender, dob, phones } = request.body as {
@@ -5517,20 +5469,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // 1. Authorization check & Fetch CRM Assignment for Online Consultant
+      // 1. Fetch CRM Assignment for Online Consultant
       const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
         where: { legacyUserId: resolvedCustomerId },
         include: { staff: true },
       });
       const onlineConsultantName = assigned?.staff?.displayName || 'Chưa phân bổ';
-
-      if (user.role !== 'admin') {
-        if (!assigned || assigned.staffId !== user.id) {
-          return reply
-            .status(403)
-            .send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin chi tiết khách hàng này.' });
-        }
-      }
 
       // 2. Fetch Customer Profile details
       const customerSql = `

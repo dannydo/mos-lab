@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Popover, Input, Button, Tooltip, Space } from 'antd';
 import { EditOutlined, FileTextOutlined, CheckOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { Customer, LocaTouchpointState, SafeAny } from '@mos-lab/shared';
+import { Customer, LocaTouchpointState, SafeAny, LASH_TOUCHUP_SYSTEM_CONFIG } from '@mos-lab/shared';
 
 const { TextArea } = Input;
 
@@ -53,15 +53,15 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     } else if (touchpointKey === '19') {
       isActive = days >= 18 && days <= 19;
       isOverdue = days > 19 && !isChecked;
-    } else if (touchpointKey === '21') {
-      isActive = days >= 20 && days <= 21;
-      isOverdue = days > 21 && !isChecked;
+    } else if (touchpointKey === String(LASH_TOUCHUP_SYSTEM_CONFIG.SINGLE_CUSTOMER_MAX_DAYS)) {
+      isActive = days >= 20 && days <= LASH_TOUCHUP_SYSTEM_CONFIG.SINGLE_CUSTOMER_MAX_DAYS;
+      isOverdue = days > LASH_TOUCHUP_SYSTEM_CONFIG.SINGLE_CUSTOMER_MAX_DAYS && !isChecked;
     } else if (touchpointKey === '23') {
       isActive = days >= 22 && days <= 23;
       isOverdue = days > 23 && !isChecked;
-    } else if (touchpointKey === '25') {
-      isActive = days >= 24 && days <= 25;
-      isOverdue = days > 25 && !isChecked;
+    } else if (touchpointKey === String(LASH_TOUCHUP_SYSTEM_CONFIG.COMBO_CUSTOMER_MAX_DAYS)) {
+      isActive = days >= 24 && days <= LASH_TOUCHUP_SYSTEM_CONFIG.COMBO_CUSTOMER_MAX_DAYS;
+      isOverdue = days > LASH_TOUCHUP_SYSTEM_CONFIG.COMBO_CUSTOMER_MAX_DAYS && !isChecked;
     } else if (touchpointKey === '30') {
       isActive = days >= 29 && days <= 30;
       isOverdue = days > 30 && !isChecked;

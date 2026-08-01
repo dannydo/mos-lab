@@ -757,9 +757,19 @@ export class CampaignService {
     }
 
     const legacyUserIds = campaignCustomers.map((cc) => cc.legacyUserId);
+    const idListStr = legacyUserIds.join(',');
 
-    // Fetch customer profiles, contacts, assignments, pending allocation batch items, and recent call logs
-    const [profiles, contacts, assignments, pendingBatchItems, callLogs] = await Promise.all([
+    // Fetch customer profiles, contacts, assignments, pending allocation batch items, recent call logs, order stats, and visit dates
+    const [
+      profiles,
+      contacts,
+      assignments,
+      pendingBatchItems,
+      callLogs,
+      orderStatsRows,
+      lastVisitRows,
+      latestBookingRows,
+    ] = await Promise.all([
       fastify.prisma.legacy.user_profile.findMany({
         where: { user_id: { in: legacyUserIds } },
         select: { user_id: true, full_name: true, avatar: true, last_order_booking: true },
@@ -791,12 +801,65 @@ export class CampaignService {
         where: { legacyUserId: { in: legacyUserIds } },
         orderBy: { createdAt: 'desc' },
       }),
+      fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT 
+          user_id as userId,
+          COALESCE(SUM(total_price), 0) as totalSpent,
+          COUNT(id) as totalVisits
+        FROM \`order\`
+        WHERE user_id IN (${idListStr}) AND order_state = 'Completed'
+        GROUP BY user_id
+      `),
+      fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT 
+          o.user_id as userId,
+          COALESCE(MAX(ro.actual_booking_date_start), MAX(o.booking_date_start)) as lastVisitDate,
+          DATEDIFF(NOW(), COALESCE(MAX(ro.actual_booking_date_start), MAX(o.booking_date_start))) as daysSinceLastVisit
+        FROM \`order\` o
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        WHERE o.user_id IN (${idListStr}) AND o.order_state = 'Completed'
+        GROUP BY o.user_id
+      `),
+      fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        SELECT 
+          o.user_id as userId,
+          o.booking_date_start as lastBookingDate,
+          o.order_state as lastBookingState
+        FROM \`order\` o
+        INNER JOIN (
+          SELECT user_id, MAX(id) as max_id
+          FROM \`order\`
+          WHERE user_id IN (${idListStr})
+          GROUP BY user_id
+        ) latest ON o.id = latest.max_id
+      `),
     ]);
 
     const profileMap = new Map(profiles.map((p) => [p.user_id, p]));
     const phoneMap = new Map(contacts.map((c) => [c.user_id, c.phone_number]));
     const assignmentMap = new Map(assignments.map((a) => [a.legacyUserId, a]));
     const pendingBatchMap = new Map(pendingBatchItems.map((item) => [item.customerId, item]));
+
+    const orderStatsMap = new Map(orderStatsRows.map((r) => [Number(r.userId), Number(r.totalSpent || 0)]));
+    const lastVisitMap = new Map(
+      lastVisitRows.map((r) => [
+        Number(r.userId),
+        {
+          lastVisitDate: r.lastVisitDate ? new Date(r.lastVisitDate).toISOString() : null,
+          daysSinceLastVisit:
+            r.daysSinceLastVisit !== null && r.daysSinceLastVisit !== undefined ? Number(r.daysSinceLastVisit) : null,
+        },
+      ])
+    );
+    const latestBookingMap = new Map(
+      latestBookingRows.map((r) => [
+        Number(r.userId),
+        {
+          lastBookingDate: r.lastBookingDate ? new Date(r.lastBookingDate).toISOString() : null,
+          lastBookingState: r.lastBookingState,
+        },
+      ])
+    );
 
     const callLogMap = new Map<number, any>();
     for (const log of callLogs) {
@@ -814,6 +877,23 @@ export class CampaignService {
       const assignment = assignmentMap.get(cc.legacyUserId) || null;
       const pendingItem = pendingBatchMap.get(cc.legacyUserId) || null;
       const lastCall = callLogMap.get(cc.legacyUserId) || null;
+
+      const orderSpent = orderStatsMap.get(cc.legacyUserId) || 0;
+      const visitData = lastVisitMap.get(cc.legacyUserId);
+      const bookingData = latestBookingMap.get(cc.legacyUserId);
+
+      let daysSinceLastVisit = visitData?.daysSinceLastVisit ?? null;
+      let lastVisit = visitData?.lastVisitDate ?? null;
+      if (daysSinceLastVisit === null && prof?.last_order_booking) {
+        const lastB = new Date(prof.last_order_booking);
+        const diffMs = now.getTime() - lastB.getTime();
+        daysSinceLastVisit = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+        lastVisit = lastB.toISOString();
+      }
+
+      const callbackDate = (lastCall as any)?.callbackDate
+        ? new Date((lastCall as any).callbackDate).toISOString()
+        : null;
 
       const staff = assignment?.staff || pendingItem?.batch?.booker || null;
       const isPendingAccept = !assignment && !!pendingItem;
@@ -853,6 +933,12 @@ export class CampaignService {
         customerName: prof?.full_name || `Khách hàng #${cc.legacyUserId}`,
         customerPhone: phone,
         avatar: prof?.avatar || null,
+        totalSpent: orderSpent,
+        daysSinceLastVisit,
+        lastVisit,
+        lastBookingDate: bookingData?.lastBookingDate || null,
+        lastBookingState: bookingData?.lastBookingState || null,
+        callbackDate,
         addedAt: cc.addedAt.toISOString(),
         addedBy: cc.addedBy,
         daysInCampaign,

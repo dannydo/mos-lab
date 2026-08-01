@@ -227,101 +227,111 @@ export default function BkDashboardPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Header & Filter Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      {/* Top Header & Filter Navigation (Matching CV Page Compact Style) */}
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <div>
-          <Title level={3} className="!mb-1 font-bold tracking-tight">
+          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
             Báo Cáo Hiệu Quả & Lương Booker (BK)
           </Title>
-          <Text type="secondary" className="text-sm">
+          <Text style={{ color: token.colorTextDescription }}>
             Theo dõi chỉ số tạo booking, lượt done, tip, doanh thu và lương thưởng tạm tính của đội ngũ Booker
           </Text>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* View Mode Radio */}
-          <Space.Compact size="middle">
-            <Button type={viewMode === 'month' ? 'primary' : 'default'} onClick={() => setViewMode('month')}>
-              Tháng
-            </Button>
-            <Button type={viewMode === 'week' ? 'primary' : 'default'} onClick={() => setViewMode('week')}>
-              Tuần
-            </Button>
-            <Button type={viewMode === 'day' ? 'primary' : 'default'} onClick={() => setViewMode('day')}>
-              Ngày
-            </Button>
-          </Space.Compact>
-
-          {/* Date Navigation */}
-          <Space.Compact size="middle">
-            <Button
-              icon={<LeftOutlined />}
-              onClick={() => handleNavigate(-1)}
-              aria-label="Ngày trước đó"
-              title="Ngày trước đó"
-            />
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <Button onClick={() => setPickerOpen(true)} className="font-semibold tabular-nums min-w-[160px]">
-                {getPeriodLabel()}
+        {/* TOP FILTER CONTROLS BAR */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <Space wrap>
+            {/* View Mode Switcher: Tháng / Tuần / Ngày */}
+            <Space.Compact>
+              <Button type={viewMode === 'month' ? 'primary' : 'default'} onClick={() => setViewMode('month')}>
+                Tháng
               </Button>
-              {pickerOpen && (
-                <RangePicker
-                  open={true}
-                  onOpenChange={(open) => {
-                    if (!open) setPickerOpen(false);
-                  }}
-                  value={dateRange}
-                  onChange={(dates) => {
-                    if (dates && dates[0] && dates[1]) {
-                      setDateRange([dates[0], dates[1]]);
-                      setPickerOpen(false);
-                    }
-                  }}
+              <Button type={viewMode === 'week' ? 'primary' : 'default'} onClick={() => setViewMode('week')}>
+                Tuần
+              </Button>
+              <Button type={viewMode === 'day' ? 'primary' : 'default'} onClick={() => setViewMode('day')}>
+                Ngày
+              </Button>
+            </Space.Compact>
+
+            {/* Date Navigator: < Tháng 08/2026 📅 > */}
+            <Space.Compact>
+              <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <Button
+                  onClick={() => setPickerOpen(true)}
                   style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: 0,
-                    height: 0,
-                    padding: 0,
-                    border: 'none',
-                    visibility: 'hidden',
-                    pointerEvents: 'none',
+                    fontWeight: '600',
+                    minWidth: '190px',
+                    textAlign: 'center',
+                    color: token.colorText,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
                   }}
-                />
-              )}
-            </div>
-            <Button
-              icon={<RightOutlined />}
-              onClick={() => handleNavigate(1)}
-              aria-label="Ngày tiếp theo"
-              title="Ngày tiếp theo"
+                  className="tabular-nums"
+                >
+                  {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
+                </Button>
+                {pickerOpen && (
+                  <RangePicker
+                    open={true}
+                    onOpenChange={(open) => {
+                      if (!open) setPickerOpen(false);
+                    }}
+                    value={dateRange}
+                    onChange={(dates) => {
+                      if (dates && dates[0] && dates[1]) {
+                        setDateRange([dates[0], dates[1]]);
+                        setPickerOpen(false);
+                      }
+                    }}
+                    format="DD/MM/YYYY"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: 0,
+                      height: 0,
+                      padding: 0,
+                      border: 'none',
+                      visibility: 'hidden',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+              </div>
+              <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
+            </Space.Compact>
+
+            {/* Store Filter */}
+            <Select
+              value={selectedStore}
+              onChange={setSelectedStore}
+              style={{ width: 140 }}
+              options={[
+                { value: 'ALL', label: 'Tất cả CS' },
+                { value: 'PXL', label: 'Phan Xích Long' },
+                { value: 'Q1', label: 'Quận 1' },
+              ]}
             />
-          </Space.Compact>
 
-          {/* Store Filter */}
-          <Select
-            value={selectedStore}
-            onChange={setSelectedStore}
-            size="middle"
-            className="w-[130px]"
-            options={[
-              { value: 'ALL', label: 'Tất cả CS' },
-              { value: 'PXL', label: 'Phan Xích Long' },
-              { value: 'Q1', label: 'Quận 1' },
-            ]}
-          />
-
-          {/* Config Button → Team Management */}
-          <Button
-            type="primary"
-            icon={<SettingOutlined />}
-            size="middle"
-            onClick={() => router.push('/dashboard/staff/teams?selected=BK')}
-            className="bg-amber-500 hover:bg-amber-600 border-amber-500"
-          >
-            Cấu hình BK
-          </Button>
+            {/* Config Button → Team Management */}
+            <Button
+              type="primary"
+              icon={<SettingOutlined />}
+              onClick={() => router.push('/dashboard/staff/teams?selected=BK')}
+              style={{
+                backgroundColor: token.colorPrimary,
+                borderColor: token.colorPrimary,
+                color: '#000',
+                fontWeight: '600',
+              }}
+            >
+              Cấu hình BK
+            </Button>
+          </Space>
         </div>
       </div>
 

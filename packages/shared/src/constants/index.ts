@@ -74,3 +74,5 @@ export const CALL_OUTCOME_LABELS: Record<CallOutcome, string> = {
   REFUSED: 'Từ chối/Yêu cầu không gọi điện nữa',
   PENDING: 'Đang suy nghĩ/Chưa chốt',
 };
+
+export * from './system-constants';

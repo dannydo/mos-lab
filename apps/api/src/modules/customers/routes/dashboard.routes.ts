@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { RevenueHourlyResponse, RevenueDetailResponse } from '@mos-lab/shared';
+import { RevenueHourlyResponse, RevenueDetailResponse, calculateFractionToday } from '@mos-lab/shared';
 
 export async function registerDashboardRoutes(fastify: FastifyInstance) {
   // GET /api/nyc/config
@@ -1604,10 +1604,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
       const vnNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
       const currentHour = vnNow.getHours();
-      let fractionToday = 0;
-      if (currentHour < 11) fractionToday = 0;
-      else if (currentHour > 22) fractionToday = 1;
-      else fractionToday = (currentHour - 11 + 1) / 12;
+      const fractionToday = calculateFractionToday(currentHour);
 
       const pad2 = (n: number) => String(n).padStart(2, '0');
       const todayStr = `${vnNow.getFullYear()}-${pad2(vnNow.getMonth() + 1)}-${pad2(vnNow.getDate())}`;

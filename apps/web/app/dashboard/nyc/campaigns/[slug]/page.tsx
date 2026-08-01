@@ -939,26 +939,51 @@ export default function CampaignDetailPage() {
           ✨ Tiến Trình Chạm CSKH
         </div>
       ),
-      children: displayTouchpoints.map((tp) => ({
-        title: (
-          <Tooltip title={`Chạm ${tp.label}`}>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
-              {tp.label}
-            </span>
-          </Tooltip>
-        ),
-        key: `tp_${tp.key || tp.id}`,
-        width: 38,
-        align: 'center' as const,
-        render: (_: any, record: any) => (
-          <CampaignTouchpointCell
-            customer={record}
-            touchpoint={tp}
-            themeMode={themeMode}
-            onToggle={handleToggleTouchpoint}
-          />
-        ),
-      })),
+      children: displayTouchpoints.map((tp) => {
+        const rawLabel = (tp.label || tp.key).replace(/^Chạm\s*/i, '').replace(/^Chăm sóc\s*/i, '');
+        let displayLabel = rawLabel.replace(/n$/i, '');
+        if (tp.key === '24h' || rawLabel === '24h') displayLabel = '24h';
+        else if (tp.key === '30plus' || rawLabel === '30+' || rawLabel === '30n+') displayLabel = '30+';
+
+        let fullTooltipText = `Chạm ${displayLabel}`;
+        if (tp.key === '24h' || displayLabel === '24h')
+          fullTooltipText = 'Chạm 24h: Đảm bảo khách hài lòng với bộ mi (24 giờ sau làm)';
+        else if (tp.key === '17' || displayLabel === '17')
+          fullTooltipText = 'Chạm 17n: Nhắc lịch dặm mi (Ngày 17 sau khi làm mi)';
+        else if (tp.key === '19' || displayLabel === '19')
+          fullTooltipText = 'Chạm 19n: Nhắc dặm mi lần 2 (Ngày 19 sau khi làm mi)';
+        else if (tp.key === '21' || displayLabel === '21')
+          fullTooltipText = 'Chạm 21n: Hạn cuối chu kỳ dặm mi 21 ngày cho Khách Lẻ';
+        else if (tp.key === '23' || displayLabel === '23')
+          fullTooltipText = 'Chạm 23n: Nhắc lịch dặm mi cho Khách mua gói Combo (Ngày 23)';
+        else if (tp.key === '25' || displayLabel === '25')
+          fullTooltipText = 'Chạm 25n: Hạn dặm mi tối đa 25 ngày cho Khách mua gói Combo';
+        else if (tp.key === '30' || displayLabel === '30')
+          fullTooltipText = 'Chạm 30n: Nhắc lịch nối mi mới (Ngày 30 sau khi làm mi)';
+        else if (tp.key === '30plus' || displayLabel === '30+')
+          fullTooltipText = 'Chạm 30n+: Quá 30 ngày - Khách cần tư vấn làm bộ mi mới';
+
+        return {
+          title: (
+            <Tooltip title={fullTooltipText}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: themeMode === 'dark' ? '#f8fafc' : '#1e293b' }}>
+                {displayLabel}
+              </span>
+            </Tooltip>
+          ),
+          key: `tp_${tp.key || tp.id}`,
+          width: 38,
+          align: 'center' as const,
+          render: (_: any, record: any) => (
+            <CampaignTouchpointCell
+              customer={record}
+              touchpoint={tp}
+              themeMode={themeMode}
+              onToggle={handleToggleTouchpoint}
+            />
+          ),
+        };
+      }),
     },
     {
       title: 'Ngày gọi gần nhất',
