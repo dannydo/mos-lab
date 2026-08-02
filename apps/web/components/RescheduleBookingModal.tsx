@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Drawer, Steps, Button, Select, DatePicker, Input, theme, message, Card, Tag } from 'antd';
-import { FormOutlined, HomeOutlined, InboxOutlined } from '@ant-design/icons';
+import { Drawer, Steps, Button, Select, DatePicker, Input, theme, message, Card, Tag, Modal } from 'antd';
+import { FormOutlined, HomeOutlined, InboxOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../lib/api-client';
@@ -73,6 +73,23 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   } = useSlotMatrix(selectedCN, selectedCV);
 
   const { morning, afternoon, night } = getCategorizedSlots();
+
+  // 20:00 Late Slot Policy Confirmation Modal States
+  const [isLateSlotModalOpen, setIsLateSlotModalOpen] = useState<boolean>(false);
+  const [pendingSlot, setPendingSlot] = useState<string | null>(null);
+
+  const handleSelectSlot = (slot: string | null) => {
+    if (!slot) {
+      setSelectedSlot(null);
+      return;
+    }
+    if (slot === '20:00') {
+      setPendingSlot(slot);
+      setIsLateSlotModalOpen(true);
+      return;
+    }
+    setSelectedSlot(slot);
+  };
 
   // Load Services
   const fetchServices = async () => {
@@ -528,7 +545,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
               slotMatrix={slotMatrix}
               loadingSlots={loadingSlots}
               selectedSlot={selectedSlot}
-              setSelectedSlot={setSelectedSlot}
+              setSelectedSlot={handleSelectSlot}
               selectedCN={selectedCN}
               morning={morning}
               afternoon={afternoon}
@@ -620,6 +637,77 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           </div>
         </div>
       )}
+
+      {/* 20:00 Late Slot Policy Confirmation Modal */}
+      <Modal
+        open={isLateSlotModalOpen}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fa8c16', fontSize: '15px' }}>
+            <ExclamationCircleOutlined style={{ fontSize: '18px' }} />
+            <span>⚠️ XÁC NHẬN THÔNG BÁO QUY ĐỊNH 20:15</span>
+          </div>
+        }
+        onCancel={() => {
+          setIsLateSlotModalOpen(false);
+          setPendingSlot(null);
+          message.warning('Vui lòng thông báo quy định 15 phút cho khách trước khi dời sang khung 20:00!');
+        }}
+        footer={[
+          <Button
+            key="no"
+            danger
+            onClick={() => {
+              setIsLateSlotModalOpen(false);
+              setPendingSlot(null);
+              message.warning('Vui lòng thông báo quy định 15 phút cho khách trước khi dời sang khung 20:00!');
+            }}
+          >
+            Chưa thông báo (Hủy chọn)
+          </Button>,
+          <Button
+            key="yes"
+            type="primary"
+            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+            onClick={() => {
+              if (pendingSlot) {
+                setSelectedSlot(pendingSlot);
+              }
+              setIsLateSlotModalOpen(false);
+              setPendingSlot(null);
+              message.success('Đã xác nhận thông báo quy định 20:15 với khách!');
+            }}
+          >
+            Đã thông báo với khách
+          </Button>,
+        ]}
+      >
+        <div
+          style={{
+            padding: '12px 4px',
+            fontSize: '14px',
+            lineHeight: '1.6',
+            color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
+          }}
+        >
+          <p>
+            Vì <strong>20:00</strong> là khung chốt ca cuối ngày, tiệm em chỉ giữ lịch và chờ khách tối đa 15 phút (đến{' '}
+            <strong>20:15</strong>) để đảm bảo đủ thời gian làm mi đẹp nhất.
+          </p>
+          <div
+            style={{
+              marginTop: '12px',
+              padding: '10px 14px',
+              borderRadius: '6px',
+              backgroundColor: themeMode === 'dark' ? 'rgba(250, 140, 22, 0.15)' : '#fffbe6',
+              border: `1px solid ${themeMode === 'dark' ? '#d97706' : '#ffe58f'}`,
+              color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
+              fontWeight: '600',
+            }}
+          >
+            Bạn đã thông báo quy định 20:15 này cho khách hàng chưa?
+          </div>
+        </div>
+      </Modal>
     </Drawer>
   );
 };

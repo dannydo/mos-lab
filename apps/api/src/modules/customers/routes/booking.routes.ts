@@ -3,6 +3,7 @@ import { requireAuth } from '../../../middlewares/auth.js';
 import { SafeAny } from '@mos-lab/shared';
 import { getBkPaystubData } from '../../kpi/services/bk-salary.service.js';
 import { BookingAuditService } from '../services/booking-audit.service.js';
+import { UserServiceTypeService } from '../services/user-service-type.service.js';
 
 export async function registerBookingRoutes(fastify: FastifyInstance) {
   // POST /api/customers/booking
@@ -287,6 +288,12 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       );
 
       // 5. Create order_service record
+      const userServiceType = await UserServiceTypeService.determineUserServiceType(
+        fastify,
+        finalCustomerId,
+        mysqlStart
+      );
+
       await fastify.prisma.legacy.$executeRawUnsafe(
         `INSERT INTO order_service (
           client_id, client_business_id, user_id, order_id, service_id, 
@@ -301,7 +308,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         finalServiceId,
         'Normal',
         'LashesTop',
-        'new',
+        userServiceType,
         technicianId,
         technicianId,
         srvDuration,
@@ -554,7 +561,13 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         mysqlEnd
       );
 
-      // 5. Update order_service record KTV assignment & service details
+      // 5. Update order_service record KTV assignment, service details, and recalculate user_service_type
+      const userServiceType = await UserServiceTypeService.determineUserServiceType(
+        fastify,
+        finalCustomerId,
+        mysqlStart
+      );
+
       if (serviceId !== undefined && serviceId !== null) {
         await fastify.prisma.legacy.$executeRawUnsafe(
           `UPDATE order_service 
@@ -562,22 +575,25 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
                duration_minute = ?,
                service_price = ?,
                assigned_staff_id = ?, 
-               booked_staff_id = ? 
+               booked_staff_id = ?,
+               user_service_type = ?
            WHERE order_id = ?`,
           finalServiceId,
           duration,
           totalPrice,
           technicianId || null,
           technicianId || null,
+          userServiceType,
           orderId
         );
       } else {
         await fastify.prisma.legacy.$executeRawUnsafe(
           `UPDATE order_service 
-           SET assigned_staff_id = ?, booked_staff_id = ? 
+           SET assigned_staff_id = ?, booked_staff_id = ?, user_service_type = ?
            WHERE order_id = ?`,
           technicianId || null,
           technicianId || null,
+          userServiceType,
           orderId
         );
       }

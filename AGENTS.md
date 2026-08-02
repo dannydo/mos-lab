@@ -292,4 +292,14 @@ mos-lab/
   - `UI_PAGINATION_SYSTEM_CONFIG`: Default page size options (`['10', '20', '50', '100']`), default page size (`20`).
 - **KTV Hourly Wage Invariant**: Tuyệt đối **KHÔNG** hardcode mức lương giờ KTV (CV) `21500` trên UI. Lương giờ KTV bắt buộc truy vấn 100% động từ CSDL `staff_payroll.working_hour_rate`.
 
+### 40. Dynamic `user_service_type` Recognition Rules
+- **Cơ chế tính toán**: Khi tạo mới lịch hẹn (`POST /customers/booking`) hoặc dời lịch hẹn (`PUT /customers/booking/:id/reschedule`), Fastify backend bắt buộc phải dùng `UserServiceTypeService.determineUserServiceType(fastify, customerId, bookingDateStart)` để tự động xác định trạng thái làm dịch vụ của khách hàng (`new`, `combo`, `combo_last`, `combo_expired`, `combo_over`, `lapser`, `long_time`).
+- **Nghiêm cấm hardcode**: Tuyệt đối **KHÔNG** hardcode chuỗi `'new'` hoặc bỏ qua việc tính toán lại `user_service_type` khi dời lịch, để ứng dụng iOS hiển thị đúng icon biểu tượng trước tên khách hàng.
+
+### 41. Legacy Customer Profile URL Parameter Rules
+- **Đường dẫn chuẩn**: Trang danh sách khách hàng trên hệ thống Legacy Angular có đường dẫn `/admin/online-consultant/user/customer`.
+- **Query Parameters được hỗ trợ**: Hệ thống Legacy tiếp nhận các tham số tìm kiếm bao gồm `phone`, `phone_number`, `keyword`, hoặc `search` (Ví dụ: `http://localhost/admin/online-consultant/user/customer?phone=0983960852`).
+- **Lưu ý**: Không sử dụng `search_keyword` làm query parameter vì hệ thống Legacy Angular không đọc tham số này.
+
+
 
