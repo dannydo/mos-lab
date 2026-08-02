@@ -433,6 +433,7 @@ model CrmCustomCampaign {
   endDate     DateTime? @map("end_date") @db.Date
   status      String    @default("ACTIVE") @db.VarChar(20) // ACTIVE | ENDED | ARCHIVED
   createdBy   Int?      @map("created_by")
+  assignedStaffIds String? @map("assigned_staff_ids") @db.Text
   createdAt   DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 

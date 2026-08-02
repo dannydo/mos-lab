@@ -4,15 +4,7 @@ import React from 'react';
 import { Tag } from 'antd';
 
 export type StatusType =
-  | 'success'
-  | 'processing'
-  | 'error'
-  | 'warning'
-  | 'default'
-  | 'gold'
-  | 'cyan'
-  | 'purple'
-  | 'orange';
+  'success' | 'processing' | 'error' | 'warning' | 'default' | 'gold' | 'cyan' | 'purple' | 'orange';
 
 export interface StatusTagProps {
   status?: StatusType;
@@ -29,20 +21,13 @@ const COLOR_MAP: Record<StatusType, { color: string; borderClass: string }> = {
   error: { color: 'red', borderClass: 'border-rose-500/30' },
   warning: { color: 'gold', borderClass: 'border-amber-500/30' },
   default: { color: 'default', borderClass: 'border-slate-500/30' },
-  gold: { color: '#D4A84B', borderClass: 'border-[#D4A84B]/40' },
+  gold: { color: 'gold', borderClass: 'border-amber-500/40' },
   cyan: { color: 'cyan', borderClass: 'border-cyan-500/30' },
   purple: { color: 'purple', borderClass: 'border-purple-500/30' },
   orange: { color: 'orange', borderClass: 'border-orange-500/30' },
 };
 
-export function StatusTag({
-  status = 'default',
-  label,
-  icon,
-  bordered = true,
-  className = '',
-  style,
-}: StatusTagProps) {
+export function StatusTag({ status = 'default', label, icon, bordered = true, className = '', style }: StatusTagProps) {
   const conf = COLOR_MAP[status] || COLOR_MAP.default;
 
   return (
@@ -50,10 +35,10 @@ export function StatusTag({
       color={conf.color}
       icon={icon}
       bordered={bordered}
-      className={`m-0 text-[11px] font-semibold ${conf.borderClass} ${className}`}
+      className={`inline-flex items-center justify-center leading-none m-0 text-[11px] font-semibold ${conf.borderClass} ${className}`}
       style={style}
     >
-      {label}
+      <span className="leading-none">{label}</span>
     </Tag>
   );
 }

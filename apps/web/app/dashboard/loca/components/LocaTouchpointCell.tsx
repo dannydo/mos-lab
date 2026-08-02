@@ -12,6 +12,7 @@ import {
   BellRing,
   Hourglass,
   RotateCcw,
+  MessageSquare,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { Customer, LocaTouchpointState, TouchpointStatus, LASH_TOUCHUP_SYSTEM_CONFIG } from '@mos-lab/shared';
@@ -29,7 +30,8 @@ interface LocaTouchpointCellProps {
     touchpointKey: string,
     isChecked: boolean,
     note?: string,
-    status?: TouchpointStatus | null
+    status?: TouchpointStatus | null,
+    hasReferredDiamond?: boolean
   ) => Promise<void>;
   onOpenBooking?: (customer: Customer) => void;
 }
@@ -47,16 +49,23 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
   const isChecked = !!tpState?.isChecked;
   const rawStatus = tpState?.status || (isChecked ? 'SUCCESS' : null);
   const currentNote = tpState?.note || '';
+  const initialDiamond = !!(
+    (tpState as SafeAny)?.hasReferredDiamond ||
+    (customer as SafeAny)?.hasReferredDiamond ||
+    currentNote.includes('💎')
+  );
 
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<TouchpointStatus | null>(rawStatus);
   const [noteInput, setNoteInput] = useState(currentNote);
+  const [hasReferredDiamond, setHasReferredDiamond] = useState<boolean>(initialDiamond);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setSelectedStatus(rawStatus);
     setNoteInput(currentNote);
-  }, [rawStatus, currentNote]);
+    setHasReferredDiamond(initialDiamond);
+  }, [rawStatus, currentNote, initialDiamond]);
 
   const days = customer.daysSinceLastVisit;
 
@@ -95,9 +104,7 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
   // Resolve display state priority: DB status -> System active -> Pending window -> Overdue -> Blank
   let displayStatus: TouchpointStatus | 'OVERDUE' | 'BLANK' = 'BLANK';
 
-  if (rawStatus === 'DONE' || rawStatus === 'BOOKED') {
-    displayStatus = rawStatus;
-  } else if (rawStatus === 'SUCCESS' || rawStatus === 'FAILED' || rawStatus === 'LOST') {
+  if (rawStatus) {
     displayStatus = rawStatus;
   } else if (isActive) {
     displayStatus = 'DUE_TODAY';
@@ -122,8 +129,16 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     setLoading(true);
     const targetStatus = statusToSave !== undefined ? statusToSave : selectedStatus;
     const isNowChecked = targetStatus !== null;
+    let finalNote = noteInput.trim();
+    if (hasReferredDiamond && !finalNote.includes('💎')) {
+      finalNote = finalNote ? `${finalNote} [Đã tư vấn CT Kim Cương 💎]` : '[Đã tư vấn CT Kim Cương 💎]';
+    } else if (!hasReferredDiamond && finalNote.includes(' [Đã tư vấn CT Kim Cương 💎]')) {
+      finalNote = finalNote.replace(' [Đã tư vấn CT Kim Cương 💎]', '');
+    } else if (!hasReferredDiamond && finalNote.includes('[Đã tư vấn CT Kim Cương 💎]')) {
+      finalNote = finalNote.replace('[Đã tư vấn CT Kim Cương 💎]', '');
+    }
     try {
-      await onToggle(customer.id, touchpointKey, isNowChecked, noteInput, targetStatus);
+      await onToggle(customer.id, touchpointKey, isNowChecked, finalNote, targetStatus, hasReferredDiamond);
       setPopoverOpen(false);
     } finally {
       setLoading(false);
@@ -134,9 +149,10 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     e.stopPropagation();
     setLoading(true);
     try {
-      await onToggle(customer.id, touchpointKey, false, '', null);
+      await onToggle(customer.id, touchpointKey, false, '', null, false);
       setSelectedStatus(null);
       setNoteInput('');
+      setHasReferredDiamond(false);
       setPopoverOpen(false);
     } finally {
       setLoading(false);
@@ -178,6 +194,23 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
       return (
         <div style={{ fontSize: '12px' }}>
           <div style={{ fontWeight: 700, color: '#34d399' }}>📞✓ Cuộc gọi thành công (Bởi {staffName})</div>
+          {formattedDate && <div style={{ opacity: 0.85 }}>Thực hiện lúc: {formattedDate}</div>}
+          {currentNote ? (
+            <div
+              style={{ marginTop: '4px', fontStyle: 'italic', borderTop: '1px dashed #ffffff44', paddingTop: '4px' }}
+            >
+              📝 Note: {currentNote}
+            </div>
+          ) : (
+            <div style={{ marginTop: '2px', opacity: 0.75 }}>(Bấm để thay đổi trạng thái/ghi chú)</div>
+          )}
+        </div>
+      );
+    }
+    if (displayStatus === 'MESSAGED') {
+      return (
+        <div style={{ fontSize: '12px' }}>
+          <div style={{ fontWeight: 700, color: '#22d3ee' }}>💬✓ Nhắn tin thành công (Bởi {staffName})</div>
           {formattedDate && <div style={{ opacity: 0.85 }}>Thực hiện lúc: {formattedDate}</div>}
           {currentNote ? (
             <div
@@ -245,6 +278,7 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: 10 }}>
+        {/* 1. Gọi thành công */}
         <button
           type="button"
           onClick={() => handleSelectStatus('SUCCESS')}
@@ -266,9 +300,10 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
           }}
         >
           <PhoneCall size={14} className="text-emerald-500" />
-          <span>Hoàn tất (Gọi thành công)</span>
+          <span>Gọi thành công</span>
         </button>
 
+        {/* 2. Gọi thất bại */}
         <button
           type="button"
           onClick={() => handleSelectStatus('FAILED')}
@@ -289,9 +324,35 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
           }}
         >
           <PhoneOff size={14} className="text-rose-500" />
-          <span>Fail (Cuộc gọi thất bại)</span>
+          <span>Gọi thất bại</span>
         </button>
 
+        {/* 3. Nhắn tin thành công */}
+        <button
+          type="button"
+          onClick={() => handleSelectStatus('MESSAGED')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 10px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            border:
+              selectedStatus === 'MESSAGED' ? '2px solid #06b6d4' : isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+            background:
+              selectedStatus === 'MESSAGED' ? (isDark ? '#164e63' : '#ecfeff') : isDark ? '#1e293b' : '#f8fafc',
+            color: selectedStatus === 'MESSAGED' ? (isDark ? '#67e8f9' : '#0891b2') : isDark ? '#e2e8f0' : '#1e293b',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <MessageSquare size={14} className="text-cyan-500" />
+          <span>Nhắn tin thành công</span>
+        </button>
+
+        {/* 4. Đã đặt lịch */}
         <button
           type="button"
           onClick={(e) => {
@@ -318,9 +379,10 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
           }}
         >
           <CalendarCheck size={14} className="text-indigo-500" />
-          <span>Đã đặt lịch (Chuyển đổi Book)</span>
+          <span>Đã đặt lịch</span>
         </button>
 
+        {/* 5. Không thuộc về nhau */}
         <button
           type="button"
           onClick={() => handleSelectStatus('LOST')}
@@ -343,6 +405,44 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
           <HeartOff size={14} className="text-pink-500" />
           <span>Không thuộc về nhau</span>
         </button>
+      </div>
+
+      {/* Diamond Referral Toggle Button */}
+      <div
+        onClick={() => setHasReferredDiamond(!hasReferredDiamond)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 10px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontWeight: 600,
+          cursor: 'pointer',
+          border: hasReferredDiamond ? '1.5px solid #06b6d4' : isDark ? '1px dashed #334155' : '1px dashed #cbd5e1',
+          background: hasReferredDiamond
+            ? isDark
+              ? 'rgba(6,182,212,0.15)'
+              : '#ecfeff'
+            : isDark
+              ? '#0f172a'
+              : '#f8fafc',
+          color: hasReferredDiamond ? (isDark ? '#22d3ee' : '#0891b2') : isDark ? '#94a3b8' : '#64748b',
+          transition: 'all 0.2s ease',
+          marginBottom: '8px',
+        }}
+        className="user-select-none hover:opacity-90"
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '13px' }}>💎</span>
+          <span>Đã tư vấn CT Kim Cương</span>
+        </div>
+        <input
+          type="checkbox"
+          checked={hasReferredDiamond}
+          onChange={() => {}}
+          style={{ accentColor: '#0891b2', cursor: 'pointer' }}
+        />
       </div>
 
       <TextArea
@@ -392,6 +492,11 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     border = '1px solid #10b981';
     textColor = '#34d399';
     boxShadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+  } else if (displayStatus === 'MESSAGED') {
+    bg = isDark ? 'rgba(6, 182, 212, 0.25)' : 'rgba(6, 182, 212, 0.15)';
+    border = '1px solid #06b6d4';
+    textColor = '#22d3ee';
+    boxShadow = '0 0 8px rgba(6, 182, 212, 0.4)';
   } else if (displayStatus === 'FAILED') {
     bg = isDark ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.15)';
     border = '1px solid #ef4444';
@@ -421,6 +526,7 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     if (displayStatus === 'DONE') return <CheckCircle2 size={13} className="text-emerald-400" />;
     if (displayStatus === 'BOOKED') return <CalendarCheck size={13} className="text-indigo-400" />;
     if (displayStatus === 'SUCCESS') return <PhoneCall size={12} className="text-emerald-400" />;
+    if (displayStatus === 'MESSAGED') return <MessageSquare size={12} className="text-cyan-400" />;
     if (displayStatus === 'FAILED') return <PhoneOff size={12} className="text-rose-400" />;
     if (displayStatus === 'LOST') return <HeartOff size={12} className="text-pink-400" />;
     if (displayStatus === 'DUE_TODAY') return <BellRing size={13} className="text-amber-400 animate-pulse" />;
@@ -441,6 +547,7 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
         <div
           onClick={handleCellClick}
           style={{
+            position: 'relative',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -454,19 +561,56 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
             color: textColor,
             boxShadow: boxShadow,
             userSelect: 'none',
+            overflow: 'visible',
           }}
         >
-          <Space size={1} align="center">
-            {renderPillIcon()}
-            {currentNote && (
-              <FileTextOutlined
-                style={{
-                  color: isChecked ? '#fff' : '#D4A84B',
-                  fontSize: '9px',
-                }}
-              />
-            )}
-          </Space>
+          {/* Main Status Icon */}
+          {renderPillIcon()}
+
+          {/* Top-Right Corner Diamond Badge */}
+          {hasReferredDiamond && (
+            <span
+              style={{
+                position: 'absolute',
+                top: '-6px',
+                right: '-6px',
+                fontSize: '11px',
+                lineHeight: 1,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
+                zIndex: 2,
+              }}
+              title="Đã tư vấn Chương Trình Kim Cương"
+            >
+              💎
+            </span>
+          )}
+
+          {/* Bottom-Left Corner Note Indicator */}
+          {currentNote && (
+            <span
+              style={{
+                position: 'absolute',
+                bottom: '-4px',
+                left: '-4px',
+                fontSize: '9px',
+                lineHeight: 1,
+                color: isDark ? '#fbbf24' : '#d97706',
+                backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                border: isDark ? '1px solid #475569' : '1px solid #cbd5e1',
+                borderRadius: '50%',
+                width: '12px',
+                height: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                zIndex: 2,
+              }}
+              title={`Ghi chú: ${currentNote}`}
+            >
+              <FileTextOutlined style={{ fontSize: '8px', color: isDark ? '#fbbf24' : '#d97706' }} />
+            </span>
+          )}
         </div>
       </Tooltip>
     </Popover>

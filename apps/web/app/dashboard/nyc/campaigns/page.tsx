@@ -23,7 +23,9 @@ import {
   Divider,
   InputNumber,
   Switch,
+  Tabs,
 } from 'antd';
+import { GoogleSheetColorPicker } from '../../../../components/GoogleSheetColorPicker';
 import {
   PlusOutlined,
   EditOutlined,
@@ -34,6 +36,11 @@ import {
   ClockCircleOutlined,
   CalendarOutlined,
   MinusCircleOutlined,
+  SettingOutlined,
+  EnvironmentOutlined,
+  GiftOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -80,10 +87,20 @@ export default function CampaignManagementPage() {
     window.dispatchEvent(new Event('mos_sidebar_toggle'));
   };
 
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [staffList, setStaffList] = useState<any[]>([]);
+
+  useEffect(() => {
+    apiClient.customers
+      .getStaff({ role: 'booker' })
+      .then((res: any) => {
+        if (Array.isArray(res)) setStaffList(res);
+        else if (res?.data && Array.isArray(res.data)) setStaffList(res.data);
+      })
+      .catch(() => {});
+  }, []);
 
   // Load User Role & Username
   useEffect(() => {
@@ -180,6 +197,7 @@ export default function CampaignManagementPage() {
           description: details.description,
           dates: dates,
           status: details.status,
+          assignedStaffIds: details.assignedStaffIds || [],
           touchpoints: details.touchpoints || details.CampaignTouchpoint || [],
           promotions: details.promotions || details.CampaignPromotion || [],
         });
@@ -252,6 +270,7 @@ export default function CampaignManagementPage() {
           startDate,
           endDate,
           status: values.status,
+          assignedStaffIds: values.assignedStaffIds || null,
           touchpoints,
           promotions,
         };
@@ -264,6 +283,7 @@ export default function CampaignManagementPage() {
           description: values.description,
           startDate,
           endDate,
+          assignedStaffIds: values.assignedStaffIds || null,
           touchpoints,
           promotions,
         };
@@ -334,6 +354,21 @@ export default function CampaignManagementPage() {
       dataIndex: 'status',
       key: 'status',
       render: (status: CampaignStatus) => renderStatusTag(status),
+    },
+    {
+      title: 'Quyền truy cập',
+      key: 'access',
+      render: (_: any, record: Campaign) => {
+        const count = record.assignedStaffIds?.length || 0;
+        if (count === 0) {
+          return <Tag color="blue">🌐 Công khai (Tất cả)</Tag>;
+        }
+        return (
+          <Tooltip title={`Chỉ Admin và ${count} thành viên được gán mới có quyền xem`}>
+            <Tag color="purple">🔒 Riêng tư ({count} thành viên)</Tag>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Tổng KH',
@@ -527,179 +562,283 @@ export default function CampaignManagementPage() {
           }}
           className="mt-4"
         >
-          <Row gutter={16}>
-            <Col span={14}>
-              <Form.Item
-                name="name"
-                label="Tên chiến dịch"
-                rules={[{ required: true, message: 'Vui lòng nhập tên chiến dịch' }]}
-              >
-                <Input placeholder="VD: Chiến dịch NYC Tri ân Tháng 8" />
-              </Form.Item>
-            </Col>
-            <Col span={10}>
-              <Form.Item
-                name="slug"
-                label="Slug (Đường dẫn)"
-                tooltip="Tùy chọn. Nếu để trống hệ thống sẽ tự sinh từ tên."
-              >
-                <Input placeholder="VD: tri-an-thang-8" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Tabs
+            defaultActiveKey="info"
+            className="campaign-minimal-tabs"
+            items={[
+              {
+                key: 'info',
+                label: (
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    <SettingOutlined className="text-slate-500" /> Thông tin
+                  </span>
+                ),
+                children: (
+                  <div className="pt-2 space-y-4">
+                    <Row gutter={16}>
+                      <Col span={14}>
+                        <Form.Item
+                          name="name"
+                          label="Tên chiến dịch"
+                          rules={[{ required: true, message: 'Vui lòng nhập tên chiến dịch' }]}
+                        >
+                          <Input placeholder="VD: Chiến dịch NYC Tri ân Tháng 8" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={10}>
+                        <Form.Item
+                          name="slug"
+                          label="Slug (Đường dẫn)"
+                          tooltip="Tùy chọn. Nếu để trống hệ thống sẽ tự sinh từ tên."
+                        >
+                          <Input placeholder="VD: tri-an-thang-8" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
 
-          <Row gutter={16}>
-            <Col span={14}>
-              <Form.Item name="dates" label="Thời gian diễn ra">
-                <RangePicker
-                  style={{ width: '100%' }}
-                  format="DD/MM/YYYY"
-                  placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
-                />
-              </Form.Item>
-            </Col>
-            {editingCampaign && (
-              <Col span={10}>
-                <Form.Item name="status" label="Trạng thái">
-                  <Select
-                    options={[
-                      { value: 'ACTIVE', label: 'ACTIVE (Hoạt động)' },
-                      { value: 'ENDED', label: 'ENDED (Đã kết thúc)' },
-                      { value: 'ARCHIVED', label: 'ARCHIVED (Lưu trữ)' },
-                    ]}
-                  />
-                </Form.Item>
-              </Col>
-            )}
-          </Row>
+                    <Row gutter={16}>
+                      <Col span={14}>
+                        <Form.Item name="dates" label="Thời gian diễn ra">
+                          <RangePicker
+                            style={{ width: '100%' }}
+                            format="DD/MM/YYYY"
+                            placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
+                          />
+                        </Form.Item>
+                      </Col>
+                      {editingCampaign && (
+                        <Col span={10}>
+                          <Form.Item name="status" label="Trạng thái">
+                            <Select
+                              options={[
+                                { value: 'ACTIVE', label: 'ACTIVE (Hoạt động)' },
+                                { value: 'ENDED', label: 'ENDED (Đã kết thúc)' },
+                                { value: 'ARCHIVED', label: 'ARCHIVED (Lưu trữ)' },
+                              ]}
+                            />
+                          </Form.Item>
+                        </Col>
+                      )}
+                    </Row>
 
-          <Form.Item name="description" label="Mô tả chiến dịch">
-            <Input.TextArea rows={2} placeholder="Mô tả ngắn gọn về mục tiêu và quy định của chiến dịch..." />
-          </Form.Item>
+                    <Form.Item name="description" label="Mô tả chiến dịch">
+                      <Input.TextArea rows={2} placeholder="Mô tả ngắn gọn về mục tiêu và quy định của chiến dịch..." />
+                    </Form.Item>
 
-          <Divider orientation="left" style={{ margin: '16px 0 12px 0' }}>
-            <span className="text-sm font-semibold">📍 Cấu hình các điểm chạm (Touchpoints)</span>
-          </Divider>
-
-          <Form.List name="touchpoints">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, ...restField }) => (
-                  <Row gutter={8} key={key} align="middle" className="mb-2">
-                    <Col span={6}>
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'label']}
-                        rules={[{ required: true, message: 'Tên chạm' }]}
-                        style={{ marginBottom: 0 }}
-                      >
-                        <Input placeholder="Tên chạm (VD: Chạm D1)" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={5}>
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'key']}
-                        rules={[{ required: true, message: 'Mã chạm' }]}
-                        style={{ marginBottom: 0 }}
-                      >
-                        <Input placeholder="Mã (VD: TP_D1)" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={4}>
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'daysMin']}
-                        rules={[{ required: true, message: 'Số ngày' }]}
-                        style={{ marginBottom: 0 }}
-                      >
-                        <InputNumber min={0} placeholder="Từ ngày" style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={4}>
-                      <Form.Item {...restField} name={[name, 'daysMax']} style={{ marginBottom: 0 }}>
-                        <InputNumber min={0} placeholder="Đến ngày" style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={3}>
-                      <Form.Item {...restField} name={[name, 'color']} style={{ marginBottom: 0 }}>
-                        <Input type="color" style={{ width: '100%', height: '32px', padding: 0 }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={2}>
-                      <MinusCircleOutlined onClick={() => remove(name)} className="text-red-500 cursor-pointer" />
-                    </Col>
-                  </Row>
-                ))}
-                <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />} className="mt-1 mb-4">
-                  Thêm điểm chạm mới
-                </Button>
-              </>
-            )}
-          </Form.List>
-
-          <Divider orientation="left" style={{ margin: '16px 0 12px 0' }}>
-            <span className="text-sm font-semibold">🎁 Cấu hình ưu đãi (Promotions)</span>
-          </Divider>
-
-          <Form.List name="promotions">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, ...restField }) => (
-                  <Row gutter={8} key={key} align="middle" className="mb-2">
-                    <Col span={7}>
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'name']}
-                        rules={[{ required: true, message: 'Tên ưu đãi' }]}
-                        style={{ marginBottom: 0 }}
-                      >
-                        <Input placeholder="Tên ưu đãi" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={7}>
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'type']}
-                        rules={[{ required: true, message: 'Loại ưu đãi' }]}
-                        style={{ marginBottom: 0 }}
-                      >
-                        <Select
-                          options={[
-                            { value: 'PERCENT_DISCOUNT', label: 'Giảm %' },
-                            { value: 'FIXED_DISCOUNT', label: 'Giảm số tiền' },
-                            { value: 'FREE_SERVICE', label: 'Tặng dịch vụ' },
-                            { value: 'FREE_PRODUCT', label: 'Tặng sản phẩm' },
-                          ]}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col span={5}>
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'value']}
-                        rules={[{ required: true, message: 'Giá trị' }]}
-                        style={{ marginBottom: 0 }}
-                      >
-                        <InputNumber min={0} placeholder="Giá trị" style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={3}>
-                      <Form.Item {...restField} name={[name, 'code']} style={{ marginBottom: 0 }}>
-                        <Input placeholder="Mã Code" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={2}>
-                      <MinusCircleOutlined onClick={() => remove(name)} className="text-red-500 cursor-pointer" />
-                    </Col>
-                  </Row>
-                ))}
-                <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />} className="mt-1 mb-4">
-                  Thêm ưu đãi mới
-                </Button>
-              </>
-            )}
-          </Form.List>
+                    <Form.Item
+                      name="assignedStaffIds"
+                      label={
+                        <span className="inline-flex items-center gap-1.5">
+                          <TeamOutlined className="text-blue-500" />
+                          <span>Thành viên được phép truy cập (Team Booker)</span>
+                        </span>
+                      }
+                      tooltip="Chọn các nhân sự thuộc Team Booker được phép xem và thao tác trên chiến dịch này. Nếu để trống, tất cả nhân sự đều xem được."
+                    >
+                      <Select
+                        mode="multiple"
+                        allowClear
+                        placeholder="Chừa trống = Công Khai (Tất cả nhân sự xem được)"
+                        style={{ width: '100%' }}
+                        tagRender={(props) => {
+                          const { label, closable, onClose } = props;
+                          const cleanLabel = typeof label === 'string' ? label.split('(')[0].trim() : label;
+                          return (
+                            <Tag
+                              color="blue"
+                              closable={closable}
+                              onClose={onClose}
+                              style={{ marginRight: 4 }}
+                              className="rounded-md font-medium text-xs py-0.5 px-2 inline-flex items-center gap-1"
+                            >
+                              <UserOutlined className="text-blue-500 text-xs" />
+                              <span>{cleanLabel}</span>
+                            </Tag>
+                          );
+                        }}
+                        options={staffList.map((s) => ({
+                          value: s.id,
+                          label: `${s.displayName || s.name || s.username} (${s.username})`,
+                        }))}
+                      />
+                    </Form.Item>
+                  </div>
+                ),
+              },
+              {
+                key: 'touchpoints',
+                label: (
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    <EnvironmentOutlined className="text-rose-500 text-base" /> Điểm chạm
+                  </span>
+                ),
+                children: (
+                  <div className="pt-2">
+                    <Form.List name="touchpoints">
+                      {(fields, { add, remove }) => (
+                        <div>
+                          {fields.length > 0 && (
+                            <div className="flex items-center gap-2 px-1 py-1.5 mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                              <div className="flex-1">Tên điểm chạm</div>
+                              <div className="w-20 text-center">Từ ngày</div>
+                              <div className="w-20 text-center">Đến ngày</div>
+                              <div className="w-[110px] text-center">Màu sắc</div>
+                              <div className="w-8 text-center">Xóa</div>
+                            </div>
+                          )}
+                          <div className="space-y-2">
+                            {fields.map(({ key, name, ...restField }) => (
+                              <div key={key} className="flex items-center gap-2 py-0.5">
+                                <div className="flex-1">
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'label']}
+                                    rules={[{ required: true, message: 'Nhập tên' }]}
+                                    style={{ marginBottom: 0 }}
+                                  >
+                                    <Input placeholder="Tên chạm (VD: Chạm D1)" />
+                                  </Form.Item>
+                                </div>
+                                <div className="w-20">
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'daysMin']}
+                                    rules={[{ required: true, message: 'Nhập ngày' }]}
+                                    style={{ marginBottom: 0 }}
+                                  >
+                                    <InputNumber min={0} placeholder="D+" style={{ width: '100%' }} />
+                                  </Form.Item>
+                                </div>
+                                <div className="w-20">
+                                  <Form.Item {...restField} name={[name, 'daysMax']} style={{ marginBottom: 0 }}>
+                                    <InputNumber min={0} placeholder="D+" style={{ width: '100%' }} />
+                                  </Form.Item>
+                                </div>
+                                <div className="w-[110px] flex justify-center">
+                                  <Form.Item {...restField} name={[name, 'color']} style={{ marginBottom: 0 }}>
+                                    <GoogleSheetColorPicker size="small" />
+                                  </Form.Item>
+                                </div>
+                                <div className="w-8 flex justify-center">
+                                  <Button
+                                    type="text"
+                                    danger
+                                    icon={<MinusCircleOutlined />}
+                                    onClick={() => remove(name)}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                            <Button
+                              type="dashed"
+                              onClick={() => add({ color: '#3b82f6', daysMin: 1 })}
+                              block
+                              icon={<PlusOutlined />}
+                              className="rounded-xl h-10 border-dashed mt-2"
+                            >
+                              Thêm điểm chạm mới
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </Form.List>
+                  </div>
+                ),
+              },
+              {
+                key: 'promotions',
+                label: (
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    <GiftOutlined className="text-amber-500 text-base" /> Ưu đãi
+                  </span>
+                ),
+                children: (
+                  <div className="pt-2">
+                    <Form.List name="promotions">
+                      {(fields, { add, remove }) => (
+                        <div>
+                          {fields.length > 0 && (
+                            <div className="flex items-center gap-2 px-1 py-1.5 mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                              <div className="flex-1">Tên ưu đãi</div>
+                              <div className="w-36 text-left">Loại ưu đãi</div>
+                              <div className="w-24 text-center">Giá trị</div>
+                              <div className="w-28 text-left">Mã voucher</div>
+                              <div className="w-8 text-center">Xóa</div>
+                            </div>
+                          )}
+                          <div className="space-y-2">
+                            {fields.map(({ key, name, ...restField }) => (
+                              <div key={key} className="flex items-center gap-2 py-0.5">
+                                <div className="flex-1">
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'name']}
+                                    rules={[{ required: true, message: 'Nhập tên' }]}
+                                    style={{ marginBottom: 0 }}
+                                  >
+                                    <Input placeholder="Tên ưu đãi (VD: Giảm 50%)" />
+                                  </Form.Item>
+                                </div>
+                                <div className="w-36">
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'type']}
+                                    rules={[{ required: true, message: 'Chọn loại' }]}
+                                    style={{ marginBottom: 0 }}
+                                  >
+                                    <Select
+                                      options={[
+                                        { value: 'PERCENT_DISCOUNT', label: 'Giảm %' },
+                                        { value: 'FIXED_DISCOUNT', label: 'Giảm số tiền' },
+                                        { value: 'FREE_SERVICE', label: 'Tặng dịch vụ' },
+                                        { value: 'FREE_PRODUCT', label: 'Tặng sản phẩm' },
+                                      ]}
+                                    />
+                                  </Form.Item>
+                                </div>
+                                <div className="w-24">
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'value']}
+                                    rules={[{ required: true, message: 'Nhập giá trị' }]}
+                                    style={{ marginBottom: 0 }}
+                                  >
+                                    <InputNumber min={0} placeholder="Giá trị" style={{ width: '100%' }} />
+                                  </Form.Item>
+                                </div>
+                                <div className="w-28">
+                                  <Form.Item {...restField} name={[name, 'code']} style={{ marginBottom: 0 }}>
+                                    <Input placeholder="Mã Code" />
+                                  </Form.Item>
+                                </div>
+                                <div className="w-8 flex justify-center">
+                                  <Button
+                                    type="text"
+                                    danger
+                                    icon={<MinusCircleOutlined />}
+                                    onClick={() => remove(name)}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                            <Button
+                              type="dashed"
+                              onClick={() => add({ type: 'PERCENT_DISCOUNT', value: 50 })}
+                              block
+                              icon={<PlusOutlined />}
+                              className="rounded-xl h-10 border-dashed mt-2"
+                            >
+                              Thêm ưu đãi mới
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </Form.List>
+                  </div>
+                ),
+              },
+            ]}
+          />
 
           <div className="flex justify-end gap-2 mt-6">
             <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>

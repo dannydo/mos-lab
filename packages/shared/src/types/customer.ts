@@ -2,7 +2,7 @@ import { CallLog } from './call';
 
 export type BucketType = 'COMBO_LIVE' | 'COMBO_DEAD' | 'SINGLE';
 
-export type TouchpointStatus = 'SUCCESS' | 'FAILED' | 'LOST' | 'PENDING' | 'DUE_TODAY' | 'BOOKED' | 'DONE';
+export type TouchpointStatus = 'SUCCESS' | 'MESSAGED' | 'FAILED' | 'LOST' | 'PENDING' | 'DUE_TODAY' | 'BOOKED' | 'DONE';
 
 export interface LocaTouchpointState {
   isChecked: boolean;

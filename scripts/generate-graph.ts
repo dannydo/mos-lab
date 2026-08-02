@@ -5,7 +5,8 @@ import path from 'path';
 
 export interface GraphNode {
   id: string;
-  type: 'Workspace' | 'File' | 'FastifyRoute' | 'PrismaModel' | 'SharedType' | 'Component';
+  type:
+    'Workspace' | 'File' | 'FastifyRoute' | 'PrismaModel' | 'SharedType' | 'Component' | 'DesignToken' | 'UIComponent';
   label: string;
   category: string;
   filePath?: string;
@@ -26,7 +27,9 @@ export interface GraphEdge {
     | 'USES_TYPE'
     | 'RENDERS'
     | 'API_CALL'
-    | 'RELATION_TO';
+    | 'RELATION_TO'
+    | 'USES_TOKEN'
+    | 'USES_COMPONENT';
   label?: string;
   metadata?: Record<string, any>;
 }
@@ -65,6 +68,8 @@ class MonorepoGraphGenerator {
   private prismaModels: PrismaModelMetadata[] = [];
   private pageCalls: PageCallMetadata[] = [];
   private sharedTypes: string[] = [];
+  private designTokensCount: number = 0;
+  private uiComponentsCount: number = 0;
 
   constructor(rootDir: string) {
     this.rootDir = rootDir;
@@ -89,17 +94,21 @@ class MonorepoGraphGenerator {
     // 5. Parse Shared Package Types
     this.parseSharedTypes();
 
-    // 6. Scan Source Code Files & TS Imports
+    // 6. Parse Design Tokens & UI Primitives
+    this.parseDesignTokens();
+    this.parseUIComponents();
+
+    // 7. Scan Source Code Files & TS Imports
     this.scanSourceFiles();
 
-    // 7. Compute Linkages (Route -> Model, Page -> Route, File -> Imports)
+    // 8. Compute Linkages (Route -> Model, Page -> Route, File -> Imports, Page -> UI/Tokens)
     this.computeCrossLayerLinkages();
 
     const duration = Date.now() - startTime;
     console.log(`✅ Extraction completed in ${duration}ms.`);
     console.log(`📊 Total Nodes: ${this.nodes.size}, Total Edges: ${this.edges.size}`);
 
-    // 8. Generate Artifacts
+    // 9. Generate Artifacts
     const graphData = this.buildGraphPayload();
     this.writeGraphJson(graphData);
     this.writeGraphReport(graphData, duration);
@@ -409,6 +418,170 @@ class MonorepoGraphGenerator {
     }
   }
 
+  // --- 5.1. Design Tokens Parser ---
+  private parseDesignTokens() {
+    const tokenFile = path.join(this.rootDir, 'packages/shared/src/theme/tokens.ts');
+    if (!fs.existsSync(tokenFile)) return;
+
+    const tokens = [
+      {
+        id: 'token:color:primary',
+        label: 'Color: Primary Gold (#D4A84B)',
+        cat: 'Theme Color Token',
+        detail: 'Gold Primary (#D4A84B / #9E7118)',
+      },
+      {
+        id: 'token:color:dark',
+        label: 'Color: Dark Theme (#0b0f19)',
+        cat: 'Theme Color Token',
+        detail: 'Dark BG (#0b0f19 / Container #111827)',
+      },
+      {
+        id: 'token:color:light',
+        label: 'Color: Light Theme (#f5f7fa)',
+        cat: 'Theme Color Token',
+        detail: 'Light BG (#f5f7fa / Container #ffffff)',
+      },
+      {
+        id: 'token:breakpoint:phone',
+        label: 'Breakpoint: phone (375px)',
+        cat: 'Responsive Token',
+        detail: 'Phone screen (375px)',
+      },
+      {
+        id: 'token:breakpoint:ipad',
+        label: 'Breakpoint: ipad (768px)',
+        cat: 'Responsive Token',
+        detail: 'Tablet/iPad (768px)',
+      },
+      {
+        id: 'token:breakpoint:laptop',
+        label: 'Breakpoint: laptop (1024px)',
+        cat: 'Responsive Token',
+        detail: 'Laptop (1024px)',
+      },
+      {
+        id: 'token:breakpoint:desktop',
+        label: 'Breakpoint: desktop (1440px)',
+        cat: 'Responsive Token',
+        detail: 'Desktop (1440px)',
+      },
+      {
+        id: 'token:breakpoint:fourK',
+        label: 'Breakpoint: 4K (2560px)',
+        cat: 'Responsive Token',
+        detail: '4K Ultrawide (2560px)',
+      },
+      {
+        id: 'token:density:compact',
+        label: 'Density: compact (8px)',
+        cat: 'Density Token',
+        detail: 'Compact density (padding 8px 12px)',
+      },
+      {
+        id: 'token:density:comfort',
+        label: 'Density: comfort (12px)',
+        cat: 'Density Token',
+        detail: 'Comfort density (padding 12px 16px)',
+      },
+      {
+        id: 'token:density:spacious',
+        label: 'Density: spacious (16px)',
+        cat: 'Density Token',
+        detail: 'Spacious density (padding 16px 24px)',
+      },
+      {
+        id: 'token:typography:tabular',
+        label: 'Typography: tabular-nums',
+        cat: 'Typography Token',
+        detail: 'font-variant-numeric: tabular-nums',
+      },
+    ];
+
+    for (const tok of tokens) {
+      this.nodes.set(tok.id, {
+        id: tok.id,
+        type: 'DesignToken',
+        label: tok.label,
+        category: tok.cat,
+        filePath: 'packages/shared/src/theme/tokens.ts',
+        packageName: '@mos-lab/shared',
+        metadata: { detail: tok.detail },
+      });
+
+      this.addEdge({
+        id: `edge:${tok.id}:ws:packages/shared`,
+        source: tok.id,
+        target: 'ws:packages/shared',
+        type: 'EXPORTS',
+        label: 'DEFINED_IN_TOKENS',
+      });
+    }
+    this.designTokensCount = tokens.length;
+  }
+
+  // --- 5.2. UI Component Parser ---
+  private parseUIComponents() {
+    const compDir = path.join(this.rootDir, 'apps/web/components');
+    if (!fs.existsSync(compDir)) return;
+
+    const files = this.findFiles(compDir, /\.(tsx|ts)$/);
+    let count = 0;
+
+    for (const file of files) {
+      if (path.basename(file) === 'index.ts' || path.basename(file) === 'suppress-warnings.ts') continue;
+      const compName = path.basename(file, path.extname(file));
+      const relPath = path.relative(this.rootDir, file);
+      const nodeId = `uicomp:${compName}`;
+      const isPrimitive = relPath.includes('components/ui/');
+
+      this.nodes.set(nodeId, {
+        id: nodeId,
+        type: 'UIComponent',
+        label: `<${compName} />`,
+        category: isPrimitive ? 'UI Primitive Component' : 'UI Feature Component',
+        filePath: relPath,
+        packageName: '@mos-lab/web',
+        metadata: { componentName: compName, isPrimitive },
+      });
+
+      this.addEdge({
+        id: `edge:${nodeId}:ws:apps/web`,
+        source: nodeId,
+        target: 'ws:apps/web',
+        type: 'RENDERS',
+        label: 'DECLARED_IN_WEB',
+      });
+
+      // Link UIComponent to DesignTokens
+      this.addEdge({
+        id: `edge:${nodeId}:token:color:primary`,
+        source: nodeId,
+        target: 'token:color:primary',
+        type: 'USES_TOKEN',
+        label: 'USES_DESIGN_TOKEN',
+      });
+      if (compName === 'DensityContainer') {
+        this.addEdge({
+          id: `edge:${nodeId}:token:density:compact`,
+          source: nodeId,
+          target: 'token:density:compact',
+          type: 'USES_TOKEN',
+          label: 'DENSITY_TOKEN',
+        });
+        this.addEdge({
+          id: `edge:${nodeId}:token:breakpoint:ipad`,
+          source: nodeId,
+          target: 'token:breakpoint:ipad',
+          type: 'USES_TOKEN',
+          label: 'RESPONSIVE_TOKEN',
+        });
+      }
+      count++;
+    }
+    this.uiComponentsCount = count;
+  }
+
   // --- 6. Source File AST & Imports Scanner ---
   private scanSourceFiles() {
     const dirsToScan = [
@@ -599,8 +772,11 @@ class MonorepoGraphGenerator {
   // --- Writer: graph.json ---
   private writeGraphJson(data: any) {
     const outputPath = path.join(this.rootDir, 'graph.json');
-    fs.writeFileSync(outputPath, JSON.stringify(data, null, 2), 'utf-8');
-    console.log(`📄 Wrote ${outputPath}`);
+    const webPublicPath = path.join(this.rootDir, 'apps/web/public/graph.json');
+    const jsonStr = JSON.stringify(data, null, 2);
+    fs.writeFileSync(outputPath, jsonStr, 'utf-8');
+    fs.writeFileSync(webPublicPath, jsonStr, 'utf-8');
+    console.log(`📄 Wrote ${outputPath} and ${webPublicPath}`);
   }
 
   // --- Writer: GRAPH_REPORT.md ---
@@ -825,8 +1001,10 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
     <div class="filter-group">
       <div class="section-title">Node Categories</div>
       <div class="filter-item"><input type="checkbox" checked value="Workspace" id="f-ws"> <span class="color-dot" style="background:#ec4899;"></span> Workspace Packages (<span id="c-ws">0</span>)</div>
-      <div class="filter-item"><input type="checkbox" checked value="FastifyRoute" id="f-route"> <span class="color-dot" style="background:#06b6d4;"></span> Fastify Routes (<span id="c-route">0</span>)</div>
+      <div class="filter-item"><input type="checkbox" checked value="DesignToken" id="f-token"> <span class="color-dot" style="background:#d4a84b;"></span> Design Tokens (<span id="c-token">0</span>)</div>
       <div class="filter-item"><input type="checkbox" checked value="PrismaModel" id="f-model"> <span class="color-dot" style="background:#10b981;"></span> Prisma Models (<span id="c-model">0</span>)</div>
+      <div class="filter-item"><input type="checkbox" checked value="FastifyRoute" id="f-route"> <span class="color-dot" style="background:#06b6d4;"></span> Fastify Routes (<span id="c-route">0</span>)</div>
+      <div class="filter-item"><input type="checkbox" checked value="UIComponent" id="f-uicomp"> <span class="color-dot" style="background:#6366f1;"></span> UI Components (<span id="c-uicomp">0</span>)</div>
       <div class="filter-item"><input type="checkbox" checked value="Component" id="f-page"> <span class="color-dot" style="background:#3b82f6;"></span> Next.js Pages (<span id="c-page">0</span>)</div>
       <div class="filter-item"><input type="checkbox" checked value="SharedType" id="f-type"> <span class="color-dot" style="background:#f97316;"></span> Shared Types (<span id="c-type">0</span>)</div>
       <div class="filter-item"><input type="checkbox" checked value="File" id="f-file"> <span class="color-dot" style="background:#8b5cf6;"></span> Source Files (<span id="c-file">0</span>)</div>
@@ -859,26 +1037,51 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
   </div>
 
   <script>
-    const rawData = ${JSON.stringify(data)};
+    const embeddedData = ${JSON.stringify(data).replace(/</g, '\\u003c')};
 
-    const COLOR_MAP = {
-      'Workspace': '#ec4899',
-      'FastifyRoute': '#06b6d4',
-      'PrismaModel': '#10b981',
-      'Component': '#3b82f6',
-      'SharedType': '#f97316',
-      'File': '#8b5cf6'
-    };
+    async function initGraph() {
+      let rawData = embeddedData;
 
-    // Update Sidebar Counts
-    document.getElementById('statNodes').innerText = rawData.nodes.length;
-    document.getElementById('statEdges').innerText = rawData.edges.length;
-    document.getElementById('c-ws').innerText = rawData.stats.nodeTypeCounts['Workspace'] || 0;
-    document.getElementById('c-route').innerText = rawData.stats.fastifyRouteCount || 0;
-    document.getElementById('c-model').innerText = rawData.stats.prismaModelCount || 0;
-    document.getElementById('c-page').innerText = rawData.stats.nextPageCount || 0;
-    document.getElementById('c-type').innerText = rawData.stats.sharedTypeCount || 0;
-    document.getElementById('c-file').innerText = rawData.stats.nodeTypeCounts['File'] || 0;
+      // Try fetching dynamic graph.json if available
+      try {
+        const res = await fetch('/graph.json');
+        if (res.ok) {
+          const remoteData = await res.json();
+          if (remoteData && remoteData.nodes && remoteData.nodes.length > 0) {
+            rawData = remoteData;
+          }
+        }
+      } catch (err) {
+        console.log('Using embedded graph payload');
+      }
+
+      if (!rawData || !rawData.nodes || rawData.nodes.length === 0) {
+        console.error('No graph nodes found');
+        return;
+      }
+
+      const COLOR_MAP = {
+        'Workspace': '#ec4899',
+        'DesignToken': '#d4a84b',
+        'PrismaModel': '#10b981',
+        'FastifyRoute': '#06b6d4',
+        'UIComponent': '#6366f1',
+        'Component': '#3b82f6',
+        'SharedType': '#f97316',
+        'File': '#8b5cf6'
+      };
+
+      // Update Sidebar Counts
+      document.getElementById('statNodes').innerText = rawData.nodes.length;
+      document.getElementById('statEdges').innerText = rawData.edges.length;
+      document.getElementById('c-ws').innerText = (rawData.stats && rawData.stats.nodeTypeCounts) ? (rawData.stats.nodeTypeCounts['Workspace'] || 0) : 0;
+      document.getElementById('c-token').innerText = (rawData.stats && rawData.stats.nodeTypeCounts) ? (rawData.stats.nodeTypeCounts['DesignToken'] || 0) : 0;
+      document.getElementById('c-route').innerText = (rawData.stats && rawData.stats.fastifyRouteCount) || 0;
+      document.getElementById('c-model').innerText = (rawData.stats && rawData.stats.prismaModelCount) || 0;
+      document.getElementById('c-uicomp').innerText = (rawData.stats && rawData.stats.nodeTypeCounts) ? (rawData.stats.nodeTypeCounts['UIComponent'] || 0) : 0;
+      document.getElementById('c-page').innerText = (rawData.stats && rawData.stats.nextPageCount) || 0;
+      document.getElementById('c-type').innerText = (rawData.stats && rawData.stats.sharedTypeCount) || 0;
+      document.getElementById('c-file').innerText = (rawData.stats && rawData.stats.nodeTypeCounts) ? (rawData.stats.nodeTypeCounts['File'] || 0) : 0;
 
     // Interactive Force-Directed Canvas Layout Engine (100% Offline)
     const canvas = document.getElementById('graphCanvas');
@@ -919,14 +1122,16 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
       new ResizeObserver(updateCanvasSize).observe(canvas.parentElement);
     }
 
-    // Node physics state initialization — Concentric ring distribution by category
+    // Node physics state initialization — Compact concentric ring distribution by category
     const CATEGORY_RADII = {
-      'Workspace': 60,
-      'PrismaModel': 180,
-      'FastifyRoute': 320,
-      'Component': 450,
-      'SharedType': 580,
-      'File': 720
+      'Workspace': 40,
+      'DesignToken': 80,
+      'PrismaModel': 150,
+      'FastifyRoute': 230,
+      'UIComponent': 300,
+      'Component': 380,
+      'SharedType': 460,
+      'File': 540
     };
 
     const typeCounts = {};
@@ -939,16 +1144,16 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
     const nodes = rawData.nodes.map((n) => {
       const count = typeCounts[n.type] || 1;
       const idx = typeIndices[n.type]++;
-      const angle = (idx / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.2;
-      const baseRadius = CATEGORY_RADII[n.type] || 400;
-      const radiusJitter = baseRadius + (Math.random() - 0.5) * 40;
+      const angle = (idx / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.15;
+      const baseRadius = CATEGORY_RADII[n.type] || 350;
+      const radiusJitter = baseRadius + (Math.random() - 0.5) * 30;
       return {
         ...n,
-        x: width / 2 + Math.cos(angle) * radiusJitter,
+        x: width / 2 + 100 + Math.cos(angle) * radiusJitter,
         y: height / 2 + Math.sin(angle) * radiusJitter,
         vx: 0,
         vy: 0,
-        radius: n.type === 'Workspace' ? 14 : n.type === 'FastifyRoute' || n.type === 'PrismaModel' ? 9 : 6
+        radius: n.type === 'Workspace' ? 14 : n.type === 'FastifyRoute' || n.type === 'PrismaModel' || n.type === 'UIComponent' ? 9 : 6
       };
     });
 
@@ -959,9 +1164,9 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
       targetNode: nodeMap.get(e.target)
     })).filter(e => e.sourceNode && e.targetNode);
 
-    // Viewport transform (Pan & Zoom) — Initial zoom set to 0.65 to fit all nodes nicely
-    let zoom = 0.65;
-    let panX = 0;
+    // Viewport transform (Pan & Zoom) — Initial zoom & panX offset to center graph past 280px left sidebar
+    let zoom = 0.85;
+    let panX = 60;
     let panY = 0;
     let isDragging = false;
     let dragStart = { x: 0, y: 0 };
@@ -969,12 +1174,14 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
     let searchQuery = '';
 
     // Active filters
-    const activeFilters = new Set(['Workspace', 'FastifyRoute', 'PrismaModel', 'Component', 'SharedType', 'File']);
+    const activeFilters = new Set(['Workspace', 'DesignToken', 'PrismaModel', 'FastifyRoute', 'UIComponent', 'Component', 'SharedType', 'File']);
 
     document.querySelectorAll('.filter-item input').forEach(cb => {
       cb.addEventListener('change', (e) => {
         if (e.target.checked) activeFilters.add(e.target.value);
         else activeFilters.delete(e.target.value);
+        isSettled = false;
+        simulationStep = 0;
       });
     });
 
@@ -983,7 +1190,7 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
     });
 
     document.getElementById('resetZoomBtn').addEventListener('click', () => {
-      zoom = 0.65; panX = 0; panY = 0;
+      zoom = 0.85; panX = 60; panY = 0;
     });
 
     function applyGlobalTheme(mode) {
@@ -1104,11 +1311,18 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
     };
 
     // Physics Simulation & Render Loop
+    let isSettled = false;
+    let simulationStep = 0;
+
     function simulate() {
+      if (isSettled) return;
+      simulationStep++;
+      let maxVel = 0;
+
       // 1. Central Gravity Pull
       for (const n of nodes) {
         if (!activeFilters.has(n.type)) continue;
-        n.vx += (width / 2 - n.x) * 0.0006;
+        n.vx += (width / 2 + 60 - n.x) * 0.0006;
         n.vy += (height / 2 - n.y) * 0.0006;
       }
 
@@ -1124,9 +1338,9 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
           const dx = n2.x - n1.x;
           const dy = n2.y - n1.y;
           const distSq = dx * dx + dy * dy;
-          if (distSq > 0 && distSq < 16000) { // dist < ~126px
+          if (distSq > 0 && distSq < 12100) { // dist < 110px
             const dist = Math.sqrt(distSq);
-            const force = Math.min(1.5, ((126 - dist) / dist) * 0.15);
+            const force = Math.min(1.2, ((110 - dist) / dist) * 0.12);
             const nx = dx / dist;
             const ny = dy / dist;
             n1.vx -= nx * force;
@@ -1143,7 +1357,7 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
         const dx = e.targetNode.x - e.sourceNode.x;
         const dy = e.targetNode.y - e.sourceNode.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const force = (dist - 90) * 0.003;
+        const force = (dist - 80) * 0.0025;
         const nx = dx / dist;
         const ny = dy / dist;
         e.sourceNode.vx += nx * force;
@@ -1155,14 +1369,20 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
       // 4. Update positions with damping and max speed cap
       for (const n of nodes) {
         const speed = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
-        if (speed > 6) {
-          n.vx = (n.vx / speed) * 6;
-          n.vy = (n.vy / speed) * 6;
+        if (speed > 5) {
+          n.vx = (n.vx / speed) * 5;
+          n.vy = (n.vy / speed) * 5;
         }
         n.x += n.vx;
         n.y += n.vy;
-        n.vx *= 0.8;
-        n.vy *= 0.8;
+        n.vx *= 0.78;
+        n.vy *= 0.78;
+
+        if (speed > maxVel) maxVel = speed;
+      }
+
+      if (simulationStep > 300 || (simulationStep > 30 && maxVel < 0.05)) {
+        isSettled = true;
       }
     }
 
@@ -1177,7 +1397,7 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
       ctx.translate(-width / 2, -height / 2);
 
       // EDGE TYPE COLOR MAP
-      const EDGE_COLOR_MAP: Record<string, string> = {
+      const EDGE_COLOR_MAP = {
         'HANDLES_ROUTE': 'rgba(6, 182, 212, 0.65)',
         'QUERIES_MODEL': 'rgba(16, 185, 129, 0.65)',
         'API_CALL': 'rgba(59, 130, 246, 0.65)',
@@ -1261,6 +1481,9 @@ Using the Graphify Knowledge Graph, the AI Agent queries a **2-hop Subgraph Slic
     }
 
     render();
+  }
+
+  initGraph();
   </script>
 </body>
 </html>`;

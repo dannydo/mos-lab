@@ -30,6 +30,7 @@ import {
   Result,
   ConfigProvider,
 } from 'antd';
+import { GoogleSheetColorPicker } from '../../../components/GoogleSheetColorPicker';
 import {
   SearchOutlined,
   EyeOutlined,
@@ -50,6 +51,8 @@ import {
   RightOutlined,
   UnorderedListOutlined,
   CloseCircleOutlined,
+  TableOutlined,
+  SaveOutlined,
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
@@ -72,6 +75,84 @@ import { formatDuration, formatVND } from '../../../lib/format-utils';
 import { useOmiCall } from '../../../context/OmiCallContext';
 
 const { Title, Text } = Typography;
+
+export interface TouchpointPalette {
+  bg: string;
+  border: string;
+  text: string;
+  dot: string;
+}
+
+export const getTouchpointPalette = (colorStr: string | undefined, themeMode: string): TouchpointPalette => {
+  const isDark = themeMode === 'dark';
+
+  if (!colorStr) {
+    return {
+      bg: isDark ? 'rgba(59,130,246,0.12)' : '#eff6ff',
+      border: isDark ? 'rgba(59,130,246,0.3)' : '#bfdbfe',
+      text: isDark ? '#93c5fd' : '#1d4ed8',
+      dot: '#3b82f6',
+    };
+  }
+
+  const hex = colorStr.startsWith('#')
+    ? colorStr
+    : {
+        blue: '#2563eb',
+        cyan: '#0891b2',
+        green: '#16a34a',
+        emerald: '#059669',
+        amber: '#d97706',
+        orange: '#ea580c',
+        rose: '#e11d48',
+        red: '#dc2626',
+        purple: '#9333ea',
+        indigo: '#4f46e5',
+        pink: '#db2777',
+        slate: '#475569',
+      }[colorStr.toLowerCase()] || '#2563eb';
+
+  let r = 37,
+    g = 99,
+    b = 235;
+  if (hex.startsWith('#') && (hex.length === 7 || hex.length === 4)) {
+    const fullHex = hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex;
+    r = parseInt(fullHex.slice(1, 3), 16);
+    g = parseInt(fullHex.slice(3, 5), 16);
+    b = parseInt(fullHex.slice(5, 7), 16);
+  }
+
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  if (isDark) {
+    return {
+      bg: `rgba(${r}, ${g}, ${b}, 0.15)`,
+      border: `rgba(${r}, ${g}, ${b}, 0.32)`,
+      text: luminance > 0.7 ? `rgb(${Math.min(255, r + 40)}, ${Math.min(255, g + 40)}, ${Math.min(255, b + 40)})` : hex,
+      dot: hex,
+    };
+  } else {
+    let textR = r,
+      textG = g,
+      textB = b;
+    if (luminance > 0.55) {
+      textR = Math.round(r * 0.52);
+      textG = Math.round(g * 0.52);
+      textB = Math.round(b * 0.52);
+    } else {
+      textR = Math.round(r * 0.75);
+      textG = Math.round(g * 0.75);
+      textB = Math.round(b * 0.75);
+    }
+
+    return {
+      bg: `rgba(${r}, ${g}, ${b}, 0.07)`,
+      border: `rgba(${r}, ${g}, ${b}, 0.25)`,
+      text: `rgb(${textR}, ${textG}, ${textB})`,
+      dot: hex,
+    };
+  }
+};
 
 export default function LocaCampaignPage() {
   const { themeMode } = useTheme();
@@ -146,6 +227,7 @@ export default function LocaCampaignPage() {
     onSuccess: (msg) => message.success(msg),
     onError: (msg) => message.error(msg),
     onWarning: (msg) => message.warning(msg),
+    onCloseDrawer: () => closeLocaConfig(),
   });
 
   const isLocaAllowed = ['admin', 'manager', 'oc', 'cc', 'cs', 'control'].includes(
@@ -159,7 +241,7 @@ export default function LocaCampaignPage() {
       setSelectedCustomer(customer);
       setSmsModalVisible(true);
     },
-    [setSelectedCustomer]
+    [setSelectedCustomer, setSmsModalVisible]
   );
 
   const handleDetailClose = React.useCallback(() => {
@@ -319,6 +401,13 @@ export default function LocaCampaignPage() {
 
   const activeTouchpointsList = configs['LOCA_ALL'] || [];
 
+  useEffect(() => {
+    if (locaConfigVisible) {
+      const currentConfigs = configs['LOCA_ALL'] || [];
+      settingsForm.setFieldsValue({ touchpoints: currentConfigs });
+    }
+  }, [locaConfigVisible, configs, settingsForm]);
+
   if (currentUser && !isLocaAllowed) {
     return (
       <Card style={{ marginTop: 24, textAlign: 'center', borderRadius: 8 }}>
@@ -374,8 +463,9 @@ export default function LocaCampaignPage() {
                 type="primary"
                 icon={<CalendarPlusIcon fontSize={16} />}
                 style={{
-                  backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
-                  borderColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
+                  backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
+                  borderColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
+                  color: '#ffffff',
                   fontWeight: 'bold',
                 }}
                 onClick={() => {
@@ -384,16 +474,6 @@ export default function LocaCampaignPage() {
                 }}
               />
             </Tooltip>
-            {currentUser?.role === 'admin' && (
-              <Tooltip title="Cấu hình Quy trình">
-                <Button
-                  type="primary"
-                  icon={<SettingOutlined />}
-                  onClick={handleOpenSettings}
-                  style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}
-                />
-              </Tooltip>
-            )}
           </Space>
         </div>
       </div>
@@ -605,12 +685,14 @@ export default function LocaCampaignPage() {
               {activeTouchpointsList.map((tp, idx) => {
                 const isSelected = activeTouchpointKey === tp.key;
                 const count = touchpointCounts[tp.key] || 0;
+                const palette = getTouchpointPalette(tp.color, themeMode);
+
                 return (
                   <React.Fragment key={tp.key}>
                     {idx > 0 && (
                       <div
                         style={{
-                          width: '6px',
+                          width: '4px',
                           height: '2px',
                           backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
                           flexShrink: 0,
@@ -619,54 +701,55 @@ export default function LocaCampaignPage() {
                     )}
                     <div
                       onClick={() => setActiveTouchpointKey(tp.key)}
-                      className={`rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
+                      className={`rounded-xl cursor-pointer text-center select-none transition-all duration-300 border ${
                         isSelected
-                          ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
-                          : themeMode === 'dark'
-                            ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
-                            : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
+                          ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-md scale-[1.03]'
+                          : 'hover:scale-[1.01]'
                       }`}
                       style={{
                         flex: 1,
-                        minWidth: '68px',
+                        minWidth: '76px',
                         flexShrink: 0,
-                        padding: '6px 8px',
+                        padding: '6px 10px',
+                        backgroundColor: isSelected
+                          ? themeMode === 'dark'
+                            ? 'rgba(212,168,75,0.15)'
+                            : '#fffbeb'
+                          : palette.bg,
+                        borderColor: isSelected ? '#f59e0b' : palette.border,
                       }}
                     >
-                      <div
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: '800',
-                          whiteSpace: 'nowrap',
-                          color:
-                            tp.color === 'red'
-                              ? themeMode === 'dark'
-                                ? '#ff4d4f'
-                                : '#d9363e'
-                              : tp.color === 'orange'
-                                ? themeMode === 'dark'
-                                  ? '#fa8c16'
-                                  : '#d46b08'
-                                : tp.color === 'green'
-                                  ? themeMode === 'dark'
-                                    ? '#52c41a'
-                                    : '#389e0d'
-                                  : themeMode === 'dark'
-                                    ? '#1890ff'
-                                    : '#096dd9',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {tp.label}
+                      <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                        <span
+                          style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            backgroundColor: palette.dot,
+                            flexShrink: 0,
+                            boxShadow: `0 0 4px ${palette.dot}80`,
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: '800',
+                            whiteSpace: 'nowrap',
+                            color: palette.text,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.02em',
+                          }}
+                        >
+                          {tp.label}
+                        </span>
                       </div>
                       <div
                         style={{
                           fontSize: '15px',
                           fontWeight: '900',
-                          marginTop: '1px',
                           fontVariantNumeric: 'tabular-nums',
                           fontFeatureSettings: '"tnum"',
-                          color: isSelected ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
+                          color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : palette.text,
                         }}
                       >
                         {count}
@@ -794,11 +877,16 @@ export default function LocaCampaignPage() {
                 onClick={() => setBookingStatusFilter('ALL')}
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
                   bookingStatusFilter === 'ALL'
-                    ? 'bg-slate-800 text-amber-400 border-slate-600 shadow-sm dark:bg-slate-800 dark:border-slate-700'
-                    : 'bg-slate-500/5 hover:bg-slate-500/10 text-slate-400 border-slate-200/60 dark:border-slate-800/60'
+                    ? 'bg-blue-50 text-blue-600 border-blue-300 shadow-xs dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/40'
+                    : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
                 }`}
               >
-                <UnorderedListOutlined style={{ fontSize: '14px' }} />
+                <UnorderedListOutlined
+                  style={{
+                    fontSize: '14px',
+                    color: bookingStatusFilter === 'ALL' ? (themeMode === 'dark' ? '#60a5fa' : '#2563eb') : undefined,
+                  }}
+                />
               </button>
             </Tooltip>
 
@@ -808,12 +896,16 @@ export default function LocaCampaignPage() {
                 onClick={() => setBookingStatusFilter('BOOKED')}
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
                   bookingStatusFilter === 'BOOKED'
-                    ? 'bg-emerald-950/50 text-emerald-400 border-emerald-500/50 shadow-sm'
-                    : 'bg-slate-500/5 hover:bg-slate-500/10 text-slate-400 border-slate-200/60 dark:border-slate-800/60'
+                    ? 'bg-emerald-50 text-emerald-600 border-emerald-300 shadow-xs dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/40'
+                    : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
                 }`}
               >
                 <CalendarOutlined
-                  style={{ fontSize: '14px', color: bookingStatusFilter === 'BOOKED' ? '#10B981' : undefined }}
+                  style={{
+                    fontSize: '14px',
+                    color:
+                      bookingStatusFilter === 'BOOKED' ? (themeMode === 'dark' ? '#34d399' : '#059669') : undefined,
+                  }}
                 />
               </button>
             </Tooltip>
@@ -824,12 +916,16 @@ export default function LocaCampaignPage() {
                 onClick={() => setBookingStatusFilter('NOT_BOOKED')}
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
                   bookingStatusFilter === 'NOT_BOOKED'
-                    ? 'bg-rose-950/50 text-rose-400 border-rose-500/50 shadow-sm'
-                    : 'bg-slate-500/5 hover:bg-slate-500/10 text-slate-400 border-slate-200/60 dark:border-slate-800/60'
+                    ? 'bg-rose-50 text-rose-600 border-rose-300 shadow-xs dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/40'
+                    : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
                 }`}
               >
                 <CloseCircleOutlined
-                  style={{ fontSize: '14px', color: bookingStatusFilter === 'NOT_BOOKED' ? '#F43F5E' : undefined }}
+                  style={{
+                    fontSize: '14px',
+                    color:
+                      bookingStatusFilter === 'NOT_BOOKED' ? (themeMode === 'dark' ? '#f87171' : '#e11d48') : undefined,
+                  }}
                 />
               </button>
             </Tooltip>
@@ -852,11 +948,11 @@ export default function LocaCampaignPage() {
           <Tooltip title="Cấu hình cột bảng">
             <Button
               type="primary"
-              icon={<SettingOutlined style={{ color: '#000000', fontSize: '14px' }} />}
+              icon={<SettingOutlined style={{ color: '#ffffff', fontSize: '14px' }} />}
               onClick={openLocaConfig}
               style={{
-                backgroundColor: '#D4A84B',
-                borderColor: '#D4A84B',
+                backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
+                borderColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
                 width: 32,
                 height: 32,
                 display: 'flex',
@@ -919,168 +1015,6 @@ export default function LocaCampaignPage() {
         }}
       />
 
-      {/* RESIZABLE TOUCHPOINT CONFIGURATION MODAL (Admin only) */}
-      {currentUser?.role === 'admin' && (
-        <Modal
-          title={<div style={{ fontSize: '16px', fontWeight: 'bold' }}>⚙️ Cấu hình quy trình chạm LoCa</div>}
-          open={settingsModalVisible}
-          onCancel={() => setSettingsModalVisible(false)}
-          onOk={handleSaveConfig}
-          okText="Xuất bản Cấu hình"
-          cancelText="Hủy"
-          width={modalWidth}
-          styles={{
-            body: {
-              padding: '16px 0 0 0',
-              maxHeight: 'calc(100vh - 300px)',
-              overflowY: 'auto',
-            },
-          }}
-          modalRender={(modal) => {
-            if (React.isValidElement(modal)) {
-              return React.cloneElement(modal as SafeAny, {
-                style: {
-                  ...(modal.props as SafeAny)?.style,
-                  position: 'relative',
-                  width: `${modalWidth}px`,
-                  maxWidth: '95vw',
-                  pointerEvents: 'auto',
-                },
-                children: (
-                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                    {(modal.props as SafeAny)?.children}
-                    <div
-                      onMouseDown={handleResizeMouseDown}
-                      title="Kéo góc để thay đổi kích thước Modal (Kích thước được tự động lưu)"
-                      style={{
-                        position: 'absolute',
-                        right: '4px',
-                        bottom: '4px',
-                        width: '20px',
-                        height: '20px',
-                        cursor: 'nwse-resize',
-                        zIndex: 9999,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#D4A84B',
-                        opacity: 0.85,
-                        transition: 'opacity 0.2s',
-                      }}
-                      className="hover:opacity-100"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                        <path d="M11 1v10H1V1h10m1-1H0v12h12V0z M9 9H7v2h2V9z M9 5H7v2h2V5z M5 9H3v2h2V9z" />
-                      </svg>
-                    </div>
-                  </div>
-                ),
-              });
-            }
-            return modal;
-          }}
-        >
-          <div className="px-5">
-            <div className="flex justify-end items-center mb-4">
-              <Button type="dashed" danger onClick={handleResetConfigDefaults} icon={<UndoOutlined />}>
-                Khôi phục mặc định
-              </Button>
-            </div>
-            <Form form={settingsForm} name="loca_touchpoints_form" layout="vertical">
-              <Form.List name="touchpoints">
-                {(fields, { add, remove }) => (
-                  <div
-                    id="loca-touchpoints-list"
-                    style={{
-                      height: `${modalHeight - 200}px`,
-                      overflowY: 'auto',
-                      paddingRight: '6px',
-                    }}
-                    className="space-y-4 pr-1"
-                  >
-                    {fields.map(({ key, name, ...restField }) => (
-                      <Card
-                        key={key}
-                        size="small"
-                        title={<span style={{ fontSize: '12px', fontWeight: 'bold' }}>Touchpoint #{name + 1}</span>}
-                        extra={
-                          <Button type="text" danger onClick={() => remove(name)} icon={<MinusCircleOutlined />} />
-                        }
-                        className={themeMode === 'dark' ? 'bg-[#1c1c1e]' : 'bg-slate-50'}
-                      >
-                        <Row gutter={12}>
-                          <Col span={6}>
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'key']}
-                              label="Mã định danh (Key)"
-                              rules={[{ required: true, message: 'Nhập key' }]}
-                            >
-                              <Input placeholder="Ví dụ: chạm-17" />
-                            </Form.Item>
-                          </Col>
-                          <Col span={6}>
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'label']}
-                              label="Tên hiển thị (Label)"
-                              rules={[{ required: true, message: 'Nhập nhãn' }]}
-                            >
-                              <Input placeholder="Ví dụ: Chạm 17 ngày" />
-                            </Form.Item>
-                          </Col>
-                          <Col span={4}>
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'daysMin']}
-                              label="Min (Ngày)"
-                              rules={[{ required: true, message: 'Nhập min' }]}
-                            >
-                              <InputNumber min={0} style={{ width: '100%' }} />
-                            </Form.Item>
-                          </Col>
-                          <Col span={4}>
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'daysMax']}
-                              label="Max (Ngày)"
-                              rules={[{ required: true, message: 'Nhập max' }]}
-                            >
-                              <InputNumber min={0} style={{ width: '100%' }} />
-                            </Form.Item>
-                          </Col>
-                          <Col span={4}>
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'color']}
-                              label="Màu sắc đại diện"
-                              rules={[{ required: true, message: 'Chọn màu' }]}
-                            >
-                              <Select
-                                options={[
-                                  { value: 'blue', label: 'Xanh dương' },
-                                  { value: 'cyan', label: 'Xanh ngọc' },
-                                  { value: 'green', label: 'Xanh lá' },
-                                  { value: 'orange', label: 'Cam' },
-                                  { value: 'red', label: 'Đỏ' },
-                                ]}
-                              />
-                            </Form.Item>
-                          </Col>
-                        </Row>
-                      </Card>
-                    ))}
-                    <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                      Thêm Mốc Chạm Mới
-                    </Button>
-                  </div>
-                )}
-              </Form.List>
-            </Form>
-          </div>
-        </Modal>
-      )}
-
       {/* DRAWERS */}
       {detailModalVisible && selectedCustomer && (
         <CustomerDetailDrawer
@@ -1107,6 +1041,143 @@ export default function LocaCampaignPage() {
         onClose={closeLocaConfig}
         onSave={saveLocaConfig}
         onReset={resetLocaConfig}
+        extraTabTitle="Quy Trình & Nghiệp Vụ"
+        extraTabContent={
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-xs text-slate-500 font-medium">
+                Cấu hình các mốc chạm thời gian & quy trình CSKH
+              </span>
+              <Tooltip title="Khôi phục quy trình mốc chạm mặc định">
+                <Button type="text" danger icon={<UndoOutlined />} onClick={handleResetConfigDefaults} size="small" />
+              </Tooltip>
+            </div>
+            <Form form={settingsForm} name="loca_touchpoints_form" layout="vertical">
+              <Form.List name="touchpoints">
+                {(fields, { add, remove }) => (
+                  <div id="loca-touchpoints-list" className="space-y-4 pr-1">
+                    {fields.map(({ key, name, ...restField }) => (
+                      <div
+                        key={key}
+                        className={`flex items-center gap-2 p-2 mb-2 rounded-lg border border-slate-200 dark:border-slate-800 ${
+                          themeMode === 'dark' ? 'bg-[#1c1c1e]' : 'bg-slate-50'
+                        }`}
+                      >
+                        <Tag color="blue" className="text-xs font-semibold m-0 px-1.5 py-0.5">
+                          #{name + 1}
+                        </Tag>
+
+                        <Tooltip title="Mã định danh Key (ví dụ: now, 17)">
+                          <div className="w-24">
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'key']}
+                              margin="none"
+                              noStyle
+                              rules={[{ required: true }]}
+                            >
+                              <Input placeholder="Key" size="small" style={{ fontSize: '12px' }} />
+                            </Form.Item>
+                          </div>
+                        </Tooltip>
+
+                        <Tooltip title="Tên nhãn hiển thị (ví dụ: Chạm 24h)">
+                          <div className="flex-1 min-w-0">
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'label']}
+                              margin="none"
+                              noStyle
+                              rules={[{ required: true }]}
+                            >
+                              <Input placeholder="Tên hiển thị" size="small" style={{ fontSize: '12px' }} />
+                            </Form.Item>
+                          </div>
+                        </Tooltip>
+
+                        <div className="flex items-center gap-1 w-32">
+                          <Tooltip title="Số ngày Min">
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'daysMin']}
+                              margin="none"
+                              noStyle
+                              rules={[{ required: true }]}
+                            >
+                              <InputNumber
+                                min={0}
+                                placeholder="Min"
+                                size="small"
+                                style={{ width: '100%', fontSize: '11px' }}
+                              />
+                            </Form.Item>
+                          </Tooltip>
+                          <span className="text-slate-400 text-xs">-</span>
+                          <Tooltip title="Số ngày Max">
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'daysMax']}
+                              margin="none"
+                              noStyle
+                              rules={[{ required: true }]}
+                            >
+                              <InputNumber
+                                min={0}
+                                placeholder="Max"
+                                size="small"
+                                style={{ width: '100%', fontSize: '11px' }}
+                              />
+                            </Form.Item>
+                          </Tooltip>
+                        </div>
+
+                        <Tooltip title="Màu sắc đại diện">
+                          <div className="w-28">
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'color']}
+                              margin="none"
+                              noStyle
+                              rules={[{ required: true }]}
+                            >
+                              <GoogleSheetColorPicker size="small" />
+                            </Form.Item>
+                          </div>
+                        </Tooltip>
+
+                        <Tooltip title="Xóa mốc chạm">
+                          <Button
+                            type="text"
+                            danger
+                            size="small"
+                            onClick={() => remove(name)}
+                            icon={<MinusCircleOutlined />}
+                          />
+                        </Tooltip>
+                      </div>
+                    ))}
+                    <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />} size="small">
+                      Thêm Mốc Chạm Mới
+                    </Button>
+                  </div>
+                )}
+              </Form.List>
+            </Form>
+            <Divider style={{ margin: '12px 0' }} />
+            <Button
+              type="primary"
+              icon={<SaveOutlined />}
+              onClick={handleSaveConfig}
+              block
+              style={{
+                backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
+                borderColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
+              }}
+            >
+              Xuất bản quy trình LoCa
+            </Button>
+          </div>
+        }
       />
 
       <SMSModal

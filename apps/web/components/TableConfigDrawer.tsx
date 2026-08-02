@@ -14,6 +14,7 @@ import {
   InputNumber,
   Alert,
   Select,
+  Tabs,
 } from 'antd';
 import {
   ArrowUpOutlined,
@@ -25,6 +26,7 @@ import {
   SettingOutlined,
   HolderOutlined,
   SearchOutlined,
+  TableOutlined,
 } from '@ant-design/icons';
 import { ColumnConfig } from '@mos-lab/shared';
 import { AVAILABLE_ICONS, getDefaultIcon, renderIconHelper } from '../hooks/useTableConfig';
@@ -39,15 +41,19 @@ interface TableConfigDrawerProps {
   columns: ColumnConfig[];
   onSave: (columns: ColumnConfig[], saveAsDefault?: boolean) => Promise<void>;
   onReset: () => Promise<void>;
+  extraTabContent?: React.ReactNode;
+  extraTabTitle?: string;
 }
 
 export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
   visible,
   onClose,
-  title = 'Cấu hình cột bảng',
+  title = 'Cấu hình hệ thống',
   columns: initialColumns,
   onSave,
   onReset,
+  extraTabContent,
+  extraTabTitle = 'Quy trình & Nghiệp vụ',
 }) => {
   const { token } = theme.useToken();
   const [columns, setColumns] = useState<ColumnConfig[]>([]);
@@ -167,6 +173,199 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
     }
   };
 
+  const [drawerWidth, setDrawerWidth] = useState<number>(500);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedWidth = localStorage.getItem('table_config_drawer_width');
+      if (savedWidth) {
+        const parsed = parseInt(savedWidth, 10);
+        if (!isNaN(parsed) && parsed >= 400 && parsed <= 1200) {
+          setDrawerWidth(parsed);
+        }
+      }
+    }
+  }, []);
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = drawerWidth;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = startX - moveEvent.clientX;
+      const newWidth = Math.min(Math.max(startWidth + deltaX, 420), window.innerWidth * 0.9);
+      setDrawerWidth(newWidth);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('table_config_drawer_width', Math.round(newWidth).toString());
+      }
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
+
+  const columnsContent = (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}>
+      <div className="flex justify-between items-center gap-2">
+        <Alert
+          message="Kéo thả để sắp xếp lại thứ tự cột. Tích chọn để ẩn/hiển thị."
+          type="info"
+          showIcon
+          style={{ fontSize: '11px', padding: '4px 10px', flex: 1 }}
+        />
+        <Tooltip title="Khôi phục cấu hình cột mặc định">
+          <Button type="text" danger icon={<UndoOutlined />} onClick={handleReset} loading={resetting} size="small" />
+        </Tooltip>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
+        <List
+          size="small"
+          dataSource={columns}
+          renderItem={(item, index) => {
+            const isFirst = index === 0;
+            const isLast = index === columns.length - 1;
+            const currentIcon = item.icon !== undefined && item.icon !== '' ? item.icon : getDefaultIcon(item.key);
+
+            return (
+              <div
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '6px 10px',
+                  marginBottom: '6px',
+                  borderRadius: '8px',
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  background: draggedIndex === index ? token.colorFillAlter : token.colorBgContainer,
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                  opacity: item.visible ? 1 : 0.55,
+                  cursor: 'grab',
+                  gap: '8px',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <div style={{ cursor: 'grab', color: token.colorTextDescription }} title="Kéo thả sắp xếp">
+                  <HolderOutlined />
+                </div>
+
+                <Tooltip title={item.visible ? 'Đang hiển thị' : 'Đang ẩn'}>
+                  <Checkbox checked={item.visible} onChange={() => handleToggleVisibility(index)} />
+                </Tooltip>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Input
+                    size="small"
+                    value={item.title}
+                    onChange={(e) => handleRename(index, e.target.value)}
+                    placeholder={item.originalTitle}
+                    prefix={currentIcon !== 'none' && renderIconHelper(currentIcon)}
+                    style={{ fontSize: '12px' }}
+                  />
+                </div>
+
+                <Tooltip title="Độ rộng cột (px)">
+                  <InputNumber
+                    size="small"
+                    min={50}
+                    max={1000}
+                    value={item.width}
+                    onChange={(val) => handleResize(index, val)}
+                    placeholder="Auto"
+                    style={{ width: '65px', fontSize: '11px' }}
+                  />
+                </Tooltip>
+
+                <Tooltip title="Icon đại diện">
+                  <Select
+                    size="small"
+                    style={{ width: '105px' }}
+                    value={item.icon || ''}
+                    onChange={(val) => handleSelectIcon(index, val)}
+                    options={AVAILABLE_ICONS}
+                    popupMatchSelectWidth={false}
+                  />
+                </Tooltip>
+
+                <Tooltip title="Tìm kiếm Icon">
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<SearchOutlined style={{ fontSize: '12px' }} />}
+                    onClick={() => {
+                      setActiveColIndex(index);
+                      setPickerOpen(true);
+                    }}
+                  />
+                </Tooltip>
+
+                <Space size={0}>
+                  <Tooltip title="Lên">
+                    <Button
+                      size="small"
+                      type="text"
+                      icon={<ArrowUpOutlined style={{ fontSize: '11px' }} />}
+                      disabled={isFirst}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveColumn(index, 'up');
+                      }}
+                    />
+                  </Tooltip>
+                  <Tooltip title="Xuống">
+                    <Button
+                      size="small"
+                      type="text"
+                      icon={<ArrowDownOutlined style={{ fontSize: '11px' }} />}
+                      disabled={isLast}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveColumn(index, 'down');
+                      }}
+                    />
+                  </Tooltip>
+                </Space>
+              </div>
+            );
+          }}
+        />
+      </div>
+
+      <Divider style={{ margin: '4px 0' }} />
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <Button type="primary" icon={<SaveOutlined />} onClick={() => handleSave(false)} loading={saving} block>
+          Lưu cấu hình cá nhân
+        </Button>
+
+        {isDanhDo && (
+          <Tooltip title="Cập nhật cấu hình này làm mẫu chung cho tất cả nhân viên khác">
+            <Button
+              type="dashed"
+              danger
+              icon={<SaveOutlined />}
+              onClick={() => handleSave(true)}
+              loading={saving}
+              block
+              size="small"
+            >
+              Lưu làm mẫu mặc định (danhdo@gmail.com)
+            </Button>
+          </Tooltip>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <Drawer
       title={
@@ -176,195 +375,63 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
         </Space>
       }
       placement="right"
-      width={450}
+      width={drawerWidth}
       onClose={onClose}
       open={visible}
       styles={{
         body: {
-          padding: '16px',
+          padding: '12px 16px',
           background: token.colorBgLayout,
+          position: 'relative',
         },
       }}
-      extra={
-        <Button type="text" icon={<UndoOutlined />} onClick={handleReset} loading={resetting} danger>
-          Reset mặc định
-        </Button>
-      }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '16px' }}>
-        <Alert
-          message="Hướng dẫn"
-          description="Kéo thả để sắp xếp lại thứ tự cột hoặc sử dụng các nút Mũi tên. Tích chọn để ẩn/hiển thị cột."
-          type="info"
-          showIcon
-          style={{ fontSize: '12px' }}
+      {/* Resizable Left Handle */}
+      <div
+        onMouseDown={handleResizeMouseDown}
+        title="Kéo thả viền trái để thay đổi chiều rộng Drawer (Kích thước được lưu tự động)"
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: '6px',
+          cursor: 'ew-resize',
+          zIndex: 100,
+          backgroundColor: 'transparent',
+          transition: 'background-color 0.2s',
+        }}
+        className="hover:bg-blue-500/40 active:bg-blue-600/60"
+      />
+      {extraTabContent ? (
+        <Tabs
+          defaultActiveKey="columns"
+          items={[
+            {
+              key: 'columns',
+              label: (
+                <Space>
+                  <TableOutlined />
+                  <span className="font-semibold">Cấu hình cột bảng</span>
+                </Space>
+              ),
+              children: columnsContent,
+            },
+            {
+              key: 'process',
+              label: (
+                <Space>
+                  <SettingOutlined />
+                  <span className="font-semibold">{extraTabTitle}</span>
+                </Space>
+              ),
+              children: extraTabContent,
+            },
+          ]}
         />
-
-        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
-          <List
-            size="small"
-            dataSource={columns}
-            renderItem={(item, index) => {
-              const isFirst = index === 0;
-              const isLast = index === columns.length - 1;
-
-              const currentIcon = item.icon !== undefined && item.icon !== '' ? item.icon : getDefaultIcon(item.key);
-
-              return (
-                <div
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDrop={(e) => handleDrop(e, index)}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    padding: '12px',
-                    marginBottom: '8px',
-                    borderRadius: '8px',
-                    border: `1px solid ${token.colorBorderSecondary}`,
-                    background: draggedIndex === index ? token.colorFillAlter : token.colorBgContainer,
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                    opacity: item.visible ? 1 : 0.6,
-                    cursor: 'grab',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }}>
-                    <div style={{ cursor: 'grab', color: token.colorTextDescription }}>
-                      <HolderOutlined />
-                    </div>
-
-                    <Checkbox checked={item.visible} onChange={() => handleToggleVisibility(index)} />
-
-                    <div style={{ flex: 1 }}>
-                      <Input
-                        size="small"
-                        value={item.title}
-                        onChange={(e) => handleRename(index, e.target.value)}
-                        placeholder={item.originalTitle}
-                        prefix={currentIcon !== 'none' && renderIconHelper(currentIcon)}
-                        addonBefore={
-                          <span style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                            Gốc: {item.originalTitle}
-                          </span>
-                        }
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-
-                    <Space size={2}>
-                      <Tooltip title="Di chuyển lên">
-                        <Button
-                          size="small"
-                          type="text"
-                          icon={<ArrowUpOutlined />}
-                          disabled={isFirst}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveColumn(index, 'up');
-                          }}
-                        />
-                      </Tooltip>
-                      <Tooltip title="Di chuyển xuống">
-                        <Button
-                          size="small"
-                          type="text"
-                          icon={<ArrowDownOutlined />}
-                          disabled={isLast}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveColumn(index, 'down');
-                          }}
-                        />
-                      </Tooltip>
-                    </Space>
-                  </div>
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: '8px',
-                      marginTop: '8px',
-                      paddingLeft: '24px',
-                    }}
-                  >
-                    <span style={{ fontSize: '11px', color: token.colorTextDescription }}>Độ rộng (px):</span>
-                    <InputNumber
-                      size="small"
-                      min={50}
-                      max={1000}
-                      value={item.width}
-                      onChange={(val) => handleResize(index, val)}
-                      placeholder="Tự động"
-                      style={{ width: '75px' }}
-                    />
-                    {item.width && (
-                      <Button
-                        size="small"
-                        type="link"
-                        onClick={() => handleResize(index, null)}
-                        style={{ padding: 0, fontSize: '11px', marginRight: '4px' }}
-                      >
-                        Reset
-                      </Button>
-                    )}
-
-                    <span style={{ fontSize: '11px', color: token.colorTextDescription, marginLeft: '8px' }}>
-                      Icon:
-                    </span>
-                    <Space size={4}>
-                      <Select
-                        size="small"
-                        style={{ width: '130px' }}
-                        value={item.icon || ''}
-                        onChange={(val) => handleSelectIcon(index, val)}
-                        options={AVAILABLE_ICONS}
-                        popupMatchSelectWidth={false}
-                      />
-                      <Tooltip title="Tìm kiếm tất cả icon Ant Design & Lucide">
-                        <Button
-                          size="small"
-                          icon={<SearchOutlined />}
-                          onClick={() => {
-                            setActiveColIndex(index);
-                            setPickerOpen(true);
-                          }}
-                        />
-                      </Tooltip>
-                    </Space>
-                  </div>
-                </div>
-              );
-            }}
-          />
-        </div>
-
-        <Divider style={{ margin: '8px 0' }} />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <Button type="primary" icon={<SaveOutlined />} onClick={() => handleSave(false)} loading={saving} block>
-            Lưu cấu hình cá nhân
-          </Button>
-
-          {isDanhDo && (
-            <Tooltip title="Cập nhật cấu hình này làm mẫu chung cho tất cả nhân viên khác">
-              <Button
-                type="dashed"
-                danger
-                icon={<SaveOutlined />}
-                onClick={() => handleSave(true)}
-                loading={saving}
-                block
-              >
-                Lưu làm mẫu mặc định (danhdo@gmail.com)
-              </Button>
-            </Tooltip>
-          )}
-        </div>
-      </div>
+      ) : (
+        columnsContent
+      )}
 
       <IconPickerModal
         open={pickerOpen}

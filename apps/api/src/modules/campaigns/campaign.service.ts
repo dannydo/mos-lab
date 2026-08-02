@@ -83,23 +83,32 @@ export class CampaignService {
       }),
     ]);
 
-    const items: Campaign[] = campaigns.map((c) => ({
-      id: c.id,
-      name: c.name,
-      slug: c.slug,
-      description: c.description || null,
-      startDate: c.startDate ? c.startDate.toISOString().split('T')[0] : null,
-      endDate: c.endDate ? c.endDate.toISOString().split('T')[0] : null,
-      status: c.status as CampaignStatus,
-      createdBy: c.createdBy,
-      createdAt: c.createdAt.toISOString(),
-      updatedAt: c.updatedAt.toISOString(),
-      _count: {
-        customers: c._count.customers,
-        touchpoints: c._count.touchpoints,
-        promotions: c._count.promotions,
-      },
-    }));
+    const items: Campaign[] = campaigns.map((c) => {
+      let assignedStaffIds: number[] = [];
+      if ((c as any).assignedStaffIds) {
+        try {
+          assignedStaffIds = JSON.parse((c as any).assignedStaffIds);
+        } catch {}
+      }
+      return {
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        description: c.description || null,
+        startDate: c.startDate ? c.startDate.toISOString().split('T')[0] : null,
+        endDate: c.endDate ? c.endDate.toISOString().split('T')[0] : null,
+        status: c.status as CampaignStatus,
+        createdBy: c.createdBy,
+        assignedStaffIds,
+        createdAt: c.createdAt.toISOString(),
+        updatedAt: c.updatedAt.toISOString(),
+        _count: {
+          customers: c._count.customers,
+          touchpoints: c._count.touchpoints,
+          promotions: c._count.promotions,
+        },
+      };
+    });
 
     return {
       items,
@@ -248,6 +257,10 @@ export class CampaignService {
           endDate,
           status: 'ACTIVE',
           createdBy: validStaffId,
+          assignedStaffIds:
+            dto.assignedStaffIds && Array.isArray(dto.assignedStaffIds) && dto.assignedStaffIds.length > 0
+              ? JSON.stringify(dto.assignedStaffIds)
+              : null,
         },
       });
 
@@ -321,6 +334,12 @@ export class CampaignService {
     if (dto.startDate !== undefined) updateData.startDate = dto.startDate ? new Date(dto.startDate) : null;
     if (dto.endDate !== undefined) updateData.endDate = dto.endDate ? new Date(dto.endDate) : null;
     if (dto.status !== undefined) updateData.status = dto.status;
+    if (dto.assignedStaffIds !== undefined) {
+      updateData.assignedStaffIds =
+        dto.assignedStaffIds && Array.isArray(dto.assignedStaffIds) && dto.assignedStaffIds.length > 0
+          ? JSON.stringify(dto.assignedStaffIds)
+          : null;
+    }
 
     if (dto.slug !== undefined || dto.name !== undefined) {
       let targetSlug = dto.slug ? slugify(dto.slug) : slugify(dto.name || existing.name);
@@ -1453,6 +1472,11 @@ export class CampaignService {
       endDate: c.endDate ? new Date(c.endDate).toISOString().split('T')[0] : null,
       status: c.status as CampaignStatus,
       createdBy: c.createdBy,
+      assignedStaffIds: c.assignedStaffIds
+        ? typeof c.assignedStaffIds === 'string'
+          ? JSON.parse(c.assignedStaffIds) || []
+          : c.assignedStaffIds
+        : [],
       creatorName: c.creator?.displayName || c.creator?.username || null,
       createdAt: new Date(c.createdAt).toISOString(),
       updatedAt: new Date(c.updatedAt).toISOString(),

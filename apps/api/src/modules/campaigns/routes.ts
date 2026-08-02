@@ -1,3 +1,4 @@
+// Campaign Routes
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { requireAuth, requireCampaignAdmin } from '../../middlewares/auth.js';
 import { CampaignService } from './campaign.service.js';

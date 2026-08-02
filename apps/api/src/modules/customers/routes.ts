@@ -9,6 +9,7 @@ import { bookingAuditRoutes } from './routes/booking-audit.routes.js';
 import { BookingAuditService } from './services/booking-audit.service.js';
 import { registerLocaTouchpointRoutes } from './routes/loca-touchpoint.routes.js';
 import { AllocationService } from '../allocation/allocation.service.js';
+import { TeamService } from '../teams/team.service.js';
 
 export async function customerRoutes(fastify: FastifyInstance) {
   // Start automated allocation expiration cronjob
@@ -2975,9 +2976,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const result = Array.from(uniqueStaffMap.values());
       if (role === 'booker' || role === 'telesales') {
-        return result.filter(
-          (s) => ['telesales', 'booker'].includes(s.role?.toLowerCase() || '') || s.displayName === 'Tâm Nguyễn'
+        const bkIds = await TeamService.getActiveStaffIdsWithFallback(fastify, 'BK', 'ACTIVE_BK_STAFF_CONFIG');
+        const teleIds = await TeamService.getActiveStaffIdsWithFallback(
+          fastify,
+          'BK_TELESALES',
+          'ACTIVE_BK_TELESALES_STAFF_CONFIG'
         );
+        const allBkIds = Array.from(new Set([...(bkIds || []), ...(teleIds || [])]));
+
+        if (allBkIds.length > 0) {
+          const filtered = result.filter((s) => {
+            const legId = Number(s.legacyStaffId);
+            const sysId = Number(s.id);
+            return allBkIds.includes(legId) || allBkIds.includes(sysId);
+          });
+          if (filtered.length > 0) return filtered;
+        }
+        return result.filter((s) => ['telesales', 'booker'].includes(s.role?.toLowerCase() || ''));
       }
       return result;
     } catch (error: SafeAny) {

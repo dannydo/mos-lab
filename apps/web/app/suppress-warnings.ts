@@ -51,7 +51,11 @@ console.error = (...args: SafeAny[]) => {
       args[0].includes('Peer connection closed') ||
       args[0].includes('Peer connection undefined') ||
       args[0].includes('SessionDescriptionHandler') ||
-      args[0].includes('registering a cleanup function after unmount'))
+      args[0].includes('registering a cleanup function after unmount') ||
+      args[0].includes('hydration-mismatch') ||
+      args[0].includes('Hydration failed') ||
+      args[0].includes('Text content did not match') ||
+      args[0].includes("server rendered HTML didn't match"))
   ) {
     return;
   }

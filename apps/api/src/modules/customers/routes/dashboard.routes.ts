@@ -152,11 +152,20 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
   // PUT /api/loca/config
   // Save touchpoint config for LoCa campaign (Admins only)
   fastify.put('/loca/config', { preHandler: [requireAuth] }, async (request, reply) => {
-    const user = request.user as { role: string };
-    if (user.role !== 'admin') {
+    const user = request.user as { role: string; username?: string; email?: string };
+    const isAuthorized =
+      user.role === 'admin' ||
+      user.role === 'manager' ||
+      user.role === 'cs' ||
+      user.role === 'control' ||
+      user.username === 'admin' ||
+      user.username === 'danhdo@gmail.com' ||
+      user.email === 'danhdo@gmail.com';
+
+    if (!isAuthorized) {
       return reply.status(403).send({
         error: 'Forbidden',
-        message: 'Chỉ Admin mới có quyền cấu hình touchpoints.',
+        message: 'Chỉ Admin, Manager, CS và Control mới có quyền cấu hình touchpoints.',
       });
     }
 

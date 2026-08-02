@@ -5,6 +5,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ConfigProvider, theme as antdTheme } from 'antd';
 import viVN from 'antd/locale/vi_VN';
 import { safeStorage } from '../lib/safe-storage';
+import { themeTokens } from '@mos-lab/shared';
 
 type ThemeMode = 'light' | 'dark';
 
@@ -50,6 +51,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isDark = themeMode === 'dark';
+  const currentTokens = isDark ? themeTokens.colors.dark : themeTokens.colors.light;
 
   return (
     <ThemeContext.Provider value={{ themeMode, toggleTheme }}>
@@ -58,26 +60,26 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         theme={{
           algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
           token: {
-            colorPrimary: isDark ? '#D4A84B' : '#9E7118',
-            colorInfo: isDark ? '#D4A84B' : '#9E7118',
-            colorSuccess: '#52c41a',
-            colorWarning: '#faad14',
-            colorError: '#ff4d4f',
+            colorPrimary: currentTokens.primary,
+            colorInfo: currentTokens.info,
+            colorSuccess: currentTokens.success,
+            colorWarning: currentTokens.warning,
+            colorError: currentTokens.error,
             controlOutline: isDark ? 'rgba(212, 168, 75, 0.25)' : 'rgba(158, 113, 24, 0.25)',
             controlOutlineWidth: 2,
-            borderRadius: 8,
-            borderRadiusLG: 12,
-            borderRadiusSM: 6,
-            borderRadiusXS: 4,
-            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            colorBgContainer: isDark ? '#111827' : '#ffffff',
-            colorBgElevated: isDark ? '#1e293b' : '#ffffff',
-            colorBgLayout: isDark ? '#0b0f19' : '#f5f7fa',
-            colorBorder: isDark ? '#1f2937' : '#e5e7eb',
-            colorBorderSecondary: isDark ? '#374151' : '#f3f4f6',
-            colorText: isDark ? '#f8fafc' : '#0f172a',
-            colorTextSecondary: isDark ? '#94a3b8' : '#64748b',
-            colorTextDescription: isDark ? '#94a3b8' : '#64748b',
+            borderRadius: themeTokens.radii.md,
+            borderRadiusLG: themeTokens.radii.xl,
+            borderRadiusSM: themeTokens.radii.sm,
+            borderRadiusXS: themeTokens.radii.xs,
+            fontFamily: themeTokens.typography.fontFamily,
+            colorBgContainer: currentTokens.bgContainer,
+            colorBgElevated: currentTokens.bgElevated,
+            colorBgLayout: currentTokens.bgLayout,
+            colorBorder: currentTokens.borderColor,
+            colorBorderSecondary: currentTokens.borderSecondary,
+            colorText: currentTokens.textPrimary,
+            colorTextSecondary: currentTokens.textSecondary,
+            colorTextDescription: currentTokens.textSecondary,
           },
           components: {
             DatePicker: {
@@ -93,9 +95,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             Table: {
               padding: 12,
               paddingContentVertical: 10,
-              headerBg: isDark ? '#1e293b' : '#f8fafc',
-              headerColor: isDark ? '#f8fafc' : '#1e293b',
-              headerSplitColor: isDark ? '#334155' : '#e2e8f0',
+              headerBg: isDark ? '#1e293b' : '#f1f5f9',
+              headerColor: isDark ? '#f8fafc' : '#0f172a',
+              headerSplitColor: isDark ? '#334155' : '#cbd5e1',
               rowHoverBg: isDark ? 'rgba(212, 168, 75, 0.08)' : 'rgba(212, 168, 75, 0.05)',
               borderColor: isDark ? '#1f2937' : '#e2e8f0',
             },

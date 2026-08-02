@@ -11,6 +11,7 @@ export interface Campaign {
   endDate: string | null;
   status: CampaignStatus;
   createdBy: number | null;
+  assignedStaffIds?: number[] | null;
   createdAt: string;
   updatedAt: string;
   _count?: {
@@ -110,6 +111,7 @@ export interface CreateCampaignDto {
   description?: string;
   startDate?: string;
   endDate?: string;
+  assignedStaffIds?: number[] | null;
   touchpoints?: CreateCampaignTouchpointDto[];
   promotions?: CreateCampaignPromotionDto[];
 }
@@ -121,6 +123,7 @@ export interface UpdateCampaignDto {
   startDate?: string;
   endDate?: string;
   status?: CampaignStatus;
+  assignedStaffIds?: number[] | null;
   touchpoints?: CreateCampaignTouchpointDto[];
   promotions?: CreateCampaignPromotionDto[];
 }

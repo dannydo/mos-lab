@@ -104,11 +104,13 @@ export const getLocaColumns = ({
             }}
           />
           <div>
-            <div
-              style={{ fontWeight: '600', color: 'var(--client-name-color)' }}
-              className="hover:underline transition-all"
-            >
-              {text}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span
+                style={{ fontWeight: '600', color: 'var(--client-name-color)' }}
+                className="hover:underline transition-all"
+              >
+                {text}
+              </span>
             </div>
             {record.phone && (
               <div

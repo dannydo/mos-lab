@@ -26,6 +26,7 @@ import {
   Tooltip,
   message,
 } from 'antd';
+import { GoogleSheetColorPicker } from '../../../components/GoogleSheetColorPicker';
 import {
   SearchOutlined,
   EyeOutlined,
@@ -477,17 +478,6 @@ export default function NycCampaignPage() {
                   }}
                 />
               </Tooltip>
-              {currentUser?.role === 'admin' && (
-                <Tooltip title="Cấu hình Quy trình">
-                  <Button
-                    type="primary"
-                    size="middle"
-                    icon={<SettingOutlined />}
-                    onClick={handleOpenSettings}
-                    style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}
-                  />
-                </Tooltip>
-              )}
             </Space>
           </div>
         </div>
@@ -826,15 +816,7 @@ export default function NycCampaignPage() {
                               label="Màu sắc đại diện"
                               rules={[{ required: true, message: 'Chọn màu' }]}
                             >
-                              <Select
-                                options={[
-                                  { value: 'blue', label: 'Xanh dương' },
-                                  { value: 'cyan', label: 'Xanh ngọc' },
-                                  { value: 'green', label: 'Xanh lá' },
-                                  { value: 'orange', label: 'Cam' },
-                                  { value: 'red', label: 'Đỏ' },
-                                ]}
-                              />
+                              <GoogleSheetColorPicker size="small" />
                             </Form.Item>
                           </Col>
                         </Row>

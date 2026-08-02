@@ -2,13 +2,21 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Space, Typography, Tag, Result, Spin, Tooltip } from 'antd';
-import { FullscreenOutlined, ReloadOutlined, SafetyCertificateOutlined, ClusterOutlined } from '@ant-design/icons';
+import {
+  FullscreenOutlined,
+  ReloadOutlined,
+  SafetyCertificateOutlined,
+  ClusterOutlined,
+  BgColorsOutlined,
+} from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
 import { PageHeader } from '../../../components/ui';
+import { useRouter } from 'next/navigation';
 
 export default function ArchitecturePage() {
   const { themeMode } = useTheme();
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [iframeKey, setIframeKey] = useState(Date.now());
@@ -108,6 +116,9 @@ export default function ArchitecturePage() {
         subtitle="Trực quan hóa đồ thị liên kết giữa API Fastify, Schema Prisma CSDL, React Components & Shared DTOs"
         extra={
           <Space>
+            <Button icon={<BgColorsOutlined />} onClick={() => router.push('/dashboard/design-system')}>
+              Xem Design System
+            </Button>
             <Tooltip title="Tải lại iframe sơ đồ kiến trúc">
               <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
                 Làm mới

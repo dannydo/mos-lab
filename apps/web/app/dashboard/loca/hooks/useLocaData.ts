@@ -34,6 +34,7 @@ export interface UseLocaDataOptions {
   onSuccess?: (msg: string) => void;
   onError?: (msg: string) => void;
   onWarning?: (msg: string) => void;
+  onCloseDrawer?: () => void;
 }
 
 const DEFAULT_LOCA_CONFIGS: TabConfigs = {
@@ -453,6 +454,9 @@ export function useLocaData(options?: UseLocaDataOptions) {
       setConfigs(updatedConfigs);
       setSettingsModalVisible(false);
       setActiveTouchpointKey('ALL');
+      if (optionsRef.current.onCloseDrawer) {
+        optionsRef.current.onCloseDrawer();
+      }
     } catch (err) {
       console.error('Save configs failed:', err);
       optionsRef.current.onError?.((err as SafeAny).response?.data?.message || 'Lưu cấu hình thất bại.');

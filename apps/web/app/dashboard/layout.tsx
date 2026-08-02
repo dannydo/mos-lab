@@ -21,6 +21,7 @@ import {
   AudioOutlined,
   ShopOutlined,
   RocketOutlined,
+  BgColorsOutlined,
 } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
@@ -132,6 +133,7 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     if (pathname.includes('/dashboard/referrals')) return 'referrals';
     if (pathname.includes('/dashboard/catalog')) return 'catalog';
     if (pathname.includes('/dashboard/architecture')) return 'architecture';
+    if (pathname.includes('/dashboard/design-system')) return 'design-system';
     return 'customers-all';
   };
 
@@ -230,6 +232,9 @@ function SidebarMenu({ themeMode, token, userRole }: { themeMode: string; token:
     menuItems.push(createNavItem('catalog', <ShopOutlined />, 'Quản lý Catalog', '/dashboard/catalog'));
     menuItems.push(
       createNavItem('architecture', <ShareAltOutlined />, 'Sơ đồ Kiến trúc AI', '/dashboard/architecture')
+    );
+    menuItems.push(
+      createNavItem('design-system', <BgColorsOutlined />, 'Hệ Thống Thiết Kế', '/dashboard/design-system')
     );
   }
 
@@ -456,6 +461,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div
         className="flex h-screen w-screen items-center justify-center"
         style={{ background: token.colorBgLayout, color: token.colorText }}
+        suppressHydrationWarning
       >
         Tải thông tin phiên đăng nhập...
       </div>
@@ -501,11 +507,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <OmiCallProvider>
-      <Layout style={{ minHeight: '100vh' }}>
+      <Layout style={{ minHeight: '100vh' }} suppressHydrationWarning>
         <Sider
           trigger={null}
           collapsible
           collapsed={collapsed}
+          suppressHydrationWarning
           style={{
             background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
             borderRight: `1px solid ${token.colorBorderSecondary}`,
@@ -553,7 +560,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               padding: 0,
               background: themeMode === 'dark' ? '#141414' : '#ffffff',
               border: `1px solid ${themeMode === 'dark' ? '#303030' : '#d9d9d9'}`,
-              color: '#D4A84B',
+              color: themeMode === 'dark' ? '#D4A84B' : '#855b0e',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
               cursor: 'pointer',
               transition: 'left 0.2s ease, opacity 0.3s ease, background 0.3s',
@@ -730,7 +737,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Button
                   type="text"
                   aria-label="Cuộc gọi hôm nay"
-                  icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+                  icon={<PhoneOutlined style={{ color: themeMode === 'dark' ? '#D4A84B' : '#0284c7' }} />}
                   onClick={() => setIsDailyCallsOpen(true)}
                   style={{
                     fontSize: '16px',
@@ -750,9 +757,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 title={themeMode === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
                 icon={
                   themeMode === 'dark' ? (
-                    <SunOutlined style={{ color: '#FAAD14' }} />
+                    <SunOutlined style={{ color: '#f59e0b', fontSize: '18px' }} />
                   ) : (
-                    <MoonOutlined style={{ color: '#1890ff' }} />
+                    <MoonOutlined style={{ color: '#4f46e5', fontSize: '18px' }} />
                   )
                 }
                 onClick={toggleTheme}
@@ -774,8 +781,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         : undefined
                     }
                     alt={user?.name ? `Ảnh đại diện ${user.name}` : 'Ảnh đại diện người dùng'}
-                    icon={<UserOutlined />}
-                    style={{ backgroundColor: token.colorPrimary, color: '#000' }}
+                    icon={<UserOutlined style={{ color: '#ffffff' }} />}
+                    style={{ backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb', color: '#ffffff' }}
                   />
                 </div>
               </Dropdown>

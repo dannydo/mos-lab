@@ -52,6 +52,14 @@
     <span className="tabular-nums">...</span>
     ```
 
+## 6. Single Source of Truth Design Tokens & Responsive / Density Standardization Rules
+* **Lưu trữ Design Tokens tập trung**: Toàn bộ quy chuẩn màu sắc, bo góc, typography, responsive breakpoints (`phone: 375`, `ipad: 768`, `laptop: 1024`, `desktop: 1440`, `fourK: 2560`) và mật độ hiển thị (`compact`, `comfort`, `spacious`) bắt buộc phải lấy từ `themeTokens` trong `@mos-lab/shared` (`packages/shared/src/theme/tokens.ts`).
+* **Tái sử dụng UI Primitives**: Ưu tiên sử dụng các UI components dùng chung tại `apps/web/components/ui` (`StatCard`, `SectionCard`, `PageHeader`, `StatusTag`, `IconText`, `DensityContainer`) thay vì viết lại các khối giao diện tương tự rải rác.
+
+## 7. Strict Vertical Alignment (v-align) & Flex Centering Rules
+* **Tuyệt đối KHÔNG sử dụng class `align-center`**: Class `align-center` không tồn tại trong Tailwind CSS. Khi cần căn giữa theo chiều dọc trong flex container, luôn luôn sử dụng class `items-center` (`align-items: center`).
+* **Căn giữa chuẩn cho Badges, Tags & Pills**: Tất cả các thành phần dạng nhãn (Thẻ Tag, Badges, Pills, Status Badge) bắt buộc phải dùng `inline-flex items-center justify-center leading-none` kèm padding cân đối (`py-1 px-2.5`) để văn bản và biểu tượng vector luôn nằm chính giữa tuyệt đối theo chiều dọc, không bị lệch lề trên hay lề dưới.
+
 ---
 
 # Booker Salary API Configuration & Usage Rules

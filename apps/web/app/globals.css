@@ -635,24 +635,24 @@ body {
 .light-theme {
   color-scheme: light;
   --background: #f5f7fa;
-  --foreground: #171717;
-  --avatar-bg: #e6e8eb;
-  --avatar-border: #d9d9d9;
-  --client-name-color: #111827;
-  --client-phone-color: #4b5563;
-  --client-desc-color: #4b5563;
-  --color-gold: #9e7118;
+  --foreground: #0f172a;
+  --avatar-bg: #e2e8f0;
+  --avatar-border: #cbd5e1;
+  --client-name-color: #0f172a;
+  --client-phone-color: #334155;
+  --client-desc-color: #334155;
+  --color-gold: #855b0e;
 }
 
 .dark-theme {
   color-scheme: dark;
   --background: #0b0f19;
-  --foreground: #ededed;
-  --avatar-bg: #262626;
-  --avatar-border: #2a2a2a;
+  --foreground: #f8fafc;
+  --avatar-bg: #1e293b;
+  --avatar-border: #334155;
   --client-name-color: #f8fafc;
-  --client-phone-color: #9ca3af;
-  --client-desc-color: #9ca3af;
+  --client-phone-color: #cbd5e1;
+  --client-desc-color: #cbd5e1;
   --color-gold: #d4a84b;
 }
 
@@ -781,8 +781,8 @@ body {
 }
 
 .light-theme .ant-table-thead > tr > th {
-  background: #f8fafc !important;
-  color: #1e293b !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
   border-bottom: 1px solid #cbd5e1 !important;
   font-weight: 700 !important;
   font-size: 13px !important;
