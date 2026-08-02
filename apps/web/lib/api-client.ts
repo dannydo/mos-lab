@@ -93,6 +93,7 @@ import {
   MissedLog,
   SmsTemplate,
   SaveSmsTemplateInput,
+  BookingConfirmationTemplate,
   SendSmsRequest,
   SendSmsResponse,
   CustomerSmsHistoryItem,
@@ -1043,6 +1044,31 @@ export const apiClient = {
       const response = await api.get('/sms/templates');
       return response.data;
     },
+    getBookingTemplates: async (): Promise<BookingConfirmationTemplate[]> => {
+      const response = await api.get('/sms/booking-templates');
+      return response.data;
+    },
+    saveBookingTemplate: async (
+      data: BookingConfirmationTemplate
+    ): Promise<{
+      success: boolean;
+      template: BookingConfirmationTemplate;
+      templates: BookingConfirmationTemplate[];
+    }> => {
+      const response = await api.post('/sms/booking-templates', data);
+      return response.data;
+    },
+    deleteBookingTemplate: async (
+      id: string
+    ): Promise<{ success: boolean; templates: BookingConfirmationTemplate[] }> => {
+      const response = await api.delete(`/sms/booking-templates/${id}`);
+      return response.data;
+    },
+    resetBookingTemplates: async (): Promise<{ success: boolean; templates: BookingConfirmationTemplate[] }> => {
+      const response = await api.post('/sms/booking-templates/reset');
+      return response.data;
+    },
+
     saveTemplate: async (
       data: SaveSmsTemplateInput
     ): Promise<{ success: boolean; template: SmsTemplate; templates: SmsTemplate[] }> => {

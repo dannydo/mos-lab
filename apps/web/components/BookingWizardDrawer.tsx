@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Drawer, Steps, Button, Select, DatePicker, Radio, Input, theme, message, Card, Tag } from 'antd';
+import { Drawer, Steps, Button, Select, DatePicker, Radio, Input, theme, message, Card, Tag, Modal } from 'antd';
 import {
   PhoneOutlined,
   UserOutlined,
@@ -9,11 +9,25 @@ import {
   CalendarOutlined,
   InboxOutlined,
   GiftOutlined,
+  CopyOutlined,
+  SaveOutlined,
+  CheckOutlined,
+  MessageOutlined,
+  ReloadOutlined,
+  SettingOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../lib/api-client';
-import { vietnameseSearchFilter, CustomerCampaignPromotionInfo, CustomerCampaignPromotionItem } from '@mos-lab/shared';
+import {
+  vietnameseSearchFilter,
+  CustomerCampaignPromotionInfo,
+  CustomerCampaignPromotionItem,
+  BookingConfirmationTemplate,
+  DEFAULT_BOOKING_TEMPLATES,
+  BOOKING_TEMPLATE_TAGS,
+} from '@mos-lab/shared';
 
 // Shared modules
 import { STORES, FALLBACK_SERVICES, CHANNELS } from './booking/constants';
@@ -23,6 +37,7 @@ import { useSlotMatrix } from './booking/useSlotMatrix';
 import { useCustomerInsights } from './booking/useCustomerInsights';
 import { TechnicianSelector } from './booking/TechnicianSelector';
 import { SlotMatrixGrid } from './booking/SlotMatrixGrid';
+import { BookingTemplateManagerModal } from './booking/BookingTemplateManagerModal';
 
 const { TextArea } = Input;
 
@@ -68,6 +83,32 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
   const [services, setServices] = useState<SafeAny[]>(FALLBACK_SERVICES);
   const [bookingChannel, setBookingChannel] = useState('FB');
   const [bookingNote, setBookingNote] = useState('');
+
+  // Step 4 Confirmation Template States
+  const [bookingCreated, setBookingCreated] = useState(false);
+  const [bookingTemplates, setBookingTemplates] = useState<BookingConfirmationTemplate[]>(DEFAULT_BOOKING_TEMPLATES);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('tpl_booking_no_tech');
+  const [customMessage, setCustomMessage] = useState<string>('');
+  const [savingTemplate, setSavingTemplate] = useState<boolean>(false);
+  const [loadingTemplates, setLoadingTemplates] = useState<boolean>(false);
+  const [isManagerModalOpen, setIsManagerModalOpen] = useState<boolean>(false);
+
+  // 20:00 Late Slot Confirmation Modal States
+  const [isLateSlotModalOpen, setIsLateSlotModalOpen] = useState<boolean>(false);
+  const [pendingSlot, setPendingSlot] = useState<string | null>(null);
+
+  const handleSelectSlot = (slot: string | null) => {
+    if (!slot) {
+      setSelectedSlot(null);
+      return;
+    }
+    if (slot === '20:00') {
+      setPendingSlot(slot);
+      setIsLateSlotModalOpen(true);
+      return;
+    }
+    setSelectedSlot(slot);
+  };
 
   // Custom Hooks
   const { favoriteTechs, comboBalances, suggestedServices, lastUsedServices, suggestedBranch } = useCustomerInsights(
@@ -137,6 +178,122 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     getCategorizedSlots,
   } = useSlotMatrix(selectedCN, selectedCV);
 
+  // Helper for Vietnamese Day of Week without accent
+  const getDayOfWeekNoAccent = useCallback((date: SafeAny): string => {
+    if (!date) return 'Chu Nhat';
+    const d = typeof date.format === 'function' ? date : dayjs(date);
+    const dayNum = d.day();
+    const map: { [key: number]: string } = {
+      0: 'Chu Nhat',
+      1: 'Thu Hai',
+      2: 'Thu Ba',
+      3: 'Thu Tu',
+      4: 'Thu Nam',
+      5: 'Thu Sau',
+      6: 'Thu Bay',
+    };
+    return map[dayNum] || 'Chu Nhat';
+  }, []);
+
+  // Helper for Cycle Days ({chu_ky_ngay})
+  const getCycleDays = useCallback((targetDate: SafeAny, customer: SafeAny): number => {
+    const lastVisit = customer?.lastVisit || customer?.last_order_booking || customer?.lastOrderBooking;
+    if (!lastVisit) return 787;
+    const tDate = typeof targetDate?.format === 'function' ? targetDate : dayjs(targetDate);
+    const lDate = dayjs(lastVisit);
+    if (!tDate.isValid() || !lDate.isValid()) return 787;
+    const diff = tDate.diff(lDate, 'day');
+    return diff > 0 ? diff : 787;
+  }, []);
+
+  // Helper to evaluate tags in template
+  const evaluateBookingTemplate = useCallback(
+    (templateContent: string): string => {
+      if (!templateContent) return '';
+      const customerName = isNewLead
+        ? leadName
+        : selectedCustomer?.name || selectedCustomer?.customerName || 'Khách hàng';
+      const branchName = selectedCN?.name || '159 - 159A Đề Thám, Quận 1';
+      const slotTime = selectedSlot || '1:30 PM';
+      const dayOfWeek = getDayOfWeekNoAccent(rawBookingDate);
+      const formattedDate = rawBookingDate
+        ? typeof rawBookingDate.format === 'function'
+          ? rawBookingDate.format('DD/MM/YYYY')
+          : dayjs(rawBookingDate).format('DD/MM/YYYY')
+        : dayjs().format('DD/MM/YYYY');
+      const techName = selectedCV?.displayName || 'Chuyên viên';
+      const cycleDays = getCycleDays(rawBookingDate, selectedCustomer);
+
+      return templateContent
+        .replace(/\{ten_khach\}/g, customerName)
+        .replace(/\{chi_nhanh\}/g, branchName)
+        .replace(/\{gio_hen\}/g, slotTime)
+        .replace(/\{thu_ngay\}/g, dayOfWeek)
+        .replace(/\{ngay_thang_nam\}/g, formattedDate)
+        .replace(/\{ten_chuyen_vien\}/g, techName)
+        .replace(/\{chu_ky_ngay\}/g, String(cycleDays));
+    },
+    [
+      isNewLead,
+      leadName,
+      selectedCustomer,
+      selectedCN,
+      selectedSlot,
+      rawBookingDate,
+      selectedCV,
+      getDayOfWeekNoAccent,
+      getCycleDays,
+    ]
+  );
+
+  // Helper to auto select template based on priority rule: 20:00 slot > Has Tech > No Tech
+  const autoSelectTemplate = useCallback(
+    (templatesList: BookingConfirmationTemplate[]) => {
+      const isLateSlot = selectedSlot && (selectedSlot.includes('20:00') || selectedSlot === '20:00');
+      const hasTech = selectedCV !== null && selectedCV !== undefined;
+
+      let target: BookingConfirmationTemplate | undefined;
+      if (isLateSlot && hasTech) {
+        target = templatesList.find(
+          (t) => t.type === 'has_tech_late_slot' || t.id === 'tpl_booking_has_tech_late_slot'
+        );
+      } else if (isLateSlot) {
+        target = templatesList.find((t) => t.type === 'late_slot' || t.id === 'tpl_booking_late_slot');
+      } else if (hasTech) {
+        target = templatesList.find((t) => t.type === 'has_tech' || t.id === 'tpl_booking_has_tech');
+      } else {
+        target = templatesList.find((t) => t.type === 'no_tech' || t.id === 'tpl_booking_no_tech');
+      }
+
+      if (!target && templatesList.length > 0) {
+        target = templatesList[0];
+      }
+
+      if (target) {
+        setSelectedTemplateId(target.id);
+        setCustomMessage(target.content);
+      }
+    },
+    [selectedSlot, selectedCV]
+  );
+
+  // Fetch templates from API
+  const fetchBookingTemplates = useCallback(async () => {
+    setLoadingTemplates(true);
+    try {
+      const list = await apiClient.sms.getBookingTemplates();
+      if (Array.isArray(list) && list.length > 0) {
+        setBookingTemplates(list);
+        return list;
+      }
+    } catch (err) {
+      console.error('Failed to fetch booking templates:', err);
+    } finally {
+      setLoadingTemplates(false);
+    }
+    return DEFAULT_BOOKING_TEMPLATES;
+  }, []);
+
   const { morning, afternoon, night } = getCategorizedSlots();
 
   const HARDCODED_OFF_DATES: { [name: string]: string[] } = {
@@ -152,34 +309,24 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
         return true;
       }
 
-      const cvName = ((cv && cv.displayName) || 'cẩm tiên').trim().toLowerCase();
+      if (!cv) {
+        return false;
+      }
+
+      const cvName = (cv.displayName || '').trim().toLowerCase();
       const cvNormalized = cvName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
       const dateStr = current.format('YYYY-MM-DD');
 
-      if (cvNormalized.includes('cam tien') || !cv) {
-        const dayOfWeek = current.day();
-        const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
-        if (dbDayStr === '2' || dateStr === '2026-07-27' || dateStr === '2026-07-26') {
-          return true;
-        }
-      }
+      const matchedStaffs = (staffList || []).filter(
+        (s: SafeAny) => s.id === cv.id || (s.displayName && s.displayName.trim().toLowerCase() === cvName)
+      );
 
-      const targetCV =
-        cv || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
-
-      const matchedStaffs = targetCV
-        ? (staffList || []).filter(
-            (s: SafeAny) => s.id === targetCV.id || (s.displayName && s.displayName.trim().toLowerCase() === cvName)
-          )
-        : [];
-
-      const fallbackOffDates = HARDCODED_OFF_DATES[cvName] ||
-        HARDCODED_OFF_DATES[cvNormalized] || ['2026-07-26', '2026-07-27'];
+      const fallbackOffDates = HARDCODED_OFF_DATES[cvName] || HARDCODED_OFF_DATES[cvNormalized] || [];
 
       const allApprovedOffDates: string[] = Array.from(
         new Set([
-          ...((targetCV && targetCV.approvedOffDates) || []),
+          ...(cv.approvedOffDates || []),
           ...matchedStaffs.flatMap((s: SafeAny) => s.approvedOffDates || []),
           ...fallbackOffDates,
         ])
@@ -190,7 +337,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
       }
 
       const allOffDays: string[] = Array.from(
-        new Set([...((targetCV && targetCV.offDays) || []), ...matchedStaffs.flatMap((s: SafeAny) => s.offDays || [])])
+        new Set([...(cv.offDays || []), ...matchedStaffs.flatMap((s: SafeAny) => s.offDays || [])])
       );
 
       if (allOffDays.length > 0) {
@@ -217,48 +364,27 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     (newDate: dayjs.Dayjs | null) => {
       if (!newDate) return;
       const cDayjs = dayjs(newDate);
-      const checkCV =
-        selectedCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
-
-      const adjusted = getNextAvailableDate(cDayjs, checkCV);
+      const adjusted = getNextAvailableDate(cDayjs, selectedCV);
       setRawBookingDate(dayjs(adjusted));
       setPickerNonce((prev) => prev + 1);
     },
-    [selectedCV, staffList, getNextAvailableDate, setRawBookingDate]
+    [selectedCV, getNextAvailableDate, setRawBookingDate, setPickerNonce]
   );
 
   const bookingDate = rawBookingDate;
 
   useEffect(() => {
-    const checkCV =
-      selectedCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
-    if (
-      rawBookingDate &&
-      (rawBookingDate.date() === 27 ||
-        rawBookingDate.date() === 26 ||
-        rawBookingDate.format('YYYY-MM-DD') === '2026-07-27' ||
-        rawBookingDate.format('YYYY-MM-DD') === '2026-07-26' ||
-        isCVOff(rawBookingDate, checkCV))
-    ) {
-      const adjusted = getNextAvailableDate(rawBookingDate.add(1, 'day'), checkCV);
+    if (rawBookingDate && (rawBookingDate.isBefore(dayjs().startOf('day')) || isCVOff(rawBookingDate, selectedCV))) {
+      const adjusted = getNextAvailableDate(rawBookingDate.add(1, 'day'), selectedCV);
       setRawBookingDate(dayjs(adjusted));
       setPickerNonce((prev) => prev + 1);
     }
-  }, [rawBookingDate, selectedCV, staffList, isCVOff, getNextAvailableDate, setRawBookingDate]);
+  }, [rawBookingDate, selectedCV, isCVOff, getNextAvailableDate, setRawBookingDate]);
 
   const safeBookingDate = useMemo(() => {
-    const checkCV =
-      selectedCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
     const target = bookingDate || dayjs();
-    const result = getNextAvailableDate(target, checkCV);
-    const rDate = result.date();
-    const rDay = result.day();
-    const dStr = result.format('YYYY-MM-DD');
-    if (rDate === 27 || rDate === 26 || rDay === 2 || dStr === '2026-07-27' || dStr === '2026-07-26') {
-      return getNextAvailableDate(dayjs(), checkCV);
-    }
-    return result;
-  }, [bookingDate, selectedCV, staffList, getNextAvailableDate]);
+    return getNextAvailableDate(target, selectedCV);
+  }, [bookingDate, selectedCV, getNextAvailableDate]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -319,6 +445,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
 
   const resetForm = () => {
     setCurrentStep(0);
+    setBookingCreated(false);
     setSelectedCV(null);
     setSelectedCN(null);
     if (initialCustomer) {
@@ -498,7 +625,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     setCurrentStep(step);
   };
 
-  const handleCreateBooking = async () => {
+  const [creatingBooking, setCreatingBooking] = useState(false);
+
+  const handleGoToStep4 = async () => {
     if (!selectedCN) {
       message.error('Vui lòng chọn chi nhánh');
       return;
@@ -539,6 +668,13 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
       }
     }
 
+    const list = await fetchBookingTemplates();
+    autoSelectTemplate(list);
+    setCurrentStep(3);
+  };
+
+  const handleFinalCreateBooking = async () => {
+    setCreatingBooking(true);
     try {
       const payload = {
         customerId: isNewLead ? null : selectedCustomer.legacyUserId || selectedCustomer.id,
@@ -550,7 +686,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
         serviceName: selectedService.name,
         technicianId: selectedCV?.id || null,
         technicianName: selectedCV?.displayName || 'Chuyên viên tự do',
-        bookingDate: bookingDate.format('YYYY-MM-DD'),
+        bookingDate: rawBookingDate.format('YYYY-MM-DD'),
         bookingTime: selectedSlot,
         bookingChannel,
         bookingNote: checkAndAppendLowerLashNote(bookingNote, comboBalances),
@@ -567,12 +703,55 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
       window.dispatchEvent(new CustomEvent('mos-customer-updated'));
       window.dispatchEvent(new CustomEvent('mos-call-log-saved'));
       window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'booking' } }));
+
+      setBookingCreated(true);
       onSuccess();
       onClose();
     } catch (err) {
       console.error('[BookingWizard] Failed to create booking:', err);
       message.error((err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi tạo lịch đặt hẹn.');
+    } finally {
+      setCreatingBooking(false);
     }
+  };
+
+  const handleCopyMessage = () => {
+    const text = evaluateBookingTemplate(customMessage);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      message.success('Đã sao chép tin nhắn xác nhận vào bộ nhớ tạm!');
+    } else {
+      message.error('Trình duyệt không hỗ trợ tự động sao chép.');
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!selectedTemplateId || !customMessage.trim()) return;
+    setSavingTemplate(true);
+    try {
+      const currentTpl = bookingTemplates.find((t) => t.id === selectedTemplateId);
+      const res = await apiClient.sms.saveBookingTemplate({
+        id: selectedTemplateId,
+        type: currentTpl?.type || 'no_tech',
+        title: currentTpl?.title || 'Mẫu đặt lịch',
+        content: customMessage,
+        isDefault: true,
+      });
+      if (res.success && res.templates) {
+        setBookingTemplates(res.templates);
+        message.success('Đã lưu mẫu tin nhắn thành công vào CSDL hệ thống!');
+      }
+    } catch (err) {
+      console.error('Failed to save template:', err);
+      message.error('Không thể lưu mẫu tin nhắn.');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const handleFinishWizard = () => {
+    onSuccess();
+    onClose();
   };
 
   useEffect(() => {
@@ -625,7 +804,12 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
         }}
         size="small"
         style={{ marginBottom: '24px' }}
-        items={[{ title: 'Chuyên viên' }, { title: 'Dịch vụ & KH & Khung Giờ' }, { title: 'Xác Nhận' }]}
+        items={[
+          { title: 'Chuyên viên' },
+          { title: 'Dịch Vụ & Thời Gian' },
+          { title: 'Xác Nhận' },
+          { title: 'Gửi Tin Nhắn' },
+        ]}
       />
 
       {/* STEP 0: SELECT TECHNICIAN (CV) */}
@@ -1208,11 +1392,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
                   onChange={(val) => {
                     if (!val) return;
                     const cDayjs = dayjs(val);
-                    const checkCV =
-                      selectedCV ||
-                      (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
-
-                    const adjusted = getNextAvailableDate(cDayjs, checkCV);
+                    const adjusted = getNextAvailableDate(cDayjs, selectedCV);
                     setBookingDate(dayjs(adjusted));
                     setPickerNonce((prev) => prev + 1);
                   }}
@@ -1222,21 +1402,12 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
                     if (!current) return false;
                     const cDayjs = dayjs(current);
                     if (cDayjs.isBefore(dayjs().startOf('day'))) return true;
-                    const checkCV =
-                      selectedCV ||
-                      (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
-                    return isCVOff(cDayjs, checkCV);
+                    return isCVOff(cDayjs, selectedCV);
                   }}
                   cellRender={(current, info) => {
                     if (info.type === 'date' && current) {
                       const cDayjs = dayjs(current);
-                      const checkCV =
-                        selectedCV ||
-                        (staffList || []).find((s: SafeAny) =>
-                          (s.displayName || '').toLowerCase().includes('cẩm tiên')
-                        );
-
-                      if (isCVOff(cDayjs, checkCV)) {
+                      if (isCVOff(cDayjs, selectedCV)) {
                         return (
                           <div
                             className="ant-picker-cell-inner ant-picker-cell-disabled"
@@ -1292,7 +1463,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
               slotMatrix={slotMatrix}
               loadingSlots={loadingSlots}
               selectedSlot={selectedSlot}
-              setSelectedSlot={setSelectedSlot}
+              setSelectedSlot={handleSelectSlot}
               selectedCN={selectedCN}
               morning={morning}
               afternoon={afternoon}
@@ -1437,13 +1608,283 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
             <Button
               type="primary"
               style={{ flex: 2, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-              onClick={handleCreateBooking}
+              onClick={handleGoToStep4}
             >
-              Xác nhận Đặt Lịch
+              Tiếp tục: Tạo tin nhắn xác nhận
             </Button>
           </div>
         </div>
       )}
+
+      {/* STEP 3: MESSAGE CONFIRMATION TEMPLATE */}
+      {currentStep === 3 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <Card
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span
+                  style={{ color: '#D4A84B', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <MessageOutlined /> TIN NHẮN MẪU XÁC NHẬN ĐẶT LỊCH
+                </span>
+                <Tag color="orange">Chờ xác nhận & Tạo lịch</Tag>
+              </div>
+            }
+            style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Template selector */}
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '6px',
+                  }}
+                >
+                  <label
+                    style={{
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                    }}
+                  >
+                    MẪU TIN NHẮN HỆ THỐNG:
+                  </label>
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<SettingOutlined />}
+                    onClick={() => setIsManagerModalOpen(true)}
+                    style={{ color: '#D4A84B', padding: 0 }}
+                  >
+                    ⚙️ Quản lý Mẫu
+                  </Button>
+                </div>
+                <Select
+                  style={{ width: '100%' }}
+                  value={selectedTemplateId}
+                  loading={loadingTemplates}
+                  onChange={(val) => {
+                    setSelectedTemplateId(val);
+                    const chosen = bookingTemplates.find((t) => t.id === val);
+                    if (chosen) setCustomMessage(chosen.content);
+                  }}
+                  options={bookingTemplates.map((t) => ({
+                    label: t.title,
+                    value: t.id,
+                  }))}
+                />
+              </div>
+
+              {/* Variable Insert Tags */}
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                    marginBottom: '8px',
+                  }}
+                >
+                  CHÈN NHANH THẺ BIẾN ĐỘNG (NHẤP ĐỂ CHÈN):
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {BOOKING_TEMPLATE_TAGS.map((tagDef) => (
+                    <Button
+                      key={tagDef.tag}
+                      size="small"
+                      type="dashed"
+                      onClick={() => setCustomMessage((prev) => prev + tagDef.tag)}
+                      style={{
+                        fontSize: '12px',
+                        borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
+                        color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
+                      }}
+                    >
+                      + {tagDef.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Editable Custom Content */}
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                    marginBottom: '6px',
+                  }}
+                >
+                  NỘI DUNG MẪU TÙY CHỈNH:
+                </label>
+                <TextArea
+                  rows={5}
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: '13px',
+                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
+                    color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
+                  }}
+                />
+              </div>
+
+              {/* Live Preview Box */}
+              <div>
+                <div
+                  style={{
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                    marginBottom: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span>
+                    XEM TRƯỚC TIN NHẮN SẼ GỬI CHO{' '}
+                    <strong style={{ color: '#D4A84B' }}>
+                      {isNewLead ? leadName : selectedCustomer?.name || selectedCustomer?.customerName || 'KHÁCH HÀNG'}
+                    </strong>
+                    :
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                    {evaluateBookingTemplate(customMessage).length} ký tự
+                  </span>
+                </div>
+                <div
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
+                    border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                    color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
+                    fontSize: '13.5px',
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: '1.6',
+                  }}
+                >
+                  {evaluateBookingTemplate(customMessage)}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
+            <Button icon={<SaveOutlined />} loading={savingTemplate} onClick={handleSaveTemplate} style={{ flex: 1 }}>
+              Lưu Template Mẫu
+            </Button>
+            <Button
+              type="primary"
+              icon={<CopyOutlined />}
+              onClick={handleCopyMessage}
+              style={{ flex: 1.5, backgroundColor: '#fa8c16', borderColor: '#fa8c16' }}
+            >
+              Sao chép tin nhắn
+            </Button>
+            <Button
+              type="primary"
+              icon={<CheckOutlined />}
+              loading={creatingBooking}
+              onClick={handleFinalCreateBooking}
+              style={{ flex: 1.5, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+            >
+              Hoàn tất & Tạo Lịch
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Template Manager Modal */}
+      <BookingTemplateManagerModal
+        open={isManagerModalOpen}
+        onClose={() => setIsManagerModalOpen(false)}
+        templates={bookingTemplates}
+        onTemplatesUpdated={(newList) => {
+          setBookingTemplates(newList);
+          autoSelectTemplate(newList);
+        }}
+      />
+
+      {/* 20:00 Late Slot Policy Confirmation Modal */}
+      <Modal
+        open={isLateSlotModalOpen}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fa8c16', fontSize: '15px' }}>
+            <ExclamationCircleOutlined style={{ fontSize: '18px' }} />
+            <span>⚠️ XÁC NHẬN THÔNG BÁO QUY ĐỊNH 20:15</span>
+          </div>
+        }
+        onCancel={() => {
+          setIsLateSlotModalOpen(false);
+          setPendingSlot(null);
+          message.warning('Vui lòng thông báo quy định 15 phút cho khách trước khi đặt khung 20:00!');
+        }}
+        footer={[
+          <Button
+            key="no"
+            danger
+            onClick={() => {
+              setIsLateSlotModalOpen(false);
+              setPendingSlot(null);
+              message.warning('Vui lòng thông báo quy định 15 phút cho khách trước khi đặt khung 20:00!');
+            }}
+          >
+            Chưa thông báo (Hủy chọn)
+          </Button>,
+          <Button
+            key="yes"
+            type="primary"
+            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+            onClick={() => {
+              if (pendingSlot) {
+                setSelectedSlot(pendingSlot);
+              }
+              setIsLateSlotModalOpen(false);
+              setPendingSlot(null);
+              message.success('Đã xác nhận thông báo quy định 20:15 với khách!');
+            }}
+          >
+            Đã thông báo với khách
+          </Button>,
+        ]}
+      >
+        <div
+          style={{
+            padding: '12px 4px',
+            fontSize: '14px',
+            lineHeight: '1.6',
+            color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
+          }}
+        >
+          <p>
+            Vì <strong>20:00</strong> là khung chốt ca cuối ngày, tiệm em chỉ giữ lịch và chờ khách tối đa 15 phút (đến{' '}
+            <strong>20:15</strong>) để đảm bảo đủ thời gian làm mi đẹp nhất.
+          </p>
+          <div
+            style={{
+              marginTop: '12px',
+              padding: '10px 14px',
+              borderRadius: '6px',
+              backgroundColor: themeMode === 'dark' ? 'rgba(250, 140, 22, 0.15)' : '#fffbe6',
+              border: `1px solid ${themeMode === 'dark' ? '#d97706' : '#ffe58f'}`,
+              color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
+              fontWeight: '600',
+            }}
+          >
+            Bạn đã thông báo quy định 20:15 này cho khách hàng chưa?
+          </div>
+        </div>
+      </Modal>
     </Drawer>
   );
 };

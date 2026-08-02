@@ -881,7 +881,7 @@ export class CampaignService {
       latestBookingRows.map((r) => [
         Number(r.userId),
         {
-          lastBookingDate: r.lastBookingDate ? new Date(r.lastBookingDate).toISOString() : null,
+          lastBookingDate: r.lastBookingDate ? new Date(r.lastBookingDate).toISOString().replace('Z', '+07:00') : null,
           lastBookingState: r.lastBookingState,
         },
       ])

@@ -4,8 +4,26 @@ import '../app/suppress-warnings';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ConfigProvider, theme as antdTheme } from 'antd';
 import viVN from 'antd/locale/vi_VN';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import updateLocale from 'dayjs/plugin/updateLocale';
+import 'dayjs/locale/vi';
 import { safeStorage } from '../lib/safe-storage';
 import { themeTokens } from '@mos-lab/shared';
+
+// Force Asia/Ho_Chi_Minh (UTC+7) timezone and Monday-First weekStart (1 = Monday) across entire application
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(updateLocale);
+dayjs.tz.setDefault('Asia/Ho_Chi_Minh');
+dayjs.locale('vi');
+dayjs.updateLocale('vi', {
+  weekStart: 1,
+});
+dayjs.updateLocale('en', {
+  weekStart: 1,
+});
 
 type ThemeMode = 'light' | 'dark';
 

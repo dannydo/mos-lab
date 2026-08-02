@@ -21,25 +21,33 @@ const parseBookingPromoInfo = (rawBookingNote?: string | null, promotionName?: s
   let fullPromoText: string | null = null;
   let cleanBookingNote: string = (rawBookingNote || '').trim();
 
-  // Pattern 1: [Ưu đãi chiến dịch Kiều Nữ: Giảm 50% Dịch vụ Nối mi (Giảm 50%)]
-  // Pattern 2: [Khuyến mãi...]
-  // Pattern 3: [Ưu đãi...]
-  const bracketMatch = cleanBookingNote.match(/\[(Ưu đãi|Khuyến mãi|Promo|Mã giảm giá)[^\]]+\]/i);
-  if (bracketMatch) {
-    fullPromoText = bracketMatch[0].slice(1, -1).trim();
-    cleanBookingNote = cleanBookingNote.replace(bracketMatch[0], '').trim();
+  // Pattern 1: New format: [50%] 💤 Wake Up: Wellcome Back
+  // Pattern 2: Old format: [Ưu đãi chiến dịch Kiều Nữ: Giảm 50% Dịch vụ Nối mi (Giảm 50%)]
+  const newFormatMatch = cleanBookingNote.match(/(\[[^\]]+\]\s*[^\n\r]+)/i);
+  const oldBracketMatch = cleanBookingNote.match(/\[(Ưu đãi|Khuyến mãi|Promo|Mã giảm giá)[^\]]+\]/i);
+
+  if (newFormatMatch && newFormatMatch[0].startsWith('[')) {
+    fullPromoText = newFormatMatch[0].trim();
+    cleanBookingNote = cleanBookingNote.replace(newFormatMatch[0], '').trim();
+  } else if (oldBracketMatch) {
+    fullPromoText = oldBracketMatch[0].slice(1, -1).trim();
+    cleanBookingNote = cleanBookingNote.replace(oldBracketMatch[0], '').trim();
   } else if (promotionName && promotionName.trim() !== '') {
     fullPromoText = promotionName.trim();
   }
 
   if (fullPromoText) {
     let title = fullPromoText;
-    if (title.includes(':')) {
-      title = title.split(':').slice(1).join(':').trim();
+    if (title.startsWith('[')) {
+      promoTitle = title;
+    } else {
+      if (title.includes(':')) {
+        title = title.split(':').slice(1).join(':').trim();
+      }
+      title = title.replace(/\([^)]*\)$/, '').trim();
+      title = title.replace(/^(Ưu đãi|Khuyến mãi|Mã)\s*/i, '').trim();
+      promoTitle = title || fullPromoText;
     }
-    title = title.replace(/\([^)]*\)$/, '').trim();
-    title = title.replace(/^(Ưu đãi|Khuyến mãi|Mã)\s*/i, '').trim();
-    promoTitle = title || fullPromoText;
   }
 
   return {

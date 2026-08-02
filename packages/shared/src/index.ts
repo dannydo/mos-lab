@@ -17,6 +17,7 @@ export * from './types/team.js';
 export * from './types/revenue-hourly.js';
 export * from './types/sms.js';
 export * from './utils/search.js';
+export * from './utils/date.js';
 export * from './types/allocation.js';
 export * from './types/campaign.js';
 export * from './theme/tokens.js';

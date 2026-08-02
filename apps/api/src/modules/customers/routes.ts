@@ -1317,7 +1317,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           lastAllocation,
           avatar: row.avatar,
           lastBookingState: booking ? booking.orderState : null,
-          lastBookingDate: booking && booking.bookingDate ? new Date(booking.bookingDate).toISOString() : null,
+          lastBookingDate:
+            booking && booking.bookingDate ? new Date(booking.bookingDate).toISOString().replace('Z', '+07:00') : null,
           callbackDate: callbackDateVal ? new Date(callbackDateVal).toISOString().split('T')[0] : null,
           lastCall: lastCallVal,
           touchpoints: userTouchpoints,
@@ -3416,12 +3417,27 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 : `Tặng sản phẩm ${campaignPromo.name}`;
           }
 
-          if (campaignPromoDiscount > 0) {
-            discountAmount = Math.max(discountAmount, campaignPromoDiscount);
-            finalPrice = Math.max(0, srvPrice - discountAmount);
+          let discountTag = '';
+          if (campaignPromo.type === 'PERCENT_DISCOUNT') {
+            discountTag = `[${campaignPromo.value}%]`;
+          } else if (campaignPromo.type === 'FIXED_DISCOUNT') {
+            discountTag = `[Giảm ${campaignPromo.value.toLocaleString('vi-VN')}đ]`;
+          } else if (campaignPromo.type === 'FREE_SERVICE') {
+            discountTag = `[Tặng Dịch Vụ]`;
+          } else if (campaignPromo.type === 'FREE_PRODUCT') {
+            discountTag = `[Tặng Sản Phẩm]`;
+          } else {
+            discountTag = `[Ưu Đãi]`;
           }
 
-          campaignPromotionTag = `[Ưu đãi chiến dịch ${campaignPromo.campaign.name}: ${campaignPromo.name} (${promoLabel})]`;
+          const campaignName = campaignPromo.campaign ? campaignPromo.campaign.name : '';
+          const promoName = campaignPromo.name || '';
+          let fullPromoName = campaignName;
+          if (promoName && !campaignName.toLowerCase().includes(promoName.toLowerCase())) {
+            fullPromoName = campaignName ? `${campaignName}: ${promoName}` : promoName;
+          }
+
+          campaignPromotionTag = `${discountTag} ${fullPromoName}`.trim();
         }
       }
 
@@ -3642,7 +3658,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 staffId: user.id,
                 callType: 'CAMPAIGN_BOOKING',
                 callResult: 'BOOKED',
-                note: `Tạo lịch thành công kèm ưu đãi chiến dịch ${campaignPromo.campaign.name}: ${campaignPromo.name}`,
+                note: `Tạo lịch thành công kèm ưu đãi ${campaignPromotionTag}`,
               },
             });
           }

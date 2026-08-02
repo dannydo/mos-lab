@@ -1,6 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth, requireRole } from '../../middlewares/auth.js';
-import { SmsTemplate, SaveSmsTemplateInput, SendSmsRequest } from '@mos-lab/shared';
+import {
+  SmsTemplate,
+  SaveSmsTemplateInput,
+  SendSmsRequest,
+  BookingConfirmationTemplate,
+  DEFAULT_BOOKING_TEMPLATES,
+} from '@mos-lab/shared';
 
 const DEFAULT_SMS_TEMPLATES: SmsTemplate[] = [
   {
@@ -192,6 +198,156 @@ export async function smsRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  // GET /api/sms/booking-templates
+  fastify.get('/sms/booking-templates', { preHandler: [requireAuth] }, async (_request, reply) => {
+    try {
+      const config = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'BOOKING_TEMPLATES_CONFIG' },
+      });
+
+      let templates: BookingConfirmationTemplate[] = DEFAULT_BOOKING_TEMPLATES;
+      if (config && config.value) {
+        try {
+          const parsed = JSON.parse(config.value);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            templates = parsed;
+          }
+        } catch (_e) {
+          // Fallback
+        }
+      }
+
+      return templates;
+    } catch (error) {
+      fastify.log.error(error as Error, 'Get booking templates error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve booking templates',
+      });
+    }
+  });
+
+  // POST /api/sms/booking-templates
+  fastify.post('/sms/booking-templates', { preHandler: [requireAuth] }, async (request, reply) => {
+    const input = request.body as BookingConfirmationTemplate;
+    if (!input || !input.id || !input.content) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Template ID and content are required',
+      });
+    }
+
+    try {
+      const config = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'BOOKING_TEMPLATES_CONFIG' },
+      });
+
+      let templates: BookingConfirmationTemplate[] = DEFAULT_BOOKING_TEMPLATES;
+      if (config && config.value) {
+        try {
+          const parsed = JSON.parse(config.value);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            templates = parsed;
+          }
+        } catch (_e) {
+          // Fallback
+        }
+      }
+
+      const existingIdx = templates.findIndex((t) => t.id === input.id);
+      const updatedTemplate: BookingConfirmationTemplate = {
+        id: input.id || `tpl_booking_${Date.now()}`,
+        type: input.type || 'no_tech',
+        title: input.title || 'Mẫu đặt lịch',
+        content: input.content,
+        isDefault: input.isDefault ?? false,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (existingIdx >= 0) {
+        templates[existingIdx] = updatedTemplate;
+      } else {
+        templates.push(updatedTemplate);
+      }
+
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: 'BOOKING_TEMPLATES_CONFIG' },
+        update: { value: JSON.stringify(templates) },
+        create: { key: 'BOOKING_TEMPLATES_CONFIG', value: JSON.stringify(templates) },
+      });
+
+      return { success: true, template: updatedTemplate, templates };
+    } catch (error) {
+      fastify.log.error(error as Error, 'Save booking template error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to save booking template',
+      });
+    }
+  });
+
+  // DELETE /api/sms/booking-templates/:id
+  fastify.delete('/sms/booking-templates/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!id) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Template ID is required' });
+    }
+
+    try {
+      const config = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'BOOKING_TEMPLATES_CONFIG' },
+      });
+
+      let templates: BookingConfirmationTemplate[] = DEFAULT_BOOKING_TEMPLATES;
+      if (config && config.value) {
+        try {
+          const parsed = JSON.parse(config.value);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            templates = parsed;
+          }
+        } catch (_e) {
+          // Fallback
+        }
+      }
+
+      templates = templates.filter((t) => t.id !== id);
+
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: 'BOOKING_TEMPLATES_CONFIG' },
+        update: { value: JSON.stringify(templates) },
+        create: { key: 'BOOKING_TEMPLATES_CONFIG', value: JSON.stringify(templates) },
+      });
+
+      return { success: true, templates };
+    } catch (error) {
+      fastify.log.error(error as Error, 'Delete booking template error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to delete booking template',
+      });
+    }
+  });
+
+  // POST /api/sms/booking-templates/reset
+  fastify.post('/sms/booking-templates/reset', { preHandler: [requireAuth] }, async (_request, reply) => {
+    try {
+      const templates = DEFAULT_BOOKING_TEMPLATES;
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: 'BOOKING_TEMPLATES_CONFIG' },
+        update: { value: JSON.stringify(templates) },
+        create: { key: 'BOOKING_TEMPLATES_CONFIG', value: JSON.stringify(templates) },
+      });
+
+      return { success: true, templates };
+    } catch (error) {
+      fastify.log.error(error as Error, 'Reset booking templates error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to reset booking templates',
+      });
+    }
+  });
 
   // GET /api/sms/history/:customerId
   fastify.get('/sms/history/:customerId', { preHandler: [requireAuth] }, async (request, reply) => {

@@ -661,7 +661,10 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
             assignedStaff: assigned,
             avatar: row.avatar,
             lastBookingState: booking ? booking.orderState : null,
-            lastBookingDate: booking && booking.bookingDate ? new Date(booking.bookingDate).toISOString() : null,
+            lastBookingDate:
+              booking && booking.bookingDate
+                ? new Date(booking.bookingDate).toISOString().replace('Z', '+07:00')
+                : null,
             callbackDate: callbackDateVal ? new Date(callbackDateVal).toISOString().split('T')[0] : null,
             lastCall: lastCallVal,
           };
