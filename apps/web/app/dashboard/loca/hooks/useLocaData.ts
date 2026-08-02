@@ -527,7 +527,9 @@ export function useLocaData(options?: UseLocaDataOptions) {
       touchpointKey: string,
       isChecked: boolean,
       note?: string,
-      status?: TouchpointStatus | null
+      status?: TouchpointStatus | null,
+      hasReferredDiamond?: boolean,
+      callbackDate?: string
     ) => {
       // 1. Optimistically update local customer state
       setCustomers((prevCustomers) =>
@@ -537,6 +539,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
             const staffName = currentUser?.displayName || currentUser?.username || 'Staff';
             return {
               ...cust,
+              callbackDate: callbackDate || cust.callbackDate,
               touchpoints: {
                 ...currentTps,
                 [touchpointKey]: {
@@ -564,6 +567,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
           isChecked,
           status,
           note,
+          callbackDate,
         });
       } catch (err) {
         console.error('Failed to toggle touchpoint:', err);

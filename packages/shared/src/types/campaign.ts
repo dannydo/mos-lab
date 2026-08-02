@@ -145,6 +145,7 @@ export interface ToggleCampaignTouchpointLogDto {
   isChecked: boolean;
   status?: TouchpointStatus | null;
   note?: string;
+  callbackDate?: string;
 }
 
 export interface CampaignStatsResponse {

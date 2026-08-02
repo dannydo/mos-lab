@@ -504,7 +504,8 @@ export default function CampaignDetailPage() {
     touchpointId: number,
     isChecked: boolean,
     note?: string,
-    status?: TouchpointStatus | null
+    status?: TouchpointStatus | null,
+    callbackDate?: string
   ) => {
     if (!campaign?.id) return;
 
@@ -540,14 +541,19 @@ export default function CampaignDetailPage() {
               },
             ];
           }
-          return { ...cust, touchpointLogs: newLogs };
+          return { ...cust, callbackDate: callbackDate || cust.callbackDate, touchpointLogs: newLogs };
         }
         return cust;
       })
     );
 
     try {
-      await apiClient.campaigns.toggleTouchpointLog(campaign.id, customerId, touchpointId, { isChecked, status, note });
+      await apiClient.campaigns.toggleTouchpointLog(campaign.id, customerId, touchpointId, {
+        isChecked,
+        status,
+        note,
+        callbackDate,
+      });
       message.success(isChecked ? 'Đã cập nhật trạng thái điểm chạm' : 'Đã bỏ chọn điểm chạm');
       if (campaign.id) {
         apiClient.campaigns.getStats(campaign.id).then(setStats).catch(console.error);

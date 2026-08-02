@@ -301,6 +301,7 @@ export const apiClient = {
       status?: TouchpointStatus | null;
       note?: string;
       cycleDate?: string;
+      callbackDate?: string;
     }): Promise<{ success: boolean; touchpoint: SafeAny }> => {
       const response = await api.post('/customers/loca-touchpoint', data);
       return response.data;

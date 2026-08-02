@@ -711,9 +711,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
         )`);
       }
       if (hasCallback === 'true') {
-        innerWhereClauses.push(`EXISTS (
-          SELECT 1 FROM mos_lab.crm_call_logs ccl 
-          WHERE ccl.legacy_user_id = u.id AND ccl.callback_date >= CURDATE()
+        innerWhereClauses.push(`(
+          EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl 
+            WHERE ccl.legacy_user_id = u.id AND ccl.callback_date >= CURDATE()
+          ) OR EXISTS (
+            SELECT 1 FROM mos_lab.crm_daily_plans cdp 
+            WHERE cdp.legacy_user_id = u.id AND cdp.planned_date >= CURDATE()
+          ) OR EXISTS (
+            SELECT 1 FROM mos_lab.crm_loca_touchpoints clt 
+            WHERE clt.legacy_user_id = u.id AND clt.status = 'CALLBACK'
+          )
         )`);
       }
       if (hasFutureBooking === 'true') {
@@ -1013,10 +1021,26 @@ export async function customerRoutes(fastify: FastifyInstance) {
             })
           : [];
 
+      const latestDailyPlans =
+        customerIds.length > 0
+          ? await fastify.prisma.crm.crmDailyPlan.findMany({
+              where: {
+                legacyUserId: { in: customerIds },
+                plannedDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+              },
+              orderBy: { plannedDate: 'asc' },
+            })
+          : [];
+
       const callbackMap = new Map();
       latestCallbacks.forEach((c) => {
         if (!callbackMap.has(c.legacyUserId)) {
           callbackMap.set(c.legacyUserId, c.callbackDate);
+        }
+      });
+      latestDailyPlans.forEach((p) => {
+        if (!callbackMap.has(p.legacyUserId)) {
+          callbackMap.set(p.legacyUserId, p.plannedDate);
         }
       });
 
@@ -1782,9 +1806,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
         )`);
       }
       if (hasCallback === 'true') {
-        innerWhereClauses.push(`EXISTS (
-          SELECT 1 FROM mos_lab.crm_call_logs ccl 
-          WHERE ccl.legacy_user_id = u.id AND ccl.callback_date >= CURDATE()
+        innerWhereClauses.push(`(
+          EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl 
+            WHERE ccl.legacy_user_id = u.id AND ccl.callback_date >= CURDATE()
+          ) OR EXISTS (
+            SELECT 1 FROM mos_lab.crm_daily_plans cdp 
+            WHERE cdp.legacy_user_id = u.id AND cdp.planned_date >= CURDATE()
+          ) OR EXISTS (
+            SELECT 1 FROM mos_lab.crm_loca_touchpoints clt 
+            WHERE clt.legacy_user_id = u.id AND clt.status = 'CALLBACK'
+          )
         )`);
       }
       if (hasFutureBooking === 'true') {
@@ -2056,9 +2088,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 LOWER(COALESCE(os_p.user_service_type, '')) LIKE '%product%'
               )
             ) as has_product,
-            EXISTS (
-              SELECT 1 FROM mos_lab.crm_call_logs ccl
-              WHERE ccl.legacy_user_id = u.id AND ccl.callback_date >= CURDATE()
+            (
+              EXISTS (
+                SELECT 1 FROM mos_lab.crm_call_logs ccl
+                WHERE ccl.legacy_user_id = u.id AND ccl.callback_date >= CURDATE()
+              ) OR EXISTS (
+                SELECT 1 FROM mos_lab.crm_daily_plans cdp 
+                WHERE cdp.legacy_user_id = u.id AND cdp.planned_date >= CURDATE()
+              ) OR EXISTS (
+                SELECT 1 FROM mos_lab.crm_loca_touchpoints clt 
+                WHERE clt.legacy_user_id = u.id AND clt.status = 'CALLBACK'
+              )
             ) as has_callback,
             EXISTS (
               SELECT 1 FROM \`order\` o_bk 

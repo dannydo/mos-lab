@@ -32,7 +32,9 @@ interface LocaColumnsOptions {
     touchpointKey: string,
     isChecked: boolean,
     note?: string,
-    status?: TouchpointStatus | null
+    status?: TouchpointStatus | null,
+    hasReferredDiamond?: boolean,
+    callbackDate?: string
   ) => Promise<void>;
   addingIds?: number[];
   sortField?: string;

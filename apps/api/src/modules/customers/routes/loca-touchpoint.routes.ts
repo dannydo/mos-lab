@@ -19,13 +19,14 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
         message: 'Bạn không có quyền truy cập Chiến dịch LoCa. Chỉ dành cho Admin, Manager, CS và Control.',
       });
     }
-    const { customerId, touchpointKey, isChecked, status, note, cycleDate } = request.body as {
+    const { customerId, touchpointKey, isChecked, status, note, cycleDate, callbackDate } = request.body as {
       customerId: number;
       touchpointKey: string;
       isChecked: boolean;
       status?: string | null;
       note?: string;
       cycleDate?: string;
+      callbackDate?: string;
     };
 
     if (!customerId || !touchpointKey) {
@@ -102,6 +103,35 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
             cycleDate: new Date(cycleDateStr),
           },
         });
+      }
+
+      // Automatically sync callbackDate to CRM Daily Plan if provided
+      if (callbackDate && !isNaN(new Date(callbackDate).getTime())) {
+        const cbDate = new Date(callbackDate);
+        try {
+          await fastify.prisma.crm.crmDailyPlan.upsert({
+            where: {
+              legacyUserId_plannedDate: {
+                legacyUserId: customerId,
+                plannedDate: cbDate,
+              },
+            },
+            create: {
+              legacyUserId: customerId,
+              staffId: user.id,
+              plannedDate: cbDate,
+              bucket: 'LOCA_CALLBACK',
+              priority: 1,
+              status: 'PLANNED',
+            },
+            update: {
+              staffId: user.id,
+              status: 'PLANNED',
+            },
+          });
+        } catch (e) {
+          request.log.error(e, 'Failed to upsert daily plan for loca touchpoint callback');
+        }
       }
 
       return reply.send({

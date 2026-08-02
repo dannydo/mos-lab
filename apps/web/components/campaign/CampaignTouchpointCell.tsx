@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Popover, Input, Button, Tooltip, Space } from 'antd';
+import { Popover, Input, Button, Tooltip, Space, DatePicker } from 'antd';
 import { FileTextOutlined } from '@ant-design/icons';
 import {
   PhoneCall,
@@ -12,6 +12,8 @@ import {
   BellRing,
   Hourglass,
   RotateCcw,
+  MessageSquare,
+  Clock,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { TouchpointStatus } from '@mos-lab/shared';
@@ -36,7 +38,8 @@ export interface CampaignTouchpointCellProps {
     touchpointId: number,
     isChecked: boolean,
     note?: string,
-    status?: TouchpointStatus | null
+    status?: TouchpointStatus | null,
+    callbackDate?: string
   ) => Promise<void>;
   onOpenBooking?: (customer: any) => void;
 }
@@ -60,12 +63,16 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<TouchpointStatus | null>(rawStatus);
   const [noteInput, setNoteInput] = useState(currentNote);
+  const [callbackDate, setCallbackDate] = useState<dayjs.Dayjs>(dayjs().add(1, 'day'));
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setSelectedStatus(rawStatus);
     setNoteInput(currentNote);
-  }, [rawStatus, currentNote]);
+    if (customer.callbackDate) {
+      setCallbackDate(dayjs(customer.callbackDate));
+    }
+  }, [rawStatus, currentNote, customer.callbackDate]);
 
   const days = customer.daysInCampaign ?? customer.daysSinceLastVisit ?? customer.daysSinceAdded ?? 0;
   const tpKey = touchpoint.key;
@@ -113,9 +120,7 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
   // Priority state resolution: DB status -> System active -> Pending window -> Overdue -> Blank
   let displayStatus: TouchpointStatus | 'OVERDUE' | 'BLANK' = 'BLANK';
 
-  if (rawStatus === 'DONE' || rawStatus === 'BOOKED') {
-    displayStatus = rawStatus;
-  } else if (rawStatus === 'SUCCESS' || rawStatus === 'FAILED' || rawStatus === 'LOST') {
+  if (rawStatus) {
     displayStatus = rawStatus;
   } else if (isActive) {
     displayStatus = 'DUE_TODAY';
@@ -144,8 +149,9 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
     setLoading(true);
     const targetStatus = statusToSave !== undefined ? statusToSave : selectedStatus;
     const isNowChecked = targetStatus !== null;
+    const cbDateStr = targetStatus === 'CALLBACK' ? callbackDate.format('YYYY-MM-DD') : undefined;
     try {
-      await onToggle(customerId, touchpoint.id, isNowChecked, noteInput, targetStatus);
+      await onToggle(customerId, touchpoint.id, isNowChecked, noteInput, targetStatus, cbDateStr);
       setPopoverOpen(false);
     } finally {
       setLoading(false);
@@ -212,6 +218,47 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
         </div>
       );
     }
+    if (displayStatus === 'MESSAGED') {
+      return (
+        <div style={{ fontSize: '12px' }}>
+          <div style={{ fontWeight: 700, color: '#22d3ee' }}>💬✓ Nhắn tin thành công (Bởi {staffName})</div>
+          {formattedDate && <div style={{ opacity: 0.85 }}>Thực hiện lúc: {formattedDate}</div>}
+          {currentNote ? (
+            <div
+              style={{ marginTop: '4px', fontStyle: 'italic', borderTop: '1px dashed #ffffff44', paddingTop: '4px' }}
+            >
+              📝 Note: {currentNote}
+            </div>
+          ) : (
+            <div style={{ marginTop: '2px', opacity: 0.75 }}>(Bấm để thay đổi trạng thái/ghi chú)</div>
+          )}
+        </div>
+      );
+    }
+    if (displayStatus === 'CALLBACK') {
+      const formattedCbDate = customer.callbackDate
+        ? dayjs(customer.callbackDate).format('DD/MM/YYYY')
+        : callbackDate.format('DD/MM/YYYY');
+      return (
+        <div style={{ fontSize: '12px' }}>
+          <div style={{ fontWeight: 700, color: '#c084fc' }}>🕒 Hẹn gọi lại: {formattedCbDate} (Daily Plan)</div>
+          {formattedDate && (
+            <div style={{ opacity: 0.85 }}>
+              Bởi {staffName} ({formattedDate})
+            </div>
+          )}
+          {currentNote ? (
+            <div
+              style={{ marginTop: '4px', fontStyle: 'italic', borderTop: '1px dashed #ffffff44', paddingTop: '4px' }}
+            >
+              📝 Note: {currentNote}
+            </div>
+          ) : (
+            <div style={{ marginTop: '2px', opacity: 0.75 }}>(Bấm để thay đổi trạng thái/ngày hẹn)</div>
+          )}
+        </div>
+      );
+    }
     if (displayStatus === 'FAILED') {
       return (
         <div style={{ fontSize: '12px' }}>
@@ -266,6 +313,7 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: 10 }}>
+        {/* 1. Gọi thành công */}
         <button
           type="button"
           onClick={() => handleSelectStatus('SUCCESS')}
@@ -290,6 +338,7 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
           <span>Hoàn tất (Gọi thành công)</span>
         </button>
 
+        {/* 2. Gọi thất bại */}
         <button
           type="button"
           onClick={() => handleSelectStatus('FAILED')}
@@ -313,6 +362,57 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
           <span>Fail (Cuộc gọi thất bại)</span>
         </button>
 
+        {/* 3. Nhắn tin thành công */}
+        <button
+          type="button"
+          onClick={() => handleSelectStatus('MESSAGED')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 10px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            border:
+              selectedStatus === 'MESSAGED' ? '2px solid #06b6d4' : isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+            background:
+              selectedStatus === 'MESSAGED' ? (isDark ? '#164e63' : '#ecfeff') : isDark ? '#1e293b' : '#f8fafc',
+            color: selectedStatus === 'MESSAGED' ? (isDark ? '#67e8f9' : '#0891b2') : isDark ? '#e2e8f0' : '#1e293b',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <MessageSquare size={14} className="text-cyan-500" />
+          <span>Nhắn tin thành công</span>
+        </button>
+
+        {/* 4. Hẹn gọi lại */}
+        <button
+          type="button"
+          onClick={() => handleSelectStatus('CALLBACK')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 10px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            border:
+              selectedStatus === 'CALLBACK' ? '2px solid #a855f7' : isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+            background:
+              selectedStatus === 'CALLBACK' ? (isDark ? '#581c87' : '#f3e8ff') : isDark ? '#1e293b' : '#f8fafc',
+            color: selectedStatus === 'CALLBACK' ? (isDark ? '#c084fc' : '#7e22ce') : isDark ? '#e2e8f0' : '#1e293b',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <Clock size={14} className="text-purple-500" />
+          <span>Hẹn gọi lại (Lên lịch gọi)</span>
+        </button>
+
+        {/* 5. Đã đặt lịch */}
         <button
           type="button"
           onClick={(e) => {
@@ -342,6 +442,7 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
           <span>Đã đặt lịch (Chuyển đổi Book)</span>
         </button>
 
+        {/* 6. Không thuộc về nhau */}
         <button
           type="button"
           onClick={() => handleSelectStatus('LOST')}
@@ -365,6 +466,63 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
           <span>Không thuộc về nhau</span>
         </button>
       </div>
+
+      {/* DatePicker expandable section for CALLBACK status */}
+      {selectedStatus === 'CALLBACK' && (
+        <div
+          style={{
+            padding: '8px',
+            borderRadius: '6px',
+            marginBottom: '10px',
+            background: isDark ? 'rgba(168, 85, 247, 0.12)' : '#faf5ff',
+            border: isDark ? '1px solid #581c87' : '1px solid #e9d5ff',
+          }}
+        >
+          <div
+            style={{ fontSize: '11px', fontWeight: 600, color: isDark ? '#c084fc' : '#7e22ce', marginBottom: '6px' }}
+          >
+            📅 Chọn ngày hẹn gọi lại (Tự lên Daily Plan):
+          </div>
+          <DatePicker
+            value={callbackDate}
+            onChange={(date) => date && setCallbackDate(date)}
+            format="DD/MM/YYYY"
+            style={{ width: '100%', marginBottom: '6px' }}
+            size="small"
+            allowClear={false}
+          />
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+            <Button
+              size="small"
+              style={{ fontSize: '10px', padding: '0 6px', height: '22px' }}
+              onClick={() => setCallbackDate(dayjs())}
+            >
+              Hôm nay
+            </Button>
+            <Button
+              size="small"
+              style={{ fontSize: '10px', padding: '0 6px', height: '22px' }}
+              onClick={() => setCallbackDate(dayjs().add(1, 'day'))}
+            >
+              Ngày mai
+            </Button>
+            <Button
+              size="small"
+              style={{ fontSize: '10px', padding: '0 6px', height: '22px' }}
+              onClick={() => setCallbackDate(dayjs().add(3, 'day'))}
+            >
+              3 ngày
+            </Button>
+            <Button
+              size="small"
+              style={{ fontSize: '10px', padding: '0 6px', height: '22px' }}
+              onClick={() => setCallbackDate(dayjs().add(7, 'day'))}
+            >
+              7 ngày
+            </Button>
+          </div>
+        </div>
+      )}
 
       <TextArea
         rows={2}
@@ -413,6 +571,16 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
     border = '1px solid #10b981';
     textColor = '#34d399';
     boxShadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+  } else if (displayStatus === 'CALLBACK') {
+    bg = isDark ? 'rgba(168, 85, 247, 0.25)' : 'rgba(168, 85, 247, 0.15)';
+    border = '1px solid #a855f7';
+    textColor = '#c084fc';
+    boxShadow = '0 0 8px rgba(168, 85, 247, 0.4)';
+  } else if (displayStatus === 'MESSAGED') {
+    bg = isDark ? 'rgba(6, 182, 212, 0.25)' : 'rgba(6, 182, 212, 0.15)';
+    border = '1px solid #06b6d4';
+    textColor = '#22d3ee';
+    boxShadow = '0 0 8px rgba(6, 182, 212, 0.4)';
   } else if (displayStatus === 'FAILED') {
     bg = isDark ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.15)';
     border = '1px solid #ef4444';
@@ -442,6 +610,8 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
     if (displayStatus === 'DONE') return <CheckCircle2 size={13} className="text-emerald-400" />;
     if (displayStatus === 'BOOKED') return <CalendarCheck size={13} className="text-indigo-400" />;
     if (displayStatus === 'SUCCESS') return <PhoneCall size={12} className="text-emerald-400" />;
+    if (displayStatus === 'CALLBACK') return <Clock size={12} className="text-purple-400" />;
+    if (displayStatus === 'MESSAGED') return <MessageSquare size={12} className="text-cyan-400" />;
     if (displayStatus === 'FAILED') return <PhoneOff size={12} className="text-rose-400" />;
     if (displayStatus === 'LOST') return <HeartOff size={12} className="text-pink-400" />;
     if (displayStatus === 'DUE_TODAY') return <BellRing size={13} className="text-amber-400 animate-pulse" />;

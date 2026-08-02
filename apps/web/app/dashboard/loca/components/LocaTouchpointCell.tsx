@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Popover, Input, Button, Tooltip, Space } from 'antd';
+import { Popover, Input, Button, Tooltip, Space, DatePicker } from 'antd';
 import { FileTextOutlined } from '@ant-design/icons';
 import {
   PhoneCall,
@@ -13,6 +13,7 @@ import {
   Hourglass,
   RotateCcw,
   MessageSquare,
+  Clock,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { Customer, LocaTouchpointState, TouchpointStatus, LASH_TOUCHUP_SYSTEM_CONFIG } from '@mos-lab/shared';
@@ -31,7 +32,8 @@ interface LocaTouchpointCellProps {
     isChecked: boolean,
     note?: string,
     status?: TouchpointStatus | null,
-    hasReferredDiamond?: boolean
+    hasReferredDiamond?: boolean,
+    callbackDate?: string
   ) => Promise<void>;
   onOpenBooking?: (customer: Customer) => void;
 }
@@ -59,13 +61,17 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<TouchpointStatus | null>(rawStatus);
   const [noteInput, setNoteInput] = useState(currentNote);
   const [hasReferredDiamond, setHasReferredDiamond] = useState<boolean>(initialDiamond);
+  const [callbackDate, setCallbackDate] = useState<dayjs.Dayjs>(dayjs().add(1, 'day'));
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setSelectedStatus(rawStatus);
     setNoteInput(currentNote);
     setHasReferredDiamond(initialDiamond);
-  }, [rawStatus, currentNote, initialDiamond]);
+    if (customer.callbackDate) {
+      setCallbackDate(dayjs(customer.callbackDate));
+    }
+  }, [rawStatus, currentNote, initialDiamond, customer.callbackDate]);
 
   const days = customer.daysSinceLastVisit;
 
@@ -137,8 +143,9 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     } else if (!hasReferredDiamond && finalNote.includes('[Đã tư vấn CT Kim Cương 💎]')) {
       finalNote = finalNote.replace('[Đã tư vấn CT Kim Cương 💎]', '');
     }
+    const cbDateStr = targetStatus === 'CALLBACK' ? callbackDate.format('YYYY-MM-DD') : undefined;
     try {
-      await onToggle(customer.id, touchpointKey, isNowChecked, finalNote, targetStatus, hasReferredDiamond);
+      await onToggle(customer.id, touchpointKey, isNowChecked, finalNote, targetStatus, hasReferredDiamond, cbDateStr);
       setPopoverOpen(false);
     } finally {
       setLoading(false);
@@ -234,6 +241,30 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
             </div>
           )}
           {currentNote && <div style={{ marginTop: '4px', fontStyle: 'italic' }}>📝 Note: {currentNote}</div>}
+        </div>
+      );
+    }
+    if (displayStatus === 'CALLBACK') {
+      const formattedCbDate = customer.callbackDate
+        ? dayjs(customer.callbackDate).format('DD/MM/YYYY')
+        : callbackDate.format('DD/MM/YYYY');
+      return (
+        <div style={{ fontSize: '12px' }}>
+          <div style={{ fontWeight: 700, color: '#c084fc' }}>🕒 Hẹn gọi lại: {formattedCbDate} (Daily Plan)</div>
+          {formattedDate && (
+            <div style={{ opacity: 0.85 }}>
+              Bởi {staffName} ({formattedDate})
+            </div>
+          )}
+          {currentNote ? (
+            <div
+              style={{ marginTop: '4px', fontStyle: 'italic', borderTop: '1px dashed #ffffff44', paddingTop: '4px' }}
+            >
+              📝 Note: {currentNote}
+            </div>
+          ) : (
+            <div style={{ marginTop: '2px', opacity: 0.75 }}>(Bấm để thay đổi trạng thái/ngày hẹn)</div>
+          )}
         </div>
       );
     }
@@ -352,7 +383,32 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
           <span>Nhắn tin thành công</span>
         </button>
 
-        {/* 4. Đã đặt lịch */}
+        {/* 4. Hẹn gọi lại */}
+        <button
+          type="button"
+          onClick={() => handleSelectStatus('CALLBACK')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 10px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            border:
+              selectedStatus === 'CALLBACK' ? '2px solid #a855f7' : isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+            background:
+              selectedStatus === 'CALLBACK' ? (isDark ? '#581c87' : '#f3e8ff') : isDark ? '#1e293b' : '#f8fafc',
+            color: selectedStatus === 'CALLBACK' ? (isDark ? '#c084fc' : '#7e22ce') : isDark ? '#e2e8f0' : '#1e293b',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <Clock size={14} className="text-purple-500" />
+          <span>Hẹn gọi lại (Lên lịch gọi)</span>
+        </button>
+
+        {/* 5. Đã đặt lịch */}
         <button
           type="button"
           onClick={(e) => {
@@ -382,7 +438,7 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
           <span>Đã đặt lịch</span>
         </button>
 
-        {/* 5. Không thuộc về nhau */}
+        {/* 6. Không thuộc về nhau */}
         <button
           type="button"
           onClick={() => handleSelectStatus('LOST')}
@@ -406,6 +462,63 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
           <span>Không thuộc về nhau</span>
         </button>
       </div>
+
+      {/* DatePicker expandable section for CALLBACK status */}
+      {selectedStatus === 'CALLBACK' && (
+        <div
+          style={{
+            padding: '8px',
+            borderRadius: '6px',
+            marginBottom: '10px',
+            background: isDark ? 'rgba(168, 85, 247, 0.12)' : '#faf5ff',
+            border: isDark ? '1px solid #581c87' : '1px solid #e9d5ff',
+          }}
+        >
+          <div
+            style={{ fontSize: '11px', fontWeight: 600, color: isDark ? '#c084fc' : '#7e22ce', marginBottom: '6px' }}
+          >
+            📅 Chọn ngày hẹn gọi lại (Tự lên Daily Plan):
+          </div>
+          <DatePicker
+            value={callbackDate}
+            onChange={(date) => date && setCallbackDate(date)}
+            format="DD/MM/YYYY"
+            style={{ width: '100%', marginBottom: '6px' }}
+            size="small"
+            allowClear={false}
+          />
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+            <Button
+              size="small"
+              style={{ fontSize: '10px', padding: '0 6px', height: '22px' }}
+              onClick={() => setCallbackDate(dayjs())}
+            >
+              Hôm nay
+            </Button>
+            <Button
+              size="small"
+              style={{ fontSize: '10px', padding: '0 6px', height: '22px' }}
+              onClick={() => setCallbackDate(dayjs().add(1, 'day'))}
+            >
+              Ngày mai
+            </Button>
+            <Button
+              size="small"
+              style={{ fontSize: '10px', padding: '0 6px', height: '22px' }}
+              onClick={() => setCallbackDate(dayjs().add(3, 'day'))}
+            >
+              3 ngày
+            </Button>
+            <Button
+              size="small"
+              style={{ fontSize: '10px', padding: '0 6px', height: '22px' }}
+              onClick={() => setCallbackDate(dayjs().add(7, 'day'))}
+            >
+              7 ngày
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Diamond Referral Toggle Button */}
       <div
@@ -492,6 +605,11 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     border = '1px solid #10b981';
     textColor = '#34d399';
     boxShadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+  } else if (displayStatus === 'CALLBACK') {
+    bg = isDark ? 'rgba(168, 85, 247, 0.25)' : 'rgba(168, 85, 247, 0.15)';
+    border = '1px solid #a855f7';
+    textColor = '#c084fc';
+    boxShadow = '0 0 8px rgba(168, 85, 247, 0.4)';
   } else if (displayStatus === 'MESSAGED') {
     bg = isDark ? 'rgba(6, 182, 212, 0.25)' : 'rgba(6, 182, 212, 0.15)';
     border = '1px solid #06b6d4';
@@ -526,6 +644,7 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     if (displayStatus === 'DONE') return <CheckCircle2 size={13} className="text-emerald-400" />;
     if (displayStatus === 'BOOKED') return <CalendarCheck size={13} className="text-indigo-400" />;
     if (displayStatus === 'SUCCESS') return <PhoneCall size={12} className="text-emerald-400" />;
+    if (displayStatus === 'CALLBACK') return <Clock size={12} className="text-purple-400" />;
     if (displayStatus === 'MESSAGED') return <MessageSquare size={12} className="text-cyan-400" />;
     if (displayStatus === 'FAILED') return <PhoneOff size={12} className="text-rose-400" />;
     if (displayStatus === 'LOST') return <HeartOff size={12} className="text-pink-400" />;

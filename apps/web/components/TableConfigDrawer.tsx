@@ -224,6 +224,30 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
         </Tooltip>
       </div>
 
+      {/* Header Tiêu Đề Cột Cấu Hình */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '6px 10px',
+          borderRadius: '6px',
+          fontSize: '11px',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          background: token.colorFillAlter,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          color: token.colorTextHeading,
+        }}
+      >
+        <span style={{ width: '32px', textAlign: 'center' }}>Ẩn/Hiện</span>
+        <span style={{ flex: 1, paddingLeft: '4px' }}>Tên Cột Hiển Thị</span>
+        <span style={{ width: '65px', textAlign: 'center' }}>Rộng(px)</span>
+        <span style={{ width: '105px', textAlign: 'center' }}>Biểu Tượng</span>
+        <span style={{ width: '75px', textAlign: 'center' }}>Thứ Tự</span>
+      </div>
+
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
         <List
           size="small"

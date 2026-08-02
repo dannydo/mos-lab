@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Popover, Tooltip, ColorPicker as AntColorPicker, Button } from 'antd';
+import { Popover, Tooltip, ColorPicker as AntColorPicker, Button, theme } from 'antd';
 import { CheckOutlined, DownOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
 
 // 10 Columns x 8 Rows = 80 Theme Colors (Exact Google Sheets Color Palette Matrix)
@@ -319,6 +319,8 @@ export const GoogleSheetColorPicker: React.FC<GoogleSheetColorPickerProps> = ({
     </div>
   );
 
+  const { token } = theme.useToken();
+
   return (
     <Popover
       content={popoverContent}
@@ -335,15 +337,16 @@ export const GoogleSheetColorPicker: React.FC<GoogleSheetColorPickerProps> = ({
           gap: '6px',
           padding: size === 'small' ? '3px 8px' : '5px 10px',
           borderRadius: '6px',
-          border: '1px solid #cbd5e1',
-          background: '#ffffff',
+          border: `1px solid ${token.colorBorderSecondary}`,
+          background: token.colorBgContainer,
+          color: token.colorText,
           cursor: 'pointer',
           fontSize: '12px',
           transition: 'all 0.15s',
           width: '100%',
           justifyContent: 'space-between',
         }}
-        className="hover:border-blue-400 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-700"
+        className="hover:border-amber-400/70"
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
           <span
@@ -363,12 +366,13 @@ export const GoogleSheetColorPicker: React.FC<GoogleSheetColorPickerProps> = ({
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              color: token.colorText,
             }}
           >
             {currentLabel}
           </span>
         </div>
-        <DownOutlined style={{ fontSize: '9px', color: '#94a3b8' }} />
+        <DownOutlined style={{ fontSize: '9px', color: token.colorTextSecondary }} />
       </button>
     </Popover>
   );

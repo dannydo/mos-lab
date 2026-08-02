@@ -1043,34 +1043,81 @@ export default function LocaCampaignPage() {
         onReset={resetLocaConfig}
         extraTabTitle="Quy Trình & Nghiệp Vụ"
         extraTabContent={
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-xs text-slate-500 font-medium">
-                Cấu hình các mốc chạm thời gian & quy trình CSKH
-              </span>
+          <div className="space-y-3">
+            {/* Header info banner */}
+            <div
+              className={`flex justify-between items-center px-3 py-2 rounded-lg border ${
+                themeMode === 'dark'
+                  ? 'bg-slate-900/90 border-slate-800 text-slate-300'
+                  : 'bg-slate-50 border-slate-200 text-slate-700'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-amber-500 font-semibold text-xs">⚡ Quy trình CSKH</span>
+                <span className="text-[11px] opacity-75 hidden sm:inline">
+                  (Cấu hình mốc thời gian & màu sắc hiển thị)
+                </span>
+              </div>
               <Tooltip title="Khôi phục quy trình mốc chạm mặc định">
-                <Button type="text" danger icon={<UndoOutlined />} onClick={handleResetConfigDefaults} size="small" />
+                <Button
+                  type="text"
+                  danger
+                  icon={<UndoOutlined />}
+                  onClick={handleResetConfigDefaults}
+                  size="small"
+                  className="hover:bg-rose-500/10 text-xs"
+                >
+                  Mặc định
+                </Button>
               </Tooltip>
             </div>
+
+            {/* Table Header Bar */}
+            <div
+              className={`flex items-center gap-2 px-3 py-2 rounded-md font-semibold text-xs uppercase tracking-wider ${
+                themeMode === 'dark'
+                  ? 'bg-slate-800/80 border border-slate-700/60 text-amber-400'
+                  : 'bg-slate-100 border border-slate-200 text-slate-700'
+              }`}
+            >
+              <span className="w-8 text-center">STT</span>
+              <span className="w-24">Mã Key</span>
+              <span className="flex-1">Tên hiển thị</span>
+              <span className="w-32 text-center">Thời gian (Min - Max)</span>
+              <span className="w-28 text-center">Màu Badge</span>
+              <span className="w-8 text-center">Xóa</span>
+            </div>
+
             <Form form={settingsForm} name="loca_touchpoints_form" layout="vertical">
               <Form.List name="touchpoints">
                 {(fields, { add, remove }) => (
-                  <div id="loca-touchpoints-list" className="space-y-4 pr-1">
+                  <div id="loca-touchpoints-list" className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
                     {fields.map(({ key, name, ...restField }) => (
                       <div
                         key={key}
-                        className={`flex items-center gap-2 p-2 mb-2 rounded-lg border border-slate-200 dark:border-slate-800 ${
-                          themeMode === 'dark' ? 'bg-[#1c1c1e]' : 'bg-slate-50'
+                        className={`flex items-center gap-2 p-2.5 rounded-lg border transition-all duration-150 ${
+                          themeMode === 'dark'
+                            ? 'bg-[#131b2e]/90 border-slate-800 hover:border-amber-500/50 shadow-sm'
+                            : 'bg-white border-slate-200 hover:border-blue-400/50 shadow-sm'
                         }`}
                       >
-                        <Tag color="blue" className="text-xs font-semibold m-0 px-1.5 py-0.5">
+                        <Tag
+                          color={themeMode === 'dark' ? 'gold' : 'blue'}
+                          className="text-xs font-semibold m-0 px-2 py-0.5 rounded-md min-w-[32px] text-center tabular-nums"
+                        >
                           #{name + 1}
                         </Tag>
 
                         <Tooltip title="Mã định danh Key (ví dụ: now, 17)">
                           <div className="w-24">
                             <Form.Item {...restField} name={[name, 'key']} noStyle rules={[{ required: true }]}>
-                              <Input placeholder="Key" size="small" style={{ fontSize: '12px' }} />
+                              <Input
+                                placeholder="Key"
+                                size="small"
+                                className={`text-xs ${
+                                  themeMode === 'dark' ? 'bg-slate-900 border-slate-700 text-slate-200' : ''
+                                }`}
+                              />
                             </Form.Item>
                           </div>
                         </Tooltip>
@@ -1078,7 +1125,13 @@ export default function LocaCampaignPage() {
                         <Tooltip title="Tên nhãn hiển thị (ví dụ: Chạm 24h)">
                           <div className="flex-1 min-w-0">
                             <Form.Item {...restField} name={[name, 'label']} noStyle rules={[{ required: true }]}>
-                              <Input placeholder="Tên hiển thị" size="small" style={{ fontSize: '12px' }} />
+                              <Input
+                                placeholder="Tên hiển thị"
+                                size="small"
+                                className={`text-xs ${
+                                  themeMode === 'dark' ? 'bg-slate-900 border-slate-700 text-slate-200' : ''
+                                }`}
+                              />
                             </Form.Item>
                           </div>
                         </Tooltip>
@@ -1090,25 +1143,29 @@ export default function LocaCampaignPage() {
                                 min={0}
                                 placeholder="Min"
                                 size="small"
-                                style={{ width: '100%', fontSize: '11px' }}
+                                className={`w-full text-xs tabular-nums ${
+                                  themeMode === 'dark' ? 'bg-slate-900 border-slate-700 text-slate-200' : ''
+                                }`}
                               />
                             </Form.Item>
                           </Tooltip>
-                          <span className="text-slate-400 text-xs">-</span>
+                          <span className="text-slate-400 text-xs font-bold">-</span>
                           <Tooltip title="Số ngày Max">
                             <Form.Item {...restField} name={[name, 'daysMax']} noStyle rules={[{ required: true }]}>
                               <InputNumber
                                 min={0}
                                 placeholder="Max"
                                 size="small"
-                                style={{ width: '100%', fontSize: '11px' }}
+                                className={`w-full text-xs tabular-nums ${
+                                  themeMode === 'dark' ? 'bg-slate-900 border-slate-700 text-slate-200' : ''
+                                }`}
                               />
                             </Form.Item>
                           </Tooltip>
                         </div>
 
                         <Tooltip title="Màu sắc đại diện">
-                          <div className="w-28">
+                          <div className="w-28 flex justify-center">
                             <Form.Item {...restField} name={[name, 'color']} noStyle rules={[{ required: true }]}>
                               <GoogleSheetColorPicker size="small" />
                             </Form.Item>
@@ -1116,33 +1173,52 @@ export default function LocaCampaignPage() {
                         </Tooltip>
 
                         <Tooltip title="Xóa mốc chạm">
-                          <Button
-                            type="text"
-                            danger
-                            size="small"
-                            onClick={() => remove(name)}
-                            icon={<MinusCircleOutlined />}
-                          />
+                          <div className="w-8 flex justify-center">
+                            <Button
+                              type="text"
+                              danger
+                              size="small"
+                              onClick={() => remove(name)}
+                              icon={<MinusCircleOutlined />}
+                              className="hover:bg-rose-500/10"
+                            />
+                          </div>
                         </Tooltip>
                       </div>
                     ))}
-                    <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />} size="small">
+
+                    <Button
+                      type="dashed"
+                      onClick={() => add()}
+                      block
+                      icon={<PlusOutlined />}
+                      size="small"
+                      className={`mt-2 py-1.5 font-medium transition-all ${
+                        themeMode === 'dark'
+                          ? 'border-slate-700 hover:border-amber-400 hover:text-amber-400 text-slate-300'
+                          : 'border-slate-300 hover:border-blue-500 hover:text-blue-600'
+                      }`}
+                    >
                       Thêm Mốc Chạm Mới
                     </Button>
                   </div>
                 )}
               </Form.List>
             </Form>
+
             <Divider style={{ margin: '12px 0' }} />
+
             <Button
               type="primary"
               icon={<SaveOutlined />}
               onClick={handleSaveConfig}
               block
-              style={{
-                backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
-                borderColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
-              }}
+              size="large"
+              className={`font-semibold shadow-md transition-all ${
+                themeMode === 'dark'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 border-amber-500 text-slate-950 hover:from-amber-400 hover:to-amber-500'
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-600 text-white'
+              }`}
             >
               Xuất bản quy trình LoCa
             </Button>

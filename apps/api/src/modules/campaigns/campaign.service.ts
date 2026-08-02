@@ -1272,6 +1272,34 @@ export class CampaignService {
       },
     });
 
+    if (dto.callbackDate && !isNaN(new Date(dto.callbackDate).getTime())) {
+      const cbDate = new Date(dto.callbackDate);
+      try {
+        await fastify.prisma.crm.crmDailyPlan.upsert({
+          where: {
+            legacyUserId_plannedDate: {
+              legacyUserId: campaignCustomer.legacyUserId,
+              plannedDate: cbDate,
+            },
+          },
+          create: {
+            legacyUserId: campaignCustomer.legacyUserId,
+            staffId,
+            plannedDate: cbDate,
+            bucket: 'CAMPAIGN_CALLBACK',
+            priority: 1,
+            status: 'PLANNED',
+          },
+          update: {
+            staffId,
+            status: 'PLANNED',
+          },
+        });
+      } catch (e) {
+        fastify.log.error(e, 'Failed to upsert daily plan for campaign touchpoint callback');
+      }
+    }
+
     return {
       id: log.id,
       campaignCustomerId: log.campaignCustomerId,
