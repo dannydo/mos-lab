@@ -6976,12 +6976,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT COUNT(*) as cnt FROM user_note WHERE user_id = ? AND (is_disabled = 0 OR note_field_key = 'order_note')`,
-        customerId
-      );
-      const totalCount = Number(countResult[0]?.cnt || 0);
-
       const notesSql = `
         SELECT 
           un.id,
@@ -6996,12 +6990,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_profile up ON un.created_staff_id = up.user_id
         WHERE un.user_id = ? AND (un.is_disabled = 0 OR un.note_field_key = 'order_note')
         ORDER BY un.date_created DESC
-        LIMIT ? OFFSET ?
       `;
 
-      const notesRaw = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(notesSql, customerId, limitNum, offset);
+      const notesRaw = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(notesSql, customerId);
 
-      const items = notesRaw.map((n) => {
+      const legacyItems = notesRaw.map((n) => {
         let safeIsoDate: string | null = null;
         if (n.dateCreated) {
           if (n.dateCreated instanceof Date) {
@@ -7023,8 +7016,127 @@ export async function customerRoutes(fastify: FastifyInstance) {
           dateCreated: safeIsoDate,
           staffName: n.staffName,
           staffAvatar: n.staffAvatar || null,
+          source: 'user_note',
         };
       });
+
+      // Query LoCa touchpoint notes
+      let locaItems: SafeAny[] = [];
+      try {
+        const locaTouchpoints = await fastify.prisma.crm.crmLocaTouchpoint.findMany({
+          where: {
+            legacyUserId: customerId,
+            note: { not: null },
+          },
+        });
+        locaItems = locaTouchpoints
+          .filter((tp) => tp.note && tp.note.trim() !== '')
+          .map((loca) => {
+            const safeDate = loca.checkedAt
+              ? loca.checkedAt.toISOString()
+              : loca.updatedAt
+                ? loca.updatedAt.toISOString()
+                : loca.createdAt.toISOString();
+
+            let tpLabel = `LoCa ${loca.touchpointKey}`;
+            switch (loca.touchpointKey) {
+              case '24h':
+                tpLabel = 'LoCa 24h';
+                break;
+              case '17':
+                tpLabel = 'LoCa Dặm mi 17d';
+                break;
+              case '19':
+                tpLabel = 'LoCa Dặm mi 19d';
+                break;
+              case '21':
+                tpLabel = 'LoCa Dặm mi 21d';
+                break;
+              case '23':
+                tpLabel = 'LoCa Dặm mi 23d';
+                break;
+              case '25':
+                tpLabel = 'LoCa Dặm mi 25d';
+                break;
+              case '30':
+                tpLabel = 'LoCa Dặm mi 30d';
+                break;
+              case '30plus':
+                tpLabel = 'LoCa >30d';
+                break;
+            }
+
+            return {
+              id: 10000000 + Number(loca.id),
+              note: loca.note || '',
+              noteFieldKey: 'touchpoint_note',
+              isSticky: false,
+              isIssue: false,
+              dateCreated: safeDate,
+              staffName: loca.checkedByStaffName || 'Staff',
+              staffAvatar: null,
+              source: 'loca_touchpoint',
+              touchpointKey: loca.touchpointKey,
+              touchpointLabel: tpLabel,
+              status: loca.status || (loca.isChecked ? 'SUCCESS' : null),
+            };
+          });
+      } catch (locaErr) {
+        fastify.log.warn(locaErr, 'Failed to fetch loca touchpoint notes for customer');
+      }
+
+      // Query Custom Campaign touchpoint notes
+      let campaignItems: SafeAny[] = [];
+      try {
+        const campaignTouchpoints = await fastify.prisma.crm.crmCampaignTouchpointLog.findMany({
+          where: {
+            campaignCustomer: {
+              legacyUserId: customerId,
+            },
+            note: { not: null },
+          },
+          include: {
+            touchpoint: {
+              include: {
+                campaign: { select: { name: true } },
+              },
+            },
+          },
+        });
+        campaignItems = campaignTouchpoints
+          .filter((camp) => camp.note && camp.note.trim() !== '')
+          .map((camp) => {
+            const safeDate = camp.completedAt ? camp.completedAt.toISOString() : new Date().toISOString();
+            const cName = camp.touchpoint?.campaign?.name || 'Chiến dịch';
+            const tpLabel = camp.touchpoint?.label || camp.touchpoint?.key || 'Điểm chạm';
+
+            return {
+              id: 20000000 + Number(camp.id),
+              note: camp.note || '',
+              noteFieldKey: 'touchpoint_note',
+              isSticky: false,
+              isIssue: false,
+              dateCreated: safeDate,
+              staffName: camp.completedByStaffName || 'Staff',
+              staffAvatar: null,
+              source: 'campaign_touchpoint',
+              touchpointKey: camp.touchpoint?.key || null,
+              touchpointLabel: `${cName} - ${tpLabel}`,
+              status: camp.status || (camp.isChecked ? 'SUCCESS' : null),
+            };
+          });
+      } catch (campErr) {
+        fastify.log.warn(campErr, 'Failed to fetch campaign touchpoint notes for customer');
+      }
+
+      const allItems = [...legacyItems, ...locaItems, ...campaignItems].sort((a, b) => {
+        const timeA = a.dateCreated ? new Date(a.dateCreated).getTime() : 0;
+        const timeB = b.dateCreated ? new Date(b.dateCreated).getTime() : 0;
+        return timeB - timeA;
+      });
+
+      const totalCount = allItems.length;
+      const items = allItems.slice(offset, offset + limitNum);
 
       return {
         items,

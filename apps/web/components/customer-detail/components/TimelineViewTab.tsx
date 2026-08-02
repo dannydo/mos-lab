@@ -261,11 +261,26 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
       }
     }
 
+    const isTouchpoint = n.source === 'loca_touchpoint' || n.source === 'campaign_touchpoint';
+    let noteText = n.note;
+    if (isTouchpoint) {
+      const statusTitle =
+        n.status === 'MESSAGED'
+          ? '💬✓ Nhắn tin'
+          : n.status === 'FAILED'
+            ? '📞❌ Cuộc gọi thất bại'
+            : n.status === 'LOST'
+              ? '💔 Khách từ chối'
+              : '📞✓ Cuộc gọi thành công';
+      const labelStr = n.touchpointLabel ? `[${n.touchpointLabel}] ` : '';
+      noteText = `${labelStr}${statusTitle}: ${n.note}`;
+    }
+
     const item: NoteItem = {
       id: `cs-note-${n.id}`,
       department: 'CS',
       staffName: n.staffName || 'CS Staff',
-      note: n.note,
+      note: noteText,
       date: n.dateCreated ? new Date(n.dateCreated) : new Date(),
       formattedTime: n.dateCreated
         ? new Date(n.dateCreated).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })

@@ -1,8 +1,17 @@
 'use client';
 
 import React from 'react';
-import { Timeline, Button, Tooltip, Skeleton } from 'antd';
-import { WarningOutlined, ClockCircleOutlined, PushpinFilled, PushpinOutlined } from '@ant-design/icons';
+import { Timeline, Button, Tooltip, Skeleton, Tag } from 'antd';
+import {
+  WarningOutlined,
+  ClockCircleOutlined,
+  PushpinFilled,
+  PushpinOutlined,
+  PhoneOutlined,
+  MessageOutlined,
+  CloseCircleOutlined,
+  HeartOutlined,
+} from '@ant-design/icons';
 
 interface NotesTabProps {
   notes: SafeAny[];
@@ -39,6 +48,8 @@ export const NotesTab: React.FC<NotesTabProps> = ({
           <Timeline
             items={notes.map((n: SafeAny) => {
               const isSticky = n.isSticky;
+              const isTouchpoint = n.source === 'loca_touchpoint' || n.source === 'campaign_touchpoint';
+
               let formattedDate = 'N/A';
               if (n.dateCreated) {
                 const d = new Date(n.dateCreated);
@@ -47,13 +58,27 @@ export const NotesTab: React.FC<NotesTabProps> = ({
                 formattedDate = `${dayPrefix}, ${d.toLocaleString('vi-VN')}`;
               }
 
+              let dotIcon = isSticky ? (
+                <WarningOutlined style={{ color: '#ff4d4f', fontSize: '16px' }} />
+              ) : (
+                <ClockCircleOutlined style={{ color: '#1890ff', fontSize: '14px' }} />
+              );
+
+              if (isTouchpoint) {
+                if (n.status === 'MESSAGED') {
+                  dotIcon = <MessageOutlined style={{ color: '#06b6d4', fontSize: '15px' }} />;
+                } else if (n.status === 'FAILED') {
+                  dotIcon = <CloseCircleOutlined style={{ color: '#ef4444', fontSize: '15px' }} />;
+                } else if (n.status === 'LOST') {
+                  dotIcon = <HeartOutlined style={{ color: '#f43f5e', fontSize: '15px' }} />;
+                } else {
+                  dotIcon = <PhoneOutlined style={{ color: '#10b981', fontSize: '15px' }} />;
+                }
+              }
+
               return {
                 key: n.id,
-                dot: isSticky ? (
-                  <WarningOutlined style={{ color: '#ff4d4f', fontSize: '16px' }} />
-                ) : (
-                  <ClockCircleOutlined style={{ color: '#1890ff', fontSize: '14px' }} />
-                ),
+                dot: dotIcon,
                 children: (
                   <div
                     style={{
@@ -61,17 +86,25 @@ export const NotesTab: React.FC<NotesTabProps> = ({
                         ? themeMode === 'dark'
                           ? '#2a1215'
                           : '#fff1f0'
-                        : themeMode === 'dark'
-                          ? '#141414'
-                          : '#fafafa',
+                        : isTouchpoint
+                          ? themeMode === 'dark'
+                            ? '#0f172a'
+                            : '#f0f9ff'
+                          : themeMode === 'dark'
+                            ? '#141414'
+                            : '#fafafa',
                       border: `1px solid ${
                         isSticky
                           ? themeMode === 'dark'
                             ? '#5c1d24'
                             : '#ffa39e'
-                          : themeMode === 'dark'
-                            ? '#303030'
-                            : '#f0f0f0'
+                          : isTouchpoint
+                            ? themeMode === 'dark'
+                              ? '#1e293b'
+                              : '#bae6fd'
+                            : themeMode === 'dark'
+                              ? '#303030'
+                              : '#f0f0f0'
                       }`,
                       borderRadius: '8px',
                       padding: '12px 16px',
@@ -79,8 +112,18 @@ export const NotesTab: React.FC<NotesTabProps> = ({
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>{formattedDate}</span>
-                      {onPinToggle && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>{formattedDate}</span>
+                        {isTouchpoint && n.touchpointLabel && (
+                          <Tag
+                            color="cyan"
+                            style={{ margin: 0, borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}
+                          >
+                            {n.touchpointLabel}
+                          </Tag>
+                        )}
+                      </div>
+                      {!isTouchpoint && onPinToggle && (
                         <Tooltip title={isSticky ? 'Bỏ ghim' : 'Ghim ghi chú'}>
                           <Button
                             type="text"
@@ -92,6 +135,21 @@ export const NotesTab: React.FC<NotesTabProps> = ({
                         </Tooltip>
                       )}
                     </div>
+
+                    {isTouchpoint && (
+                      <div style={{ marginTop: '4px', fontSize: '12px', fontWeight: 600 }}>
+                        {n.status === 'MESSAGED' ? (
+                          <span style={{ color: '#06b6d4' }}>💬✓ Nhắn tin thành công</span>
+                        ) : n.status === 'FAILED' ? (
+                          <span style={{ color: '#ef4444' }}>📞❌ Cuộc gọi thất bại</span>
+                        ) : n.status === 'LOST' ? (
+                          <span style={{ color: '#f43f5e' }}>💔 Khách từ chối / Hủy</span>
+                        ) : (
+                          <span style={{ color: '#10b981' }}>📞✓ Cuộc gọi thành công</span>
+                        )}
+                      </div>
+                    )}
+
                     <div
                       style={{
                         fontSize: '13.5px',
@@ -101,7 +159,7 @@ export const NotesTab: React.FC<NotesTabProps> = ({
                         whiteSpace: 'pre-wrap',
                       }}
                     >
-                      {n.note}
+                      {isTouchpoint ? `📝 Note: ${n.note}` : n.note}
                     </div>
                     <div
                       style={{
@@ -112,7 +170,7 @@ export const NotesTab: React.FC<NotesTabProps> = ({
                         paddingTop: '4px',
                       }}
                     >
-                      Tạo bởi: <strong>{n.staffName}</strong>
+                      {isTouchpoint ? 'Thực hiện bởi:' : 'Tạo bởi:'} <strong>{n.staffName}</strong>
                     </div>
                   </div>
                 ),
