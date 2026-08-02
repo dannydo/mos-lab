@@ -488,33 +488,32 @@ export default function DesignSystemPage() {
           <StatCard
             title="Tổng Số UI Components"
             value={`${allComponentsList.length} Components`}
-            prefix={<AppstoreOutlined className="text-blue-500" />}
-            footerText="Toàn bộ codebase apps/web"
+            icon={<AppstoreOutlined className="text-blue-500" />}
+            subValue="Toàn bộ codebase apps/web"
           />
         </Col>
         <Col xs={24} sm={8} lg={6}>
           <StatCard
             title="Chuẩn Design System"
             value={`${allComponentsList.filter((i) => i.status === 'VERIFIED').length} Components`}
-            prefix={<CheckCircleOutlined className="text-emerald-500" />}
-            footerText="Đạt 100% Theme Tokens"
-            highlight
+            icon={<CheckCircleOutlined className="text-emerald-500" />}
+            subValue="Đạt 100% Theme Tokens"
           />
         </Col>
         <Col xs={24} sm={8} lg={6}>
           <StatCard
             title="Cần Cải Tiến UI / UX"
             value={`${allComponentsList.filter((i) => i.status === 'NEEDS_IMPROVEMENT').length} Components`}
-            prefix={<ExclamationCircleOutlined className="text-amber-500" />}
-            footerText="Cần tối ưu giao diện"
+            icon={<ExclamationCircleOutlined className="text-amber-500" />}
+            subValue="Cần tối ưu giao diện"
           />
         </Col>
         <Col xs={24} sm={24} lg={6}>
           <StatCard
             title="Tỷ Lệ Chuẩn Hóa UI"
             value={`${Math.round((allComponentsList.filter((i) => i.status === 'VERIFIED').length / allComponentsList.length) * 100)}%`}
-            prefix={<SafetyCertificateOutlined className="text-purple-500" />}
-            footerText="Tự động đồng bộ Graphify"
+            icon={<SafetyCertificateOutlined className="text-purple-500" />}
+            subValue="Tự động đồng bộ Graphify"
           />
         </Col>
       </Row>
@@ -863,7 +862,7 @@ export default function DesignSystemPage() {
           Đang xem trước tương tác của component <strong>&lt;{activeDemoModal} /&gt;</strong>. Component này đã được
           đồng bộ chuẩn hóa theo Design Tokens của ứng dụng.
         </Paragraph>
-        <StatusTag type="success" text="Verified Component" />
+        <StatusTag status="success" label="Verified Component" />
       </Modal>
     </div>
   );

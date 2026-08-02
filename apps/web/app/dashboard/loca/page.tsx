@@ -1069,13 +1069,7 @@ export default function LocaCampaignPage() {
 
                         <Tooltip title="Mã định danh Key (ví dụ: now, 17)">
                           <div className="w-24">
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'key']}
-                              margin="none"
-                              noStyle
-                              rules={[{ required: true }]}
-                            >
+                            <Form.Item {...restField} name={[name, 'key']} noStyle rules={[{ required: true }]}>
                               <Input placeholder="Key" size="small" style={{ fontSize: '12px' }} />
                             </Form.Item>
                           </div>
@@ -1083,13 +1077,7 @@ export default function LocaCampaignPage() {
 
                         <Tooltip title="Tên nhãn hiển thị (ví dụ: Chạm 24h)">
                           <div className="flex-1 min-w-0">
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'label']}
-                              margin="none"
-                              noStyle
-                              rules={[{ required: true }]}
-                            >
+                            <Form.Item {...restField} name={[name, 'label']} noStyle rules={[{ required: true }]}>
                               <Input placeholder="Tên hiển thị" size="small" style={{ fontSize: '12px' }} />
                             </Form.Item>
                           </div>
@@ -1097,13 +1085,7 @@ export default function LocaCampaignPage() {
 
                         <div className="flex items-center gap-1 w-32">
                           <Tooltip title="Số ngày Min">
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'daysMin']}
-                              margin="none"
-                              noStyle
-                              rules={[{ required: true }]}
-                            >
+                            <Form.Item {...restField} name={[name, 'daysMin']} noStyle rules={[{ required: true }]}>
                               <InputNumber
                                 min={0}
                                 placeholder="Min"
@@ -1114,13 +1096,7 @@ export default function LocaCampaignPage() {
                           </Tooltip>
                           <span className="text-slate-400 text-xs">-</span>
                           <Tooltip title="Số ngày Max">
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'daysMax']}
-                              margin="none"
-                              noStyle
-                              rules={[{ required: true }]}
-                            >
+                            <Form.Item {...restField} name={[name, 'daysMax']} noStyle rules={[{ required: true }]}>
                               <InputNumber
                                 min={0}
                                 placeholder="Max"
@@ -1133,13 +1109,7 @@ export default function LocaCampaignPage() {
 
                         <Tooltip title="Màu sắc đại diện">
                           <div className="w-28">
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'color']}
-                              margin="none"
-                              noStyle
-                              rules={[{ required: true }]}
-                            >
+                            <Form.Item {...restField} name={[name, 'color']} noStyle rules={[{ required: true }]}>
                               <GoogleSheetColorPicker size="small" />
                             </Form.Item>
                           </div>

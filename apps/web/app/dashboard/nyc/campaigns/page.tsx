@@ -658,7 +658,7 @@ export default function CampaignManagementPage() {
                         }}
                         options={staffList.map((s) => ({
                           value: s.id,
-                          label: `${s.displayName || s.name || s.username} (${s.username})`,
+                          label: `${s.displayName || s.username} (${s.username})`,
                         }))}
                       />
                     </Form.Item>
