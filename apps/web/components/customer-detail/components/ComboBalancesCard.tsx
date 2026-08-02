@@ -34,7 +34,7 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = ({
       <Card
         title={
           <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
-            <InboxOutlined /> GÓI DỊCH VỤ ĐANG CHẠY
+            <InboxOutlined /> GÓI COMBO ĐANG CHẠY
           </span>
         }
         size="small"
