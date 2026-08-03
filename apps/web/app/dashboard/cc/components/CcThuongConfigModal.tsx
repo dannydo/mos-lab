@@ -7,6 +7,8 @@ import { DailySalesBonusConfig, DailySalesBonusConfigTier } from '@mos-lab/share
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 
+import { ColumnsType } from 'antd/es/table';
+
 const { Text, Title } = Typography;
 
 interface CcThuongConfigModalProps {
@@ -85,7 +87,7 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
     }
   };
 
-  const columns = [
+  const columns: ColumnsType<DailySalesBonusConfigTier> = [
     {
       title: 'Tier / Cấp',
       dataIndex: 'position',
@@ -100,6 +102,7 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
       title: 'Doanh Số Tối Thiểu (đ)',
       dataIndex: 'value_required_min',
       key: 'value_required_min',
+      align: 'right',
       render: (val: number, record: DailySalesBonusConfigTier, index: number) => (
         <InputNumber
           value={val}
@@ -117,6 +120,7 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
       title: 'Doanh Số Tối Đa (đ)',
       dataIndex: 'value_required_max',
       key: 'value_required_max',
+      align: 'right',
       render: (val: number, record: DailySalesBonusConfigTier, index: number) => (
         <InputNumber
           value={val}
@@ -135,6 +139,7 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
       title: 'Tỷ Lệ Thưởng (%)',
       dataIndex: 'reward_amount',
       key: 'reward_amount',
+      align: 'right',
       width: 140,
       render: (val: number, record: DailySalesBonusConfigTier, index: number) => (
         <InputNumber

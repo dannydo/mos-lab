@@ -3,6 +3,8 @@
 import React from 'react';
 import { Modal, Button, Table, Tag } from 'antd';
 
+import { ColumnsType } from 'antd/es/table';
+
 interface ComboHistoryModalProps {
   open: boolean;
   onCancel: () => void;
@@ -20,7 +22,7 @@ export const ComboHistoryModal: React.FC<ComboHistoryModalProps> = ({
   modalWidth,
   handleModalDragStart,
 }) => {
-  const comboHistoryColumns = [
+  const comboHistoryColumns: ColumnsType<SafeAny> = [
     {
       title: 'Tên Combo',
       key: 'serviceName',
@@ -48,6 +50,7 @@ export const ComboHistoryModal: React.FC<ComboHistoryModalProps> = ({
       title: 'Giá tiền',
       dataIndex: 'packagePrice',
       key: 'packagePrice',
+      align: 'right',
       render: (val: number | null | undefined) => {
         if (val === null || val === undefined) {
           return 'N/A';

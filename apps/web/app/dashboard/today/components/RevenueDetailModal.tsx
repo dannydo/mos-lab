@@ -3,6 +3,8 @@ import { Modal, Table, Tag, Row, Col, Card } from 'antd';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
 
+import { ColumnsType } from 'antd/es/table';
+
 interface RevenueDetailModalProps {
   themeMode: 'light' | 'dark';
   token: any;
@@ -56,7 +58,7 @@ export const RevenueDetailModal: React.FC<RevenueDetailModalProps> = ({
   const transactions = data?.transactions || [];
   const summary = data?.summary || { totalRevenue: 0, comboRevenue: 0, singleRevenue: 0, productRevenue: 0, aov: 0 };
 
-  const columns = [
+  const columns: ColumnsType<any> = [
     {
       title: 'Thời gian',
       dataIndex: 'checkinTime',
@@ -88,7 +90,8 @@ export const RevenueDetailModal: React.FC<RevenueDetailModalProps> = ({
       title: 'Giá',
       dataIndex: 'price',
       key: 'price',
-      render: (val: number) => formatVnd(val),
+      align: 'right',
+      render: (val: number) => <span className="tabular-nums font-medium">{formatVnd(val)}</span>,
     },
     { title: 'CC In', dataIndex: 'ccInName', key: 'ccInName', render: (val: string) => val || '-' },
     { title: 'CC Out', dataIndex: 'ccOutName', key: 'ccOutName', render: (val: string) => val || '-' },

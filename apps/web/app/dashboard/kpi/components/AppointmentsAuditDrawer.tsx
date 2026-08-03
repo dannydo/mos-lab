@@ -709,10 +709,13 @@ export default function AppointmentsAuditDrawer({
                 title: 'Doanh thu Net',
                 dataIndex: 'netRevenue',
                 key: 'netRevenue',
+                align: 'right',
                 sorter: (a: SafeAny, b: SafeAny) => a.netRevenue - b.netRevenue,
                 render: (val: number) =>
                   val > 0 ? (
-                    <span style={{ fontWeight: '600', color: token.colorText }}>{val.toLocaleString('vi-VN')} đ</span>
+                    <span className="tabular-nums" style={{ fontWeight: '600', color: token.colorText }}>
+                      {val.toLocaleString('vi-VN')} đ
+                    </span>
                   ) : (
                     <span style={{ color: token.colorTextDescription }}>-</span>
                   ),
@@ -721,10 +724,13 @@ export default function AppointmentsAuditDrawer({
                 title: 'Tiền tips',
                 dataIndex: 'tipAmount',
                 key: 'tipAmount',
+                align: 'right',
                 sorter: (a: SafeAny, b: SafeAny) => a.tipAmount - b.tipAmount,
                 render: (val: number) =>
                   val > 0 ? (
-                    <span style={{ color: token.colorText }}>{val.toLocaleString('vi-VN')} đ</span>
+                    <span className="tabular-nums" style={{ color: token.colorText }}>
+                      {val.toLocaleString('vi-VN')} đ
+                    </span>
                   ) : (
                     <span style={{ color: token.colorTextDescription }}>-</span>
                   ),
@@ -733,10 +739,13 @@ export default function AppointmentsAuditDrawer({
                 title: 'Hoa hồng OC',
                 dataIndex: 'bookingBonus',
                 key: 'bookingBonus',
+                align: 'right',
                 sorter: (a: SafeAny, b: SafeAny) => a.bookingBonus - b.bookingBonus,
                 render: (val: number) =>
                   val > 0 ? (
-                    <span style={{ fontWeight: '600', color: '#52C41A' }}>+{val.toLocaleString('vi-VN')} đ</span>
+                    <span className="tabular-nums" style={{ fontWeight: '600', color: '#52C41A' }}>
+                      +{val.toLocaleString('vi-VN')} đ
+                    </span>
                   ) : (
                     <span style={{ color: token.colorTextDescription }}>-</span>
                   ),

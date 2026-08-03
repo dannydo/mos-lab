@@ -38,6 +38,7 @@ const RescheduleBookingModal = dynamic(
   { ssr: false }
 );
 import { useAppointmentsData } from './hooks/useAppointmentsData';
+import { ColumnsType } from 'antd/es/table';
 import { getPendingColumns, getCompletedColumns, getMissedColumns } from './components/AppointmentColumns';
 import MissedSummaryCards from './components/MissedSummaryCards';
 import MissedReasonModal from './components/MissedReasonModal';
@@ -212,7 +213,7 @@ export default function AppointmentsPage() {
   const baseColumns =
     activeTab === 'completed' ? completedColumns : activeTab === 'missed' ? missedColumns : pendingColumns;
 
-  const columns = React.useMemo(
+  const columns = React.useMemo<ColumnsType<Appointment>>(
     () =>
       baseColumns
         .filter((col) => {

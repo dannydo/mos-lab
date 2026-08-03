@@ -18,6 +18,18 @@ export interface TabConfigs {
   [key: string]: Touchpoint[];
 }
 
+export interface CustomTouchpoint {
+  key: string;
+  daysMin: number;
+  daysMax: number;
+}
+
+export const DEFAULT_CUSTOM_TOUCHPOINTS: CustomTouchpoint[] = [
+  { key: 'CUSTOM_0', daysMin: 31, daysMax: 35 },
+  { key: 'CUSTOM_1', daysMin: 36, daysMax: 40 },
+  { key: 'CUSTOM_2', daysMin: 41, daysMax: 45 },
+];
+
 export const TAB_KEYS = [
   { id: 'NEW_LOCA', name: 'New LoCa', description: 'Khách hàng vừa mua Combo mới' },
   { id: 'LOCA_ALL', name: 'LoCa (Tất cả)', description: 'Tất cả khách hàng Combo Live' },
@@ -73,6 +85,12 @@ export function useLocaData(options?: UseLocaDataOptions) {
     optionsRef.current = options;
   }, [options]);
 
+  // ===== Performance: Initialization Gate + Debounce (Phase 1 Optimization) =====
+  // Prevents 6x duplicate API calls on mount caused by useEffect dependency cascade
+  const isInitializedRef = useRef(false);
+  const touchpointDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const customerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Current User initialized synchronously from localStorage
   const [currentUser, setCurrentUser] = useState<Staff | null>(() => {
     if (typeof window !== 'undefined') {
@@ -100,7 +118,97 @@ export function useLocaData(options?: UseLocaDataOptions) {
     }
     return 'LOCA_ALL';
   });
-  const [activeTouchpointKey, setActiveTouchpointKey] = useState<string>('ALL');
+  // Custom Touchpoints (3 filter range boxes after Chạm 30)
+  const [customTouchpoints, setCustomTouchpoints] = useState<CustomTouchpoint[]>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlCtp0 = urlParams.get('ctp0');
+      const urlCtp1 = urlParams.get('ctp1');
+      const urlCtp2 = urlParams.get('ctp2');
+      if (urlCtp0 || urlCtp1 || urlCtp2) {
+        const parseCtp = (str: string | null, defMin: number, defMax: number, key: string) => {
+          if (!str) return { key, daysMin: defMin, daysMax: defMax };
+          const parts = str.split('-').map(Number);
+          if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+            return { key, daysMin: parts[0], daysMax: parts[1] };
+          }
+          return { key, daysMin: defMin, daysMax: defMax };
+        };
+        return [
+          parseCtp(urlCtp0, 31, 35, 'CUSTOM_0'),
+          parseCtp(urlCtp1, 36, 40, 'CUSTOM_1'),
+          parseCtp(urlCtp2, 41, 45, 'CUSTOM_2'),
+        ];
+      }
+      const saved = localStorage.getItem('mos_loca_custom_touchpoints');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length >= 3) {
+            return parsed;
+          }
+        } catch (e) {
+          console.error('Failed to parse custom touchpoints:', e);
+        }
+      }
+    }
+    return DEFAULT_CUSTOM_TOUCHPOINTS;
+  });
+
+  const [activeTouchpointKey, setActiveTouchpointKeyState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTp = urlParams.get('touchpoint') || urlParams.get('activeTouchpointKey');
+      const savedTp = urlTp || localStorage.getItem('mos_loca_activeTouchpointKey');
+      if (savedTp) {
+        return savedTp;
+      }
+    }
+    return 'ALL';
+  });
+
+  const setActiveTouchpointKey = useCallback((key: string) => {
+    setActiveTouchpointKeyState(key);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mos_loca_activeTouchpointKey', key);
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('touchpoint') !== key) {
+        url.searchParams.set('touchpoint', key);
+        window.history.replaceState(null, '', url.pathname + url.search);
+      }
+    }
+  }, []);
+
+  const updateCustomTouchpoint = useCallback((index: number, daysMin: number, daysMax: number) => {
+    setCustomTouchpoints((prev) => {
+      const next = [...prev];
+      if (next[index]) {
+        next[index] = { ...next[index], daysMin, daysMax };
+      }
+      return next;
+    });
+  }, []);
+
+  // Sync customTouchpoints to localStorage and URL search params safely in useEffect
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mos_loca_custom_touchpoints', JSON.stringify(customTouchpoints));
+      const url = new URL(window.location.href);
+      let updated = false;
+      customTouchpoints.forEach((item, idx) => {
+        const paramKey = `ctp${idx}`;
+        const paramVal = `${item.daysMin}-${item.daysMax}`;
+        if (url.searchParams.get(paramKey) !== paramVal) {
+          url.searchParams.set(paramKey, paramVal);
+          updated = true;
+        }
+      });
+      if (updated) {
+        window.history.replaceState(null, '', url.pathname + url.search);
+      }
+    }
+  }, [customTouchpoints]);
+
   const [contactSubTab, setContactSubTab] = useState<'ALL' | 'CALL' | 'TEXT'>('ALL');
 
   // Date Navigation States for New LoCa
@@ -179,16 +287,6 @@ export function useLocaData(options?: UseLocaDataOptions) {
     }
   }, [currentUser]);
 
-  useEffect(() => {
-    fetchConfigs();
-  }, [fetchConfigs]);
-
-  useEffect(() => {
-    if (currentUser) {
-      fetchStaffList();
-    }
-  }, [currentUser, fetchStaffList]);
-
   // Fetch planned list for today
   const fetchTodayPlans = useCallback(async () => {
     try {
@@ -200,10 +298,6 @@ export function useLocaData(options?: UseLocaDataOptions) {
       console.error('Failed to load today call plans:', err);
     }
   }, []);
-
-  useEffect(() => {
-    fetchTodayPlans();
-  }, [fetchTodayPlans]);
 
   const fetchOverallStats = useCallback(async () => {
     try {
@@ -223,9 +317,40 @@ export function useLocaData(options?: UseLocaDataOptions) {
     }
   }, []);
 
+  // ===== Consolidated Initialization Effect =====
+  // Loads config first, then fires all dependent fetches exactly once on mount.
+  // This replaces 4 separate useEffects that each triggered independently on mount,
+  // causing 4-6x duplicate API calls due to React Strict Mode + state cascade.
   useEffect(() => {
-    fetchOverallStats();
-  }, [fetchOverallStats]);
+    let cancelled = false;
+    const initialize = async () => {
+      // Step 1: Load touchpoint configs (required before data fetches)
+      try {
+        const data = await apiClient.loca.getConfig();
+        if (!cancelled) setConfigs(data as SafeAny);
+      } catch (err) {
+        console.error('Failed to load touchpoint config:', err);
+        optionsRef.current?.onError?.('Không thể tải cấu hình touchpoints LoCa.');
+      }
+
+      // Step 2: Fire all independent fetches in parallel (exactly once)
+      if (!cancelled) {
+        isInitializedRef.current = true;
+        await Promise.allSettled([
+          fetchStaffList(),
+          fetchTodayPlans(),
+          fetchOverallStats(),
+          fetchTouchpointCounts(),
+          fetchCustomerList(),
+        ]);
+      }
+    };
+    initialize();
+    return () => {
+      cancelled = true;
+    };
+     
+  }, []);
 
   // Date Range calculation for New LoCa
   const dateRange = useMemo(() => {
@@ -259,6 +384,9 @@ export function useLocaData(options?: UseLocaDataOptions) {
     else setSelectedDate((d) => d.add(1, 'day'));
   }, [datePreset]);
 
+  // Stabilize customTouchpoints reference for dependency tracking
+  const customTouchpointsKey = useMemo(() => JSON.stringify(customTouchpoints), [customTouchpoints]);
+
   // Fetch Touchpoint & Tab Counts via 1 single Batch Stats API call
   const fetchTouchpointCounts = useCallback(async () => {
     try {
@@ -267,6 +395,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
         assignedStaffId: assignedStaffId || 'ALL',
         dateFrom: dateRange.dateFrom,
         dateTo: dateRange.dateTo,
+        customTouchpoints: customTouchpointsKey,
       };
 
       const locaStats = await apiClient.customers.getLocaStats(params as SafeAny);
@@ -286,12 +415,19 @@ export function useLocaData(options?: UseLocaDataOptions) {
     } catch (err) {
       console.error('Failed to load touchpoint counts:', err);
     }
-  }, [searchQuery, assignedStaffId, currentUser, dateRange]);
+  }, [searchQuery, assignedStaffId, currentUser, dateRange, customTouchpointsKey]);
 
+  // Debounced touchpoint counts fetcher (300ms)
   useEffect(() => {
-    if (Object.keys(configs).length > 0) {
+    if (!isInitializedRef.current) return;
+    if (Object.keys(configs).length === 0) return;
+    if (touchpointDebounceRef.current) clearTimeout(touchpointDebounceRef.current);
+    touchpointDebounceRef.current = setTimeout(() => {
       fetchTouchpointCounts();
-    }
+    }, 300);
+    return () => {
+      if (touchpointDebounceRef.current) clearTimeout(touchpointDebounceRef.current);
+    };
   }, [configs, searchQuery, assignedStaffId, fetchTouchpointCounts]);
 
   const fetchCustomerList = useCallback(async () => {
@@ -299,7 +435,20 @@ export function useLocaData(options?: UseLocaDataOptions) {
     setLoading(true);
     try {
       const activeTabConfig = configs['LOCA_ALL'] || [];
-      const currentTp = activeTabConfig.find((tp) => tp.key === activeTouchpointKey);
+      let currentTp = activeTabConfig.find((tp) => tp.key === activeTouchpointKey);
+
+      if (!currentTp && activeTouchpointKey.startsWith('CUSTOM_')) {
+        const cTp = customTouchpoints.find((ctp) => ctp.key === activeTouchpointKey);
+        if (cTp) {
+          currentTp = {
+            key: cTp.key,
+            label: `${cTp.daysMin}-${cTp.daysMax} ngày`,
+            daysMin: cTp.daysMin,
+            daysMax: cTp.daysMax,
+            color: '#F59E0B',
+          };
+        }
+      }
 
       const daysFrom = currentTp ? currentTp.daysMin : undefined;
       const daysTo = currentTp ? currentTp.daysMax : undefined;
@@ -366,14 +515,22 @@ export function useLocaData(options?: UseLocaDataOptions) {
     assignedStaffId,
     bookingStatusFilter,
     configs,
+    customTouchpointsKey,
     currentUser,
     dateRange,
   ]);
 
+  // Debounced customer list fetcher (300ms)
   useEffect(() => {
-    if (Object.keys(configs).length > 0) {
+    if (!isInitializedRef.current) return;
+    if (Object.keys(configs).length === 0) return;
+    if (customerDebounceRef.current) clearTimeout(customerDebounceRef.current);
+    customerDebounceRef.current = setTimeout(() => {
       fetchCustomerList();
-    }
+    }, 300);
+    return () => {
+      if (customerDebounceRef.current) clearTimeout(customerDebounceRef.current);
+    };
   }, [
     configs,
     currentPage,
@@ -616,10 +773,11 @@ export function useLocaData(options?: UseLocaDataOptions) {
     addingIds,
     datePreset,
     selectedDate,
-    bookingStatusFilter,
+    customTouchpoints,
     // setters
     setActiveTab: changeActiveTab,
     setActiveTouchpointKey,
+    updateCustomTouchpoint,
     setContactSubTab,
     setSearchQuery,
     setSortField,

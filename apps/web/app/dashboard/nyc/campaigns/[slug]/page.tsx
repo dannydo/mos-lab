@@ -2,6 +2,7 @@
 
 import '../../../../suppress-warnings';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { ColumnsType } from 'antd/es/table';
 import {
   Table,
   Button,
@@ -880,7 +881,7 @@ export default function CampaignDetailPage() {
   }, [touchpoints]);
 
   // Customer Table Columns (Matching NYC Main Table)
-  const columns = [
+  const columns: ColumnsType<any> = [
     {
       title: 'STT',
       key: 'stt',
@@ -1026,6 +1027,7 @@ export default function CampaignDetailPage() {
       title: 'Tổng Chi Tiêu',
       dataIndex: 'totalSpent',
       key: 'totalSpent',
+      align: 'right',
       width: 110,
       render: (val: number, record: any) => {
         const spent = val ?? record.totalSpent ?? 0;

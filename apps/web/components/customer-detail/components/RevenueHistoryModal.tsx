@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Button, Table, Tag } from 'antd';
 import { LineChartOutlined } from '@ant-design/icons';
+import { ColumnsType } from 'antd/es/table';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatVND } from '../../../lib/format-utils';
 
@@ -177,7 +178,7 @@ export const RevenueHistoryModal: React.FC<RevenueHistoryModalProps> = ({
     );
   };
 
-  const rawColumns = [
+  const rawColumns: ColumnsType<RevenueTransaction> = [
     {
       title: 'Thời gian',
       dataIndex: 'bookingDate',
@@ -231,8 +232,11 @@ export const RevenueHistoryModal: React.FC<RevenueHistoryModalProps> = ({
       title: 'Tip',
       dataIndex: 'tipAmount',
       key: 'tipAmount',
+      align: 'right',
       render: (val: number) => (
-        <span style={{ color: themeMode === 'dark' ? '#4ade80' : '#16a34a' }}>{val > 0 ? formatVND(val) : '0 đ'}</span>
+        <span className="tabular-nums" style={{ color: themeMode === 'dark' ? '#4ade80' : '#16a34a' }}>
+          {val > 0 ? formatVND(val) : '0 đ'}
+        </span>
       ),
       width: colWidths.tipAmount,
     },
@@ -240,8 +244,12 @@ export const RevenueHistoryModal: React.FC<RevenueHistoryModalProps> = ({
       title: 'Nợ',
       dataIndex: 'debtAmount',
       key: 'debtAmount',
+      align: 'right',
       render: (val: number) => (
-        <span style={{ color: themeMode === 'dark' ? '#f87171' : '#dc2626', fontWeight: val > 0 ? 'bold' : 'normal' }}>
+        <span
+          className="tabular-nums"
+          style={{ color: themeMode === 'dark' ? '#f87171' : '#dc2626', fontWeight: val > 0 ? 'bold' : 'normal' }}
+        >
           {val > 0 ? formatVND(val) : '0 đ'}
         </span>
       ),
@@ -251,8 +259,11 @@ export const RevenueHistoryModal: React.FC<RevenueHistoryModalProps> = ({
       title: 'Tổng hóa đơn',
       dataIndex: 'totalPrice',
       key: 'totalPrice',
+      align: 'right',
       render: (val: number) => (
-        <strong style={{ color: themeMode === 'dark' ? '#fbbf24' : '#d97706' }}>{formatVND(val)}</strong>
+        <strong className="tabular-nums" style={{ color: themeMode === 'dark' ? '#fbbf24' : '#d97706' }}>
+          {formatVND(val)}
+        </strong>
       ),
       width: colWidths.totalPrice,
     },

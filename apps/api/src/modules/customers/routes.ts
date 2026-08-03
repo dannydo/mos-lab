@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
 import { BucketType, SafeAny } from '@mos-lab/shared';
 import { registerAllocationCron } from './services/allocation-cron.service.js';
-import { ComboRecognitionService } from './services/combo-recognition.service.js';
+import { ComboRecognitionService, parseComboDateBounds } from './services/combo-recognition.service.js';
 import { UserServiceTypeService } from './services/user-service-type.service.js';
 import { getBkPaystubData } from '../kpi/services/bk-salary.service.js';
 import { registerDashboardRoutes } from './routes/dashboard.routes.js';
@@ -1908,7 +1908,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // Batch stats endpoint for LoCa campaign: returns all tab counts and touchpoint counts in 1 SQL query
   fastify.get('/customers/loca-stats', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      const { search, assignedStaffId, dateFrom, dateTo } = request.query as SafeAny;
+      const { search, assignedStaffId, dateFrom, dateTo, customTouchpoints } = request.query as SafeAny;
 
       const adminUser = request.user;
       let effectiveAssignedStaffId = assignedStaffId;
@@ -1967,13 +1967,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
         )
       ).map((r) => Number(r.user_id));
 
-      const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
-      const activeLocaUserIds = Array.from(new Set([...comboLiveUserIds, ...newLocaUserIds]));
+      // Phase 2 Optimization: Skip expensive getNewLoCaCustomerIds() UNION query.
+      // The is_new_loca flag will be computed inline via EXISTS subquery in SQL instead.
+      // comboLiveUserIds is sufficient for the base user set filtering.
 
       if (allowedUserIds !== null) {
-        allowedUserIds = allowedUserIds.filter((id) => activeLocaUserIds.includes(id));
+        allowedUserIds = allowedUserIds.filter((id) => comboLiveUserIds.includes(id));
       } else {
-        allowedUserIds = activeLocaUserIds;
+        allowedUserIds = comboLiveUserIds;
       }
 
       if (allowedUserIds.length === 0) {
@@ -2036,8 +2037,36 @@ export async function customerRoutes(fastify: FastifyInstance) {
       ];
       const activeTouchpoints = config ? JSON.parse(config.value)?.LOCA_ALL || defaultTouchpoints : defaultTouchpoints;
 
-      const newLocaExpr =
-        newLocaUserIds.length > 0 ? `CASE WHEN u.id IN (${newLocaUserIds.join(',')}) THEN 1 ELSE 0 END` : '0';
+      if (customTouchpoints) {
+        try {
+          const parsedCustom =
+            typeof customTouchpoints === 'string' ? JSON.parse(customTouchpoints) : customTouchpoints;
+          if (Array.isArray(parsedCustom)) {
+            parsedCustom.forEach((ctp: SafeAny) => {
+              if (ctp && ctp.key && !activeTouchpoints.some((tp: SafeAny) => tp.key === ctp.key)) {
+                activeTouchpoints.push(ctp);
+              }
+            });
+          }
+        } catch (e) {
+          console.error('Failed to parse customTouchpoints in loca-stats:', e);
+        }
+      }
+
+      // Phase 2 Optimization: Inline EXISTS subquery for is_new_loca
+      // instead of pre-fetching IDs via getNewLoCaCustomerIds() + building huge IN(...) list.
+      // MySQL optimizer handles EXISTS efficiently by stopping at first matching row.
+      const { startStr: nlDateFrom, endStr: nlDateTo } = parseComboDateBounds(dateFrom, dateTo);
+      const newLocaExpr = `EXISTS (
+            SELECT 1 FROM \`order\` o_nl
+            JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
+            LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
+            WHERE o_nl.user_id = u.id
+              AND o_nl.order_state = 'Completed'
+              AND osc_nl.total_price > 0
+              AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= '${nlDateFrom}'
+              AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= '${nlDateTo}'
+          )`;
 
       // Build dynamic SELECT for touchpoints
       const tpSelects = activeTouchpoints
@@ -2080,6 +2109,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
               ELSE 0 
             END as is_lsd1,
             DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
+            up.last_order_booking as lastOrderBooking,
             EXISTS (
               SELECT 1 FROM order_service os_p 
               WHERE os_p.user_id = u.id AND (

@@ -1170,3 +1170,22 @@ body {
   border-radius: 50% !important;
   display: block !important;
 }
+
+/* ===== Tabular-Nums: Prevent number jitter (AGENTS.md Rule #4 & #5) ===== */
+.ant-table-cell,
+.ant-badge-count,
+.ant-tabs-tab,
+.ant-statistic-content-value,
+.ant-pagination-item,
+.ant-pagination-total-text,
+.ant-tag,
+.ant-descriptions-item-content,
+.ant-card-meta-detail,
+[class*='touchpoint-count'],
+[class*='stat-value'],
+[class*='kpi-value'],
+[class*='counter'],
+[class*='timer'] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}

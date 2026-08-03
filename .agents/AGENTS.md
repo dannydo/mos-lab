@@ -482,6 +482,28 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 2. **Kho Biểu Tượng Tập Trung**: Hỗ trợ đồng bộ 4 nhóm: Ant Design (447 icons), Lucide (1995 icons), Emoji (200+ emojis), và Custom SVG icons (4 icons).
 3. **Hàm Render Chuẩn (`getIconComponent` / `renderIconHelper`)**: Sử dụng `renderIconHelper` / `getIconComponent` từ `IconSystem.tsx` để render sắc nét tất cả các định dạng icon (`Antd`, `lucide:*`, `custom:*`, `emoji`). Tuyệt đối không viết lại component chọn icon rời rạc hoặc hardcode danh sách icon nhỏ lẻ.
 
+---
+
+# 📊 Strict Ant Design Table Column `ColumnsType<T>` Explicit Type Annotation Rule
+
+1. **Explicit Type Annotation**: Every Ant Design `<Table>` column definition array, `useMemo` column array, or column generator function (`getPendingColumns`, `getStaffColumns`, `getNycColumns`, `getLocaColumns`, etc.) **MUST** be explicitly typed with `ColumnsType<T>` imported from `'antd/es/table'` (or `TableProps<T>['columns']`).
+2. **Literal Type Safety**: Never leave column definitions un-annotated when setting properties like `align: 'right'`, `align: 'center'`, or custom `sorter`/`render` functions, as TypeScript will infer `align` as standard `string` instead of `AlignType`, breaking Next.js production type checks (`pnpm --filter @mos-lab/web build`).
+3. **Example**:
+   ```typescript
+   import { ColumnsType } from 'antd/es/table';
+
+   export const getColumns = (...): ColumnsType<MyDataType> => [
+     {
+       title: 'Số tiền',
+       dataIndex: 'amount',
+       key: 'amount',
+       align: 'right',
+       render: (val: number) => <span className="tabular-nums">{formatVND(val)}</span>,
+     },
+   ];
+   ```
+
+
 
 
 

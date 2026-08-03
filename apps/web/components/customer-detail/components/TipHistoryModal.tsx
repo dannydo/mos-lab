@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Button, Table, Tag } from 'antd';
 import { DollarOutlined } from '@ant-design/icons';
+import { ColumnsType } from 'antd/es/table';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatVND } from '../../../lib/format-utils';
 
@@ -140,7 +141,7 @@ export const TipHistoryModal: React.FC<TipHistoryModalProps> = ({
     });
   };
 
-  const rawColumns = [
+  const rawColumns: ColumnsType<TipTransaction> = [
     {
       title: 'Thời gian',
       dataIndex: 'bookingDate',
@@ -159,8 +160,10 @@ export const TipHistoryModal: React.FC<TipHistoryModalProps> = ({
       title: 'Tiền Tip',
       dataIndex: 'tipAmount',
       key: 'tipAmount',
+      align: 'right',
       render: (val: number) => (
         <span
+          className="tabular-nums"
           style={{
             fontWeight: 'bold',
             color: themeMode === 'dark' ? '#4ade80' : '#22c55e',
@@ -189,8 +192,11 @@ export const TipHistoryModal: React.FC<TipHistoryModalProps> = ({
       title: 'Tổng hóa đơn',
       dataIndex: 'totalPrice',
       key: 'totalPrice',
+      align: 'right',
       render: (val: number) => (
-        <strong style={{ color: themeMode === 'dark' ? '#fbbf24' : '#d97706' }}>{formatVND(val)}</strong>
+        <strong className="tabular-nums" style={{ color: themeMode === 'dark' ? '#fbbf24' : '#d97706' }}>
+          {formatVND(val)}
+        </strong>
       ),
       width: colWidths.totalPrice,
     },

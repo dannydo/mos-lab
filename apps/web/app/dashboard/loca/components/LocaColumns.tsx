@@ -8,6 +8,8 @@ import dayjs from 'dayjs';
 import { Customer, TouchpointStatus, CALL_RESULT_LABELS } from '@mos-lab/shared';
 import { LocaTouchpointCell } from './LocaTouchpointCell';
 
+import { ColumnsType } from 'antd/es/table';
+
 const { Text } = Typography;
 
 interface LocaColumnsOptions {
@@ -66,7 +68,7 @@ export const getLocaColumns = ({
   sortField = 'daysSinceLastVisit_asc',
   currentPage = 1,
   pageSize = 20,
-}: LocaColumnsOptions) => {
+}: LocaColumnsOptions): ColumnsType<Customer> => {
   // Filter touchpoint configs from 24h to 30 days
   const baseConfigs =
     touchpointConfigs && touchpointConfigs.length > 0
@@ -533,7 +535,7 @@ export const getNewLocaColumns = ({
   sortField = 'id_desc',
   currentPage = 1,
   pageSize = 20,
-}: LocaColumnsOptions) => {
+}: LocaColumnsOptions): ColumnsType<Customer> => {
   return [
     {
       title: 'STT',
@@ -614,6 +616,7 @@ export const getNewLocaColumns = ({
     {
       title: 'Combo Mới & Doanh Thu',
       key: 'comboDetails',
+      align: 'right',
       width: 170,
       render: (_: SafeAny, record: Customer) => {
         const details = record.newComboDetails;

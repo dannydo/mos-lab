@@ -16,6 +16,8 @@ import { Appointment } from '@mos-lab/shared';
 import CalendarPlusIcon from '../../../../components/icons/CalendarPlusIcon';
 import CalendarRescheduleIcon from '../../../../components/icons/CalendarRescheduleIcon';
 
+import { ColumnsType } from 'antd/es/table';
+
 const { Text, Paragraph } = Typography;
 
 interface ColumnsOptions {
@@ -41,7 +43,7 @@ export const getPendingColumns = ({
   setSelectedBookingForReschedule,
   setRescheduleModalVisible,
   handleCancelBooking,
-}: ColumnsOptions) => {
+}: ColumnsOptions): ColumnsType<Appointment> => {
   return [
     {
       title: 'STT',
@@ -123,6 +125,7 @@ export const getPendingColumns = ({
       title: 'Giá trị ước tính',
       dataIndex: 'totalPrice',
       key: 'totalPrice',
+      align: 'right',
       sorter: (a: Appointment, b: Appointment) => a.totalPrice - b.totalPrice,
       render: (price: number) => (
         <span style={{ fontWeight: '500', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}>
@@ -328,7 +331,7 @@ export const getCompletedColumns = ({
 }: Omit<
   ColumnsOptions,
   'makeCall' | 'setSelectedBookingForReschedule' | 'setRescheduleModalVisible' | 'handleCancelBooking'
->) => {
+>): ColumnsType<Appointment> => {
   return [
     {
       title: 'STT',
@@ -469,6 +472,7 @@ export const getCompletedColumns = ({
       title: 'Doanh thu Net',
       dataIndex: 'netRevenue',
       key: 'netRevenue',
+      align: 'right',
       sorter: (a: Appointment, b: Appointment) => (a.netRevenue || 0) - (b.netRevenue || 0),
       render: (val: number) => (
         <span style={{ fontWeight: '500', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}>
@@ -480,6 +484,7 @@ export const getCompletedColumns = ({
       title: 'Tiền tips',
       dataIndex: 'tipAmount',
       key: 'tipAmount',
+      align: 'right',
       sorter: (a: Appointment, b: Appointment) => (a.tipAmount || 0) - (b.tipAmount || 0),
       render: (val: number) => (
         <span style={{ color: token.colorText, fontVariantNumeric: 'tabular-nums' }}>
@@ -491,6 +496,7 @@ export const getCompletedColumns = ({
       title: 'Hoa hồng OC',
       dataIndex: 'bookingBonus',
       key: 'bookingBonus',
+      align: 'right',
       sorter: (a: Appointment, b: Appointment) => (a.bookingBonus || 0) - (b.bookingBonus || 0),
       render: (val: number) =>
         val > 0 ? (
@@ -553,7 +559,7 @@ export const getMissedColumns = ({
   setBookingInitialCustomer,
   setBookingWizardVisible,
   onOpenMissedReasonModal,
-}: ColumnsOptions) => {
+}: ColumnsOptions): ColumnsType<Appointment> => {
   const REASON_MAP: Record<string, { label: string; color: string }> = {
     KH_DOI_HUY_LICH: { label: 'Khách đổi/hủy', color: 'orange' },
     GOI_KHONG_NGHE: { label: 'Gọi không nghe', color: 'gold' },

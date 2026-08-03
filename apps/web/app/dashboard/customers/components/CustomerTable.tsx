@@ -10,6 +10,7 @@ import { Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
 import { formatVND } from '../../../../lib/format-utils';
 import { ResizableHeaderCell } from '../../../../components/ResizableHeaderCell';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
+import { ColumnsType } from 'antd/es/table';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 
 const { Text } = Typography;
@@ -103,7 +104,7 @@ const CustomerTable = React.memo(
       return '';
     };
 
-    const columns = React.useMemo(
+    const columns: ColumnsType<Customer> = React.useMemo<ColumnsType<Customer>>(
       () => [
         {
           title: 'STT',
@@ -274,6 +275,7 @@ const CustomerTable = React.memo(
           title: 'Tổng Chi Tiêu',
           dataIndex: 'totalSpent',
           key: 'totalSpent',
+          align: 'right',
           sorter: (a: Customer, b: Customer) => (a.totalSpent || 0) - (b.totalSpent || 0),
           render: (val: number) => <span className="tabular-nums">{formatVND(val)}</span>,
         },
@@ -447,7 +449,7 @@ const CustomerTable = React.memo(
       currentUser?.role?.toLowerCase() === 'admin' ||
       currentUser?.role?.toLowerCase() === 'manager';
 
-    const staticColumns = React.useMemo(() => {
+    const staticColumns: ColumnsType<Customer> = React.useMemo<ColumnsType<Customer>>(() => {
       return columns.filter((col) => col.key !== 'assignedStaff' || isManagerOrAdmin);
     }, [columns, isManagerOrAdmin]);
 

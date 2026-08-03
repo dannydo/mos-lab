@@ -192,9 +192,11 @@ export default function LocaCampaignPage() {
     datePreset,
     selectedDate,
     bookingStatusFilter,
+    customTouchpoints,
     // setters
     setActiveTab,
     setActiveTouchpointKey,
+    updateCustomTouchpoint,
     setContactSubTab,
     setSearchQuery,
     setSortField,
@@ -633,34 +635,43 @@ export default function LocaCampaignPage() {
             </div>
 
             <div
-              className={`p-2.5 rounded-xl border ${
+              className={`p-2 rounded-xl border scroll-smooth overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
                 themeMode === 'dark' ? 'bg-[#1a1a1a] border-white/5' : 'bg-slate-50/50 border-slate-100'
               }`}
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '6px',
-                overflowX: 'auto',
-                minHeight: '68px',
+                justifyContent: 'flex-start',
+                gap: '5px',
+                minHeight: '62px',
+                maxWidth: '100%',
               }}
             >
               {/* All touchpoints capsule */}
               <div
+                role="button"
+                tabIndex={0}
+                aria-pressed={activeTouchpointKey === 'ALL'}
+                aria-label="Lọc tất cả điểm chạm"
                 onClick={() => setActiveTouchpointKey('ALL')}
-                className={`rounded-lg cursor-pointer text-center select-none transition-all duration-300 border-2 ${
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setActiveTouchpointKey('ALL');
+                  }
+                }}
+                className={`rounded-xl cursor-pointer text-center select-none transition-all duration-300 border-2 focus:outline-none focus:ring-2 focus:ring-amber-400/60 ${
                   activeTouchpointKey === 'ALL'
                     ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
                     : themeMode === 'dark'
-                      ? 'border-transparent bg-white/[0.01] hover:bg-white/[0.03]'
+                      ? 'border-transparent bg-white/[0.02] hover:bg-white/[0.04]'
                       : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
                 }`}
                 style={{
-                  flex: 1,
                   minWidth: '72px',
                   flexShrink: 0,
-                  padding: '6px 10px',
+                  padding: '5px 9px',
                 }}
               >
                 <div
@@ -676,7 +687,7 @@ export default function LocaCampaignPage() {
                 </div>
                 <div
                   style={{
-                    fontSize: '15px',
+                    fontSize: '14px',
                     fontWeight: '900',
                     marginTop: '1px',
                     fontVariantNumeric: 'tabular-nums',
@@ -689,75 +700,247 @@ export default function LocaCampaignPage() {
                 </div>
               </div>
 
-              {/* Individual touchpoints */}
-              {activeTouchpointsList.map((tp, idx) => {
-                const isSelected = activeTouchpointKey === tp.key;
-                const count = touchpointCounts[tp.key] || 0;
-                const palette = getTouchpointPalette(tp.color, themeMode);
+              {/* Individual touchpoints up to 30 days */}
+              {activeTouchpointsList
+                .filter((tp) => tp.daysMax <= 30)
+                .map((tp, idx) => {
+                  const isSelected = activeTouchpointKey === tp.key;
+                  const count = touchpointCounts[tp.key] || 0;
+                  const palette = getTouchpointPalette(tp.color, themeMode);
+
+                  return (
+                    <React.Fragment key={tp.key}>
+                      {idx > 0 && (
+                        <div
+                          style={{
+                            width: '3px',
+                            height: '2px',
+                            backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={isSelected}
+                        aria-label={`Lọc chạm ${tp.label}`}
+                        onClick={() => setActiveTouchpointKey(tp.key)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setActiveTouchpointKey(tp.key);
+                          }
+                        }}
+                        className={`rounded-xl cursor-pointer text-center select-none transition-all duration-300 border focus:outline-none focus:ring-2 focus:ring-amber-400/60 ${
+                          isSelected
+                            ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-md scale-[1.03]'
+                            : 'hover:scale-[1.01]'
+                        }`}
+                        style={{
+                          minWidth: '68px',
+                          flexShrink: 0,
+                          padding: '5px 9px',
+                          backgroundColor: isSelected
+                            ? themeMode === 'dark'
+                              ? 'rgba(212,168,75,0.15)'
+                              : '#fffbeb'
+                            : palette.bg,
+                          borderColor: isSelected ? '#f59e0b' : palette.border,
+                        }}
+                      >
+                        <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                          <span
+                            style={{
+                              width: '5px',
+                              height: '5px',
+                              borderRadius: '50%',
+                              backgroundColor: palette.dot,
+                              flexShrink: 0,
+                              boxShadow: `0 0 4px ${palette.dot}80`,
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              fontWeight: '800',
+                              whiteSpace: 'nowrap',
+                              color: palette.text,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.02em',
+                            }}
+                          >
+                            {tp.label}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '14px',
+                            fontWeight: '900',
+                            fontVariantNumeric: 'tabular-nums',
+                            fontFeatureSettings: '"tnum"',
+                            color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : palette.text,
+                          }}
+                        >
+                          {count}
+                        </div>
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+
+              {/* 3 Custom Minimalist Day Filter Capsules after Chạm 30 */}
+              {customTouchpoints.map((ctp, idx) => {
+                const isSelected = activeTouchpointKey === ctp.key;
+                const count = touchpointCounts[ctp.key] || touchpointCounts[`tp_${ctp.key}`] || 0;
 
                 return (
-                  <React.Fragment key={tp.key}>
-                    {idx > 0 && (
-                      <div
-                        style={{
-                          width: '4px',
-                          height: '2px',
-                          backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                          flexShrink: 0,
-                        }}
-                      />
-                    )}
+                  <React.Fragment key={ctp.key}>
                     <div
-                      onClick={() => setActiveTouchpointKey(tp.key)}
-                      className={`rounded-xl cursor-pointer text-center select-none transition-all duration-300 border ${
+                      style={{
+                        width: '3px',
+                        height: '2px',
+                        backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={isSelected}
+                      aria-label={`Lọc tùy chỉnh từ ${ctp.daysMin} đến ${ctp.daysMax} ngày`}
+                      onClick={() => setActiveTouchpointKey(ctp.key)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setActiveTouchpointKey(ctp.key);
+                        }
+                      }}
+                      className={`rounded-xl cursor-pointer text-center select-none transition-all duration-300 border focus:outline-none focus:ring-2 focus:ring-amber-400/60 ${
                         isSelected
                           ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-md scale-[1.03]'
                           : 'hover:scale-[1.01]'
                       }`}
                       style={{
-                        flex: 1,
-                        minWidth: '76px',
+                        minWidth: '105px',
                         flexShrink: 0,
-                        padding: '6px 10px',
+                        padding: '5px 7px',
                         backgroundColor: isSelected
                           ? themeMode === 'dark'
                             ? 'rgba(212,168,75,0.15)'
                             : '#fffbeb'
-                          : palette.bg,
-                        borderColor: isSelected ? '#f59e0b' : palette.border,
+                          : themeMode === 'dark'
+                            ? 'rgba(255,255,255,0.02)'
+                            : '#ffffff',
+                        borderColor: isSelected
+                          ? '#f59e0b'
+                          : themeMode === 'dark'
+                            ? 'rgba(255,255,255,0.08)'
+                            : '#e2e8f0',
                       }}
                     >
-                      <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                      <div className="flex items-center justify-center gap-1 mb-0.5">
                         <span
                           style={{
-                            width: '6px',
-                            height: '6px',
+                            width: '5px',
+                            height: '5px',
                             borderRadius: '50%',
-                            backgroundColor: palette.dot,
+                            backgroundColor: isSelected ? '#f59e0b' : '#3b82f6',
                             flexShrink: 0,
-                            boxShadow: `0 0 4px ${palette.dot}80`,
+                            boxShadow: `0 0 4px ${isSelected ? '#f59e0b' : '#3b82f6'}80`,
                           }}
                         />
-                        <span
-                          style={{
-                            fontSize: '10px',
-                            fontWeight: '800',
-                            whiteSpace: 'nowrap',
-                            color: palette.text,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.02em',
+                        <div
+                          className="flex items-center gap-0.5 text-[11px] font-semibold [&_.ant-input-number-input]:!bg-transparent [&_.ant-input-number-input]:!p-0 [&_.ant-input-number-input]:!h-auto [&_.ant-input-number-input]:!text-center [&_.ant-input-number]:!border-none [&_.ant-input-number]:!bg-transparent [&_.ant-input-number]:!shadow-none [&_.ant-input-number-focused]:!shadow-none"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (activeTouchpointKey !== ctp.key) {
+                              setActiveTouchpointKey(ctp.key);
+                            }
                           }}
                         >
-                          {tp.label}
-                        </span>
+                          <InputNumber
+                            size="small"
+                            min={0}
+                            max={999}
+                            controls={false}
+                            value={ctp.daysMin}
+                            aria-label={`Số ngày bắt đầu khoảng tùy chỉnh ${idx + 1}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (activeTouchpointKey !== ctp.key) {
+                                setActiveTouchpointKey(ctp.key);
+                              }
+                            }}
+                            onFocus={() => {
+                              if (activeTouchpointKey !== ctp.key) {
+                                setActiveTouchpointKey(ctp.key);
+                              }
+                            }}
+                            onChange={(val) => {
+                              if (val !== null && val !== undefined) {
+                                updateCustomTouchpoint(idx, Number(val), ctp.daysMax);
+                              }
+                            }}
+                            style={{
+                              width: '22px',
+                              textAlign: 'center',
+                              color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : token.colorText,
+                              fontWeight: '800',
+                              fontSize: '11px',
+                              lineHeight: '1.2',
+                            }}
+                          />
+                          <span
+                            style={{
+                              color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : '#888',
+                              fontSize: '10px',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            -
+                          </span>
+                          <InputNumber
+                            size="small"
+                            min={0}
+                            max={999}
+                            controls={false}
+                            value={ctp.daysMax}
+                            aria-label={`Số ngày kết thúc khoảng tùy chỉnh ${idx + 1}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (activeTouchpointKey !== ctp.key) {
+                                setActiveTouchpointKey(ctp.key);
+                              }
+                            }}
+                            onFocus={() => {
+                              if (activeTouchpointKey !== ctp.key) {
+                                setActiveTouchpointKey(ctp.key);
+                              }
+                            }}
+                            onChange={(val) => {
+                              if (val !== null && val !== undefined) {
+                                updateCustomTouchpoint(idx, ctp.daysMin, Number(val));
+                              }
+                            }}
+                            style={{
+                              width: '22px',
+                              textAlign: 'center',
+                              color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : token.colorText,
+                              fontWeight: '800',
+                              fontSize: '11px',
+                              lineHeight: '1.2',
+                            }}
+                          />
+                        </div>
                       </div>
                       <div
                         style={{
-                          fontSize: '15px',
+                          fontSize: '14px',
                           fontWeight: '900',
                           fontVariantNumeric: 'tabular-nums',
                           fontFeatureSettings: '"tnum"',
-                          color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : palette.text,
+                          color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : token.colorText,
                         }}
                       >
                         {count}

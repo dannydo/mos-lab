@@ -13,6 +13,8 @@ import {
 import dayjs from 'dayjs';
 import { Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
 
+import { ColumnsType } from 'antd/es/table';
+
 const { Text } = Typography;
 
 interface NycColumnsOptions {
@@ -51,7 +53,7 @@ export const getNycColumns = ({
   sortField = 'daysSinceLastVisit_asc',
   currentPage = 1,
   pageSize = 20,
-}: NycColumnsOptions) => {
+}: NycColumnsOptions): ColumnsType<Customer> => {
   return [
     {
       title: 'STT',
@@ -196,6 +198,7 @@ export const getNycColumns = ({
       title: 'Tổng Chi Tiêu',
       dataIndex: 'totalSpent',
       key: 'totalSpent',
+      align: 'right',
       sorter: true,
       sortOrder:
         sortField === 'totalSpent_asc'

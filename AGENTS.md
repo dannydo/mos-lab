@@ -315,5 +315,25 @@ mos-lab/
 - **Đồng bộ Dual-Query Alignment (Rule #15)**: Bắt buộc cập nhật đồng thời cả 3 vị trí trong `apps/api/src/modules/customers/routes.ts`: `bStr` (Listing Query), `bStrStats` (Stats Query) và `count_CALLBACK` (Count Subquery) để đếm đúng và khớp 100% từng khách hàng.
 
 
+### 44. Strict Ant Design Table Column `ColumnsType<T>` Explicit Type Annotation Rule
+- **Explicit Type Annotation**: Every Ant Design `<Table>` column definition array, `useMemo` column array, or column generator function (`getPendingColumns`, `getStaffColumns`, `getNycColumns`, `getLocaColumns`, etc.) **MUST** be explicitly typed with `ColumnsType<T>` imported from `'antd/es/table'` (or `TableProps<T>['columns']`).
+- **Literal Type Safety**: Never leave column definitions un-annotated when setting properties like `align: 'right'`, `align: 'center'`, or custom `sorter`/`render` functions, as TypeScript will infer `align` as standard `string` instead of `AlignType`, breaking Next.js production type checks (`pnpm --filter @mos-lab/web build`).
+- **Example**:
+  ```typescript
+  import { ColumnsType } from 'antd/es/table';
+  
+  export const getColumns = (...): ColumnsType<MyDataType> => [
+    {
+      title: 'Số tiền',
+      dataIndex: 'amount',
+      key: 'amount',
+      align: 'right',
+      render: (val: number) => <span className="tabular-nums">{formatVND(val)}</span>,
+    },
+  ];
+  ```
+
+
+
 
 

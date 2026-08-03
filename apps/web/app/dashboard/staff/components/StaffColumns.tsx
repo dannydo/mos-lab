@@ -15,6 +15,8 @@ import {
 import dayjs from 'dayjs';
 import { Staff, Role } from '@mos-lab/shared';
 
+import { ColumnsType } from 'antd/es/table';
+
 const { Text } = Typography;
 
 interface StaffColumnsOptions {
@@ -39,8 +41,8 @@ export const getStaffColumns = ({
   handleDeleteStaff,
   currentUser,
   onRoleClick,
-}: StaffColumnsOptions) => {
-  const columns = [
+}: StaffColumnsOptions): ColumnsType<Staff> => {
+  const columns: ColumnsType<Staff> = [
     {
       title: 'Nhân viên',
       key: 'name',
@@ -302,6 +304,7 @@ export const getStaffColumns = ({
     columns.splice(4, 0, {
       title: 'Lương & Đãi ngộ',
       key: 'salary',
+      align: 'right',
       render: (_: SafeAny, record: Staff) => (
         <div style={{ fontSize: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
