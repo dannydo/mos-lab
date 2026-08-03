@@ -12,6 +12,7 @@ export const useCustomerInsights = (
   const [suggestedServices, setSuggestedServices] = useState<string[]>([]);
   const [lastUsedServices, setLastUsedServices] = useState<string[]>([]);
   const [suggestedBranch, setSuggestedBranch] = useState<SafeAny>(null);
+  const [customerLastVisit, setCustomerLastVisit] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedCustomer?.id) {
@@ -21,6 +22,20 @@ export const useCustomerInsights = (
           const bookings = data.bookings || [];
           const balances = data.comboBalances || [];
           setComboBalances(balances);
+
+          // Find last completed booking date for cycle calculation (Order Completed)
+          let lastCompletedDate: string | null = null;
+          const completedBooking = (bookings as SafeAny[]).find(
+            (b: SafeAny) => b.orderState === 'ServiceCompleted' || b.orderState === 'Completed'
+          );
+          if (completedBooking?.bookingDate || completedBooking?.bookingDateStart) {
+            lastCompletedDate = completedBooking.bookingDate || completedBooking.bookingDateStart;
+          } else if ((data as SafeAny)?.customer?.lastCompletedVisit) {
+            lastCompletedDate = (data as SafeAny).customer.lastCompletedVisit;
+          } else if ((data as SafeAny)?.customer?.lastVisit) {
+            lastCompletedDate = (data as SafeAny).customer.lastVisit;
+          }
+          setCustomerLastVisit(lastCompletedDate);
 
           const techCounts: { [key: string]: number } = {};
           bookings.forEach((b: SafeAny) => {
@@ -98,6 +113,7 @@ export const useCustomerInsights = (
       setSuggestedServices([]);
       setLastUsedServices([]);
       setSuggestedBranch(null);
+      setCustomerLastVisit(null);
     }
   }, [selectedCustomer, selectedCN, setSelectedCN]);
 
@@ -109,5 +125,6 @@ export const useCustomerInsights = (
     suggestedServices,
     lastUsedServices,
     suggestedBranch,
+    customerLastVisit,
   };
 };

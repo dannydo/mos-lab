@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { Tag, Button, Skeleton, Tooltip } from 'antd';
-import { CloseCircleOutlined, CalendarOutlined, CheckOutlined, HistoryOutlined } from '@ant-design/icons';
+import { CloseCircleOutlined, CalendarOutlined, CheckOutlined, HistoryOutlined, EditOutlined } from '@ant-design/icons';
 import { CancelBookingModal } from '../../booking/CancelBookingModal';
 import { BookingAuditLogDrawer } from '../../booking/BookingAuditLogDrawer';
+import { UpdateBookingModal } from '../../UpdateBookingModal';
 import { SafeAny } from '@mos-lab/shared';
 import CalendarRescheduleIcon from '../../icons/CalendarRescheduleIcon';
 
@@ -108,6 +109,8 @@ export const BookingsTab: React.FC<
   // Pre-map notes (CC, CS, Pinned) to bookings (by orderId or closest date)
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedBookingForCancel, setSelectedBookingForCancel] = useState<SafeAny | null>(null);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [selectedBookingForUpdate, setSelectedBookingForUpdate] = useState<SafeAny | null>(null);
   const [auditDrawerOpen, setAuditDrawerOpen] = useState(false);
   const [selectedOrderIdForAudit, setSelectedOrderIdForAudit] = useState<{ id: number; key?: string } | null>(null);
 
@@ -493,6 +496,24 @@ export const BookingsTab: React.FC<
                       </Button>
 
                       <Button
+                        type="default"
+                        size="small"
+                        icon={<EditOutlined />}
+                        style={{
+                          borderRadius: '4px',
+                          borderColor: '#1890ff',
+                          color: '#1890ff',
+                          fontWeight: '600',
+                        }}
+                        onClick={() => {
+                          setSelectedBookingForUpdate(b);
+                          setUpdateModalOpen(true);
+                        }}
+                      >
+                        Cập nhật
+                      </Button>
+
+                      <Button
                         type="primary"
                         size="small"
                         icon={<CalendarRescheduleIcon fontSize={15} />}
@@ -569,6 +590,23 @@ export const BookingsTab: React.FC<
             onRefreshDetails();
           } else if (selectedBookingForCancel?.id) {
             window.location.reload();
+          }
+        }}
+      />
+
+      {/* Update Booking Modal */}
+      <UpdateBookingModal
+        visible={updateModalOpen}
+        booking={selectedBookingForUpdate}
+        onClose={() => {
+          setUpdateModalOpen(false);
+          setSelectedBookingForUpdate(null);
+        }}
+        onSuccess={() => {
+          setUpdateModalOpen(false);
+          setSelectedBookingForUpdate(null);
+          if (onRefreshDetails) {
+            onRefreshDetails();
           }
         }}
       />

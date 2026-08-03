@@ -1,21 +1,37 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Drawer, Steps, Button, Select, DatePicker, Input, theme, message, Card, Tag, Modal } from 'antd';
-import { FormOutlined, HomeOutlined, InboxOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import {
+  FormOutlined,
+  HomeOutlined,
+  InboxOutlined,
+  ExclamationCircleOutlined,
+  MessageOutlined,
+  CopyOutlined,
+  SaveOutlined,
+  CheckOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../lib/api-client';
-import { vietnameseSearchFilter } from '@mos-lab/shared';
+import {
+  vietnameseSearchFilter,
+  BookingConfirmationTemplate,
+  DEFAULT_BOOKING_TEMPLATES,
+  BOOKING_TEMPLATE_TAGS,
+} from '@mos-lab/shared';
 
 // Shared modules
-import { STORES } from './booking/constants';
+import { STORES, getStoreFullAddress } from './booking/constants';
 import { checkAndAppendLowerLashNote, getRelativeDateInfo } from './booking/comboUtils';
 import { useBookingStaff } from './booking/useBookingStaff';
 import { useSlotMatrix } from './booking/useSlotMatrix';
 import { useCustomerInsights } from './booking/useCustomerInsights';
 import { TechnicianSelector } from './booking/TechnicianSelector';
 import { SlotMatrixGrid } from './booking/SlotMatrixGrid';
+import { BookingTemplateManagerModal } from './booking/BookingTemplateManagerModal';
 
 const { TextArea } = Input;
 
@@ -49,7 +65,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
   // Re-use Customer details hook (simulating a selected customer)
   const selectedCustomer = booking?.customerId ? { id: booking.customerId } : null;
-  const { favoriteTechs, comboBalances, suggestedServices, suggestedBranch } = useCustomerInsights(
+  const { favoriteTechs, comboBalances, suggestedServices, suggestedBranch, customerLastVisit } = useCustomerInsights(
     selectedCustomer,
     selectedCN,
     setSelectedCN
@@ -77,6 +93,181 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   // 20:00 Late Slot Policy Confirmation Modal States
   const [isLateSlotModalOpen, setIsLateSlotModalOpen] = useState<boolean>(false);
   const [pendingSlot, setPendingSlot] = useState<string | null>(null);
+
+  // Step 3 (Message Template) States
+  const [bookingTemplates, setBookingTemplates] = useState<BookingConfirmationTemplate[]>(DEFAULT_BOOKING_TEMPLATES);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('tpl_booking_no_tech');
+  const [customMessage, setCustomMessage] = useState<string>('');
+  const [savingTemplate, setSavingTemplate] = useState<boolean>(false);
+  const [loadingTemplates, setLoadingTemplates] = useState<boolean>(false);
+  const [isManagerModalOpen, setIsManagerModalOpen] = useState<boolean>(false);
+
+  // Helper for Vietnamese Day of Week without accent
+  const getDayOfWeekNoAccent = useCallback((date: SafeAny): string => {
+    if (!date) return 'Chu Nhat';
+    const d = typeof date.format === 'function' ? date : dayjs(date);
+    const dayNum = d.day();
+    const map: { [key: number]: string } = {
+      0: 'Chu Nhat',
+      1: 'Thu Hai',
+      2: 'Thu Ba',
+      3: 'Thu Tu',
+      4: 'Thu Nam',
+      5: 'Thu Sau',
+      6: 'Thu Bay',
+    };
+    return map[dayNum] || 'Chu Nhat';
+  }, []);
+
+  // Helper for Cycle Days ({chu_ky_ngay})
+  const getCycleDays = useCallback(
+    (targetDate: SafeAny, customer: SafeAny, fallbackLastVisit?: string | null): number => {
+      const lastVisit =
+        customer?.lastVisit || customer?.last_order_booking || customer?.lastOrderBooking || fallbackLastVisit;
+      if (!lastVisit) return 0;
+      const tDate = typeof targetDate?.format === 'function' ? targetDate : dayjs(targetDate);
+      const lDate = dayjs(lastVisit);
+      if (!tDate.isValid() || !lDate.isValid()) return 0;
+      const diff = tDate.diff(lDate, 'day');
+      return diff > 0 ? diff : 0;
+    },
+    []
+  );
+
+  // Helper to evaluate tags in template
+  const evaluateBookingTemplate = useCallback(
+    (templateContent: string): string => {
+      if (!templateContent) return '';
+      const customerName = booking?.customerName || booking?.customer?.name || 'Khách hàng';
+      const branchName = getStoreFullAddress(selectedCN);
+      const slotTime = selectedSlot || '1:30 PM';
+      const dayOfWeek = getDayOfWeekNoAccent(bookingDate);
+      const formattedDate = bookingDate
+        ? typeof bookingDate.format === 'function'
+          ? bookingDate.format('DD/MM/YYYY')
+          : dayjs(bookingDate).format('DD/MM/YYYY')
+        : dayjs().format('DD/MM/YYYY');
+      const techName = selectedCV?.displayName || 'Chuyên viên';
+      const cycleDays = getCycleDays(bookingDate, selectedCustomer, customerLastVisit);
+
+      return templateContent
+        .replace(/\{ten_khach\}/g, customerName)
+        .replace(/\{chi_nhanh\}/g, branchName)
+        .replace(/\{gio_hen\}/g, slotTime)
+        .replace(/\{thu_ngay\}/g, dayOfWeek)
+        .replace(/\{ngay_thang_nam\}/g, formattedDate)
+        .replace(/\{ten_chuyen_vien\}/g, techName)
+        .replace(/\{chu_ky_ngay\}/g, String(cycleDays));
+    },
+    [
+      booking,
+      selectedCN,
+      selectedSlot,
+      bookingDate,
+      selectedCV,
+      selectedCustomer,
+      customerLastVisit,
+      getDayOfWeekNoAccent,
+      getCycleDays,
+    ]
+  );
+
+  // Helper to auto select template based on priority rule: 20:00 slot > Has Tech > No Tech
+  const autoSelectTemplate = useCallback(
+    (templatesList: BookingConfirmationTemplate[]) => {
+      const isLateSlot = selectedSlot && (selectedSlot.includes('20:00') || selectedSlot === '20:00');
+      const hasTech = selectedCV !== null && selectedCV !== undefined;
+
+      let target: BookingConfirmationTemplate | undefined;
+      if (isLateSlot && hasTech) {
+        target = templatesList.find(
+          (t) => t.type === 'has_tech_late_slot' || t.id === 'tpl_booking_has_tech_late_slot'
+        );
+      } else if (isLateSlot) {
+        target = templatesList.find((t) => t.type === 'late_slot' || t.id === 'tpl_booking_late_slot');
+      } else if (hasTech) {
+        target = templatesList.find((t) => t.type === 'has_tech' || t.id === 'tpl_booking_has_tech');
+      } else {
+        target = templatesList.find((t) => t.type === 'no_tech' || t.id === 'tpl_booking_no_tech');
+      }
+
+      if (!target && templatesList.length > 0) {
+        target = templatesList[0];
+      }
+
+      if (target) {
+        setSelectedTemplateId(target.id);
+        setCustomMessage(target.content);
+      }
+    },
+    [selectedSlot, selectedCV]
+  );
+
+  // Fetch templates from API
+  const fetchBookingTemplates = useCallback(async () => {
+    setLoadingTemplates(true);
+    try {
+      const list = await apiClient.sms.getBookingTemplates();
+      if (Array.isArray(list) && list.length > 0) {
+        setBookingTemplates(list);
+        return list;
+      }
+    } catch (err) {
+      console.error('Failed to fetch booking templates:', err);
+    } finally {
+      setLoadingTemplates(false);
+    }
+    return DEFAULT_BOOKING_TEMPLATES;
+  }, []);
+
+  const handleGoToStep4 = async () => {
+    if (!selectedCN) {
+      message.error('Vui lòng chọn chi nhánh');
+      return;
+    }
+    if (!selectedSlot) {
+      message.error('Vui lòng chọn khung giờ trống');
+      return;
+    }
+
+    const list = await fetchBookingTemplates();
+    autoSelectTemplate(list);
+    setCurrentStep(3);
+  };
+
+  const handleCopyMessage = () => {
+    const text = evaluateBookingTemplate(customMessage);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      message.success('Đã sao chép tin nhắn xác nhận vào bộ nhớ tạm!');
+    } else {
+      message.error('Trình duyệt không hỗ trợ tự động sao chép.');
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!selectedTemplateId || !customMessage.trim()) return;
+    setSavingTemplate(true);
+    try {
+      const currentTpl = bookingTemplates.find((t) => t.id === selectedTemplateId);
+      const res = await apiClient.sms.saveBookingTemplate({
+        id: selectedTemplateId,
+        type: currentTpl?.type || 'no_tech',
+        title: currentTpl?.title || 'Mẫu dời lịch',
+        content: customMessage,
+        isDefault: true,
+      });
+      if (res.success && res.templates) {
+        setBookingTemplates(res.templates);
+        message.success('Đã lưu mẫu tin nhắn thành công vào CSDL hệ thống!');
+      }
+    } catch (err) {
+      console.error('Failed to save template:', err);
+      message.error('Không thể lưu mẫu tin nhắn.');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
 
   const handleSelectSlot = (slot: string | null) => {
     if (!slot) {
@@ -315,8 +506,17 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         <Steps
           size="small"
           current={currentStep}
-          onChange={(step) => setCurrentStep(step)}
-          items={[{ title: 'Chuyên viên' }, { title: 'Dịch vụ & KH & Khung giờ' }, { title: 'Xác nhận' }]}
+          onChange={(step) => {
+            if (step < currentStep) {
+              setCurrentStep(step);
+            }
+          }}
+          items={[
+            { title: 'Chuyên viên' },
+            { title: 'Dịch Vụ & Thời Gian' },
+            { title: 'Xác Nhận' },
+            { title: 'Gửi Tin Nhắn' },
+          ]}
           style={{ marginBottom: '24px' }}
         />
       </div>
@@ -628,15 +828,213 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             </Button>
             <Button
               type="primary"
-              loading={submitting}
               style={{ flex: 2, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-              onClick={handleReschedule}
+              onClick={handleGoToStep4}
             >
-              Xác nhận Dời Lịch
+              Tiếp tục: Tạo tin nhắn xác nhận
             </Button>
           </div>
         </div>
       )}
+
+      {/* STEP 3: MESSAGE CONFIRMATION TEMPLATE */}
+      {currentStep === 3 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <Card
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span
+                  style={{ color: '#D4A84B', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <MessageOutlined /> TIN NHẮN MẪU XÁC NHẬN DỜI LỊCH
+                </span>
+                <Tag color="orange">Chờ xác nhận & Dời lịch</Tag>
+              </div>
+            }
+            style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Template selector */}
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '6px',
+                  }}
+                >
+                  <label
+                    style={{
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                    }}
+                  >
+                    MẪU TIN NHẮN HỆ THỐNG:
+                  </label>
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<SettingOutlined />}
+                    onClick={() => setIsManagerModalOpen(true)}
+                    style={{ color: '#D4A84B', padding: 0 }}
+                  >
+                    ⚙️ Quản lý Mẫu
+                  </Button>
+                </div>
+                <Select
+                  style={{ width: '100%' }}
+                  value={selectedTemplateId}
+                  loading={loadingTemplates}
+                  onChange={(val) => {
+                    setSelectedTemplateId(val);
+                    const chosen = bookingTemplates.find((t) => t.id === val);
+                    if (chosen) setCustomMessage(chosen.content);
+                  }}
+                  options={bookingTemplates.map((t) => ({
+                    label: t.title,
+                    value: t.id,
+                  }))}
+                />
+              </div>
+
+              {/* Variable Insert Tags */}
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                    marginBottom: '8px',
+                  }}
+                >
+                  CHÈN NHANH THẺ BIẾN ĐỘNG (NHẤP ĐỂ CHÈN):
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {BOOKING_TEMPLATE_TAGS.map((tagDef) => (
+                    <Button
+                      key={tagDef.tag}
+                      size="small"
+                      type="dashed"
+                      onClick={() => setCustomMessage((prev) => prev + tagDef.tag)}
+                      style={{
+                        fontSize: '12px',
+                        borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
+                        color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
+                      }}
+                    >
+                      + {tagDef.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Editable Custom Content */}
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                    marginBottom: '6px',
+                  }}
+                >
+                  NỘI DUNG MẪU TÙY CHỈNH:
+                </label>
+                <TextArea
+                  rows={5}
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: '13px',
+                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
+                    color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
+                  }}
+                />
+              </div>
+
+              {/* Live Preview Box */}
+              <div>
+                <div
+                  style={{
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                    marginBottom: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span>
+                    XEM TRƯỚC TIN NHẮN SẼ GỬI CHO{' '}
+                    <strong style={{ color: '#D4A84B' }}>
+                      {booking?.customerName || booking?.customer?.name || 'KHÁCH HÀNG'}
+                    </strong>
+                    :
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                    {evaluateBookingTemplate(customMessage).length} ký tự
+                  </span>
+                </div>
+                <div
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
+                    border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                    color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
+                    fontSize: '13.5px',
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: '1.6',
+                  }}
+                >
+                  {evaluateBookingTemplate(customMessage)}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
+            <Button icon={<SaveOutlined />} loading={savingTemplate} onClick={handleSaveTemplate} style={{ flex: 1 }}>
+              Lưu Template Mẫu
+            </Button>
+            <Button
+              type="primary"
+              icon={<CopyOutlined />}
+              onClick={handleCopyMessage}
+              style={{ flex: 1.5, backgroundColor: '#fa8c16', borderColor: '#fa8c16' }}
+            >
+              Sao chép tin nhắn
+            </Button>
+            <Button
+              type="primary"
+              icon={<CheckOutlined />}
+              loading={submitting}
+              onClick={handleReschedule}
+              style={{ flex: 1.5, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+            >
+              Hoàn tất & Dời Lịch
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Template Manager Modal */}
+      <BookingTemplateManagerModal
+        open={isManagerModalOpen}
+        onClose={() => setIsManagerModalOpen(false)}
+        templates={bookingTemplates}
+        onTemplatesUpdated={(newList) => {
+          setBookingTemplates(newList);
+          autoSelectTemplate(newList);
+        }}
+      />
 
       {/* 20:00 Late Slot Policy Confirmation Modal */}
       <Modal

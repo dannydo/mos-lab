@@ -2533,6 +2533,10 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
           gender: row.gender,
           dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
           lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
+          lastCompletedVisit:
+            completedOrders.length > 0 && completedOrders[0].bookingDate
+              ? new Date(completedOrders[0].bookingDate).toISOString()
+              : null,
           daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
           bucket: row.bucket,
           avatar: row.avatar,

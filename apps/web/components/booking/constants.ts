@@ -1,8 +1,22 @@
 export const STORES = [
-  { id: 16, name: 'Estella Place' },
-  { id: 6, name: 'De Tham' },
-  { id: 2, name: 'Phan Xích Long' },
+  { id: 16, name: 'Estella Place', fullAddress: 'L5-08, 09 Estella Place, 88 Song Hành, Quận 2' },
+  { id: 6, name: 'De Tham', fullAddress: '159 - 159A Đề Thám, Quận 1' },
+  { id: 2, name: 'Phan Xích Long', fullAddress: 'Phan Xích Long, Phú Nhuận' },
 ];
+
+export const getStoreFullAddress = (store: SafeAny): string => {
+  if (!store) return '159 - 159A Đề Thám, Quận 1';
+  if (typeof store === 'object') {
+    if (store.fullAddress) return store.fullAddress;
+    const matched = STORES.find((s) => s.id === store.id || s.name === store.name);
+    if (matched?.fullAddress) return matched.fullAddress;
+  }
+  const storeStr = String(store).toLowerCase();
+  if (storeStr.includes('estella')) return 'L5-08, 09 Estella Place, 88 Song Hành, Quận 2';
+  if (storeStr.includes('tham') || storeStr.includes('thám')) return '159 - 159A Đề Thám, Quận 1';
+  if (storeStr.includes('phan xích long') || storeStr.includes('pxl')) return 'Phan Xích Long, Phú Nhuận';
+  return String(store);
+};
 
 export const FALLBACK_SERVICES = [{ id: 0, name: 'Any Lashes / Any Services', price: 0, duration: 90 }];
 

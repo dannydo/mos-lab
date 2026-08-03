@@ -30,7 +30,7 @@ import {
 } from '@mos-lab/shared';
 
 // Shared modules
-import { STORES, FALLBACK_SERVICES, CHANNELS } from './booking/constants';
+import { STORES, FALLBACK_SERVICES, CHANNELS, getStoreFullAddress } from './booking/constants';
 import { checkAndAppendLowerLashNote, getCalculatedPrice, getRelativeDateInfo } from './booking/comboUtils';
 import { useBookingStaff } from './booking/useBookingStaff';
 import { useSlotMatrix } from './booking/useSlotMatrix';
@@ -111,11 +111,8 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
   };
 
   // Custom Hooks
-  const { favoriteTechs, comboBalances, suggestedServices, lastUsedServices, suggestedBranch } = useCustomerInsights(
-    selectedCustomer,
-    selectedCN,
-    setSelectedCN
-  );
+  const { favoriteTechs, comboBalances, suggestedServices, lastUsedServices, suggestedBranch, customerLastVisit } =
+    useCustomerInsights(selectedCustomer, selectedCN, setSelectedCN);
 
   const { staffList, loadingStaff, fetchStaff, getGroupedKTVs, getFavoriteKTVs } = useBookingStaff(null, favoriteTechs);
 
@@ -196,15 +193,19 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
   }, []);
 
   // Helper for Cycle Days ({chu_ky_ngay})
-  const getCycleDays = useCallback((targetDate: SafeAny, customer: SafeAny): number => {
-    const lastVisit = customer?.lastVisit || customer?.last_order_booking || customer?.lastOrderBooking;
-    if (!lastVisit) return 787;
-    const tDate = typeof targetDate?.format === 'function' ? targetDate : dayjs(targetDate);
-    const lDate = dayjs(lastVisit);
-    if (!tDate.isValid() || !lDate.isValid()) return 787;
-    const diff = tDate.diff(lDate, 'day');
-    return diff > 0 ? diff : 787;
-  }, []);
+  const getCycleDays = useCallback(
+    (targetDate: SafeAny, customer: SafeAny, fallbackLastVisit?: string | null): number => {
+      const lastVisit =
+        customer?.lastVisit || customer?.last_order_booking || customer?.lastOrderBooking || fallbackLastVisit;
+      if (!lastVisit) return 0;
+      const tDate = typeof targetDate?.format === 'function' ? targetDate : dayjs(targetDate);
+      const lDate = dayjs(lastVisit);
+      if (!tDate.isValid() || !lDate.isValid()) return 0;
+      const diff = tDate.diff(lDate, 'day');
+      return diff > 0 ? diff : 0;
+    },
+    []
+  );
 
   // Helper to evaluate tags in template
   const evaluateBookingTemplate = useCallback(
@@ -213,7 +214,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
       const customerName = isNewLead
         ? leadName
         : selectedCustomer?.name || selectedCustomer?.customerName || 'Khách hàng';
-      const branchName = selectedCN?.name || '159 - 159A Đề Thám, Quận 1';
+      const branchName = getStoreFullAddress(selectedCN);
       const slotTime = selectedSlot || '1:30 PM';
       const dayOfWeek = getDayOfWeekNoAccent(rawBookingDate);
       const formattedDate = rawBookingDate
@@ -222,7 +223,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
           : dayjs(rawBookingDate).format('DD/MM/YYYY')
         : dayjs().format('DD/MM/YYYY');
       const techName = selectedCV?.displayName || 'Chuyên viên';
-      const cycleDays = getCycleDays(rawBookingDate, selectedCustomer);
+      const cycleDays = getCycleDays(rawBookingDate, selectedCustomer, customerLastVisit);
 
       return templateContent
         .replace(/\{ten_khach\}/g, customerName)
@@ -241,6 +242,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
       selectedSlot,
       rawBookingDate,
       selectedCV,
+      customerLastVisit,
       getDayOfWeekNoAccent,
       getCycleDays,
     ]

@@ -896,6 +896,8 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
             name: customer.name,
             phone: customer.phone,
             bucket: customer.bucket,
+            lastVisit: customer.lastVisit,
+            lastCompletedVisit: (customer as SafeAny)?.lastCompletedVisit || customer.lastVisit,
           }}
         />
       )}
