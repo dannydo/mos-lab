@@ -30,6 +30,7 @@ import {
   SettingOutlined,
   WarningOutlined,
   CheckCircleOutlined,
+  PhoneOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -679,9 +680,18 @@ export default function AppointmentsPage() {
                 size="small"
               >
                 <Radio.Button value="ALL">Tất cả ({missedSummary?.totalMissed ?? 0})</Radio.Button>
-                <Radio.Button value="UNTAGGED">⚠️ Chưa ghi lý do ({missedSummary?.untaggedCount ?? 0})</Radio.Button>
-                <Radio.Button value="FOLLOWUP">📞 Cần chăm sóc / Hẹn lại</Radio.Button>
-                <Radio.Button value="RESOLVED">✅ Đã giải quyết / Đã hẹn mới</Radio.Button>
+                <Radio.Button value="UNTAGGED">
+                  <WarningOutlined className="mr-1.5 text-amber-500" />
+                  Chưa ghi lý do ({missedSummary?.untaggedCount ?? 0})
+                </Radio.Button>
+                <Radio.Button value="FOLLOWUP">
+                  <PhoneOutlined className="mr-1.5 text-blue-500" />
+                  Cần chăm sóc / Hẹn lại
+                </Radio.Button>
+                <Radio.Button value="RESOLVED">
+                  <CheckCircleOutlined className="mr-1.5 text-emerald-500" />
+                  Đã giải quyết / Đã hẹn mới
+                </Radio.Button>
               </Radio.Group>
             </div>
           </div>
