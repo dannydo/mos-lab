@@ -198,6 +198,63 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/dashboard/vat-config
+  // Get VAT rate configuration (Defaults to 8%)
+  fastify.get('/dashboard/vat-config', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const config = await fastify.prisma.crm.crmConfig.findUnique({
+        where: { key: 'VAT_RATE_CONFIG' },
+      });
+      if (config) {
+        const parsed = JSON.parse(config.value);
+        return { vatPercent: Number(parsed.vatPercent ?? 8) };
+      }
+      return { vatPercent: 8 };
+    } catch (error) {
+      fastify.log.error(error as Error, 'Get VAT config error:');
+      return { vatPercent: 8 };
+    }
+  });
+
+  // PUT /api/dashboard/vat-config
+  // Save VAT rate configuration (Admin only)
+  fastify.put('/dashboard/vat-config', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string };
+    if (user.role !== 'admin') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Chỉ Admin mới có quyền cấu hình Tỷ lệ Thuế VAT.',
+      });
+    }
+    const { vatPercent } = request.body as { vatPercent: number };
+    const num = Number(vatPercent);
+    if (isNaN(num) || num < 0 || num > 50) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Tỷ lệ VAT phải là số từ 0% đến 50%.',
+      });
+    }
+    try {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: 'VAT_RATE_CONFIG' },
+        create: {
+          key: 'VAT_RATE_CONFIG',
+          value: JSON.stringify({ vatPercent: num }),
+        },
+        update: {
+          value: JSON.stringify({ vatPercent: num }),
+        },
+      });
+      return { success: true, vatPercent: num, message: `Đã cập nhật Tỷ lệ Thuế VAT thành ${num}%.` };
+    } catch (error) {
+      fastify.log.error(error as Error, 'Save VAT config error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Không thể lưu cấu hình Tỷ lệ Thuế VAT',
+      });
+    }
+  });
+
   // GET /api/dashboard/today - Real operational data for the "today" dashboard
   fastify.get('/dashboard/today', { preHandler: [requireAuth] }, async (request, reply) => {
     const { date, dateFrom, dateTo } = request.query as { date?: string; dateFrom?: string; dateTo?: string };
@@ -1690,10 +1747,12 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         totalOrders: hourlyData.reduce((s: number, hd: any) => s + (hd.branches[bk]?.orderCount || 0), 0),
       }));
 
+      const { netFactor } = await getVatRateConfig(fastify);
+
       const response: RevenueHourlyResponse = {
         summary: {
           totalRevenue: Math.round(summaryTotalRevenue),
-          totalNetRevenue: Math.round(summaryTotalRevenue * 0.9091), // ~100/110 for 10% VAT
+          totalNetRevenue: Math.round(summaryTotalRevenue * netFactor),
           comboRevenue: Math.round(summaryComboRevenue),
           singleRevenue: Math.round(summarySingleRevenue),
           productRevenue: Math.round(summaryProductRevenue),
@@ -1885,7 +1944,9 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         users.forEach((u) => (usersMap[u.id] = { name: u.full_name, phone: u.phone }));
       }
 
-      const transactions = completedOrders.map((o) => {
+      const { netFactor } = await getVatRateConfig(fastify);
+
+      const transactions: RevenueTransactionItem[] = completedOrders.map((o) => {
         let sType: 'combo' | 'single' | 'product' = 'single';
         if (combosMap[o.orderId]) sType = 'combo';
         else if (productsMap[o.orderId] && (!orderServicesMap[o.orderId] || orderServicesMap[o.orderId].length === 0))
@@ -1922,7 +1983,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           cvName,
           serviceType: sType,
           price: Math.round(Number(o.total_price || 0)),
-          netPrice: Math.round(Number(o.total_price || 0) * 0.9091),
+          netPrice: Math.round(Number(o.total_price || 0) * netFactor),
           checkinTime: o.checkin_time,
           orderState: 'Completed',
           branchKey: storeIdToBranchKeyDetail[o.client_store_id] || 'detham',
@@ -1956,4 +2017,24 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       });
     }
   });
+}
+
+export async function getVatRateConfig(fastify: FastifyInstance): Promise<{ vatPercent: number; netFactor: number }> {
+  try {
+    const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
+      where: { key: 'VAT_RATE_CONFIG' },
+    });
+    if (configRecord?.value) {
+      const parsed = typeof configRecord.value === 'string' ? JSON.parse(configRecord.value) : configRecord.value;
+      const vatPercent = Number(parsed.vatPercent ?? 8);
+      const validVat = isNaN(vatPercent) || vatPercent < 0 ? 8 : vatPercent;
+      return {
+        vatPercent: validVat,
+        netFactor: 1 / (1 + validVat / 100),
+      };
+    }
+  } catch {
+    // Default fallback
+  }
+  return { vatPercent: 8, netFactor: 1 / 1.08 }; // Default 8% VAT
 }
