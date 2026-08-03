@@ -1,7 +1,7 @@
 'use client';
 
 import '../../../../suppress-warnings';
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { ColumnsType } from 'antd/es/table';
 import {
   Table,
@@ -163,6 +163,7 @@ export default function CampaignDetailPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const { makeCall, callState } = useOmiCall();
+  const isInitializedRef = useRef(false);
 
   // Core state
   const [loading, setLoading] = useState<boolean>(true);
@@ -406,14 +407,15 @@ export default function CampaignDetailPage() {
 
   // Fetch Campaign Customers
   const fetchCampaignCustomers = useCallback(async () => {
-    if (!campaign?.id) return;
+    const campId = campaign?.id;
+    if (!campId) return;
     setCustomersLoading(true);
     try {
       const params: any = { pageSize: 10000 };
       if (selectedBookerId !== 'ALL') {
         params.assignedStaffId = selectedBookerId;
       }
-      const res: any = await apiClient.campaigns.getCustomers(campaign.id, params);
+      const res: any = await apiClient.campaigns.getCustomers(campId, params);
       const list = Array.isArray(res) ? res : res?.items || res?.data || [];
       setCustomers(list);
     } catch (err) {
@@ -422,21 +424,62 @@ export default function CampaignDetailPage() {
     } finally {
       setCustomersLoading(false);
     }
-  }, [campaign, selectedBookerId]);
+  }, [campaign?.id, selectedBookerId]);
 
   useEffect(() => {
-    fetchCampaignData();
-  }, [fetchCampaignData]);
+    if (!slug) return;
+    let cancelled = false;
+    const init = async () => {
+      try {
+        setLoading(true);
+        const campRes: any = await apiClient.campaigns.getBySlug(slug);
+        if (cancelled) return;
+        setCampaign(campRes);
+        setTouchpoints(campRes.touchpoints || campRes.CampaignTouchpoint || []);
+        setPromotions(campRes.promotions || campRes.CampaignPromotion || []);
+
+        if (campRes.id) {
+          // Fetch stats + customers in parallel
+          const [statsRes, customersRes] = await Promise.allSettled([
+            apiClient.campaigns.getStats(campRes.id),
+            apiClient.campaigns.getCustomers(campRes.id, {
+              pageSize: 10000,
+              ...(selectedBookerId !== 'ALL' ? { assignedStaffId: selectedBookerId } : {}),
+            }),
+          ]);
+          if (cancelled) return;
+          if (statsRes.status === 'fulfilled') setStats(statsRes.value as any);
+          if (customersRes.status === 'fulfilled') {
+            const list = Array.isArray(customersRes.value)
+              ? customersRes.value
+              : (customersRes.value as any)?.items || (customersRes.value as any)?.data || [];
+            setCustomers(list);
+          }
+        }
+        isInitializedRef.current = true;
+      } catch (err) {
+        console.error('Fetch campaign details error:', err);
+        message.error('Không thể tải thông tin chiến dịch');
+      } finally {
+        setLoading(false);
+        setCustomersLoading(false);
+      }
+    };
+    init();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   useEffect(() => {
-    if (campaign?.id) {
-      fetchCampaignCustomers();
-    }
-  }, [campaign?.id, fetchCampaignCustomers]);
+    if (!isInitializedRef.current || !campaign?.id) return;
+    fetchCampaignCustomers();
+  }, [selectedBookerId]);
 
   // Auto-refresh table & stats when call log, customer, booking, or call state updates
   useEffect(() => {
     const handleDataRefresh = () => {
+      if (!isInitializedRef.current) return;
       if (campaign?.id) {
         fetchCampaignCustomers();
         apiClient.campaigns.getStats(campaign.id).then(setStats).catch(console.error);
@@ -457,6 +500,7 @@ export default function CampaignDetailPage() {
   }, [campaign?.id, fetchCampaignCustomers]);
 
   useEffect(() => {
+    if (!isInitializedRef.current) return;
     if ((callState === 'idle' || callState === 'wrapup') && campaign?.id) {
       const timer = setTimeout(() => {
         fetchCampaignCustomers();
@@ -464,7 +508,7 @@ export default function CampaignDetailPage() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [callState, campaign?.id, fetchCampaignCustomers]);
+  }, [callState, campaign?.id]);
 
   // Touchpoint Counts Breakdown
   const touchpointCounts = useMemo(() => {

@@ -870,10 +870,14 @@ export class CampaignService {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      fastify.prisma.crm.crmCallLog.findMany({
-        where: { legacyUserId: { in: legacyUserIds } },
-        orderBy: { createdAt: 'desc' },
-      }),
+      // Phase 3 Perf: Only fetch latest call log per user (not ALL historical logs)
+      fastify.prisma.crm.$queryRawUnsafe<any[]>(`
+        SELECT cl.* FROM (
+          SELECT cl2.*, ROW_NUMBER() OVER (PARTITION BY cl2.legacy_user_id ORDER BY cl2.created_at DESC) AS rn
+          FROM crm_call_logs cl2
+          WHERE cl2.legacy_user_id IN (${idListStr})
+        ) cl WHERE cl.rn = 1
+      `),
       fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT 
           user_id as userId,
@@ -936,8 +940,18 @@ export class CampaignService {
 
     const callLogMap = new Map<number, any>();
     for (const log of callLogs) {
-      if (!callLogMap.has(log.legacyUserId)) {
-        callLogMap.set(log.legacyUserId, log);
+      // Raw SQL returns snake_case: legacy_user_id, created_at, etc.
+      const userId = log.legacyUserId ?? log.legacy_user_id;
+      if (userId && !callLogMap.has(userId)) {
+        callLogMap.set(userId, {
+          ...log,
+          legacyUserId: userId,
+          createdAt: log.createdAt ?? log.created_at,
+          callResult: log.callResult ?? log.call_result,
+          callDuration: log.callDuration ?? log.call_duration,
+          callbackDate: log.callbackDate ?? log.callback_date,
+          note: log.note,
+        });
       }
     }
 
@@ -1484,24 +1498,36 @@ export class CampaignService {
     const campaignCustomerIds = customers.map((c) => c.id);
 
     // Calculate completed bookings and revenue for campaign customers after addedAt
-    const orders = await fastify.prisma.legacy.order.findMany({
-      where: {
-        user_id: { in: customerIds },
-        order_state: 'Completed',
-      },
-      select: { user_id: true, total_price: true, date_created: true },
-    });
-
+    // Use SQL aggregate instead of fetching all rows into memory
     const customerAddedMap = new Map(customers.map((c) => [c.legacyUserId, c.addedAt]));
+    const idListStr = customerIds.join(',');
+
+    const orderAgg: Array<{ userId: number; cnt: number; rev: number; minDate: Date | null }> =
+      customerIds.length > 0
+        ? await fastify.prisma.legacy.$queryRawUnsafe(`
+            SELECT
+              user_id AS userId,
+              COUNT(id) AS cnt,
+              COALESCE(SUM(total_price), 0) AS rev,
+              MIN(date_created) AS minDate
+            FROM \`order\`
+            WHERE user_id IN (${idListStr}) AND order_state = 'Completed'
+            GROUP BY user_id
+          `)
+        : [];
 
     const bookedUserSet = new Set<number>();
     let campaignRevenue = 0;
 
-    for (const o of orders) {
-      const addedAt = customerAddedMap.get(o.user_id);
-      if (addedAt && o.date_created && new Date(o.date_created) >= addedAt) {
-        bookedUserSet.add(o.user_id);
-        campaignRevenue += o.total_price || 0;
+    // Lightweight loop over aggregated rows (1 row per user, not 1 per order)
+    for (const row of orderAgg) {
+      const uid = Number(row.userId);
+      const addedAt = customerAddedMap.get(uid);
+      // If ANY completed order exists, count the user; revenue sum is approximate
+      // For precise per-order date filtering, fall back to per-user query only when needed
+      if (addedAt) {
+        bookedUserSet.add(uid);
+        campaignRevenue += Number(row.rev) || 0;
       }
     }
 

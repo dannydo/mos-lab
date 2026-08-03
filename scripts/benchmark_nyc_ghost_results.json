@@ -1,0 +1,184 @@
+{
+  "timestamp": "2026-08-03T10:53:25.255Z",
+  "report": {
+    "url": "http://localhost:4000/dashboard/nyc/campaigns/ghost-mode",
+    "label": "NYC Ghost Mode Campaign",
+    "domContentLoaded": 230,
+    "tti": 4428,
+    "totalNetworkReqs": 145,
+    "apiCallCount": 27,
+    "apiPayloadKB": 1.42,
+    "apiRequests": [
+      {
+        "url": "http://localhost:4001/api/auth/me",
+        "status": 204,
+        "duration": 0.732,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/auth/me",
+        "status": 200,
+        "duration": 5.017,
+        "bytes": 349
+      },
+      {
+        "url": "http://localhost:4001/api/calls/daily?date=2026-08-03&scope=me",
+        "status": 200,
+        "duration": 14.109,
+        "bytes": 2
+      },
+      {
+        "url": "http://localhost:4001/api/allocation/pending",
+        "status": 200,
+        "duration": 34.562,
+        "bytes": 2
+      },
+      {
+        "url": "http://localhost:4001/api/staff",
+        "status": 200,
+        "duration": 34.087,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns/slug/ghost-mode",
+        "status": 200,
+        "duration": 41.626,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns?status=ACTIVE",
+        "status": 200,
+        "duration": 42.864,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns?status=ACTIVE",
+        "status": 204,
+        "duration": 1.184,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/customers/staff?role=booker",
+        "status": 204,
+        "duration": 1.628,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns/slug/ghost-mode",
+        "status": 204,
+        "duration": 1.774,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/allocation/pending",
+        "status": 204,
+        "duration": 2.584,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/calls/daily?date=2026-08-03&scope=me",
+        "status": 204,
+        "duration": 5.613,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/staff",
+        "status": 204,
+        "duration": 5.816,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns?status=ACTIVE",
+        "status": 204,
+        "duration": 0.77,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/customers/staff?role=booker",
+        "status": 204,
+        "duration": 1.642,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns/slug/ghost-mode",
+        "status": 204,
+        "duration": 1.848,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/calls/daily?date=2026-08-03&scope=me",
+        "status": 200,
+        "duration": 3.898,
+        "bytes": 2
+      },
+      {
+        "url": "http://localhost:4001/api/staff",
+        "status": 200,
+        "duration": 8.19,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/allocation/pending",
+        "status": 200,
+        "duration": 10.091,
+        "bytes": 2
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns/slug/ghost-mode",
+        "status": 200,
+        "duration": 54.505,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns?status=ACTIVE",
+        "status": 200,
+        "duration": 65.738,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/customers/staff?role=booker",
+        "status": 200,
+        "duration": 65.824,
+        "bytes": 483
+      },
+      {
+        "url": "http://localhost:4001/api/customers/staff?role=booker",
+        "status": 200,
+        "duration": 85.421,
+        "bytes": 483
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns/11/stats",
+        "status": 204,
+        "duration": 0.468,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns/11/customers?pageSize=10000",
+        "status": 204,
+        "duration": 0.89,
+        "bytes": 0
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns/11/stats",
+        "status": 200,
+        "duration": 342.185,
+        "bytes": 134
+      },
+      {
+        "url": "http://localhost:4001/api/campaigns/11/customers?pageSize=10000",
+        "status": 200,
+        "duration": 622.349,
+        "bytes": 0
+      }
+    ],
+    "dom": {
+      "nodeCount": 1608,
+      "missingTabularNums": 0,
+      "hasH1": true,
+      "hasNav": true,
+      "iconOnlyButtons": 35,
+      "tableRowCount": 10
+    }
+  }
+}
