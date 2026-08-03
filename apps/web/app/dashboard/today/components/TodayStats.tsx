@@ -111,13 +111,14 @@ const DonutChart = ({
 };
 
 const formatCenterRevenue = (val: number) => {
-  if (val >= 1000000) {
-    return `${(val / 1000000).toFixed(1).replace('.0', '')}M`;
+  const rounded = Math.round(val || 0);
+  if (rounded >= 1000000) {
+    return `${(rounded / 1000000).toFixed(1).replace('.0', '')}M`;
   }
-  if (val >= 1000) {
-    return `${(val / 1000).toFixed(0)}k`;
+  if (rounded >= 1000) {
+    return `${(rounded / 1000).toFixed(0)}k`;
   }
-  return String(val);
+  return String(rounded);
 };
 
 interface TodayStatsProps {
@@ -148,7 +149,7 @@ export default function TodayStats({
       const rawPrice =
         typeof item.price === 'number' ? item.price : Number(String(item.ltv || '').replace(/[^\d]/g, '')) || 0;
       const tax = Number(item.tax || 0);
-      return showTax ? rawPrice : rawPrice - tax;
+      return Math.round(showTax ? rawPrice : rawPrice - tax);
     },
     [showTax]
   );
