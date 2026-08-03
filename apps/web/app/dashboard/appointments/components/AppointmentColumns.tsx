@@ -264,41 +264,44 @@ export const getPendingColumns = ({
               style={{ color: '#D4A84B' }}
             />
           </Tooltip>
-          <Button
-            type="primary"
-            size="small"
-            icon={<CalendarRescheduleIcon fontSize={15} />}
-            style={{
-              backgroundColor: '#D4A84B',
-              borderColor: '#D4A84B',
-              color: '#ffffff',
-              fontWeight: 'bold',
-              borderRadius: '6px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-            onClick={() => {
-              const bookingObj = {
-                id: record.id,
-                bookingDate: record.bookingDateStart ? dayjs(record.bookingDateStart).format('YYYY-MM-DD') : '',
-                bookingTime: record.bookingDateStart ? dayjs(record.bookingDateStart).format('HH:mm') : '',
-                branchName:
-                  record.branchName ||
-                  (record.storeId === 16 ? 'Estella Place' : record.storeId === 6 ? 'De Tham' : 'Phan Xích Long'),
-                technicianName: record.technicianName,
-                technicianId: record.technicianId,
-                bookingNote: record.bookingNote,
-                customerName: record.customerName,
-                customerPhone: record.customerPhone,
-                customerId: record.customerId,
-              };
-              setSelectedBookingForReschedule?.(bookingObj);
-              setRescheduleModalVisible?.(true);
-            }}
-          >
-            Đổi lịch
-          </Button>
+          <Tooltip title="Dời lịch hẹn">
+            <Button
+              type="primary"
+              size="small"
+              icon={<CalendarRescheduleIcon fontSize={16} />}
+              style={{
+                backgroundColor: '#D4A84B',
+                borderColor: '#D4A84B',
+                color: '#ffffff',
+                borderRadius: '6px',
+                width: '32px',
+                height: '32px',
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 4px rgba(212, 168, 75, 0.3)',
+              }}
+              onClick={() => {
+                const bookingObj = {
+                  id: record.id,
+                  bookingDate: record.bookingDateStart ? dayjs(record.bookingDateStart).format('YYYY-MM-DD') : '',
+                  bookingTime: record.bookingDateStart ? dayjs(record.bookingDateStart).format('HH:mm') : '',
+                  branchName:
+                    record.branchName ||
+                    (record.storeId === 16 ? 'Estella Place' : record.storeId === 6 ? 'De Tham' : 'Phan Xích Long'),
+                  technicianName: record.technicianName,
+                  technicianId: record.technicianId,
+                  bookingNote: record.bookingNote,
+                  customerName: record.customerName,
+                  customerPhone: record.customerPhone,
+                  customerId: record.customerId,
+                };
+                setSelectedBookingForReschedule?.(bookingObj);
+                setRescheduleModalVisible?.(true);
+              }}
+            />
+          </Tooltip>
           <Tooltip title="Hủy lịch hẹn">
             <Popconfirm
               title="Xác nhận hủy lịch"
@@ -785,36 +788,39 @@ export const getMissedColumns = ({
               style={{ color: '#D4A84B' }}
             />
           </Tooltip>
-          <Button
-            type="primary"
-            size="small"
-            icon={<CalendarPlusIcon fontSize={15} />}
-            onClick={() => {
-              if (setBookingInitialCustomer) {
-                setBookingInitialCustomer({
-                  id: record.customerId,
-                  fullName: record.customerName,
-                  phoneNumber: record.customerPhone,
-                  avatar: record.customerAvatar,
-                });
-              }
-              if (setBookingWizardVisible) {
-                setBookingWizardVisible(true);
-              }
-            }}
-            style={{
-              backgroundColor: '#D4A84B',
-              borderColor: '#D4A84B',
-              color: '#ffffff',
-              fontWeight: 'bold',
-              borderRadius: '6px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-          >
-            Đặt lại
-          </Button>
+          <Tooltip title="Đặt lại lịch mới">
+            <Button
+              type="primary"
+              size="small"
+              icon={<CalendarPlusIcon fontSize={16} />}
+              onClick={() => {
+                if (setBookingInitialCustomer) {
+                  setBookingInitialCustomer({
+                    id: record.customerId,
+                    fullName: record.customerName,
+                    phoneNumber: record.customerPhone,
+                    avatar: record.customerAvatar,
+                  });
+                }
+                if (setBookingWizardVisible) {
+                  setBookingWizardVisible(true);
+                }
+              }}
+              style={{
+                backgroundColor: '#D4A84B',
+                borderColor: '#D4A84B',
+                color: '#ffffff',
+                borderRadius: '6px',
+                width: '32px',
+                height: '32px',
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 4px rgba(212, 168, 75, 0.3)',
+              }}
+            />
+          </Tooltip>
         </Space>
       ),
     },
