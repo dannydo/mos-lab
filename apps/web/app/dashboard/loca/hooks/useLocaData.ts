@@ -349,7 +349,6 @@ export function useLocaData(options?: UseLocaDataOptions) {
     return () => {
       cancelled = true;
     };
-     
   }, []);
 
   // Date Range calculation for New LoCa
@@ -774,6 +773,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
     datePreset,
     selectedDate,
     customTouchpoints,
+    bookingStatusFilter,
     // setters
     setActiveTab: changeActiveTab,
     setActiveTouchpointKey,
