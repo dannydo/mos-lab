@@ -531,9 +531,9 @@ export default function TodayStats({
             <strong
               className="tabular-nums"
               style={{ fontSize: '13px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
-              title={`Tổng cộng: ${comingStats.totalCount} khách • ${comingStats.totalPrice.toLocaleString('vi-VN')} đ`}
+              title={`Tổng cộng: ${comingStats.totalCount} khách • ${Math.round(comingStats.totalPrice || 0).toLocaleString('vi-VN')} đ`}
             >
-              {comingStats.totalCount} khách • {comingStats.totalPrice.toLocaleString('vi-VN')} đ
+              {comingStats.totalCount} khách • {Math.round(comingStats.totalPrice || 0).toLocaleString('vi-VN')} đ
             </strong>
           </div>
 
@@ -571,7 +571,7 @@ export default function TodayStats({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, overflow: 'hidden' }}>
                   <div
                     style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}
-                    title={`Combo: ${comingStats.combo.count} khách • ${comingStats.combo.price.toLocaleString('vi-VN')} đ`}
+                    title={`Combo: ${comingStats.combo.count} khách • ${Math.round(comingStats.combo.price || 0).toLocaleString('vi-VN')} đ`}
                   >
                     <span
                       style={{
@@ -590,7 +590,7 @@ export default function TodayStats({
                   </div>
                   <div
                     style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}
-                    title={`Telesales: ${comingStats.oc.count} khách • ${comingStats.oc.price.toLocaleString('vi-VN')} đ`}
+                    title={`Telesales: ${comingStats.oc.count} khách • ${Math.round(comingStats.oc.price || 0).toLocaleString('vi-VN')} đ`}
                   >
                     <span
                       style={{
@@ -609,7 +609,7 @@ export default function TodayStats({
                   </div>
                   <div
                     style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}
-                    title={`Khác: ${comingStats.other.count} khách • ${comingStats.other.price.toLocaleString('vi-VN')} đ`}
+                    title={`Khác: ${comingStats.other.count} khách • ${Math.round(comingStats.other.price || 0).toLocaleString('vi-VN')} đ`}
                   >
                     <span
                       style={{
@@ -656,7 +656,7 @@ export default function TodayStats({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, overflow: 'hidden' }}>
                   <div
                     style={{ fontSize: '11px', whiteSpace: 'nowrap' }}
-                    title={`Hoàn thành: ${comingStatusStats.done.count} khách • ${comingStatusStats.done.price.toLocaleString('vi-VN')} đ`}
+                    title={`Hoàn thành: ${comingStatusStats.done.count} khách • ${Math.round(comingStatusStats.done.price || 0).toLocaleString('vi-VN')} đ`}
                   >
                     <span
                       style={{
@@ -675,7 +675,7 @@ export default function TodayStats({
                   </div>
                   <div
                     style={{ fontSize: '11px', whiteSpace: 'nowrap' }}
-                    title={`Đang làm: ${comingStatusStats.serving.count} khách • ${comingStatusStats.serving.price.toLocaleString('vi-VN')} đ`}
+                    title={`Đang làm: ${comingStatusStats.serving.count} khách • ${Math.round(comingStatusStats.serving.price || 0).toLocaleString('vi-VN')} đ`}
                   >
                     <span
                       style={{
@@ -759,9 +759,9 @@ export default function TodayStats({
             <strong
               className="tabular-nums"
               style={{ fontSize: '14px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
-              title={`Tổng cộng: ${totalRevenueData.total.toLocaleString('vi-VN')} đ`}
+              title={`Tổng cộng: ${Math.round(totalRevenueData.total || 0).toLocaleString('vi-VN')} đ`}
             >
-              {totalRevenueData.total.toLocaleString('vi-VN')} đ
+              {Math.round(totalRevenueData.total || 0).toLocaleString('vi-VN')} đ
             </strong>
           </div>
 
@@ -801,7 +801,7 @@ export default function TodayStats({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, overflow: 'hidden' }}>
                   <div
                     style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}
-                    title={`Combo: ${totalRevenueData.revCombo.toLocaleString('vi-VN')} đ`}
+                    title={`Combo: ${Math.round(totalRevenueData.revCombo || 0).toLocaleString('vi-VN')} đ`}
                   >
                     <span
                       style={{
@@ -817,7 +817,7 @@ export default function TodayStats({
                   </div>
                   <div
                     style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}
-                    title={`Lẻ (Single): ${totalRevenueData.revLe.toLocaleString('vi-VN')} đ`}
+                    title={`Lẻ (Single): ${Math.round(totalRevenueData.revLe || 0).toLocaleString('vi-VN')} đ`}
                   >
                     <span
                       style={{
@@ -833,7 +833,7 @@ export default function TodayStats({
                   </div>
                   <div
                     style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}
-                    title={`Sản phẩm: ${totalRevenueData.revProduct.toLocaleString('vi-VN')} đ`}
+                    title={`Sản phẩm: ${Math.round(totalRevenueData.revProduct || 0).toLocaleString('vi-VN')} đ`}
                   >
                     <span
                       style={{
