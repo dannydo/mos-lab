@@ -366,6 +366,7 @@ export default function LocaCampaignPage() {
       setBookingWizardVisible(true);
     },
     handleToggleTouchpoint,
+    touchpointConfigs: configs['LOCA_ALL'],
     addingIds,
     sortField,
     currentPage,

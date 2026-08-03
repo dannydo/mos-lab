@@ -1157,8 +1157,16 @@ export const apiClient = {
       return response.data;
     },
     getBySlug: async (slug: string) => {
-      const response = await api.get(`/campaigns/slug/${slug}`);
-      return response.data;
+      try {
+        const response = await api.get(`/campaigns/slug/${encodeURIComponent(slug)}`);
+        return response.data;
+      } catch (err: any) {
+        if (err?.response?.status === 404 && !isNaN(Number(slug))) {
+          const fallback = await api.get(`/campaigns/${slug}`);
+          return fallback.data;
+        }
+        throw err;
+      }
     },
     create: async (dto: CreateCampaignDto) => {
       const response = await api.post('/campaigns', dto);

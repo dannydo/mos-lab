@@ -299,7 +299,11 @@ mos-lab/
 ### 41. Legacy Customer Profile URL Parameter Rules
 - **Đường dẫn chuẩn**: Trang danh sách khách hàng trên hệ thống Legacy Angular có đường dẫn `/admin/online-consultant/user/customer`.
 - **Query Parameters được hỗ trợ**: Hệ thống Legacy tiếp nhận các tham số tìm kiếm bao gồm `phone`, `phone_number`, `keyword`, hoặc `search` (Ví dụ: `http://localhost/admin/online-consultant/user/customer?phone=0983960852`).
-- **Lưu ý**: Không sử dụng `search_keyword` làm query parameter vì hệ thống Legacy Angular không đọc tham số này.
+### 43. Unified Icon & Emoji Picker Invariant (Single Source of Truth Component)
+- **Single Source of Truth Component**: Tất cả các ô chọn biểu tượng (icon picker / emoji picker) trên toàn hệ thống bắt buộc phải sử dụng component dùng chung `IconPickerModal` (`apps/web/components/IconPickerModal.tsx`) và `TouchpointIconPicker` (`apps/web/components/campaign/TouchpointIconPicker.tsx`).
+- **Kho Biểu Tượng Tập Trung**: Hỗ trợ đồng bộ 4 nhóm: Ant Design (447 icons), Lucide (1995 icons), Emoji (200+ emojis), và Custom SVG icons (4 icons).
+- **Hàm Render Chuẩn (`getIconComponent` / `renderIconHelper`)**: Sử dụng `renderIconHelper` / `getIconComponent` từ `IconSystem.tsx` để render sắc nét tất cả các định dạng icon (`Antd`, `lucide:*`, `custom:*`, `emoji`). Tuyệt đối không viết lại component chọn icon rời rạc hoặc hardcode danh sách icon nhỏ lẻ.
+
 
 ### 42. Unified Touchpoint Callback & Daily Plan Synchronization Rule (Quy tắc Hẹn Gọi Lại & Đồng Bộ Daily Plan)
 - **Hợp nhất điều kiện nhận diện Tab Callback (Unified Callback Recognition)**: Một khách hàng được tính vào **Tab Callback (`has_callback = 1`)** khi thỏa mãn BẤT KỲ 1 trong 3 điều kiện:

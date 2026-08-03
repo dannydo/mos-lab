@@ -61,7 +61,7 @@ const IconButton: React.FC<IconButtonProps> = ({ name, isSelected, onSelect, ico
 export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose, onSelect, value }) => {
   const { token } = theme.useToken();
   const [searchText, setSearchText] = useState('');
-  const [activeTab, setActiveTab] = useState<'antd' | 'lucide' | 'custom'>('antd');
+  const [activeTab, setActiveTab] = useState<'antd' | 'lucide' | 'emoji' | 'custom'>('antd');
 
   // 1. Persistent Size States
   const [modalWidth, setModalWidth] = useState<number>(600);
@@ -129,6 +129,272 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
   }, [searchText, lucideIcons]);
 
   // 5. Get and filter Custom icons
+  const POPULAR_EMOJIS = [
+    // Smileys & Emotion
+    '😃',
+    '😄',
+    '😁',
+    '😆',
+    '😅',
+    '😂',
+    '🤣',
+    '😊',
+    '😇',
+    '🙂',
+    '🙃',
+    '😉',
+    '😌',
+    '😍',
+    '🥰',
+    '😘',
+    '😗',
+    '😙',
+    '😚',
+    '😋',
+    '😛',
+    '😝',
+    '😜',
+    '🤪',
+    '🤨',
+    '🧐',
+    '🤓',
+    '😎',
+    '🤩',
+    '🥳',
+    '😏',
+    '😒',
+    '😞',
+    '😔',
+    '😟',
+    '😕',
+    '🙁',
+    '☹️',
+    '😣',
+    '😖',
+    '😫',
+    '😩',
+    '🥺',
+    '😢',
+    '😭',
+    '😤',
+    '😠',
+    '😡',
+    '🤬',
+    '🤯',
+    '😳',
+    '🥵',
+    '🥶',
+    '😱',
+    '😨',
+    '😰',
+    '😥',
+    '😓',
+    '🤗',
+    '🤔',
+    '🤭',
+    '🤫',
+    '🤥',
+    '😶',
+    '😐',
+    '😑',
+    '😬',
+    '🙄',
+    '😯',
+    '😦',
+    '😧',
+    '😮',
+    '😲',
+    '🥱',
+    '😴',
+    '🤤',
+    '😪',
+    '😵',
+    '🤐',
+    '🥴',
+    '🤢',
+    '🤮',
+    '🤧',
+    '😷',
+    '🤒',
+    '🤕',
+    '🤑',
+    '🤠',
+    '😈',
+    '👿',
+    '👹',
+    '👺',
+    '🤡',
+    '💩',
+    '👻',
+    '💀',
+    // Hands & Gestures
+    '👋',
+    '🤚',
+    '🖐️',
+    '✋',
+    '🖖',
+    '👌',
+    '🤏',
+    '✌️',
+    '🤞',
+    '🤟',
+    '🤘',
+    '🤙',
+    '👈',
+    '👉',
+    '👆',
+    '🖕',
+    '👇',
+    '☝️',
+    '👍',
+    '👎',
+    '✊',
+    '👊',
+    '🤛',
+    '🤜',
+    '👏',
+    '🙌',
+    '👐',
+    '🤲',
+    '🤝',
+    '🙏',
+    '✍️',
+    '💅',
+    '🤳',
+    '💪',
+    '🦾',
+    '🦵',
+    '🦶',
+    '👂',
+    '👃',
+    '🧠',
+    '🫀',
+    '🫁',
+    '🦷',
+    '🦴',
+    '👀',
+    '👁️',
+    '👅',
+    '👄',
+    // Hearts & Romance
+    '💋',
+    '❤️',
+    '🧡',
+    '💛',
+    '💚',
+    '💙',
+    '💜',
+    '🖤',
+    '🤍',
+    '🤎',
+    '💔',
+    '❣️',
+    '💕',
+    '💞',
+    '💓',
+    '💗',
+    '💖',
+    '💘',
+    '💝',
+    '💟',
+    '💌',
+    '💍',
+    '💎',
+    // Beauty, Gifts & Objects
+    '💄',
+    '💇‍♀️',
+    '💇‍♂️',
+    '💆‍♀️',
+    '💆‍♂️',
+    '🛍️',
+    '👑',
+    '🎁',
+    '🎀',
+    '🎈',
+    '🎉',
+    '🎊',
+    '🎋',
+    '🎍',
+    '🎎',
+    '🎏',
+    '🎐',
+    '🎑',
+    '🧧',
+    '📱',
+    '💻',
+    '⏰',
+    '📅',
+    '🔔',
+    '🛏️',
+    '☕',
+    '🍹',
+    '🍷',
+    '🍺',
+    '🥂',
+    '🍾',
+    '🎂',
+    '🍰',
+    '🧁',
+    '🍭',
+    '🍬',
+    '🍫',
+    '🍿',
+    '🍩',
+    '🍪',
+    // Status, Sparkles & Nature
+    '✨',
+    '⭐',
+    '🌟',
+    '💫',
+    '💥',
+    '🔥',
+    '⚡',
+    '🌈',
+    '☀️',
+    '🌙',
+    '☁️',
+    '❄️',
+    '💧',
+    '🌊',
+    '🏆',
+    '🏅',
+    '🥇',
+    '🥈',
+    '🥉',
+    '🎯',
+    '🚀',
+    '💯',
+    '✅',
+    '❌',
+    '⚠️',
+    '🛑',
+    '🔴',
+    '🟢',
+    '🔵',
+    '🟡',
+    '🟠',
+    '🟣',
+    '⚫',
+    '⚪',
+    '🌺',
+    '🌸',
+    '🌼',
+    '🌻',
+    '🌹',
+    '🌷',
+    '🌱',
+    '🌲',
+    '🌴',
+    '🍀',
+    '🍁',
+    '🍂',
+  ];
+
+  const filteredEmojis = useMemo(() => {
+    if (!searchText) return POPULAR_EMOJIS;
+    return POPULAR_EMOJIS.filter((e) => e.includes(searchText.trim()));
+  }, [searchText]);
+
   const filteredCustomIcons = useMemo(() => {
     if (!searchText) return CUSTOM_ICONS;
     const query = searchText.toLowerCase();
@@ -208,12 +474,13 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
 
       <Tabs
         activeKey={activeTab}
-        onChange={(key) => setActiveTab(key as 'antd' | 'lucide' | 'custom')}
+        onChange={(key) => setActiveTab(key as 'antd' | 'lucide' | 'emoji' | 'custom')}
         style={{ marginBottom: '12px' }}
         size="small"
         items={[
           { key: 'antd', label: `Ant Design (${filteredAntdIcons.length})` },
           { key: 'lucide', label: `Lucide (${filteredLucideIcons.length})` },
+          { key: 'emoji', label: `Emoji (${filteredEmojis.length})` },
           { key: 'custom', label: `Custom (${filteredCustomIcons.length})` },
         ]}
       />
@@ -305,33 +572,64 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
                   />
                 );
               })
-            : filteredCustomIcons.map((name) => {
-                const isSelected = value === name;
-                const customIcon = getCustomIconComponent(name, {
-                  size: 20,
-                  style: {
-                    color: isSelected ? token.colorPrimary : token.colorTextSecondary,
-                  },
-                });
-                return (
-                  <IconButton
-                    key={name}
-                    name={name}
-                    isSelected={isSelected}
-                    onSelect={() => {
-                      onSelect(name);
-                      onClose();
-                    }}
-                    icon={customIcon}
-                    label={name.replace('custom:', '')}
-                    token={token}
-                  />
-                );
-              })}
+            : activeTab === 'emoji'
+              ? filteredEmojis.map((emoji, idx) => {
+                  const isSelected = value === emoji;
+                  return (
+                    <IconButton
+                      key={`${emoji}-${idx}`}
+                      name={emoji}
+                      isSelected={isSelected}
+                      onSelect={() => {
+                        onSelect(emoji);
+                        onClose();
+                      }}
+                      icon={<span style={{ fontSize: '22px' }}>{emoji}</span>}
+                      label={emoji}
+                      token={token}
+                    />
+                  );
+                })
+              : filteredCustomIcons.map((name) => {
+                  const isSelected = value === name;
+                  const customIcon = getCustomIconComponent(name, {
+                    size: 20,
+                    style: {
+                      color: isSelected ? token.colorPrimary : token.colorTextSecondary,
+                    },
+                  });
+                  return (
+                    <IconButton
+                      key={name}
+                      name={name}
+                      isSelected={isSelected}
+                      onSelect={() => {
+                        onSelect(name);
+                        onClose();
+                      }}
+                      icon={customIcon}
+                      label={name.replace('custom:', '')}
+                      token={token}
+                    />
+                  );
+                })}
 
         {hasNoIcons && (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '32px', color: token.colorTextSecondary }}>
-            Không tìm thấy icon nào phù hợp
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '24px', color: token.colorTextSecondary }}>
+            <div className="text-xs text-slate-400">Không tìm thấy icon sẵn có trùng khớp.</div>
+            {searchText && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSelect(searchText.trim());
+                  onClose();
+                }}
+                className="mt-3 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg shadow-sm transition-all inline-flex items-center gap-1.5"
+              >
+                <span>Dùng Emoji / Icon tùy chỉnh:</span>
+                <span className="font-bold text-amber-300 text-sm">&quot;{searchText.trim()}&quot;</span>
+              </button>
+            )}
           </div>
         )}
       </div>

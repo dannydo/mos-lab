@@ -474,6 +474,15 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 2. **Query Parameters được hỗ trợ**: Hệ thống Legacy tiếp nhận các tham số tìm kiếm bao gồm `phone`, `phone_number`, `keyword`, hoặc `search` (Ví dụ: `http://localhost/admin/online-consultant/user/customer?phone=0983960852`).
 3. **Lưu ý**: Không sử dụng `search_keyword` làm query parameter vì hệ thống Legacy Angular không đọc tham số này.
 
+---
+
+# 🎨 Unified Icon & Emoji Picker Invariant (Single Source of Truth Component)
+
+1. **Single Source of Truth Component**: Tất cả các ô chọn biểu tượng (icon picker / emoji picker) trên toàn hệ thống bắt buộc phải sử dụng component dùng chung `IconPickerModal` (`apps/web/components/IconPickerModal.tsx`) và `TouchpointIconPicker` (`apps/web/components/campaign/TouchpointIconPicker.tsx`).
+2. **Kho Biểu Tượng Tập Trung**: Hỗ trợ đồng bộ 4 nhóm: Ant Design (447 icons), Lucide (1995 icons), Emoji (200+ emojis), và Custom SVG icons (4 icons).
+3. **Hàm Render Chuẩn (`getIconComponent` / `renderIconHelper`)**: Sử dụng `renderIconHelper` / `getIconComponent` từ `IconSystem.tsx` để render sắc nét tất cả các định dạng icon (`Antd`, `lucide:*`, `custom:*`, `emoji`). Tuyệt đối không viết lại component chọn icon rời rạc hoặc hardcode danh sách icon nhỏ lẻ.
+
+
 
 
 

@@ -4,28 +4,7 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
 
-// Antd Icons whitelist to avoid importing all of them
-import {
-  OrderedListOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  UserOutlined,
-  TeamOutlined,
-  PhoneOutlined,
-  ShopOutlined,
-  GiftOutlined,
-  MessageOutlined,
-  SolutionOutlined,
-  InfoCircleOutlined,
-  StarOutlined,
-  TagOutlined,
-  HeartOutlined,
-  SettingOutlined,
-  ClusterOutlined,
-  ShareAltOutlined,
-  CustomerServiceOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
+import * as AntdIcons from '@ant-design/icons';
 
 export interface IconProps {
   size?: number;
@@ -192,11 +171,35 @@ export const getCustomIconComponent = (name: string, props?: IconProps): React.R
 const lucideComponentsCache: Record<string, React.ComponentType<SafeAny>> = {};
 
 export const getDynamicLucideIcon = (name: string): React.ComponentType<SafeAny> | null => {
-  const importFn = (dynamicIconImports as SafeAny)[name];
+  if (!name) return null;
+  const cleanName = name.replace(/^lucide:/i, '').trim();
+
+  // 1. Direct match (e.g. "bed-double" or "smile")
+  let importFn = (dynamicIconImports as SafeAny)[cleanName];
+
+  // 2. Kebab-case conversion from PascalCase/camelCase (e.g. "BedDouble" -> "bed-double")
+  if (!importFn) {
+    const kebab = cleanName
+      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+      .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
+      .toLowerCase();
+    importFn = (dynamicIconImports as SafeAny)[kebab];
+  }
+
+  // 3. Normalized match (e.g. "beddouble" -> "bed-double")
+  if (!importFn) {
+    const targetNormalized = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const foundKey = Object.keys(dynamicIconImports).find((k) => k.replace(/[^a-z0-9]/g, '') === targetNormalized);
+    if (foundKey) {
+      importFn = (dynamicIconImports as SafeAny)[foundKey];
+    }
+  }
+
   if (!importFn) return null;
 
-  if (!lucideComponentsCache[name]) {
-    lucideComponentsCache[name] = dynamic(importFn, {
+  const cacheKey = cleanName.toLowerCase();
+  if (!lucideComponentsCache[cacheKey]) {
+    lucideComponentsCache[cacheKey] = dynamic(importFn, {
       ssr: false,
       loading: () =>
         React.createElement('span', {
@@ -205,34 +208,22 @@ export const getDynamicLucideIcon = (name: string): React.ComponentType<SafeAny>
     });
   }
 
-  return lucideComponentsCache[name];
-};
-
-// Ant Design Icons whitelist mapping
-const ANTD_ICON_MAP: Record<string, React.ComponentType<SafeAny>> = {
-  OrderedListOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  UserOutlined,
-  TeamOutlined,
-  PhoneOutlined,
-  ShopOutlined,
-  GiftOutlined,
-  MessageOutlined,
-  SolutionOutlined,
-  InfoCircleOutlined,
-  StarOutlined,
-  TagOutlined,
-  HeartOutlined,
-  SettingOutlined,
-  ClusterOutlined,
-  ShareAltOutlined,
-  CustomerServiceOutlined,
-  SearchOutlined,
+  return lucideComponentsCache[cacheKey];
 };
 
 export const getAntdIconComponent = (name: string): React.ComponentType<SafeAny> | null => {
-  return ANTD_ICON_MAP[name] || null;
+  if (!name) return null;
+  const cleanName = name.trim();
+  const IconComp = (AntdIcons as SafeAny)[cleanName];
+  if (IconComp && (typeof IconComp === 'function' || typeof IconComp === 'object')) {
+    return IconComp;
+  }
+  if (!cleanName.endsWith('Outlined')) {
+    const outlinedName = `${cleanName}Outlined`;
+    const OutlinedComp = (AntdIcons as SafeAny)[outlinedName];
+    if (OutlinedComp) return OutlinedComp;
+  }
+  return null;
 };
 
 // List of custom icons

@@ -26,6 +26,7 @@ import {
   Tabs,
 } from 'antd';
 import { GoogleSheetColorPicker } from '../../../../components/GoogleSheetColorPicker';
+import { TouchpointIconPicker } from '../../../../components/campaign/TouchpointIconPicker';
 import {
   PlusOutlined,
   EditOutlined,
@@ -163,11 +164,19 @@ export default function CampaignManagementPage() {
         description: '',
         dates: null,
         touchpoints: [
-          { label: 'Chạm D1', key: 'TP_D1', daysMin: 1, daysMax: 1, color: '#1890ff', sortOrder: 1 },
-          { label: 'Chạm D3', key: 'TP_D3', daysMin: 3, daysMax: 3, color: '#52c41a', sortOrder: 2 },
-          { label: 'Chạm D7', key: 'TP_D7', daysMin: 7, daysMax: 7, color: '#fa8c16', sortOrder: 3 },
-          { label: 'Chạm D14', key: 'TP_D14', daysMin: 14, daysMax: 14, color: '#722ed1', sortOrder: 4 },
-          { label: 'Chạm D21', key: 'TP_D21', daysMin: 21, daysMax: 21, color: '#ff4d4f', sortOrder: 5 },
+          { label: 'Chạm D1', key: 'TP_D1', icon: 'Smile', daysMin: 1, daysMax: 1, color: '#34ff1a', sortOrder: 1 },
+          { label: 'Chạm D3', key: 'TP_D3', icon: 'Handshake', daysMin: 3, daysMax: 3, color: '#2e1ac7', sortOrder: 2 },
+          { label: 'Chạm D7', key: 'TP_D7', icon: 'Kiss', daysMin: 7, daysMax: 7, color: '#d5fb13', sortOrder: 3 },
+          { label: 'Chạm D14', key: 'TP_D14', icon: 'Heart', daysMin: 14, daysMax: 14, color: '#d17d2e', sortOrder: 4 },
+          {
+            label: 'Chạm D21',
+            key: 'TP_D21',
+            icon: 'BedDouble',
+            daysMin: 21,
+            daysMax: 21,
+            color: '#ff4d4f',
+            sortOrder: 5,
+          },
         ],
         promotions: [
           { name: 'Giảm 20% Dịch vụ Nối mi', type: 'PERCENT_DISCOUNT', value: 20, description: 'Ưu đãi chiến dịch' },
@@ -198,7 +207,17 @@ export default function CampaignManagementPage() {
           dates: dates,
           status: details.status,
           assignedStaffIds: details.assignedStaffIds || [],
-          touchpoints: details.touchpoints || details.CampaignTouchpoint || [],
+          touchpoints: (details.touchpoints || details.CampaignTouchpoint || []).map((tp: any, idx: number) => ({
+            label: tp.label,
+            key: tp.key,
+            icon:
+              tp.icon ||
+              (idx === 0 ? 'Smile' : idx === 1 ? 'Handshake' : idx === 2 ? 'Kiss' : idx === 3 ? 'Heart' : 'BedDouble'),
+            daysMin: tp.daysMin,
+            daysMax: tp.daysMax,
+            color: tp.color || '#1890ff',
+            sortOrder: tp.sortOrder,
+          })),
           promotions: details.promotions || details.CampaignPromotion || [],
         });
       }, 50);
@@ -244,6 +263,17 @@ export default function CampaignManagementPage() {
         .map((tp: any, index: number) => ({
           key: tp.key || `TP_${index + 1}`,
           label: tp.label || `Chạm ${index + 1}`,
+          icon:
+            tp.icon ||
+            (index === 0
+              ? 'Smile'
+              : index === 1
+                ? 'Handshake'
+                : index === 2
+                  ? 'Kiss'
+                  : index === 3
+                    ? 'Heart'
+                    : 'BedDouble'),
           daysMin: Number(tp.daysMin) || 0,
           daysMax:
             tp.daysMax !== undefined && tp.daysMax !== null && tp.daysMax !== ''
@@ -679,17 +709,18 @@ export default function CampaignManagementPage() {
                         <div>
                           {fields.length > 0 && (
                             <div className="flex items-center gap-2 px-1 py-1.5 mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                              <div className="flex-1">Tên điểm chạm</div>
-                              <div className="w-20 text-center">Từ ngày</div>
-                              <div className="w-20 text-center">Đến ngày</div>
-                              <div className="w-[110px] text-center">Màu sắc</div>
+                              <div className="flex-1 min-w-[120px]">Tên điểm chạm</div>
+                              <div className="w-[140px] text-center">Biểu tượng (Icon)</div>
+                              <div className="w-16 text-center">Từ ngày</div>
+                              <div className="w-16 text-center">Đến ngày</div>
+                              <div className="w-[95px] text-center">Màu sắc</div>
                               <div className="w-8 text-center">Xóa</div>
                             </div>
                           )}
                           <div className="space-y-2">
                             {fields.map(({ key, name, ...restField }) => (
                               <div key={key} className="flex items-center gap-2 py-0.5">
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-[120px]">
                                   <Form.Item
                                     {...restField}
                                     name={[name, 'label']}
@@ -699,7 +730,12 @@ export default function CampaignManagementPage() {
                                     <Input placeholder="Tên chạm (VD: Chạm D1)" />
                                   </Form.Item>
                                 </div>
-                                <div className="w-20">
+                                <div className="w-[140px]">
+                                  <Form.Item {...restField} name={[name, 'icon']} style={{ marginBottom: 0 }}>
+                                    <TouchpointIconPicker size="small" />
+                                  </Form.Item>
+                                </div>
+                                <div className="w-16">
                                   <Form.Item
                                     {...restField}
                                     name={[name, 'daysMin']}
@@ -709,12 +745,12 @@ export default function CampaignManagementPage() {
                                     <InputNumber min={0} placeholder="D+" style={{ width: '100%' }} />
                                   </Form.Item>
                                 </div>
-                                <div className="w-20">
+                                <div className="w-16">
                                   <Form.Item {...restField} name={[name, 'daysMax']} style={{ marginBottom: 0 }}>
                                     <InputNumber min={0} placeholder="D+" style={{ width: '100%' }} />
                                   </Form.Item>
                                 </div>
-                                <div className="w-[110px] flex justify-center">
+                                <div className="w-[95px] flex justify-center">
                                   <Form.Item {...restField} name={[name, 'color']} style={{ marginBottom: 0 }}>
                                     <GoogleSheetColorPicker size="small" />
                                   </Form.Item>
@@ -731,7 +767,22 @@ export default function CampaignManagementPage() {
                             ))}
                             <Button
                               type="dashed"
-                              onClick={() => add({ color: '#3b82f6', daysMin: 1 })}
+                              onClick={() => {
+                                const nextIdx = fields.length;
+                                const defaultIcon =
+                                  nextIdx === 0
+                                    ? 'Smile'
+                                    : nextIdx === 1
+                                      ? 'Handshake'
+                                      : nextIdx === 2
+                                        ? 'Kiss'
+                                        : nextIdx === 3
+                                          ? 'Heart'
+                                          : nextIdx === 4
+                                            ? 'BedDouble'
+                                            : 'Sparkles';
+                                add({ color: '#3b82f6', daysMin: 1, icon: defaultIcon });
+                              }}
                               block
                               icon={<PlusOutlined />}
                               className="rounded-xl h-10 border-dashed mt-2"

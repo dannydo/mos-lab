@@ -24,8 +24,10 @@ export interface CampaignTouchpointItem {
   id: number;
   key: string;
   label: string;
+  icon?: string | null;
   daysMin?: number;
   daysMax?: number | null;
+  color?: string | null;
   sortOrder?: number;
 }
 
@@ -59,29 +61,46 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
   const isChecked = !!tpLog?.isChecked;
   const rawStatus: TouchpointStatus | null = tpLog?.status || (isChecked ? 'SUCCESS' : null);
   const currentNote = tpLog?.note || '';
+  const initialDiamond = !!(
+    (tpLog as any)?.hasReferredDiamond ||
+    (customer as any)?.hasReferredDiamond ||
+    currentNote.includes('💎')
+  );
 
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<TouchpointStatus | null>(rawStatus);
   const [noteInput, setNoteInput] = useState(currentNote);
+  const [hasReferredDiamond, setHasReferredDiamond] = useState<boolean>(initialDiamond);
   const [callbackDate, setCallbackDate] = useState<dayjs.Dayjs>(dayjs().add(1, 'day'));
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setSelectedStatus(rawStatus);
     setNoteInput(currentNote);
+    setHasReferredDiamond(initialDiamond);
     if (customer.callbackDate) {
       setCallbackDate(dayjs(customer.callbackDate));
     }
-  }, [rawStatus, currentNote, customer.callbackDate]);
+  }, [rawStatus, currentNote, initialDiamond, customer.callbackDate]);
 
   const days = customer.daysInCampaign ?? customer.daysSinceLastVisit ?? customer.daysSinceAdded ?? 0;
   const tpKey = touchpoint.key;
 
-  // Determine active & overdue system windows
+  // Determine active & overdue system windows dynamically from setup
   let isActive = false;
   let isOverdue = false;
 
-  if (tpKey === '24h') {
+  if (touchpoint.daysMin !== undefined && touchpoint.daysMin !== null) {
+    const min = touchpoint.daysMin;
+    const max = touchpoint.daysMax;
+    if (max !== null && max !== undefined) {
+      isActive = days >= min && days <= max;
+      isOverdue = days > max && !isChecked && !rawStatus;
+    } else {
+      isActive = days >= min;
+      isOverdue = false;
+    }
+  } else if (tpKey === '24h') {
     isActive = days === 1;
     isOverdue = days > 1 && !isChecked && !rawStatus;
   } else if (tpKey === '17' || tpKey === '17d') {
@@ -105,16 +124,6 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
   } else if (tpKey === '30plus' || tpKey === '30dplus') {
     isActive = days > 30;
     isOverdue = false;
-  } else if (touchpoint.daysMin !== undefined) {
-    const min = touchpoint.daysMin;
-    const max = touchpoint.daysMax;
-    if (max !== null && max !== undefined) {
-      isActive = days >= min && days <= max;
-      isOverdue = days > max && !isChecked && !rawStatus;
-    } else {
-      isActive = days >= min;
-      isOverdue = false;
-    }
   }
 
   // Priority state resolution: DB status -> System active -> Pending window -> Overdue -> Blank
@@ -149,9 +158,17 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
     setLoading(true);
     const targetStatus = statusToSave !== undefined ? statusToSave : selectedStatus;
     const isNowChecked = targetStatus !== null;
+    let finalNote = noteInput.trim();
+    if (hasReferredDiamond && !finalNote.includes('💎')) {
+      finalNote = finalNote ? `${finalNote} [Đã tư vấn CT Kim Cương 💎]` : '[Đã tư vấn CT Kim Cương 💎]';
+    } else if (!hasReferredDiamond && finalNote.includes(' [Đã tư vấn CT Kim Cương 💎]')) {
+      finalNote = finalNote.replace(' [Đã tư vấn CT Kim Cương 💎]', '');
+    } else if (!hasReferredDiamond && finalNote.includes('[Đã tư vấn CT Kim Cương 💎]')) {
+      finalNote = finalNote.replace('[Đã tư vấn CT Kim Cương 💎]', '');
+    }
     const cbDateStr = targetStatus === 'CALLBACK' ? callbackDate.format('YYYY-MM-DD') : undefined;
     try {
-      await onToggle(customerId, touchpoint.id, isNowChecked, noteInput, targetStatus, cbDateStr);
+      await onToggle(customerId, touchpoint.id, isNowChecked, finalNote, targetStatus, cbDateStr);
       setPopoverOpen(false);
     } finally {
       setLoading(false);
@@ -165,6 +182,7 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
       await onToggle(customerId, touchpoint.id, false, '', null);
       setSelectedStatus(null);
       setNoteInput('');
+      setHasReferredDiamond(false);
       setPopoverOpen(false);
     } finally {
       setLoading(false);
@@ -524,6 +542,44 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
         </div>
       )}
 
+      {/* Diamond Referral Toggle Button */}
+      <div
+        onClick={() => setHasReferredDiamond(!hasReferredDiamond)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 10px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontWeight: 600,
+          cursor: 'pointer',
+          border: hasReferredDiamond ? '1.5px solid #06b6d4' : isDark ? '1px dashed #334155' : '1px dashed #cbd5e1',
+          background: hasReferredDiamond
+            ? isDark
+              ? 'rgba(6,182,212,0.15)'
+              : '#ecfeff'
+            : isDark
+              ? '#0f172a'
+              : '#f8fafc',
+          color: hasReferredDiamond ? (isDark ? '#22d3ee' : '#0891b2') : isDark ? '#94a3b8' : '#64748b',
+          transition: 'all 0.2s ease',
+          marginBottom: '8px',
+        }}
+        className="user-select-none hover:opacity-90"
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '13px' }}>💎</span>
+          <span>Đã tư vấn CT Kim Cương</span>
+        </div>
+        <input
+          type="checkbox"
+          checked={hasReferredDiamond}
+          onChange={() => {}}
+          style={{ accentColor: '#0891b2', cursor: 'pointer' }}
+        />
+      </div>
+
       <TextArea
         rows={2}
         value={noteInput}
@@ -551,9 +607,9 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
   );
 
   // Modern Glassmorphic Pill styling with state glow
-  let bg = 'transparent';
-  let border = 'none';
-  let textColor = isDark ? '#64748b' : '#94a3b8';
+  let bg = isDark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(241, 245, 249, 0.6)';
+  let border = isDark ? '1px solid rgba(148, 163, 184, 0.25)' : '1px solid rgba(203, 213, 225, 0.6)';
+  let textColor = isDark ? '#94a3b8' : '#64748b';
   let boxShadow = 'none';
 
   if (displayStatus === 'DONE') {
@@ -615,8 +671,8 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
     if (displayStatus === 'FAILED') return <PhoneOff size={12} className="text-rose-400" />;
     if (displayStatus === 'LOST') return <HeartOff size={12} className="text-pink-400" />;
     if (displayStatus === 'DUE_TODAY') return <BellRing size={13} className="text-amber-400 animate-pulse" />;
-    if (displayStatus === 'PENDING') return <Hourglass size={12} className="text-slate-400 opacity-75" />;
-    return <span style={{ fontSize: '12px', opacity: 0.25, color: textColor }}>•</span>;
+    if (displayStatus === 'OVERDUE') return <Hourglass size={12} className="text-rose-400 opacity-80" />;
+    return <Hourglass size={12} className="text-slate-400 opacity-60" />;
   };
 
   return (
@@ -632,6 +688,7 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
         <div
           onClick={handleCellClick}
           style={{
+            position: 'relative',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -645,6 +702,7 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
             color: textColor,
             boxShadow: boxShadow,
             userSelect: 'none',
+            overflow: 'visible',
           }}
         >
           <Space size={1} align="center">
@@ -658,6 +716,24 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
               />
             )}
           </Space>
+
+          {/* Top-Right Corner Diamond Badge */}
+          {hasReferredDiamond && (
+            <span
+              style={{
+                position: 'absolute',
+                top: '-6px',
+                right: '-6px',
+                fontSize: '11px',
+                lineHeight: 1,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
+                zIndex: 2,
+              }}
+              title="Đã tư vấn Chương Trình Kim Cương"
+            >
+              💎
+            </span>
+          )}
         </div>
       </Tooltip>
     </Popover>

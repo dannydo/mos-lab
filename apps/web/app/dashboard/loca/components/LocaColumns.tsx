@@ -36,6 +36,13 @@ interface LocaColumnsOptions {
     hasReferredDiamond?: boolean,
     callbackDate?: string
   ) => Promise<void>;
+  touchpointConfigs?: Array<{
+    key: string;
+    label: string;
+    daysMin: number;
+    daysMax: number;
+    color?: string;
+  }>;
   addingIds?: number[];
   sortField?: string;
   currentPage?: number;
@@ -54,11 +61,73 @@ export const getLocaColumns = ({
   handleOpenSmsModal,
   handleOpenBookingWizard,
   handleToggleTouchpoint,
+  touchpointConfigs = [],
   addingIds = [],
   sortField = 'daysSinceLastVisit_asc',
   currentPage = 1,
   pageSize = 20,
 }: LocaColumnsOptions) => {
+  // Filter touchpoint configs from 24h to 30 days
+  const baseConfigs =
+    touchpointConfigs && touchpointConfigs.length > 0
+      ? touchpointConfigs.filter((tp) => tp.key === 'now' || tp.daysMin <= 30)
+      : [
+          { key: 'now', label: 'Chạm 24h', daysMin: 1, daysMax: 1 },
+          { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17 },
+          { key: '19', label: 'Chạm 19', daysMin: 19, daysMax: 19 },
+          { key: '21', label: 'Chạm 20', daysMin: 20, daysMax: 20 },
+          { key: '23', label: 'Chạm 23', daysMin: 23, daysMax: 23 },
+          { key: '25', label: 'Chạm 25', daysMin: 25, daysMax: 25 },
+          { key: '30', label: 'Chạm 30', daysMin: 30, daysMax: 30 },
+        ];
+
+  const has30Plus = baseConfigs.some((tp) => tp.key === '30plus');
+  const activeTouchpoints = has30Plus
+    ? baseConfigs
+    : [...baseConfigs, { key: '30plus', label: '30+', daysMin: 31, daysMax: 999 }];
+
+  const touchpointChildren = activeTouchpoints.map((tp) => {
+    const displayLabel = tp.label || (tp.key === 'now' ? 'Chạm 24h' : tp.key === '30plus' ? '30+' : `Chạm ${tp.key}`);
+    const headerText = displayLabel.replace(/^Chạm\s*/i, '');
+    const tooltipText = `${displayLabel}: Mốc ${
+      tp.key === 'now' ? '24 giờ' : tp.key === '30plus' ? 'trên 30 ngày' : `${tp.daysMin} ngày`
+    } sau khi làm mi`;
+
+    return {
+      title: (
+        <Tooltip title={tooltipText}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              fontSize: '12px',
+              fontWeight: 700,
+              color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
+              whiteSpace: 'nowrap',
+              padding: '0 1px',
+            }}
+          >
+            {headerText}
+          </div>
+        </Tooltip>
+      ),
+      key: `tp_${tp.key}`,
+      width: 46,
+      align: 'center' as const,
+      render: (_: SafeAny, record: Customer) => (
+        <LocaTouchpointCell
+          customer={record}
+          touchpointKey={tp.key}
+          label={displayLabel}
+          targetDays={tp.daysMin}
+          themeMode={themeMode}
+          onToggle={handleToggleTouchpoint || (async () => {})}
+          onOpenBooking={handleOpenBookingWizard}
+        />
+      ),
+    };
+  });
   return [
     {
       title: 'STT',
@@ -246,192 +315,7 @@ export const getLocaColumns = ({
           ✨ Tiến Trình Chạm CSKH
         </div>
       ),
-      children: [
-        {
-          title: (
-            <Tooltip title="Chạm 24h: Đảm bảo khách hài lòng với bộ mi (24 giờ sau làm)">
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <Sparkles size={16} style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569' }} />
-              </div>
-            </Tooltip>
-          ),
-          key: 'tp_24h',
-          width: 44,
-          align: 'center' as const,
-          render: (_: SafeAny, record: Customer) => (
-            <LocaTouchpointCell
-              customer={record}
-              touchpointKey="24h"
-              label="Chạm 24h"
-              targetDays={1}
-              themeMode={themeMode}
-              onToggle={handleToggleTouchpoint || (async () => {})}
-              onOpenBooking={handleOpenBookingWizard}
-            />
-          ),
-        },
-        {
-          title: (
-            <Tooltip title="Chạm 17n: Nhắc lịch dặm mi (Ngày 17 sau khi làm mi)">
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <Calendar size={16} style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569' }} />
-              </div>
-            </Tooltip>
-          ),
-          key: 'tp_17',
-          width: 44,
-          align: 'center' as const,
-          render: (_: SafeAny, record: Customer) => (
-            <LocaTouchpointCell
-              customer={record}
-              touchpointKey="17"
-              label="Chạm 17n"
-              targetDays={17}
-              themeMode={themeMode}
-              onToggle={handleToggleTouchpoint || (async () => {})}
-              onOpenBooking={handleOpenBookingWizard}
-            />
-          ),
-        },
-        {
-          title: (
-            <Tooltip title="Chạm 19n: Nhắc dặm mi lần 2 (Ngày 19 sau khi làm mi)">
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <Clock size={16} style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569' }} />
-              </div>
-            </Tooltip>
-          ),
-          key: 'tp_19',
-          width: 44,
-          align: 'center' as const,
-          render: (_: SafeAny, record: Customer) => (
-            <LocaTouchpointCell
-              customer={record}
-              touchpointKey="19"
-              label="Chạm 19n"
-              targetDays={19}
-              themeMode={themeMode}
-              onToggle={handleToggleTouchpoint || (async () => {})}
-              onOpenBooking={handleOpenBookingWizard}
-            />
-          ),
-        },
-        {
-          title: (
-            <Tooltip title="Chạm 21n: Hạn cuối chu kỳ dặm mi 21 ngày cho Khách Lẻ">
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <Bell size={16} style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569' }} />
-              </div>
-            </Tooltip>
-          ),
-          key: 'tp_21',
-          width: 44,
-          align: 'center' as const,
-          render: (_: SafeAny, record: Customer) => (
-            <LocaTouchpointCell
-              customer={record}
-              touchpointKey="21"
-              label="Chạm 21n"
-              targetDays={21}
-              themeMode={themeMode}
-              onToggle={handleToggleTouchpoint || (async () => {})}
-              onOpenBooking={handleOpenBookingWizard}
-            />
-          ),
-        },
-        {
-          title: (
-            <Tooltip title="Chạm 23n: Nhắc lịch dặm mi cho Khách mua gói Combo (Ngày 23)">
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <Heart size={16} style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569' }} />
-              </div>
-            </Tooltip>
-          ),
-          key: 'tp_23',
-          width: 44,
-          align: 'center' as const,
-          render: (_: SafeAny, record: Customer) => (
-            <LocaTouchpointCell
-              customer={record}
-              touchpointKey="23"
-              label="Chạm 23n"
-              targetDays={23}
-              themeMode={themeMode}
-              onToggle={handleToggleTouchpoint || (async () => {})}
-              onOpenBooking={handleOpenBookingWizard}
-            />
-          ),
-        },
-        {
-          title: (
-            <Tooltip title="Chạm 25n: Hạn dặm mi tối đa 25 ngày cho Khách mua gói Combo">
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <ShieldCheck size={16} style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569' }} />
-              </div>
-            </Tooltip>
-          ),
-          key: 'tp_25',
-          width: 44,
-          align: 'center' as const,
-          render: (_: SafeAny, record: Customer) => (
-            <LocaTouchpointCell
-              customer={record}
-              touchpointKey="25"
-              label="Chạm 25n"
-              targetDays={25}
-              themeMode={themeMode}
-              onToggle={handleToggleTouchpoint || (async () => {})}
-              onOpenBooking={handleOpenBookingWizard}
-            />
-          ),
-        },
-        {
-          title: (
-            <Tooltip title="Chạm 30n: Nhắc lịch nối mi mới (Ngày 30 sau khi làm mi)">
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <RefreshCw size={16} style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569' }} />
-              </div>
-            </Tooltip>
-          ),
-          key: 'tp_30',
-          width: 44,
-          align: 'center' as const,
-          render: (_: SafeAny, record: Customer) => (
-            <LocaTouchpointCell
-              customer={record}
-              touchpointKey="30"
-              label="Chạm 30n"
-              targetDays={30}
-              themeMode={themeMode}
-              onToggle={handleToggleTouchpoint || (async () => {})}
-              onOpenBooking={handleOpenBookingWizard}
-            />
-          ),
-        },
-        {
-          title: (
-            <Tooltip title="Chạm 30n+: Quá 30 ngày - Khách cần tư vấn làm bộ mi mới">
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <UserPlus size={16} style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569' }} />
-              </div>
-            </Tooltip>
-          ),
-          key: 'tp_30plus',
-          width: 44,
-          align: 'center' as const,
-          render: (_: SafeAny, record: Customer) => (
-            <LocaTouchpointCell
-              customer={record}
-              touchpointKey="30plus"
-              label="Chạm 30n+"
-              targetDays={31}
-              themeMode={themeMode}
-              onToggle={handleToggleTouchpoint || (async () => {})}
-              onOpenBooking={handleOpenBookingWizard}
-            />
-          ),
-        },
-      ],
+      children: touchpointChildren,
     },
 
     {

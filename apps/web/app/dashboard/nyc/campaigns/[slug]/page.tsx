@@ -25,8 +25,10 @@ import {
   Divider,
   Avatar,
   Tabs,
+  Alert,
 } from 'antd';
 import { GoogleSheetColorPicker } from '../../../../../components/GoogleSheetColorPicker';
+import { TouchpointIconPicker, getIconComponent } from '../../../../../components/campaign/TouchpointIconPicker';
 import {
   ClockCircleOutlined,
   CalendarOutlined,
@@ -48,6 +50,7 @@ import {
   EditOutlined,
   MinusCircleOutlined,
   AimOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -246,11 +249,13 @@ export default function CampaignDetailPage() {
 
   // Edit Campaign Modal state
   const [editCampaignModalVisible, setEditCampaignModalVisible] = useState<boolean>(false);
+  const [editModalTab, setEditModalTab] = useState<string>('info');
   const [editForm] = Form.useForm();
   const [editingSubmitting, setEditingSubmitting] = useState<boolean>(false);
 
-  const handleOpenEditModal = () => {
+  const handleOpenEditModal = (targetTab: any = 'info') => {
     if (!campaign) return;
+    setEditModalTab(typeof targetTab === 'string' ? targetTab : 'info');
     const dates = campaign.startDate && campaign.endDate ? [dayjs(campaign.startDate), dayjs(campaign.endDate)] : null;
     editForm.setFieldsValue({
       name: campaign.name,
@@ -259,9 +264,13 @@ export default function CampaignDetailPage() {
       description: campaign.description,
       dates,
       assignedStaffIds: campaign.assignedStaffIds || [],
-      touchpoints: touchpoints.map((t) => ({
+      touchpoints: touchpoints.map((t, idx) => ({
+        id: t.id,
         key: t.key,
         label: t.label,
+        icon:
+          t.icon ||
+          (idx === 0 ? 'Smile' : idx === 1 ? 'Handshake' : idx === 2 ? 'Kiss' : idx === 3 ? 'Heart' : 'BedDouble'),
         daysMin: t.daysMin,
         daysMax: t.daysMax ?? undefined,
         color: t.color || '#3b82f6',
@@ -285,8 +294,20 @@ export default function CampaignDetailPage() {
       const endDate = dates?.[1] ? dates[1].format('YYYY-MM-DD') : undefined;
 
       const updatedTouchpoints = (values.touchpoints || []).map((t: any, index: number) => ({
-        key: t.key ? t.key.trim() : `tp_${index + 1}`,
+        id: t.id,
+        key: t.key ? t.key.trim() : t.id ? `tp_${t.id}` : `step_${index + 1}`,
         label: t.label ? t.label.trim() : `Chạm ${index + 1}`,
+        icon:
+          t.icon ||
+          (index === 0
+            ? 'Smile'
+            : index === 1
+              ? 'Handshake'
+              : index === 2
+                ? 'Kiss'
+                : index === 3
+                  ? 'Heart'
+                  : 'BedDouble'),
         daysMin: typeof t.daysMin === 'number' ? t.daysMin : 0,
         daysMax: typeof t.daysMax === 'number' ? t.daysMax : undefined,
         color: t.color || '#3b82f6',
@@ -320,7 +341,8 @@ export default function CampaignDetailPage() {
       if (targetSlug && targetSlug !== slug) {
         router.push(`/dashboard/nyc/campaigns/${targetSlug}`);
       } else {
-        fetchCampaignData();
+        await fetchCampaignData();
+        await fetchCampaignCustomers();
       }
     } catch (err: any) {
       console.error('Update campaign error:', err);
@@ -833,30 +855,28 @@ export default function CampaignDetailPage() {
       });
   }, [staffList, campaign?.assignedStaffIds]);
 
-  // Touchpoints to display in table (filter out 'all')
+  // Touchpoints to display in table for custom campaigns (5 static steps)
   const DEFAULT_CAMPAIGN_TOUCHPOINTS: CampaignTouchpointItem[] = [
-    { id: 1, key: '24h', label: '24h', daysMin: 1, daysMax: 1 },
-    { id: 2, key: '17', label: '17n', daysMin: 17, daysMax: 17 },
-    { id: 3, key: '19', label: '19n', daysMin: 19, daysMax: 19 },
-    { id: 4, key: '21', label: '21n', daysMin: 21, daysMax: 21 },
-    { id: 5, key: '23', label: '23n', daysMin: 23, daysMax: 23 },
-    { id: 6, key: '25', label: '25n', daysMin: 25, daysMax: 25 },
-    { id: 7, key: '30', label: '30n', daysMin: 30, daysMax: 30 },
-    { id: 8, key: '30plus', label: '30n+', daysMin: 31, daysMax: null },
+    { id: 1, key: 'step_1', label: 'Chạm D1', icon: 'Smile', sortOrder: 1 },
+    { id: 2, key: 'step_2', label: 'Chạm D3', icon: 'Handshake', sortOrder: 2 },
+    { id: 3, key: 'step_3', label: 'Chạm D7', icon: 'Kiss', sortOrder: 3 },
+    { id: 4, key: 'step_4', label: 'Chạm D14', icon: 'Heart', sortOrder: 4 },
+    { id: 5, key: 'step_5', label: 'Chạm D21', icon: 'BedDouble', sortOrder: 5 },
   ];
 
   const displayTouchpoints = useMemo(() => {
     const filtered = touchpoints.filter((tp) => tp.key !== 'all');
-    if (filtered.length > 0) {
-      return filtered.map((tp) => ({
-        id: tp.id,
-        key: tp.key,
-        label: tp.label?.replace(/^Chạm\s*/i, '').replace(/^Chăm sóc\s*/i, '') || tp.key,
-        daysMin: tp.daysMin,
-        daysMax: tp.daysMax,
-      }));
-    }
-    return DEFAULT_CAMPAIGN_TOUCHPOINTS;
+    return filtered.map((tp, idx) => ({
+      id: tp.id,
+      key: tp.key,
+      label: tp.label?.replace(/^Chạm\s*/i, '').replace(/^Chăm sóc\s*/i, '') || tp.key,
+      icon:
+        tp.icon ||
+        (idx === 0 ? 'Smile' : idx === 1 ? 'Handshake' : idx === 2 ? 'Kiss' : idx === 3 ? 'Heart' : 'BedDouble'),
+      daysMin: tp.daysMin,
+      daysMax: tp.daysMax,
+      color: tp.color,
+    }));
   }, [touchpoints]);
 
   // Customer Table Columns (Matching NYC Main Table)
@@ -1051,53 +1071,30 @@ export default function CampaignDetailPage() {
         if (tp.key === '24h' || rawLabel === '24h') displayLabel = '24h';
         else if (tp.key === '30plus' || rawLabel === '30+' || rawLabel === '30n+') displayLabel = '30+';
 
-        let fullTooltipText =
-          tp.daysMin !== undefined
-            ? `${tp.label} (Ngày ${tp.daysMin}${tp.daysMax ? `-${tp.daysMax}` : '+'})`
-            : `Chạm ${displayLabel}`;
-        if (tp.key === '24h' || displayLabel === '24h')
-          fullTooltipText = 'Chạm 24h: Đảm bảo khách hài lòng với bộ mi (24 giờ sau làm)';
-        else if (tp.key === '17' || displayLabel === '17')
-          fullTooltipText = 'Chạm 17n: Nhắc lịch dặm mi (Ngày 17 sau khi làm mi)';
-        else if (tp.key === '19' || displayLabel === '19')
-          fullTooltipText = 'Chạm 19n: Nhắc dặm mi lần 2 (Ngày 19 sau khi làm mi)';
-        else if (tp.key === '21' || displayLabel === '21')
-          fullTooltipText = 'Chạm 21n: Hạn cuối chu kỳ dặm mi 21 ngày cho Khách Lẻ';
-        else if (tp.key === '23' || displayLabel === '23')
-          fullTooltipText = 'Chạm 23n: Nhắc lịch dặm mi cho Khách mua gói Combo (Ngày 23)';
-        else if (tp.key === '25' || displayLabel === '25')
-          fullTooltipText = 'Chạm 25n: Hạn dặm mi tối đa 25 ngày cho Khách mua gói Combo';
-        else if (tp.key === '30' || displayLabel === '30')
-          fullTooltipText = 'Chạm 30n: Nhắc lịch nối mi mới (Ngày 30 sau khi làm mi)';
-        else if (tp.key === '30plus' || displayLabel === '30+')
-          fullTooltipText = 'Chạm 30n+: Quá 30 ngày - Khách cần tư vấn làm bộ mi mới';
+        const labelStr = tp.label || `Chạm ${displayLabel}`;
+        const daysStr =
+          tp.daysMin !== undefined && tp.daysMin !== null
+            ? ` (Ngày ${tp.daysMin}${tp.daysMax !== null && tp.daysMax !== undefined ? (tp.daysMax === tp.daysMin ? '' : `-${tp.daysMax}`) : '+'})`
+            : '';
+        const fullTooltipText = `${labelStr}${daysStr}`;
 
-        // Select sleek Lucide icon for header
-        let HeaderIcon: React.ComponentType<any> = Smile;
-        const lowLabel = (tp.label || '').toLowerCase();
-        if (lowLabel.includes('😂') || lowLabel.includes('cười')) HeaderIcon = Smile;
-        else if (lowLabel.includes('🤝') || lowLabel.includes('nắm tay')) HeaderIcon = Handshake;
-        else if (lowLabel.includes('😚') || lowLabel.includes('má')) HeaderIcon = KissIcon;
-        else if (lowLabel.includes('😘') || lowLabel.includes('môi')) HeaderIcon = Heart;
-        else if (lowLabel.includes('🛏️') || lowLabel.includes('giường')) HeaderIcon = BedDouble;
-        else if (tp.key === '24h' || displayLabel === '24h') HeaderIcon = Sparkles;
-        else if (tp.key === '17' || displayLabel === '17') HeaderIcon = Calendar;
-        else if (tp.key === '19' || displayLabel === '19') HeaderIcon = Clock;
-        else if (tp.key === '21' || displayLabel === '21') HeaderIcon = Bell;
-        else if (tp.key === '23' || displayLabel === '23') HeaderIcon = Heart;
-        else if (tp.key === '25' || displayLabel === '25') HeaderIcon = Heart;
-        else if (tp.key === '30' || displayLabel === '30') HeaderIcon = Calendar;
-        else if (tp.key === '30plus' || displayLabel === '30+') HeaderIcon = UserPlus;
-        else {
-          // Sequential fallback by touchpoint index for custom campaign touchpoints
-          const rawSortOrder = (tp as any).sortOrder;
-          const idx = typeof rawSortOrder === 'number' ? rawSortOrder - 1 : tpIndex;
-          if (idx === 0) HeaderIcon = Smile;
-          else if (idx === 1) HeaderIcon = Handshake;
-          else if (idx === 2) HeaderIcon = KissIcon;
-          else if (idx === 3) HeaderIcon = Heart;
-          else HeaderIcon = BedDouble;
-        }
+        // Dynamically resolve vector icon / emoji component for header
+        const rawSortOrder = (tp as any).sortOrder;
+        const idx = typeof rawSortOrder === 'number' ? rawSortOrder - 1 : tpIndex;
+        const iconKey =
+          tp.icon ||
+          (idx === 0
+            ? 'Smile'
+            : idx === 1
+              ? 'Handshake'
+              : idx === 2
+                ? 'Kiss'
+                : idx === 3
+                  ? 'Heart'
+                  : idx === 4
+                    ? 'BedDouble'
+                    : tp.key);
+        const headerIconNode = getIconComponent(iconKey);
 
         return {
           title: (
@@ -1109,9 +1106,10 @@ export default function CampaignDetailPage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
+                  color: themeMode === 'dark' ? '#cbd5e1' : '#475569',
                 }}
               >
-                <HeaderIcon size={16} style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569' }} />
+                {headerIconNode}
               </div>
             </Tooltip>
           ),
@@ -1474,6 +1472,36 @@ export default function CampaignDetailPage() {
         </div>
       </div>
 
+      {/* Zero Touchpoints Warning Alert */}
+      {campaign && touchpoints.length === 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          icon={<WarningOutlined className="text-amber-500 text-lg" />}
+          message={
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <span className="font-bold text-amber-600 dark:text-amber-400">
+                  ⚠️ Chiến dịch này chưa được cấu hình mốc điểm chạm trong CSDL!
+                </span>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 m-0">
+                  Vui lòng bấm nút dưới đây để cấu hình các mốc điểm chạm cho Booker/CSKH ghi nhận tiến trình chăm sóc.
+                </p>
+              </div>
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => handleOpenEditModal('touchpoints')}
+                className="bg-amber-500 hover:bg-amber-600 border-none font-semibold text-xs rounded-lg"
+              >
+                Cấu hình điểm chạm ngay
+              </Button>
+            </div>
+          }
+          className="mb-4 rounded-xl border border-amber-300 dark:border-amber-900/50 bg-amber-50/90 dark:bg-amber-950/40"
+        />
+      )}
+
       {/* UNIFIED MINIMALIST TOOLBAR (SEARCH, BOOKER FILTER & ACTIONS - 1 SINGLE LINE) */}
       <div
         className={`px-3 py-2 rounded-xl mb-4 border transition-all duration-300 ${
@@ -1681,7 +1709,8 @@ export default function CampaignDetailPage() {
           className="mt-4"
         >
           <Tabs
-            defaultActiveKey="info"
+            activeKey={editModalTab}
+            onChange={setEditModalTab}
             className="campaign-minimal-tabs"
             items={[
               {
@@ -1795,17 +1824,24 @@ export default function CampaignDetailPage() {
                         <div>
                           {fields.length > 0 && (
                             <div className="flex items-center gap-2 px-1 py-1.5 mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                              <div className="flex-1">Tên điểm chạm</div>
-                              <div className="w-20 text-center">Từ ngày</div>
-                              <div className="w-20 text-center">Đến ngày</div>
-                              <div className="w-[110px] text-center">Màu sắc</div>
+                              <div className="flex-1 min-w-[120px]">Tên điểm chạm</div>
+                              <div className="w-[140px] text-center">Biểu tượng (Icon)</div>
+                              <div className="w-16 text-center">Từ ngày</div>
+                              <div className="w-16 text-center">Đến ngày</div>
+                              <div className="w-[95px] text-center">Màu sắc</div>
                               <div className="w-8 text-center">Xóa</div>
                             </div>
                           )}
                           <div className="space-y-2">
                             {fields.map(({ key, name, ...restField }) => (
                               <div key={key} className="flex items-center gap-2 py-0.5">
-                                <div className="flex-1">
+                                <Form.Item {...restField} name={[name, 'id']} hidden>
+                                  <Input />
+                                </Form.Item>
+                                <Form.Item {...restField} name={[name, 'key']} hidden>
+                                  <Input />
+                                </Form.Item>
+                                <div className="flex-1 min-w-[120px]">
                                   <Form.Item
                                     {...restField}
                                     name={[name, 'label']}
@@ -1815,7 +1851,12 @@ export default function CampaignDetailPage() {
                                     <Input placeholder="Tên chạm (VD: Chạm D1)" />
                                   </Form.Item>
                                 </div>
-                                <div className="w-20">
+                                <div className="w-[140px]">
+                                  <Form.Item {...restField} name={[name, 'icon']} style={{ marginBottom: 0 }}>
+                                    <TouchpointIconPicker size="small" />
+                                  </Form.Item>
+                                </div>
+                                <div className="w-16">
                                   <Form.Item
                                     {...restField}
                                     name={[name, 'daysMin']}
@@ -1825,12 +1866,12 @@ export default function CampaignDetailPage() {
                                     <InputNumber min={0} placeholder="D+" style={{ width: '100%' }} />
                                   </Form.Item>
                                 </div>
-                                <div className="w-20">
+                                <div className="w-16">
                                   <Form.Item {...restField} name={[name, 'daysMax']} style={{ marginBottom: 0 }}>
                                     <InputNumber min={0} placeholder="D+" style={{ width: '100%' }} />
                                   </Form.Item>
                                 </div>
-                                <div className="w-[110px] flex justify-center">
+                                <div className="w-[95px] flex justify-center">
                                   <Form.Item {...restField} name={[name, 'color']} style={{ marginBottom: 0 }}>
                                     <GoogleSheetColorPicker size="small" />
                                   </Form.Item>
@@ -1847,7 +1888,41 @@ export default function CampaignDetailPage() {
                             ))}
                             <Button
                               type="dashed"
-                              onClick={() => add({ color: '#3b82f6', daysMin: 1 })}
+                              onClick={() => {
+                                const nextIdx = fields.length;
+                                const defaultIcon =
+                                  nextIdx === 0
+                                    ? 'Smile'
+                                    : nextIdx === 1
+                                      ? 'Handshake'
+                                      : nextIdx === 2
+                                        ? 'Kiss'
+                                        : nextIdx === 3
+                                          ? 'Heart'
+                                          : nextIdx === 4
+                                            ? 'BedDouble'
+                                            : 'Sparkles';
+                                const defaultLabel = `Chạm D${nextIdx === 0 ? 1 : nextIdx === 1 ? 3 : nextIdx === 2 ? 7 : nextIdx === 3 ? 14 : nextIdx === 4 ? 21 : (nextIdx + 1) * 5}`;
+                                const defaultDays =
+                                  nextIdx === 0
+                                    ? 1
+                                    : nextIdx === 1
+                                      ? 3
+                                      : nextIdx === 2
+                                        ? 7
+                                        : nextIdx === 3
+                                          ? 14
+                                          : nextIdx === 4
+                                            ? 21
+                                            : (nextIdx + 1) * 5;
+                                add({
+                                  label: defaultLabel,
+                                  color: '#3b82f6',
+                                  daysMin: defaultDays,
+                                  daysMax: defaultDays,
+                                  icon: defaultIcon,
+                                });
+                              }}
                               block
                               icon={<PlusOutlined />}
                               className="rounded-xl h-10 border-dashed mt-2"
@@ -1939,7 +2014,7 @@ export default function CampaignDetailPage() {
                             ))}
                             <Button
                               type="dashed"
-                              onClick={() => add({ type: 'PERCENT_DISCOUNT', value: 50 })}
+                              onClick={() => add({ name: 'Ưu đãi mới', type: 'PERCENT_DISCOUNT', value: 50 })}
                               block
                               icon={<PlusOutlined />}
                               className="rounded-xl h-10 border-dashed mt-2"

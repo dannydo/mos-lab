@@ -39,6 +39,7 @@ export interface CampaignTouchpoint {
   campaignId: number;
   key: string;
   label: string;
+  icon?: string | null;
   daysMin: number;
   daysMax: number | null;
   color: string | null;
@@ -74,6 +75,7 @@ export interface CampaignTouchpointLog {
 export interface CreateCampaignTouchpointDto {
   key: string;
   label: string;
+  icon?: string;
   daysMin: number;
   daysMax?: number;
   color?: string;
@@ -82,6 +84,7 @@ export interface CreateCampaignTouchpointDto {
 
 export interface UpdateCampaignTouchpointDto {
   label?: string;
+  icon?: string;
   daysMin?: number;
   daysMax?: number;
   color?: string;

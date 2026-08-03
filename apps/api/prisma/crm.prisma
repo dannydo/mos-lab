@@ -474,6 +474,7 @@ model CrmCampaignTouchpoint {
   campaignId Int      @map("campaign_id")
   key        String   @db.VarChar(50)
   label      String   @db.VarChar(100)
+  icon       String?  @db.VarChar(50)
   daysMin    Int      @map("days_min")
   daysMax    Int?     @map("days_max")
   color      String?  @db.VarChar(30)

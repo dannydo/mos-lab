@@ -649,8 +649,8 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     if (displayStatus === 'FAILED') return <PhoneOff size={12} className="text-rose-400" />;
     if (displayStatus === 'LOST') return <HeartOff size={12} className="text-pink-400" />;
     if (displayStatus === 'DUE_TODAY') return <BellRing size={13} className="text-amber-400 animate-pulse" />;
-    if (displayStatus === 'PENDING') return <Hourglass size={12} className="text-slate-400 opacity-75" />;
-    return <span style={{ fontSize: '12px', opacity: 0.25, color: textColor }}>•</span>;
+    if (displayStatus === 'OVERDUE') return <Hourglass size={12} className="text-rose-400 opacity-80" />;
+    return <Hourglass size={12} className="text-slate-400 opacity-60" />;
   };
 
   return (

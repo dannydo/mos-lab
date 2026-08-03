@@ -26,6 +26,7 @@ function slugify(text: string): string {
     .replace(/[^a-z0-9 -]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
     .trim();
 }
 
@@ -150,14 +151,21 @@ export class CampaignService {
    * Get single campaign by Slug.
    */
   static async getCampaignBySlug(fastify: FastifyInstance, slug: string): Promise<any> {
-    const trimmed = (slug || '').trim();
-    const clean = slugify(trimmed);
-    const noTrailingDash = trimmed.replace(/-+$/, '');
-    const cleanNoTrailingDash = clean.replace(/-+$/, '');
+    const raw = (slug || '').trim();
+    const clean = slugify(raw);
+    const bare = raw.replace(/^-+|-+$/g, '');
+    const numericId = !isNaN(Number(raw)) ? parseInt(raw, 10) : null;
 
-    const campaign = await fastify.prisma.crm.crmCustomCampaign.findFirst({
+    let campaign = await fastify.prisma.crm.crmCustomCampaign.findFirst({
       where: {
-        OR: [{ slug: trimmed }, { slug: clean }, { slug: noTrailingDash }, { slug: cleanNoTrailingDash }],
+        OR: [
+          { slug: raw },
+          { slug: clean },
+          { slug: bare },
+          { slug: `-${clean}` },
+          { slug: `-${bare}` },
+          ...(numericId !== null ? [{ id: numericId }] : []),
+        ],
       },
       include: {
         creator: { select: { id: true, displayName: true, username: true } },
@@ -172,6 +180,26 @@ export class CampaignService {
         },
       },
     });
+
+    if (!campaign && clean) {
+      campaign = await fastify.prisma.crm.crmCustomCampaign.findFirst({
+        where: {
+          slug: { contains: clean },
+        },
+        include: {
+          creator: { select: { id: true, displayName: true, username: true } },
+          touchpoints: { orderBy: { sortOrder: 'asc' } },
+          promotions: true,
+          _count: {
+            select: {
+              customers: { where: { removedAt: null } },
+              touchpoints: true,
+              promotions: true,
+            },
+          },
+        },
+      });
+    }
 
     if (!campaign) {
       throw new Error(`Chiến dịch slug "${slug}" không tồn tại`);
@@ -205,16 +233,8 @@ export class CampaignService {
     const startDate = dto.startDate ? new Date(dto.startDate) : null;
     const endDate = dto.endDate ? new Date(dto.endDate) : null;
 
-    // Default touchpoints if none provided
-    const touchpointsRaw =
-      dto.touchpoints && dto.touchpoints.length > 0
-        ? dto.touchpoints
-        : [
-            { key: 'all', label: 'Tất cả chạm', daysMin: 0, daysMax: undefined, color: 'blue', sortOrder: 1 },
-            { key: '24h', label: 'Chăm sóc 24h', daysMin: 1, daysMax: 1, color: 'cyan', sortOrder: 2 },
-            { key: '17d', label: 'Dặm mi 17 ngày', daysMin: 17, daysMax: 17, color: 'orange', sortOrder: 3 },
-            { key: '25d', label: 'Dặm mi 25 ngày', daysMin: 25, daysMax: 25, color: 'red', sortOrder: 4 },
-          ];
+    // Touchpoints input from DTO (empty array if not provided)
+    const touchpointsRaw = dto.touchpoints || [];
 
     // Deduplicate & sanitize touchpoint keys
     const usedKeys = new Set<string>();
@@ -272,6 +292,7 @@ export class CampaignService {
             campaignId: campaign.id,
             key: tp.key,
             label: tp.label,
+            icon: tp.icon || null,
             daysMin: tp.daysMin,
             daysMax: tp.daysMax ?? null,
             color: tp.color || 'blue',
@@ -368,32 +389,44 @@ export class CampaignService {
       });
 
       if (dto.touchpoints) {
+        const keptIds: number[] = [];
         const keptKeys: string[] = [];
-        const usedKeys = new Set<string>();
 
         for (let i = 0; i < dto.touchpoints.length; i++) {
           const tp = dto.touchpoints[i];
-          let rawKey = tp.key ? tp.key.trim() : `tp_${i + 1}`;
-          if (!rawKey) rawKey = `tp_${i + 1}`;
+          const targetId = (tp as any).id;
+          const rawKey = tp.key ? tp.key.trim() : targetId ? `tp_${targetId}` : `step_${i + 1}`;
 
-          let finalKey = rawKey;
-          let counter = 1;
-          while (usedKeys.has(finalKey)) {
-            finalKey = `${rawKey}_${counter}`;
-            counter++;
+          if (targetId) {
+            const existingTp = await tx.crmCampaignTouchpoint.findUnique({ where: { id: targetId } });
+            if (existingTp) {
+              await tx.crmCampaignTouchpoint.update({
+                where: { id: targetId },
+                data: {
+                  label: tp.label,
+                  icon: tp.icon || null,
+                  daysMin: tp.daysMin,
+                  daysMax: tp.daysMax ?? null,
+                  color: tp.color || 'blue',
+                  sortOrder: tp.sortOrder ?? i + 1,
+                },
+              });
+              keptIds.push(targetId);
+              keptKeys.push(existingTp.key);
+              continue;
+            }
           }
-          usedKeys.add(finalKey);
-          keptKeys.push(finalKey);
 
-          await tx.crmCampaignTouchpoint.upsert({
+          const upserted = await tx.crmCampaignTouchpoint.upsert({
             where: {
               campaignId_key: {
                 campaignId: id,
-                key: finalKey,
+                key: rawKey,
               },
             },
             update: {
               label: tp.label,
+              icon: tp.icon || null,
               daysMin: tp.daysMin,
               daysMax: tp.daysMax ?? null,
               color: tp.color || 'blue',
@@ -401,23 +434,37 @@ export class CampaignService {
             },
             create: {
               campaignId: id,
-              key: finalKey,
+              key: rawKey,
               label: tp.label,
+              icon: tp.icon || null,
               daysMin: tp.daysMin,
               daysMax: tp.daysMax ?? null,
               color: tp.color || 'blue',
               sortOrder: tp.sortOrder ?? i + 1,
             },
           });
+          keptIds.push(upserted.id);
+          keptKeys.push(upserted.key);
         }
 
-        // Delete touchpoints for this campaign that were removed on the UI
-        await tx.crmCampaignTouchpoint.deleteMany({
+        // Delete touchpoints for this campaign that were removed on the UI (only if no customer logs exist)
+        const toDelete = await tx.crmCampaignTouchpoint.findMany({
           where: {
             campaignId: id,
-            key: { notIn: keptKeys },
+            id: { notIn: keptIds },
+          },
+          include: {
+            _count: { select: { logs: true } },
           },
         });
+
+        for (const item of toDelete) {
+          if (item._count.logs === 0) {
+            await tx.crmCampaignTouchpoint.delete({ where: { id: item.id } });
+          } else {
+            console.warn(`Touchpoint ${item.id} (${item.label}) has ${item._count.logs} logs, skipping delete.`);
+          }
+        }
       }
 
       if (dto.promotions) {
@@ -1513,6 +1560,7 @@ export class CampaignService {
         campaignId: tp.campaignId,
         key: tp.key,
         label: tp.label,
+        icon: tp.icon,
         daysMin: tp.daysMin,
         daysMax: tp.daysMax,
         color: tp.color,
