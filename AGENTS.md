@@ -178,6 +178,7 @@ mos-lab/
 - **Frontend Day.js / Moment**: Tuyệt đối không sử dụng `dayjs().startOf('week')` (mặc định coi Chủ Nhật là đầu tuần theo chuẩn US). Bắt buộc phải dùng `dayjs().startOf('isoWeek')` và `dayjs().endOf('isoWeek')` để đảm bảo Thứ 2 là ngày bắt đầu tuần.
 
 ### 23. Catalog Product Stock & VND Price Integer Rounding Rule
+- **VND Whole Number Invariant (Toàn cục)**: Tiền VND không có đơn vị nhỏ hơn "đồng". Tất cả các số tiền VND trên toàn hệ thống (API response, UI display, báo cáo, export file, tính toán trung gian) bắt buộc phải là **số nguyên (`Math.round`)**, tuyệt đối không hiển thị phần thập phân (ví dụ: `750000` ✅, `750000.50` ❌, `681818.18` ❌).
 - **Đơn vị tiền tệ chuẩn (VND)**: Bảng `product_price` và `service_price` lưu trữ giá theo `currency_id = 2` (VND). Khi truy vấn giá sản phẩm/dịch vụ, luôn lọc theo `currency_id = 2`.
 - **Làm tròn số nguyên (`Math.round`)**: Do CSDL legacy lưu trữ giá dạng `float` chưa VAT (ví dụ `681818.181818`), tất cả các DTO và ô nhập liệu giá tiền **bắt buộc phải bọc trong `Math.round(price)`** để không bị xuất hiện chuỗi số thập phân rườm rà (như `.18181818`).
 - **Tra cứu Tồn kho Sản phẩm (`inventory_warehouse_item`)**: Số lượng tồn kho sẵn bán của sản phẩm được liên kết từ `product.inventory_item_id` đến `inventory_warehouse_item.inventory_item_id`. Số lượng `inStockCount` được đếm từ các dòng có `item_state = 'New'`.

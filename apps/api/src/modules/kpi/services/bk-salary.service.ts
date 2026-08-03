@@ -485,16 +485,14 @@ export async function getBkPaystubData(
       up.full_name as staffName,
       up.avatar as avatar,
       UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
-      COUNT(DISTINCT CASE WHEN o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0 THEN o.id END) as doneCount,
-      COUNT(DISTINCT CASE WHEN (o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') THEN o.id END) as missedCount,
-      COUNT(DISTINCT CASE WHEN (o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) OR o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0 THEN o.id END) as totalCount,
-      COALESCE(SUM(CASE WHEN o.order_state = 'Completed' THEN o.total_price ELSE 0 END), 0) as totalRevenue,
-      COALESCE(SUM(st.customer_tip_100), 0) as totalCustomerTip
+      COUNT(DISTINCT CASE WHEN (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0) AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59' THEN o.id END) as doneCount,
+      COUNT(DISTINCT CASE WHEN (o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59' THEN o.id END) as missedCount,
+      COUNT(DISTINCT CASE WHEN COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59' THEN o.id END) as totalCount,
+      COALESCE(SUM(CASE WHEN o.order_state = 'Completed' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59' THEN o.total_price ELSE 0 END), 0) as totalRevenue,
+      COALESCE(SUM(CASE WHEN COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59' THEN st.customer_tip_100 ELSE 0 END), 0) as totalCustomerTip
     FROM \`user_profile\` up
     LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
-    LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id
-      AND o.booking_date_start >= '${startPart} 00:00:00'
-      AND o.booking_date_start <= '${endPart} 23:59:59' ${storeFilter}
+    LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id ${storeFilter}
     LEFT JOIN report_order ro ON ro.order_id = o.id
     LEFT JOIN (
       SELECT 

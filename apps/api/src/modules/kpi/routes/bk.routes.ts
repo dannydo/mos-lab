@@ -584,7 +584,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         const totalBookingsCount = Number(r.totalBookingsCount || 0);
         const tippedBookingsCount = Number(r.tippedBookingsCount || 0);
         const totalCustomerTip = Number(r.totalCustomerTip || 0);
-        const totalBkTipBonus = (totalCustomerTip * (config.tipsPercent || 7)) / 100;
+        const totalBkTipBonus = Math.round((totalCustomerTip * (config.tipsPercent || 7)) / 100);
 
         grandTotalBookings += totalBookingsCount;
         grandTippedBookings += tippedBookingsCount;
@@ -687,7 +687,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
       const data: BkTipRecord[] = rows.map((r) => {
         const totalCustomerTip = Number(r.totalCustomerTip || 0);
-        const bkTipAmount = (totalCustomerTip * (config.tipsPercent || 7)) / 100;
+        const bkTipAmount = Math.round((totalCustomerTip * (config.tipsPercent || 7)) / 100);
 
         totalCustomerTipSum += totalCustomerTip;
         totalBkTipBonusSum += bkTipAmount;
@@ -786,7 +786,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         const completedOrdersCount = Number(r.completedOrdersCount || 0);
         const totalRevenue = Number(r.totalRevenue || 0);
         const commissionRate = getRevCommissionRate(totalRevenue, config.revBonusTiers);
-        const commissionBonus = (totalRevenue * commissionRate) / 100;
+        const commissionBonus = Math.round((totalRevenue * commissionRate) / 100);
 
         grandTotalOrders += completedOrdersCount;
         grandTotalRevenue += totalRevenue;
@@ -878,7 +878,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       const data: BkRevenueRecord[] = rows.map((r) => {
         const totalOrderPrice = Number(r.totalOrderPrice || 0);
         const commissionRate = getRevCommissionRate(totalOrderPrice, config.revBonusTiers);
-        const commissionBonus = (totalOrderPrice * commissionRate) / 100;
+        const commissionBonus = Math.round((totalOrderPrice * commissionRate) / 100);
 
         totalRevenueSum += totalOrderPrice;
         totalCommissionSum += commissionBonus;

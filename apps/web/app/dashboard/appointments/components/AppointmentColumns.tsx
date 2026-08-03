@@ -177,24 +177,20 @@ export const getPendingColumns = ({
         const pct = record.promotionDiscountPercent || 0;
         const amt = record.promotionDiscountAmount || 0;
         return (
-          <Space direction="vertical" size={2}>
-            <Tag color="purple" style={{ margin: 0, fontWeight: 600 }}>
+          <div className="flex flex-col gap-0.5 items-start">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-fuchsia-500/15 dark:bg-fuchsia-950/60 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-500/30 whitespace-nowrap">
               {record.promotionName}
-            </Tag>
+            </span>
             {pct > 0 ? (
-              <span
-                style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}
-              >
+              <span className="text-[11px] font-black text-fuchsia-600 dark:text-fuchsia-300 tabular-nums">
                 Giảm {pct}%
               </span>
             ) : amt > 0 ? (
-              <span
-                style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}
-              >
+              <span className="text-[11px] font-black text-fuchsia-600 dark:text-fuchsia-300 tabular-nums">
                 Giảm {formatVND(amt)}
               </span>
             ) : null}
-          </Space>
+          </div>
         );
       },
     },
@@ -447,24 +443,20 @@ export const getCompletedColumns = ({
         const pct = record.promotionDiscountPercent || 0;
         const amt = record.promotionDiscountAmount || 0;
         return (
-          <Space direction="vertical" size={2}>
-            <Tag color="purple" style={{ margin: 0, fontWeight: 600 }}>
+          <div className="flex flex-col gap-0.5 items-start">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-fuchsia-500/15 dark:bg-fuchsia-950/60 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-500/30 whitespace-nowrap">
               {record.promotionName}
-            </Tag>
+            </span>
             {pct > 0 ? (
-              <span
-                style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}
-              >
+              <span className="text-[11px] font-black text-fuchsia-600 dark:text-fuchsia-300 tabular-nums">
                 Giảm {pct}%
               </span>
             ) : amt > 0 ? (
-              <span
-                style={{ fontSize: '11px', color: '#722ed1', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}
-              >
+              <span className="text-[11px] font-black text-fuchsia-600 dark:text-fuchsia-300 tabular-nums">
                 Giảm {formatVND(amt)}
               </span>
             ) : null}
-          </Space>
+          </div>
         );
       },
     },

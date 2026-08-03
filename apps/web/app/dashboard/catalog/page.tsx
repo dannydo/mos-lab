@@ -534,7 +534,7 @@ export default function CatalogPage() {
 
   const formatCurrency = (val: number | undefined) => {
     if (val === undefined || val === null) return '-';
-    return new Intl.NumberFormat('vi-VN').format(val) + ' đ';
+    return new Intl.NumberFormat('vi-VN').format(Math.round(val)) + ' đ';
   };
 
   // ─── Service Handlers ──────────────────────────────────────────────────────

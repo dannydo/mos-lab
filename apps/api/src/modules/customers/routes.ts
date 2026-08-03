@@ -1324,7 +1324,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           age: row.age !== null && row.age !== undefined ? Number(row.age) : null,
           lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
           daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
-          totalSpent: Number(row.totalSpent || 0),
+          totalSpent: Math.round(Number(row.totalSpent || 0)),
           totalVisits: Number(row.totalVisits || 0),
           totalPromotionsUsed: Number(row.totalPromotionsUsed || 0),
           totalReferrals: Number(row.totalReferrals || 0),
@@ -5714,7 +5714,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         customerId
       );
 
-      const totalSpent = completedOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
+      const totalSpent = Math.round(completedOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0));
       const totalVisits = completedOrders.length;
 
       // 4. Calculate Average Visit Frequency (in days)
@@ -7401,6 +7401,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
+      const cleanDateFrom = dateFrom.includes(' ') ? dateFrom : `${dateFrom} 00:00:00`;
+      const cleanDateTo = dateTo.includes(' ') ? dateTo : `${dateTo} 23:59:59`;
+
       // 2. Query total count matching filters
       let countSql = `
         SELECT COUNT(*) as total
@@ -7408,7 +7411,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LEFT JOIN report_order ro ON o.id = ro.order_id
         WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
       `;
-      const countParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
+      const countParams: SafeAny[] = [cleanDateFrom, cleanDateTo];
 
       if (filterByStaff) {
         if (staffLegacyId) {
@@ -7470,7 +7473,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
       `;
 
-      const params: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
+      const params: SafeAny[] = [cleanDateFrom, cleanDateTo];
 
       if (filterByStaff) {
         if (staffLegacyId) {

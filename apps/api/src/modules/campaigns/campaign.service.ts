@@ -917,7 +917,7 @@ export class CampaignService {
     const assignmentMap = new Map(assignments.map((a) => [a.legacyUserId, a]));
     const pendingBatchMap = new Map(pendingBatchItems.map((item) => [item.customerId, item]));
 
-    const orderStatsMap = new Map(orderStatsRows.map((r) => [Number(r.userId), Number(r.totalSpent || 0)]));
+    const orderStatsMap = new Map(orderStatsRows.map((r) => [Number(r.userId), Math.round(Number(r.totalSpent || 0))]));
     const lastVisitMap = new Map(
       lastVisitRows.map((r) => [
         Number(r.userId),

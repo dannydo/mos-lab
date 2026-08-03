@@ -23,7 +23,14 @@ import {
   message,
   Tooltip,
 } from 'antd';
-import { CalendarOutlined, LeftOutlined, RightOutlined, SettingOutlined } from '@ant-design/icons';
+import {
+  CalendarOutlined,
+  LeftOutlined,
+  RightOutlined,
+  SettingOutlined,
+  WarningOutlined,
+  CheckCircleOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
@@ -41,6 +48,7 @@ import { useAppointmentsData } from './hooks/useAppointmentsData';
 import { ColumnsType } from 'antd/es/table';
 import { getPendingColumns, getCompletedColumns, getMissedColumns } from './components/AppointmentColumns';
 import MissedSummaryCards from './components/MissedSummaryCards';
+import DoneSummaryStrip from './components/DoneSummaryStrip';
 import MissedReasonModal from './components/MissedReasonModal';
 import { MissedSummaryStats, Appointment, vietnameseSearchFilter } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
@@ -507,242 +515,156 @@ export default function AppointmentsPage() {
         </div>
       </div>
 
-      {/* 3 INTERACTIVE SUMMARY KPI CARDS */}
-      <div style={{ marginBottom: '20px' }}>
-        <Row gutter={[16, 16]}>
-          {/* Card 1: Lịch Hẹn */}
-          <Col xs={24} sm={8}>
-            <div
-              onClick={() => {
-                setActiveTab('pending');
-                localStorage.setItem('mos_appointments_activeTab', 'pending');
-              }}
-              style={{
-                cursor: 'pointer',
-                background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
-                border:
-                  activeTab === 'pending'
-                    ? '2px solid #D4A84B'
-                    : `1px solid ${themeMode === 'dark' ? '#303030' : '#e8e8e8'}`,
-                boxShadow: activeTab === 'pending' ? '0 0 12px rgba(212, 168, 75, 0.3)' : '0 2px 6px rgba(0,0,0,0.04)',
-                borderRadius: '12px',
-                padding: '16px 20px',
-                transition: 'all 0.25s ease-in-out',
-                position: 'relative',
-              }}
-              className="hover:scale-[1.01]"
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      color: '#D4A84B',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                    }}
-                  >
-                    📅 LỊCH HẸN (ĐANG CHỜ)
-                  </div>
-                  <div
-                    style={{ fontSize: '24px', fontWeight: '800', color: token.colorText, marginTop: '4px' }}
-                    className="tabular-nums"
-                  >
-                    {summary?.totalPending ?? (activeTab === 'pending' ? total : 0)}{' '}
-                    <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
-                      lượt
-                    </span>
-                  </div>
-                  <div
-                    style={{ fontSize: '12px', color: token.colorTextDescription, marginTop: '2px' }}
-                    className="tabular-nums"
-                  >
-                    Ước tính:{' '}
-                    <span style={{ fontWeight: '600', color: '#D4A84B' }}>{formatVND(summary?.pendingValue || 0)}</span>
-                  </div>
-                </div>
-                {activeTab === 'pending' && (
-                  <Badge count="Đang xem" style={{ backgroundColor: '#D4A84B', fontWeight: 'bold' }} />
-                )}
-              </div>
-            </div>
-          </Col>
+      {/* ULTRA-COMPACT SEGMENTED PILL TAB BAR (macOS / iOS Control Center Style) */}
+      <div
+        role="tablist"
+        aria-label="Danh sách trạng thái lịch hẹn"
+        className="mb-3 p-1 rounded-xl bg-slate-200/60 dark:bg-slate-900 border border-slate-300/60 dark:border-slate-800 inline-flex flex-row items-center gap-1.5 max-w-full overflow-x-auto"
+      >
+        {/* Tab 1: Lịch Hẹn */}
+        <button
+          type="button"
+          role="tab"
+          id="tab-pending"
+          aria-selected={activeTab === 'pending'}
+          aria-controls="panel-appointments"
+          tabIndex={activeTab === 'pending' ? 0 : -1}
+          onClick={() => {
+            setActiveTab('pending');
+            localStorage.setItem('mos_appointments_activeTab', 'pending');
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setActiveTab('pending');
+              localStorage.setItem('mos_appointments_activeTab', 'pending');
+            } else if (e.key === 'ArrowRight') {
+              e.preventDefault();
+              setActiveTab('missed');
+              localStorage.setItem('mos_appointments_activeTab', 'missed');
+              document.getElementById('tab-missed')?.focus();
+            }
+          }}
+          className={`inline-flex items-center gap-2.5 h-9 px-3.5 rounded-lg transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 text-xs whitespace-nowrap shrink-0 ${
+            activeTab === 'pending'
+              ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 font-bold shadow-xs border border-amber-500/40'
+              : 'text-slate-600 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/40'
+          }`}
+        >
+          <span className="flex items-center gap-1.5 text-xs sm:text-sm">
+            <CalendarOutlined className="text-amber-500 text-sm" />
+            <span>Lịch Hẹn</span>
+          </span>
+          <span className="tabular-nums flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-black text-sm">
+              {summary?.totalPending ?? (activeTab === 'pending' ? total : 0)}
+            </span>
+            <span className="text-xs text-slate-400 font-semibold">({formatVND(summary?.pendingValue || 0)})</span>
+          </span>
+        </button>
 
-          {/* Card 2: Lịch Missed */}
-          <Col xs={24} sm={8}>
-            <div
-              onClick={() => {
-                setActiveTab('missed');
-                localStorage.setItem('mos_appointments_activeTab', 'missed');
-              }}
-              style={{
-                cursor: 'pointer',
-                background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
-                border:
-                  activeTab === 'missed'
-                    ? '2px solid #FF4D4F'
-                    : `1px solid ${themeMode === 'dark' ? '#303030' : '#e8e8e8'}`,
-                boxShadow: activeTab === 'missed' ? '0 0 12px rgba(255, 77, 79, 0.3)' : '0 2px 6px rgba(0,0,0,0.04)',
-                borderRadius: '12px',
-                padding: '16px 20px',
-                transition: 'all 0.25s ease-in-out',
-                position: 'relative',
-              }}
-              className="hover:scale-[1.01]"
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      color: '#FF4D4F',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                    }}
-                  >
-                    ⚠️ LỊCH MISSED (LỠ / HỦY)
-                  </div>
-                  <div
-                    style={{ fontSize: '24px', fontWeight: '800', color: token.colorText, marginTop: '4px' }}
-                    className="tabular-nums"
-                  >
-                    {summary?.totalMissed ?? (activeTab === 'missed' ? total : 0)}{' '}
-                    <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
-                      lượt
-                    </span>
-                  </div>
-                  <div
-                    style={{ fontSize: '12px', color: token.colorTextDescription, marginTop: '2px' }}
-                    className="tabular-nums"
-                  >
-                    Tỷ lệ Missed:{' '}
-                    <span style={{ fontWeight: '600', color: '#FF4D4F' }}>
-                      {summary?.missedRate ?? summary?.missedRatePct ?? 0}%
-                    </span>
-                  </div>
-                </div>
-                {activeTab === 'missed' && (
-                  <Badge count="Đang xem" style={{ backgroundColor: '#FF4D4F', fontWeight: 'bold' }} />
-                )}
-              </div>
-            </div>
-          </Col>
+        {/* Tab 2: Lịch Missed */}
+        <button
+          type="button"
+          role="tab"
+          id="tab-missed"
+          aria-selected={activeTab === 'missed'}
+          aria-controls="panel-appointments"
+          tabIndex={activeTab === 'missed' ? 0 : -1}
+          onClick={() => {
+            setActiveTab('missed');
+            localStorage.setItem('mos_appointments_activeTab', 'missed');
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setActiveTab('missed');
+              localStorage.setItem('mos_appointments_activeTab', 'missed');
+            } else if (e.key === 'ArrowRight') {
+              e.preventDefault();
+              setActiveTab('completed');
+              localStorage.setItem('mos_appointments_activeTab', 'completed');
+              document.getElementById('tab-completed')?.focus();
+            } else if (e.key === 'ArrowLeft') {
+              e.preventDefault();
+              setActiveTab('pending');
+              localStorage.setItem('mos_appointments_activeTab', 'pending');
+              document.getElementById('tab-pending')?.focus();
+            }
+          }}
+          className={`inline-flex items-center gap-2.5 h-9 px-3.5 rounded-lg transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 text-xs whitespace-nowrap shrink-0 ${
+            activeTab === 'missed'
+              ? 'bg-white dark:bg-slate-800 text-red-500 dark:text-red-400 font-bold shadow-xs border border-red-500/40'
+              : 'text-slate-600 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/40'
+          }`}
+        >
+          <span className="flex items-center gap-1.5 text-xs sm:text-sm">
+            <WarningOutlined className="text-red-500 text-sm" />
+            <span>Lịch Missed</span>
+          </span>
+          <span className="tabular-nums flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-500 dark:text-red-400 font-black text-sm">
+              {summary?.totalMissed ?? (activeTab === 'missed' ? total : 0)}
+            </span>
+            <span className="text-xs text-slate-400 font-semibold">
+              ({summary?.missedRate ?? summary?.missedRatePct ?? 0}%)
+            </span>
+          </span>
+        </button>
 
-          {/* Card 3: Lịch Done */}
-          <Col xs={24} sm={8}>
-            <div
-              onClick={() => {
-                setActiveTab('completed');
-                localStorage.setItem('mos_appointments_activeTab', 'completed');
-              }}
-              style={{
-                cursor: 'pointer',
-                background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
-                border:
-                  activeTab === 'completed'
-                    ? '2px solid #52C41A'
-                    : `1px solid ${themeMode === 'dark' ? '#303030' : '#e8e8e8'}`,
-                boxShadow: activeTab === 'completed' ? '0 0 12px rgba(82, 196, 26, 0.3)' : '0 2px 6px rgba(0,0,0,0.04)',
-                borderRadius: '12px',
-                padding: '16px 20px',
-                transition: 'all 0.25s ease-in-out',
-                position: 'relative',
-              }}
-              className="hover:scale-[1.01]"
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      color: '#52C41A',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                    }}
-                  >
-                    ✅ LỊCH DONE (ĐÃ ĐẾN)
-                  </div>
-                  <div
-                    style={{ fontSize: '24px', fontWeight: '800', color: token.colorText, marginTop: '4px' }}
-                    className="tabular-nums"
-                  >
-                    {summary?.totalCompleted ?? (activeTab === 'completed' ? total : 0)}{' '}
-                    <span style={{ fontSize: '13px', fontWeight: 'normal', color: token.colorTextDescription }}>
-                      lượt
-                    </span>
-                  </div>
-                  <div
-                    style={{ fontSize: '12px', color: token.colorTextDescription, marginTop: '2px' }}
-                    className="tabular-nums"
-                  >
-                    Doanh thu Net:{' '}
-                    <span style={{ fontWeight: '600', color: '#52C41A' }}>
-                      {formatVND(summary?.completedRevenue || summary?.totalNetRev || 0)}
-                    </span>
-                  </div>
-                </div>
-                {activeTab === 'completed' && (
-                  <Badge count="Đang xem" style={{ backgroundColor: '#52C41A', fontWeight: 'bold' }} />
-                )}
-              </div>
-            </div>
-          </Col>
-        </Row>
+        {/* Tab 3: Lịch Done */}
+        <button
+          type="button"
+          role="tab"
+          id="tab-completed"
+          aria-selected={activeTab === 'completed'}
+          aria-controls="panel-appointments"
+          tabIndex={activeTab === 'completed' ? 0 : -1}
+          onClick={() => {
+            setActiveTab('completed');
+            localStorage.setItem('mos_appointments_activeTab', 'completed');
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setActiveTab('completed');
+              localStorage.setItem('mos_appointments_activeTab', 'completed');
+            } else if (e.key === 'ArrowLeft') {
+              e.preventDefault();
+              setActiveTab('missed');
+              localStorage.setItem('mos_appointments_activeTab', 'missed');
+              document.getElementById('tab-missed')?.focus();
+            }
+          }}
+          className={`inline-flex items-center gap-2.5 h-9 px-3.5 rounded-lg transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 text-xs whitespace-nowrap shrink-0 ${
+            activeTab === 'completed'
+              ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 font-bold shadow-xs border border-emerald-500/40'
+              : 'text-slate-600 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/40'
+          }`}
+        >
+          <span className="flex items-center gap-1.5 text-xs sm:text-sm">
+            <CheckCircleOutlined className="text-emerald-500 text-sm" />
+            <span>Lịch Done</span>
+          </span>
+          <span className="tabular-nums flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-black text-sm">
+              {summary?.totalCompleted ?? (activeTab === 'completed' ? total : 0)}
+            </span>
+            <span className="text-xs text-slate-400 font-semibold">
+              ({formatVND(summary?.completedRevenue || summary?.totalNetRev || 0)})
+            </span>
+          </span>
+        </button>
       </div>
 
-      <Card style={{ background: token.colorBgContainer, borderRadius: '8px' }}>
-        <Tabs
-          activeKey={activeTab}
-          onChange={(key) => {
-            setActiveTab(key as SafeAny);
-            localStorage.setItem('mos_appointments_activeTab', key);
-          }}
-          style={{ color: token.colorText }}
-          items={[
-            {
-              key: 'pending',
-              label: (
-                <span style={{ fontSize: '15px', fontWeight: '500' }}>
-                  Lịch hẹn / Đang chờ
-                  <Badge
-                    count={summary?.totalPending ?? (activeTab === 'pending' ? total : 0)}
-                    style={{ marginLeft: 8, backgroundColor: '#D4A84B' }}
-                  />
-                </span>
-              ),
-            },
-            {
-              key: 'missed',
-              label: (
-                <span style={{ fontSize: '15px', fontWeight: '500' }}>
-                  Lịch Missed (Không đến)
-                  <Badge
-                    count={summary?.totalMissed ?? (activeTab === 'missed' ? total : 0)}
-                    style={{ marginLeft: 8, backgroundColor: '#FF4D4F' }}
-                  />
-                </span>
-              ),
-            },
-            {
-              key: 'completed',
-              label: (
-                <span style={{ fontSize: '15px', fontWeight: '500' }}>
-                  Lịch Done (Đã đến)
-                  <Badge
-                    count={summary?.totalCompleted ?? (activeTab === 'completed' ? total : 0)}
-                    style={{ marginLeft: 8, backgroundColor: '#52C41A' }}
-                  />
-                </span>
-              ),
-            },
-          ]}
-        />
-
+      <Card
+        id="panel-appointments"
+        role="tabpanel"
+        aria-labelledby={`tab-${activeTab}`}
+        style={{ background: token.colorBgContainer, borderRadius: '8px' }}
+      >
         {activeTab === 'missed' && (
-          <div className="mt-4 mb-4 flex flex-col gap-3">
+          <div className="mb-4 flex flex-col gap-3">
             <MissedSummaryCards summary={missedSummary} loading={missedSummaryLoading} />
 
             <div className="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -765,286 +687,7 @@ export default function AppointmentsPage() {
           </div>
         )}
 
-        {activeTab === 'completed' && summary && (
-          <div style={{ marginTop: '16px', marginBottom: '16px' }}>
-            <Row gutter={[12, 12]}>
-              <Col xs={12} sm={6} md={3}>
-                <div
-                  style={{
-                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                    borderRadius: '8px',
-                    padding: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    height: '100%',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      color: token.colorTextDescription,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    LỊCH HẸN / CHECK-IN
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: token.colorText }}>
-                    {summary.totalPlanned} lượt / <span style={{ color: '#52C41A' }}>{summary.totalCheckin}</span>
-                  </div>
-                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                    Tỷ lệ đến: {summary.checkInRate}%
-                  </div>
-                </div>
-              </Col>
-
-              <Col xs={12} sm={6} md={3}>
-                <div
-                  style={{
-                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                    borderRadius: '8px',
-                    padding: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    height: '100%',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      color: token.colorTextDescription,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    LƯƠNG CỨNG
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: token.colorText }}>
-                    {formatVND(summary.baseSalary)}
-                  </div>
-                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>Cố định hàng tháng</div>
-                </div>
-              </Col>
-
-              <Col xs={12} sm={6} md={3}>
-                <div
-                  style={{
-                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                    borderRadius: '8px',
-                    padding: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    height: '100%',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      color: token.colorTextDescription,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    HOA HỒNG ĐẶT LỊCH (LIVE)
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#52C41A' }}>
-                    {formatVND(summary.clientBonus)}
-                  </div>
-                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>Cộng dồn đơn thành công</div>
-                </div>
-              </Col>
-
-              <Col xs={12} sm={6} md={3}>
-                <div
-                  style={{
-                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                    borderRadius: '8px',
-                    padding: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    height: '100%',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      color: token.colorTextDescription,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    THƯỞNG MỐC DONE
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '16px',
-                      fontWeight: '700',
-                      color: summary.doneBonus > 0 ? '#52C41A' : token.colorText,
-                    }}
-                  >
-                    {formatVND(summary.doneBonus)}
-                  </div>
-                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                    {summary.doneBonus > 0 ? `Đạt mốc ${summary.doneLevelCount} đơn` : 'Chưa đạt mốc thưởng'}
-                  </div>
-                </div>
-              </Col>
-
-              <Col xs={12} sm={6} md={3}>
-                <div
-                  style={{
-                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                    borderRadius: '8px',
-                    padding: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    height: '100%',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      color: token.colorTextDescription,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    THƯỞNG / PHẠT LỖI
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '16px',
-                      fontWeight: '700',
-                      color:
-                        summary.missedBonus < 0 ? '#FF4D4F' : summary.missedBonus > 0 ? '#52C41A' : token.colorText,
-                    }}
-                  >
-                    {summary.missedBonus > 0 ? '+' : ''}
-                    {formatVND(summary.missedBonus)}
-                  </div>
-                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                    Lỗi {summary.missedRatePct}% (Mốc &lt;= {summary.missedLevelRate || 10}%)
-                  </div>
-                </div>
-              </Col>
-
-              <Col xs={12} sm={6} md={3}>
-                <div
-                  style={{
-                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                    borderRadius: '8px',
-                    padding: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    height: '100%',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      color: token.colorTextDescription,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    THƯỞNG TIPS (7%)
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '16px',
-                      fontWeight: '700',
-                      color: summary.tipBonus > 0 ? '#52C41A' : token.colorText,
-                    }}
-                  >
-                    {formatVND(summary.tipBonus)}
-                  </div>
-                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                    Tổng tips: {formatVND(summary.totalTips)}
-                  </div>
-                </div>
-              </Col>
-
-              <Col xs={12} sm={6} md={3}>
-                <div
-                  style={{
-                    background: themeMode === 'dark' ? '#1f1f1f' : '#f9f9f9',
-                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
-                    borderRadius: '8px',
-                    padding: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    height: '100%',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      color: token.colorTextDescription,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    THƯỞNG DOANH THU NET
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '16px',
-                      fontWeight: '700',
-                      color: summary.revBonus > 0 ? '#52C41A' : token.colorText,
-                    }}
-                  >
-                    {formatVND(summary.revBonus)}
-                  </div>
-                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                    {summary.revBonus > 0
-                      ? `Đạt mốc ${summary.revLevelMin / 1000000}M (${Math.round(summary.revLevelRate * 100 * 100) / 100}%)`
-                      : `Chưa đạt (DS: ${Math.round(summary.totalNetRev / 100000) / 10}M)`}
-                  </div>
-                </div>
-              </Col>
-
-              <Col xs={12} sm={6} md={3}>
-                <div
-                  style={{
-                    background: themeMode === 'dark' ? '#2c220f' : '#fefaf0',
-                    border: `1px solid #D4A84B`,
-                    borderRadius: '8px',
-                    padding: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    height: '100%',
-                    boxShadow:
-                      themeMode === 'dark' ? '0 0 10px rgba(212, 168, 75, 0.15)' : '0 0 10px rgba(212, 168, 75, 0.08)',
-                  }}
-                >
-                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#D4A84B', textTransform: 'uppercase' }}>
-                    TỔNG THU NHẬP (LIVE)
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#D4A84B' }}>
-                    {formatVND(summary.totalSalary)}
-                  </div>
-                  <div style={{ fontSize: '11px', color: themeMode === 'dark' ? '#bfa36b' : '#a38445' }}>
-                    Lương cứng + thưởng live
-                  </div>
-                </div>
-              </Col>
-            </Row>
-          </div>
-        )}
+        {activeTab === 'completed' && summary && <DoneSummaryStrip summary={summary} />}
 
         <Table
           components={tableComponents}

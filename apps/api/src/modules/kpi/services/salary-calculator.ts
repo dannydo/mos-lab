@@ -552,7 +552,7 @@ export async function calculateConsultantSalaryStats(
       // ignore JSON parse error
     }
 
-    const totalSalary = baseSalary + salesReward + servicingReward + growthReward + storeServicingReward;
+    const totalSalary = Math.round(baseSalary + salesReward + servicingReward + growthReward + storeServicingReward);
 
     if (!stats[uid]) {
       stats[uid] = {

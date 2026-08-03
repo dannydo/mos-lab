@@ -388,7 +388,7 @@ export class CcKpiService {
         const ccOutName = String(row.ccOutName || '');
         const isSplit = Boolean(ccInName && ccOutName && ccInName !== ccOutName);
 
-        const dbCash = Number(sbData.dbCashBonus || 0);
+        const dbCash = Math.round(Number(sbData.dbCashBonus || 0));
         const consultantBonus = dbCash > 0 ? dbCash : this.calculateCcBonus(calculatedLevel, isSplit);
 
         const dateOnly = String(row.dateOnlyStr || '').substring(0, 10);

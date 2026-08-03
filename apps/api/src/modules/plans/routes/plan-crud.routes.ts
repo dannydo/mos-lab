@@ -259,7 +259,7 @@ export async function registerPlanCrudRoutes(fastify: FastifyInstance) {
           dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
           lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
           daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
-          totalSpent: Number(row.totalSpent || 0),
+          totalSpent: Math.round(Number(row.totalSpent || 0)),
           totalVisits: Number(row.totalVisits || 0),
           bucket: row.bucket,
           comboBalance:

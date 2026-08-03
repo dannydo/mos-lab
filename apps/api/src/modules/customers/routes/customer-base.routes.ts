@@ -645,7 +645,7 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
             age: row.age !== null && row.age !== undefined ? Number(row.age) : null,
             lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
             daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
-            totalSpent: Number(row.totalSpent || 0),
+            totalSpent: Math.round(Number(row.totalSpent || 0)),
             totalVisits: Number(row.totalVisits || 0),
             totalPromotionsUsed: Number(row.totalPromotionsUsed || 0),
             totalReferrals: Number(row.totalReferrals || 0),
@@ -2075,7 +2075,7 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
         customerId
       );
 
-      const totalSpent = completedOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
+      const totalSpent = Math.round(completedOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0));
       const totalVisits = completedOrders.length;
 
       // 4. Calculate Average Visit Frequency (in days)
