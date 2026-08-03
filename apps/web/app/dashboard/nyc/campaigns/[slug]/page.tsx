@@ -1238,19 +1238,12 @@ export default function CampaignDetailPage() {
               <Button
                 type="primary"
                 size="small"
-                icon={<CalendarPlusIcon fontSize={16} />}
+                icon={<CalendarPlusIcon fontSize={14} />}
                 style={{
                   backgroundColor: '#D4A84B',
                   borderColor: '#D4A84B',
                   color: '#ffffff',
                   borderRadius: '6px',
-                  width: '32px',
-                  height: '32px',
-                  padding: 0,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 4px rgba(212, 168, 75, 0.3)',
                 }}
                 onClick={() => {
                   setBookingInitialCustomer(record);
