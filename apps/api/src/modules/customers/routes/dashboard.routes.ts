@@ -1946,7 +1946,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
       const { netFactor } = await getVatRateConfig(fastify);
 
-      const transactions: RevenueTransactionItem[] = completedOrders.map((o) => {
+      const transactions = completedOrders.map((o) => {
         let sType: 'combo' | 'single' | 'product' = 'single';
         if (combosMap[o.orderId]) sType = 'combo';
         else if (productsMap[o.orderId] && (!orderServicesMap[o.orderId] || orderServicesMap[o.orderId].length === 0))
