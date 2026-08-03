@@ -705,17 +705,8 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
             overflow: 'visible',
           }}
         >
-          <Space size={1} align="center">
-            {renderPillIcon()}
-            {currentNote && (
-              <FileTextOutlined
-                style={{
-                  color: isChecked ? '#fff' : '#D4A84B',
-                  fontSize: '9px',
-                }}
-              />
-            )}
-          </Space>
+          {/* Main Status Icon */}
+          {renderPillIcon()}
 
           {/* Top-Right Corner Diamond Badge */}
           {hasReferredDiamond && (
@@ -732,6 +723,33 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
               title="Đã tư vấn Chương Trình Kim Cương"
             >
               💎
+            </span>
+          )}
+
+          {/* Bottom-Left Corner Note Indicator */}
+          {currentNote && (
+            <span
+              style={{
+                position: 'absolute',
+                bottom: '-4px',
+                left: '-4px',
+                fontSize: '9px',
+                lineHeight: 1,
+                color: isDark ? '#fbbf24' : '#d97706',
+                backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                border: isDark ? '1px solid #475569' : '1px solid #cbd5e1',
+                borderRadius: '50%',
+                width: '12px',
+                height: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                zIndex: 2,
+              }}
+              title={`Ghi chú: ${currentNote}`}
+            >
+              <FileTextOutlined style={{ fontSize: '8px', color: isDark ? '#fbbf24' : '#d97706' }} />
             </span>
           )}
         </div>
