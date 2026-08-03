@@ -465,12 +465,19 @@ export default function NycCampaignPage() {
               <Tooltip title="Đặt lịch mới">
                 <Button
                   type="primary"
-                  icon={<CalendarPlusIcon fontSize={16} />}
-                  size="middle"
+                  icon={<CalendarPlusIcon fontSize={18} />}
                   style={{
-                    backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
-                    borderColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
-                    fontWeight: 'bold',
+                    backgroundColor: '#D4A84B',
+                    borderColor: '#D4A84B',
+                    color: '#ffffff',
+                    height: '36px',
+                    width: '36px',
+                    padding: 0,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
                   }}
                   onClick={() => {
                     setBookingInitialCustomer(null);

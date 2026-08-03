@@ -6,6 +6,7 @@ import { RocketOutlined, FieldTimeOutlined, GiftOutlined } from '@ant-design/ico
 import { apiClient } from '../../lib/api-client';
 import { Campaign } from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
+import CampaignPlusIcon from '../icons/CampaignPlusIcon';
 
 const { Text, Paragraph } = Typography;
 
@@ -92,7 +93,7 @@ export function AddToCampaignModal({
     <Modal
       title={
         <Space>
-          <RocketOutlined style={{ color: '#10b981', fontSize: '18px' }} />
+          <CampaignPlusIcon fontSize={18} badgeBg="#047857" />
           <span className="font-bold">
             {customerName
               ? `Thêm khách hàng "${customerName}" vào Chiến dịch`
@@ -109,11 +110,18 @@ export function AddToCampaignModal({
         <Button
           key="submit"
           type="primary"
-          icon={<RocketOutlined />}
+          icon={<CampaignPlusIcon fontSize={16} badgeBg="#047857" />}
           loading={submitting}
           disabled={!selectedCampaignId || campaigns.length === 0}
           onClick={handleConfirm}
-          style={{ backgroundColor: '#10b981', borderColor: '#10b981', fontWeight: 'bold' }}
+          style={{
+            backgroundColor: '#10b981',
+            borderColor: '#10b981',
+            fontWeight: 'bold',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
         >
           Xác nhận thêm vào chiến dịch
         </Button>,

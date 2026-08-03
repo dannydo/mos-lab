@@ -7,6 +7,7 @@ import { RevokeAssignmentModal } from './RevokeAssignmentModal';
 import { RetainDataButton } from './RetainDataButton';
 import { AddToCampaignModal } from '../../../../components/campaign/AddToCampaignModal';
 import { SafeAny, Staff } from '@mos-lab/shared';
+import CampaignPlusIcon from '../../../../components/icons/CampaignPlusIcon';
 
 const { Text } = Typography;
 
@@ -122,9 +123,17 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
 
           <Button
             type="primary"
-            icon={<RocketOutlined />}
+            icon={<CampaignPlusIcon fontSize={16} badgeBg="#047857" />}
             onClick={() => setAddToCampaignModalVisible(true)}
-            style={{ background: '#10b981', borderColor: '#10b981', borderRadius: '6px', fontWeight: 600 }}
+            style={{
+              background: '#10b981',
+              borderColor: '#10b981',
+              borderRadius: '6px',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
           >
             Thêm vào chiến dịch
           </Button>

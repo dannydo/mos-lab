@@ -461,12 +461,19 @@ export default function LocaCampaignPage() {
             <Tooltip title="Đặt lịch mới">
               <Button
                 type="primary"
-                icon={<CalendarPlusIcon fontSize={16} />}
+                icon={<CalendarPlusIcon fontSize={18} />}
                 style={{
-                  backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
-                  borderColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
+                  backgroundColor: '#D4A84B',
+                  borderColor: '#D4A84B',
                   color: '#ffffff',
-                  fontWeight: 'bold',
+                  height: '36px',
+                  width: '36px',
+                  padding: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
                 }}
                 onClick={() => {
                   setBookingInitialCustomer(null);

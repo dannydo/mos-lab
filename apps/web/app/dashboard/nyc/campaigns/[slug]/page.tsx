@@ -58,6 +58,7 @@ import { removeVietnameseTones } from '../../../../../lib/utils/search';
 import { formatVND, formatDuration } from '../../../../../lib/format-utils';
 import { useOmiCall } from '../../../../../context/OmiCallContext';
 import { TouchpointStatus } from '@mos-lab/shared';
+import CalendarPlusIcon from '../../../../../components/icons/CalendarPlusIcon';
 import {
   Smile,
   Handshake,
@@ -1233,16 +1234,27 @@ export default function CampaignDetailPage() {
                 style={{ borderColor: '#D4A84B', color: '#D4A84B' }}
               />
             </Tooltip>
-            <Tooltip title="Đặt lịch hẹn">
-              <Button
-                size="small"
-                icon={<CalendarOutlined />}
-                onClick={() => {
-                  setBookingInitialCustomer(record);
-                  setBookingWizardVisible(true);
-                }}
-              />
-            </Tooltip>
+            <Button
+              type="primary"
+              size="small"
+              icon={<CalendarPlusIcon fontSize={15} />}
+              style={{
+                backgroundColor: '#D4A84B',
+                borderColor: '#D4A84B',
+                color: '#ffffff',
+                fontWeight: 'bold',
+                borderRadius: '6px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+              onClick={() => {
+                setBookingInitialCustomer(record);
+                setBookingWizardVisible(true);
+              }}
+            >
+              Đặt lịch
+            </Button>
             {isAdmin && (
               <Tooltip title="Xóa khỏi chiến dịch">
                 <Button

@@ -301,5 +301,15 @@ mos-lab/
 - **Query Parameters được hỗ trợ**: Hệ thống Legacy tiếp nhận các tham số tìm kiếm bao gồm `phone`, `phone_number`, `keyword`, hoặc `search` (Ví dụ: `http://localhost/admin/online-consultant/user/customer?phone=0983960852`).
 - **Lưu ý**: Không sử dụng `search_keyword` làm query parameter vì hệ thống Legacy Angular không đọc tham số này.
 
+### 42. Unified Touchpoint Callback & Daily Plan Synchronization Rule (Quy tắc Hẹn Gọi Lại & Đồng Bộ Daily Plan)
+- **Hợp nhất điều kiện nhận diện Tab Callback (Unified Callback Recognition)**: Một khách hàng được tính vào **Tab Callback (`has_callback = 1`)** khi thỏa mãn BẤT KỲ 1 trong 3 điều kiện:
+  1. Trạng thái điểm Chạm = `'CALLBACK'` (`crm_loca_touchpoints.status = 'CALLBACK'`).
+  2. Lịch hẹn Daily Plan >= Hôm nay (`crm_daily_plans.planned_date >= CURDATE()`).
+  3. Nhật ký cuộc gọi có lịch gọi lại >= Hôm nay (`crm_call_logs.callback_date >= CURDATE()`).
+- **Tự động đồng bộ Lịch Daily Plan khi chọn "Hẹn gọi lại"**: Khi chọn trạng thái `'CALLBACK'` từ Popover điểm Chạm (`LocaTouchpointCell` & `CampaignTouchpointCell`), hệ thống phải tự động gọi API `upsert` bản ghi vào `crm_daily_plans` với `plannedDate = callbackDate` dưới bucket `'LOCA_CALLBACK'` / `'CAMPAIGN_CALLBACK'`.
+- **Hiển thị giao diện & Populate `callbackDate`**: Hệ thống trả về `callbackDate` từ `crm_daily_plans` hoặc `crm_call_logs` giúp ô Chạm hiển thị màu tím phát sáng (`#a855f7`) kèm icon Đồng hồ 🕒 và tooltip ngày hẹn.
+- **Đồng bộ Dual-Query Alignment (Rule #15)**: Bắt buộc cập nhật đồng thời cả 3 vị trí trong `apps/api/src/modules/customers/routes.ts`: `bStr` (Listing Query), `bStrStats` (Stats Query) và `count_CALLBACK` (Count Subquery) để đếm đúng và khớp 100% từng khách hàng.
+
+
 
 

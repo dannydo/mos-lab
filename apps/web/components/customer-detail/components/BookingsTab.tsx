@@ -6,6 +6,7 @@ import { CloseCircleOutlined, CalendarOutlined, CheckOutlined, HistoryOutlined }
 import { CancelBookingModal } from '../../booking/CancelBookingModal';
 import { BookingAuditLogDrawer } from '../../booking/BookingAuditLogDrawer';
 import { SafeAny } from '@mos-lab/shared';
+import CalendarRescheduleIcon from '../../icons/CalendarRescheduleIcon';
 
 interface BookingsTabProps {
   bookings: SafeAny[];
@@ -494,13 +495,16 @@ export const BookingsTab: React.FC<
                       <Button
                         type="primary"
                         size="small"
-                        icon={<CalendarOutlined />}
+                        icon={<CalendarRescheduleIcon fontSize={15} />}
                         style={{
                           backgroundColor: '#D4A84B',
                           borderColor: '#D4A84B',
-                          color: '#000000',
-                          fontWeight: '600',
-                          borderRadius: '4px',
+                          color: '#ffffff',
+                          fontWeight: 'bold',
+                          borderRadius: '6px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
                         }}
                         onClick={() => {
                           setSelectedBookingForReschedule({
@@ -512,7 +516,7 @@ export const BookingsTab: React.FC<
                           setRescheduleModalVisible(true);
                         }}
                       >
-                        Dời lịch hẹn
+                        Đổi lịch
                       </Button>
                     </>
                   )}

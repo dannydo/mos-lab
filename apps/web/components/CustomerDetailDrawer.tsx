@@ -23,6 +23,7 @@ const RescheduleBookingModal = dynamic(() => import('./RescheduleBookingModal').
   ssr: false,
 });
 const BookingWizardDrawer = dynamic(() => import('./BookingWizardDrawer'), { ssr: false });
+import CalendarPlusIcon from './icons/CalendarPlusIcon';
 import { useCustomerDetail } from './customer-detail/hooks/useCustomerDetail';
 
 // Sub-components
@@ -489,24 +490,31 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   onClick={() => setIsNoteModalOpen(true)}
                 />
               </Tooltip>
-              <Button
-                type="primary"
-                icon={<CalendarOutlined />}
-                style={{
-                  background: '#D4A84B',
-                  borderColor: '#D4A84B',
-                  fontWeight: 'bold',
-                }}
-                onClick={() => {
-                  if (onBookAppointment) {
-                    onBookAppointment(customer);
-                  } else {
-                    setBookingWizardOpen(true);
-                  }
-                }}
-              >
-                Đặt Lịch Hẹn
-              </Button>
+              <Tooltip title="Đặt Lịch Hẹn">
+                <Button
+                  type="primary"
+                  icon={<CalendarPlusIcon fontSize={18} />}
+                  style={{
+                    background: '#D4A84B',
+                    borderColor: '#D4A84B',
+                    height: '36px',
+                    width: '36px',
+                    padding: 0,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
+                  }}
+                  onClick={() => {
+                    if (onBookAppointment) {
+                      onBookAppointment(customer);
+                    } else {
+                      setBookingWizardOpen(true);
+                    }
+                  }}
+                />
+              </Tooltip>
             </Space>
           </div>
         )

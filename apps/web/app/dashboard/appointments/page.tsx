@@ -21,6 +21,7 @@ import {
   Col,
   Spin,
   message,
+  Tooltip,
 } from 'antd';
 import { CalendarOutlined, LeftOutlined, RightOutlined, SettingOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -31,6 +32,7 @@ import { useOmiCall } from '../../../context/OmiCallContext';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 const BookingWizardDrawer = dynamic(() => import('../../../components/BookingWizardDrawer'), { ssr: false });
+import CalendarPlusIcon from '../../../components/icons/CalendarPlusIcon';
 const RescheduleBookingModal = dynamic(
   () => import('../../../components/RescheduleBookingModal').then((m) => m.RescheduleBookingModal),
   { ssr: false }
@@ -292,21 +294,26 @@ export default function AppointmentsPage() {
               Theo dõi và quản lý lịch hẹn của khách hàng đã được phân bổ cho bạn
             </Text>
           </div>
-          <Button
-            type="primary"
-            icon={<CalendarOutlined />}
-            style={{
-              backgroundColor: '#D4A84B',
-              borderColor: '#D4A84B',
-              height: '38px',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              marginTop: '4px',
-            }}
-            onClick={() => setBookingWizardVisible(true)}
-          >
-            Đặt lịch mới
-          </Button>
+          <Tooltip title="Đặt lịch mới">
+            <Button
+              type="primary"
+              icon={<CalendarPlusIcon fontSize={18} />}
+              style={{
+                backgroundColor: '#D4A84B',
+                borderColor: '#D4A84B',
+                height: '38px',
+                width: '38px',
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '8px',
+                boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
+                marginTop: '4px',
+              }}
+              onClick={() => setBookingWizardVisible(true)}
+            />
+          </Tooltip>
         </div>
 
         {/* Date Filter & Staff Selection */}
