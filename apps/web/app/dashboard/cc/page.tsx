@@ -3,7 +3,21 @@
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Typography, Card, theme, DatePicker, Select, Radio, Space, Button, Tabs, Spin, message, Tooltip } from 'antd';
+import {
+  Typography,
+  Card,
+  theme,
+  DatePicker,
+  Select,
+  Radio,
+  Space,
+  Button,
+  Tabs,
+  Spin,
+  message,
+  Tooltip,
+  Switch,
+} from 'antd';
 import {
   CalendarOutlined,
   LeftOutlined,
@@ -87,33 +101,119 @@ export default function CcDashboardPage() {
   const { token } = theme.useToken();
   const router = useRouter();
 
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
-  const [referenceDate, setReferenceDate] = useState<Dayjs>(dayjs());
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs().endOf('month')]);
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cc_view_mode');
+      if (saved && ['month', 'week', 'day'].includes(saved)) return saved as 'month' | 'week' | 'day';
+    }
+    return 'month';
+  });
+
+  const [referenceDate, setReferenceDate] = useState<Dayjs>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cc_reference_date');
+      if (saved) {
+        const parsed = dayjs(saved);
+        if (parsed.isValid()) return parsed;
+      }
+    }
+    return dayjs();
+  });
+
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedRef = localStorage.getItem('cc_reference_date');
+      const savedMode = localStorage.getItem('cc_view_mode') as 'month' | 'week' | 'day' | null;
+      const ref = savedRef && dayjs(savedRef).isValid() ? dayjs(savedRef) : dayjs();
+      const mode = savedMode && ['month', 'week', 'day'].includes(savedMode) ? savedMode : 'month';
+
+      if (mode === 'month') return [ref.startOf('month'), ref.endOf('month')];
+      if (mode === 'week') return [ref.startOf('isoWeek'), ref.endOf('isoWeek')];
+      return [ref.startOf('day'), ref.endOf('day')];
+    }
+    return [dayjs().startOf('month'), dayjs().endOf('month')];
+  });
+
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [selectedStore, setSelectedStore] = useState<string>('ALL');
-  const [selectedConsultant, setSelectedConsultant] = useState<string>('ALL');
 
-  const [activeTab, setActiveTab] = useState<string>('xoay');
-  const [loading, setLoading] = useState(false);
-  const [xoayData, setXoayData] = useState<CcXoayRecord[]>([]);
+  const [selectedStore, setSelectedStore] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cc_selected_store');
+      if (saved) return saved;
+    }
+    return 'ALL';
+  });
 
-  const [xoayTotal, setXoayTotal] = useState(0);
-  const [leaderboardData, setLeaderboardData] = useState<CcLeaderboardEntry[]>([]);
+  const [selectedConsultant, setSelectedConsultant] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cc_selected_consultant');
+      if (saved) return saved;
+    }
+    return 'ALL';
+  });
 
-  // Restore active tab from URL param or localStorage on mount
-  useEffect(() => {
+  const [includeVat, setIncludeVat] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cc_include_vat');
+      if (saved !== null) return saved === 'true';
+    }
+    return true;
+  });
+
+  const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get('tab');
       const savedTab = localStorage.getItem('cc_active_tab');
       const initialTab = tabParam || savedTab;
-
       if (initialTab && ['xoay', 'thuong', 'game', 'tip', 'diamond', 'thunhap'].includes(initialTab)) {
-        setActiveTab(initialTab);
+        return initialTab;
       }
     }
-  }, []);
+    return 'thuong';
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [xoayData, setXoayData] = useState<CcXoayRecord[]>([]);
+  const [xoayTotal, setXoayTotal] = useState(0);
+  const [leaderboardData, setLeaderboardData] = useState<CcLeaderboardEntry[]>([]);
+
+  // Sync state changes to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cc_active_tab', activeTab);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cc_view_mode', viewMode);
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cc_reference_date', referenceDate.format('YYYY-MM-DD'));
+    }
+  }, [referenceDate]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cc_selected_store', selectedStore);
+    }
+  }, [selectedStore]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cc_selected_consultant', selectedConsultant);
+    }
+  }, [selectedConsultant]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cc_include_vat', String(includeVat));
+    }
+  }, [includeVat]);
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
@@ -204,6 +304,24 @@ export default function CcDashboardPage() {
 
   const tabItems = [
     {
+      key: 'thuong',
+      icon: <GiftOutlined />,
+      label: 'CC Daily Bonus',
+      children:
+        activeTab === 'thuong' ? (
+          <CcThuongTab
+            loading={loading}
+            dateRange={dateRange}
+            selectedStore={selectedStore}
+            selectedConsultant={selectedConsultant}
+            includeVat={includeVat}
+            onSelectConsultant={(ccName) => {
+              setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
+            }}
+          />
+        ) : null,
+    },
+    {
       key: 'xoay',
       icon: <TableOutlined />,
       label: 'CC Xoay',
@@ -220,23 +338,6 @@ export default function CcDashboardPage() {
             />
             <CcXoayTab data={xoayData} total={xoayTotal} loading={loading} onRefresh={fetchCcData} />
           </div>
-        ) : null,
-    },
-    {
-      key: 'thuong',
-      icon: <GiftOutlined />,
-      label: 'CC Daily Bonus',
-      children:
-        activeTab === 'thuong' ? (
-          <CcThuongTab
-            loading={loading}
-            dateRange={dateRange}
-            selectedStore={selectedStore}
-            selectedConsultant={selectedConsultant}
-            onSelectConsultant={(ccName) => {
-              setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
-            }}
-          />
         ) : null,
     },
     {
@@ -397,6 +498,12 @@ export default function CcDashboardPage() {
               ]}
               placeholder="Chọn CC"
             />
+
+            {/* VAT 8% Global Toggle Switch */}
+            <div className="flex items-center gap-1.5 bg-slate-800/80 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/80 shadow-sm">
+              <Text className="text-xs text-amber-400 font-semibold select-none">VAT 8%</Text>
+              <Switch aria-label="Công tắc VAT 8%" checked={includeVat} onChange={setIncludeVat} size="small" />
+            </div>
 
             {/* Config Button (Admin Global Config) */}
             <Tooltip title="Cấu hình CC">

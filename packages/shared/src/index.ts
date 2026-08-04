@@ -21,3 +21,4 @@ export * from './utils/date.js';
 export * from './types/allocation.js';
 export * from './types/campaign.js';
 export * from './theme/tokens.js';
+export * from './utils/wheel-cap.js';

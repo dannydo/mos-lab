@@ -459,12 +459,11 @@ export class CcKpiService {
    */
   public static async getCcLeaderboard(fastify: FastifyInstance, filters: CcKpiFilters) {
     const { dateFrom, dateTo } = filters;
-    const { start, end } = parseDateRange(dateFrom, dateTo);
+    const { startStr: startDateStr, endStr: endDateStr } = parseDateRange(dateFrom, dateTo);
     const activeCcIds = await this.getActiveCcStaffIds(fastify);
 
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const startStr = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())} ${pad(start.getHours())}:${pad(start.getMinutes())}:${pad(start.getSeconds())}`;
-    const endStr = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())} ${pad(end.getHours())}:${pad(end.getMinutes())}:${pad(end.getSeconds())}`;
+    const startStr = `${startDateStr} 00:00:00`;
+    const endStr = `${endDateStr} 23:59:59`;
 
     let activeCcFilter = '';
     if (activeCcIds && activeCcIds.length > 0) {
@@ -481,7 +480,7 @@ export class CcKpiService {
         COUNT(DISTINCT sb.order_service_id) as totalServices,
         SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) as totalPointsAccu,
         FLOOR(SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) / 100) + 1 as level,
-        SUM(CASE WHEN sb.bonus_type = 'Cash' THEN sb.bonus_amount ELSE 0 END) as totalConsultantBonus,
+        SUM(CASE WHEN sb.bonus_type = 'Cash' AND sb.order_service_id IS NOT NULL THEN sb.bonus_amount ELSE 0 END) as totalConsultantBonus,
         COALESCE(combo.combo_revenue, 0) as comboRevenue,
         COALESCE(combo.combo_count, 0) as comboCount
       FROM \`staff_bonus\` sb
@@ -562,10 +561,7 @@ export class CcKpiService {
     const { dateFrom, dateTo, storeId, consultantId } = filters;
     const activeCcIds = await this.getActiveCcStaffIds(fastify);
 
-    const { start: startDate, end: endDate } = parseDateRange(dateFrom, dateTo);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const startStr = `${startDate.getFullYear()}-${pad(startDate.getMonth() + 1)}-${pad(startDate.getDate())}`;
-    const endStr = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}`;
+    const { startStr, endStr } = parseDateRange(dateFrom, dateTo);
 
     let targetStaffIds: number[] = activeCcIds;
     if (consultantId && consultantId !== 'ALL') {
@@ -601,74 +597,38 @@ export class CcKpiService {
       });
     });
 
-    const staffExprOsc = `COALESCE(
-      osc.check_in_staff_id,
-      osc.check_out_staff_id,
-      (SELECT os2.check_in_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.check_in_staff_id IS NOT NULL LIMIT 1),
-      (SELECT os2.check_out_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.check_out_staff_id IS NOT NULL LIMIT 1),
-      (SELECT os2.assigned_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.assigned_staff_id IS NOT NULL LIMIT 1),
-      o.assigned_staff_id,
-      o.created_staff_id
-    )`;
+    // === RAW PER-ORDER QUERIES: Return both check_in & check_out staff IDs for 50/50 split ===
 
     const comboSalesQuery = `
       SELECT 
         DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
-        ${staffExprOsc} as staff_id,
-        SUM(COALESCE(NULLIF(osc.total_price - osc.tax_amount, 0), osc.service_price - osc.discount_amount - osc.tax_amount, 0)) as combo_sales,
-        SUM(COALESCE(osc.quantity, 1)) as combo_count,
+        COALESCE(osc.check_in_staff_id,
+          (SELECT os2.check_in_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.check_in_staff_id IS NOT NULL LIMIT 1)
+        ) as cc_in_id,
+        COALESCE(osc.check_out_staff_id,
+          (SELECT os2.check_out_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.check_out_staff_id IS NOT NULL LIMIT 1)
+        ) as cc_out_id,
+        GREATEST(0, (COALESCE(NULLIF(osc.total_price - osc.tax_amount, 0), osc.service_price - osc.discount_amount - osc.tax_amount, 0) - COALESCE(ud.debt_amount, 0))) as combo_sales,
+        COALESCE(osc.quantity, 1) as combo_count,
         UPPER(cs.client_store_key) as store_code
       FROM \`order\` o
       JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+      LEFT JOIN \`user_debt\` ud ON ud.order_id = o.id AND ud.debt_amount > 0
       LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
       LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
       WHERE o.order_state = 'Completed'
         AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
         AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
-        AND ${staffExprOsc} IN (${staffIdsListStr})
         ${storeFilterClause}
-      GROUP BY sale_date, staff_id, store_code
     `;
 
-    const staffExprOp = `COALESCE(
-      op.created_staff_id,
-      (SELECT os2.check_in_staff_id FROM \`order_service\` os2 WHERE os2.order_id = op.order_id AND os2.check_in_staff_id IS NOT NULL LIMIT 1),
-      o.assigned_staff_id,
-      o.created_staff_id
-    )`;
-
-    const productSalesQuery = `
+    const upgradeSalesQuery = `
       SELECT 
         DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
-        ${staffExprOp} as staff_id,
-        SUM(op.total_price) as product_sales,
-        SUM(op.quantity) as product_count,
-        UPPER(cs.client_store_key) as store_code
-      FROM \`order\` o
-      JOIN \`order_product\` op ON op.order_id = o.id
-      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-      LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-      WHERE o.order_state = 'Completed'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
-        AND ${staffExprOp} IN (${staffIdsListStr})
-        ${storeFilterClause}
-      GROUP BY sale_date, staff_id, store_code
-    `;
-
-    const staffExprOsSingle = `COALESCE(
-      os.check_in_staff_id,
-      os.check_out_staff_id,
-      os.assigned_staff_id,
-      o.assigned_staff_id,
-      o.created_staff_id
-    )`;
-
-    const singleSalesQuery = `
-      SELECT 
-        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
-        ${staffExprOsSingle} as staff_id,
-        SUM(os.total_price) as single_sales,
+        os.check_in_staff_id as cc_in_id,
+        os.check_out_staff_id as cc_out_id,
+        os.upgrade_price as combo_sales,
+        0 as combo_count,
         UPPER(cs.client_store_key) as store_code
       FROM \`order\` o
       JOIN \`order_service\` os ON os.order_id = o.id
@@ -677,111 +637,190 @@ export class CcKpiService {
       WHERE o.order_state = 'Completed'
         AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
         AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
-        AND ${staffExprOsSingle} IN (${staffIdsListStr})
+        AND os.upgrade_price > 0
+        ${storeFilterClause}
+    `;
+
+    const productSalesQuery = `
+      SELECT 
+        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
+        (SELECT os2.check_in_staff_id FROM \`order_service\` os2 WHERE os2.order_id = op.order_id AND os2.check_in_staff_id IS NOT NULL LIMIT 1) as cc_in_id,
+        (SELECT os2.check_out_staff_id FROM \`order_service\` os2 WHERE os2.order_id = op.order_id AND os2.check_out_staff_id IS NOT NULL LIMIT 1) as cc_out_id,
+        op.total_price as product_sales,
+        op.quantity as product_count,
+        UPPER(cs.client_store_key) as store_code
+      FROM \`order\` o
+      JOIN \`order_product\` op ON op.order_id = o.id
+      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+      LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+      WHERE o.order_state = 'Completed'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
+        ${storeFilterClause}
+    `;
+
+    const singleSalesQuery = `
+      SELECT 
+        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
+        os.check_in_staff_id as cc_in_id,
+        os.check_out_staff_id as cc_out_id,
+        os.total_price as single_sales,
+        UPPER(cs.client_store_key) as store_code
+      FROM \`order\` o
+      JOIN \`order_service\` os ON os.order_id = o.id
+      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+      LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+      WHERE o.order_state = 'Completed'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
         AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
         AND LOWER(COALESCE(os.service_type, '')) NOT LIKE '%combo%'
         AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%product%'
         ${storeFilterClause}
-      GROUP BY sale_date, staff_id, store_code
     `;
 
-    const [comboRows, productRows, singleRows] = await Promise.all([
+    const [comboRows, upgradeRows, productRows, singleRows] = await Promise.all([
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSalesQuery),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(upgradeSalesQuery),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productSalesQuery),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(singleSalesQuery),
     ]);
 
-    const salesMap = new Map<string, SafeAny>();
+    // === 50/50 SPLIT LOGIC: Split doanh số TRƯỚC → Gom theo NGÀY → Tra Tier Rate ===
+    // CC owner = COALESCE(check_out_staff_id, check_in_staff_id)
+    // If CC IN == CC OUT (or only 1 CC): that CC gets 100%
+    // If CC IN != CC OUT: each CC gets 50%
+
+    interface DailySalesAccum {
+      combo_sales: number;
+      combo_count: number;
+      product_sales: number;
+      product_count: number;
+      single_sales: number;
+      debt_collected: number;
+      store_code: string;
+    }
+
+    const salesMap = new Map<string, DailySalesAccum>();
     const getMapKey = (dateStr: string, sId: number) => `${dateStr}_${sId}`;
 
+    const getOrCreate = (dateStr: string, sId: number, storeCode: string): DailySalesAccum => {
+      const key = getMapKey(dateStr, sId);
+      let entry = salesMap.get(key);
+      if (!entry) {
+        entry = {
+          combo_sales: 0,
+          combo_count: 0,
+          product_sales: 0,
+          product_count: 0,
+          single_sales: 0,
+          debt_collected: 0,
+          store_code: storeCode,
+        };
+        salesMap.set(key, entry);
+      }
+      return entry;
+    };
+
+    /**
+     * Apply 50/50 split: returns array of { staffId, share } tuples.
+     * - CC owner = COALESCE(check_out, check_in) — if both null, skip.
+     * - If CC IN == CC OUT (or one is null): 1 entry with share = 1.0
+     * - If CC IN != CC OUT: 2 entries each with share = 0.5
+     */
+    const splitForCcs = (ccInRaw: SafeAny, ccOutRaw: SafeAny): Array<{ staffId: number; share: number }> => {
+      const ccIn = ccInRaw ? Number(ccInRaw) : null;
+      const ccOut = ccOutRaw ? Number(ccOutRaw) : null;
+
+      if (!ccIn && !ccOut) return [];
+
+      // Only one CC exists
+      if (!ccIn || !ccOut) {
+        const singleCc = (ccOut || ccIn)!;
+        if (!targetStaffIds.includes(singleCc)) return [];
+        return [{ staffId: singleCc, share: 1.0 }];
+      }
+
+      // CC IN == CC OUT: 100% to that CC
+      if (ccIn === ccOut) {
+        if (!targetStaffIds.includes(ccIn)) return [];
+        return [{ staffId: ccIn, share: 1.0 }];
+      }
+
+      // CC IN != CC OUT: 50/50 split
+      const result: Array<{ staffId: number; share: number }> = [];
+      if (targetStaffIds.includes(ccIn)) result.push({ staffId: ccIn, share: 0.5 });
+      if (targetStaffIds.includes(ccOut)) result.push({ staffId: ccOut, share: 0.5 });
+      return result;
+    };
+
+    // Process combo rows (per-order, not aggregated)
     comboRows.forEach((r) => {
-      const sId = Number(r.staff_id);
-      const key = getMapKey(String(r.sale_date), sId);
-      const prof = staffProfileMap.get(sId);
-      salesMap.set(key, {
-        id: `${key}_${r.store_code || 'MOS'}`,
-        date: String(r.sale_date),
-        user_id: sId,
-        consultant_name: prof?.displayName || `CC ${sId}`,
-        avatar: prof?.avatar || null,
-        store_code: String(r.store_code || 'MOS'),
-        combo_sales: Math.round(Number(r.combo_sales) || 0),
-        combo_count: Number(r.combo_count) || 0,
-        product_sales: 0,
-        product_count: 0,
-        single_sales: 0,
-        debt_collected: 0,
-        vat: 0,
-        debt: 0,
-        total_sales: 0,
-        commission_rate_percent: 0,
-        daily_bonus: 0,
+      const splits = splitForCcs(r.cc_in_id, r.cc_out_id);
+      const sales = Math.round(Number(r.combo_sales) || 0);
+      const count = Number(r.combo_count) || 0;
+      const dateStr = String(r.sale_date);
+      const storeCode = String(r.store_code || 'MOS');
+
+      splits.forEach(({ staffId, share }) => {
+        const entry = getOrCreate(dateStr, staffId, storeCode);
+        entry.combo_sales += Math.round(sales * share);
+        entry.combo_count += Math.round(count * share);
       });
     });
 
+    // Process upgrade rows (per-order)
+    upgradeRows.forEach((r) => {
+      const splits = splitForCcs(r.cc_in_id, r.cc_out_id);
+      const sales = Math.round(Number(r.combo_sales) || 0);
+      const dateStr = String(r.sale_date);
+      const storeCode = String(r.store_code || 'MOS');
+
+      splits.forEach(({ staffId, share }) => {
+        const entry = getOrCreate(dateStr, staffId, storeCode);
+        entry.combo_sales += Math.round(sales * share);
+      });
+    });
+
+    // Process product rows (per-order)
     productRows.forEach((r) => {
-      const sId = Number(r.staff_id);
-      const key = getMapKey(String(r.sale_date), sId);
-      const prof = staffProfileMap.get(sId);
-      const existing = salesMap.get(key) || {
-        id: `${key}_${r.store_code || 'MOS'}`,
-        date: String(r.sale_date),
-        user_id: sId,
-        consultant_name: prof?.displayName || `CC ${sId}`,
-        avatar: prof?.avatar || null,
-        store_code: String(r.store_code || 'MOS'),
-        combo_sales: 0,
-        combo_count: 0,
-        product_sales: 0,
-        product_count: 0,
-        single_sales: 0,
-        debt_collected: 0,
-        vat: 0,
-        debt: 0,
-        total_sales: 0,
-        commission_rate_percent: 0,
-        daily_bonus: 0,
-      };
-      existing.product_sales = Math.round(Number(r.product_sales) || 0);
-      existing.product_count = Number(r.product_count) || 0;
-      salesMap.set(key, existing);
+      const splits = splitForCcs(r.cc_in_id, r.cc_out_id);
+      const sales = Math.round(Number(r.product_sales) || 0);
+      const count = Number(r.product_count) || 0;
+      const dateStr = String(r.sale_date);
+      const storeCode = String(r.store_code || 'MOS');
+
+      splits.forEach(({ staffId, share }) => {
+        const entry = getOrCreate(dateStr, staffId, storeCode);
+        entry.product_sales += Math.round(sales * share);
+        entry.product_count += Math.round(count * share);
+      });
     });
 
+    // Process single service rows (per-order, for display only — NOT in bonus calculation)
     singleRows.forEach((r) => {
-      const sId = Number(r.staff_id);
-      const key = getMapKey(String(r.sale_date), sId);
-      const prof = staffProfileMap.get(sId);
-      const existing = salesMap.get(key) || {
-        id: `${key}_${r.store_code || 'MOS'}`,
-        date: String(r.sale_date),
-        user_id: sId,
-        consultant_name: prof?.displayName || `CC ${sId}`,
-        avatar: prof?.avatar || null,
-        store_code: String(r.store_code || 'MOS'),
-        combo_sales: 0,
-        combo_count: 0,
-        product_sales: 0,
-        product_count: 0,
-        single_sales: 0,
-        debt_collected: 0,
-        vat: 0,
-        debt: 0,
-        total_sales: 0,
-        commission_rate_percent: 0,
-        daily_bonus: 0,
-      };
-      existing.single_sales = Math.round(Number(r.single_sales) || 0);
-      salesMap.set(key, existing);
+      const splits = splitForCcs(r.cc_in_id, r.cc_out_id);
+      const sales = Math.round(Number(r.single_sales) || 0);
+      const dateStr = String(r.sale_date);
+      const storeCode = String(r.store_code || 'MOS');
+
+      splits.forEach(({ staffId, share }) => {
+        const entry = getOrCreate(dateStr, staffId, storeCode);
+        entry.single_sales += Math.round(sales * share);
+      });
     });
 
-    const result = Array.from(salesMap.values()).map((rec) => {
-      const total_sales = rec.combo_sales + rec.product_sales + rec.single_sales;
-      rec.total_sales = total_sales;
+    // === BUILD RESULT: Aggregate per-day, apply Tier Rate ===
+    const result = Array.from(salesMap.entries()).map(([key, rec]) => {
+      const [dateStr, staffIdStr] = key.split('_');
+      const sId = Number(staffIdStr);
+      const prof = staffProfileMap.get(sId);
+
+      // Total Sales for CC Bonus: Combo Sales + Product Sales + Debt Collected (EXCLUDES single_sales)
+      const total_sales = rec.combo_sales + rec.product_sales + (rec.debt_collected || 0);
 
       let matchedTierRate: number;
-      if (total_sales >= 30000000) {
-        matchedTierRate = 3.0;
-      } else if (total_sales >= 25000000) {
+      if (total_sales >= 20000000) {
         matchedTierRate = 2.5;
       } else if (total_sales >= 15000000) {
         matchedTierRate = 2.0;
@@ -792,15 +831,83 @@ export class CcKpiService {
       } else {
         matchedTierRate = 0.5;
       }
-      rec.commission_rate_percent = matchedTierRate;
-      rec.daily_bonus = Math.round((total_sales * matchedTierRate) / 100);
-      return rec;
+
+      // Daily Bonus: % Tier Rate on Qualifying Total Sales (Rule #15 actual_booking_date_start)
+      const daily_bonus = Math.round((total_sales * matchedTierRate) / 100);
+
+      return {
+        id: `${key}_${rec.store_code}`,
+        date: dateStr,
+        user_id: sId,
+        consultant_name: prof?.displayName || `CC ${sId}`,
+        avatar: prof?.avatar || null,
+        store_code: rec.store_code,
+        combo_sales: rec.combo_sales,
+        combo_count: rec.combo_count,
+        product_sales: rec.product_sales,
+        product_count: rec.product_count,
+        single_sales: rec.single_sales,
+        debt_collected: rec.debt_collected,
+        vat: 0,
+        debt: 0,
+        total_sales,
+        commission_rate_percent: matchedTierRate,
+        daily_bonus,
+      };
     });
 
+    // Calculate Real-time Run-rate Elapsed Ratio (11:00 AM - 23:00 PM shift formula)
+    const now = new Date();
+    const currentHour = now.getHours();
+    let fractionToday = 0;
+    if (currentHour < 11) {
+      fractionToday = 0;
+    } else if (currentHour > 22) {
+      fractionToday = 1;
+    } else {
+      fractionToday = (currentHour - 11 + 1) / 12;
+    }
+
+    const sDate = new Date(startStr);
+    const eDate = new Date(endStr);
+    const tDate = new Date(now.toISOString().slice(0, 10));
+
+    const totalDays = Math.max(1, Math.round((eDate.getTime() - sDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+    let elapsedRatio = 1.0;
+    if (tDate < sDate) {
+      elapsedRatio = 0.001;
+    } else if (tDate > eDate) {
+      elapsedRatio = 1.0;
+    } else {
+      const daysPassedBeforeToday = Math.max(
+        0,
+        Math.round((tDate.getTime() - sDate.getTime()) / (1000 * 60 * 60 * 24))
+      );
+      const totalElapsedDays = daysPassedBeforeToday + fractionToday;
+      elapsedRatio = Math.min(1.0, Math.max(0.001, totalElapsedDays / totalDays));
+    }
+
+    const totalComboSales = Math.round(result.reduce((sum, r) => sum + (r.combo_sales || 0), 0));
+    const totalProductSales = Math.round(result.reduce((sum, r) => sum + (r.product_sales || 0), 0));
+    const totalSingleSales = Math.round(result.reduce((sum, r) => sum + (r.single_sales || 0), 0));
+    // totalSales = bonus-eligible sales only (combo + product + debt), excludes single_sales
+    const totalSales = Math.round(
+      result.reduce((sum, r) => sum + (r.combo_sales || 0) + (r.product_sales || 0) + (r.debt_collected || 0), 0)
+    );
+    const totalCcBonus = Math.round(result.reduce((sum, r) => sum + (r.daily_bonus || 0), 0));
+
     const summary = {
-      totalComboSales: Math.round(result.reduce((sum, r) => sum + (r.combo_sales || 0), 0)),
-      totalProductSales: Math.round(result.reduce((sum, r) => sum + (r.product_sales || 0) + (r.single_sales || 0), 0)),
-      totalCcBonus: Math.round(result.reduce((sum, r) => sum + (r.daily_bonus || 0), 0)),
+      totalComboSales,
+      totalProductSales,
+      totalSingleSales,
+      totalSales,
+      totalCcBonus,
+      projectedComboSales: Math.round(totalComboSales / elapsedRatio),
+      projectedProductSales: Math.round(totalProductSales / elapsedRatio),
+      projectedTotalSales: Math.round(totalSales / elapsedRatio),
+      projectedCcBonus: Math.round(totalCcBonus / elapsedRatio),
+      elapsedRatioPercent: Math.round(elapsedRatio * 1000) / 10,
     };
 
     return {
@@ -822,10 +929,9 @@ export class CcKpiService {
     const { dateFrom, dateTo, storeId } = filters;
     const activeCcIds = await this.getActiveCcStaffIds(fastify);
 
-    const { start: startDate, end: endDate } = parseDateRange(dateFrom, dateTo);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const startStr = `${startDate.getFullYear()}-${pad(startDate.getMonth() + 1)}-${pad(startDate.getDate())} 00:00:00`;
-    const endStr = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())} 23:59:59`;
+    const { startStr: startDateStr, endStr: endDateStr } = parseDateRange(dateFrom, dateTo);
+    const startStr = `${startDateStr} 00:00:00`;
+    const endStr = `${endDateStr} 23:59:59`;
 
     let activeCcFilter = '';
     if (activeCcIds && activeCcIds.length > 0) {

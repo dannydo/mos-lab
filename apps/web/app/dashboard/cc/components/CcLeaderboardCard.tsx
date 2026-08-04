@@ -144,7 +144,7 @@ export default function CcLeaderboardCard({
       ),
     },
     {
-      title: 'Thưởng CC Bonus',
+      title: 'CC Xoay Bonus',
       dataIndex: 'totalConsultantBonus',
       key: 'totalConsultantBonus',
       align: 'right' as const,

@@ -1,9 +1,16 @@
-'use client';
-
 import React, { useState, useMemo } from 'react';
-import { Card, Table, Tag, Input, Space, Button, Typography, theme, Tooltip } from 'antd';
-import { SearchOutlined, ReloadOutlined, SettingOutlined, CompressOutlined, ExpandOutlined } from '@ant-design/icons';
-import { CcXoayRecord, removeVietnameseTones } from '@mos-lab/shared';
+import { Card, Table, Tag, Input, Space, Button, Typography, theme, Tooltip, Progress, Alert } from 'antd';
+import {
+  SearchOutlined,
+  ReloadOutlined,
+  SettingOutlined,
+  CompressOutlined,
+  ExpandOutlined,
+  WarningOutlined,
+  FireOutlined,
+  SafetyCertificateOutlined,
+} from '@ant-design/icons';
+import { CcXoayRecord, removeVietnameseTones, calculateWheelBonusCap } from '@mos-lab/shared';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import CcAvatar from './CcAvatar';
@@ -19,6 +26,70 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
   const { token } = theme.useToken();
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
+
+  // Compute staff-level Wheel Bonus Cap map
+  const staffCapMap = useMemo(() => {
+    const map = new Map<string, { dailyBonus: number; wheelBonus: number }>();
+    data.forEach((item) => {
+      const name = item.consultantName || 'Unknown';
+      if (!map.has(name)) {
+        map.set(name, { dailyBonus: item.monthlyDailyBonus || 0, wheelBonus: item.monthlyWheelBonus || 0 });
+      } else {
+        const cur = map.get(name)!;
+        if (item.monthlyDailyBonus && item.monthlyDailyBonus > cur.dailyBonus) {
+          cur.dailyBonus = item.monthlyDailyBonus;
+        }
+        if (item.monthlyWheelBonus && item.monthlyWheelBonus > cur.wheelBonus) {
+          cur.wheelBonus = item.monthlyWheelBonus;
+        }
+      }
+    });
+
+    const resultMap = new Map<
+      string,
+      {
+        capStatus: 'NORMAL' | 'WARNING' | 'HARDCAPPED';
+        wheelCapPercent: number;
+        maxWheelBonusAllowed: number;
+        effectiveWheelBonus: number;
+      }
+    >();
+
+    map.forEach((val, name) => {
+      // Fallback demo values if backend data not fully populated
+      const dBonus = val.dailyBonus || 1000000;
+      const wBonus = val.wheelBonus || 0;
+      const res = calculateWheelBonusCap(dBonus, wBonus);
+      resultMap.set(name, {
+        capStatus: res.capStatus,
+        wheelCapPercent: res.wheelCapPercent,
+        maxWheelBonusAllowed: res.maxWheelBonusAllowed,
+        effectiveWheelBonus: res.effectiveWheelBonus,
+      });
+    });
+
+    return resultMap;
+  }, [data]);
+
+  // Capped & Warning Summary Stats for Header Banner
+  const capSummary = useMemo(() => {
+    let cappedCount = 0;
+    let warningCount = 0;
+    const cappedNames: string[] = [];
+    const warningNames: string[] = [];
+
+    staffCapMap.forEach((val, name) => {
+      if (val.capStatus === 'HARDCAPPED') {
+        cappedCount++;
+        cappedNames.push(name);
+      } else if (val.capStatus === 'WARNING') {
+        warningCount++;
+        warningNames.push(name);
+      }
+    });
+
+    return { cappedCount, warningCount, cappedNames, warningNames };
+  }, [staffCapMap]);
 
   const filteredData = useMemo(() => {
     if (!searchText) return data;
@@ -111,13 +182,104 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         title: 'CC Bonus (đ)',
         dataIndex: 'consultantBonus',
         key: 'consultantBonus',
-        width: 120,
+        width: 165,
         align: 'right' as const,
-        render: (val: number) => (
-          <span className="tabular-nums font-bold text-emerald-400 text-xs">
-            +{Math.round(val || 0).toLocaleString('vi-VN')} đ
-          </span>
-        ),
+        render: (val: number, record: CcXoayRecord) => {
+          const capInfo = staffCapMap.get(record.consultantName || '') || {
+            capStatus: record.capStatus || 'NORMAL',
+            wheelCapPercent: record.wheelCapPercent || 0,
+            maxWheelBonusAllowed: record.maxWheelBonusAllowed || 0,
+            effectiveWheelBonus: val,
+          };
+
+          const isHardcapped = capInfo.capStatus === 'HARDCAPPED';
+          const isWarning = capInfo.capStatus === 'WARNING';
+          const percent = capInfo.wheelCapPercent || 0;
+          const maxAllowed = capInfo.maxWheelBonusAllowed || 0;
+
+          if (isHardcapped) {
+            return (
+              <Tooltip
+                title={
+                  <div>
+                    <div className="font-bold text-rose-300">⛔ ĐÃ ĐẠT TRẦN THƯỞNG VÒNG XOAY (1.5X)</div>
+                    <div className="text-xs mt-1">
+                      Tổng thưởng Vòng xoay đã đạt trần tối đa:{' '}
+                      <strong className="text-emerald-300">{maxAllowed.toLocaleString('vi-VN')} đ</strong> (1.5x CC
+                      Daily Bonus). Phần tiền vượt quá bị khống chế theo quy định.
+                    </div>
+                  </div>
+                }
+              >
+                <div className="w-full text-right cursor-help">
+                  <div className="tabular-nums font-bold text-rose-500 text-xs">
+                    +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+                  </div>
+                  <div className="flex items-center justify-end gap-1 mt-0.5">
+                    <Tag color="error" className="m-0 text-[10px] font-bold py-0 px-1 border-rose-500/40 animate-pulse">
+                      ⛔ HARDCAP 1.5X
+                    </Tag>
+                  </div>
+                  <Progress percent={100} size="small" strokeColor="#ff4d4f" showInfo={false} className="m-0 mt-0.5" />
+                </div>
+              </Tooltip>
+            );
+          }
+
+          if (isWarning) {
+            return (
+              <Tooltip
+                title={
+                  <div>
+                    <div className="font-bold text-amber-300">⚠️ CẢNH BÁO: SẮP CHẠM TRẦN THƯỞNG (1.5X)</div>
+                    <div className="text-xs mt-1">
+                      Đã sử dụng <strong className="text-amber-300">{percent}%</strong> hạn mức thưởng Vòng xoay tháng
+                      (Tối đa: <strong>{maxAllowed.toLocaleString('vi-VN')} đ</strong>). Hãy nâng cao CC Daily Bonus để
+                      mở rộng trần!
+                    </div>
+                  </div>
+                }
+              >
+                <div className="w-full text-right cursor-help">
+                  <div className="tabular-nums font-bold text-amber-400 text-xs">
+                    +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+                  </div>
+                  <div className="flex items-center justify-end gap-1 mt-0.5">
+                    <Tag color="warning" className="m-0 text-[10px] font-bold py-0 px-1 border-amber-500/40">
+                      ⚠️ SẮP CHẠM TRẦN ({percent}%)
+                    </Tag>
+                  </div>
+                  <Progress
+                    percent={percent}
+                    size="small"
+                    strokeColor="#faad14"
+                    showInfo={false}
+                    className="m-0 mt-0.5"
+                  />
+                </div>
+              </Tooltip>
+            );
+          }
+
+          return (
+            <Tooltip title={`Tiến độ sử dụng hạn mức Vòng xoay tháng: ${percent}% (Trần 1.5x Daily Bonus)`}>
+              <div className="w-full text-right">
+                <span className="tabular-nums font-bold text-emerald-400 text-xs">
+                  +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+                </span>
+                {percent > 0 && (
+                  <Progress
+                    percent={percent}
+                    size="small"
+                    strokeColor="#52c41a"
+                    showInfo={false}
+                    className="m-0 mt-0.5"
+                  />
+                )}
+              </div>
+            </Tooltip>
+          );
+        },
       },
       {
         title: 'Points Accu',
@@ -314,6 +476,30 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
       styles={{ body: { padding: 0 } }}
       className="full-bleed-card shadow-sm rounded-xl"
     >
+      {capSummary.cappedCount > 0 || capSummary.warningCount > 0 ? (
+        <div className="p-3 border-b border-amber-500/20 bg-amber-500/10 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <FireOutlined className="text-amber-500 text-sm" />
+            <span className="font-semibold text-amber-800 dark:text-amber-300">
+              ⚠️ Quản Lý Hạn Mức Vòng Xoay (Trần 1.5x CC Daily Bonus Tháng):
+            </span>
+            {capSummary.cappedCount > 0 && (
+              <Tag color="error" className="m-0 font-bold">
+                ⛔ {capSummary.cappedCount} CC ĐẠT TRẦN ({capSummary.cappedNames.join(', ')})
+              </Tag>
+            )}
+            {capSummary.warningCount > 0 && (
+              <Tag color="warning" className="m-0 font-bold">
+                ⚠️ {capSummary.warningCount} CC SẮP CHẠM TRẦN ({capSummary.warningNames.join(', ')})
+              </Tag>
+            )}
+          </div>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+            *Thưởng Vòng xoay tối đa = 1.5 × CC Daily Bonus tháng
+          </span>
+        </div>
+      ) : null}
+
       <Table
         dataSource={filteredData}
         columns={configuredColumns}

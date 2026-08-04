@@ -141,6 +141,11 @@ export interface CcPaystubRecord {
   comboCount: number;
   productCount: number;
   minigameBonus: number;
+  rawMinigameBonus?: number;
+  monthlyDailyBonus?: number;
+  maxWheelBonusAllowed?: number;
+  wheelCapPercent?: number;
+  capStatus?: 'NORMAL' | 'WARNING' | 'HARDCAPPED';
   ccTipBonus: number;
   tippedVisitsCount?: number;
   diamondBonus?: number;

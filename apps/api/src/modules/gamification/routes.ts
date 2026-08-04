@@ -8,6 +8,7 @@ import {
   calculateFractionToday,
 } from '@mos-lab/shared';
 import { TeamService } from '../teams/team.service.js';
+import { CcKpiService } from '../kpi/services/cc-kpi.service.js';
 
 const DEFAULT_CONFIG: DailySalesBonusConfig = {
   combo_unit_bonus: 200000,
@@ -107,6 +108,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
                 properties: {
                   totalComboSales: { type: 'number' },
                   totalProductSales: { type: 'number' },
+                  totalSingleSales: { type: 'number' },
                   totalSales: { type: 'number' },
                   totalCcBonus: { type: 'number' },
                   projectedComboSales: { type: 'number' },
@@ -148,414 +150,14 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
       };
 
       const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-      const endStr = dateTo || new Date().toLocaleDateString('en-CA');
-
-      const _config = await getBonusConfig(fastify);
-      const activeCcIds = await getActiveCcIds(fastify);
-
       try {
-        // Fetch CC staff profiles (filtered strictly by Global CC Config if configured)
-        let staffFilterClause = `up.provider = 'Staff' AND up.is_disabled = 0 AND (
-        ugl.user_group_name LIKE '%Client Consultant%'
-        OR up.user_id IN (SELECT DISTINCT user_id FROM staff_payroll_client_consultant)
-        OR up.full_name LIKE '%CC%'
-        OR up.user_id IN (SELECT DISTINCT check_in_staff_id FROM order_service WHERE check_in_staff_id IS NOT NULL)
-      )`;
-
-        if (activeCcIds && activeCcIds.length > 0) {
-          staffFilterClause += ` AND up.user_id IN (${activeCcIds.join(',')})`;
-        }
-
-        if (consultantId && consultantId !== 'ALL') {
-          if (!isNaN(Number(consultantId))) {
-            staffFilterClause += ` AND up.user_id = ${Number(consultantId)}`;
-          } else {
-            const escapedName = consultantId.replace(/'/g, "''");
-            staffFilterClause += ` AND up.full_name LIKE '%${escapedName}%'`;
-          }
-        }
-
-        const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT DISTINCT up.user_id as userId, up.full_name as displayName, up.avatar as avatar
-        FROM \`user_profile\` up
-        JOIN \`staff_profile\` sp ON sp.user_id = up.user_id
-        LEFT JOIN \`user_group_language\` ugl ON up.user_group_id = ugl.user_group_id
-        WHERE ${staffFilterClause}
-        ORDER BY up.full_name ASC
-      `);
-
-        if (staffProfiles.length === 0) {
-          return { data: [], total: 0, activeStaff: [] };
-        }
-
-        const staffMap = new Map<number, { name: string; avatar: string | null; store: string }>();
-        staffProfiles.forEach((s) => {
-          staffMap.set(Number(s.userId), {
-            name: s.displayName,
-            avatar: s.avatar ? String(s.avatar) : null,
-            store: s.displayName.includes('PXL') ? 'PXL' : 'De Tham',
-          });
+        const res = await CcKpiService.getCcDailySalesBonus(fastify, {
+          dateFrom,
+          dateTo,
+          consultantId,
+          storeId,
         });
-
-        const staffIds = Array.from(staffMap.keys());
-        const staffIdsListStr = staffIds.join(',');
-
-        let storeFilterClause = '';
-        if (storeId && storeId !== 'ALL') {
-          const escapedStore = storeId.toLowerCase().replace(/'/g, "''");
-          storeFilterClause = ` AND LOWER(cs.client_store_key) LIKE '%${escapedStore}%'`;
-        }
-
-        // 1. Query Single Services (order_service)
-        const singleSqlQuery = `
-        SELECT 
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
-          COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
-          os.id as order_service_id,
-          os.quantity,
-          (os.total_price - os.tax_amount) as total_price,
-          os.tax_amount,
-          o.is_debt,
-          UPPER(cs.client_store_key) as store_code
-        FROM \`order\` o
-        JOIN \`order_service\` os ON os.order_id = o.id
-        LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
-          AND COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) IN (${staffIdsListStr})
-          ${storeFilterClause}
-          AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
-          AND LOWER(COALESCE(os.service_type, '')) NOT LIKE '%combo%'
-          AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%product%'
-        ORDER BY sale_date DESC, staff_id ASC
-      `;
-
-        // 2. Query Combo Packages (order_service_combo)
-        const comboSqlQuery = `
-        SELECT 
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
-          COALESCE(
-            osc.check_in_staff_id,
-            osc.check_out_staff_id,
-            (SELECT os.check_in_staff_id FROM \`order_service\` os WHERE os.order_id = osc.order_id AND os.check_in_staff_id IS NOT NULL LIMIT 1),
-            (SELECT os.check_out_staff_id FROM \`order_service\` os WHERE os.order_id = osc.order_id AND os.check_out_staff_id IS NOT NULL LIMIT 1),
-            (SELECT os.assigned_staff_id FROM \`order_service\` os WHERE os.order_id = osc.order_id AND os.assigned_staff_id IS NOT NULL LIMIT 1),
-            o.assigned_staff_id,
-            o.created_staff_id
-          ) as staff_id,
-          osc.quantity,
-          (osc.total_price - osc.tax_amount) as total_price,
-          osc.tax_amount,
-          UPPER(cs.client_store_key) as store_code
-        FROM \`order\` o
-        JOIN \`order_service_combo\` osc ON osc.order_id = o.id
-        LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
-          AND COALESCE(
-            osc.check_in_staff_id,
-            osc.check_out_staff_id,
-            (SELECT os.check_in_staff_id FROM \`order_service\` os WHERE os.order_id = osc.order_id AND os.check_in_staff_id IS NOT NULL LIMIT 1),
-            (SELECT os.check_out_staff_id FROM \`order_service\` os WHERE os.order_id = osc.order_id AND os.check_out_staff_id IS NOT NULL LIMIT 1),
-            (SELECT os.assigned_staff_id FROM \`order_service\` os WHERE os.order_id = osc.order_id AND os.assigned_staff_id IS NOT NULL LIMIT 1),
-            o.assigned_staff_id,
-            o.created_staff_id
-          ) IN (${staffIdsListStr})
-          ${storeFilterClause}
-      `;
-
-        // 3. Query Physical Products (order_product)
-        const productSqlQuery = `
-        SELECT 
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
-          COALESCE(
-            op.created_staff_id,
-            (SELECT os.check_in_staff_id FROM \`order_service\` os WHERE os.order_id = op.order_id AND os.check_in_staff_id IS NOT NULL LIMIT 1),
-            o.assigned_staff_id,
-            o.created_staff_id
-          ) as staff_id,
-          op.quantity,
-          (op.total_price - op.tax_amount) as total_price,
-          op.tax_amount,
-          UPPER(cs.client_store_key) as store_code
-        FROM \`order\` o
-        JOIN \`order_product\` op ON op.order_id = o.id
-        LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
-          AND COALESCE(
-            op.created_staff_id,
-            (SELECT os.check_in_staff_id FROM \`order_service\` os WHERE os.order_id = op.order_id AND os.check_in_staff_id IS NOT NULL LIMIT 1),
-            o.assigned_staff_id,
-            o.created_staff_id
-          ) IN (${staffIdsListStr})
-          ${storeFilterClause}
-      `;
-
-        // 4. Query Debt Payments (user_debt_payment)
-        const debtPaymentSqlQuery = `
-        SELECT 
-          DATE_FORMAT(udp.date_created, '%Y-%m-%d') as sale_date,
-          COALESCE(udp.created_staff_id, ud.user_debt_payment_staff_id, ud.created_staff_id) as staff_id,
-          SUM(udp.paid_amount) as debt_collected
-        FROM \`user_debt_payment\` udp
-        JOIN \`user_debt\` ud ON ud.id = udp.user_debt_id
-        WHERE udp.date_created >= '${startStr} 00:00:00'
-          AND udp.date_created <= '${endStr} 23:59:59'
-          AND COALESCE(udp.created_staff_id, ud.user_debt_payment_staff_id, ud.created_staff_id) IN (${staffIdsListStr})
-        GROUP BY sale_date, staff_id
-      `;
-
-        // 5. Query New Debts (user_debt)
-        const newDebtSqlQuery = `
-        SELECT 
-          DATE_FORMAT(ud.date_created, '%Y-%m-%d') as sale_date,
-          ud.created_staff_id as staff_id,
-          SUM(ud.debt_amount) as debt_amount
-        FROM \`user_debt\` ud
-        WHERE ud.date_created >= '${startStr} 00:00:00'
-          AND ud.date_created <= '${endStr} 23:59:59'
-          AND ud.created_staff_id IN (${staffIdsListStr})
-        GROUP BY sale_date, staff_id
-      `;
-
-        // 6. Query Green Circle Visits (Lượt khách đi lẻ hoặc còn 1 combo cuối)
-        const greenVisitSqlQuery = `
-        SELECT 
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
-          COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
-          COUNT(os.id) as green_visits
-        FROM \`order\` o
-        JOIN \`order_service\` os ON os.order_id = o.id
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
-          AND COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) IN (${staffIdsListStr})
-          ${storeFilterClause}
-          AND (os.user_service_type != 'combo' OR os.user_service_type = 'combo_last')
-        GROUP BY sale_date, staff_id
-      `;
-
-        // 7. Query Total Visits (Tổng lượt khách đã tiếp)
-        const totalVisitSqlQuery = `
-        SELECT 
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
-          COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
-          COUNT(os.id) as total_visits
-        FROM \`order\` o
-        JOIN \`order_service\` os ON os.order_id = o.id
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
-          AND COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) IN (${staffIdsListStr})
-          ${storeFilterClause}
-        GROUP BY sale_date, staff_id
-      `;
-
-        const [singleRows, comboRows, productRows, debtPaymentRows, newDebtRows, greenVisitRows, totalVisitRows] =
-          await Promise.all([
-            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(singleSqlQuery),
-            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSqlQuery),
-            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productSqlQuery),
-            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(debtPaymentSqlQuery),
-            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(newDebtSqlQuery),
-            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(greenVisitSqlQuery),
-            fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(totalVisitSqlQuery),
-          ]);
-
-        // Group by Date + Staff
-        const mapKey = (d: string, uid: number) => `${d}_${uid}`;
-        const grouped = new Map<string, DailySalesBonusConsultantRecord>();
-
-        const getOrCreateRecord = (d: string, uid: number, store_code?: string) => {
-          const k = mapKey(d, uid);
-          if (!grouped.has(k)) {
-            const sInfo = staffMap.get(uid) || { name: `Staff #${uid}`, avatar: null, store: 'PXL' };
-            grouped.set(k, {
-              id: k,
-              date: d,
-              user_id: uid,
-              consultant_name: sInfo.name,
-              avatar: sInfo.avatar,
-              store_code: store_code || sInfo.store,
-              single_sales: 0,
-              combo_sales: 0,
-              combo_count: 0,
-              product_sales: 0,
-              product_count: 0,
-              debt_collected: 0,
-              vat: 0,
-              debt: 0,
-              total_sales: 0,
-              commission_rate_percent: 0,
-              daily_bonus: 0,
-              green_visits: 0,
-              total_visits: 0,
-            });
-          }
-          return grouped.get(k)!;
-        };
-
-        // Accumulate Single Services
-        singleRows.forEach((row) => {
-          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id), row.store_code);
-          const price = Number(row.total_price || 0);
-          const tax = Number(row.tax_amount || 0);
-
-          rec.single_sales += price;
-          rec.vat += tax;
-        });
-
-        // Accumulate Combos
-        comboRows.forEach((row) => {
-          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id), row.store_code);
-          const price = Number(row.total_price || 0);
-          const qty = Number(row.quantity || 1);
-          const tax = Number(row.tax_amount || 0);
-
-          rec.combo_sales += price;
-          rec.combo_count! += qty;
-          rec.vat += tax;
-        });
-
-        // Accumulate Products
-        productRows.forEach((row) => {
-          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id), row.store_code);
-          const price = Number(row.total_price || 0);
-          const qty = Number(row.quantity || 1);
-          const tax = Number(row.tax_amount || 0);
-
-          rec.product_sales += price;
-          rec.product_count! += qty;
-          rec.vat += tax;
-        });
-
-        // Accumulate Debt Payments (Thu Nợ)
-        debtPaymentRows.forEach((row) => {
-          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
-          rec.debt_collected += Number(row.debt_collected || 0);
-        });
-
-        // Accumulate New Debts (Nợ Mới)
-        newDebtRows.forEach((row) => {
-          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
-          rec.debt += Number(row.debt_amount || 0);
-        });
-
-        // Accumulate Green Circle Visits
-        greenVisitRows.forEach((row) => {
-          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
-          rec.green_visits = (rec.green_visits || 0) + Number(row.green_visits || 0);
-        });
-
-        // Accumulate Total Visits
-        totalVisitRows.forEach((row) => {
-          const rec = getOrCreateRecord(row.sale_date, Number(row.staff_id));
-          rec.total_visits = (rec.total_visits || 0) + Number(row.total_visits || 0);
-        });
-
-        // Calculate totals, matching commission rate percent, and daily bonus
-        const result: DailySalesBonusConsultantRecord[] = Array.from(grouped.values()).map((rec) => {
-          rec.single_sales = Math.round(rec.single_sales);
-          rec.combo_sales = Math.round(rec.combo_sales);
-          rec.product_sales = Math.round(rec.product_sales);
-          rec.debt_collected = Math.round(rec.debt_collected);
-          rec.vat = Math.round(rec.vat);
-          rec.debt = Math.round(rec.debt);
-
-          // Total Sales for Bonus: Combo Sales + Product Sales + Debt Collected
-          const qualifyingSales = rec.combo_sales + rec.product_sales + rec.debt_collected;
-          const total_sales = Math.round(Math.max(0, qualifyingSales));
-          rec.total_sales = total_sales;
-
-          // Match tier based on Total Sales before VAT
-          let matchedTierRate: number;
-          if (total_sales >= 20000000) {
-            matchedTierRate = 2.5;
-          } else if (total_sales >= 15000000) {
-            matchedTierRate = 2.0;
-          } else if (total_sales >= 10000000) {
-            matchedTierRate = 1.5;
-          } else if (total_sales >= 5000000) {
-            matchedTierRate = 1.0;
-          } else {
-            matchedTierRate = 0.5;
-          }
-          rec.commission_rate_percent = matchedTierRate;
-
-          // Daily Bonus: % Bonus on Total Sales
-          rec.daily_bonus = Math.round((total_sales * matchedTierRate) / 100);
-
-          return rec;
-        });
-
-        // Calculate Real-time Run-rate Elapsed Ratio (11:00 AM - 23:00 PM shift formula)
-        const now = new Date();
-        const currentHour = now.getHours();
-        const fractionToday = calculateFractionToday(currentHour);
-
-        const startDate = new Date(startStr);
-        const endDate = new Date(endStr);
-        const todayDate = new Date(now.toISOString().slice(0, 10));
-
-        const totalDays = Math.max(
-          1,
-          Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-        );
-
-        let elapsedRatio = 1.0;
-        if (todayDate < startDate) {
-          elapsedRatio = 0.001;
-        } else if (todayDate > endDate) {
-          elapsedRatio = 1.0;
-        } else {
-          const daysPassedBeforeToday = Math.max(
-            0,
-            Math.round((todayDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-          );
-          const totalElapsedDays = daysPassedBeforeToday + fractionToday;
-          elapsedRatio = Math.min(1.0, Math.max(0.001, totalElapsedDays / totalDays));
-        }
-
-        const totalComboSales = Math.round(result.reduce((sum, r) => sum + (r.combo_sales || 0), 0));
-        const totalProductSales = Math.round(
-          result.reduce((sum, r) => sum + (r.product_sales || 0) + (r.single_sales || 0), 0)
-        );
-        const totalSales = Math.round(
-          result.reduce((sum, r) => sum + (r.combo_sales || 0) + (r.product_sales || 0) + (r.single_sales || 0), 0)
-        );
-        const totalCcBonus = Math.round(result.reduce((sum, r) => sum + (r.daily_bonus || 0), 0));
-
-        const summary = {
-          totalComboSales,
-          totalProductSales,
-          totalSales,
-          totalCcBonus,
-          projectedComboSales: Math.round(totalComboSales / elapsedRatio),
-          projectedProductSales: Math.round(totalProductSales / elapsedRatio),
-          projectedTotalSales: Math.round(totalSales / elapsedRatio),
-          projectedCcBonus: Math.round(totalCcBonus / elapsedRatio),
-          elapsedRatioPercent: Math.round(elapsedRatio * 1000) / 10,
-        };
-
-        return {
-          data: result,
-          total: result.length,
-          summary,
-          activeStaff: staffProfiles.map((s) => ({
-            userId: Number(s.userId),
-            displayName: s.displayName,
-            avatar: s.avatar ? String(s.avatar) : null,
-          })),
-        };
+        return res;
       } catch (err) {
         fastify.log.error(err as Error, 'Get daily sales bonus consultant error');
         return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tải báo cáo thưởng CC.' });
@@ -650,25 +252,15 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu tham số date.' });
     }
 
-    const config = await getBonusConfig(fastify);
-
     try {
-      let staffFilterOsc = '';
+      let subStaffFilter = '';
       let staffFilterOp = '';
       let staffFilterOs = '';
       let staffFilterUdp = '';
 
       if (consultantId && consultantId !== 'ALL' && !isNaN(Number(consultantId))) {
         const uid = Number(consultantId);
-        staffFilterOsc = ` AND COALESCE(
-          osc.check_in_staff_id,
-          osc.check_out_staff_id,
-          (SELECT os.check_in_staff_id FROM \`order_service\` os WHERE os.order_id = osc.order_id AND os.check_in_staff_id IS NOT NULL LIMIT 1),
-          (SELECT os.check_out_staff_id FROM \`order_service\` os WHERE os.order_id = osc.order_id AND os.check_out_staff_id IS NOT NULL LIMIT 1),
-          (SELECT os.assigned_staff_id FROM \`order_service\` os WHERE os.order_id = osc.order_id AND os.assigned_staff_id IS NOT NULL LIMIT 1),
-          o.assigned_staff_id,
-          o.created_staff_id
-        ) = ${uid}`;
+        subStaffFilter = `WHERE sub.staff_id = ${uid}`;
 
         staffFilterOp = ` AND COALESCE(
           op.created_staff_id,
@@ -682,27 +274,131 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         staffFilterUdp = ` AND COALESCE(udp.created_staff_id, ud.user_debt_payment_staff_id, ud.created_staff_id) = ${uid}`;
       }
 
-      // Query Combos
+      // Query Combos (Net cash value subtracts unpaid debt) with 50/50 Split for CC IN != CC OUT
       const comboQuery = `
         SELECT 
-          osc.id as order_service_id,
-          o.id as order_id,
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
-          up_cust.full_name as customer_name,
-          UPPER(cs.client_store_key) as store_code,
-          CONCAT('Combo #', osc.service_id, ' - ', COALESCE(osc.service_group, 'Gói Combo')) as item_title,
-          'Combo' as item_type,
-          osc.quantity,
-          osc.total_price as payment_value
-        FROM \`order\` o
-        JOIN \`order_service_combo\` osc ON osc.order_id = o.id
-        LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
-        LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
-          ${staffFilterOsc}
+          sub.order_service_id,
+          sub.order_id,
+          sub.order_time,
+          sub.customer_name,
+          sub.store_code,
+          sub.item_title,
+          sub.item_type,
+          sub.quantity,
+          sub.gross_value,
+          sub.net_value,
+          sub.debt_amount,
+          sub.is_split,
+          sub.cc_in_name,
+          sub.cc_out_name
+        FROM (
+          -- CC IN != CC OUT -> 50% to CC IN (New Combo)
+          SELECT 
+            osc.id as order_service_id,
+            o.id as order_id,
+            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            up_cust.full_name as customer_name,
+            UPPER(cs.client_store_key) as store_code,
+            CONCAT('Combo #', osc.service_id, ' - ', COALESCE(sl.service_name, 'Gói Combo')) as item_title,
+            'Combo' as item_type,
+            osc.quantity * 0.5 as quantity,
+            osc.total_price * 0.5 as gross_value,
+            GREATEST(0, (osc.total_price - osc.tax_amount - COALESCE(ud.debt_amount, 0))) * 0.5 as net_value,
+            COALESCE(ud.debt_amount, 0) * 0.5 as debt_amount,
+            1 as is_split,
+            os.check_in_staff_id as staff_id,
+            up_in.full_name as cc_in_name,
+            up_out.full_name as cc_out_name
+          FROM \`order\` o
+          JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+          JOIN \`order_service\` os ON os.id = osc.order_service_id
+          LEFT JOIN \`service_language\` sl ON sl.service_id = osc.service_id AND sl.language_id = 1
+          LEFT JOIN \`user_debt\` ud ON ud.order_id = o.id AND ud.debt_amount > 0
+          LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
+          LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
+          LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
+          LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+          WHERE o.order_state = 'Completed'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
+            AND os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
+
+          UNION ALL
+
+          -- CC IN != CC OUT -> 50% to CC OUT (New Combo)
+          SELECT 
+            osc.id as order_service_id,
+            o.id as order_id,
+            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            up_cust.full_name as customer_name,
+            UPPER(cs.client_store_key) as store_code,
+            CONCAT('Combo #', osc.service_id, ' - ', COALESCE(sl.service_name, 'Gói Combo')) as item_title,
+            'Combo' as item_type,
+            osc.quantity * 0.5 as quantity,
+            osc.total_price * 0.5 as gross_value,
+            GREATEST(0, (osc.total_price - osc.tax_amount - COALESCE(ud.debt_amount, 0))) * 0.5 as net_value,
+            COALESCE(ud.debt_amount, 0) * 0.5 as debt_amount,
+            1 as is_split,
+            os.check_out_staff_id as staff_id,
+            up_in.full_name as cc_in_name,
+            up_out.full_name as cc_out_name
+          FROM \`order\` o
+          JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+          JOIN \`order_service\` os ON os.id = osc.order_service_id
+          LEFT JOIN \`service_language\` sl ON sl.service_id = osc.service_id AND sl.language_id = 1
+          LEFT JOIN \`user_debt\` ud ON ud.order_id = o.id AND ud.debt_amount > 0
+          LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
+          LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
+          LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
+          LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+          WHERE o.order_state = 'Completed'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
+            AND os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
+
+          UNION ALL
+
+          -- Same CC or single CC -> 100% to single staff (New Combo)
+          SELECT 
+            osc.id as order_service_id,
+            o.id as order_id,
+            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            up_cust.full_name as customer_name,
+            UPPER(cs.client_store_key) as store_code,
+            CONCAT('Combo #', osc.service_id, ' - ', COALESCE(sl.service_name, 'Gói Combo')) as item_title,
+            'Combo' as item_type,
+            osc.quantity * 1.0 as quantity,
+            osc.total_price * 1.0 as gross_value,
+            GREATEST(0, (osc.total_price - osc.tax_amount - COALESCE(ud.debt_amount, 0))) * 1.0 as net_value,
+            COALESCE(ud.debt_amount, 0) * 1.0 as debt_amount,
+            0 as is_split,
+            COALESCE(
+              os.check_in_staff_id,
+              os.check_out_staff_id,
+              os.assigned_staff_id,
+              o.assigned_staff_id,
+              o.created_staff_id
+            ) as staff_id,
+            up_in.full_name as cc_in_name,
+            up_out.full_name as cc_out_name
+          FROM \`order\` o
+          JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+          JOIN \`order_service\` os ON os.id = osc.order_service_id
+          LEFT JOIN \`service_language\` sl ON sl.service_id = osc.service_id AND sl.language_id = 1
+          LEFT JOIN \`user_debt\` ud ON ud.order_id = o.id AND ud.debt_amount > 0
+          LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
+          LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
+          LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
+          LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+          WHERE o.order_state = 'Completed'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
+            AND (os.check_in_staff_id IS NULL OR os.check_out_staff_id IS NULL OR os.check_in_staff_id = os.check_out_staff_id)
+        ) sub
+        ${subStaffFilter}
       `;
 
       // Query Products
@@ -713,12 +409,18 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
           up_cust.full_name as customer_name,
           UPPER(cs.client_store_key) as store_code,
-          CONCAT('Sản Phẩm #', op.product_id) as item_title,
+          CONCAT('Sản Phẩm #', op.product_id, ' - ', COALESCE(pl.product_name, 'Sản Phẩm')) as item_title,
           'Product' as item_type,
           op.quantity,
-          op.total_price as payment_value
+          op.total_price as gross_value,
+          (op.total_price - op.tax_amount) as net_value,
+          0 as debt_amount,
+          0 as is_split,
+          NULL as cc_in_name,
+          NULL as cc_out_name
         FROM \`order\` o
         JOIN \`order_product\` op ON op.order_id = o.id
+        LEFT JOIN \`product_language\` pl ON pl.product_id = op.product_id AND pl.language_id = 1
         LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
         LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
@@ -728,7 +430,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           ${staffFilterOp}
       `;
 
-      // Query Single Services
+      // Query Single Services (Exclude Combo Upgrades)
       const serviceQuery = `
         SELECT 
           os.id as order_service_id,
@@ -736,22 +438,149 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
           up_cust.full_name as customer_name,
           UPPER(cs.client_store_key) as store_code,
-          CONCAT('DV #', os.service_id, ' - ', COALESCE(os.service_group, 'Mi/SP')) as item_title,
+          CONCAT('DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,
           'Service' as item_type,
           os.quantity,
-          os.total_price as payment_value
+          os.total_price as gross_value,
+          0 as net_value,
+          0 as debt_amount,
+          0 as is_split,
+          up_in.full_name as cc_in_name,
+          up_out.full_name as cc_out_name
         FROM \`order\` o
         JOIN \`order_service\` os ON os.order_id = o.id
+        LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
         LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
+        LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
+        LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
         LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
           AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
           AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
           ${staffFilterOs}
+          AND COALESCE(os.upgrade_price, 0) = 0
           AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
           AND LOWER(COALESCE(os.service_type, '')) NOT LIKE '%combo%'
           AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%product%'
+      `;
+
+      // Query Combo Upgrades with 50/50 Split for CC IN != CC OUT
+      const comboUpgradeQuery = `
+        SELECT 
+          sub.order_service_id,
+          sub.order_id,
+          sub.order_time,
+          sub.customer_name,
+          sub.store_code,
+          sub.item_title,
+          sub.item_type,
+          sub.quantity,
+          sub.gross_value,
+          sub.net_value,
+          sub.debt_amount,
+          sub.is_split,
+          sub.cc_in_name,
+          sub.cc_out_name
+        FROM (
+          -- CC IN != CC OUT -> 50% to CC IN (Combo Upgrade)
+          SELECT 
+            os.id as order_service_id,
+            o.id as order_id,
+            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            up_cust.full_name as customer_name,
+            UPPER(cs.client_store_key) as store_code,
+            CONCAT('Nâng Cấp Combo DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,
+            'Combo' as item_type,
+            0.5 as quantity,
+            os.upgrade_price * 0.5 as gross_value,
+            os.upgrade_price * 0.5 as net_value,
+            0 as debt_amount,
+            1 as is_split,
+            os.check_in_staff_id as staff_id,
+            up_in.full_name as cc_in_name,
+            up_out.full_name as cc_out_name
+          FROM \`order\` o
+          JOIN \`order_service\` os ON os.order_id = o.id
+          LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
+          LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
+          LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
+          LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
+          LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+          WHERE o.order_state = 'Completed'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
+            AND os.upgrade_price > 0
+            AND os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
+
+          UNION ALL
+
+          -- CC IN != CC OUT -> 50% to CC OUT (Combo Upgrade)
+          SELECT 
+            os.id as order_service_id,
+            o.id as order_id,
+            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            up_cust.full_name as customer_name,
+            UPPER(cs.client_store_key) as store_code,
+            CONCAT('Nâng Cấp Combo DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,
+            'Combo' as item_type,
+            0.5 as quantity,
+            os.upgrade_price * 0.5 as gross_value,
+            os.upgrade_price * 0.5 as net_value,
+            0 as debt_amount,
+            1 as is_split,
+            os.check_out_staff_id as staff_id,
+            up_in.full_name as cc_in_name,
+            up_out.full_name as cc_out_name
+          FROM \`order\` o
+          JOIN \`order_service\` os ON os.order_id = o.id
+          LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
+          LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
+          LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
+          LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
+          LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+          WHERE o.order_state = 'Completed'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
+            AND os.upgrade_price > 0
+            AND os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
+
+          UNION ALL
+
+          -- Same CC or single CC -> 100% to single staff (Combo Upgrade)
+          SELECT 
+            os.id as order_service_id,
+            o.id as order_id,
+            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            up_cust.full_name as customer_name,
+            UPPER(cs.client_store_key) as store_code,
+            CONCAT('Nâng Cấp Combo DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,
+            'Combo' as item_type,
+            1.0 as quantity,
+            os.upgrade_price * 1.0 as gross_value,
+            os.upgrade_price * 1.0 as net_value,
+            0 as debt_amount,
+            0 as is_split,
+            COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
+            up_in.full_name as cc_in_name,
+            up_out.full_name as cc_out_name
+          FROM \`order\` o
+          JOIN \`order_service\` os ON os.order_id = o.id
+          LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
+          LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
+          LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
+          LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
+          LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+          WHERE o.order_state = 'Completed'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
+            AND os.upgrade_price > 0
+            AND (os.check_in_staff_id IS NULL OR os.check_out_staff_id IS NULL OR os.check_in_staff_id = os.check_out_staff_id)
+        ) sub
+        ${subStaffFilter}
       `;
 
       // Query Debt Payments
@@ -763,9 +592,14 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           up_cust.full_name as customer_name,
           'PXL' as store_code,
           'Thu Nợ Khoản Nợ Cũ' as item_title,
-          'Service' as item_type,
+          'Combo' as item_type,
           1 as quantity,
-          udp.paid_amount as payment_value
+          udp.paid_amount as gross_value,
+          udp.paid_amount as net_value,
+          0 as debt_amount,
+          0 as is_split,
+          NULL as cc_in_name,
+          NULL as cc_out_name
         FROM \`user_debt_payment\` udp
         JOIN \`user_debt\` ud ON ud.id = udp.user_debt_id
         LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = ud.user_id
@@ -774,23 +608,44 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           ${staffFilterUdp}
       `;
 
-      const [comboRows, productRows, serviceRows, debtPaymentRows] = await Promise.all([
+      const [comboRows, comboUpgradeRows, productRows, serviceRows, debtPaymentRows] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboQuery),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboUpgradeQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(serviceQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(debtPaymentQuery),
       ]);
 
-      const allRows = [...comboRows, ...productRows, ...serviceRows, ...debtPaymentRows].sort((a, b) =>
-        (b.order_time || '').localeCompare(a.order_time || '')
+      const allRows = [...comboRows, ...comboUpgradeRows, ...productRows, ...serviceRows, ...debtPaymentRows].sort(
+        (a, b) => (b.order_time || '').localeCompare(a.order_time || '')
       );
+
+      // Compute total qualifying sales for matching the tier rate
+      const totalQualifyingSales = Math.round(
+        allRows.reduce((sum, r) => sum + (r.item_type !== 'Service' ? Number(r.net_value || 0) : 0), 0)
+      );
+
+      const matchedTierRate =
+        totalQualifyingSales >= 30000000
+          ? 3.0
+          : totalQualifyingSales >= 25000000
+            ? 2.5
+            : totalQualifyingSales >= 20000000
+              ? 2.5
+              : totalQualifyingSales >= 15000000
+                ? 2.0
+                : totalQualifyingSales >= 10000000
+                  ? 1.5
+                  : totalQualifyingSales >= 5000000
+                    ? 1.0
+                    : 0.5;
 
       const transactions: DailySalesBonusTransaction[] = allRows.map((r) => {
         const item_type = r.item_type as 'Combo' | 'Product' | 'Service';
-        const qty = Number(r.quantity || 1);
-        const unitBonus =
-          item_type === 'Combo' ? config.combo_unit_bonus : item_type === 'Product' ? config.product_unit_bonus : 0;
-        const recorded_bonus = qty * unitBonus;
+        const gross_value = Math.round(Number(r.gross_value || 0));
+        const net_value = Math.round(Number(r.net_value || 0));
+        const debt_amount = Math.round(Number(r.debt_amount || 0));
+        const recorded_bonus = item_type !== 'Service' ? Math.round((net_value * matchedTierRate) / 100) : 0;
 
         return {
           order_service_id: Number(r.order_service_id),
@@ -800,14 +655,22 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           store_code: r.store_code || 'PXL',
           item_title: r.item_title,
           item_type,
-          payment_value: Math.round(Number(r.payment_value || 0)),
-          recorded_bonus: Math.round(recorded_bonus),
+          payment_value: net_value,
+          gross_value,
+          net_value,
+          debt_amount,
+          recorded_bonus,
+          is_split: Boolean(r.is_split),
+          cc_in_name: r.cc_in_name || null,
+          cc_out_name: r.cc_out_name || null,
         };
       });
 
       return {
         data: transactions,
         total: transactions.length,
+        matchedTierRate,
+        totalQualifyingSales,
       };
     } catch (err) {
       fastify.log.error(err as Error, 'Get daily sales bonus transactions error');

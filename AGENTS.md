@@ -334,7 +334,40 @@ mos-lab/
   ];
   ```
 
+### 45. 4-Part CC Daily Sales Bonus Rule (Quy tắc Thưởng Doanh Số CC 4 Danh Mục)
+- **4 Danh Mục Doanh Số Tính Thưởng CC Daily Sales Bonus**:
+  1. **Doanh Số Combo Bán Mới**: Từ bảng `order_service_combo`.
+  2. **Doanh Số Sản Phẩm Bán Lẻ**: Từ bảng `order_product`.
+  3. **Doanh Số Thu Nợ**: Từ bảng `user_debt_payment`.
+  4. **Doanh Số Nâng Cấp Gói Combo (`upgrade_price`)**: Tiền nâng cấp gói combo từ bảng `order_service` có `upgrade_price > 0` (hoặc `user_service_type = 'combo'` kèm `upgrade_price > 0`).
+- **Quy tắc Tính Tiền & Chia 50/50**:
+  - Doanh số nâng cấp combo tính thưởng = `upgrade_price` (hoặc `total_price - tax_amount`).
+  - Áp dụng chuẩn quy tắc chia **50/50** cho CC IN và CC OUT khi `check_in_staff_id != check_out_staff_id` (mỗi CC nhận 50% doanh số nâng cấp, tuân thủ Rule #2 & Rule #7).
 
+### 46. Cash-Based Combo Sales & Debt Collection Bonus Recognition Invariant (Quy tắc Doanh số Combo Theo Thực Thu & Thu Nợ 50/50)
+- **Doanh Số Combo Bán Mới Theo Thực Thu (Cash-based Combo Sales)**: Khi bán gói Combo mới có phát sinh nợ (`user_debt` có `debt_amount > 0`), doanh số tính thưởng CC Daily Sales Bonus của ca/ngày bán **chỉ tính theo số tiền thực thu trong ca** ($\text{qualifying\_combo\_sales} = \text{total\_price\_pre\_tax} - \text{unpaid\_debt\_amount}$).
+- **Ghi Nhận Doanh Số Thu Nợ (Debt Collection Credit)**: Khi khách hàng quay lại làm dịch vụ và thanh toán khoản nợ (ghi nhận trong `user_debt_payment`), khoản tiền thu nợ này được cộng dồn vào danh mục **Doanh Số Thu Nợ (`debt_collected`)** cho **CC IN / CC OUT của ngày/ca thu nợ đó**, áp dụng đúng quy luật chia **50/50** (nếu CC IN != CC OUT) hoặc 100% (nếu 1 CC).
 
+### 47. Combo Package CC Staff Recognition Invariant (`order_service_combo` JOIN Rule)
+- **Cột NULL trên `order_service_combo`**: Bảng `order_service_combo` có chứa `check_in_staff_id` và `check_out_staff_id`, nhưng **99.3% các dòng dữ liệu trong DB legacy nhận giá trị `NULL`**.
+- **Quy tắc JOIN bắt buộc**: Tất cả các truy vấn SQL / Prisma tính toán doanh số Combo, chia thưởng CC 50/50 hay phân bổ KPI Combo **bắt buộc phải `JOIN order_service os ON os.id = osc.order_service_id`** và lấy `os.check_in_staff_id`, `os.check_out_staff_id` từ `order_service`.
+- **Tuyệt đối KHÔNG**: Tuyệt đối không đọc `osc.check_in_staff_id` hoặc `osc.check_out_staff_id` trực tiếp từ `order_service_combo`, tránh làm rụng logic chia 50/50 khi 2 CC khác nhau thực hiện Check-in / Check-out.
 
+### 48. MOS API vs. iOS App API Data Reconciliation & Presentation Invariant (Quy tắc Đối chiếu Dữ liệu MOS API và iOS App API)
+- **Phân biệt Dữ liệu CSDL Thô vs Giao diện iOS App UI**:
+  - Khi truy vấn CSDL legacy thô (`staff_bonus`), cột `date_created` chứa dấu thời gian rạng sáng/nửa đêm (`23:59:59` hoặc `02:00:00` ngày $D+1$) do script batch cronjob chốt sổ (`OrderRegenerationService.php`) tạo ra. Tuyệt đối không dùng `WHERE DATE(sb.date_created) = date` khi so sánh dữ liệu hiển thị trên giao diện iOS.
+  - **Giao diện iOS App UI** (màn hình `ClientConsultantHomeVC` / API `/staff/client-consultant/bonus`) hiển thị và gom nhóm ca làm việc theo ngày thực tế **`booking_date_start` (`ReportOrder.date`)** — chính là thời điểm dịch vụ ($D$).
+- **Quy trình Đối chiếu Chuẩn (Reconciliation Workflow)**:
+  - Khi so sánh kết quả giữa MOS API (`GET /api/gamification/daily-sales-bonus/consultant`) và iOS App API:
+    1. **Khớp mốc ngày hiển thị UI**: Luôn gom nhóm các bản ghi thưởng legacy theo ngày làm việc thực tế `DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))`.
+    2. **Gộp bản ghi thưởng lẻ/chia 50/50**: Hệ thống legacy có thể sinh ra nhiều dòng `staff_bonus` lẻ cho cùng 1 ca/ngày do điều kiện chia 50/50 CC IN != CC OUT hoặc thưởng điều chỉnh. Cần `SUM(sb.bonus_amount)` theo `service_date` trước khi so sánh với `daily_bonus` của MOS API.
+    3. **Kiểm thử trực tiếp Localhost**: Truy vấn trực tiếp local PHP endpoints qua HTTP (`POST http://127.0.0.1:80/1/staff/client-consultant/report` & `/1/staff/client-consultant/bonus` kèm `login_token`) để verify dữ liệu phản hồi thực tế của iOS App.
+
+### 49. No Monthly Sales Bonus for CC Invariant (Quy tắc Không Có Thưởng Doanh Số Tháng Cho CC)
+- **Chỉ tính Thưởng Doanh Số Theo Ngày (CC Daily Bonus)**: Hệ thống **KHÔNG CÓ** thưởng doanh số chốt tháng (Monthly Sales Bonus / Monthly Commission) cho Client Consultant (CC).
+- **Phạm vi áp dụng**: Tất cả các báo cáo, API, và logic tính thưởng CC chỉ ghi nhận:
+  1. **Thưởng Ca Làm CC Xoay**: $\text{Level CC} \times 65\text{đ}$ (chia 50/50 nếu CC IN $\neq$ CC OUT).
+  2. **Thưởng Doanh Số Ngày (CC Daily Bonus)**: % thưởng tính theo từng ngày dựa trên 4 danh mục (Combo mới, Sản phẩm, Thu nợ, Nâng cấp combo).
+  3. **Thưởng CC Tip**: 20% tiền tip (chia 50/50 nếu CC IN $\neq$ CC OUT).
+- Tuyệt đối **KHÔNG** tự ý thêm các khoản cộng dồn hay nhân tỷ lệ % thưởng doanh số tổng kết chốt tháng cho CC.
 

@@ -162,7 +162,22 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
 - **Lọc theo đơn Completed**: Chỉ tính tiền tip từ các đơn hàng có trạng thái `order.order_state = 'Completed'` trong khoảng thời gian được lọc.
 - **Tránh SQL Duplication**: Tuyệt đối không `JOIN order_service` hoặc `JOIN staff_bonus` trực tiếp khi tính `SUM(st.tip_amount)`, tránh hiện tượng đơn hàng có nhiều dịch vụ làm nhân bản tổng tiền tip. Hãy query trực tiếp từ `staff_tip` JOIN `order` theo `st.user_id` hoặc `st.id`.
 
-## 5. Cấu hình danh sách CC (`ACTIVE_CC_STAFF_CONFIG`) & Paystub Live
+## 5. CC Daily Sales Bonus Calculation Pipeline (Immutable — Finalized 2026-08-05)
+- **4 Danh Mục Doanh Số**: (1) Combo Bán Mới (`order_service_combo`), (2) Sản Phẩm Bán Lẻ (`order_product`), (3) Thu Nợ Cũ (`user_debt_payment`), và (4) Nâng Cấp Gói Combo (`order_service.upgrade_price > 0`).
+- **CC Chủ Đơn**: `COALESCE(check_out_staff_id, check_in_staff_id)` — ưu tiên CC OUT.
+- **Mốc Ngày**: `COALESCE(ro.actual_booking_date_start, o.booking_date_start)` (Rule #15). Tuyệt đối KHÔNG dùng `staff_bonus.date_created` hay `order.date_created`.
+- **Pipeline Tính Toán (Thứ Tự Bắt Buộc)**:
+  1. **① Chia 50/50 Doanh Số TRƯỚC**: Khi CC IN ≠ CC OUT → mỗi CC nhận **50% doanh số đơn đó**. Khi CC IN = CC OUT → 100%.
+  2. **② Gom Theo NGÀY**: Tổng doanh số per-CC per-day sau khi đã split.
+  3. **③ Tra Tier Rate**: Áp 1 Tier Rate duy nhất trên tổng daily aggregate: `<5M: 0.5%` | `5-10M: 1%` | `10-15M: 1.5%` | `15-20M: 2%` | `≥20M: 2.5%`.
+  4. **④ Tính Thưởng**: `daily_bonus = Math.round((total_sales × tier_rate) / 100)`.
+- **Quy tắc 50/50 áp dụng cho TẤT CẢ 4 danh mục**.
+- **Đơn bán Combo có Nợ**: Chỉ tính thưởng trên số tiền thực thu: $\text{qualifying\_combo\_sales} = \text{net\_price} - \text{unpaid\_debt\_amount}$.
+- **Thu Nợ Lần Sau**: Khoản tiền nợ thu được trong `user_debt_payment` cộng dồn vào danh mục Thu Nợ cho CC IN/CC OUT của ca/ngày thu nợ đó, chia 50/50 (nếu CC IN ≠ CC OUT) hoặc 100%.
+- **⚠️ KHÔNG sao chép logic WingsLashes**: WingsLashes (`generate-staff-payroll-user-group.php` L348-350) cộng raw `check_in_amount + check_out_amount` gây double-count khi CC IN = CC OUT. MOS sử dụng logic đúng nghiệp vụ.
+
+
+## 6. Cấu hình danh sách CC (`ACTIVE_CC_STAFF_CONFIG`) & Paystub Live
 - **Lọc theo Active CC Config**: Tất cả các tab báo cáo CC (Leaderboard, CC Xoay, CC Thưởng, CC Tip, CC Live Paystub) bắt buộc phải lọc theo danh sách ID tư vấn viên đang hoạt động trong `crmConfig` với key `ACTIVE_CC_STAFF_CONFIG`.
 - **Công thức Paystub Live**: `Tổng Thu Nhập Tạm Tính` = `Lương Giờ` + `Thưởng CC Xoay` + `Thưởng Combo & SP` + `Thưởng Minigame` + `Thưởng CC Tip (20%)`.
 
@@ -203,10 +218,15 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
 2. **Quy tắc Cronjob Regenerate Nửa Đêm (02:00 AM ICT)**:
    - Cronjob batch regenerate trên Prod đặt vào **02:00 AM, 02:10 AM, 02:20 AM giờ Việt Nam (`Asia/Ho_Chi_Minh`)** quét 3 ngày lùi (`1 day ago`, `2 days ago`, `3 days ago`) để làm sạch 100% rủi ro race condition cuối ngày.
 
-
-
+## 11. No Monthly Sales Bonus for CC Invariant (Quy tắc Không Có Thưởng Doanh Số Tháng Cho CC)
+1. **Chỉ ghi nhận Thưởng Doanh Số Ngày (CC Daily Bonus)**:
+   - Hệ thống **KHÔNG CÓ** khoản thưởng doanh số tháng (Monthly Sales Bonus) cho nhóm tư vấn viên CC.
+   - Toàn bộ thưởng doanh số của CC chỉ được ghi nhận và chi trả theo **NGÀY (CC Daily Bonus)** dựa trên 4 danh mục (Combo mới, Sản phẩm, Thu nợ, Nâng cấp combo).
+2. **Ngăn chặn giả định sai**:
+   - Tuyệt đối không giả định hay viết logic tính toán/hiển thị thưởng % doanh số chốt cuối tháng cho CC trên các tab báo cáo và API.
 
 ---
+
 
 # 📞 OmiCall Switchboard Diagnostic & Testing Rules
 
@@ -410,6 +430,14 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 
 ---
 
+# 📦 Combo Package CC Staff Recognition Invariants (`order_service_combo` JOIN Rule)
+
+1. **Cột NULL trên `order_service_combo`**: Bảng `order_service_combo` có chứa `check_in_staff_id` và `check_out_staff_id`, nhưng **99.3% các dòng dữ liệu trong DB legacy nhận giá trị `NULL`**.
+2. **Quy tắc JOIN bắt buộc**: Tất cả các truy vấn SQL / Prisma tính toán doanh số Combo, chia thưởng CC 50/50 hay phân bổ KPI Combo **bắt buộc phải `JOIN order_service os ON os.id = osc.order_service_id`** và lấy `os.check_in_staff_id`, `os.check_out_staff_id` từ `order_service`.
+3. **Tuyệt đối KHÔNG**: Tuyệt đối không đọc `osc.check_in_staff_id` hoặc `osc.check_out_staff_id` trực tiếp từ `order_service_combo`, tránh làm rụng logic chia 50/50 khi 2 CC khác nhau thực hiện Check-in / Check-out.
+
+---
+
 # 🎯 LoCa Campaign Customer Care Touchpoint Schedule Rules (Quy tắc Mốc Chạm CSKH LoCa)
 
 1. **Mục tiêu chiến dịch LoCa**: Chăm sóc đặc biệt dành cho khách hàng đã mua Combo Live để hỗ trợ họ sử dụng hết các lượt nối/dặm trong gói và tiếp tục tái sử dụng dịch vụ tại salon.
@@ -491,7 +519,6 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 3. **Example**:
    ```typescript
    import { ColumnsType } from 'antd/es/table';
-
    export const getColumns = (...): ColumnsType<MyDataType> => [
      {
        title: 'Số tiền',
@@ -503,13 +530,18 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
    ];
    ```
 
+---
 
+# 📱 MOS API vs. iOS App API Data Reconciliation & Presentation Invariants
 
-
-
-
-
-
+1. **Phân biệt Dữ liệu CSDL Thô vs Giao diện iOS App UI**:
+   - Khi truy vấn CSDL legacy thô (`staff_bonus`), cột `date_created` chứa dấu thời gian rạng sáng/nửa đêm (`23:59:59` hoặc `02:00:00` ngày $D+1$) do script batch cronjob chốt sổ (`OrderRegenerationService.php`) tạo ra. Tuyệt đối không dùng `WHERE DATE(sb.date_created) = date` khi so sánh dữ liệu hiển thị trên giao diện iOS.
+   - **Giao diện iOS App UI** (màn hình `ClientConsultantHomeVC` / API `/staff/client-consultant/bonus`) hiển thị và gom nhóm ca làm việc theo ngày thực tế **`booking_date_start` (`ReportOrder.date`)** — chính là thời điểm dịch vụ ($D$).
+2. **Quy trình Đối chiếu Chuẩn (Reconciliation Workflow)**:
+   - Khi so sánh kết quả giữa MOS API (`GET /api/gamification/daily-sales-bonus/consultant`) và iOS App API:
+     - **Khớp mốc ngày hiển thị UI**: Luôn gom nhóm các bản ghi thưởng legacy theo ngày làm việc thực tế `DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))`.
+     - **Gộp bản ghi thưởng lẻ/chia 50/50**: Hệ thống legacy có thể sinh ra nhiều dòng `staff_bonus` lẻ cho cùng 1 ca/ngày do điều kiện chia 50/50 CC IN != CC OUT hoặc thưởng điều chỉnh. Cần `SUM(sb.bonus_amount)` theo `service_date` trước khi so sánh với `daily_bonus` của MOS API.
+     - **Kiểm thử trực tiếp Localhost**: Truy vấn trực tiếp local PHP endpoints qua HTTP (`POST http://127.0.0.1:80/1/staff/client-consultant/report` & `/1/staff/client-consultant/bonus` kèm `login_token`) để verify dữ liệu phản hồi thực tế của iOS App.
 
 
 

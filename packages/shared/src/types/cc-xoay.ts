@@ -28,6 +28,13 @@ export interface CcXoayRecord {
   color: string;
   colorPts: number;
   falRule?: string;
+
+  // 1.5x Wheel Bonus Cap fields
+  monthlyDailyBonus?: number;
+  monthlyWheelBonus?: number;
+  maxWheelBonusAllowed?: number;
+  wheelCapPercent?: number;
+  capStatus?: 'NORMAL' | 'WARNING' | 'HARDCAPPED';
 }
 
 export interface CcLeaderboardEntry {
@@ -44,6 +51,13 @@ export interface CcLeaderboardEntry {
   totalPointsAccu: number;
   totalConsultantBonus: number;
   targetCompletionRate: number;
+
+  // 1.5x Wheel Bonus Cap fields
+  monthlyDailyBonus?: number;
+  monthlyWheelBonus?: number;
+  maxWheelBonusAllowed?: number;
+  wheelCapPercent?: number;
+  capStatus?: 'NORMAL' | 'WARNING' | 'HARDCAPPED';
 }
 
 export interface CcXoayReportResponse {

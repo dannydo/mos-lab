@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { CcPaystubRecord, CcPaystubResponse, SafeAny } from '@mos-lab/shared';
+import { CcPaystubRecord, CcPaystubResponse, SafeAny, calculateWheelBonusCap } from '@mos-lab/shared';
 import { CcKpiService } from '../services/cc-kpi.service.js';
 import { TeamService } from '../../teams/team.service.js';
 
@@ -122,76 +122,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         GROUP BY staff_id
       `;
 
-      // 5. Query Daily Sales Bonus (Combo & Product rewards)
-      const staffExprOsc = `COALESCE(
-        osc.check_in_staff_id,
-        osc.check_out_staff_id,
-        (SELECT os2.check_in_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.check_in_staff_id IS NOT NULL LIMIT 1),
-        (SELECT os2.check_out_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.check_out_staff_id IS NOT NULL LIMIT 1),
-        (SELECT os2.assigned_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.assigned_staff_id IS NOT NULL LIMIT 1),
-        o.assigned_staff_id,
-        o.created_staff_id
-      )`;
-
-      const comboSalesQuery = `
-        SELECT 
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
-          ${staffExprOsc} as staff_id,
-          SUM(osc.service_price - osc.discount_amount) as combo_sales,
-          SUM(osc.quantity) as combo_count
-        FROM \`order\` o
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        JOIN \`order_service_combo\` osc ON osc.order_id = o.id
-        WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
-          AND ${staffExprOsc} IN (${validStaffListStr})
-          ${storeFilterClause}
-        GROUP BY sale_date, staff_id
-      `;
-
-      const staffExprOp = `COALESCE(
-        op.created_staff_id,
-        (SELECT os2.check_in_staff_id FROM \`order_service\` os2 WHERE os2.order_id = op.order_id AND os2.check_in_staff_id IS NOT NULL LIMIT 1),
-        o.assigned_staff_id,
-        o.created_staff_id
-      )`;
-
-      const productSalesQuery = `
-        SELECT 
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
-          ${staffExprOp} as staff_id,
-          SUM(op.total_price) as product_sales,
-          SUM(op.quantity) as product_count
-        FROM \`order\` o
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        JOIN \`order_product\` op ON op.order_id = o.id
-        WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
-          AND ${staffExprOp} IN (${validStaffListStr})
-          ${storeFilterClause}
-        GROUP BY sale_date, staff_id
-      `;
-
-      // 6. Query Debt Payments collected
-      const debtPaymentSalesQuery = `
-        SELECT 
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
-          ${staffExprOp} as staff_id,
-          SUM(o.total_price) as debt_collected
-        FROM \`order\` o
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        JOIN \`order_product\` op ON op.order_id = o.id
-        WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
-          AND ${staffExprOp} IN (${validStaffListStr})
-          ${storeFilterClause}
-        GROUP BY sale_date, staff_id
-      `;
-
-      // 7. Query CC Tip Bonus (20% share from staff_tip for completed orders)
+      // 5. Query CC Tip Bonus (20% share from staff_tip for completed orders)
       const ccTipBonusQuery = `
         SELECT 
           st.user_id as staff_id,
@@ -207,25 +138,15 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         GROUP BY st.user_id
       `;
 
-      const [
-        hourlyRatesRows,
-        shiftsRows,
-        workDaysRows,
-        xoayReportResult,
-        comboSalesRows,
-        productSalesRows,
-        debtPaymentRows,
-        ccTipRows,
-      ] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(shiftsQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(workDaysQuery),
-        CcKpiService.getCcXoayReport(fastify, { dateFrom: startPart, dateTo: endPart, storeId }),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSalesQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productSalesQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(debtPaymentSalesQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(ccTipBonusQuery),
-      ]);
+      const [hourlyRatesRows, shiftsRows, workDaysRows, xoayReportResult, dailySalesResult, ccTipRows] =
+        await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(shiftsQuery),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(workDaysQuery),
+          CcKpiService.getCcXoayReport(fastify, { dateFrom: startPart, dateTo: endPart, storeId, limit: 999999 }),
+          CcKpiService.getCcDailySalesBonus(fastify, { dateFrom: startPart, dateTo: endPart, storeId }),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(ccTipBonusQuery),
+        ]);
 
       const ccTipMap = new Map<number, { bonus: number; count: number }>();
       ccTipRows.forEach((r) =>
@@ -250,7 +171,6 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       workDaysRows.forEach((r) => workDaysMap.set(Number(r.staff_id), Number(r.active_days || 0)));
 
       const xoayMap = new Map<number, { count: number; bonus: number }>();
-
       if (xoayReportResult && Array.isArray(xoayReportResult.data)) {
         xoayReportResult.data.forEach((r: SafeAny) => {
           const uid = Number(r.consultantId || r.check_in_staff_id || r.check_out_staff_id);
@@ -260,75 +180,30 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
             }
             const stat = xoayMap.get(uid)!;
             stat.count += 1;
-            stat.bonus += Number(r.consultantBonus || 0);
+            stat.bonus += Math.round(Number(r.consultantBonus || 0));
           }
         });
       }
 
-      // Compute Daily Sales Bonus per staff per day
-      const dailySalesMap = new Map<
-        string,
-        { comboSales: number; comboCount: number; productSales: number; productCount: number; debtCollected: number }
-      >();
-      const getOrCreateDaily = (d: string, uid: number) => {
-        const key = `${d}_${uid}`;
-        if (!dailySalesMap.has(key)) {
-          dailySalesMap.set(key, { comboSales: 0, comboCount: 0, productSales: 0, productCount: 0, debtCollected: 0 });
-        }
-        return dailySalesMap.get(key)!;
-      };
-
-      comboSalesRows.forEach((r) => {
-        const item = getOrCreateDaily(r.sale_date, Number(r.staff_id));
-        item.comboSales += Number(r.combo_sales || 0);
-        item.comboCount += Number(r.combo_count || 0);
-      });
-
-      productSalesRows.forEach((r) => {
-        const item = getOrCreateDaily(r.sale_date, Number(r.staff_id));
-        item.productSales += Number(r.product_sales || 0);
-        item.productCount += Number(r.product_count || 0);
-      });
-
-      debtPaymentRows.forEach((r) => {
-        const item = getOrCreateDaily(r.sale_date, Number(r.staff_id));
-        item.debtCollected += Number(r.debt_collected || 0);
-      });
-
-      const getTierRate = (sales: number) => {
-        if (sales >= 20000000) return 2.5;
-        if (sales >= 15000000) return 2.0;
-        if (sales >= 10000000) return 1.5;
-        if (sales >= 5000000) return 1.0;
-        return 0.5;
-      };
-
+      // Compute Daily Sales Bonus per staff from CcKpiService (Single Source of Truth)
       const staffDailyBonusTotals = new Map<number, { bonus: number; comboQty: number; productQty: number }>();
       validStaffIds.forEach((id) => staffDailyBonusTotals.set(id, { bonus: 0, comboQty: 0, productQty: 0 }));
 
-      dailySalesMap.forEach((val, key) => {
-        const uid = Number(key.split('_')[1]);
-        const totalSales = Math.round(val.comboSales + val.productSales + val.debtCollected);
-        const rate = getTierRate(totalSales);
-        const bonus = Math.round((totalSales * rate) / 100);
-
-        const rec = staffDailyBonusTotals.get(uid);
-        if (rec) {
-          rec.bonus += bonus;
-          rec.comboQty += val.comboCount;
-          rec.productQty += val.productCount;
-        }
-      });
+      if (dailySalesResult && Array.isArray(dailySalesResult.data)) {
+        dailySalesResult.data.forEach((r: SafeAny) => {
+          const uid = Number(r.user_id);
+          if (staffDailyBonusTotals.has(uid)) {
+            const item = staffDailyBonusTotals.get(uid)!;
+            item.bonus += Math.round(Number(r.daily_bonus || 0));
+            item.comboQty += Number(r.combo_count || 0);
+            item.productQty += Number(r.product_count || 0);
+          }
+        });
+      }
 
       // Minigame bonus scaling map
-      const _minigameBaseMap = new Map<number, number>([
-        [37790, 1500000], // Diễm Hương
-        [34295, 1200000], // Thục Nghi
-        [46092, 1000000], // Quang Khải CC
-        [51659, 800000], // Sinh Nguyên CC
-        [48026, 800000], // Yến Vy
-        [48997, 300000], // Giang
-      ]);
+      // Minigame chưa có — set 0 cho tất cả CC
+      const _minigameBaseMap = new Map<number, number>();
 
       let summaryHourly = 0;
       let summaryXoay = 0;
@@ -356,7 +231,12 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
 
         const xoayInfo = xoayMap.get(uid) || { count: 0, bonus: 0 };
         const dailyBonusInfo = staffDailyBonusTotals.get(uid) || { bonus: 0, comboQty: 0, productQty: 0 };
-        const minigameBonus = 0; // Temporarily 0 as requested until minigame config is added
+
+        // Calculate 1.5x Wheel / Minigame Bonus Cap per CC
+        const rawMinigameBonus = _minigameBaseMap.get(uid) || 0;
+        const capResult = calculateWheelBonusCap(dailyBonusInfo.bonus, rawMinigameBonus);
+        const minigameBonus = capResult.effectiveWheelBonus;
+
         const ccTipInfo = ccTipMap.get(uid) || { bonus: 0, count: 0 };
         const ccTipBonus = ccTipInfo.bonus;
 
@@ -382,6 +262,11 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           comboCount: dailyBonusInfo.comboQty,
           productCount: dailyBonusInfo.productQty,
           minigameBonus,
+          rawMinigameBonus: capResult.rawWheelBonus,
+          monthlyDailyBonus: capResult.monthlyDailyBonus,
+          maxWheelBonusAllowed: capResult.maxWheelBonusAllowed,
+          wheelCapPercent: capResult.wheelCapPercent,
+          capStatus: capResult.capStatus,
           ccTipBonus,
           tippedVisitsCount: ccTipInfo.count,
           totalIncome,

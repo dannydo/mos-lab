@@ -43,6 +43,7 @@ import {
 import { apiClient } from '../../../../lib/api-client';
 import dayjs from 'dayjs';
 import CcAvatar from './CcAvatar';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const { Text } = Typography;
 
@@ -61,6 +62,8 @@ interface CcThuNhapTabProps {
 
 export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabProps) {
   const { token } = theme.useToken();
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
   const [loading, setLoading] = useState(false);
   const [paystubData, setPaystubData] = useState<CcPaystubRecord[]>([]);
   const [summary, setSummary] = useState({
@@ -322,6 +325,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       key: 'displayName',
       width: 240,
       render: (name: string, record: CcPaystubRecord, index: number) => {
+        const isPxl = record.store === 'PXL';
         return (
           <Space
             className="group cursor-pointer"
@@ -344,7 +348,27 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               <div className="font-bold text-sm" style={{ color: token.colorText }}>
                 {name}
               </div>
-              <Tag color={record.store === 'PXL' ? 'blue' : 'purple'} className="text-[10px] m-0">
+              <Tag
+                style={{
+                  background: isPxl
+                    ? isDark
+                      ? 'rgba(59, 130, 246, 0.2)'
+                      : '#e6f7ff'
+                    : isDark
+                      ? 'rgba(168, 85, 247, 0.2)'
+                      : '#f9f0ff',
+                  borderColor: isPxl
+                    ? isDark
+                      ? 'rgba(59, 130, 246, 0.4)'
+                      : '#91d5ff'
+                    : isDark
+                      ? 'rgba(168, 85, 247, 0.4)'
+                      : '#d3ade6',
+                  color: isPxl ? (isDark ? '#60a5fa' : '#096dd9') : isDark ? '#c084fc' : '#722ed1',
+                  fontWeight: 600,
+                }}
+                className="text-[10px] m-0 border"
+              >
                 CN: {record.store}
               </Tag>
             </div>
@@ -376,14 +400,20 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                 }
               }}
             >
-              <div className="tabular-nums font-bold text-blue-500 text-sm group-hover:underline underline-offset-2">
+              <div
+                className={`tabular-nums font-bold text-sm group-hover:underline underline-offset-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+              >
                 +{Math.round(val || 0).toLocaleString('vi-VN')} đ
               </div>
-              <div className="text-[11px] text-gray-400 tabular-nums flex items-center justify-end gap-1">
+              <div
+                className={`text-[11px] tabular-nums flex items-center justify-end gap-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}
+              >
                 <span>
                   ({formatHoursToHoursMinutes(record.totalWorkHours, true)} @ {Math.round(rate / 1000)}k/h)
                 </span>
-                <EyeOutlined className="text-[10px] text-blue-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+                <EyeOutlined
+                  className={`text-[10px] opacity-75 group-hover:opacity-100 transition-opacity ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                />
               </div>
             </div>
           </Tooltip>
@@ -410,12 +440,18 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               }
             }}
           >
-            <div className="tabular-nums font-bold text-purple-500 text-sm group-hover:underline underline-offset-2">
+            <div
+              className={`tabular-nums font-bold text-sm group-hover:underline underline-offset-2 ${isDark ? 'text-purple-300' : 'text-purple-600'}`}
+            >
               +{Math.round(val || 0).toLocaleString('vi-VN')} đ
             </div>
-            <div className="text-[11px] text-gray-400 tabular-nums flex items-center justify-end gap-1">
+            <div
+              className={`text-[11px] tabular-nums flex items-center justify-end gap-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}
+            >
               <span>({record.checkinCount} lượt)</span>
-              <EyeOutlined className="text-[10px] text-purple-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+              <EyeOutlined
+                className={`text-[10px] opacity-75 group-hover:opacity-100 transition-opacity ${isDark ? 'text-purple-300' : 'text-purple-600'}`}
+              />
             </div>
           </div>
         </Tooltip>
@@ -429,10 +465,10 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       render: (val: number, record: CcPaystubRecord) => (
         <Tooltip title={`${record.comboCount} combo + ${record.productCount} sản phẩm`}>
           <div className="text-right">
-            <span className="tabular-nums font-bold text-emerald-500 text-sm">
+            <span className={`tabular-nums font-bold text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
               +{Math.round(val || 0).toLocaleString('vi-VN')} đ
             </span>
-            <div className="text-[11px] text-gray-400 tabular-nums">
+            <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
               ({record.comboCount} combo / {record.productCount} SP)
             </div>
           </div>
@@ -447,10 +483,12 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       render: (val: number, record: CcPaystubRecord) => (
         <Tooltip title={`Nhận 20% tiền tip từ ${record.tippedVisitsCount || 0} lượt khách`}>
           <div className="text-right">
-            <span className="tabular-nums font-bold text-amber-500 text-sm">
+            <span className={`tabular-nums font-bold text-sm ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>
               +{Math.round(val || 0).toLocaleString('vi-VN')} đ
             </span>
-            <div className="text-[11px] text-gray-400 tabular-nums">({record.tippedVisitsCount || 0} ca tip)</div>
+            <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+              ({record.tippedVisitsCount || 0} ca tip)
+            </div>
           </div>
         </Tooltip>
       ),
@@ -463,10 +501,12 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       render: (val: number, record: CcPaystubRecord) => (
         <Tooltip title={`Giới thiệu ${record.diamondCount || 0} khách hàng mới`}>
           <div className="text-right">
-            <span className="tabular-nums font-bold text-cyan-500 text-sm">
+            <span className={`tabular-nums font-bold text-sm ${isDark ? 'text-cyan-300' : 'text-cyan-600'}`}>
               +{Math.round(val || 0).toLocaleString('vi-VN')} đ
             </span>
-            <div className="text-[11px] text-gray-400 tabular-nums">({record.diamondCount || 0} khách 💎)</div>
+            <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+              ({record.diamondCount || 0} khách 💎)
+            </div>
           </div>
         </Tooltip>
       ),
@@ -477,7 +517,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       key: 'minigameBonus',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-amber-500 text-sm">
+        <span className={`tabular-nums font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
           +{Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
@@ -488,7 +528,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       key: 'totalIncome',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-extrabold text-amber-500 text-base">
+        <span className={`tabular-nums font-extrabold text-base ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>
           {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
@@ -565,7 +605,11 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               value={summary.totalHourlyWage}
               suffix="đ"
               precision={0}
-              valueStyle={{ fontSize: '15px', color: '#1890ff', fontVariantNumeric: 'tabular-nums' }}
+              valueStyle={{
+                fontSize: '15px',
+                color: isDark ? '#60a5fa' : '#1890ff',
+                fontVariantNumeric: 'tabular-nums',
+              }}
               prefix={<ClockCircleOutlined />}
             />
           </Card>
@@ -581,7 +625,11 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               value={summary.totalCcXoayBonus}
               suffix="đ"
               precision={0}
-              valueStyle={{ fontSize: '15px', color: '#722ed1', fontVariantNumeric: 'tabular-nums' }}
+              valueStyle={{
+                fontSize: '15px',
+                color: isDark ? '#c084fc' : '#722ed1',
+                fontVariantNumeric: 'tabular-nums',
+              }}
               prefix={<ThunderboltOutlined />}
             />
           </Card>
@@ -597,7 +645,11 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               value={summary.totalComboProductBonus}
               suffix="đ"
               precision={0}
-              valueStyle={{ fontSize: '15px', color: '#52c41a', fontVariantNumeric: 'tabular-nums' }}
+              valueStyle={{
+                fontSize: '15px',
+                color: isDark ? '#4ade80' : '#52c41a',
+                fontVariantNumeric: 'tabular-nums',
+              }}
               prefix={<GiftOutlined />}
             />
           </Card>
@@ -613,7 +665,11 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               value={summary.totalCcTipBonus}
               suffix="đ"
               precision={0}
-              valueStyle={{ fontSize: '15px', color: '#d4a84b', fontVariantNumeric: 'tabular-nums' }}
+              valueStyle={{
+                fontSize: '15px',
+                color: isDark ? '#fbbf24' : '#d4a84b',
+                fontVariantNumeric: 'tabular-nums',
+              }}
               prefix={<DollarOutlined />}
             />
           </Card>
@@ -629,13 +685,21 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               value={summary.totalMinigameBonus}
               suffix="đ"
               precision={0}
-              valueStyle={{ fontSize: '15px', color: '#faad14', fontVariantNumeric: 'tabular-nums' }}
+              valueStyle={{
+                fontSize: '15px',
+                color: isDark ? '#fde047' : '#d97706',
+                fontVariantNumeric: 'tabular-nums',
+              }}
               prefix={<TrophyOutlined />}
             />
           </Card>
         </Col>
         <Col xs={12} sm={8} lg={4}>
-          <Card size="small" variant="outlined" style={{ background: token.colorBgContainer, borderColor: '#d4a84b' }}>
+          <Card
+            size="small"
+            variant="outlined"
+            style={{ background: token.colorBgContainer, borderColor: isDark ? '#fbbf24' : '#d4a84b' }}
+          >
             <Statistic
               title="Tổng Thu Nhập Tất Cả CC"
               value={summary.grandTotalIncome}
@@ -643,7 +707,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               precision={0}
               valueStyle={{
                 fontSize: '15px',
-                color: '#d4a84b',
+                color: isDark ? '#fde047' : '#d4a84b',
                 fontWeight: 'bold',
                 fontVariantNumeric: 'tabular-nums',
               }}
@@ -666,7 +730,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
 
             <Input
               placeholder="Tìm tên CC, chi nhánh..."
-              prefix={<SearchOutlined className="text-gray-400" />}
+              prefix={<SearchOutlined className={isDark ? 'text-slate-400' : 'text-slate-500'} />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 220 }}
@@ -676,7 +740,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
           </div>
         }
         variant="outlined"
-        style={{ background: token.colorBgContainer, borderColor: '#d4a84b' }}
+        style={{ background: token.colorBgContainer, borderColor: isDark ? '#fbbf24' : '#d4a84b' }}
         styles={{ body: { padding: 0 } }}
         className="full-bleed-card shadow-sm rounded-xl"
       >
@@ -696,14 +760,14 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
 
         <div className="flex justify-between items-center px-4 flex-wrap gap-4">
           <div>
-            <Text type="secondary" className="text-xs font-semibold">
+            <Text className={`text-xs font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               TỔNG THU NHẬP TẠM TÍNH (LIVE SALARY):
             </Text>
-            <div className="text-xs text-gray-400">
+            <div className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
               💡 Mẹo: Click vào cột Lương Giờ để xem Báo cáo Ca làm việc IN/OUT chi tiết theo từng ngày.
             </div>
           </div>
-          <div className="tabular-nums text-2xl font-extrabold text-amber-500">
+          <div className={`tabular-nums text-2xl font-extrabold ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>
             {Math.round(summary.grandTotalIncome || 0).toLocaleString('vi-VN')} đ
           </div>
         </div>
@@ -871,7 +935,11 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                   title="Tổng Ngày Đi Làm"
                   value={workLogSummary.totalWorkDays}
                   suffix="ngày"
-                  valueStyle={{ fontSize: '15px', color: '#1890ff', fontVariantNumeric: 'tabular-nums' }}
+                  valueStyle={{
+                    fontSize: '15px',
+                    color: isDark ? '#60a5fa' : '#1890ff',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
                   prefix={<CalendarOutlined />}
                 />
               </Card>
@@ -881,7 +949,11 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                 <Statistic
                   title="Tổng Số Giờ Làm"
                   value={formatHoursToHoursMinutes(workLogSummary.totalWorkHours)}
-                  valueStyle={{ fontSize: '15px', color: '#722ed1', fontVariantNumeric: 'tabular-nums' }}
+                  valueStyle={{
+                    fontSize: '15px',
+                    color: isDark ? '#c084fc' : '#722ed1',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
                   prefix={<ClockCircleOutlined />}
                 />
               </Card>
@@ -892,13 +964,17 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                   title="Đơn Giá Lương Giờ"
                   value={workLogSummary.hourlyRate}
                   suffix="đ/h"
-                  valueStyle={{ fontSize: '15px', color: '#52c41a', fontVariantNumeric: 'tabular-nums' }}
+                  valueStyle={{
+                    fontSize: '15px',
+                    color: isDark ? '#4ade80' : '#52c41a',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
                   prefix={<DollarOutlined />}
                 />
               </Card>
             </Col>
             <Col span={6}>
-              <Card size="small" variant="outlined" style={{ borderColor: '#1890ff' }}>
+              <Card size="small" variant="outlined" style={{ borderColor: isDark ? '#60a5fa' : '#1890ff' }}>
                 <Statistic
                   title="Tổng Lương Giờ Nhận"
                   value={workLogSummary.totalWage}
@@ -906,7 +982,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                   precision={0}
                   valueStyle={{
                     fontSize: '15px',
-                    color: '#1890ff',
+                    color: isDark ? '#60a5fa' : '#1890ff',
                     fontVariantNumeric: 'tabular-nums',
                     fontWeight: 'bold',
                   }}
@@ -977,7 +1053,9 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                 align: 'right' as const,
                 width: 140,
                 render: (val: number) => (
-                  <span className="tabular-nums font-bold text-blue-500">{formatHoursToHoursMinutes(val)}</span>
+                  <span className={`tabular-nums font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                    {formatHoursToHoursMinutes(val)}
+                  </span>
                 ),
               },
               {
@@ -987,7 +1065,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                 align: 'right' as const,
                 width: 150,
                 render: (val: number) => (
-                  <span className="tabular-nums font-bold text-emerald-500">
+                  <span className={`tabular-nums font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                     +{Math.round(val || 0).toLocaleString('vi-VN')} đ
                   </span>
                 ),
@@ -1028,7 +1106,11 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                       title="Tổng Lượt Check-in"
                       value={ccXoaySummary.totalCheckins}
                       suffix="lượt"
-                      valueStyle={{ fontSize: '15px', color: '#722ed1', fontVariantNumeric: 'tabular-nums' }}
+                      valueStyle={{
+                        fontSize: '15px',
+                        color: isDark ? '#c084fc' : '#722ed1',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
                       prefix={<CalendarOutlined />}
                     />
                   </Card>
@@ -1039,13 +1121,17 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                       title="Tổng Điểm Tích Lũy"
                       value={ccXoaySummary.totalPoints}
                       suffix="pts"
-                      valueStyle={{ fontSize: '15px', color: '#1890ff', fontVariantNumeric: 'tabular-nums' }}
+                      valueStyle={{
+                        fontSize: '15px',
+                        color: isDark ? '#60a5fa' : '#1890ff',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
                       prefix={<TrophyOutlined />}
                     />
                   </Card>
                 </Col>
                 <Col span={8}>
-                  <Card size="small" variant="outlined" style={{ borderColor: '#722ed1' }}>
+                  <Card size="small" variant="outlined" style={{ borderColor: isDark ? '#c084fc' : '#722ed1' }}>
                     <Statistic
                       title="Tổng Thưởng CC Xoay"
                       value={ccXoaySummary.totalBonus}
@@ -1053,7 +1139,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                       precision={0}
                       valueStyle={{
                         fontSize: '15px',
-                        color: '#722ed1',
+                        color: isDark ? '#c084fc' : '#722ed1',
                         fontVariantNumeric: 'tabular-nums',
                         fontWeight: 'bold',
                       }}

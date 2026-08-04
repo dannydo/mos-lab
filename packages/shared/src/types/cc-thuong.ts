@@ -32,6 +32,13 @@ export interface DailySalesBonusConsultantRecord {
   daily_bonus: number;
   green_visits?: number;
   total_visits?: number;
+
+  // 1.5x Wheel Bonus Cap fields
+  monthlyDailyBonus?: number;
+  monthlyWheelBonus?: number;
+  maxWheelBonusAllowed?: number;
+  wheelCapPercent?: number;
+  capStatus?: 'NORMAL' | 'WARNING' | 'HARDCAPPED';
 }
 
 export interface DailySalesBonusConsultantResponse {
@@ -67,6 +74,13 @@ export interface DailySalesBonusLeaderboardEntry {
   totalSales: number;
   totalBonus: number;
   targetCompletionRate: number;
+
+  // 1.5x Wheel Bonus Cap fields
+  monthlyDailyBonus?: number;
+  monthlyWheelBonus?: number;
+  maxWheelBonusAllowed?: number;
+  wheelCapPercent?: number;
+  capStatus?: 'NORMAL' | 'WARNING' | 'HARDCAPPED';
 }
 
 export interface DailySalesBonusTransaction {
@@ -78,7 +92,17 @@ export interface DailySalesBonusTransaction {
   item_title: string;
   item_type: 'Combo' | 'Product' | 'Service';
   payment_value: number;
+  gross_value?: number;
+  net_value?: number;
+  tax_amount?: number;
   recorded_bonus: number;
+  is_eligible?: boolean;
+  cc_in_name?: string | null;
+  cc_out_name?: string | null;
+  is_split?: boolean;
+  split_ratio?: number;
+  full_order_value?: number;
+  debt_amount?: number;
 }
 
 export interface DailySalesBonusQueryParams {

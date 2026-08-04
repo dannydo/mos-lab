@@ -40,6 +40,7 @@ import {
   removeVietnameseTones,
   calculateFractionToday,
   OPERATIONAL_SHIFT_SYSTEM_CONFIG,
+  calculateWheelBonusCap,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -63,6 +64,7 @@ interface CcThuongTabProps {
   dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
   selectedStore?: string;
   selectedConsultant?: string;
+  includeVat?: boolean;
   onSelectConsultant?: (consultantName: string) => void;
 }
 
@@ -71,10 +73,12 @@ export default function CcThuongTab({
   dateRange,
   selectedStore = 'ALL',
   selectedConsultant: parentSelectedConsultant,
+  includeVat = true,
   onSelectConsultant: parentOnSelectConsultant,
 }: CcThuongTabProps) {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<DailySalesBonusConsultantRecord[]>([]);
@@ -147,25 +151,63 @@ export default function CcThuongTab({
     fetchData();
   }, [dateRange, selectedStore]);
 
+  // Mapped Data based on includeVat (ON: Gross with 8% VAT, OFF: Net before 8% VAT)
+  const mappedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    return data.map((r) => {
+      if (!includeVat) {
+        // VAT OFF (Tắt VAT 8%): Use Net DB values directly from backend
+        return r;
+      }
+
+      // VAT ON (Bật VAT 8%): Multiply 1.08 for display sales columns (Gross with 8% VAT)
+      const combo_sales = Math.round((r.combo_sales || 0) * 1.08);
+      const product_sales = Math.round((r.product_sales || 0) * 1.08);
+      const single_sales = Math.round((r.single_sales || 0) * 1.08);
+      const debt_collected = Math.round((r.debt_collected || 0) * 1.08);
+      const total_sales = Math.round((r.total_sales || 0) * 1.08);
+
+      return {
+        ...r,
+        combo_sales,
+        product_sales,
+        single_sales,
+        debt_collected,
+        total_sales,
+        // Keep daily_bonus unchanged as it is calculated on Net sales
+      };
+    });
+  }, [data, includeVat]);
+
   // Aggregate Top KPI Cards (Prioritize Fastify backend summary calculation)
   const totalComboSales = useMemo(() => {
-    return summary?.totalComboSales ?? data.reduce((acc, curr) => acc + (curr.combo_sales || 0), 0);
-  }, [summary, data]);
+    return mappedData.reduce((acc, curr) => acc + (curr.combo_sales || 0), 0);
+  }, [mappedData]);
 
   const totalProductSales = useMemo(() => {
-    return (
-      summary?.totalProductSales ??
-      data.reduce((acc, curr) => acc + (curr.product_sales || 0) + (curr.single_sales || 0), 0)
-    );
-  }, [summary, data]);
+    return mappedData.reduce((acc, curr) => acc + (curr.product_sales || 0), 0);
+  }, [mappedData]);
 
+  const totalSingleSales = useMemo(() => {
+    return mappedData.reduce((acc, curr) => acc + (curr.single_sales || 0), 0);
+  }, [mappedData]);
+
+  // totalSales = Total Revenue for display (includes all categories)
   const totalSales = useMemo(() => {
-    return summary?.totalSales ?? totalComboSales + totalProductSales;
-  }, [summary, totalComboSales, totalProductSales]);
+    return mappedData.reduce(
+      (acc, curr) =>
+        acc +
+        (curr.combo_sales || 0) +
+        (curr.product_sales || 0) +
+        (curr.single_sales || 0) +
+        (curr.debt_collected || 0),
+      0
+    );
+  }, [mappedData]);
 
   const totalCcBonus = useMemo(() => {
-    return summary?.totalCcBonus ?? data.reduce((acc, curr) => acc + (curr.daily_bonus || 0), 0);
-  }, [summary, data]);
+    return mappedData.reduce((acc, curr) => acc + (curr.daily_bonus || 0), 0);
+  }, [mappedData]);
 
   // Realtime shift Run-rate Elapsed Ratio & Forecasts
   const elapsedRatioPercent = useMemo(() => {
@@ -247,7 +289,7 @@ export default function CcThuongTab({
       });
     });
 
-    data.forEach((r) => {
+    mappedData.forEach((r) => {
       if (!map.has(r.user_id)) {
         map.set(r.user_id, {
           consultantId: r.user_id,
@@ -301,11 +343,11 @@ export default function CcThuongTab({
         targetCompletionRate: Math.min(100, Math.round((item.totalBonus / (maxBonus || 1)) * 100)),
       };
     });
-  }, [data, activeStaff]);
+  }, [mappedData, activeStaff]);
 
   // Level 2: Filtered Daily Records Table
   const filteredDailyData = useMemo(() => {
-    let result = data;
+    let result = mappedData;
 
     if (selectedCcName) {
       result = result.filter((r) => r.consultant_name === selectedCcName);
@@ -322,7 +364,7 @@ export default function CcThuongTab({
     }
 
     return result;
-  }, [data, selectedCcName, searchText]);
+  }, [mappedData, selectedCcName, searchText]);
 
   // Level 1 Columns: Leaderboard
   const leaderboardColumns = [
@@ -471,21 +513,62 @@ export default function CcThuongTab({
       title: 'Thưởng CC Bonus & Tiến Độ',
       dataIndex: 'totalBonus',
       key: 'totalBonus',
-      width: 200,
+      width: 210,
       align: 'right' as const,
-      render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
-        <div className="w-full text-right">
-          <div className="tabular-nums font-bold text-emerald-400 text-sm">
-            +{Math.round(val || 0).toLocaleString('vi-VN')} đ
-          </div>
-          <Progress
-            percent={record.targetCompletionRate}
-            size="small"
-            strokeColor={record.targetCompletionRate >= 80 ? '#52c41a' : '#faad14'}
-            className="m-0"
-          />
-        </div>
-      ),
+      render: (val: number, record: DailySalesBonusLeaderboardEntry) => {
+        const capInfo = calculateWheelBonusCap(val, record.monthlyWheelBonus || 0);
+        const isHardcapped = capInfo.capStatus === 'HARDCAPPED';
+        const isWarning = capInfo.capStatus === 'WARNING';
+
+        return (
+          <Tooltip
+            title={
+              <div>
+                <div className="font-bold text-amber-300">📊 TIẾN ĐỘ & HẠN MỨC THƯỞNG</div>
+                <div className="text-xs mt-1">
+                  • CC Daily Bonus tháng: <strong>{Math.round(val || 0).toLocaleString('vi-VN')} đ</strong>
+                </div>
+                <div className="text-xs">
+                  • Hạn mức Vòng xoay tối đa (1.5x):{' '}
+                  <strong className="text-emerald-300">{capInfo.maxWheelBonusAllowed.toLocaleString('vi-VN')} đ</strong>
+                </div>
+                {isHardcapped && (
+                  <div className="text-xs text-rose-300 font-bold mt-1">⛔ ĐÃ ĐẠT TRẦN THƯỞNG VÒNG XOAY 1.5X</div>
+                )}
+                {isWarning && (
+                  <div className="text-xs text-amber-300 font-bold mt-1">
+                    ⚠️ SẮP CHẠM TRẦN ({capInfo.wheelCapPercent}%)
+                  </div>
+                )}
+              </div>
+            }
+          >
+            <div className="w-full text-right cursor-help">
+              <div className="flex items-center justify-end gap-1.5">
+                <span className="tabular-nums font-bold text-emerald-400 text-sm">
+                  +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+                </span>
+                {isHardcapped && (
+                  <Tag color="error" className="m-0 text-[10px] font-bold py-0 px-1">
+                    ⛔ 1.5X
+                  </Tag>
+                )}
+                {isWarning && (
+                  <Tag color="warning" className="m-0 text-[10px] font-bold py-0 px-1">
+                    ⚠️ {capInfo.wheelCapPercent}%
+                  </Tag>
+                )}
+              </div>
+              <Progress
+                percent={record.targetCompletionRate}
+                size="small"
+                strokeColor={isHardcapped ? '#ff4d4f' : isWarning ? '#faad14' : '#52c41a'}
+                className="m-0 mt-0.5"
+              />
+            </div>
+          </Tooltip>
+        );
+      },
     },
   ];
 
@@ -676,7 +759,11 @@ export default function CcThuongTab({
               value={totalComboSales}
               suffix="đ"
               precision={0}
-              valueStyle={{ color: '#1890ff', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
+              valueStyle={{
+                color: isDark ? '#60a5fa' : '#1890ff',
+                fontVariantNumeric: 'tabular-nums',
+                fontWeight: 'bold',
+              }}
               prefix={<GiftOutlined />}
             />
             {renderForecastSubtext(projectedComboSales)}
@@ -690,10 +777,14 @@ export default function CcThuongTab({
           >
             <Statistic
               title="Doanh Thu SP & DV Lẻ"
-              value={totalProductSales}
+              value={totalProductSales + totalSingleSales}
               suffix="đ"
               precision={0}
-              valueStyle={{ color: '#722ed1', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
+              valueStyle={{
+                color: isDark ? '#c084fc' : '#722ed1',
+                fontVariantNumeric: 'tabular-nums',
+                fontWeight: 'bold',
+              }}
               prefix={<ShoppingCartOutlined />}
             />
             {renderForecastSubtext(projectedProductSales)}
@@ -710,7 +801,11 @@ export default function CcThuongTab({
               value={totalSales}
               suffix="đ"
               precision={0}
-              valueStyle={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
+              valueStyle={{
+                color: isDark ? '#4ade80' : '#52c41a',
+                fontVariantNumeric: 'tabular-nums',
+                fontWeight: 'bold',
+              }}
               prefix={<RiseOutlined />}
             />
             {renderForecastSubtext(projectedTotalSales)}
@@ -891,6 +986,7 @@ export default function CcThuongTab({
         date={selectedTxDate}
         consultantId={selectedTxConsultantId}
         consultantName={selectedTxConsultantName}
+        includeVat={includeVat}
       />
     </div>
   );
