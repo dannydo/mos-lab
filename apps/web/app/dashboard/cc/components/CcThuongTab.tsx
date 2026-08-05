@@ -1,25 +1,11 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Card,
-  Table,
-  Tag,
-  Typography,
-  theme,
-  Row,
-  Col,
-  Statistic,
-  Button,
-  Space,
-  Progress,
-  Tooltip,
-  Input,
-  message,
-} from 'antd';
+import { Card, Table, Tag, Typography, theme, Statistic, Button, Space, Progress, Tooltip, Input, message } from 'antd';
 import {
   GiftOutlined,
   ShoppingCartOutlined,
+  SkinOutlined,
   DollarOutlined,
   RiseOutlined,
   TrophyOutlined,
@@ -240,6 +226,11 @@ export default function CcThuongTab({
     const ratio = (elapsedRatioPercent || 100) / 100;
     return Math.round(totalProductSales / (ratio || 1));
   }, [summary, totalProductSales, elapsedRatioPercent]);
+
+  const projectedSingleSales = useMemo(() => {
+    const ratio = (elapsedRatioPercent || 100) / 100;
+    return Math.round(totalSingleSales / (ratio || 1));
+  }, [totalSingleSales, elapsedRatioPercent]);
 
   const projectedTotalSales = useMemo(() => {
     if (summary?.projectedTotalSales !== undefined) return summary.projectedTotalSales;
@@ -746,102 +737,113 @@ export default function CcThuongTab({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 4 TOP KPI SUMMARY CARDS */}
-      <Row gutter={[16, 16]} className="mb-4">
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            variant="outlined"
-            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-            className="shadow-sm rounded-xl flex flex-col justify-between"
-          >
-            <Statistic
-              title="Doanh Thu Combo"
-              value={totalComboSales}
-              suffix="đ"
-              precision={0}
-              valueStyle={{
-                color: isDark ? '#60a5fa' : '#1890ff',
-                fontVariantNumeric: 'tabular-nums',
-                fontWeight: 'bold',
-              }}
-              prefix={<GiftOutlined />}
-            />
-            {renderForecastSubtext(projectedComboSales)}
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            variant="outlined"
-            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-            className="shadow-sm rounded-xl flex flex-col justify-between"
-          >
-            <Statistic
-              title="Doanh Thu SP & DV Lẻ"
-              value={totalProductSales + totalSingleSales}
-              suffix="đ"
-              precision={0}
-              valueStyle={{
-                color: isDark ? '#c084fc' : '#722ed1',
-                fontVariantNumeric: 'tabular-nums',
-                fontWeight: 'bold',
-              }}
-              prefix={<ShoppingCartOutlined />}
-            />
-            {renderForecastSubtext(projectedProductSales)}
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            variant="outlined"
-            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-            className="shadow-sm rounded-xl flex flex-col justify-between"
-          >
-            <Statistic
-              title="Tổng Doanh Thu"
-              value={totalSales}
-              suffix="đ"
-              precision={0}
-              valueStyle={{
-                color: isDark ? '#4ade80' : '#52c41a',
-                fontVariantNumeric: 'tabular-nums',
-                fontWeight: 'bold',
-              }}
-              prefix={<RiseOutlined />}
-            />
-            {renderForecastSubtext(projectedTotalSales)}
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            variant="outlined"
-            style={{ background: token.colorBgContainer, borderColor: '#d4a84b' }}
-            className="shadow-sm rounded-xl relative flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex justify-between items-start">
-                <Statistic
-                  title="Tổng Thưởng CC Bonus"
-                  value={totalCcBonus}
-                  suffix="đ"
-                  precision={0}
-                  valueStyle={{ color: '#d4a84b', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
-                  prefix={<DollarOutlined />}
+      {/* 5 TOP KPI SUMMARY CARDS */}
+      <div className="grid grid-cols-5 gap-3 mb-4 w-full">
+        <Card
+          variant="outlined"
+          style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+          className="shadow-sm rounded-xl flex flex-col justify-between min-w-0"
+        >
+          <Statistic
+            title="Doanh Thu Combo"
+            value={totalComboSales}
+            suffix="đ"
+            precision={0}
+            valueStyle={{
+              color: isDark ? '#60a5fa' : '#1890ff',
+              fontVariantNumeric: 'tabular-nums',
+              fontWeight: 'bold',
+            }}
+            prefix={<GiftOutlined />}
+          />
+          {renderForecastSubtext(projectedComboSales)}
+        </Card>
+        <Card
+          variant="outlined"
+          style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+          className="shadow-sm rounded-xl flex flex-col justify-between min-w-0"
+        >
+          <Statistic
+            title="Doanh Thu Sản Phẩm"
+            value={totalProductSales}
+            suffix="đ"
+            precision={0}
+            valueStyle={{
+              color: isDark ? '#c084fc' : '#722ed1',
+              fontVariantNumeric: 'tabular-nums',
+              fontWeight: 'bold',
+            }}
+            prefix={<ShoppingCartOutlined />}
+          />
+          {renderForecastSubtext(projectedProductSales)}
+        </Card>
+        <Card
+          variant="outlined"
+          style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+          className="shadow-sm rounded-xl flex flex-col justify-between min-w-0"
+        >
+          <Statistic
+            title="DV Bán Lẻ"
+            value={totalSingleSales}
+            suffix="đ"
+            precision={0}
+            valueStyle={{
+              color: isDark ? '#fb923c' : '#d46b08',
+              fontVariantNumeric: 'tabular-nums',
+              fontWeight: 'bold',
+            }}
+            prefix={<SkinOutlined />}
+          />
+          {renderForecastSubtext(projectedSingleSales)}
+        </Card>
+        <Card
+          variant="outlined"
+          style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+          className="shadow-sm rounded-xl flex flex-col justify-between min-w-0"
+        >
+          <Statistic
+            title="Tổng Doanh Thu"
+            value={totalSales}
+            suffix="đ"
+            precision={0}
+            valueStyle={{
+              color: isDark ? '#4ade80' : '#52c41a',
+              fontVariantNumeric: 'tabular-nums',
+              fontWeight: 'bold',
+            }}
+            prefix={<RiseOutlined />}
+          />
+          {renderForecastSubtext(projectedTotalSales)}
+        </Card>
+        <Card
+          variant="outlined"
+          style={{ background: token.colorBgContainer, borderColor: '#d4a84b' }}
+          className="shadow-sm rounded-xl relative flex flex-col justify-between min-w-0"
+        >
+          <div>
+            <div className="flex justify-between items-start">
+              <Statistic
+                title="Tổng Thưởng CC Bonus"
+                value={totalCcBonus}
+                suffix="đ"
+                precision={0}
+                valueStyle={{ color: '#d4a84b', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
+                prefix={<DollarOutlined />}
+              />
+              <Tooltip title="Cấu hình CC">
+                <Button
+                  type="primary"
+                  icon={<SettingOutlined />}
+                  size="small"
+                  onClick={() => setConfigModalOpen(true)}
+                  style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000', fontWeight: '600' }}
                 />
-                <Tooltip title="Cấu hình CC">
-                  <Button
-                    type="primary"
-                    icon={<SettingOutlined />}
-                    size="small"
-                    onClick={() => setConfigModalOpen(true)}
-                    style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000', fontWeight: '600' }}
-                  />
-                </Tooltip>
-              </div>
+              </Tooltip>
             </div>
-            {renderForecastSubtext(projectedCcBonus)}
-          </Card>
-        </Col>
-      </Row>
+          </div>
+          {renderForecastSubtext(projectedCcBonus)}
+        </Card>
+      </div>
 
       {/* LEVEL 1: CC LEADERBOARD */}
       <Card

@@ -11,21 +11,20 @@ async function getActiveCvIds(fastify: FastifyInstance): Promise<number[]> {
 export async function registerCvRoutes(fastify: FastifyInstance) {
   // GET /api/kpi/cv-xoay (Realtime technician report)
   fastify.get('/kpi/cv-xoay', { preHandler: [requireAuth] }, async (request, reply) => {
-    const {
-      dateFrom,
-      dateTo,
-      storeId,
-      consultantId,
-      page = 1,
-      limit = 100,
-    } = request.query as {
+    const queryParams = request.query as {
       dateFrom?: string;
       dateTo?: string;
       storeId?: string;
       consultantId?: string;
-      page?: number;
-      limit?: number;
+      page?: number | string;
+      limit?: number | string;
     };
+    const dateFrom = queryParams.dateFrom;
+    const dateTo = queryParams.dateTo;
+    const storeId = queryParams.storeId;
+    const consultantId = queryParams.consultantId;
+    const pageNum = Math.max(1, Number(queryParams.page) || 1);
+    const limitNum = queryParams.limit ? Math.max(1, Number(queryParams.limit)) : 10000;
 
     const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
     const endStr = dateTo || new Date().toLocaleDateString('en-CA');
@@ -136,9 +135,39 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
 
       const dbRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(rawSql);
 
-      // Accumulate points per technician chronologically (from oldest to newest)
+      // Pre-query prior accumulated points in current month if startPart > 1st of month
+      const monthStart = `${startPart.slice(0, 7)}-01`;
       const pointsAccuMap = new Map<number, number>();
 
+      if (startPart > monthStart) {
+        try {
+          const priorSql = `
+            SELECT 
+              os.assigned_staff_id AS techId,
+              SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS priorPts
+            FROM order_service os
+            JOIN \`order\` o ON os.order_id = o.id
+            JOIN report_order ro ON o.id = ro.order_id
+            LEFT JOIN staff_bonus sb ON os.id = sb.order_service_id AND sb.user_id = os.assigned_staff_id
+            WHERE ro.date >= '${monthStart}' AND ro.date < '${startPart}'
+              AND o.order_state = 'Completed'
+              AND os.assigned_staff_id > 0
+            GROUP BY os.assigned_staff_id
+          `;
+          const priorRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(priorSql);
+          for (const pr of priorRows) {
+            const techId = Number(pr.techId || 0);
+            const priorPts = Math.round(Number(pr.priorPts || 0));
+            if (techId > 0 && priorPts > 0) {
+              pointsAccuMap.set(techId, priorPts);
+            }
+          }
+        } catch (priorErr) {
+          fastify.log.warn(priorErr as SafeAny, 'Error fetching prior points for CV Xoay');
+        }
+      }
+
+      // Accumulate points per technician chronologically (from oldest to newest)
       const recordsAsc: CvXoayRecord[] = dbRows.map((r) => {
         const techId = Number(r.techId || 0);
         const techPoints = Math.round(Number(r.techPoints || 0));
@@ -180,7 +209,7 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
       const totalBonus = recordsDesc.reduce((sum, r) => sum + r.techBonus, 0);
       const totalPoints = recordsDesc.reduce((sum, r) => sum + r.techPoints, 0);
 
-      const paginatedData = recordsDesc.slice((page - 1) * limit, page * limit);
+      const paginatedData = recordsDesc.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
       const response: CvXoayReportResponse = {
         data: paginatedData,

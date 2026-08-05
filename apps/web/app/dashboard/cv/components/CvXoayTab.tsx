@@ -93,6 +93,7 @@ export default function CvXoayTab({
         dateTo,
         storeId: selectedStore,
         consultantId: selectedConsultant,
+        limit: 10000,
       });
 
       if (res) {

@@ -371,3 +371,13 @@ mos-lab/
   3. **Thưởng CC Tip**: 20% tiền tip (chia 50/50 nếu CC IN $\neq$ CC OUT).
 - Tuyệt đối **KHÔNG** tự ý thêm các khoản cộng dồn hay nhân tỷ lệ % thưởng doanh số tổng kết chốt tháng cho CC.
 
+### 50. CC Xoay (Wheel Bonus) 1.5x Hardcap Invariant Rule
+- **Quy tắc Trần Thưởng Vòng Xoay**: Tổng tiền thưởng Vòng Xoay (CC Xoay Bonus / Minigame Bonus) của mỗi CC trong tháng **tuyệt đối không được vượt quá 1.5 lần** tổng CC Daily Bonus của cá nhân CC đó trong cùng tháng:
+  $$\text{maxWheelBonusAllowed} = 1.5 \times \text{monthlyDailyBonus}$$
+- **3 Trạng thái Hạn mức**:
+  - `NORMAL`: `wheelCapPercent < 80%` — Hoạt động bình thường.
+  - `WARNING`: `80% ≤ wheelCapPercent < 100%` — Cảnh báo sắp chạm trần, UI hiển thị tag vàng ⚠️.
+  - `HARDCAPPED`: `wheelCapPercent ≥ 100%` hoặc `monthlyDailyBonus = 0` mà `rawWheelBonus > 0` — UI hiển thị tag đỏ ⛔, phần tiền vượt quá bị khống chế.
+- **Single Source of Truth**: Hàm `calculateWheelBonusCap(monthlyDailyBonus, rawWheelBonus)` tại `packages/shared/src/utils/wheel-cap.ts` là nguồn tính toán duy nhất. Tất cả các tab (CC Xoay, CC Daily Bonus, CC Game, CC Thu Nhập) bắt buộc gọi hàm này.
+- **Mục đích**: Khuyến khích CC bán nhiều Combo/Sản phẩm hơn để nâng CC Daily Bonus (mở rộng trần), thay vì chỉ tập trung vào Vòng Xoay/Minigame.
+

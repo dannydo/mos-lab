@@ -46,18 +46,107 @@ export default function CvReportPage() {
     }
   }, []);
 
-  // Filters State
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
-  const [referenceDate, setReferenceDate] = useState<Dayjs>(dayjs());
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs().endOf('month')]);
+  // Persistent Filters State
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cv_view_mode');
+      if (saved && ['month', 'week', 'day'].includes(saved)) {
+        return saved as 'month' | 'week' | 'day';
+      }
+    }
+    return 'month';
+  });
+
+  const [referenceDate, setReferenceDate] = useState<Dayjs>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cv_reference_date');
+      if (saved) {
+        const parsed = dayjs(saved);
+        if (parsed.isValid()) return parsed;
+      }
+    }
+    return dayjs();
+  });
+
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedRef = localStorage.getItem('cv_reference_date');
+      const savedMode = localStorage.getItem('cv_view_mode') as 'month' | 'week' | 'day' | null;
+      const ref = savedRef && dayjs(savedRef).isValid() ? dayjs(savedRef) : dayjs();
+      const mode = savedMode && ['month', 'week', 'day'].includes(savedMode) ? savedMode : 'month';
+
+      if (mode === 'month') return [ref.startOf('month'), ref.endOf('month')];
+      if (mode === 'week') return [ref.startOf('isoWeek'), ref.endOf('isoWeek')];
+      return [ref.startOf('day'), ref.endOf('day')];
+    }
+    return [dayjs().startOf('month'), dayjs().endOf('month')];
+  });
+
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const [selectedStore, setSelectedStore] = useState<string>('ALL');
-  const [selectedConsultant, setSelectedConsultant] = useState<string>('ALL');
-  const [activeTab, setActiveTab] = useState<string>('xoay');
+  const [selectedStore, setSelectedStore] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cv_selected_store');
+      if (saved) return saved;
+    }
+    return 'ALL';
+  });
+
+  const [selectedConsultant, setSelectedConsultant] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cv_selected_consultant');
+      if (saved) return saved;
+    }
+    return 'ALL';
+  });
+
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      const savedTab = localStorage.getItem('cv_active_tab');
+      const initialTab = tabParam || savedTab;
+
+      if (initialTab && ['xoay', 'tip', 'thunhap'].includes(initialTab)) {
+        return initialTab;
+      }
+    }
+    return 'xoay';
+  });
 
   // Staff Config & Staff Options
   const [staffOptions, setStaffOptions] = useState<CvStaffOption[]>([]);
+
+  // Sync state changes to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cv_active_tab', activeTab);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cv_view_mode', viewMode);
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cv_reference_date', referenceDate.format('YYYY-MM-DD'));
+    }
+  }, [referenceDate]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cv_selected_store', selectedStore);
+    }
+  }, [selectedStore]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cv_selected_consultant', selectedConsultant);
+    }
+  }, [selectedConsultant]);
 
   // Update date range when viewMode or referenceDate changes
   useEffect(() => {
@@ -107,20 +196,6 @@ export default function CvReportPage() {
     }
     return referenceDate.format('DD/MM/YYYY');
   };
-
-  // Restore active tab from URL param or localStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tabParam = urlParams.get('tab');
-      const savedTab = localStorage.getItem('cv_active_tab');
-      const initialTab = tabParam || savedTab;
-
-      if (initialTab && ['xoay', 'tip', 'thunhap'].includes(initialTab)) {
-        setActiveTab(initialTab);
-      }
-    }
-  }, []);
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);

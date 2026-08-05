@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { SafeAny, CC_GAMIFICATION_SYSTEM_CONFIG } from '@mos-lab/shared';
+import { SafeAny, CC_GAMIFICATION_SYSTEM_CONFIG, calculateWheelBonusCap } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 
 export interface CcKpiFilters {
@@ -547,6 +547,41 @@ export class CcKpiService {
         targetCompletionRate,
       };
     });
+
+    // === ENRICH LEADERBOARD WITH 1.5x HARDCAP DATA ===
+    // Get full-month daily bonus totals per staff to calculate wheel cap
+    try {
+      const monthStart = `${startDateStr.substring(0, 7)}-01`;
+      const dailyBonusResult = await this.getCcDailySalesBonus(fastify, {
+        dateFrom: monthStart,
+        dateTo: endDateStr,
+      });
+
+      // Aggregate monthly daily bonus per staff
+      const staffDailyBonusMap = new Map<number, number>();
+      if (dailyBonusResult?.data) {
+        for (const rec of dailyBonusResult.data) {
+          const uid = Number(rec.user_id);
+          const prev = staffDailyBonusMap.get(uid) || 0;
+          staffDailyBonusMap.set(uid, prev + Math.round(Number(rec.daily_bonus) || 0));
+        }
+      }
+
+      // Enrich each leaderboard entry with cap info
+      for (const entry of leaderboard) {
+        const monthlyDaily = staffDailyBonusMap.get(Number(entry.consultantId)) || 0;
+        const monthlyWheel = entry.totalConsultantBonus; // CC Xoay bonus = wheel bonus
+        const capResult = calculateWheelBonusCap(monthlyDaily, monthlyWheel);
+
+        (entry as SafeAny).monthlyDailyBonus = capResult.monthlyDailyBonus;
+        (entry as SafeAny).monthlyWheelBonus = capResult.rawWheelBonus;
+        (entry as SafeAny).maxWheelBonusAllowed = capResult.maxWheelBonusAllowed;
+        (entry as SafeAny).wheelCapPercent = capResult.wheelCapPercent;
+        (entry as SafeAny).capStatus = capResult.capStatus;
+      }
+    } catch (capErr) {
+      fastify.log.warn(capErr as Error, 'Failed to enrich leaderboard with wheel cap data (non-blocking)');
+    }
 
     return {
       data: leaderboard,
