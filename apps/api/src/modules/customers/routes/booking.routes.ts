@@ -5,6 +5,47 @@ import { getBkPaystubData } from '../../kpi/services/bk-salary.service.js';
 import { BookingAuditService } from '../services/booking-audit.service.js';
 import { UserServiceTypeService } from '../services/user-service-type.service.js';
 
+const ALLOWED_BOOKING_LEGACY_GROUPS = [2, 5, 14, 31, 32, 33, 34, 45];
+
+async function validateLegacyStaffBookingPermission(
+  fastify: FastifyInstance,
+  legacyStaffId: number
+): Promise<{ valid: boolean; statusCode?: number; message?: string }> {
+  const staffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+    `SELECT user_group_id, access_user_group_ids FROM user_profile WHERE user_id = ? AND is_disabled = 0 LIMIT 1`,
+    legacyStaffId
+  );
+
+  if (staffRows.length === 0) {
+    return {
+      valid: false,
+      statusCode: 400,
+      message: 'Tài khoản liên kết bên hệ thống cũ không tồn tại hoặc đã bị vô hiệu hóa. Vui lòng liên hệ Admin.',
+    };
+  }
+
+  const profile = staffRows[0];
+  const primaryGroup = Number(profile.user_group_id || 0);
+  const accessGroups = (profile.access_user_group_ids || '')
+    .split(',')
+    .map((g: string) => parseInt(g.trim(), 10))
+    .filter((g: number) => !isNaN(g));
+
+  const hasPermission =
+    ALLOWED_BOOKING_LEGACY_GROUPS.includes(primaryGroup) ||
+    accessGroups.some((g: number) => ALLOWED_BOOKING_LEGACY_GROUPS.includes(g));
+
+  if (!hasPermission) {
+    return {
+      valid: false,
+      statusCode: 403,
+      message: `Tài khoản legacy của bạn (Nhóm quyền #${primaryGroup}) không có quyền thực hiện đặt lịch. Vui lòng liên hệ Admin.`,
+    };
+  }
+
+  return { valid: true };
+}
+
 export async function registerBookingRoutes(fastify: FastifyInstance) {
   // POST /api/customers/booking
   // Create a new booking (order and order_service) in the legacy core database
@@ -45,23 +86,14 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       }
 
       const legacyStaffId = crmStaff.legacyStaffId;
-      let validStaffId: number | null = null;
-      if (legacyStaffId) {
-        const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT id FROM user WHERE id = ? LIMIT 1`,
-          legacyStaffId
-        );
-        if (staffExists.length > 0) {
-          validStaffId = legacyStaffId;
-        }
-      }
-
-      if (!validStaffId) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Tài khoản liên kết bên hệ thống cũ không tồn tại hoặc đã bị xóa. Vui lòng liên hệ Admin.',
+      const permCheck = await validateLegacyStaffBookingPermission(fastify, legacyStaffId);
+      if (!permCheck.valid) {
+        return reply.status(permCheck.statusCode || 400).send({
+          error: permCheck.statusCode === 403 ? 'Forbidden' : 'Bad Request',
+          message: permCheck.message,
         });
       }
+      const validStaffId = legacyStaffId;
 
       // Check referrer phone
       let referrerUserId: number | null = null;
@@ -435,6 +467,14 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         });
       }
 
+      const permCheck = await validateLegacyStaffBookingPermission(fastify, crmStaff.legacyStaffId);
+      if (!permCheck.valid) {
+        return reply.status(permCheck.statusCode || 400).send({
+          error: permCheck.statusCode === 403 ? 'Forbidden' : 'Bad Request',
+          message: permCheck.message,
+        });
+      }
+
       const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT id FROM user WHERE id = ? LIMIT 1`,
         crmStaff.legacyStaffId
@@ -654,6 +694,14 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           error: 'Bad Request',
           message:
             'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.',
+        });
+      }
+
+      const permCheck = await validateLegacyStaffBookingPermission(fastify, crmStaff.legacyStaffId);
+      if (!permCheck.valid) {
+        return reply.status(permCheck.statusCode || 400).send({
+          error: permCheck.statusCode === 403 ? 'Forbidden' : 'Bad Request',
+          message: permCheck.message,
         });
       }
 

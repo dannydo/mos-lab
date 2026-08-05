@@ -278,7 +278,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
   }, []);
 
   const fetchStaffList = useCallback(async () => {
-    if (!currentUser || currentUser.role !== 'admin') return;
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'manager')) return;
     try {
       const data = await apiClient.customers.getStaff();
       setStaffList(data);

@@ -446,7 +446,7 @@ export default function LocaCampaignPage() {
 
         <div className="flex items-center gap-3 flex-wrap">
           <Space wrap>
-            {currentUser?.role === 'admin' && (
+            {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
               <Select
                 showSearch
                 filterOption={vietnameseSearchFilter}
