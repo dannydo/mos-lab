@@ -33,7 +33,8 @@ export interface SidebarGroupConfig {
 export function getSidebarGroups(
   userRole: string = '',
   activeCampaigns: SafeAny[] = [],
-  showCustomCampaigns: boolean = true
+  showCustomCampaigns: boolean = true,
+  campaignVisibility: Record<string, boolean> = {}
 ): SidebarGroupConfig[] {
   const normalizedRole = userRole?.toLowerCase() || '';
   const isAdmin = normalizedRole === 'admin';
@@ -85,12 +86,19 @@ export function getSidebarGroups(
 
   if (showCustomCampaigns && activeCampaigns && activeCampaigns.length > 0) {
     activeCampaigns.forEach((c: SafeAny) => {
-      nycChildren.push({
-        key: `nyc-campaign-${c.slug}`,
-        label: c.name,
-        icon: <RocketOutlined style={{ color: '#10b981', fontSize: '12px' }} />,
-        path: `/dashboard/nyc/campaigns/${c.slug}`,
-      });
+      const isNotDeleted = c.status !== 'DELETED';
+      const isVisible =
+        isNotDeleted &&
+        campaignVisibility[c.slug] !== false &&
+        (c.id === undefined || campaignVisibility[String(c.id)] !== false);
+      if (isVisible) {
+        nycChildren.push({
+          key: `nyc-campaign-${c.slug}`,
+          label: c.name,
+          icon: <RocketOutlined style={{ color: '#10b981', fontSize: '12px' }} />,
+          path: `/dashboard/nyc/campaigns/${c.slug}`,
+        });
+      }
     });
   }
 

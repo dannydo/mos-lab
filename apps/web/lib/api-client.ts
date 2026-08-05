@@ -111,9 +111,13 @@ import {
   CampaignTouchpoint,
   CampaignPromotion,
   CampaignTouchpointLog,
+  CloneCampaignDto,
   CreateCampaignDto,
+  ReopenCampaignDto,
   UpdateCampaignDto,
   AddCampaignCustomersDto,
+  AddCampaignCustomersResponse,
+  TransferCampaignCustomersDto,
   RemoveCampaignCustomerDto,
   BatchRemoveCampaignCustomersDto,
   CreateCampaignTouchpointDto,
@@ -1184,12 +1188,48 @@ export const apiClient = {
       const response = await api.post(`/campaigns/${id}/end`);
       return response.data;
     },
+    pause: async (id: number) => {
+      const response = await api.post(`/campaigns/${id}/pause`);
+      return response.data;
+    },
+    resume: async (id: number) => {
+      const response = await api.post(`/campaigns/${id}/resume`);
+      return response.data;
+    },
+    complete: async (id: number) => {
+      const response = await api.post(`/campaigns/${id}/complete`);
+      return response.data;
+    },
+    archive: async (id: number) => {
+      const response = await api.post(`/campaigns/${id}/archive`);
+      return response.data;
+    },
+    unarchive: async (id: number) => {
+      const response = await api.post(`/campaigns/${id}/unarchive`);
+      return response.data;
+    },
+    reopen: async (id: number, dto?: ReopenCampaignDto) => {
+      const response = await api.post(`/campaigns/${id}/reopen`, dto);
+      return response.data;
+    },
+    restore: async (id: number) => {
+      const response = await api.post(`/campaigns/${id}/restore`);
+      return response.data;
+    },
+    clone: async (id: number, dto?: CloneCampaignDto) => {
+      const response = await api.post(`/campaigns/${id}/clone`, dto);
+      return response.data;
+    },
     getCustomers: async (campaignId: number, params?: Record<string, unknown>) => {
       const response = await api.get(`/campaigns/${campaignId}/customers`, { params });
       return response.data;
     },
-    addCustomers: async (campaignId: number, dto: AddCampaignCustomersDto) => {
+    addCustomers: async (campaignId: number, dto: AddCampaignCustomersDto): Promise<AddCampaignCustomersResponse> => {
       const response = await api.post(`/campaigns/${campaignId}/customers`, dto);
+      return response.data;
+    },
+    transferCustomers: async (campaignId: number, dto: TransferCampaignCustomersDto) => {
+      const response = await api.post(`/campaigns/${campaignId}/transfer-customers`, dto);
       return response.data;
     },
     removeCustomer: async (campaignId: number, customerId: number, dto?: RemoveCampaignCustomerDto) => {

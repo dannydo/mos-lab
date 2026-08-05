@@ -1,4 +1,5 @@
-export type CampaignStatus = 'ACTIVE' | 'ENDED' | 'ARCHIVED';
+export type CampaignStatus =
+  'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ENDED' | 'ARCHIVED' | 'DELETED';
 
 export type CampaignPromotionType = 'PERCENT_DISCOUNT' | 'FIXED_DISCOUNT' | 'FREE_SERVICE' | 'FREE_PRODUCT';
 
@@ -12,6 +13,7 @@ export interface Campaign {
   status: CampaignStatus;
   createdBy: number | null;
   assignedStaffIds?: number[] | null;
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   _count?: {
@@ -114,6 +116,7 @@ export interface CreateCampaignDto {
   description?: string;
   startDate?: string;
   endDate?: string;
+  status?: CampaignStatus;
   assignedStaffIds?: number[] | null;
   touchpoints?: CreateCampaignTouchpointDto[];
   promotions?: CreateCampaignPromotionDto[];
@@ -133,6 +136,29 @@ export interface UpdateCampaignDto {
 
 export interface AddCampaignCustomersDto {
   customerIds: number[];
+}
+
+export interface AddCustomerDetail {
+  legacyUserId: number;
+  customerName: string;
+  customerPhone?: string | null;
+  status: 'ADDED' | 'SKIPPED';
+  reason?: string;
+  currentCampaignId?: number | null;
+  currentCampaignName?: string | null;
+}
+
+export interface AddCampaignCustomersResponse {
+  success: boolean;
+  message: string;
+  addedCount: number;
+  skippedCount: number;
+  details: AddCustomerDetail[];
+}
+
+export interface TransferCampaignCustomersDto {
+  customerIds: number[];
+  reason?: string;
 }
 
 export interface RemoveCampaignCustomerDto {
@@ -184,4 +210,16 @@ export interface ListCampaignsParams {
   search?: string;
   page?: number;
   pageSize?: number;
+}
+
+export interface CloneCampaignDto {
+  name?: string;
+  slug?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface ReopenCampaignDto {
+  endDate?: string;
 }

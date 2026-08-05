@@ -29,16 +29,27 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole }: Si
     }
     return true;
   });
+  const [campaignVisibility, setCampaignVisibility] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mos_sidebar_campaign_visibility');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (_) {}
+      }
+    }
+    return {};
+  });
 
   const fetchActiveCampaigns = useCallback(() => {
     apiClient.campaigns
-      .list({ status: 'ACTIVE' })
+      .list({ pageSize: 100 })
       .then((res: SafeAny) => {
         const list = Array.isArray(res) ? res : res?.items || res?.data || [];
         setActiveCampaigns(list);
       })
       .catch((err) => {
-        console.error('Fetch active campaigns for sidebar error:', err);
+        console.error('Fetch campaigns for sidebar error:', err);
       });
   }, []);
 
@@ -46,6 +57,12 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole }: Si
     const handleToggle = () => {
       const saved = localStorage.getItem('mos_sidebar_show_custom_campaigns');
       setShowCustomCampaigns(saved !== null ? saved === 'true' : true);
+      const savedVis = localStorage.getItem('mos_sidebar_campaign_visibility');
+      if (savedVis) {
+        try {
+          setCampaignVisibility(JSON.parse(savedVis));
+        } catch (_) {}
+      }
       fetchActiveCampaigns();
     };
 
@@ -79,7 +96,7 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole }: Si
   };
 
   const selectedKey = getSelectedMenuKey(pathname, assignedStaffId);
-  const sidebarGroups = getSidebarGroups(userRole, activeCampaigns, showCustomCampaigns);
+  const sidebarGroups = getSidebarGroups(userRole, activeCampaigns, showCustomCampaigns, campaignVisibility);
 
   const createMenuItem = (item: SidebarItemConfig): SafeAny => {
     if (item.children && item.children.length > 0) {

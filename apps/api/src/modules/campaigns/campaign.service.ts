@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import {
+  AddCampaignCustomersResponse,
   Campaign,
   CampaignCustomer,
   CampaignPromotion,
@@ -8,10 +9,12 @@ import {
   CampaignStatus,
   CampaignTouchpoint,
   CampaignTouchpointLog,
+  CloneCampaignDto,
   CreateCampaignDto,
   CreateCampaignPromotionDto,
   CustomerCampaignPromotionInfo,
   ListCampaignsParams,
+  ReopenCampaignDto,
   ToggleCampaignTouchpointLogDto,
   UpdateCampaignDto,
 } from '@mos-lab/shared';
@@ -32,6 +35,43 @@ function slugify(text: string): string {
 
 export class CampaignService {
   /**
+   * Auto check and transition campaign statuses based on start/end dates.
+   */
+  static async checkAndUpdateCampaignStatuses(fastify: FastifyInstance): Promise<void> {
+    const now = new Date();
+    try {
+      // 1. Auto activate SCHEDULED campaigns where startDate <= now
+      const scheduledCampaigns = await fastify.prisma.crm.crmCustomCampaign.findMany({
+        where: {
+          status: 'SCHEDULED',
+          deletedAt: null,
+          startDate: { lte: now },
+        },
+      });
+      for (const c of scheduledCampaigns) {
+        await fastify.prisma.crm.crmCustomCampaign.update({
+          where: { id: c.id },
+          data: { status: 'ACTIVE' },
+        });
+      }
+
+      // 2. Auto complete ACTIVE campaigns where endDate <= now
+      const expiredCampaigns = await fastify.prisma.crm.crmCustomCampaign.findMany({
+        where: {
+          status: 'ACTIVE',
+          deletedAt: null,
+          endDate: { lte: now },
+        },
+      });
+      for (const c of expiredCampaigns) {
+        await this.endCampaign(fastify, c.id);
+      }
+    } catch (err: any) {
+      fastify.log.warn('Failed to auto check campaign statuses:', err?.message || err);
+    }
+  }
+
+  /**
    * List custom campaigns with stats summary.
    */
   static async listCampaigns(
@@ -44,12 +84,16 @@ export class CampaignService {
     pageSize: number;
     pages: number;
   }> {
+    await this.checkAndUpdateCampaignStatuses(fastify);
+
     const { status, search, page = 1, pageSize = 20 } = params;
     const pageNum = Number(page) || 1;
     const limitNum = Number(pageSize) || 20;
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {};
+    const where: any = {
+      deletedAt: null,
+    };
     if (status) {
       where.status = status;
     }
@@ -275,7 +319,7 @@ export class CampaignService {
           description: dto.description || null,
           startDate,
           endDate,
-          status: 'ACTIVE',
+          status: dto.status || 'ACTIVE',
           createdBy: validStaffId,
           assignedStaffIds:
             dto.assignedStaffIds && Array.isArray(dto.assignedStaffIds) && dto.assignedStaffIds.length > 0
@@ -508,7 +552,9 @@ export class CampaignService {
   }
 
   /**
-   * Complete cleanup and deletion of custom campaign.
+   * Soft deletion of custom campaign.
+   * Preserves 100% of allocated customers, booker assignments, touchpoints, and call logs intact.
+   * Marks customer global allocation status as unallocated for future new campaign filters.
    */
   static async deleteCampaign(fastify: FastifyInstance, id: number): Promise<{ success: boolean; message: string }> {
     const existing = await fastify.prisma.crm.crmCustomCampaign.findUnique({
@@ -521,118 +567,25 @@ export class CampaignService {
     const now = new Date();
 
     await fastify.prisma.crm.$transaction(async (tx) => {
-      // 1. Find active allocation batches linked to campaign
-      const activeBatches = await tx.crmAllocationBatch.findMany({
-        where: {
-          campaignId: id,
-          status: { in: ['PENDING_ACCEPT', 'ACCEPTED'] },
-        },
-        include: { items: true },
-      });
-
-      // 2. Find active campaign customers
-      const campaignCustomers = await tx.crmCampaignCustomer.findMany({
-        where: {
-          campaignId: id,
-          removedAt: null,
-        },
-      });
-
-      // Collect customer IDs from campaign customers and active batch items
-      const customerIdsSet = new Set<number>();
-      for (const cc of campaignCustomers) {
-        customerIdsSet.add(cc.legacyUserId);
-      }
-      for (const batch of activeBatches) {
-        for (const item of batch.items) {
-          customerIdsSet.add(item.customerId);
-        }
-      }
-      const customerIds = Array.from(customerIdsSet);
-
-      // 3. Find active customer assignments and log history expiration entries
-      if (customerIds.length > 0) {
-        const activeAssignments = await tx.crmCustomerAssignment.findMany({
-          where: { legacyUserId: { in: customerIds } },
-        });
-
-        const customerBatchMap = new Map<number, { batchCode: string; assignerId: number }>();
-        for (const batch of activeBatches) {
-          for (const item of batch.items) {
-            customerBatchMap.set(item.customerId, {
-              batchCode: batch.batchCode,
-              assignerId: batch.assignerId,
-            });
-          }
-        }
-
-        for (const assignment of activeAssignments) {
-          const batchInfo = customerBatchMap.get(assignment.legacyUserId);
-          const batchId = batchInfo?.batchCode || `campaign_${id}`;
-          const assignedBy = assignment.assignedBy || batchInfo?.assignerId || existing.createdBy || 1;
-
-          await tx.crmAssignmentHistory.create({
-            data: {
-              batchId,
-              legacyUserId: assignment.legacyUserId,
-              prevStaffId: assignment.staffId,
-              newStaffId: null,
-              assignedBy,
-              actionType: 'EXPIRED',
-              reason: `Chiến dịch ${existing.name} đã kết thúc`,
-            },
-          });
-        }
-
-        // Delete active customer assignments
-        if (activeAssignments.length > 0) {
-          await tx.crmCustomerAssignment.deleteMany({
-            where: { legacyUserId: { in: activeAssignments.map((a) => a.legacyUserId) } },
-          });
-        }
-      }
-
-      // 4. Expire active allocation batches and items
-      for (const batch of activeBatches) {
-        await tx.crmAllocationBatch.update({
-          where: { id: batch.id },
-          data: { status: 'EXPIRED' },
-        });
-
-        await tx.crmAllocationBatchItem.updateMany({
-          where: { batchId: batch.id },
-          data: { status: 'EXPIRED' },
-        });
-      }
-
-      // 5. Mark removedAt on campaign customers
-      await tx.crmCampaignCustomer.updateMany({
-        where: {
-          campaignId: id,
-          removedAt: null,
-        },
-        data: {
-          removedAt: now,
-          removedReason: `Chiến dịch ${existing.name} đã kết thúc`,
-        },
-      });
-
-      // 6. Delete campaign record
-      await tx.crmCustomCampaign.delete({
+      // Mark campaign as DELETED (Soft Delete)
+      await tx.crmCustomCampaign.update({
         where: { id },
+        data: {
+          status: 'DELETED',
+          deletedAt: now,
+        },
       });
     });
 
     return {
       success: true,
-      message: 'Đã xóa chiến dịch thành công',
+      message: 'Đã xóa chiến dịch thành công (Dữ liệu khách hàng và Booker được lưu giữ nguyên vẹn)',
     };
   }
 
   /**
-   * End campaign: mark status as 'ENDED', expire associated active batch allocation assignments,
-   * release unbooked customers back to NYC main pool while preserving participation logs,
-   * and log assignment history expiration entries.
+   * End campaign: mark status as 'COMPLETED'.
+   * Preserves 100% of customer allocations and touchpoint logs so bookers can track conversion metrics.
    */
   static async endCampaign(fastify: FastifyInstance, id: number): Promise<any> {
     const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
@@ -644,112 +597,9 @@ export class CampaignService {
 
     const now = new Date();
 
-    await fastify.prisma.crm.$transaction(async (tx) => {
-      // 1. Find active allocation batches linked to campaign
-      const activeBatches = await tx.crmAllocationBatch.findMany({
-        where: {
-          campaignId: id,
-          status: { in: ['PENDING_ACCEPT', 'ACCEPTED'] },
-        },
-        include: { items: true },
-      });
-
-      // 2. Find active campaign customers
-      const campaignCustomers = await tx.crmCampaignCustomer.findMany({
-        where: {
-          campaignId: id,
-          removedAt: null,
-        },
-      });
-
-      // Collect customer IDs from campaign customers and active batch items
-      const customerIdsSet = new Set<number>();
-      for (const cc of campaignCustomers) {
-        customerIdsSet.add(cc.legacyUserId);
-      }
-      for (const batch of activeBatches) {
-        for (const item of batch.items) {
-          customerIdsSet.add(item.customerId);
-        }
-      }
-      const customerIds = Array.from(customerIdsSet);
-
-      // 3. Find active customer assignments and log history expiration entries
-      if (customerIds.length > 0) {
-        const activeAssignments = await tx.crmCustomerAssignment.findMany({
-          where: { legacyUserId: { in: customerIds } },
-        });
-
-        const customerBatchMap = new Map<number, { batchCode: string; assignerId: number }>();
-        for (const batch of activeBatches) {
-          for (const item of batch.items) {
-            customerBatchMap.set(item.customerId, {
-              batchCode: batch.batchCode,
-              assignerId: batch.assignerId,
-            });
-          }
-        }
-
-        for (const assignment of activeAssignments) {
-          const batchInfo = customerBatchMap.get(assignment.legacyUserId);
-          const batchId = batchInfo?.batchCode || `campaign_${id}`;
-          const assignedBy = assignment.assignedBy || batchInfo?.assignerId || campaign.createdBy || 1;
-
-          await tx.crmAssignmentHistory.create({
-            data: {
-              batchId,
-              legacyUserId: assignment.legacyUserId,
-              prevStaffId: assignment.staffId,
-              newStaffId: null,
-              assignedBy,
-              actionType: 'EXPIRED',
-              reason: `Chiến dịch ${campaign.name} đã kết thúc`,
-            },
-          });
-        }
-
-        // Delete active customer assignments
-        if (activeAssignments.length > 0) {
-          await tx.crmCustomerAssignment.deleteMany({
-            where: { legacyUserId: { in: activeAssignments.map((a) => a.legacyUserId) } },
-          });
-        }
-      }
-
-      // 4. Expire active allocation batches and items
-      for (const batch of activeBatches) {
-        await tx.crmAllocationBatch.update({
-          where: { id: batch.id },
-          data: { status: 'EXPIRED' },
-        });
-
-        await tx.crmAllocationBatchItem.updateMany({
-          where: { batchId: batch.id },
-          data: { status: 'EXPIRED' },
-        });
-      }
-
-      // 5. Release unbooked customers back to NYC pool by updating removedAt while preserving logs
-      await tx.crmCampaignCustomer.updateMany({
-        where: {
-          campaignId: id,
-          removedAt: null,
-        },
-        data: {
-          removedAt: now,
-          removedReason: `Chiến dịch ${campaign.name} đã kết thúc`,
-        },
-      });
-
-      // 6. Mark campaign status as ENDED
-      await tx.crmCustomCampaign.update({
-        where: { id },
-        data: { status: 'ENDED', endDate: campaign.endDate || now },
-      });
-    });
-
-    const updated = await fastify.prisma.crm.crmCustomCampaign.findUnique({
+    const updated = await fastify.prisma.crm.crmCustomCampaign.update({
       where: { id },
+      data: { status: 'COMPLETED', endDate: campaign.endDate || now },
       include: {
         creator: { select: { id: true, displayName: true, username: true } },
         touchpoints: { orderBy: { sortOrder: 'asc' } },
@@ -765,6 +615,288 @@ export class CampaignService {
     });
 
     return this.mapCampaignToDto(updated);
+  }
+
+  /**
+   * Pause campaign: mark status as 'PAUSED'. Booker UI disables actions.
+   */
+  static async pauseCampaign(fastify: FastifyInstance, id: number): Promise<any> {
+    const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
+      where: { id },
+    });
+    if (!campaign) {
+      throw new Error(`Chiến dịch ID ${id} không tồn tại`);
+    }
+    const updated = await fastify.prisma.crm.crmCustomCampaign.update({
+      where: { id },
+      data: { status: 'PAUSED' },
+      include: {
+        creator: { select: { id: true, displayName: true, username: true } },
+        touchpoints: { orderBy: { sortOrder: 'asc' } },
+        promotions: true,
+        _count: {
+          select: {
+            customers: { where: { removedAt: null } },
+            touchpoints: true,
+            promotions: true,
+          },
+        },
+      },
+    });
+    return this.mapCampaignToDto(updated);
+  }
+
+  /**
+   * Resume campaign: mark status as 'ACTIVE'.
+   */
+  static async resumeCampaign(fastify: FastifyInstance, id: number): Promise<any> {
+    const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
+      where: { id },
+    });
+    if (!campaign) {
+      throw new Error(`Chiến dịch ID ${id} không tồn tại`);
+    }
+    const updated = await fastify.prisma.crm.crmCustomCampaign.update({
+      where: { id },
+      data: { status: 'ACTIVE' },
+      include: {
+        creator: { select: { id: true, displayName: true, username: true } },
+        touchpoints: { orderBy: { sortOrder: 'asc' } },
+        promotions: true,
+        _count: {
+          select: {
+            customers: { where: { removedAt: null } },
+            touchpoints: true,
+            promotions: true,
+          },
+        },
+      },
+    });
+    return this.mapCampaignToDto(updated);
+  }
+
+  /**
+   * Complete campaign alias for endCampaign.
+   */
+  static async completeCampaign(fastify: FastifyInstance, id: number): Promise<any> {
+    return this.endCampaign(fastify, id);
+  }
+
+  /**
+   * Archive campaign: mark status as 'ARCHIVED'.
+   */
+  static async archiveCampaign(fastify: FastifyInstance, id: number): Promise<any> {
+    const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
+      where: { id },
+    });
+    if (!campaign) {
+      throw new Error(`Chiến dịch ID ${id} không tồn tại`);
+    }
+    const updated = await fastify.prisma.crm.crmCustomCampaign.update({
+      where: { id },
+      data: { status: 'ARCHIVED' },
+      include: {
+        creator: { select: { id: true, displayName: true, username: true } },
+        touchpoints: { orderBy: { sortOrder: 'asc' } },
+        promotions: true,
+        _count: {
+          select: {
+            customers: { where: { removedAt: null } },
+            touchpoints: true,
+            promotions: true,
+          },
+        },
+      },
+    });
+    return this.mapCampaignToDto(updated);
+  }
+
+  /**
+   * Unarchive campaign: mark status as 'COMPLETED'.
+   */
+  static async unarchiveCampaign(fastify: FastifyInstance, id: number): Promise<any> {
+    const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
+      where: { id },
+    });
+    if (!campaign) {
+      throw new Error(`Chiến dịch ID ${id} không tồn tại`);
+    }
+    const updated = await fastify.prisma.crm.crmCustomCampaign.update({
+      where: { id },
+      data: { status: 'COMPLETED' },
+      include: {
+        creator: { select: { id: true, displayName: true, username: true } },
+        touchpoints: { orderBy: { sortOrder: 'asc' } },
+        promotions: true,
+        _count: {
+          select: {
+            customers: { where: { removedAt: null } },
+            touchpoints: true,
+            promotions: true,
+          },
+        },
+      },
+    });
+    return this.mapCampaignToDto(updated);
+  }
+
+  /**
+   * Reopen campaign: set status to 'ACTIVE' and update end date.
+   */
+  static async reopenCampaign(fastify: FastifyInstance, id: number, dto?: ReopenCampaignDto): Promise<any> {
+    const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
+      where: { id },
+    });
+    if (!campaign) {
+      throw new Error(`Chiến dịch ID ${id} không tồn tại`);
+    }
+    let newEndDate: Date;
+    if (dto?.endDate) {
+      newEndDate = new Date(dto.endDate);
+    } else {
+      newEndDate = new Date();
+      newEndDate.setDate(newEndDate.getDate() + 30);
+    }
+    const updated = await fastify.prisma.crm.crmCustomCampaign.update({
+      where: { id },
+      data: {
+        status: 'ACTIVE',
+        endDate: newEndDate,
+      },
+      include: {
+        creator: { select: { id: true, displayName: true, username: true } },
+        touchpoints: { orderBy: { sortOrder: 'asc' } },
+        promotions: true,
+        _count: {
+          select: {
+            customers: { where: { removedAt: null } },
+            touchpoints: true,
+            promotions: true,
+          },
+        },
+      },
+    });
+    return this.mapCampaignToDto(updated);
+  }
+
+  /**
+   * Restore a deleted campaign: set status back to 'ACTIVE', clear deletedAt timestamp.
+   */
+  static async restoreCampaign(fastify: FastifyInstance, id: number): Promise<any> {
+    const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
+      where: { id },
+    });
+    if (!campaign) {
+      throw new Error(`Chiến dịch ID ${id} không tồn tại`);
+    }
+    const updated = await fastify.prisma.crm.crmCustomCampaign.update({
+      where: { id },
+      data: {
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+      include: {
+        creator: { select: { id: true, displayName: true, username: true } },
+        touchpoints: { orderBy: { sortOrder: 'asc' } },
+        promotions: true,
+        _count: {
+          select: {
+            customers: { where: { removedAt: null } },
+            touchpoints: true,
+            promotions: true,
+          },
+        },
+      },
+    });
+    return this.mapCampaignToDto(updated);
+  }
+
+  /**
+   * Clone campaign: duplicate touchpoints and promotions into a new DRAFT campaign.
+   */
+  static async cloneCampaign(
+    fastify: FastifyInstance,
+    id: number,
+    dto: CloneCampaignDto = {},
+    createdBy: number
+  ): Promise<any> {
+    const original = await fastify.prisma.crm.crmCustomCampaign.findUnique({
+      where: { id },
+      include: {
+        touchpoints: { orderBy: { sortOrder: 'asc' } },
+        promotions: true,
+      },
+    });
+    if (!original) {
+      throw new Error(`Chiến dịch ID ${id} không tồn tại`);
+    }
+
+    const name = (dto.name || `[Bản sao] ${original.name}`).trim();
+    let baseSlug = dto.slug || slugify(name);
+    if (!baseSlug) baseSlug = `campaign-${Date.now()}`;
+    const slug = `${baseSlug}-${Date.now().toString().slice(-4)}`;
+
+    const created = await fastify.prisma.crm.$transaction(async (tx) => {
+      const campaign = await tx.crmCustomCampaign.create({
+        data: {
+          name,
+          slug,
+          description: dto.description ?? original.description,
+          startDate: dto.startDate ? new Date(dto.startDate) : original.startDate,
+          endDate: dto.endDate ? new Date(dto.endDate) : original.endDate,
+          status: 'DRAFT',
+          createdBy,
+          assignedStaffIds: original.assignedStaffIds,
+        },
+      });
+
+      if (original.touchpoints.length > 0) {
+        await tx.crmCampaignTouchpoint.createMany({
+          data: original.touchpoints.map((tp) => ({
+            campaignId: campaign.id,
+            key: tp.key,
+            label: tp.label,
+            icon: tp.icon,
+            daysMin: tp.daysMin,
+            daysMax: tp.daysMax,
+            color: tp.color,
+            sortOrder: tp.sortOrder,
+          })),
+        });
+      }
+
+      if (original.promotions.length > 0) {
+        await tx.crmCampaignPromotion.createMany({
+          data: original.promotions.map((p) => ({
+            campaignId: campaign.id,
+            name: p.name,
+            code: p.code,
+            type: p.type,
+            value: p.value,
+            description: p.description,
+            isActive: p.isActive,
+          })),
+        });
+      }
+
+      return tx.crmCustomCampaign.findUnique({
+        where: { id: campaign.id },
+        include: {
+          creator: { select: { id: true, displayName: true, username: true } },
+          touchpoints: { orderBy: { sortOrder: 'asc' } },
+          promotions: true,
+          _count: {
+            select: {
+              customers: { where: { removedAt: null } },
+              touchpoints: true,
+              promotions: true,
+            },
+          },
+        },
+      });
+    });
+
+    return this.mapCampaignToDto(created);
   }
 
   /**
@@ -1117,7 +1249,7 @@ export class CampaignService {
     campaignId: number,
     customerIds: number[],
     staffId: number
-  ): Promise<{ success: boolean; message: string; addedCount: number; skippedCount: number }> {
+  ): Promise<AddCampaignCustomersResponse> {
     if (!customerIds || customerIds.length === 0) {
       throw new Error('Danh sách ID khách hàng không được để trống');
     }
@@ -1125,34 +1257,75 @@ export class CampaignService {
     const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
       where: { id: campaignId },
     });
-    if (!campaign || campaign.status !== 'ACTIVE') {
-      throw new Error('Chiến dịch không tồn tại hoặc không ở trạng thái HOẠT ĐỘNG');
+    if (!campaign || ['COMPLETED', 'ENDED', 'ARCHIVED', 'DELETED'].includes(campaign.status)) {
+      throw new Error('Chiến dịch không tồn tại hoặc đã bị chốt/lưu trữ/xóa');
     }
 
-    const uniqueCustomerIds = Array.from(new Set(customerIds));
+    const uniqueCustomerIds = Array.from(
+      new Set(customerIds.map((id) => Number(id)).filter((id) => !isNaN(id) && id > 0))
+    );
 
-    // Check which customers are already in ANY active campaign and create inside a transaction
-    return await fastify.prisma.crm.$transaction(async (tx) => {
-      const activeAssignments = await tx.crmCampaignCustomer.findMany({
+    // Fetch customer profiles, contacts, and existing active campaign assignments
+    const [profiles, contacts, activeAssignments] = await Promise.all([
+      fastify.prisma.legacy.user_profile.findMany({
+        where: { user_id: { in: uniqueCustomerIds } },
+        select: { user_id: true, full_name: true },
+      }),
+      fastify.prisma.legacy.user_contact.findMany({
+        where: { user_id: { in: uniqueCustomerIds }, is_disabled: false },
+        select: { user_id: true, phone_number: true },
+      }),
+      fastify.prisma.crm.crmCampaignCustomer.findMany({
         where: {
           legacyUserId: { in: uniqueCustomerIds },
           removedAt: null,
-          campaign: { status: 'ACTIVE' },
+          campaign: { status: { in: ['DRAFT', 'SCHEDULED', 'ACTIVE', 'PAUSED'] } },
         },
-        select: { legacyUserId: true, campaignId: true },
-      });
+        include: {
+          campaign: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
 
-      const activeUserSet = new Set(activeAssignments.map((a) => a.legacyUserId));
+    const profileMap = new Map(profiles.map((p) => [p.user_id, p.full_name]));
+    const phoneMap = new Map(contacts.map((c) => [c.user_id, c.phone_number]));
+    const activeAssignmentMap = new Map(activeAssignments.map((a) => [a.legacyUserId, a.campaign]));
 
-      const validCustomerIds = uniqueCustomerIds.filter((id) => !activeUserSet.has(id));
-      const skippedCount = uniqueCustomerIds.length - validCustomerIds.length;
+    const details: any[] = [];
+    const validCustomerIds: number[] = [];
 
-      if (validCustomerIds.length === 0) {
-        throw new Error(`Tất cả ${uniqueCustomerIds.length} khách hàng đã thuộc chiến dịch khác đang hoạt động`);
+    uniqueCustomerIds.forEach((cId) => {
+      const name = profileMap.get(cId) || `Khách hàng #${cId}`;
+      const phone = phoneMap.get(cId) || null;
+      const currentCamp = activeAssignmentMap.get(cId);
+
+      if (currentCamp) {
+        const isSame = currentCamp.id === campaignId;
+        details.push({
+          legacyUserId: cId,
+          customerName: name,
+          customerPhone: phone,
+          status: 'SKIPPED',
+          reason: isSame ? 'Đã có sẵn trong chiến dịch này' : `Đã thuộc chiến dịch "${currentCamp.name}"`,
+          currentCampaignId: currentCamp.id,
+          currentCampaignName: currentCamp.name,
+        });
+      } else {
+        validCustomerIds.push(cId);
+        details.push({
+          legacyUserId: cId,
+          customerName: name,
+          customerPhone: phone,
+          status: 'ADDED',
+        });
       }
+    });
 
+    const skippedCount = details.filter((d) => d.status === 'SKIPPED').length;
+
+    if (validCustomerIds.length > 0) {
       const now = new Date();
-      await tx.crmCampaignCustomer.createMany({
+      await fastify.prisma.crm.crmCampaignCustomer.createMany({
         data: validCustomerIds.map((cId) => ({
           campaignId,
           legacyUserId: cId,
@@ -1160,16 +1333,84 @@ export class CampaignService {
           addedBy: staffId,
         })),
       });
+    }
 
-      return {
-        success: true,
-        message: `Đã thêm thành công ${validCustomerIds.length} khách hàng vào chiến dịch${
-          skippedCount > 0 ? ` (đã bỏ qua ${skippedCount} KH đang ở chiến dịch khác)` : ''
-        }`,
-        addedCount: validCustomerIds.length,
-        skippedCount,
-      };
+    return {
+      success: validCustomerIds.length > 0,
+      message:
+        validCustomerIds.length > 0
+          ? `Đã thêm thành công ${validCustomerIds.length} khách hàng vào chiến dịch${
+              skippedCount > 0 ? ` (bỏ qua ${skippedCount} KH trùng)` : ''
+            }`
+          : `Tất cả ${uniqueCustomerIds.length} khách hàng được chọn đã thuộc chiến dịch khác đang hoạt động (hoặc đã có trong chiến dịch này)`,
+      addedCount: validCustomerIds.length,
+      skippedCount,
+      details,
+    };
+  }
+
+  /**
+   * Force transfer customers from their old active campaign to a new campaign.
+   * Sets removedAt on old campaign customer record, clears old assignment, and adds to new campaign.
+   */
+  static async transferCustomersToCampaign(
+    fastify: FastifyInstance,
+    campaignId: number,
+    customerIds: number[],
+    reason: string | undefined,
+    staffId: number
+  ): Promise<{ success: boolean; message: string; transferredCount: number }> {
+    if (!customerIds || customerIds.length === 0) {
+      throw new Error('Danh sách ID khách hàng không được để trống');
+    }
+
+    const targetCampaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
+      where: { id: campaignId },
     });
+    if (!targetCampaign || ['COMPLETED', 'ENDED', 'ARCHIVED', 'DELETED'].includes(targetCampaign.status)) {
+      throw new Error('Chiến dịch đích không tồn tại hoặc đã bị chốt/lưu trữ/xóa');
+    }
+
+    const uniqueCustomerIds = Array.from(
+      new Set(customerIds.map((id) => Number(id)).filter((id) => !isNaN(id) && id > 0))
+    );
+    const now = new Date();
+
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      // 1. Soft remove from old active campaigns
+      await tx.crmCampaignCustomer.updateMany({
+        where: {
+          legacyUserId: { in: uniqueCustomerIds },
+          removedAt: null,
+        },
+        data: {
+          removedAt: now,
+          removedReason: reason || `Quản lý chuyển sang chiến dịch "${targetCampaign.name}"`,
+          removedBy: staffId,
+        },
+      });
+
+      // 2. Clear old Booker assignments
+      await tx.crmCustomerAssignment.deleteMany({
+        where: { legacyUserId: { in: uniqueCustomerIds } },
+      });
+
+      // 3. Add to target campaign
+      await tx.crmCampaignCustomer.createMany({
+        data: uniqueCustomerIds.map((cId) => ({
+          campaignId,
+          legacyUserId: cId,
+          addedAt: now,
+          addedBy: staffId,
+        })),
+      });
+    });
+
+    return {
+      success: true,
+      message: `Đã chuyển thành công ${uniqueCustomerIds.length} khách hàng sang chiến dịch "${targetCampaign.name}"`,
+      transferredCount: uniqueCustomerIds.length,
+    };
   }
 
   /**
@@ -1578,6 +1819,7 @@ export class CampaignService {
           ? JSON.parse(c.assignedStaffIds) || []
           : c.assignedStaffIds
         : [],
+      deletedAt: c.deletedAt ? new Date(c.deletedAt).toISOString() : null,
       creatorName: c.creator?.displayName || c.creator?.username || null,
       createdAt: new Date(c.createdAt).toISOString(),
       updatedAt: new Date(c.updatedAt).toISOString(),

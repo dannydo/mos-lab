@@ -116,7 +116,7 @@ export async function campaignRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // 7. End Campaign (Admin only)
+  // 7. End / Complete Campaign (Admin only)
   fastify.post(
     '/campaigns/:id/end',
     { preHandler: [requireAuth, requireCampaignAdmin] },
@@ -131,6 +131,168 @@ export async function campaignRoutes(fastify: FastifyInstance) {
         return reply.send(campaign);
       } catch (err: any) {
         request.log.error('Failed to end campaign:', err);
+        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  fastify.post(
+    '/campaigns/:id/complete',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const campaign = await CampaignService.completeCampaign(fastify, id);
+        return reply.send(campaign);
+      } catch (err: any) {
+        request.log.error('Failed to complete campaign:', err);
+        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 8. Pause Campaign (Admin only)
+  fastify.post(
+    '/campaigns/:id/pause',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const campaign = await CampaignService.pauseCampaign(fastify, id);
+        return reply.send(campaign);
+      } catch (err: any) {
+        request.log.error('Failed to pause campaign:', err);
+        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 9. Resume Campaign (Admin only)
+  fastify.post(
+    '/campaigns/:id/resume',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const campaign = await CampaignService.resumeCampaign(fastify, id);
+        return reply.send(campaign);
+      } catch (err: any) {
+        request.log.error('Failed to resume campaign:', err);
+        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 10. Archive Campaign (Admin only)
+  fastify.post(
+    '/campaigns/:id/archive',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const campaign = await CampaignService.archiveCampaign(fastify, id);
+        return reply.send(campaign);
+      } catch (err: any) {
+        request.log.error('Failed to archive campaign:', err);
+        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 11. Unarchive Campaign (Admin only)
+  fastify.post(
+    '/campaigns/:id/unarchive',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const campaign = await CampaignService.unarchiveCampaign(fastify, id);
+        return reply.send(campaign);
+      } catch (err: any) {
+        request.log.error('Failed to unarchive campaign:', err);
+        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 12. Reopen Campaign (Admin only)
+  fastify.post(
+    '/campaigns/:id/reopen',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const dto = (request.body || {}) as { endDate?: string };
+        const campaign = await CampaignService.reopenCampaign(fastify, id, dto);
+        return reply.send(campaign);
+      } catch (err: any) {
+        request.log.error('Failed to reopen campaign:', err);
+        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 12b. Restore Campaign (Admin only)
+  fastify.post(
+    '/campaigns/:id/restore',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const campaign = await CampaignService.restoreCampaign(fastify, id);
+        return reply.send(campaign);
+      } catch (err: any) {
+        request.log.error('Failed to restore campaign:', err);
+        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 13. Clone Campaign (Admin only)
+  fastify.post(
+    '/campaigns/:id/clone',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const user = request.user;
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const dto = (request.body || {}) as any;
+        const campaign = await CampaignService.cloneCampaign(fastify, id, dto, user.id);
+        return reply.status(201).send(campaign);
+      } catch (err: any) {
+        request.log.error('Failed to clone campaign:', err);
         return reply.status(400).send({ error: 'Bad Request', message: err.message });
       }
     }
@@ -189,6 +351,34 @@ export async function campaignRoutes(fastify: FastifyInstance) {
         return reply.status(201).send(result);
       } catch (err: any) {
         request.log.error('Failed to add customers to campaign:', err);
+        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 9b. Transfer Customers to Campaign (Admin only)
+  fastify.post(
+    '/campaigns/:id/transfer-customers',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const user = request.user;
+        const dto = (request.body || {}) as { customerIds: number[]; reason?: string };
+        const result = await CampaignService.transferCustomersToCampaign(
+          fastify,
+          id,
+          dto.customerIds || [],
+          dto.reason,
+          user.id
+        );
+        return reply.status(200).send(result);
+      } catch (err: any) {
+        request.log.error('Failed to transfer customers to campaign:', err);
         return reply.status(400).send({ error: 'Bad Request', message: err.message });
       }
     }

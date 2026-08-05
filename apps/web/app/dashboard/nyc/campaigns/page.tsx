@@ -42,6 +42,13 @@ import {
   GiftOutlined,
   TeamOutlined,
   UserOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  CheckCircleOutlined,
+  FolderOutlined,
+  CopyOutlined,
+  UndoOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -82,10 +89,34 @@ export default function CampaignManagementPage() {
     return true;
   });
 
+  const [campaignVisibilityMap, setCampaignVisibilityMap] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mos_sidebar_campaign_visibility');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (_) {}
+      }
+    }
+    return {};
+  });
+
   const handleToggleSidebar = (checked: boolean) => {
     setShowInSidebar(checked);
     localStorage.setItem('mos_sidebar_show_custom_campaigns', String(checked));
     window.dispatchEvent(new Event('mos_sidebar_toggle'));
+  };
+
+  const handleToggleCampaignSidebar = (campaign: Campaign, checked: boolean) => {
+    const updatedMap = {
+      ...campaignVisibilityMap,
+      [campaign.slug]: checked,
+      [String(campaign.id)]: checked,
+    };
+    setCampaignVisibilityMap(updatedMap);
+    localStorage.setItem('mos_sidebar_campaign_visibility', JSON.stringify(updatedMap));
+    window.dispatchEvent(new Event('mos_sidebar_toggle'));
+    message.success(`Đã ${checked ? 'hiển thị' : 'ẩn'} link chiến dịch "${campaign.name}" trên Sidebar`);
   };
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -163,6 +194,8 @@ export default function CampaignManagementPage() {
         slug: '',
         description: '',
         dates: null,
+        status: 'ACTIVE',
+        showInSidebar: true,
         touchpoints: [
           { label: 'Chạm D1', key: 'TP_D1', icon: 'Smile', daysMin: 1, daysMax: 1, color: '#34ff1a', sortOrder: 1 },
           { label: 'Chạm D3', key: 'TP_D3', icon: 'Handshake', daysMin: 3, daysMax: 3, color: '#2e1ac7', sortOrder: 2 },
@@ -198,6 +231,9 @@ export default function CampaignManagementPage() {
             ? [dayjs(details.startDate), null]
             : null;
 
+      const isShown =
+        campaignVisibilityMap[details.slug] !== false && campaignVisibilityMap[String(details.id)] !== false;
+
       setTimeout(() => {
         form.resetFields();
         form.setFieldsValue({
@@ -206,6 +242,7 @@ export default function CampaignManagementPage() {
           description: details.description,
           dates: dates,
           status: details.status,
+          showInSidebar: isShown,
           assignedStaffIds: details.assignedStaffIds || [],
           touchpoints: (details.touchpoints || details.CampaignTouchpoint || []).map((tp: any, idx: number) => ({
             label: tp.label,
@@ -248,6 +285,102 @@ export default function CampaignManagementPage() {
     } catch (err) {
       console.error('Delete campaign error:', err);
       message.error('Không thể xóa chiến dịch');
+    }
+  };
+
+  // Pause Campaign
+  const handlePauseCampaign = async (campaign: Campaign) => {
+    try {
+      await apiClient.campaigns.pause(campaign.id);
+      message.success(`Đã tạm dừng chiến dịch "${campaign.name}"`);
+      fetchCampaigns();
+    } catch (err: any) {
+      console.error('Pause campaign error:', err);
+      message.error(err?.response?.data?.message || 'Không thể tạm dừng chiến dịch');
+    }
+  };
+
+  // Resume / Activate Campaign
+  const handleResumeCampaign = async (campaign: Campaign) => {
+    try {
+      await apiClient.campaigns.resume(campaign.id);
+      message.success(`Đã tiếp tục/kích hoạt chiến dịch "${campaign.name}"`);
+      fetchCampaigns();
+    } catch (err: any) {
+      console.error('Resume campaign error:', err);
+      message.error(err?.response?.data?.message || 'Không thể kích hoạt chiến dịch');
+    }
+  };
+
+  // Complete / End Campaign
+  const handleCompleteCampaign = async (campaign: Campaign) => {
+    try {
+      await apiClient.campaigns.complete(campaign.id);
+      message.success(`Đã hoàn thành chốt sổ chiến dịch "${campaign.name}"`);
+      fetchCampaigns();
+    } catch (err: any) {
+      console.error('Complete campaign error:', err);
+      message.error(err?.response?.data?.message || 'Không thể chốt sổ chiến dịch');
+    }
+  };
+
+  // Archive Campaign
+  const handleArchiveCampaign = async (campaign: Campaign) => {
+    try {
+      await apiClient.campaigns.archive(campaign.id);
+      message.success(`Đã lưu trữ chiến dịch "${campaign.name}"`);
+      fetchCampaigns();
+    } catch (err: any) {
+      console.error('Archive campaign error:', err);
+      message.error(err?.response?.data?.message || 'Không thể lưu trữ chiến dịch');
+    }
+  };
+
+  // Unarchive Campaign
+  const handleUnarchiveCampaign = async (campaign: Campaign) => {
+    try {
+      await apiClient.campaigns.unarchive(campaign.id);
+      message.success(`Đã bỏ lưu trữ chiến dịch "${campaign.name}"`);
+      fetchCampaigns();
+    } catch (err: any) {
+      console.error('Unarchive campaign error:', err);
+      message.error(err?.response?.data?.message || 'Không thể bỏ lưu trữ chiến dịch');
+    }
+  };
+
+  // Reopen Campaign
+  const handleReopenCampaign = async (campaign: Campaign) => {
+    try {
+      await apiClient.campaigns.reopen(campaign.id);
+      message.success(`Đã gia hạn & mở lại chiến dịch "${campaign.name}" 30 ngày`);
+      fetchCampaigns();
+    } catch (err: any) {
+      console.error('Reopen campaign error:', err);
+      message.error(err?.response?.data?.message || 'Không thể mở lại chiến dịch');
+    }
+  };
+
+  // Clone Campaign
+  const handleCloneCampaign = async (campaign: Campaign) => {
+    try {
+      const cloned: any = await apiClient.campaigns.clone(campaign.id);
+      message.success(`Đã nhân bản chiến dịch thành "${cloned?.name || 'Bản sao'}" (Nháp)`);
+      fetchCampaigns();
+    } catch (err: any) {
+      console.error('Clone campaign error:', err);
+      message.error(err?.response?.data?.message || 'Không thể nhân bản chiến dịch');
+    }
+  };
+
+  // Restore Campaign
+  const handleRestoreCampaign = async (campaign: Campaign) => {
+    try {
+      await apiClient.campaigns.restore(campaign.id);
+      message.success(`Đã khôi phục chiến dịch "${campaign.name}" về trạng thái Đang hoạt động`);
+      fetchCampaigns();
+    } catch (err: any) {
+      console.error('Restore campaign error:', err);
+      message.error(err?.response?.data?.message || 'Không thể khôi phục chiến dịch');
     }
   };
 
@@ -313,12 +446,29 @@ export default function CampaignManagementPage() {
           description: values.description,
           startDate,
           endDate,
+          status: values.status || 'ACTIVE',
           assignedStaffIds: values.assignedStaffIds || null,
           touchpoints,
           promotions,
         };
         await apiClient.campaigns.create(createDto);
         message.success('Tạo chiến dịch mới thành công');
+      }
+
+      if (values.showInSidebar !== undefined) {
+        const targetSlug = editingCampaign ? editingCampaign.slug : values.slug;
+        if (targetSlug) {
+          const updatedMap: Record<string, boolean> = {
+            ...campaignVisibilityMap,
+            [targetSlug]: values.showInSidebar,
+          };
+          if (editingCampaign) {
+            updatedMap[String(editingCampaign.id)] = values.showInSidebar;
+          }
+          setCampaignVisibilityMap(updatedMap);
+          localStorage.setItem('mos_sidebar_campaign_visibility', JSON.stringify(updatedMap));
+          window.dispatchEvent(new Event('mos_sidebar_toggle'));
+        }
       }
 
       setIsModalOpen(false);
@@ -334,12 +484,21 @@ export default function CampaignManagementPage() {
 
   const renderStatusTag = (status: CampaignStatus) => {
     switch (status) {
+      case 'DRAFT':
+        return <Tag color="default">📝 NHÁP</Tag>;
+      case 'SCHEDULED':
+        return <Tag color="processing">⏰ LÊN LỊCH</Tag>;
       case 'ACTIVE':
-        return <Tag color="success">HOẠT ĐỘNG</Tag>;
+        return <Tag color="success">🟢 ĐANG CHẠY</Tag>;
+      case 'PAUSED':
+        return <Tag color="warning">⏸️ TẠM DỪNG</Tag>;
+      case 'COMPLETED':
       case 'ENDED':
-        return <Tag color="default">ĐÃ KẾT THÚC</Tag>;
+        return <Tag color="purple">🏁 HOÀN THÀNH</Tag>;
       case 'ARCHIVED':
-        return <Tag color="warning">LƯU TRỮ</Tag>;
+        return <Tag color="magenta">📦 LƯU TRỮ</Tag>;
+      case 'DELETED':
+        return <Tag color="error">🗑️ ĐÃ XÓA</Tag>;
       default:
         return <Tag>{status}</Tag>;
     }
@@ -401,6 +560,27 @@ export default function CampaignManagementPage() {
       },
     },
     {
+      title: 'Hiện Sidebar',
+      key: 'showInSidebar',
+      align: 'center' as const,
+      render: (_: any, record: Campaign) => {
+        const isShown =
+          campaignVisibilityMap[record.slug] !== false && campaignVisibilityMap[String(record.id)] !== false;
+        return (
+          <Tooltip
+            title={isShown ? 'Đang hiện link ở Sidebar (Click để ẩn)' : 'Đang ẩn link ở Sidebar (Click để hiện)'}
+          >
+            <Switch
+              size="small"
+              checked={isShown}
+              onChange={(checked) => handleToggleCampaignSidebar(record, checked)}
+              style={{ backgroundColor: isShown ? '#10b981' : undefined }}
+            />
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: 'Tổng KH',
       key: 'totalCustomers',
       align: 'right' as const,
@@ -412,42 +592,96 @@ export default function CampaignManagementPage() {
       title: 'Thao tác',
       key: 'actions',
       align: 'center' as const,
+      width: 240,
       render: (_: any, record: Campaign) => (
-        <Space size="small">
+        <Space size={4} align="center">
           <Tooltip title="Xem chi tiết chiến dịch">
             <Button
               type="primary"
               size="small"
               icon={<EyeOutlined />}
               onClick={() => router.push(`/dashboard/nyc/campaigns/${record.slug}`)}
-            >
-              Chi tiết
-            </Button>
+            />
           </Tooltip>
           {isAdmin && (
             <>
-              <Tooltip title="Chỉnh sửa chiến dịch">
-                <Button size="small" icon={<EditOutlined />} onClick={() => handleOpenEdit(record)} />
-              </Tooltip>
+              {['DRAFT', 'SCHEDULED', 'ACTIVE', 'PAUSED'].includes(record.status) && (
+                <Tooltip title="Chỉnh sửa chiến dịch">
+                  <Button size="small" icon={<EditOutlined />} onClick={() => handleOpenEdit(record)} />
+                </Tooltip>
+              )}
+              {['DRAFT', 'SCHEDULED', 'PAUSED'].includes(record.status) && (
+                <Tooltip title={record.status === 'PAUSED' ? 'Tiếp tục chiến dịch' : 'Kích hoạt ngay'}>
+                  <Button
+                    size="small"
+                    className="bg-emerald-600 text-white hover:bg-emerald-500"
+                    icon={<PlayCircleOutlined />}
+                    onClick={() => handleResumeCampaign(record)}
+                  />
+                </Tooltip>
+              )}
               {record.status === 'ACTIVE' && (
+                <Tooltip title="Tạm dừng chiến dịch">
+                  <Button
+                    size="small"
+                    className="bg-amber-500 text-white hover:bg-amber-400 font-bold"
+                    icon={<PauseCircleOutlined />}
+                    onClick={() => handlePauseCampaign(record)}
+                  />
+                </Tooltip>
+              )}
+              {['ACTIVE', 'PAUSED'].includes(record.status) && (
                 <Popconfirm
-                  title="Kết thúc chiến dịch?"
-                  description="Chiến dịch sẽ chuyển sang trạng thái ENDED và ngưng phân bổ."
-                  onConfirm={() => handleEndCampaign(record)}
-                  okText="Kết thúc"
+                  title="Chốt / Hoàn thành chiến dịch?"
+                  description="Khách hàng chưa booked sẽ được hoàn trả về NYC main pool."
+                  onConfirm={() => handleCompleteCampaign(record)}
+                  okText="Chốt sổ"
                   cancelText="Hủy"
                   okButtonProps={{ danger: true }}
                 >
-                  <Tooltip title="Kết thúc chiến dịch">
-                    <Button size="small" danger icon={<StopOutlined />} />
+                  <Tooltip title="Chốt & Hoàn thành">
+                    <Button size="small" danger icon={<CheckCircleOutlined />} />
                   </Tooltip>
                 </Popconfirm>
               )}
+              {['COMPLETED', 'ENDED'].includes(record.status) && (
+                <Tooltip title="Lưu trữ chiến dịch">
+                  <Button size="small" icon={<FolderOutlined />} onClick={() => handleArchiveCampaign(record)} />
+                </Tooltip>
+              )}
+              {record.status === 'ARCHIVED' && (
+                <Tooltip title="Bỏ lưu trữ">
+                  <Button size="small" icon={<UndoOutlined />} onClick={() => handleUnarchiveCampaign(record)} />
+                </Tooltip>
+              )}
+              {['COMPLETED', 'ENDED', 'ARCHIVED'].includes(record.status) && (
+                <Tooltip title="Mở lại / Gia hạn">
+                  <Button
+                    size="small"
+                    className="bg-blue-600 text-white hover:bg-blue-500"
+                    icon={<ReloadOutlined />}
+                    onClick={() => handleReopenCampaign(record)}
+                  />
+                </Tooltip>
+              )}
+              {(record.status as string) === 'DELETED' && (
+                <Tooltip title="Khôi phục chiến dịch">
+                  <Button
+                    size="small"
+                    className="bg-emerald-600 text-white hover:bg-emerald-500 font-semibold"
+                    icon={<UndoOutlined />}
+                    onClick={() => handleRestoreCampaign(record)}
+                  />
+                </Tooltip>
+              )}
+              <Tooltip title="Nhân bản chiến dịch">
+                <Button size="small" icon={<CopyOutlined />} onClick={() => handleCloneCampaign(record)} />
+              </Tooltip>
               <Popconfirm
                 title="Xóa chiến dịch?"
-                description="Bạn có chắc chắn muốn xóa hẳn chiến dịch này không?"
+                description="Bạn có chắc chắn muốn xóa chiến dịch này không?"
                 onConfirm={() => handleDeleteCampaign(record)}
-                okText="Xóa ngay"
+                okText="Xóa"
                 cancelText="Hủy"
                 okButtonProps={{ danger: true }}
               >
@@ -533,20 +767,24 @@ export default function CampaignManagementPage() {
               allowClear
             />
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={10}>
             <Select
               value={statusFilter}
               onChange={(val) => setStatusFilter(val)}
               style={{ width: '100%' }}
               options={[
                 { value: 'ALL', label: 'Tất cả trạng thái' },
-                { value: 'ACTIVE', label: 'Đang hoạt động (ACTIVE)' },
-                { value: 'ENDED', label: 'Đã kết thúc (ENDED)' },
-                { value: 'ARCHIVED', label: 'Lưu trữ (ARCHIVED)' },
+                { value: 'ACTIVE', label: '🟢 Đang hoạt động (ACTIVE)' },
+                { value: 'PAUSED', label: '⏸️ Tạm dừng (PAUSED)' },
+                { value: 'SCHEDULED', label: '⏰ Lên lịch (SCHEDULED)' },
+                { value: 'DRAFT', label: '📝 Nháp (DRAFT)' },
+                { value: 'COMPLETED', label: '🏁 Đã hoàn thành (COMPLETED)' },
+                { value: 'ARCHIVED', label: '📦 Lưu trữ (ARCHIVED)' },
+                { value: 'DELETED', label: '🗑️ Đã xóa (DELETED)' },
               ]}
             />
           </Col>
-          <Col xs={24} sm={24} md={8} className="text-right">
+          <Col xs={24} sm={24} md={6} className="text-right">
             <Text type="secondary" className="tabular-nums">
               Hiển thị <strong>{filteredCampaigns.length}</strong> chiến dịch
             </Text>
@@ -636,23 +874,34 @@ export default function CampaignManagementPage() {
                           />
                         </Form.Item>
                       </Col>
-                      {editingCampaign && (
-                        <Col span={10}>
-                          <Form.Item name="status" label="Trạng thái">
-                            <Select
-                              options={[
-                                { value: 'ACTIVE', label: 'ACTIVE (Hoạt động)' },
-                                { value: 'ENDED', label: 'ENDED (Đã kết thúc)' },
-                                { value: 'ARCHIVED', label: 'ARCHIVED (Lưu trữ)' },
-                              ]}
-                            />
-                          </Form.Item>
-                        </Col>
-                      )}
+                      <Col span={10}>
+                        <Form.Item name="status" label="Trạng thái" initialValue="ACTIVE">
+                          <Select
+                            options={[
+                              { value: 'DRAFT', label: '📝 DRAFT (Nháp)' },
+                              { value: 'SCHEDULED', label: '⏰ SCHEDULED (Lên lịch)' },
+                              { value: 'ACTIVE', label: '🟢 ACTIVE (Đang hoạt động)' },
+                              { value: 'PAUSED', label: '⏸️ PAUSED (Tạm dừng)' },
+                              { value: 'COMPLETED', label: '🏁 COMPLETED (Hoàn thành)' },
+                              { value: 'ARCHIVED', label: '📦 ARCHIVED (Lưu trữ)' },
+                              { value: 'DELETED', label: '🗑️ DELETED (Đã xóa)' },
+                            ]}
+                          />
+                        </Form.Item>
+                      </Col>
                     </Row>
 
                     <Form.Item name="description" label="Mô tả chiến dịch">
                       <Input.TextArea rows={2} placeholder="Mô tả ngắn gọn về mục tiêu và quy định của chiến dịch..." />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="showInSidebar"
+                      label="Hiển thị link ở Sidebar menu"
+                      valuePropName="checked"
+                      tooltip="Bật switch này để hiển thị đường dẫn của chiến dịch ở menu bên trái."
+                    >
+                      <Switch checkedChildren="Hiện" unCheckedChildren="Ẩn" style={{ backgroundColor: '#10b981' }} />
                     </Form.Item>
 
                     <Form.Item
