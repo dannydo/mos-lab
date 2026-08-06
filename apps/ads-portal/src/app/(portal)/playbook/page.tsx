@@ -33,7 +33,7 @@ const DEFAULT_PLAYBOOKS: Playbook[] = [
    - Thiết kế phom mi độc quyền cá nhân hóa (Baby Doll tròn mắt, Sexy Wings kéo dài đuôi mắt, Wispy bay bổng...) ôm trọn dáng mắt thật của chị.
    - Sử dụng dòng keo nối cao cấp độc quyền hạn chế tối đa cay mắt hay kích ứng vùng nhạy cảm, cực nhẹ mắt, không cộm ngứa.
    - Kỹ thuật đặt chân mi chuẩn khoảng cách, không gây rụng mi thật.
-3. Chốt lịch: "Dạ hôm nay bên em đang trống kỹ thuật viên thiết kế phom lúc 15h và 17h, em book lịch thiết kế phom dáng mắt riêng cho chị nha."`,
+3. Chốt lịch: "Dạ hôm nay bên em đang trống chuyên viên thiết kế phom lúc 15h và 17h, em book lịch thiết kế phom dáng mắt riêng cho chị nha."`,
   },
   {
     id: 'pb-upsell-lower-lashes',

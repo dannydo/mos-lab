@@ -137,15 +137,11 @@ export const BookingsTab: React.FC<
             }
           });
 
-          if (closestB) {
+          // Only attach to booking card if note was created within 12 hours of appointment
+          if (closestB && minDiff <= 12 * 60 * 60 * 1000) {
             targetBookingId = String(closestB.id);
           }
         }
-      }
-
-      // Fallback: attach to first/latest booking if no date matched
-      if (!targetBookingId && bookings.length > 0) {
-        targetBookingId = String(bookings[0].id);
       }
 
       if (targetBookingId) {
@@ -285,7 +281,11 @@ export const BookingsTab: React.FC<
                 >
                   <div>
                     CN: <strong>{b.branchName || '-'}</strong> | CV:{' '}
-                    <strong>{b.technicianName && b.technicianName !== 'Kỹ thuật viên' ? b.technicianName : '-'}</strong>
+                    <strong>
+                      {b.technicianName && b.technicianName !== 'Kỹ thuật viên' && b.technicianName !== 'Chuyên viên'
+                        ? b.technicianName
+                        : '-'}
+                    </strong>
                   </div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', opacity: 0.85 }}>
                     <span>

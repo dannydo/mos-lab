@@ -552,12 +552,12 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       };
 
       // 4. Determine action type
-      let actionType: 'RESCHEDULE' | 'CHANGE_KTV' | 'CHANGE_STORE' | 'EDIT' = 'EDIT';
+      let actionType: 'RESCHEDULE' | 'CHANGE_CV' | 'CHANGE_STORE' | 'EDIT' = 'EDIT';
       const oldStartStr = order.booking_date_start ? formatLocalMySQL(new Date(order.booking_date_start)) : '';
       if (oldStartStr !== mysqlStart) {
         actionType = 'RESCHEDULE';
       } else if (Number(order.assigned_staff_id || 0) !== Number(technicianId || 0)) {
-        actionType = 'CHANGE_KTV';
+        actionType = 'CHANGE_CV';
       } else if (Number(order.client_store_id) !== Number(storeId)) {
         actionType = 'CHANGE_STORE';
       }

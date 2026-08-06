@@ -1613,7 +1613,7 @@ export async function catalogRoutes(fastify: FastifyInstance) {
             COALESCE(up.full_name, up.username, uc.phone_number, 'Khách hàng') as customerName,
             uc.phone_number as customerPhone,
             COALESCE(ro.actual_booking_date_start, o.booking_date_start, o.date_created) as orderDate,
-            'Kỹ thuật viên' as staffName,
+            'Chuyên viên' as staffName,
             1 as quantity,
             ROUND(COALESCE(sp.service_price, 0)) as amount
           FROM \`order_service\` os

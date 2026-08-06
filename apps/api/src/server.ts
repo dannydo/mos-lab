@@ -25,6 +25,7 @@ import { teamRoutes } from './modules/teams/routes.js';
 import { smsRoutes } from './modules/sms/routes.js';
 import { allocationRoutes } from './modules/allocation/routes.js';
 import { campaignRoutes } from './modules/campaigns/routes.js';
+import { csRoutes } from './modules/cs/routes.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
 // Load environment variables
@@ -161,7 +162,7 @@ const start = async () => {
             viewTeamKPI: false,
             manageStaff: false,
             isSystem: true,
-            description: 'Kỹ thuật viên',
+            description: 'Chuyên viên',
           },
         ],
       });
@@ -185,6 +186,7 @@ const start = async () => {
     await server.register(smsRoutes, { prefix: '/api' });
     await server.register(allocationRoutes, { prefix: '/api' });
     await server.register(campaignRoutes, { prefix: '/api' });
+    await server.register(csRoutes, { prefix: '/api' });
 
     // Start background analyzer polling for AI laugh detection
     startRecordingAnalyzer(server);

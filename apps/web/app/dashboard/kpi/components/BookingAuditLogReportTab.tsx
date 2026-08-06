@@ -22,7 +22,8 @@ const { RangePicker } = DatePicker;
 const ACTION_TAG_MAP: Record<string, { color: string; label: string }> = {
   CANCEL: { color: 'error', label: '❌ Hủy lịch' },
   RESCHEDULE: { color: 'warning', label: '📅 Dời lịch' },
-  CHANGE_KTV: { color: 'processing', label: '💇 Đổi KTV' },
+  CHANGE_CV: { color: 'processing', label: '💇 Đổi CV' },
+  CHANGE_KTV: { color: 'processing', label: '💇 Đổi CV' },
   CHANGE_STORE: { color: 'purple', label: '🏢 Đổi chi nhánh' },
   EDIT: { color: 'default', label: '✏️ Sửa đơn' },
 };
@@ -318,7 +319,7 @@ export const BookingAuditLogReportTab: React.FC = () => {
                 { value: 'ALL', label: 'Tất cả hành động' },
                 { value: 'CANCEL', label: '❌ Hủy lịch' },
                 { value: 'RESCHEDULE', label: '📅 Dời lịch' },
-                { value: 'CHANGE_KTV', label: '💇 Đổi KTV' },
+                { value: 'CHANGE_CV', label: '💇 Đổi CV' },
                 { value: 'CHANGE_STORE', label: '🏢 Đổi chi nhánh' },
                 { value: 'EDIT', label: '✏️ Sửa đơn' },
               ]}

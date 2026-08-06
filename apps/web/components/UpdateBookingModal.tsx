@@ -59,6 +59,7 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
             if (
               booking.technicianName &&
               booking.technicianName !== 'Kỹ thuật viên' &&
+              booking.technicianName !== 'Chuyên viên' &&
               st.displayName &&
               st.displayName.toLowerCase().trim() === String(booking.technicianName).toLowerCase().trim()
             )

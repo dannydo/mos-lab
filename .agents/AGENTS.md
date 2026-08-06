@@ -210,20 +210,23 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
 
 ## 10. FAL (Fix, Adjust, Log) & Midnight Regeneration Rules
 1. **Quy tắc Nghiệp vụ FAL (Fix, Adjust, Log)**:
-   - **Fix**: Sửa mi hỏng $\le 25$ phút $\rightarrow$ KTV sửa mi được điểm Banana, CC được thưởng thêm; KTV cũ làm hỏng mi bị trừ thưởng (`_punishBonus`).
-   - **Adjust**: Chỉnh dáng mi $\rightarrow$ KTV cũ bị trừ điểm/thưởng đền bù.
-   - **Log**: Ghi nhận log mi $\rightarrow$ Luôn được cộng điểm Banana.
-   - **Bóc tách SQL**: Truy vấn SQL của KTV Xoay & CC Xoay bắt buộc bóc tách cột `falRule` từ `next_fix_order_service_id`, `next_adjust_order_service_id`, `s.service_type IN ('Fix', 'Adjust', 'Log')` và `tracking_key`.
+   - **Fix**: Sửa mi hỏng $\le 25$ phút $\rightarrow$ KTV sửa mi được điểm Banana. Khi $> 25$ phút $\rightarrow$ KTV mới không được điểm Banana (chỉ tính Lương giờ cứng). KTV cũ ca hỏng mi luôn bị phạt thu hồi thưởng (`_punishBonus`) 100%.
+   - **Adjust**: Chỉnh dáng mi $\le 25$ phút $\rightarrow$ KTV mới được điểm Banana. Khi $> 25$ phút $\rightarrow$ KTV mới không được điểm Banana. CC cũ ca tư vấn sai dáng mi luôn bị phạt thu hồi thưởng (`_punishBonus`) 100% (KHÔNG phạt KTV).
+   - **Log**: Ghi nhận tháo mi / kiểm tra $\rightarrow$ Luôn được cộng điểm Banana bất kể thời lượng ngắn hay dài.
+   - **Replace**: Tháo mi cũ nối lại bộ mới 100% $\rightarrow$ KTV mới được tính thưởng Full theo bộ mới. KTV ca cũ bị phạt thu hồi thưởng (`_punishBonus`).
+   - **Bóc tách SQL**: Truy vấn SQL của KTV Xoay & CC Xoay bắt buộc bóc tách cột `falRule` từ `next_fix_order_service_id`, `next_adjust_order_service_id`, `s.service_type IN ('Fix', 'Adjust', 'Log', 'Replace')` và `tracking_key`.
 
 2. **Quy tắc Cronjob Regenerate Nửa Đêm (02:00 AM ICT)**:
    - Cronjob batch regenerate trên Prod đặt vào **02:00 AM, 02:10 AM, 02:20 AM giờ Việt Nam (`Asia/Ho_Chi_Minh`)** quét 3 ngày lùi (`1 day ago`, `2 days ago`, `3 days ago`) để làm sạch 100% rủi ro race condition cuối ngày.
 
-## 11. No Monthly Sales Bonus for CC Invariant (Quy tắc Không Có Thưởng Doanh Số Tháng Cho CC)
-1. **Chỉ ghi nhận Thưởng Doanh Số Ngày (CC Daily Bonus)**:
-   - Hệ thống **KHÔNG CÓ** khoản thưởng doanh số tháng (Monthly Sales Bonus) cho nhóm tư vấn viên CC.
-   - Toàn bộ thưởng doanh số của CC chỉ được ghi nhận và chi trả theo **NGÀY (CC Daily Bonus)** dựa trên 4 danh mục (Combo mới, Sản phẩm, Thu nợ, Nâng cấp combo).
-2. **Ngăn chặn giả định sai**:
-   - Tuyệt đối không giả định hay viết logic tính toán/hiển thị thưởng % doanh số chốt cuối tháng cho CC trên các tab báo cáo và API.
+## 12. SVG Diagram Event Delegation & Ant Design Z-Index Stacking Rules
+1. **SVG Node Click Event Delegation & State Batching**:
+   - Khi gắn sự kiện tương tác click lên các phần tử SVG động (Mermaid flowchart nodes), luôn sử dụng **Event Delegation trên Container SVG Gốc (`svgWrapperRef`)** dùng `.closest('.node')`.
+   - Tất cả các hàm cập nhật trạng thái React (`setSelectedNode`, `setModalOpen`) gọi từ listener DOM SVG gốc phải bọc trong `flushSync(() => { ... })` từ `'react-dom'` để đảm bảo React 19 / Next.js 16 re-render giao diện ngay lập tức.
+2. **Ant Design Select `getPopupContainer` inside Modals/Drawers**:
+   - Tất cả các component `<Select>` nằm bên trong `<Modal>` hoặc `<Drawer>` có `zIndex` tùy chỉnh bắt buộc phải khai báo `getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}`.
+   - Tránh việc Ant Design render menu thả xuống bên ngoài `body` với `z-index: 1050` bị chìm ẩn đằng sau vách tối của Modal/Drawer.
+   - Đặt `zIndex={1050}` chuẩn cho Modal/Drawer thay vì dùng mốc quá lớn (`10000`) để không kích hoạt cảnh báo Ant Design `[antd: SelectLike] zIndex is over design token zIndexPopupBase`.
 
 ---
 

@@ -96,7 +96,7 @@ export const BookingHabitsCard: React.FC<BookingHabitsCardProps> = ({
         <div style={sectionStyle}>
           <div style={titleHeaderStyle}>
             <UserOutlined style={{ color: themeMode === 'dark' ? '#f472b6' : '#db2777' }} />
-            <span>Kỹ thuật viên (Chuyên viên)</span>
+            <span>Chuyên viên (CV)</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '18px', fontSize: '12px' }}>
             <div>

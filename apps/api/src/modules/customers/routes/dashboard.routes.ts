@@ -529,7 +529,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         const firstCvStaffId =
           o.assigned_staff_id ||
           (orderSvs.length > 0 ? orderSvs.find((cs) => cs.assigned_staff_id !== null)?.assigned_staff_id : null);
-        const cvRequested = firstCvStaffId ? staffMap.get(Number(firstCvStaffId)) || 'Kỹ thuật viên' : 'Chưa phân công';
+        const cvRequested = firstCvStaffId ? staffMap.get(Number(firstCvStaffId)) || 'Chuyên viên' : 'Chưa phân công';
 
         let status: 'completed' | 'serving' | 'confirmed' | 'pending' | 'late' = 'pending';
         if (o.order_state === 'Completed') {
@@ -845,9 +845,9 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
         let cvName = 'Chưa phân công';
         if (o.assigned_staff_id) {
-          cvName = staffMap.get(Number(o.assigned_staff_id)) || 'Kỹ thuật viên';
+          cvName = staffMap.get(Number(o.assigned_staff_id)) || 'Chuyên viên';
         } else if (orderSvs.length > 0 && orderSvs[0].assigned_staff_id) {
-          cvName = staffMap.get(Number(orderSvs[0].assigned_staff_id)) || 'Kỹ thuật viên';
+          cvName = staffMap.get(Number(orderSvs[0].assigned_staff_id)) || 'Chuyên viên';
         }
 
         const booker = o.created_staff_id

@@ -1,6 +1,6 @@
 # Task Checklist - Module 2: KPI & Gamification API (`apps/api`)
 
-Mục tiêu: Chuyển đổi và tập trung 100% Business Logic tính toán KPI, Gamification, Thưởng Level CC, Booker Productivity, KTV FAL Rules và Paystub về Fastify Backend.
+Mục tiêu: Chuyển đổi và tập trung 100% Business Logic tính toán KPI, Gamification, Thưởng Level CC, Booker Productivity, CV FAL Rules và Paystub về Fastify Backend.
 
 ---
 
@@ -22,11 +22,11 @@ Mục tiêu: Chuyển đổi và tập trung 100% Business Logic tính toán KPI
 - [x] `GET /api/kpi/cc/diamond`: Báo cáo chỉ số Diamond CC.
 - [x] `GET /api/kpi/cc/paystub`: Live Paystub CC.
 
-### 3. KTV / CV KPI API (`/api/kpi/cv`)
+### 3. CV KPI API (`/api/kpi/cv`)
 
-- [x] `GET /api/kpi/cv/xoay`: Báo cáo ca làm KTV Xoay & bóc tách FAL Rules (`Fix`, `Adjust`, `Log`).
-- [x] `GET /api/kpi/cv/tip`: Báo cáo KTV Tip share.
-- [x] `GET /api/kpi/cv/paystub`: Live Paystub KTV.
+- [x] `GET /api/kpi/cv/xoay`: Báo cáo ca làm CV Xoay & bóc tách FAL Rules (`Fix`, `Adjust`, `Log`).
+- [x] `GET /api/kpi/cv/tip`: Báo cáo CV Tip share.
+- [x] `GET /api/kpi/cv/paystub`: Live Paystub CV.
 
 ### 4. Booker Salary Export API (`/api/kpi/export-booker-salary`)
 

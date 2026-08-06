@@ -705,7 +705,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     bookingsList.forEach((b) => {
       if (isCompletedOrValidVisit(b.orderState)) {
         const name = b.technicianName || b.checkinStaffName || b.checkoutStaffName;
-        if (name && name !== 'Unknown' && name !== 'Kỹ thuật viên') {
+        if (name && name !== 'Unknown' && name !== 'Kỹ thuật viên' && name !== 'Chuyên viên') {
           const trimmed = name.trim();
           if (!trimmed.includes('(Đã nghỉ)')) {
             techCounts[trimmed] = (techCounts[trimmed] || 0) + 1;
@@ -756,7 +756,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     for (const b of sorted) {
       if (isCompletedOrValidVisit(b.orderState)) {
         const name = b.technicianName || b.checkinStaffName || b.checkoutStaffName;
-        if (name && name !== 'Unknown' && name !== 'Kỹ thuật viên') {
+        if (name && name !== 'Unknown' && name !== 'Kỹ thuật viên' && name !== 'Chuyên viên') {
           const trimmed = name.trim();
           if (!trimmed.includes('(Đã nghỉ)')) {
             return trimmed;

@@ -15,3 +15,5 @@ export type { PageHeaderProps } from './PageHeader';
 
 export { DensityContainer } from './DensityContainer';
 export type { DensityContainerProps, DensityMode, BreakpointPreset } from './DensityContainer';
+
+export { MermaidViewer } from './MermaidViewer';

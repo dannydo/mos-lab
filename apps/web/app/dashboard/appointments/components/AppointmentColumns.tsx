@@ -557,6 +557,7 @@ export const getMissedColumns = ({
     GOI_KHONG_NGHE: { label: 'Gọi không nghe', color: 'gold' },
     TIEM_QUATAI: { label: 'Tiệm quá tải', color: 'red' },
     BOOKER_LATHUONG: { label: 'Booker nhầm', color: 'purple' },
+    CV_BAN_LOI: { label: 'CV bận/trễ', color: 'volcano' },
     KTV_BAN_LOI: { label: 'CV bận/trễ', color: 'volcano' },
     KH_QUEN_LICH: { label: 'Khách quên lịch', color: 'magenta' },
     LY_DO_KHAC: { label: 'Lý do khác', color: 'cyan' },

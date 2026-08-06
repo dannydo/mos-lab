@@ -273,8 +273,10 @@ export class TeamService {
           LEFT JOIN \`user_group_language\` ugl ON up.user_group_id = ugl.user_group_id
           WHERE up.provider = 'Staff' AND up.is_disabled = 0
             AND (
-              ugl.user_group_name LIKE '%Kỹ thuật viên%'
+              ugl.user_group_name LIKE '%Chuyên viên%'
+              OR ugl.user_group_name LIKE '%Kỹ thuật viên%'
               OR ugl.user_group_name LIKE '%Technician%'
+              OR up.full_name LIKE '%CV%'
               OR up.full_name LIKE '%KTV%'
               OR up.user_id IN (SELECT DISTINCT assigned_staff_id FROM \`order_service\` WHERE assigned_staff_id > 0)
             )

@@ -12,6 +12,7 @@ import {
   ShareAltOutlined,
   BgColorsOutlined,
   RocketOutlined,
+  CustomerServiceOutlined,
 } from '@ant-design/icons';
 import { SafeAny } from '@mos-lab/shared';
 
@@ -131,6 +132,13 @@ export function getSidebarGroups(
     label: 'Chiến dịch NYC',
     icon: <ClockCircleOutlined />,
     children: nycChildren,
+  });
+
+  crmGroupItems.push({
+    key: 'cs-hub',
+    label: 'Trung Tâm CSKH',
+    icon: <CustomerServiceOutlined />,
+    path: '/dashboard/cs',
   });
 
   const crmGroup: SidebarGroupConfig = {
@@ -281,5 +289,6 @@ export function getSelectedMenuKey(pathname: string, assignedStaffId?: string | 
   if (pathname.includes('/dashboard/catalog')) return 'catalog';
   if (pathname.includes('/dashboard/architecture')) return 'architecture';
   if (pathname.includes('/dashboard/design-system')) return 'design-system';
+  if (pathname.includes('/dashboard/cs')) return 'cs-hub';
   return 'today';
 }

@@ -128,6 +128,24 @@ import {
   CustomerCampaignPromotionInfo,
   CampaignStatsResponse,
   ListCampaignsParams,
+  HappyCallTask,
+  SurveyRating,
+  CsTicket,
+  CsCampaign,
+  CsDashboardStats,
+  CsStaffRanking,
+  CsRatingTrend,
+  ListHappyCallsParams,
+  ListCsTicketsParams,
+  ListCsCampaignsParams,
+  CsDashboardParams,
+  CreateSurveyRatingDto,
+  CreateCsTicketDto,
+  UpdateCsTicketDto,
+  ResolveCsTicketDto,
+  CreateTicketCommentDto,
+  CreateCsCampaignDto,
+  UpdateCsCampaignDto,
 } from '@mos-lab/shared';
 
 // API Client SDK for mos-lab
@@ -743,8 +761,12 @@ export const apiClient = {
 
   staff: {
     list: async (params?: Record<string, unknown>): Promise<Staff[]> => {
-      const response = await api.get('/staff', { params });
-      return response.data;
+      try {
+        const response = await api.get('/staff', { params });
+        return Array.isArray(response.data) ? response.data : [];
+      } catch (_err) {
+        return [];
+      }
     },
     getLegacy: async (): Promise<unknown[]> => {
       const response = await api.get('/staff/legacy');
@@ -1273,6 +1295,101 @@ export const apiClient = {
     },
     getCustomerActivePromotions: async (customerId: number): Promise<CustomerCampaignPromotionInfo[]> => {
       const response = await api.get(`/campaigns/customer/${customerId}/active-promotions`);
+      return response.data;
+    },
+  },
+
+  cs: {
+    // Happy Calls
+    listHappyCalls: async (params?: any) => {
+      const response = await api.get('/cs/happy-calls', { params });
+      return response.data;
+    },
+    generateHappyCalls: async () => {
+      const response = await api.post('/cs/happy-calls/generate');
+      return response.data;
+    },
+    updateHappyCallStatus: async (id: number, status: string) => {
+      const response = await api.put(`/cs/happy-calls/${id}/status`, { status });
+      return response.data;
+    },
+    submitSurvey: async (taskId: number, dto: any) => {
+      const response = await api.post(`/cs/happy-calls/${taskId}/survey`, dto);
+      return response.data;
+    },
+    // Tickets
+    listTickets: async (params?: any) => {
+      const response = await api.get('/cs/tickets', { params });
+      return response.data;
+    },
+    createTicket: async (dto: any) => {
+      const response = await api.post('/cs/tickets', dto);
+      return response.data;
+    },
+    updateTicket: async (id: number, dto: any) => {
+      const response = await api.put(`/cs/tickets/${id}`, dto);
+      return response.data;
+    },
+    resolveTicket: async (id: number, dto: any) => {
+      const response = await api.post(`/cs/tickets/${id}/resolve`, dto);
+      return response.data;
+    },
+    scheduleSubtaskInspection: async (subtaskId: number, dto: any) => {
+      const response = await api.post(`/cs/tickets/subtasks/${subtaskId}/schedule-inspection`, dto);
+      return response.data;
+    },
+    resolveSubtask: async (subtaskId: number, dto: any) => {
+      const response = await api.post(`/cs/tickets/subtasks/${subtaskId}/resolve`, dto);
+      return response.data;
+    },
+    addTicketComment: async (ticketId: number, dto: any) => {
+      const response = await api.post(`/cs/tickets/${ticketId}/comments`, dto);
+      return response.data;
+    },
+    getDepartmentHandlers: async () => {
+      const response = await api.get('/cs/tickets/department-handlers');
+      return response.data;
+    },
+    updateDepartmentHandlers: async (data: any) => {
+      const response = await api.put('/cs/tickets/department-handlers', data);
+      return response.data;
+    },
+    // Campaigns
+    listCsCampaigns: async (params?: any) => {
+      const response = await api.get('/cs/campaigns', { params });
+      return response.data;
+    },
+    createCsCampaign: async (dto: any) => {
+      const response = await api.post('/cs/campaigns', dto);
+      return response.data;
+    },
+    updateCsCampaign: async (id: number, dto: any) => {
+      const response = await api.put(`/cs/campaigns/${id}`, dto);
+      return response.data;
+    },
+    activateCsCampaign: async (id: number) => {
+      const response = await api.post(`/cs/campaigns/${id}/activate`);
+      return response.data;
+    },
+    getCsCampaignTasks: async (id: number, params?: any) => {
+      const response = await api.get(`/cs/campaigns/${id}/tasks`, { params });
+      return response.data;
+    },
+    // Dashboard
+    getDashboardStats: async (params?: any) => {
+      const response = await api.get('/cs/dashboard/stats', { params });
+      return response.data;
+    },
+    getStaffRankings: async (params?: any) => {
+      const response = await api.get('/cs/dashboard/staff-rankings', { params });
+      return response.data;
+    },
+    getRatingTrends: async (params?: any) => {
+      const response = await api.get('/cs/dashboard/rating-trends', { params });
+      return response.data;
+    },
+    getCsStaffPerformance: async (params?: any) => {
+      const response = await api.get('/cs/dashboard/staff-performance', { params });
       return response.data;
     },
   },

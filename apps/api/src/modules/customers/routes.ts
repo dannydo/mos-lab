@@ -3892,12 +3892,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         bookingNote: bookingNote || null,
       };
 
-      let actionType: 'RESCHEDULE' | 'CHANGE_KTV' | 'CHANGE_STORE' | 'EDIT' = 'EDIT';
+      let actionType: 'RESCHEDULE' | 'CHANGE_CV' | 'CHANGE_STORE' | 'EDIT' = 'EDIT';
       const oldStartStr = order.booking_date_start ? formatLocalMySQL(new Date(order.booking_date_start)) : '';
       if (oldStartStr !== mysqlStart) {
         actionType = 'RESCHEDULE';
       } else if (Number(order.assigned_staff_id || 0) !== Number(technicianId || 0)) {
-        actionType = 'CHANGE_KTV';
+        actionType = 'CHANGE_CV';
       } else if (Number(order.client_store_id) !== Number(storeId)) {
         actionType = 'CHANGE_STORE';
       }
@@ -6326,7 +6326,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         const bookerDisplayName = getStaffDisplayName(finalBookerId);
         const technicianName =
           getStaffDisplayName(firstCvStaffId) ||
-          (b.assignedTechnicianName && b.assignedTechnicianName !== 'Kỹ thuật viên' ? b.assignedTechnicianName : null);
+          (b.assignedTechnicianName &&
+          b.assignedTechnicianName !== 'Kỹ thuật viên' &&
+          b.assignedTechnicianName !== 'Chuyên viên'
+            ? b.assignedTechnicianName
+            : null);
 
         return {
           id: b.id,
@@ -8007,6 +8011,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         GOI_KHONG_NGHE: 'Gọi không nghe máy / Thuê bao',
         TIEM_QUATAI: 'Tiệm quá tải / Hết ghế',
         BOOKER_LATHUONG: 'Booker tư vấn sai / Đặt nhầm',
+        CV_BAN_LOI: 'CV bận / Phục vụ chậm',
         KTV_BAN_LOI: 'CV bận / Phục vụ chậm',
         KH_QUEN_LICH: 'Khách quên lịch',
         LY_DO_KHAC: 'Lý do khác',

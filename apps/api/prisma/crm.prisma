@@ -317,7 +317,7 @@ model CrmTeamMember {
 model CrmBookingLog {
   id                  Int      @id @default(autoincrement())
   orderId             Int      @map("order_id")
-  actionType          String   @map("action_type") @db.VarChar(30) // CANCEL, RESCHEDULE, CHANGE_KTV, CHANGE_STORE, EDIT
+  actionType          String   @map("action_type") @db.VarChar(30) // CANCEL, RESCHEDULE, CHANGE_CV, CHANGE_STORE, EDIT
   actorStaffId        Int      @map("actor_staff_id")
   actorStaffName      String?  @map("actor_staff_name") @db.VarChar(100)
   originalStaffId     Int?     @map("original_staff_id")
@@ -528,4 +528,194 @@ model CrmCampaignTouchpointLog {
   @@index([campaignCustomerId])
   @@index([touchpointId])
   @@map("crm_campaign_touchpoint_logs")
+}
+
+// ═══════════════════════════════════════════
+// Customer Support (CS) Module
+// ═══════════════════════════════════════════
+
+model CrmHappyCallTask {
+  id                  Int       @id @default(autoincrement())
+  orderId             Int       @map("order_id")
+  customerId          Int       @map("customer_id")
+  assignedCsStaffId   Int?      @map("assigned_cs_staff_id")
+  status              String    @default("PENDING") @db.VarChar(20)
+  attemptCount        Int       @default(0) @map("attempt_count")
+  scheduledDate       DateTime  @map("scheduled_date") @db.Date
+  completedAt         DateTime? @map("completed_at") @db.DateTime(0)
+  checkoutDate        DateTime? @map("checkout_date") @db.DateTime(0)
+  technicianId        Int?      @map("technician_id")
+  ccInStaffId         Int?      @map("cc_in_staff_id")
+  ccOutStaffId        Int?      @map("cc_out_staff_id")
+  bookerStaffId       Int?      @map("booker_staff_id")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  surveyRating        CrmSurveyRating?
+  tickets             CrmCsTicket[]
+
+  @@index([orderId])
+  @@index([customerId])
+  @@index([assignedCsStaffId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@map("crm_happy_call_tasks")
+}
+
+model CrmSurveyRating {
+  id                      Int       @id @default(autoincrement())
+  happyCallTaskId         Int       @unique @map("happy_call_task_id")
+  orderId                 Int       @map("order_id")
+  customerId              Int       @map("customer_id")
+  overallRating           Int       @map("overall_rating") @db.TinyInt
+  technicianQualityRating Int?      @map("technician_quality_rating") @db.TinyInt
+  staffAttitudeRating     Int?      @map("staff_attitude_rating") @db.TinyInt
+  facilityRating          Int?      @map("facility_rating") @db.TinyInt
+  valueForMoneyRating     Int?      @map("value_for_money_rating") @db.TinyInt
+  checkInExperienceRating Int?      @map("check_in_experience_rating") @db.TinyInt
+  checkOutExperienceRating Int?     @map("check_out_experience_rating") @db.TinyInt
+  bookingExperienceRating Int?      @map("booking_experience_rating") @db.TinyInt
+  customerNote            String?   @map("customer_note") @db.Text
+  csNote                  String?   @map("cs_note") @db.Text
+  technicianId            Int?      @map("technician_id")
+  ccInStaffId             Int?      @map("cc_in_staff_id")
+  ccOutStaffId            Int?      @map("cc_out_staff_id")
+  bookerStaffId           Int?      @map("booker_staff_id")
+  createdAt               DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  happyCallTask           CrmHappyCallTask @relation(fields: [happyCallTaskId], references: [id], onDelete: Cascade)
+  tickets                 CrmCsTicket[]
+
+  @@index([orderId])
+  @@index([customerId])
+  @@map("crm_survey_ratings")
+}
+
+model CrmCsTicket {
+  id                  Int       @id @default(autoincrement())
+  ticketCode          String    @unique @map("ticket_code") @db.VarChar(20)
+  surveyRatingId      Int?      @map("survey_rating_id")
+  happyCallTaskId     Int?      @map("happy_call_task_id")
+  orderId             Int?      @map("order_id")
+  customerId          Int?      @map("customer_id")
+  type                String    @db.VarChar(30)
+  priority            String    @default("MEDIUM") @db.VarChar(10)
+  status              String    @default("OPEN") @db.VarChar(20)
+  department          String?   @db.VarChar(20)
+  relatedStaffId      Int?      @map("related_staff_id")
+  assignedCsStaffId   Int?      @map("assigned_cs_staff_id")
+  description         String    @db.Text
+  slaDueDate          DateTime? @map("sla_due_date") @db.DateTime(0)
+  resolutionNote      String?   @map("resolution_note") @db.Text
+  actionPlan          String?   @map("action_plan") @db.Text
+  resolvedAt          DateTime? @map("resolved_at") @db.DateTime(0)
+  resolvedByStaffId   Int?      @map("resolved_by_staff_id")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  surveyRating        CrmSurveyRating?  @relation(fields: [surveyRatingId], references: [id], onDelete: SetNull)
+  happyCallTask       CrmHappyCallTask? @relation(fields: [happyCallTaskId], references: [id], onDelete: SetNull)
+  comments            CrmCsTicketComment[]
+  subtasks            CrmCsTicketSubtask[]
+
+  @@index([surveyRatingId])
+  @@index([happyCallTaskId])
+  @@index([orderId])
+  @@index([customerId])
+  @@index([status])
+  @@index([priority])
+  @@index([department])
+  @@map("crm_cs_tickets")
+}
+
+model CrmCsTicketSubtask {
+  id                        Int       @id @default(autoincrement())
+  ticketId                  Int       @map("ticket_id")
+  department                String    @db.VarChar(20)
+  assignedStaffId           Int?      @map("assigned_staff_id")
+  status                    String    @default("PENDING") @db.VarChar(30)
+                                      // PENDING | APPOINTMENT_SCHEDULED | RESOLVED
+  issueSummary              String?   @map("issue_summary") @db.Text
+  resolutionNote            String?   @map("resolution_note") @db.Text
+  actionPlan                String?   @map("action_plan") @db.Text
+  technicalIssueTags        String?   @map("technical_issue_tags") @db.VarChar(255)
+  warrantyType              String?   @map("warranty_type") @db.VarChar(50)
+  isWithin3DayWarranty      Boolean   @default(false) @map("is_within_3day_warranty") @db.TinyInt
+  previousTechnicianId      Int?      @map("previous_technician_id")
+  replacementTechnicianId   Int?      @map("replacement_technician_id")
+  warrantyAppointmentDate   DateTime? @map("warranty_appointment_date") @db.DateTime(0)
+  nextFalOrderServiceId     BigInt?   @map("next_fal_order_service_id")
+  inspectionStoreName       String?   @map("inspection_store_name") @db.VarChar(100)
+  inspectionAppointmentDate DateTime? @map("inspection_appointment_date") @db.DateTime(0)
+  inspectionResultNote      String?   @map("inspection_result_note") @db.Text
+  resolvedAt                DateTime? @map("resolved_at") @db.DateTime(0)
+  resolvedByStaffId         Int?      @map("resolved_by_staff_id")
+  createdAt                 DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt                 DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  ticket                    CrmCsTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([department])
+  @@index([assignedStaffId])
+  @@index([status])
+  @@map("crm_cs_ticket_subtasks")
+}
+
+model CrmCsTicketComment {
+  id          Int      @id @default(autoincrement())
+  ticketId    Int      @map("ticket_id")
+  staffId     Int      @map("staff_id")
+  staffName   String?  @map("staff_name") @db.VarChar(100)
+  content     String   @db.Text
+  isInternal  Boolean  @default(true) @map("is_internal") @db.TinyInt
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  ticket      CrmCsTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("crm_cs_ticket_comments")
+}
+
+model CrmCsCampaign {
+  id               Int       @id @default(autoincrement())
+  name             String    @db.VarChar(200)
+  description      String?   @db.Text
+  target           String    @db.VarChar(30)
+  status           String    @default("DRAFT") @db.VarChar(20)
+  dateFrom         DateTime? @map("date_from") @db.Date
+  dateTo           DateTime? @map("date_to") @db.Date
+  filterBucket     String?   @map("filter_bucket") @db.VarChar(20)
+  sampleSize       Int?      @map("sample_size")
+  createdByStaffId Int       @map("created_by_staff_id")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  tasks            CrmCsCampaignTask[]
+
+  @@index([status])
+  @@map("crm_cs_campaigns")
+}
+
+model CrmCsCampaignTask {
+  id                Int       @id @default(autoincrement())
+  campaignId        Int       @map("campaign_id")
+  orderId           Int       @map("order_id")
+  customerId        Int       @map("customer_id")
+  assignedCsStaffId Int?      @map("assigned_cs_staff_id")
+  status            String    @default("PENDING") @db.VarChar(20)
+  attemptCount      Int       @default(0) @map("attempt_count")
+  surveyRatingId    Int?      @map("survey_rating_id")
+  completedAt       DateTime? @map("completed_at") @db.DateTime(0)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  campaign          CrmCsCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([orderId])
+  @@index([customerId])
+  @@index([status])
+  @@map("crm_cs_campaign_tasks")
 }

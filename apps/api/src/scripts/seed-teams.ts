@@ -28,8 +28,8 @@ const TEAMS_TO_SEED: TeamSeed[] = [
   },
   {
     code: 'CV',
-    name: 'Chuyên Viên / KTV',
-    description: 'Đội ngũ Kỹ Thuật Viên trực tiếp thực hiện dịch vụ làm mi',
+    name: 'Chuyên Viên (CV)',
+    description: 'Đội ngũ Chuyên Viên trực tiếp thực hiện dịch vụ làm mi',
     color: '#52c41a',
     icon: '✂️',
     sortOrder: 2,

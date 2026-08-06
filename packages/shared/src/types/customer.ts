@@ -444,7 +444,7 @@ export interface SaveMissedLogInput {
   callbackDate?: string | null;
 }
 
-export type BookingActionType = 'CANCEL' | 'RESCHEDULE' | 'CHANGE_KTV' | 'CHANGE_STORE' | 'EDIT';
+export type BookingActionType = 'CANCEL' | 'RESCHEDULE' | 'CHANGE_CV' | 'CHANGE_KTV' | 'CHANGE_STORE' | 'EDIT';
 
 export interface BookingAuditLog {
   id: number;

@@ -17,7 +17,8 @@ export interface BookingAuditLogDrawerProps {
 const ACTION_TAG_CONFIG: Record<string, { color: string; label: string }> = {
   CANCEL: { color: 'error', label: '❌ Hủy lịch' },
   RESCHEDULE: { color: 'warning', label: '📅 Dời ngày/giờ' },
-  CHANGE_KTV: { color: 'processing', label: '💇 Đổi KTV' },
+  CHANGE_CV: { color: 'processing', label: '💇 Đổi CV' },
+  CHANGE_KTV: { color: 'processing', label: '💇 Đổi CV' },
   CHANGE_STORE: { color: 'purple', label: '🏢 Đổi chi nhánh' },
   EDIT: { color: 'default', label: '✏️ Chỉnh sửa đơn' },
 };

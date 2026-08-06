@@ -55,6 +55,10 @@ console.error = (...args: SafeAny[]) => {
       args[0].includes('hydration-mismatch') ||
       args[0].includes('Hydration failed') ||
       args[0].includes('Text content did not match') ||
+      args[0].includes('zIndexPopupBase') ||
+      args[0].includes('SelectLike') ||
+      args[0].includes('Fetch online staff error') ||
+      args[0].includes('Fetch daily calls count error') ||
       args[0].includes("server rendered HTML didn't match"))
   ) {
     return;

@@ -108,8 +108,8 @@ mos-lab/
 
 ### 13. FAL (Fix, Adjust, Log) Rules & Midnight Order Regeneration Invariant
 - **FAL (Fix / Adjust / Log) Definition & SQL Extraction**:
-  - Dịch vụ **Fix** / **Adjust** $\le 25$ phút được thưởng điểm Banana. KTV làm sai bộ mi trước đó bị phạt trừ thưởng (`_punishBonus`). Dịch vụ **Log** luôn được tính điểm Banana.
-  - Tất cả các API báo cáo ca làm (KTV Xoay và CC Xoay) bắt buộc phải bóc tách cột `falRule` (`Fix`, `Adjust`, `Log`) thông qua các trường `next_fix_order_service_id`, `next_adjust_order_service_id`, `service_type` và `tracking_key`.
+  - Dịch vụ **Fix** / **Adjust** $\le 25$ phút được thưởng điểm Banana. Khi thời lượng $> 25$ phút, KTV mới không được điểm Banana (chỉ tính Lương giờ cứng). Ca cũ làm hỏng mi (`FIX` / `REPLACE`) hoặc tư vấn sai (`ADJUST`) luôn BỊ PHẠT THU HỒI THƯỞNG (`_punishBonus`) 100%, bất kể KTV mới làm khắc phục trong bao nhiêu phút. Dịch vụ **Log** (tháo mi/kiểm tra) luôn được tính điểm Banana bất kể thời lượng. Dịch vụ **Replace** (tháo nối mới 100%) được tính thưởng Full theo bộ mi mới.
+  - Tất cả các API báo cáo ca làm (KTV Xoay và CC Xoay) bắt buộc phải bóc tách cột `falRule` (`Fix`, `Adjust`, `Log`, `Replace`) thông qua các trường `next_fix_order_service_id`, `next_adjust_order_service_id`, `service_type` và `tracking_key`.
 - **Lịch Cronjob Nửa đêm (02:00 AM ICT)**:
   - Do 81,4% lỗi lạm phát Level phát sinh trong khung giờ chốt đơn tối (21h-23h), script `regenerate-order-batch.php` trên Prod bắt buộc chạy vào **02:00 AM, 02:10 AM, 02:20 AM (Giờ Việt Nam - Asia/Ho_Chi_Minh)** cho 3 ngày gần nhất (`1 day ago`, `2 days ago`, `3 days ago`) để chốt sổ sạch sẽ.
 

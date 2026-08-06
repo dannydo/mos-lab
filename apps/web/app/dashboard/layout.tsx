@@ -106,6 +106,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const fetchOnlineStaff = useCallback(async () => {
     try {
       const list = await apiClient.staff.list();
+      if (!Array.isArray(list)) return;
       const now = dayjs();
 
       const filtered = list.filter((m: SafeAny) => {

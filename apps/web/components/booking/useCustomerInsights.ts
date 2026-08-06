@@ -44,7 +44,8 @@ export const useCustomerInsights = (
               isCompleted &&
               b.technicianName &&
               b.technicianName !== 'Unknown' &&
-              b.technicianName !== 'Kỹ thuật viên'
+              b.technicianName !== 'Kỹ thuật viên' &&
+              b.technicianName !== 'Chuyên viên'
             ) {
               const name = b.technicianName.trim();
               if (!name.includes('(Đã nghỉ)')) {
