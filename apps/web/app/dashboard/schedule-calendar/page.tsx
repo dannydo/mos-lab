@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from 'react';
 import {
   Card,
@@ -35,7 +37,7 @@ import {
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
 import { Appointment, vietnameseSearchFilter } from '@mos-lab/shared';
@@ -45,9 +47,9 @@ import ScheduleListView from './components/ScheduleListView';
 import MultiDayColumnView, { getBranchBadgeInfo } from './components/MultiDayColumnView';
 import FullCalendarGrid from './components/FullCalendarGrid';
 
-const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
-const BookingWizardDrawer = dynamic(() => import('../../../components/BookingWizardDrawer'), { ssr: false });
-const RescheduleBookingModal = dynamic(
+const CustomerDetailDrawer = nextDynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
+const BookingWizardDrawer = nextDynamic(() => import('../../../components/BookingWizardDrawer'), { ssr: false });
+const RescheduleBookingModal = nextDynamic(
   () => import('../../../components/RescheduleBookingModal').then((m) => m.RescheduleBookingModal),
   { ssr: false }
 );
