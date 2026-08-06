@@ -7299,15 +7299,19 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // GET /api/customers/appointments
   // Get list of appointments for assigned customers
   fastify.get('/customers/appointments', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { dateFrom, dateTo, type, staffId, page, limit, missedStatusFilter } = request.query as {
-      dateFrom?: string;
-      dateTo?: string;
-      type?: 'pending' | 'missed' | 'completed';
-      staffId?: string;
-      page?: string;
-      limit?: string;
-      missedStatusFilter?: 'ALL' | 'UNTAGGED' | 'FOLLOWUP' | 'RESOLVED';
-    };
+    const { dateFrom, dateTo, type, status, staffId, storeId, page, limit, pageSize, missedStatusFilter } =
+      request.query as {
+        dateFrom?: string;
+        dateTo?: string;
+        type?: 'pending' | 'missed' | 'completed';
+        status?: string;
+        staffId?: string;
+        storeId?: string;
+        page?: string;
+        limit?: string;
+        pageSize?: string;
+        missedStatusFilter?: 'ALL' | 'UNTAGGED' | 'FOLLOWUP' | 'RESOLVED';
+      };
 
     const user = request.user as { id: number; role: string };
 
@@ -7316,7 +7320,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     const pageNum = parseInt(page || '1', 10) || 1;
-    const limitNum = parseInt(limit || '10', 10) || 10;
+    const limitNum = parseInt(limit || pageSize || '50', 10) || 50;
     const offsetNum = (pageNum - 1) * limitNum;
 
     try {
@@ -7430,14 +7434,29 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      if (type === 'completed') {
+      if (storeId && storeId !== 'all') {
+        const storeIds = String(storeId)
+          .split(',')
+          .map((s) => parseInt(s.trim(), 10))
+          .filter((n) => !isNaN(n));
+        if (storeIds.length === 1) {
+          countSql += ` AND o.client_store_id = ?`;
+          countParams.push(storeIds[0]);
+        } else if (storeIds.length > 1) {
+          countSql += ` AND o.client_store_id IN (${storeIds.join(',')})`;
+        }
+      }
+
+      const filterType = (type || (status && status !== 'all' ? status : '')).toLowerCase();
+
+      if (filterType === 'completed') {
         countSql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
-      } else if (type === 'missed') {
+      } else if (filterType === 'missed') {
         countSql +=
           ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))` +
           missedFilterCond;
-      } else {
-        countSql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
+      } else if (filterType === 'pending') {
+        countSql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
       }
 
       const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams);
@@ -7460,7 +7479,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
           o.user_id as userId,
           o.date_created as dateCreated,
           o.assigned_staff_id as technicianId,
+          up_tech.full_name as technicianName,
+          up_tech.avatar as technicianAvatar,
           o.client_store_id as storeId,
+          COALESCE(csl.client_store_name, 'Estella Place') as branchName,
           COALESCE(up.full_name, 'No Name') as customerName,
           up.avatar as customerAvatar,
           up_created.full_name as bookerName,
@@ -7473,7 +7495,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         FROM \`order\` o
         LEFT JOIN report_order ro ON o.id = ro.order_id
         LEFT JOIN user_profile up ON o.user_id = up.user_id
+        LEFT JOIN user_profile up_tech ON o.assigned_staff_id = up_tech.user_id
         LEFT JOIN user_profile up_created ON o.created_staff_id = up_created.user_id
+        LEFT JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
         WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
       `;
 
@@ -7492,14 +7516,27 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      if (type === 'completed') {
+      if (storeId && storeId !== 'all') {
+        const storeIds = String(storeId)
+          .split(',')
+          .map((s) => parseInt(s.trim(), 10))
+          .filter((n) => !isNaN(n));
+        if (storeIds.length === 1) {
+          sql += ` AND o.client_store_id = ?`;
+          params.push(storeIds[0]);
+        } else if (storeIds.length > 1) {
+          sql += ` AND o.client_store_id IN (${storeIds.join(',')})`;
+        }
+      }
+
+      if (filterType === 'completed') {
         sql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
-      } else if (type === 'missed') {
+      } else if (filterType === 'missed') {
         sql +=
           ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))` +
           missedFilterCond;
-      } else {
-        sql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
+      } else if (filterType === 'pending') {
+        sql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
       }
 
       sql += ` ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) ASC LIMIT ? OFFSET ?`;
@@ -7781,15 +7818,302 @@ export async function customerRoutes(fastify: FastifyInstance) {
           tipAmount: Number(tipAmount || 0),
           bookingBonus: Number(bookingBonus || 0),
           technicianId: row.technicianId ? Number(row.technicianId) : null,
+          technicianName: row.technicianName || null,
+          technicianAvatar: row.technicianAvatar || null,
           storeId: row.storeId ? Number(row.storeId) : null,
+          branchName: row.branchName || 'Estella Place',
           bookerName: row.bookerName || crmStaffMap.get(Number(row.createdStaffId)) || null,
           missedLog: missedLogsMap.get(Number(row.id)) || null,
         };
       });
 
+      // Calculate accurate working CV capacities per day (excluding weekly OFFs and approved requested OFFs)
+      const dailyCapacities: Record<
+        string,
+        {
+          workingKtvCount: number;
+          maxCapacity: number;
+          workingStaffList?: Array<{ id: number; name: string; branchName?: string; shift?: string }>;
+          offStaffList?: Array<{ id: number; name: string; branchName?: string; reason: string; type?: string }>;
+        }
+      > = {};
+      try {
+        const cvConfig = await fastify.prisma.crm.crmConfig.findUnique({ where: { key: 'ACTIVE_CV_STAFF_CONFIG' } });
+        const cvStaffIds = cvConfig ? JSON.parse(cvConfig.value).map(Number) : [];
+
+        if (cvStaffIds.length > 0) {
+          const startDateObj = new Date(cleanDateFrom.split(' ')[0]);
+          const endDateObj = new Date(cleanDateTo.split(' ')[0]);
+          const cur = new Date(startDateObj);
+
+          // Query fixed store & name for all CV staff from DB master tables (user_profile & staff_day_off_schedule)
+          const cvProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT user_id as id, full_name as name, client_store_id
+            FROM user_profile
+            WHERE user_id IN (${cvStaffIds.join(',')})
+          `);
+          const cvNameMap = new Map<number, string>();
+          const cvProfileStoreMap = new Map<number, number>();
+          cvProfiles.forEach((p) => {
+            const uid = Number(p.id);
+            cvNameMap.set(uid, String(p.name || '').trim());
+            if (p.client_store_id) cvProfileStoreMap.set(uid, Number(p.client_store_id));
+          });
+
+          // Query fixed store from staff_day_off_schedule master
+          const dayOffStores = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT user_id, client_store_id
+            FROM staff_day_off_schedule
+            WHERE is_disabled = 0 AND user_id IN (${cvStaffIds.join(',')})
+            GROUP BY user_id
+          `);
+          const cvStoreMap = new Map<number, string>();
+          cvStaffIds.forEach((uid: number) => {
+            const schedStore = dayOffStores.find((s) => Number(s.user_id) === uid)?.client_store_id;
+            const finalStoreId = schedStore ? Number(schedStore) : cvProfileStoreMap.get(uid) || 6;
+            const storeName = finalStoreId === 16 ? 'Estella Place' : 'Đề Thám';
+            cvStoreMap.set(uid, storeName);
+          });
+
+          // Query exact working shifts per staff from staff_working_shift_schedule
+          const shiftRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT user_id, start_time, end_time, type, type_value
+            FROM staff_working_shift_schedule
+            WHERE is_disabled = 0 AND user_id IN (${cvStaffIds.join(',')})
+            ORDER BY type DESC
+          `);
+          const cvShiftMap = new Map<number, string>();
+          cvStaffIds.forEach((uid: number) => {
+            const userShifts = shiftRows.filter((r) => Number(r.user_id) === uid);
+            let shiftLabel = 'Ca Full';
+            if (userShifts.length > 0) {
+              const primary = userShifts[0];
+              const startHour = primary.start_time ? new Date(primary.start_time).getUTCHours() : 9;
+              const endHour = primary.end_time ? new Date(primary.end_time).getUTCHours() : 20;
+
+              if (startHour <= 9 && endHour <= 18) {
+                shiftLabel = 'Ca Sáng';
+              } else if (startHour >= 11 && endHour >= 20) {
+                shiftLabel = 'Ca Chiều';
+              } else {
+                shiftLabel = 'Ca Full';
+              }
+            }
+            cvShiftMap.set(uid, shiftLabel);
+          });
+
+          // Filter CV staff pool by storeId if store filter is active
+          let activeCvStaffIds = cvStaffIds;
+          if (storeId && storeId !== 'all') {
+            const requestedStoreIds = String(storeId)
+              .split(',')
+              .map((s) => parseInt(s.trim(), 10))
+              .filter((n) => !isNaN(n));
+            if (requestedStoreIds.length > 0) {
+              activeCvStaffIds = cvStaffIds.filter((uid: number) => {
+                const schedStore = dayOffStores.find((s) => Number(s.user_id) === uid)?.client_store_id;
+                const finalStoreId = schedStore ? Number(schedStore) : cvProfileStoreMap.get(uid) || 6;
+                return requestedStoreIds.includes(finalStoreId);
+              });
+            }
+          }
+
+          // Batch query 1: Weekly Offs for active CV staff
+          const weeklyOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT user_id, weekday
+            FROM staff_day_off_schedule
+            WHERE is_disabled = 0 AND user_id IN (${activeCvStaffIds.join(',')})
+          `);
+          const weeklyOffMap = new Map<number, Set<number>>();
+          weeklyOffs.forEach((r) => {
+            const uid = Number(r.user_id);
+            if (!weeklyOffMap.has(uid)) weeklyOffMap.set(uid, new Set());
+            weeklyOffMap.get(uid)!.add(Number(r.weekday));
+          });
+
+          // Batch query 2: Approved leave requests for date range
+          const dateOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT from_user_id as user_id, DATE_FORMAT(from_date, '%Y-%m-%d') as date_str, note
+            FROM staff_day_off
+            WHERE request_state = 'Approved'
+              AND from_date >= '${cleanDateFrom}' AND from_date <= '${cleanDateTo}'
+              AND from_user_id IN (${activeCvStaffIds.join(',')})
+          `);
+          const dateOffMap = new Map<string, Map<number, string>>();
+          dateOffs.forEach((r) => {
+            const dStr = String(r.date_str);
+            if (!dateOffMap.has(dStr)) dateOffMap.set(dStr, new Map());
+            dateOffMap.get(dStr)!.set(Number(r.user_id), String(r.note || 'Xin nghỉ phép (Đã duyệt)').trim());
+          });
+
+          // Batch query 3: Booked orders grouped by date and assigned_staff_id
+          const bookedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as date_str,
+                   o.assigned_staff_id as user_id, COUNT(DISTINCT o.id) as cnt
+            FROM \`order\` o
+            LEFT JOIN report_order ro ON o.id = ro.order_id
+            WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${cleanDateFrom}'
+              AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${cleanDateTo}'
+              AND o.assigned_staff_id IN (${activeCvStaffIds.join(',')})
+            GROUP BY date_str, o.assigned_staff_id
+          `);
+          const rangeBookedMap = new Map<string, Map<number, number>>();
+          bookedRows.forEach((r) => {
+            const dStr = String(r.date_str);
+            if (!rangeBookedMap.has(dStr)) rangeBookedMap.set(dStr, new Map());
+            rangeBookedMap.get(dStr)!.set(Number(r.user_id), Number(r.cnt || 0));
+          });
+
+          // Batch query 4: Completed orders served by staff grouped by date and staff_id
+          const doneRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT date_str, staff_id, COUNT(DISTINCT order_id) as cnt
+            FROM (
+              SELECT DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as date_str,
+                     sb.user_id as staff_id, sb.order_id
+              FROM staff_bonus sb
+              JOIN \`order\` o ON sb.order_id = o.id
+              LEFT JOIN report_order ro ON o.id = ro.order_id
+              WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${cleanDateFrom}'
+                AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${cleanDateTo}'
+                AND o.order_state = 'Completed'
+                AND sb.user_id IN (${activeCvStaffIds.join(',')})
+
+              UNION
+
+              SELECT DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as date_str,
+                     o.assigned_staff_id as staff_id, o.id as order_id
+              FROM \`order\` o
+              LEFT JOIN report_order ro ON o.id = ro.order_id
+              WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${cleanDateFrom}'
+                AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${cleanDateTo}'
+                AND o.order_state = 'Completed'
+                AND o.assigned_staff_id IN (${activeCvStaffIds.join(',')})
+            ) combined
+            GROUP BY date_str, staff_id
+          `);
+          const rangeDoneMap = new Map<string, Map<number, number>>();
+          doneRows.forEach((r) => {
+            const dStr = String(r.date_str);
+            if (!rangeDoneMap.has(dStr)) rangeDoneMap.set(dStr, new Map());
+            rangeDoneMap.get(dStr)!.set(Number(r.staff_id), Number(r.cnt || 0));
+          });
+
+          // Batch query 5: Average lash extension speed duration (phút/bộ) per staff member
+          const speedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT
+              assigned_staff_id as staff_id,
+              service_type,
+              ROUND(AVG(duration_minute)) as avg_min
+            FROM order_service
+            WHERE duration_minute > 0 AND duration_minute < 300
+              AND date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+              AND assigned_staff_id IN (${activeCvStaffIds.join(',')})
+            GROUP BY assigned_staff_id, service_type
+          `);
+
+          const staffSpeedMap = new Map<
+            number,
+            { normalAvg?: number; retainAvg?: number; removalAvg?: number; overallAvg?: number }
+          >();
+          speedRows.forEach((r) => {
+            const sid = Number(r.staff_id);
+            const stype = String(r.service_type || '');
+            const avgVal = Math.round(Number(r.avg_min || 0));
+
+            if (!staffSpeedMap.has(sid)) staffSpeedMap.set(sid, {});
+            const item = staffSpeedMap.get(sid)!;
+
+            if (stype === 'Normal') item.normalAvg = avgVal;
+            else if (stype === 'Retain') item.retainAvg = avgVal;
+            else if (stype === 'Removal' || stype === 'Fix') item.removalAvg = avgVal;
+          });
+
+          // In-memory daily capacities assembly
+          while (cur <= endDateObj) {
+            const dateStr = cur.toISOString().split('T')[0];
+            const jsDay = cur.getDay();
+            const legacyWeekday = jsDay === 0 ? 7 : jsDay;
+
+            if (activeCvStaffIds.length === 0) {
+              dailyCapacities[dateStr] = {
+                workingKtvCount: 0,
+                maxCapacity: 0,
+                workingStaffList: [],
+                offStaffList: [],
+              };
+              cur.setDate(cur.getDate() + 1);
+              continue;
+            }
+
+            const dayDateOffMap = dateOffMap.get(dateStr) || new Map<number, string>();
+            const dayBookedMap = rangeBookedMap.get(dateStr) || new Map<number, number>();
+            const dayDoneMap = rangeDoneMap.get(dateStr) || new Map<number, number>();
+
+            const workingCvIds = activeCvStaffIds.filter((id: number) => {
+              const userWeeklyOffs = weeklyOffMap.get(id);
+              const isWeeklyOff = userWeeklyOffs ? userWeeklyOffs.has(legacyWeekday) : false;
+              const isDateOff = dayDateOffMap.has(id);
+              return !isWeeklyOff && !isDateOff;
+            });
+
+            const workingStaffList = workingCvIds.map((id: number) => ({
+              id,
+              name: cvNameMap.get(id) || `CV #${id}`,
+              branchName: cvStoreMap.get(id) || 'Đề Thám',
+              shift: cvShiftMap.get(id) || 'Ca Full',
+              bookedCount: dayBookedMap.get(id) || 0,
+              doneCount: dayDoneMap.get(id) || 0,
+              avgDurationMinutes: staffSpeedMap.get(id),
+            }));
+
+            const offStaffList: Array<{
+              id: number;
+              name: string;
+              branchName?: string;
+              reason: string;
+              type?: string;
+            }> = [];
+            const weekdayNames = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
+            activeCvStaffIds.forEach((id: number) => {
+              const userWeeklyOffs = weeklyOffMap.get(id);
+              const isWeeklyOff = userWeeklyOffs ? userWeeklyOffs.has(legacyWeekday) : false;
+              if (dayDateOffMap.has(id)) {
+                offStaffList.push({
+                  id,
+                  name: cvNameMap.get(id) || `CV #${id}`,
+                  branchName: cvStoreMap.get(id) || 'Đề Thám',
+                  reason: dayDateOffMap.get(id) || 'Xin nghỉ phép (Đã duyệt)',
+                  type: 'date_off',
+                });
+              } else if (isWeeklyOff) {
+                offStaffList.push({
+                  id,
+                  name: cvNameMap.get(id) || `CV #${id}`,
+                  branchName: cvStoreMap.get(id) || 'Đề Thám',
+                  reason: `Nghỉ hàng tuần (${weekdayNames[legacyWeekday] || ''})`,
+                  type: 'weekly_off',
+                });
+              }
+            });
+
+            dailyCapacities[dateStr] = {
+              workingKtvCount: workingCvIds.length,
+              maxCapacity: workingCvIds.length * 5,
+              workingStaffList,
+              offStaffList,
+            };
+
+            cur.setDate(cur.getDate() + 1);
+          }
+        }
+      } catch (capErr) {
+        fastify.log.error(capErr, 'Failed to compute daily KTV capacities');
+      }
+
       return {
         data: appointments,
         total,
+        dailyCapacities,
         summary: {
           totalPending,
           totalMissed,

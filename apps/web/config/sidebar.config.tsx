@@ -52,6 +52,12 @@ export function getSidebarGroups(
         icon: <ClockCircleOutlined />,
         path: '/dashboard/today',
       },
+      {
+        key: 'schedule-calendar',
+        label: 'Lịch & Công suất',
+        icon: <CalendarOutlined />,
+        path: '/dashboard/schedule-calendar',
+      },
     ],
   };
 
@@ -152,12 +158,6 @@ export function getSidebarGroups(
     groupKey: 'grp-operations',
     groupTitle: 'VẬN HÀNH CUỘC GỌI',
     items: [
-      {
-        key: 'schedule-calendar',
-        label: 'Lịch & Công suất',
-        icon: <CalendarOutlined />,
-        path: '/dashboard/schedule-calendar',
-      },
       {
         key: 'my-appointments',
         label: 'Lịch hẹn của tôi',

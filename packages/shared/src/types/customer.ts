@@ -193,6 +193,7 @@ export interface Appointment {
   storeId?: number | null;
   branchName?: string;
   technicianName?: string;
+  technicianAvatar?: string | null;
   ccInName?: string;
   ccOutName?: string;
   bookerName?: string;
@@ -321,6 +322,34 @@ export interface AppointmentSummary {
 export interface ListAppointmentsResponse {
   data: Appointment[];
   total: number;
+  dailyCapacities?: Record<
+    string,
+    {
+      workingKtvCount: number;
+      maxCapacity: number;
+      workingStaffList?: Array<{
+        id: number;
+        name: string;
+        branchName?: string;
+        shift?: string;
+        bookedCount?: number;
+        doneCount?: number;
+        avgDurationMinutes?: {
+          normalAvg?: number;
+          retainAvg?: number;
+          removalAvg?: number;
+          overallAvg?: number;
+        };
+      }>;
+      offStaffList?: Array<{
+        id: number;
+        name: string;
+        branchName?: string;
+        reason: string;
+        type?: string;
+      }>;
+    }
+  >;
   summary?: AppointmentSummary | null;
 }
 

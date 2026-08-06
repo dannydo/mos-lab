@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from 'react';
 import {
   Card,
   Space,
@@ -42,7 +42,7 @@ import { Appointment, vietnameseSearchFilter } from '@mos-lab/shared';
 import { formatVND } from '../../../lib/format-utils';
 
 import ScheduleListView from './components/ScheduleListView';
-import MultiDayColumnView from './components/MultiDayColumnView';
+import MultiDayColumnView, { getBranchBadgeInfo } from './components/MultiDayColumnView';
 import FullCalendarGrid from './components/FullCalendarGrid';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
@@ -70,6 +70,7 @@ export default function ScheduleCalendarPage() {
   const [customRange, setCustomRange] = useState<[Dayjs, Dayjs] | null>(null);
 
   // Filters state
+  const [selectedBranch, setSelectedBranch] = useState<string>('all');
   const [selectedStaffId, setSelectedStaffId] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedChannel, setSelectedChannel] = useState<string>('all');
@@ -81,9 +82,46 @@ export default function ScheduleCalendarPage() {
   // Appointments data
   const [loading, setLoading] = useState<boolean>(false);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [dailyCapacities, setDailyCapacities] = useState<
+    Record<
+      string,
+      {
+        workingKtvCount: number;
+        maxCapacity: number;
+        workingStaffList?: Array<{
+          id: number;
+          name: string;
+          branchName?: string;
+          shift?: string;
+          bookedCount?: number;
+          doneCount?: number;
+          avgDurationMinutes?: { normalAvg?: number; retainAvg?: number; removalAvg?: number; overallAvg?: number };
+        }>;
+        offStaffList?: Array<{ id: number; name: string; branchName?: string; reason: string; type?: string }>;
+      }
+    >
+  >({});
   const [totalAppointments, setTotalAppointments] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(50);
+
+  const branchCounts = useMemo(() => {
+    const counts = { all: appointments.length, EP: 0, DT: 0, PXL: 0 };
+    appointments.forEach((appt) => {
+      const b = getBranchBadgeInfo(appt.storeId, appt.branchName);
+      if (b.code === 'EP') counts.EP++;
+      else if (b.code === 'DT') counts.DT++;
+      else if (b.code === 'PXL') counts.PXL++;
+    });
+    return counts;
+  }, [appointments]);
+
+  const maxCapacityPerDay = useMemo(() => {
+    if (selectedBranch === 'EP') return 25;
+    if (selectedBranch === 'DT') return 20;
+    if (selectedBranch === 'PXL') return 15;
+    return 25;
+  }, [selectedBranch]);
 
   // Modal / Drawer states
   const [detailCustomerId, setDetailCustomerId] = useState<number | null>(null);
@@ -139,9 +177,16 @@ export default function ScheduleCalendarPage() {
     ];
   }, [startDate, daysCount, dateRangePreset, customRange]);
 
+  // In-memory cache for loaded API responses
+  const appointmentsCacheRef = useRef<Map<string, { data: Appointment[]; dailyCapacities: any; total: number }>>(
+    new Map()
+  );
+
+  // Deferred search query for smooth 60 FPS input typing
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
   // Fetch appointments from Backend API
   const fetchAppointments = useCallback(async () => {
-    setLoading(true);
     try {
       const [start, end] = computedDateRange;
       const params: Record<string, any> = {
@@ -149,6 +194,7 @@ export default function ScheduleCalendarPage() {
         dateTo: end.format('YYYY-MM-DD 23:59:59'),
         page: viewMode === 'list' ? currentPage : 1,
         pageSize: viewMode === 'list' ? pageSize : 500,
+        limit: viewMode === 'list' ? pageSize : 500,
       };
 
       if (selectedStatus !== 'all') {
@@ -157,33 +203,59 @@ export default function ScheduleCalendarPage() {
       if (selectedStaffId !== 'all') {
         params.staffId = selectedStaffId;
       }
+      if (selectedBranch !== 'all') {
+        const storeMap: Record<string, string> = { EP: '16', DT: '6,1,3', PXL: '2,9' };
+        params.storeId = storeMap[selectedBranch] || selectedBranch;
+      }
 
+      const cacheKey = `${params.dateFrom}_${params.dateTo}_${params.storeId || 'all'}_${params.status || 'all'}_${params.staffId || 'all'}_${viewMode}_${currentPage}_${pageSize}`;
+      if (appointmentsCacheRef.current.has(cacheKey)) {
+        const cached = appointmentsCacheRef.current.get(cacheKey)!;
+        setAppointments(cached.data);
+        setDailyCapacities(cached.dailyCapacities);
+        setTotalAppointments(cached.total);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       const res = await apiClient.customers.getAppointments(params);
       const rawData = res.data || [];
+      const caps = res.dailyCapacities || {};
+      const tot = res.total || rawData.length;
+
+      appointmentsCacheRef.current.set(cacheKey, { data: rawData, dailyCapacities: caps, total: tot });
       setAppointments(rawData);
-      setTotalAppointments(res.total || rawData.length);
+      setDailyCapacities(caps);
+      setTotalAppointments(tot);
     } catch (err: any) {
       message.error(err?.message || 'Lỗi tải danh sách lịch hẹn');
     } finally {
       setLoading(false);
     }
-  }, [computedDateRange, viewMode, currentPage, pageSize, selectedStatus, selectedStaffId]);
+  }, [computedDateRange, viewMode, currentPage, pageSize, selectedStatus, selectedStaffId, selectedBranch]);
 
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  // Filtered appointments client-side for fast search and channel filter
+  // Filtered appointments client-side for fast search, branch, and channel filter
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appt) => {
+      // Branch filter
+      if (selectedBranch !== 'all') {
+        const b = getBranchBadgeInfo(appt.storeId, appt.branchName);
+        if (b.code !== selectedBranch) return false;
+      }
+
       // Channel filter
       if (selectedChannel !== 'all' && appt.bookingChannel !== selectedChannel) {
         return false;
       }
 
       // Search query filter (search customerName, phone, serviceName)
-      if (searchQuery.trim()) {
-        const query = searchQuery.trim();
+      if (deferredSearchQuery.trim()) {
+        const query = deferredSearchQuery.trim();
         const custName = appt.customerName || (appt as any).userName || '';
         const phone = appt.customerPhone || (appt as any).phone || '';
         const service = appt.serviceName || (appt as any).packageName || '';
@@ -199,7 +271,7 @@ export default function ScheduleCalendarPage() {
 
       return true;
     });
-  }, [appointments, selectedChannel, searchQuery]);
+  }, [appointments, selectedBranch, selectedChannel, deferredSearchQuery]);
 
   // Quick stats summary calculations
   const statsSummary = useMemo(() => {
@@ -245,7 +317,7 @@ export default function ScheduleCalendarPage() {
   };
 
   return (
-    <div className="schedule-calendar-page p-4 md:p-6 space-y-5 max-w-[1600px] mx-auto">
+    <div className="schedule-calendar-page w-full p-4 md:p-6 space-y-5">
       {/* Header & Page Title */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
         <div>
@@ -277,6 +349,18 @@ export default function ScheduleCalendarPage() {
           >
             Đặt lịch mới
           </Button>
+
+          <Segmented
+            value={selectedBranch}
+            onChange={(val) => setSelectedBranch(val as string)}
+            options={[
+              { label: `Tất cả Chi nhánh (${branchCounts.all})`, value: 'all' },
+              { label: `EP (${branchCounts.EP})`, value: 'EP' },
+              { label: `DT (${branchCounts.DT})`, value: 'DT' },
+              { label: `PXL (${branchCounts.PXL})`, value: 'PXL' },
+            ]}
+            className="bg-slate-100 dark:bg-slate-800 p-1 font-semibold text-xs"
+          />
 
           <Segmented
             value={viewMode}
@@ -357,13 +441,13 @@ export default function ScheduleCalendarPage() {
         </div>
 
         {/* Multi-dimensional Filters Row */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2.5 w-full">
           <Input
             placeholder="Tìm theo Tên KH, SĐT, Dịch vụ..."
             prefix={<SearchOutlined className="text-slate-400" />}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-64"
+            className="flex-1 min-w-[200px]"
             allowClear
             size="small"
           />
@@ -409,7 +493,7 @@ export default function ScheduleCalendarPage() {
         </div>
 
         {/* Summary Indicators Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+        <div className="grid grid-cols-4 gap-3 pt-2">
           <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
             <Text type="secondary" className="text-xs font-medium">
               Tổng lịch hẹn
@@ -451,6 +535,8 @@ export default function ScheduleCalendarPage() {
           loading={loading}
           startDate={computedDateRange[0]}
           daysCount={daysCount}
+          maxCapacityPerDay={maxCapacityPerDay}
+          dailyCapacities={dailyCapacities}
           appointments={filteredAppointments}
           onSelectSlot={(date, hour) => {
             setBookingInitialCustomer(null);

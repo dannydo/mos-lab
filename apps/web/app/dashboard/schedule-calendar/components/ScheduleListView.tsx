@@ -17,6 +17,7 @@ import { formatVND } from '../../../../lib/format-utils';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 import { useTheme } from '../../../../context/ThemeContext';
 import { ResizableHeaderCell } from '../../../../components/ResizableHeaderCell';
+import { getBranchBadgeInfo } from './MultiDayColumnView';
 
 const { Text } = Typography;
 
@@ -109,6 +110,22 @@ export default function ScheduleListView({
           )}
         </div>
       ),
+    },
+    {
+      title: 'Chi nhánh',
+      key: 'branch',
+      width: 110,
+      align: 'center' as const,
+      render: (_: unknown, record: Appointment) => {
+        const branch = getBranchBadgeInfo(record.storeId, record.branchName);
+        return (
+          <span
+            className={`text-xs font-extrabold px-2 py-0.5 rounded border uppercase tracking-tight ${branch.bgClass}`}
+          >
+            [{branch.code}] {branch.label}
+          </span>
+        );
+      },
     },
     {
       title: 'Số điện thoại',
@@ -233,7 +250,7 @@ export default function ScheduleListView({
   ];
 
   return (
-    <div className="schedule-list-view-container bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-4">
+    <div className="schedule-list-view-container w-full bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-4">
       <Table
         loading={loading}
         dataSource={appointments}

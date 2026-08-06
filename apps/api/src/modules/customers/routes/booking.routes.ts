@@ -761,13 +761,15 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
   // GET /api/customers/appointments
   // Get list of appointments for assigned customers
   fastify.get('/customers/appointments', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { dateFrom, dateTo, type, staffId, page, limit } = request.query as {
+    const { dateFrom, dateTo, type, status, staffId, page, limit, pageSize } = request.query as {
       dateFrom?: string;
       dateTo?: string;
       type?: 'pending' | 'missed' | 'completed';
+      status?: string;
       staffId?: string;
       page?: string;
       limit?: string;
+      pageSize?: string;
     };
 
     const user = request.user as { id: number; role: string };
@@ -777,7 +779,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
     }
 
     const pageNum = parseInt(page || '1', 10) || 1;
-    const limitNum = parseInt(limit || '10', 10) || 10;
+    const limitNum = parseInt(limit || pageSize || '50', 10) || 50;
     const offsetNum = (pageNum - 1) * limitNum;
 
     try {
@@ -832,6 +834,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         return { data: [], total: 0 };
       }
 
+      const filterType = (type || (status && status !== 'all' ? status : '')).toLowerCase();
+
       // 2. Query total count matching filters
       let countSql = `
         SELECT COUNT(*) as total
@@ -839,7 +843,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         LEFT JOIN report_order ro ON o.id = ro.order_id
         WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
       `;
-      const countParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
+      const countParams: SafeAny[] = [dateFrom, dateTo];
 
       if (filterByStaff) {
         if (staffLegacyId) {
@@ -854,12 +858,12 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         }
       }
 
-      if (type === 'completed') {
+      if (filterType === 'completed') {
         countSql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
-      } else if (type === 'missed') {
+      } else if (filterType === 'missed') {
         countSql += ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))`;
-      } else {
-        countSql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
+      } else if (filterType === 'pending') {
+        countSql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
       }
 
       const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams);
@@ -911,12 +915,12 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         }
       }
 
-      if (type === 'completed') {
+      if (filterType === 'completed') {
         sql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
-      } else if (type === 'missed') {
+      } else if (filterType === 'missed') {
         sql += ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))`;
-      } else {
-        sql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()`;
+      } else if (filterType === 'pending') {
+        sql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
       }
 
       sql += ` ORDER BY o.booking_date_start ASC LIMIT ? OFFSET ?`;

@@ -95,7 +95,7 @@ export default function FullCalendarGrid({
   };
 
   return (
-    <div className="full-calendar-grid-container bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm">
+    <div className="full-calendar-grid-container w-full bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm">
       <Calendar
         value={referenceDate}
         cellRender={dateCellRender}
