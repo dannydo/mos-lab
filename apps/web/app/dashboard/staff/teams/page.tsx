@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import { Card, Typography, Tag, Button, Input, Spin, message, Badge, Tooltip, Alert } from 'antd';
 import {
   TeamOutlined,
@@ -25,7 +25,7 @@ import { Team, TeamStaffOption, removeVietnameseTones } from '@mos-lab/shared';
 
 const { Title, Text } = Typography;
 
-export default function TeamsPage() {
+function TeamsContent() {
   const { themeMode } = useTheme();
   const searchParams = useSearchParams();
   const initialSelectedCode = searchParams.get('selected') || 'CC';
@@ -787,5 +787,19 @@ export default function TeamsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TeamsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 text-center">
+          <Spin size="large" />
+        </div>
+      }
+    >
+      <TeamsContent />
+    </Suspense>
   );
 }

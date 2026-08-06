@@ -1,9 +1,9 @@
 'use client';
 
 import '../../suppress-warnings';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, theme, Tabs, Button, DatePicker, Space, Segmented, Tooltip, Tag } from 'antd';
+import { Card, theme, Tabs, Button, DatePicker, Space, Segmented, Tooltip, Tag, Spin } from 'antd';
 import {
   DashboardOutlined,
   PhoneOutlined,
@@ -36,7 +36,7 @@ type DateMode = 'day' | 'week' | 'month' | 'custom';
 type PresetType =
   'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'stepper' | 'custom';
 
-export default function CsPage() {
+function CsContent() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const router = useRouter();
@@ -367,5 +367,19 @@ export default function CsPage() {
         <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} size="large" destroyOnHidden />
       </Card>
     </div>
+  );
+}
+
+export default function CsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 text-center">
+          <Spin size="large" />
+        </div>
+      }
+    >
+      <CsContent />
+    </Suspense>
   );
 }

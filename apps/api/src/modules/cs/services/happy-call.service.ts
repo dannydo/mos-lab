@@ -201,7 +201,7 @@ export class HappyCallService {
     const serviceMap = new Map<number, string>();
     if (orderIds.length > 0) {
       const services = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT os.order_id, sl.service_name AS name
+        `SELECT os.order_id, MIN(sl.service_name) AS name
          FROM order_service os
          JOIN service s ON os.service_id = s.id
          LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1

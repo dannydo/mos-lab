@@ -153,6 +153,12 @@ export function getSidebarGroups(
     groupTitle: 'VẬN HÀNH CUỘC GỌI',
     items: [
       {
+        key: 'schedule-calendar',
+        label: 'Lịch & Công suất',
+        icon: <CalendarOutlined />,
+        path: '/dashboard/schedule-calendar',
+      },
+      {
         key: 'my-appointments',
         label: 'Lịch hẹn của tôi',
         icon: <CalendarOutlined />,
@@ -275,6 +281,7 @@ export function getSelectedMenuKey(pathname: string, assignedStaffId?: string | 
   }
   if (pathname.includes('/dashboard/nyc')) return 'nyc-parent';
   if (pathname.includes('/dashboard/loca')) return 'loca';
+  if (pathname.includes('/dashboard/schedule-calendar')) return 'schedule-calendar';
   if (pathname.includes('/dashboard/appointments')) return 'my-appointments';
   if (pathname.includes('/dashboard/plans')) return 'plans';
   if (pathname.includes('/dashboard/calls')) return 'calls';
