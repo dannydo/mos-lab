@@ -394,3 +394,14 @@ mos-lab/
 - **KPI Thời gian rước khách**: $\text{Pickup Time} = \text{ServiceStart} - \text{Preparation}$, mục tiêu dưới 3 phút.
 - **`ACTIVE_SERVICING_STATES`** dùng trong `cv-realtime-status`: `['ServiceStart', 'ServiceCleaned', 'Consultation', 'Preparation', 'CheckIn', 'ServiceCompleted', 'ServiceEnd']`.
 - **Source code gốc**: `WingsLashes/Server/src/api/1/app/models/Order.php` (`Order::STATE_*`), `OrderServiceProgress.php` (`serviceProgressOrder()`), `iOS/WingsBeauty/Model/Config.swift`.
+
+### 52. CV / KTV Servicing Speed Calculation & Dynamic 90-Day iPad Benchmark Rule
+- **Thời lượng thao tác thực tế từ iPad (`report_order_service`)**: Tốc độ thực hiện dịch vụ của Chuyên viên (KTV) không lấy theo thời lượng ước tính niêm yết mà **bắt buộc phải tính theo tổng số phút thao tác thực tế ghi nhận từ ứng dụng iPad** trong `report_order_service`:
+  $$\text{actual\_servicing\_minutes} = \text{preparation\_minute} + \text{pre\_servicing\_minute} + \text{cleaning\_minute} + \text{servicing\_minute}$$
+- **Khung thời gian 90 ngày động (Dynamic 90-Day Window)**: Tốc độ trung bình (`normalAvg` - Nối mới, `retainAvg` - Dặm mi, `removalAvg` - Tháo mi) được tính trung bình cộng từ các đơn hàng có trạng thái `o.order_state = 'Completed'`, nhóm dịch vụ `s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')`, thời lượng trong khoảng từ 15 đến 200 phút, và thời điểm check-in thực tế trong vòng **90 ngày gần nhất** (`actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)`).
+- **Phân loại chỉ số tốc độ theo từng loại dịch vụ (`service_type`)**:
+  - `service_type = 'Normal'` $\rightarrow$ `normalAvg` (Thời gian nối mi mới trung bình).
+  - `service_type = 'Retain'` $\rightarrow$ `retainAvg` (Thời gian dặm mi trung bình).
+  - `service_type IN ('Removal', 'Fix')` $\rightarrow$ `removalAvg` (Thời gian tháo mi trung bình).
+- **Đồng bộ Backend API & Giao diện Linh hoạt**: Cả 2 API `/api/customers/ktv-daily-capacities` và `/api/customers/cv-realtime-status` bắt buộc đính kèm `avgDurationMinutes` cho tất cả nhân viên CV đang hoạt động. Component Frontend (`CvWorkingStaffCard`) hiển thị Badge tốc độ linh hoạt nếu nhân sự có bất kỳ chỉ số nào trong 3 loại (`normalAvg`, `retainAvg`, hoặc `removalAvg`), tuyệt đối không hardcode tốc độ thủ công hoặc ẩn badge khi nhân sự chỉ làm dặm/tháo mi.
+

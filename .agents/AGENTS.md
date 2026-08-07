@@ -535,16 +535,24 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 
 ---
 
-# 📱 MOS API vs. iOS App API Data Reconciliation & Presentation Invariants
+# ⏱️ CV / KTV Servicing Speed Calculation & Dynamic 90-Day iPad Benchmark Rules
 
-1. **Phân biệt Dữ liệu CSDL Thô vs Giao diện iOS App UI**:
-   - Khi truy vấn CSDL legacy thô (`staff_bonus`), cột `date_created` chứa dấu thời gian rạng sáng/nửa đêm (`23:59:59` hoặc `02:00:00` ngày $D+1$) do script batch cronjob chốt sổ (`OrderRegenerationService.php`) tạo ra. Tuyệt đối không dùng `WHERE DATE(sb.date_created) = date` khi so sánh dữ liệu hiển thị trên giao diện iOS.
-   - **Giao diện iOS App UI** (màn hình `ClientConsultantHomeVC` / API `/staff/client-consultant/bonus`) hiển thị và gom nhóm ca làm việc theo ngày thực tế **`booking_date_start` (`ReportOrder.date`)** — chính là thời điểm dịch vụ ($D$).
-2. **Quy trình Đối chiếu Chuẩn (Reconciliation Workflow)**:
-   - Khi so sánh kết quả giữa MOS API (`GET /api/gamification/daily-sales-bonus/consultant`) và iOS App API:
-     - **Khớp mốc ngày hiển thị UI**: Luôn gom nhóm các bản ghi thưởng legacy theo ngày làm việc thực tế `DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))`.
-     - **Gộp bản ghi thưởng lẻ/chia 50/50**: Hệ thống legacy có thể sinh ra nhiều dòng `staff_bonus` lẻ cho cùng 1 ca/ngày do điều kiện chia 50/50 CC IN != CC OUT hoặc thưởng điều chỉnh. Cần `SUM(sb.bonus_amount)` theo `service_date` trước khi so sánh với `daily_bonus` của MOS API.
-     - **Kiểm thử trực tiếp Localhost**: Truy vấn trực tiếp local PHP endpoints qua HTTP (`POST http://127.0.0.1:80/1/staff/client-consultant/report` & `/1/staff/client-consultant/bonus` kèm `login_token`) để verify dữ liệu phản hồi thực tế của iOS App.
+1. **Thời lượng thao tác thực tế từ iPad (`report_order_service`)**:
+   - Tốc độ thực hiện dịch vụ của Chuyên viên (KTV) không lấy theo thời lượng ước tính niêm yết mà **bắt buộc phải tính theo tổng số phút thao tác thực tế ghi nhận từ ứng dụng iPad** trong `report_order_service`:
+     $$\text{actual\_servicing\_minutes} = \text{preparation\_minute} + \text{pre\_servicing\_minute} + \text{cleaning\_minute} + \text{servicing\_minute}$$
+
+2. **Khung thời gian 90 ngày động (Dynamic 90-Day Window)**:
+   - Tốc độ trung bình (`normalAvg` - Nối mới, `retainAvg` - Dặm mi, `removalAvg` - Tháo mi) được tính trung bình cộng từ các đơn hàng có trạng thái `o.order_state = 'Completed'`, nhóm dịch vụ `s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')`, thời lượng trong khoảng từ 15 đến 200 phút, và thời điểm check-in thực tế trong vòng **90 ngày gần nhất** (`actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)`).
+
+3. **Phân loại chỉ số tốc độ theo từng loại dịch vụ (`service_type`)**:
+   - `service_type = 'Normal'` $\rightarrow$ `normalAvg` (Thời gian nối mi mới trung bình).
+   - `service_type = 'Retain'` $\rightarrow$ `retainAvg` (Thời gian dặm mi trung bình).
+   - `service_type IN ('Removal', 'Fix')` $\rightarrow$ `removalAvg` (Thời gian tháo mi trung bình).
+
+4. **Đồng bộ Backend API & Giao diện Linh hoạt**:
+   - Cả 2 API `/api/customers/ktv-daily-capacities` và `/api/customers/cv-realtime-status` bắt buộc đính kèm `avgDurationMinutes` cho tất cả nhân viên CV đang hoạt động.
+   - Component Frontend (`CvWorkingStaffCard`) hiển thị Badge tốc độ linh hoạt nếu nhân sự có bất kỳ chỉ số nào trong 3 loại (`normalAvg`, `retainAvg`, hoặc `removalAvg`), tuyệt đối không hardcode tốc độ thủ công hoặc ẩn badge khi nhân sự chỉ làm dặm/tháo mi.
+
 
 
 
