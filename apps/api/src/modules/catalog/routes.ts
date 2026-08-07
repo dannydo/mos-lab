@@ -1797,7 +1797,7 @@ export async function catalogRoutes(fastify: FastifyInstance) {
   /**
    * GET /api/catalog/lash-benchmarks — List all benchmarks
    */
-  fastify.get('/api/catalog/lash-benchmarks', { preHandler: [requireAuth] }, async (_request, reply) => {
+  fastify.get('/catalog/lash-benchmarks', { preHandler: [requireAuth] }, async (_request, reply) => {
     try {
       const benchmarks = await LashBenchmarkService.listBenchmarks(fastify);
       return { success: true, data: benchmarks };
@@ -1810,7 +1810,7 @@ export async function catalogRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/catalog/lash-benchmarks/seed — Auto-calculate & seed from Legacy DB
    */
-  fastify.post('/api/catalog/lash-benchmarks/seed', { preHandler: [requireCatalogAdmin] }, async (_request, reply) => {
+  fastify.post('/catalog/lash-benchmarks/seed', { preHandler: [requireCatalogAdmin] }, async (_request, reply) => {
     try {
       const result = await LashBenchmarkService.seedBenchmarks(fastify);
       return {
@@ -1830,7 +1830,7 @@ export async function catalogRoutes(fastify: FastifyInstance) {
   fastify.put<{
     Params: { id: string };
     Body: { benchmarkMinutes?: number; minMinutes?: number; maxMinutes?: number };
-  }>('/api/catalog/lash-benchmarks/:id', { preHandler: [requireCatalogAdmin] }, async (request, reply) => {
+  }>('/catalog/lash-benchmarks/:id', { preHandler: [requireCatalogAdmin] }, async (request, reply) => {
     try {
       const id = parseInt(request.params.id, 10);
       if (isNaN(id)) return reply.status(400).send({ success: false, error: 'Invalid ID' });
