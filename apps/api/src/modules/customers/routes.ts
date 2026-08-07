@@ -8539,8 +8539,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const storeIds = [6, 16]; // Đề Thám, Estella Place
 
       storeIds.forEach((sid) => {
-        // Filter upcoming bookings for this store
-        const storeUpcomingBookings = upcomingStoreOrders.filter((o: SafeAny) => Number(o.storeId) === sid);
+        // Filter upcoming bookings for this store (exclude past-due bookings late by >30 mins)
+        const storeUpcomingBookings = upcomingStoreOrders
+          .filter((o: SafeAny) => Number(o.storeId) === sid)
+          .filter((o: SafeAny) => {
+            const startMs = new Date(o.bookStartStr.replace(' ', 'T') + '+07:00').getTime();
+            const diffMins = Math.round((startMs - now.getTime()) / 60000);
+            return diffMins >= -30; // Ignore > 30 mins late (considered missed)
+          });
 
         // Get the latest queue entries for this store (only unassigned = waiting in queue)
         const storeQueue = queueRows
@@ -8577,13 +8583,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
             let mappedBookingTime: string | null = null;
 
             if (isLockedForBooking && nextBookingInMinutes != null) {
-              estimatedWaitMinutes = Math.max(0, nextBookingInMinutes);
+              estimatedWaitMinutes = nextBookingInMinutes;
               mappedBookingTime = nextBooking.bookStartStr ? String(nextBooking.bookStartStr).slice(11, 16) : null;
             } else if (storeUpcomingBookings[idx]) {
               const booking = storeUpcomingBookings[idx];
               const startMs = new Date(booking.bookStartStr.replace(' ', 'T') + '+07:00').getTime();
               const diffMins = Math.round((startMs - now.getTime()) / 60000);
-              estimatedWaitMinutes = Math.max(0, diffMins);
+              estimatedWaitMinutes = diffMins; // Can be negative (e.g. -15p, -26p) if late within 30m
               mappedBookingTime = booking.bookStartStr ? String(booking.bookStartStr).slice(11, 16) : null;
             } else {
               // Beyond scheduled bookings today for this store: leave blank (null)

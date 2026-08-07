@@ -307,9 +307,11 @@ const QueueLane: React.FC<QueueLaneProps> = React.memo(({ storeName, storeId, en
               const waitText =
                 entry.estimatedWaitMinutes == null
                   ? '-'
-                  : entry.estimatedWaitMinutes <= 0
-                    ? '0p'
-                    : `~${entry.estimatedWaitMinutes}p`;
+                  : entry.estimatedWaitMinutes < 0
+                    ? `${entry.estimatedWaitMinutes}p`
+                    : entry.estimatedWaitMinutes === 0
+                      ? '0p'
+                      : `~${entry.estimatedWaitMinutes}p`;
 
               const tooltipContent = (
                 <div className="text-xs space-y-1 min-w-[140px]">
@@ -324,10 +326,19 @@ const QueueLane: React.FC<QueueLaneProps> = React.memo(({ storeName, storeId, en
                   {staffStatus?.currentCustomerName && (
                     <div className="text-blue-300">👤 {staffStatus.currentCustomerName}</div>
                   )}
-                  <div className="text-emerald-300 font-bold tabular-nums">
-                    {entry.estimatedWaitMinutes == null
-                      ? 'Chờ: Chưa có lịch'
-                      : `Chờ tua: ${waitText}${entry.mappedBookingTime ? ` (${entry.mappedBookingTime})` : ''}`}
+                  <div className="font-bold tabular-nums">
+                    {entry.estimatedWaitMinutes == null ? (
+                      <span className="text-slate-400">Chờ: Chưa có lịch</span>
+                    ) : entry.estimatedWaitMinutes < 0 ? (
+                      <span className="text-rose-400">
+                        ⚠️ Khách trễ: {entry.estimatedWaitMinutes}p ({entry.mappedBookingTime || ''})
+                      </span>
+                    ) : (
+                      <span className="text-emerald-300">
+                        Chờ tua: {waitText}
+                        {entry.mappedBookingTime ? ` (${entry.mappedBookingTime})` : ''}
+                      </span>
+                    )}
                   </div>
                 </div>
               );
@@ -362,11 +373,13 @@ const QueueLane: React.FC<QueueLaneProps> = React.memo(({ storeName, storeId, en
                         className={`text-[8px] tabular-nums font-bold leading-none ${
                           entry.estimatedWaitMinutes == null
                             ? 'text-slate-500 opacity-60'
-                            : entry.estimatedWaitMinutes <= 0
-                              ? 'text-emerald-400'
-                              : entry.estimatedWaitMinutes <= 15
-                                ? 'text-amber-400'
-                                : 'text-slate-400'
+                            : entry.estimatedWaitMinutes < 0
+                              ? 'text-rose-400 font-extrabold'
+                              : entry.estimatedWaitMinutes === 0
+                                ? 'text-emerald-400'
+                                : entry.estimatedWaitMinutes <= 15
+                                  ? 'text-amber-400'
+                                  : 'text-slate-400'
                         }`}
                       >
                         {waitText}
