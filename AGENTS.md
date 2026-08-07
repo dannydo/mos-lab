@@ -381,3 +381,16 @@ mos-lab/
 - **Single Source of Truth**: Hàm `calculateWheelBonusCap(monthlyDailyBonus, rawWheelBonus)` tại `packages/shared/src/utils/wheel-cap.ts` là nguồn tính toán duy nhất. Tất cả các tab (CC Xoay, CC Daily Bonus, CC Game, CC Thu Nhập) bắt buộc gọi hàm này.
 - **Mục đích**: Khuyến khích CC bán nhiều Combo/Sản phẩm hơn để nâng CC Daily Bonus (mở rộng trần), thay vì chỉ tập trung vào Vòng Xoay/Minigame.
 
+### 51. Order State Lifecycle & Department Ownership SOP (Quy trình Vòng Đời Đơn Hàng & Phân Quyền Bộ Phận)
+- **14 trạng thái chính** trong vòng đời đơn nối mi, phân bổ theo bộ phận:
+  - **BK/Telesales (2)**: `New` (tạo lịch), `Confirmed` (xác nhận).
+  - **Bảo vệ (1)**: `Parking` (đỗ xe).
+  - **CC — Client Consultant (5)**: `CheckIn` (đón khách), `Consultation` (tư vấn kiểu mi + chọn KTV), `Preparation` (CC nhấn bắt đầu đo thời gian KTV rước khách ⏱️), `ServiceStart` (CC nhấn khi KTV đã đón khách, mục tiêu < 3p), `CheckOut` (thanh toán).
+  - **CV/KTV — Kỹ thuật viên (4)**: 📷 `ServiceStart` (chụp ảnh TRƯỚC — `before_attribute_value`), `ServiceCleaned` (vệ sinh + 📷 chụp ảnh GIỮA — `cleaned_attribute_value`), `ServiceEnd` (xong nối + 📷 chụp ảnh SAU — `after_attribute_value`), `ServiceCompleted` (KTV bấm Hoàn thành → **CV trả về Queue ngay lập tức**).
+  - **Hệ thống Auto (2)**: `Completed` (hoàn tất đơn, trigger side-effects), `Missed` (khách vắng mặt).
+  - **BK/Admin (1)**: `Cancelled` (hủy đơn).
+- **Phân biệt `ServiceEnd` vs `ServiceCompleted`**: `ServiceEnd` = KTV hoàn tất nối mi + chụp ảnh After. `ServiceCompleted` = KTV nhấn "Hoàn thành" (`/order/service/done`) → gửi tín hiệu cho CC checkout và **CV được trả về hàng chờ tua (Queue)**.
+- **KPI Thời gian nối mi**: $\text{Service Duration} = \text{ServiceCompleted} - \text{Preparation}$.
+- **KPI Thời gian rước khách**: $\text{Pickup Time} = \text{ServiceStart} - \text{Preparation}$, mục tiêu dưới 3 phút.
+- **`ACTIVE_SERVICING_STATES`** dùng trong `cv-realtime-status`: `['ServiceStart', 'ServiceCleaned', 'Consultation', 'Preparation', 'CheckIn', 'ServiceCompleted', 'ServiceEnd']`.
+- **Source code gốc**: `WingsLashes/Server/src/api/1/app/models/Order.php` (`Order::STATE_*`), `OrderServiceProgress.php` (`serviceProgressOrder()`), `iOS/WingsBeauty/Model/Config.swift`.

@@ -145,7 +145,8 @@ export function computeCvAvailability(
   );
 
   const activeAppt = staffAppts.find((a) => {
-    if (a.orderState === 'Completed') return false;
+    if (a.orderState === 'Completed' || a.orderState === 'ServiceCompleted' || a.orderState === 'CheckOut')
+      return false;
     const startStr = a.bookingDateStart || (a as any).booking_date_start || (a as any).date_start;
     const start = dayjs(startStr);
     if (!start.isValid()) return false;
@@ -195,7 +196,8 @@ export function computeCvAvailability(
 
   const upcomingAppt = staffAppts
     .filter((a) => {
-      if (a.orderState === 'Completed') return false;
+      if (a.orderState === 'Completed' || a.orderState === 'ServiceCompleted' || a.orderState === 'CheckOut')
+        return false;
       const startStr = a.bookingDateStart || (a as any).booking_date_start || (a as any).date_start;
       const start = dayjs(startStr);
       return start.isValid() && start.isAfter(now);

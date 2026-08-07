@@ -67,25 +67,21 @@ export default function ScheduleListView({
         );
       case 'CheckOut':
       case 'ServiceCompleted':
-      case 'ServiceCleaned':
-      case 'ServiceEnd':
         return (
-          <Tooltip title="💳 Đã nối mi xong — Chờ CC checkout / tính tiền">
+          <Tooltip title="💳 KTV đã hoàn thành — Chờ CC checkout / tính tiền">
             <Tag
               icon={<CreditCardOutlined />}
               color="purple"
               className="px-2 py-0.5 rounded-full font-medium cursor-help"
             >
-              Nối xong (Chờ tính tiền)
+              Xong DV (Chờ checkout)
             </Tag>
           </Tooltip>
         );
-      case 'ServiceStart':
-      case 'Consultation':
-      case 'Preparation':
-      case 'CheckIn':
+      case 'ServiceCleaned':
+      case 'ServiceEnd':
         return (
-          <Tooltip title="🔵 Đang phục vụ / Nối mi tại cửa hàng">
+          <Tooltip title="💅 KTV đang nối mi / chụp ảnh trên iPad">
             <Tag
               icon={<SyncOutlined spin />}
               color="processing"
@@ -95,9 +91,35 @@ export default function ScheduleListView({
             </Tag>
           </Tooltip>
         );
+      case 'Preparation':
+      case 'ServiceStart':
+        return (
+          <Tooltip title="🤝 CC đang bàn giao khách cho KTV (đo thời gian rước khách)">
+            <Tag
+              icon={<ClockCircleOutlined />}
+              color="cyan"
+              className="px-2 py-0.5 rounded-full font-medium cursor-help"
+            >
+              Chuẩn bị / Rước khách
+            </Tag>
+          </Tooltip>
+        );
+      case 'CheckIn':
+      case 'Consultation':
+        return (
+          <Tooltip title="💬 CC đã đón khách & đang tư vấn kiểu mi tại quầy">
+            <Tag
+              icon={<CheckCircleOutlined />}
+              color="green"
+              className="px-2 py-0.5 rounded-full font-medium cursor-help"
+            >
+              Đã check-in / Tư vấn
+            </Tag>
+          </Tooltip>
+        );
       case 'Missed':
         return (
-          <Tooltip title="⚠️ Đã bỏ lỡ hẹn">
+          <Tooltip title="⏰ Hệ thống đánh dấu — Khách vắng mặt / không đến">
             <Tag icon={<WarningOutlined />} color="error" className="px-2 py-0.5 rounded-full font-medium cursor-help">
               Missed (Bỏ lỡ)
             </Tag>
@@ -105,7 +127,7 @@ export default function ScheduleListView({
         );
       case 'Cancelled':
         return (
-          <Tooltip title="❌ Đã hủy lịch">
+          <Tooltip title="🚫 Lịch hẹn đã bị Booker / Admin hủy">
             <Tag
               icon={<CloseCircleOutlined />}
               color="default"

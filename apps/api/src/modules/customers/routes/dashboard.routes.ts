@@ -535,20 +535,14 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         if (o.order_state === 'Completed') {
           status = 'completed';
         } else if (
-          [
-            'CheckIn',
-            'Consultation',
-            'Preparation',
-            'ServiceStart',
-            'ServiceCleaned',
-            'ServiceEnd',
-            'ServiceCompleted',
-            'CheckOut',
-            'Parking',
-          ].includes(o.order_state)
+          ['CheckIn', 'Consultation', 'Preparation', 'ServiceStart', 'ServiceCleaned', 'ServiceEnd'].includes(
+            o.order_state
+          )
         ) {
           status = 'serving';
-        } else if (o.order_state === 'Confirmed' || o.order_state === 'New' || o.order_state === 'Approved') {
+        } else if (['ServiceCompleted', 'CheckOut'].includes(o.order_state)) {
+          status = 'checkout';
+        } else if (o.order_state === 'Confirmed' || o.order_state === 'New') {
           const now = new Date();
           const actualStart = toActualDate(o.booking_date_start);
           if (o.booking_date_start && actualStart < new Date(now.getTime() - 15 * 60000)) {
@@ -870,20 +864,14 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         if (o.order_state === 'Completed') {
           status = 'completed';
         } else if (
-          [
-            'CheckIn',
-            'Consultation',
-            'Preparation',
-            'ServiceStart',
-            'ServiceCleaned',
-            'ServiceEnd',
-            'ServiceCompleted',
-            'CheckOut',
-            'Parking',
-          ].includes(o.order_state)
+          ['CheckIn', 'Consultation', 'Preparation', 'ServiceStart', 'ServiceCleaned', 'ServiceEnd'].includes(
+            o.order_state
+          )
         ) {
           status = 'serving';
-        } else if (o.order_state === 'Confirmed' || o.order_state === 'New' || o.order_state === 'Approved') {
+        } else if (['ServiceCompleted', 'CheckOut'].includes(o.order_state)) {
+          status = 'checkout';
+        } else if (o.order_state === 'Confirmed' || o.order_state === 'New') {
           const now = new Date();
           const actualStart = toActualDate(o.booking_date_start);
           if (o.booking_date_start && actualStart < new Date(now.getTime() - 15 * 60000)) {

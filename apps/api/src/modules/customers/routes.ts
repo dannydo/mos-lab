@@ -8473,7 +8473,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
             'Consultation',
             'Preparation',
             'CheckIn',
-            'ServiceCompleted',
             'ServiceEnd',
           ];
           const stateActiveOrder = staffOrders.find((o: SafeAny) => {
@@ -8505,9 +8504,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
             } else if (activeOrder.orderState === 'Consultation') {
               liveStatus = 'BUSY';
               liveLabel = `💬 Đang tư vấn${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
-            } else if (activeOrder.orderState === 'ServiceCompleted') {
+            } else if (activeOrder.orderState === 'ServiceEnd') {
               liveStatus = 'ENDING_SOON';
-              liveLabel = `🩺 Xong dịch vụ, chờ CC checkout`;
+              liveLabel = `📷 Xong nối mi, chụp ảnh After${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
             } else if (estimatedEndMinutes != null && estimatedEndMinutes < -10) {
               liveStatus = 'OVERTIME';
               liveLabel = `🔴 Quá giờ (${Math.abs(estimatedEndMinutes)}p)`;

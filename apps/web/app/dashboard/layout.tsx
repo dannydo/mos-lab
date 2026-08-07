@@ -34,11 +34,16 @@ const PendingAllocationModal = dynamic(
   () => import('../../components/allocation/PendingAllocationModal').then((m) => m.PendingAllocationModal),
   { ssr: false }
 );
+const CvScheduleDrawer = dynamic(
+  () => import('./schedule-calendar/components/CvScheduleDrawer').then((m) => m.CvScheduleDrawer),
+  { ssr: false }
+);
 import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
 import { OmiCallProvider } from '../../context/OmiCallContext';
 import OmiCallWidget from '../../components/OmiCallWidget';
 import SidebarNav from '../../components/layout/SidebarNav';
+import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
 
 const { Header, Sider, Content } = Layout;
 
@@ -60,6 +65,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const [isPendingAllocationOpen, setIsPendingAllocationOpen] = useState(false);
   const [pendingAllocationCount, setPendingAllocationCount] = useState(0);
+
+  // Global CV Schedule Drawer state
+  const [isCvDrawerOpen, setIsCvDrawerOpen] = useState(false);
+  const [cvDrawerDate, setCvDrawerDate] = useState(() => dayjs());
+  const [workingCvCount, setWorkingCvCount] = useState(0);
+
+  const fetchWorkingCvCount = useCallback(async () => {
+    try {
+      const res = await apiClient.customers.getCvRealtimeStatus();
+      if (res?.staffStatuses) {
+        setWorkingCvCount(res.staffStatuses.length);
+      }
+    } catch (err) {
+      console.warn('Fetch working CV count error:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    fetchWorkingCvCount();
+    const interval = setInterval(fetchWorkingCvCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchWorkingCvCount, loading, user]);
 
   const fetchPendingAllocationsCount = useCallback(async () => {
     try {
@@ -363,10 +391,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               background: token.colorBgContainer,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
               borderBottom: `1px solid ${token.colorBorderSecondary}`,
             }}
           >
+            <HeaderLeftToolbar onOpenCvDrawer={() => setIsCvDrawerOpen(true)} workingCvCount={workingCvCount} />
             <div style={{ display: 'flex', alignItems: 'center' }}>
               {isImpersonating && (
                 <Tag
@@ -668,6 +697,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </Layout>
       <OmiCallWidget />
       <CallLogModal />
+      <CvScheduleDrawer
+        open={isCvDrawerOpen}
+        onClose={() => setIsCvDrawerOpen(false)}
+        currentDate={cvDrawerDate}
+        onDateChange={(d) => setCvDrawerDate(d)}
+      />
     </OmiCallProvider>
   );
 }

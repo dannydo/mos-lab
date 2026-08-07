@@ -387,17 +387,12 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
   const service = appt.serviceName || (appt as any).packageName || 'Lịch dịch vụ';
   const timeFormatted = appt.bookingDateStart ? dayjs(appt.bookingDateStart).format('HH:mm') : hourStr;
   const isCompleted = appt.orderState === 'Completed';
-  const isPendingCheckout =
-    appt.orderState === 'CheckOut' ||
-    appt.orderState === 'ServiceCompleted' ||
-    appt.orderState === 'ServiceCleaned' ||
-    appt.orderState === 'ServiceEnd';
-  const isServicing =
-    appt.orderState === 'ServiceStart' ||
-    appt.orderState === 'Consultation' ||
-    appt.orderState === 'Preparation' ||
-    appt.orderState === 'CheckIn';
-  const isMissed = appt.orderState === 'Missed' || appt.orderState === 'Cancelled';
+  const isPendingCheckout = appt.orderState === 'CheckOut' || appt.orderState === 'ServiceCompleted';
+  const isServicing = appt.orderState === 'ServiceCleaned' || appt.orderState === 'ServiceEnd';
+  const isPrep = appt.orderState === 'Preparation' || appt.orderState === 'ServiceStart';
+  const isCheckInConsult = appt.orderState === 'CheckIn' || appt.orderState === 'Consultation';
+  const isCancelled = appt.orderState === 'Cancelled';
+  const isMissed = appt.orderState === 'Missed';
 
   const cardPopoverContent = (
     <div className="p-1 max-w-[240px] space-y-2">
@@ -412,12 +407,18 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
             {isCompleted
               ? '✅ Hoàn thành (Đã tính tiền)'
               : isPendingCheckout
-                ? '💳 Đã nối xong (Chờ checkout)'
+                ? '💳 Xong DV (Chờ checkout)'
                 : isServicing
-                  ? '🔵 Đang phục vụ / Nối mi'
-                  : isMissed
-                    ? '❌ Đã hủy / Bỏ lỡ'
-                    : '🕒 Chờ check-in'}
+                  ? '💅 Đang nối mi'
+                  : isPrep
+                    ? '🤝 Chuẩn bị / Rước khách'
+                    : isCheckInConsult
+                      ? '💬 Đã check-in / Tư vấn'
+                      : isCancelled
+                        ? '🚫 Đã hủy (Booker/Admin)'
+                        : isMissed
+                          ? '⏰ Missed (Bỏ lỡ)'
+                          : '🕒 Chờ check-in'}
           </span>
         </div>
         <div>

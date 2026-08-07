@@ -231,13 +231,22 @@ export const getPendingColumns = ({
       render: (state: string, record: Appointment) => {
         const isPast = record.bookingDateStart ? dayjs(record.bookingDateStart).isBefore(dayjs()) : false;
         const isCompleted = state === 'Completed';
-        const isInService = ['CheckIn', 'ServiceCleaned', 'CheckOut'].includes(state);
+        const isCheckout = ['ServiceCompleted', 'CheckOut'].includes(state);
+        const isInService = ['Consultation', 'Preparation', 'ServiceStart', 'ServiceCleaned', 'ServiceEnd'].includes(
+          state
+        );
 
         let color = 'default';
         if (isCompleted) {
           color = 'success';
+        } else if (isCheckout) {
+          color = 'purple';
         } else if (isInService) {
           color = 'processing';
+        } else if (state === 'Missed') {
+          color = 'error';
+        } else if (state === 'Cancelled') {
+          color = 'default';
         } else if (isPast) {
           color = 'error';
         } else {
