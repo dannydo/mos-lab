@@ -2,7 +2,14 @@
 
 import React, { useState, useMemo } from 'react';
 import { Tag, Button, Skeleton, Tooltip } from 'antd';
-import { CloseCircleOutlined, CalendarOutlined, CheckOutlined, HistoryOutlined, EditOutlined } from '@ant-design/icons';
+import {
+  CloseCircleOutlined,
+  CalendarOutlined,
+  CheckOutlined,
+  HistoryOutlined,
+  EditOutlined,
+  SyncOutlined,
+} from '@ant-design/icons';
 import { CancelBookingModal } from '../../booking/CancelBookingModal';
 import { BookingAuditLogDrawer } from '../../booking/BookingAuditLogDrawer';
 import { UpdateBookingModal } from '../../UpdateBookingModal';
@@ -157,6 +164,58 @@ export const BookingsTab: React.FC<
       return map;
     }, [notes, bookings]);
 
+    const bookingCycleMap = useMemo(() => {
+      const map = new Map<
+        number,
+        {
+          cycleDays: number | null;
+          isFirstOrder: boolean;
+          prevCompletedDateStr: string | null;
+        }
+      >();
+
+      if (!bookings || bookings.length === 0) return map;
+
+      const completedList = bookings
+        .filter((b: SafeAny) => b.orderState === 'ServiceCompleted' || b.orderState === 'Completed')
+        .map((b: SafeAny) => ({
+          id: Number(b.id),
+          date: safeParseDate(b.bookingDate),
+        }))
+        .filter((b): b is { id: number; date: Date } => b.date !== null)
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+      bookings.forEach((b: SafeAny) => {
+        const bId = Number(b.id);
+        const bDate = safeParseDate(b.bookingDate);
+
+        if (!bDate) {
+          map.set(bId, { cycleDays: null, isFirstOrder: false, prevCompletedDateStr: null });
+          return;
+        }
+
+        const prevCompleted = completedList.filter((cb) => cb.id !== bId && cb.date.getTime() <= bDate.getTime()).pop();
+
+        if (!prevCompleted) {
+          map.set(bId, { cycleDays: null, isFirstOrder: true, prevCompletedDateStr: null });
+        } else {
+          const diffTime = bDate.getTime() - prevCompleted.date.getTime();
+          const diffDays = Math.max(0, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+          const dayPrefixes = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+          const dayPrefix = dayPrefixes[prevCompleted.date.getDay()];
+          const formattedPrevDate = `${dayPrefix}, ${prevCompleted.date.toLocaleDateString('vi-VN')}`;
+
+          map.set(bId, {
+            cycleDays: diffDays,
+            isFirstOrder: false,
+            prevCompletedDateStr: formattedPrevDate,
+          });
+        }
+      });
+
+      return map;
+    }, [bookings]);
+
     return (
       <div
         className="custom-scrollbar"
@@ -247,6 +306,7 @@ export const BookingsTab: React.FC<
                       <span style={{ fontSize: '12px', color: '#888' }}>{formattedDate}</span>
                       {b.bookingDate && (
                         <span
+                          className="tabular-nums"
                           style={{
                             fontSize: '11px',
                             fontWeight: '600',
@@ -259,6 +319,78 @@ export const BookingsTab: React.FC<
                           {getDaysDiffText(b.bookingDate)}
                         </span>
                       )}
+                      {(() => {
+                        const cycleInfo = bookingCycleMap.get(Number(b.id));
+                        if (!cycleInfo) return null;
+
+                        if (cycleInfo.isFirstOrder) {
+                          return (
+                            <Tooltip title="Đơn đặt lịch hoàn tất đầu tiên của khách hàng">
+                              <span
+                                className="tabular-nums"
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: '600',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  background: themeMode === 'dark' ? 'rgba(148, 163, 184, 0.15)' : '#f1f5f9',
+                                  color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                                  border: `1px solid ${themeMode === 'dark' ? 'rgba(148, 163, 184, 0.3)' : '#cbd5e1'}`,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <SyncOutlined style={{ fontSize: '10px' }} />
+                                <span>Chu kỳ: Đơn đầu</span>
+                              </span>
+                            </Tooltip>
+                          );
+                        }
+
+                        if (cycleInfo.cycleDays !== null) {
+                          const hasCombo = Boolean(customer?.hasComboPackage || customer?.hasCombo);
+                          const maxLimit = hasCombo ? 25 : 21;
+                          const isOverdue = cycleInfo.cycleDays > maxLimit;
+
+                          let bg = themeMode === 'dark' ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5';
+                          let color = themeMode === 'dark' ? '#34d399' : '#047857';
+                          let border = `1px solid ${themeMode === 'dark' ? 'rgba(52, 211, 153, 0.3)' : '#a7f3d0'}`;
+
+                          if (isOverdue) {
+                            bg = themeMode === 'dark' ? 'rgba(245, 158, 11, 0.18)' : '#fffbeb';
+                            color = themeMode === 'dark' ? '#fbbf24' : '#b45309';
+                            border = `1px solid ${themeMode === 'dark' ? 'rgba(251, 191, 36, 0.35)' : '#fde68a'}`;
+                          }
+
+                          const tooltipText = `Chu kỳ: ${cycleInfo.cycleDays} ngày (tính từ đơn hoàn tất liền trước: ${cycleInfo.prevCompletedDateStr || 'N/A'}${isOverdue ? ` - Quá hạn dặm >${maxLimit} ngày` : ''})`;
+
+                          return (
+                            <Tooltip title={tooltipText}>
+                              <span
+                                className="tabular-nums"
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: '600',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  background: bg,
+                                  color: color,
+                                  border: border,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <SyncOutlined style={{ fontSize: '10px' }} />
+                                <span>Chu kỳ: {cycleInfo.cycleDays} ngày</span>
+                              </span>
+                            </Tooltip>
+                          );
+                        }
+
+                        return null;
+                      })()}
                       {isCompleted ? (
                         <CheckOutlined
                           style={{
