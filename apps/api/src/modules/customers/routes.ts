@@ -763,7 +763,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // Call Status Multi-Select Filter & Last Call Days Filter
       if (callStatuses && callStatuses.trim() !== '') {
-        const statusList = callStatuses.split(',').map((s) => s.trim()).filter(Boolean);
+        const statusList = callStatuses
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
         const hasNotCalled = statusList.includes('NOT_CALLED');
         const realStatuses = statusList.filter((s) => s !== 'NOT_CALLED');
 
@@ -1912,7 +1915,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // Call Status Multi-Select Filter & Last Call Days Filter
       if (callStatuses && callStatuses.trim() !== '') {
-        const statusList = callStatuses.split(',').map((s) => s.trim()).filter(Boolean);
+        const statusList = callStatuses
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
         const hasNotCalled = statusList.includes('NOT_CALLED');
         const realStatuses = statusList.filter((s) => s !== 'NOT_CALLED');
 
@@ -7984,17 +7990,19 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
           // Query fixed store & name for all active CV staff from DB master tables
           const cvProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-            SELECT user_id as id, full_name as name, client_store_id
+            SELECT user_id as id, full_name as name, client_store_id, avatar
             FROM user_profile
             WHERE user_id IN (${cvStaffIds.join(',')})
               AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0
           `);
           const cvNameMap = new Map<number, string>();
           const cvProfileStoreMap = new Map<number, number>();
+          const cvAvatarMap = new Map<number, string | null>();
           cvProfiles.forEach((p) => {
             const uid = Number(p.id);
             cvNameMap.set(uid, String(p.name || '').trim());
             if (p.client_store_id) cvProfileStoreMap.set(uid, Number(p.client_store_id));
+            cvAvatarMap.set(uid, p.avatar ? String(p.avatar) : null);
           });
 
           // Query fixed store from staff_day_off_schedule master
@@ -8208,7 +8216,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
               continue;
             }
 
-            const dayDateOffMap = dateOffMap.get(dateStr) || new Map<number, { reason: string; type: 'urgent_off' | 'planned_off'; daysAhead: number }>();
+            const dayDateOffMap =
+              dateOffMap.get(dateStr) ||
+              new Map<number, { reason: string; type: 'urgent_off' | 'planned_off'; daysAhead: number }>();
             const dayBookedMap = rangeBookedMap.get(dateStr) || new Map<number, number>();
             const dayDoneMap = rangeDoneMap.get(dateStr) || new Map<number, number>();
 
@@ -8222,6 +8232,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             const workingStaffList = workingCvIds.map((id: number) => ({
               id,
               name: cvNameMap.get(id) || `CV #${id}`,
+              avatarUrl: cvAvatarMap.get(id) || null,
               branchName: cvStoreMap.get(id) || 'Đề Thám',
               shift: cvShiftMap.get(id) || 'Ca Full',
               bookedCount: dayBookedMap.get(id) || 0,
@@ -8308,6 +8319,263 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: (error as SafeAny).message || 'Failed to retrieve appointments',
+      });
+    }
+  });
+
+  // GET /api/customers/cv-realtime-status
+  // Real-time CV availability status from legacy order_state + order_staff_queue
+  fastify.get('/customers/cv-realtime-status', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const now = new Date();
+      const tzOffset = 7 * 60 * 60 * 1000; // ICT UTC+7
+      const nowICT = new Date(now.getTime() + tzOffset);
+      const todayStr = nowICT.toISOString().split('T')[0];
+      const todayStart = `${todayStr} 00:00:00`;
+      const todayEnd = `${todayStr} 23:59:59`;
+
+      // 1. Get active CV staff IDs
+      const cvStaffIds = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
+      if (cvStaffIds.length === 0) {
+        return { staffStatuses: [], queueByStore: {}, timestamp: nowICT.toISOString() };
+      }
+
+      // 2. Get CV profiles with avatar
+      const cvProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT user_id, full_name, avatar, client_store_id
+        FROM user_profile
+        WHERE user_id IN (${cvStaffIds.join(',')})
+          AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0
+      `);
+      const profileMap = new Map<number, { name: string; avatar: string | null; storeId: number }>();
+      cvProfiles.forEach((p) => {
+        profileMap.set(Number(p.user_id), {
+          name: String(p.full_name || '').trim(),
+          avatar: p.avatar ? String(p.avatar) : null,
+          storeId: Number(p.client_store_id || 6),
+        });
+      });
+
+      // 3. Query real-time order states for today — get the LATEST active order per KTV
+      const orderRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `
+        SELECT
+          o.id as orderId,
+          o.order_state as orderState,
+          o.booking_date_start as bookStart,
+          o.booking_date_end as bookEnd,
+          COALESCE(os.assigned_staff_id, os.booked_staff_id) as ktvId,
+          cust_up.full_name as customerName
+        FROM \`order\` o
+        LEFT JOIN order_service os ON o.id = os.order_id
+        LEFT JOIN user_profile cust_up ON o.user_id = cust_up.user_id
+        WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
+          AND o.order_state NOT IN ('Cancelled', 'Missed')
+          AND COALESCE(os.assigned_staff_id, os.booked_staff_id) IN (${cvStaffIds.join(',')})
+        ORDER BY o.booking_date_start DESC
+      `,
+        todayStart,
+        todayEnd
+      );
+
+      // 4. Build per-CV status: find the most relevant active order
+      // Active states in priority order (most active first)
+      const ACTIVE_STATES = ['ServiceStart', 'ServiceCleaned', 'Consultation', 'ServiceCompleted'];
+      const CHECKOUT_STATE = 'CheckOut';
+
+      const staffStatuses = cvStaffIds
+        .map((staffId: number) => {
+          const profile = profileMap.get(staffId);
+          if (!profile) return null;
+
+          const staffOrders = orderRows.filter((r: SafeAny) => Number(r.ktvId) === staffId);
+
+          // Find the most "active" order for this CV
+          let activeOrder = staffOrders.find((o: SafeAny) => ACTIVE_STATES.includes(o.orderState));
+          if (!activeOrder) {
+            activeOrder = staffOrders.find((o: SafeAny) => o.orderState === CHECKOUT_STATE);
+          }
+
+          let liveStatus = 'IDLE';
+          let liveLabel = '🟢 Đang rảnh';
+          let currentOrderId = null;
+          let currentOrderState = null;
+          let currentCustomerName = null;
+          let bookingDateEnd = null;
+          let estimatedEndMinutes = null;
+
+          if (activeOrder && ACTIVE_STATES.includes(activeOrder.orderState)) {
+            currentOrderId = Number(activeOrder.orderId);
+            currentOrderState = activeOrder.orderState;
+            currentCustomerName = activeOrder.customerName ? String(activeOrder.customerName).trim() : null;
+            const endTime = activeOrder.bookEnd ? new Date(activeOrder.bookEnd) : null;
+            bookingDateEnd = endTime ? endTime.toISOString() : null;
+
+            if (endTime) {
+              estimatedEndMinutes = Math.round((endTime.getTime() - now.getTime()) / 60000);
+            }
+
+            switch (activeOrder.orderState) {
+              case 'ServiceStart':
+                liveStatus = 'BUSY';
+                liveLabel = `🔵 Đang nối mi${estimatedEndMinutes != null ? ` (còn ${Math.max(0, estimatedEndMinutes)}p)` : ''}`;
+                break;
+              case 'ServiceCleaned':
+                liveStatus = 'ENDING_SOON';
+                liveLabel = `🧹 Đang vệ sinh mi${estimatedEndMinutes != null ? ` (còn ${Math.max(0, estimatedEndMinutes)}p)` : ''}`;
+                break;
+              case 'Consultation':
+                liveStatus = 'BUSY';
+                liveLabel = `💬 Đang tư vấn`;
+                break;
+              case 'ServiceCompleted':
+                liveStatus = 'ENDING_SOON';
+                liveLabel = `🩺 Xong dịch vụ, chờ CC checkout`;
+                break;
+            }
+
+            // Check for overtime (> 10 minutes past estimated end)
+            if (estimatedEndMinutes != null && estimatedEndMinutes < -10) {
+              liveStatus = 'OVERTIME';
+              liveLabel = `🔴 Quá giờ (${Math.abs(estimatedEndMinutes)}p)`;
+            }
+          } else if (activeOrder && activeOrder.orderState === CHECKOUT_STATE) {
+            // CheckOut = CV is available (checkout is CC's job)
+            liveStatus = 'IDLE';
+            liveLabel = '🟢 Sẵn sàng (khách đang checkout)';
+          } else {
+            // Check for upcoming bookings
+            const upcomingOrders = staffOrders
+              .filter((o: SafeAny) => o.orderState === 'New' || o.orderState === 'Confirmed')
+              .sort((a: SafeAny, b: SafeAny) => new Date(a.bookStart).getTime() - new Date(b.bookStart).getTime());
+
+            if (upcomingOrders.length > 0) {
+              const nextOrder = upcomingOrders[0];
+              const nextStart = new Date(nextOrder.bookStart);
+              const diffMins = Math.round((nextStart.getTime() - now.getTime()) / 60000);
+
+              if (diffMins <= 45) {
+                liveStatus = diffMins <= 15 ? 'UPCOMING' : 'LOCKED';
+                liveLabel = `🟡 Sắp có khách (${Math.max(0, diffMins)}p nữa)`;
+                currentCustomerName = nextOrder.customerName ? String(nextOrder.customerName).trim() : null;
+                bookingDateEnd = null;
+                estimatedEndMinutes = diffMins;
+              }
+            }
+          }
+
+          const storeId = profile.storeId;
+          const storeName = storeId === 16 ? 'Estella Place' : 'Đề Thám';
+
+          return {
+            staffId,
+            name: profile.name,
+            avatar: profile.avatar,
+            storeId,
+            storeName,
+            currentOrderId,
+            currentOrderState,
+            currentCustomerName,
+            bookingDateEnd,
+            estimatedEndMinutes,
+            liveStatus,
+            liveLabel,
+          };
+        })
+        .filter(Boolean);
+
+      // 5. Query today's queue from order_staff_queue
+      const queueRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `
+        SELECT osq.id as queueId, osq.client_store_id as storeId, osq.user_id as staffId,
+               osq.order_id as orderId, osq.position, osq.date_assigned as dateAssigned,
+               osq.date_skipped as dateSkipped, osq.date_created as dateCreated
+        FROM order_staff_queue osq
+        WHERE osq.date_created >= ?
+        ORDER BY osq.client_store_id ASC, osq.position ASC
+      `,
+        todayStart
+      );
+
+      // 6. Build queue by store — only include entries that are "waiting" (orderId = null, not skipped)
+      const queueByStore: Record<number, SafeAny[]> = {};
+      const storeIds = [6, 16]; // Đề Thám, Estella Place
+
+      storeIds.forEach((sid) => {
+        // Get the latest queue entries for this store (only unassigned = waiting in queue)
+        const storeQueue = queueRows
+          .filter((q: SafeAny) => Number(q.storeId) === sid && !q.orderId && !q.dateSkipped)
+          .map((q: SafeAny) => {
+            const staffId = Number(q.staffId);
+            const profile = profileMap.get(staffId);
+            const staffStatus = staffStatuses.find((s: SafeAny) => s?.staffId === staffId);
+
+            // Check if this CV has an upcoming booking within 45 minutes
+            const upcomingBookings = orderRows.filter(
+              (o: SafeAny) =>
+                Number(o.ktvId) === staffId &&
+                (o.orderState === 'New' || o.orderState === 'Confirmed') &&
+                new Date(o.bookStart).getTime() > now.getTime()
+            );
+            const nextBooking = upcomingBookings.sort(
+              (a: SafeAny, b: SafeAny) => new Date(a.bookStart).getTime() - new Date(b.bookStart).getTime()
+            )[0];
+            const nextBookingInMinutes = nextBooking
+              ? Math.round((new Date(nextBooking.bookStart).getTime() - now.getTime()) / 60000)
+              : null;
+            const isLockedForBooking = nextBookingInMinutes != null && nextBookingInMinutes <= 45;
+
+            // Check if CV is actually available now
+            const isAvailableNow = staffStatus ? staffStatus.liveStatus === 'IDLE' : true;
+
+            return {
+              queueId: Number(q.queueId),
+              staffId,
+              name: profile?.name || `CV #${staffId}`,
+              avatar: profile?.avatar || null,
+              storeId: sid,
+              position: Number(q.position),
+              orderId: null,
+              dateAssigned: null,
+              dateCreated: q.dateCreated ? new Date(q.dateCreated).toISOString() : '',
+              isAvailableNow,
+              estimatedWaitMinutes: 0, // Will be calculated below
+              isLockedForBooking,
+              nextBookingInMinutes,
+            };
+          });
+
+        // Calculate estimated wait time based on queue position
+        // For each CV in queue: if the CVs before them are busy, accumulate their remaining time
+        let accumulatedWait = 0;
+        storeQueue.forEach((entry, idx) => {
+          if (idx === 0) {
+            entry.estimatedWaitMinutes = entry.isAvailableNow ? 0 : 5;
+          } else {
+            // Look at CVs before in queue — if they're busy, the wait increases
+            const prevEntry = storeQueue[idx - 1];
+            if (!prevEntry.isAvailableNow) {
+              const prevStatus = staffStatuses.find((s: SafeAny) => s?.staffId === prevEntry.staffId);
+              const prevRemaining = prevStatus?.estimatedEndMinutes ? Math.max(0, prevStatus.estimatedEndMinutes) : 15; // default 15 min if unknown
+              accumulatedWait += prevRemaining;
+            }
+            entry.estimatedWaitMinutes = accumulatedWait;
+          }
+        });
+
+        queueByStore[sid] = storeQueue;
+      });
+
+      return {
+        staffStatuses,
+        queueByStore,
+        timestamp: nowICT.toISOString(),
+      };
+    } catch (error: SafeAny) {
+      fastify.log.error(error, 'CV realtime status error');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: (error as SafeAny).message || 'Failed to get CV realtime status',
       });
     }
   });

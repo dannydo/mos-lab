@@ -155,3 +155,61 @@ export interface CvConfigResponse {
   activeCvIds: number[];
   allStaffOptions: CvStaffOption[];
 }
+
+// ── CV Real-time Status & Queue Types ──────────────────────────────────────
+
+/** Possible real-time order states from legacy DB */
+export type LegacyOrderState =
+  | 'New'
+  | 'Confirmed'
+  | 'Consultation'
+  | 'ServiceStart'
+  | 'ServiceCleaned'
+  | 'ServiceCompleted'
+  | 'CheckOut'
+  | 'Completed'
+  | 'Cancelled'
+  | 'Missed';
+
+/** CV availability derived from order_state */
+export type CvLiveStatus = 'IDLE' | 'UPCOMING' | 'BUSY' | 'ENDING_SOON' | 'OVERTIME' | 'LOCKED';
+
+export interface CvStaffRealtimeStatus {
+  staffId: number;
+  name: string;
+  avatar: string | null;
+  storeId: number;
+  storeName: string;
+  // Real-time from order.order_state
+  currentOrderId: number | null;
+  currentOrderState: LegacyOrderState | null;
+  currentCustomerName: string | null;
+  bookingDateEnd: string | null;
+  estimatedEndMinutes: number | null;
+  // Derived status for UI
+  liveStatus: CvLiveStatus;
+  liveLabel: string;
+}
+
+export interface CvQueueEntry {
+  queueId: number;
+  staffId: number;
+  name: string;
+  avatar: string | null;
+  storeId: number;
+  position: number;
+  orderId: number | null;
+  dateAssigned: string | null;
+  dateCreated: string;
+  // Calculated
+  isAvailableNow: boolean;
+  estimatedWaitMinutes: number;
+  isLockedForBooking: boolean;
+  nextBookingInMinutes: number | null;
+}
+
+export interface CvRealtimeStatusResponse {
+  staffStatuses: CvStaffRealtimeStatus[];
+  queueByStore: Record<number, CvQueueEntry[]>;
+  timestamp: string;
+}

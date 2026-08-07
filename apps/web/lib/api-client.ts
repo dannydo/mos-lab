@@ -146,6 +146,7 @@ import {
   CreateTicketCommentDto,
   CreateCsCampaignDto,
   UpdateCsCampaignDto,
+  CvRealtimeStatusResponse,
 } from '@mos-lab/shared';
 
 // In-flight request deduplication & short-term cache map for GET endpoints
@@ -449,6 +450,10 @@ export const apiClient = {
     getAppointments: async (params: Record<string, unknown>): Promise<ListAppointmentsResponse> => {
       const data = await dedupeApiGet<ListAppointmentsResponse>('/customers/appointments', params, 2000);
       return data;
+    },
+    getCvRealtimeStatus: async (): Promise<CvRealtimeStatusResponse> => {
+      const response = await api.get('/customers/cv-realtime-status');
+      return response.data;
     },
     getMissedSummary: async (params?: {
       dateFrom?: string;
