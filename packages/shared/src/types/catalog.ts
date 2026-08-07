@@ -336,6 +336,10 @@ export const LASH_STYLES = [
   'Ultralight',
   'Hyperlight',
   'Flawless',
+  'Ivylight',
+  'Ivylight 3L',
+  'Ivylight 4L',
+  'Ivylight 5L',
   'Under Mink',
 ] as const;
 export type LashStyle = (typeof LASH_STYLES)[number];

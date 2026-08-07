@@ -20,6 +20,10 @@ const STYLE_COLORS: Record<string, string> = {
   Ultralight: '#fa8c16',
   Hyperlight: '#eb2f96',
   Flawless: '#f5222d',
+  Ivylight: '#9254de',
+  'Ivylight 3L': '#722ed1',
+  'Ivylight 4L': '#531dab',
+  'Ivylight 5L': '#391085',
   'Under Mink': '#8c8c8c',
 };
 
