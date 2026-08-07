@@ -10,6 +10,8 @@ import {
   ClockCircleOutlined,
   CloseCircleOutlined,
   WarningOutlined,
+  CreditCardOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Appointment } from '@mos-lab/shared';
@@ -28,7 +30,8 @@ interface ScheduleListViewProps {
   currentPage: number;
   pageSize: number;
   onPageChange: (page: number, pageSize: number) => void;
-  onViewCustomerDetail: (customerId: number) => void;
+  onMakeCall: (phone: string, name: string) => void;
+  onViewCustomerDetail?: (customerId: number) => void;
   onReschedule: (appointment: Appointment) => void;
   onCancelBooking?: (orderId: number) => void;
 }
@@ -40,6 +43,7 @@ export default function ScheduleListView({
   currentPage,
   pageSize,
   onPageChange,
+  onMakeCall,
   onViewCustomerDetail,
   onReschedule,
 }: ScheduleListViewProps) {
@@ -50,28 +54,80 @@ export default function ScheduleListView({
     switch (state) {
       case 'Completed':
         return (
-          <Tag icon={<CheckCircleOutlined />} color="success" className="px-2 py-0.5 rounded-full font-medium">
-            Hoàn thành
-          </Tag>
+          <Tooltip title="✅ Đã hoàn thành & đã tính tiền">
+            <Tag
+              icon={<CheckCircleOutlined />}
+              color="success"
+              className="px-2 py-0.5 rounded-full font-medium cursor-help"
+            >
+              Hoàn thành
+            </Tag>
+          </Tooltip>
+        );
+      case 'CheckOut':
+      case 'ServiceCompleted':
+      case 'ServiceCleaned':
+      case 'ServiceEnd':
+        return (
+          <Tooltip title="💳 Đã nối mi xong — Chờ CC checkout / tính tiền">
+            <Tag
+              icon={<CreditCardOutlined />}
+              color="purple"
+              className="px-2 py-0.5 rounded-full font-medium cursor-help"
+            >
+              Nối xong (Chờ tính tiền)
+            </Tag>
+          </Tooltip>
+        );
+      case 'ServiceStart':
+      case 'Consultation':
+      case 'Preparation':
+      case 'CheckIn':
+        return (
+          <Tooltip title="🔵 Đang phục vụ / Nối mi tại cửa hàng">
+            <Tag
+              icon={<SyncOutlined spin />}
+              color="processing"
+              className="px-2 py-0.5 rounded-full font-medium cursor-help"
+            >
+              Đang nối mi
+            </Tag>
+          </Tooltip>
         );
       case 'Missed':
         return (
-          <Tag icon={<WarningOutlined />} color="error" className="px-2 py-0.5 rounded-full font-medium">
-            Missed (Bỏ lỡ)
-          </Tag>
+          <Tooltip title="⚠️ Đã bỏ lỡ hẹn">
+            <Tag icon={<WarningOutlined />} color="error" className="px-2 py-0.5 rounded-full font-medium cursor-help">
+              Missed (Bỏ lỡ)
+            </Tag>
+          </Tooltip>
         );
       case 'Cancelled':
         return (
-          <Tag icon={<CloseCircleOutlined />} color="default" className="px-2 py-0.5 rounded-full font-medium">
-            Đã hủy
-          </Tag>
+          <Tooltip title="❌ Đã hủy lịch">
+            <Tag
+              icon={<CloseCircleOutlined />}
+              color="default"
+              className="px-2 py-0.5 rounded-full font-medium cursor-help"
+            >
+              Đã hủy
+            </Tag>
+          </Tooltip>
         );
       case 'Pending':
+      case 'New':
+      case 'Confirmed':
       default:
         return (
-          <Tag icon={<ClockCircleOutlined />} color="processing" className="px-2 py-0.5 rounded-full font-medium">
-            Chờ check-in
-          </Tag>
+          <Tooltip title="🕒 Lịch hẹn mới chờ khách check-in">
+            <Tag
+              icon={<ClockCircleOutlined />}
+              color="warning"
+              className="px-2 py-0.5 rounded-full font-medium cursor-help"
+            >
+              Chờ check-in
+            </Tag>
+          </Tooltip>
         );
     }
   };

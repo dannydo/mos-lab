@@ -16,6 +16,8 @@ import {
   CloseCircleFilled,
   ClockCircleFilled,
   SyncOutlined,
+  CreditCardFilled,
+  ThunderboltFilled,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Appointment } from '@mos-lab/shared';
@@ -383,10 +385,18 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
   const customerName = appt.customerName || (appt as any).userName || 'Khách hàng';
   const phone = appt.customerPhone || (appt as any).phone || '';
   const service = appt.serviceName || (appt as any).packageName || 'Lịch dịch vụ';
-  const timeFormatted = appt.bookingDateStart
-    ? dayjs(appt.bookingDateStart).format('HH:mm')
-    : hourStr;
+  const timeFormatted = appt.bookingDateStart ? dayjs(appt.bookingDateStart).format('HH:mm') : hourStr;
   const isCompleted = appt.orderState === 'Completed';
+  const isPendingCheckout =
+    appt.orderState === 'CheckOut' ||
+    appt.orderState === 'ServiceCompleted' ||
+    appt.orderState === 'ServiceCleaned' ||
+    appt.orderState === 'ServiceEnd';
+  const isServicing =
+    appt.orderState === 'ServiceStart' ||
+    appt.orderState === 'Consultation' ||
+    appt.orderState === 'Preparation' ||
+    appt.orderState === 'CheckIn';
   const isMissed = appt.orderState === 'Missed' || appt.orderState === 'Cancelled';
 
   const cardPopoverContent = (
@@ -397,20 +407,30 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
       </div>
       <div className="text-xs space-y-1">
         <div>
+          <span className="text-slate-400">Trạng thái:</span>{' '}
+          <span className="font-bold text-slate-700 dark:text-slate-200">
+            {isCompleted
+              ? '✅ Hoàn thành (Đã tính tiền)'
+              : isPendingCheckout
+                ? '💳 Đã nối xong (Chờ checkout)'
+                : isServicing
+                  ? '🔵 Đang phục vụ / Nối mi'
+                  : isMissed
+                    ? '❌ Đã hủy / Bỏ lỡ'
+                    : '🕒 Chờ check-in'}
+          </span>
+        </div>
+        <div>
           <span className="text-slate-400">Dịch vụ:</span>{' '}
           <span className="font-medium text-slate-700 dark:text-slate-200">{service}</span>
         </div>
         <div>
           <span className="text-slate-400">Thời gian:</span>{' '}
-          <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-            {timeFormatted}
-          </span>
+          <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{timeFormatted}</span>
         </div>
         <div>
           <span className="text-slate-400">CV:</span>{' '}
-          <span className="text-slate-700 dark:text-slate-300">
-            {appt.technicianName || 'Chưa gán'}
-          </span>
+          <span className="text-slate-700 dark:text-slate-300">{appt.technicianName || 'Chưa gán'}</span>
         </div>
         <div>
           <span className="text-slate-400">Ước tính:</span>{' '}
@@ -459,17 +479,19 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
         onDragStart={(e) => onHandleDragStart(e, appt)}
         className={`p-2 rounded-lg border text-xs shadow-2xs cursor-grab active:cursor-grabbing transition-all hover:scale-[1.02] ${
           isCompleted
-            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
-            : isMissed
-              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-200'
-              : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60 text-blue-900 dark:text-blue-200'
+            ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
+            : isPendingCheckout
+              ? 'bg-purple-50/80 dark:bg-purple-950/40 border-purple-300 dark:border-purple-800/70 text-purple-900 dark:text-purple-200 shadow-xs'
+              : isServicing
+                ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800/60 text-blue-900 dark:text-blue-200'
+                : isMissed
+                  ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800/60 text-rose-900 dark:text-rose-200'
+                  : 'bg-slate-50/80 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/60 text-slate-800 dark:text-slate-200'
         }`}
       >
         <div className="flex items-center justify-between gap-1.5 min-w-0 mb-1">
           <div className="flex items-center gap-1 min-w-0 flex-1">
-            <span className="font-bold font-mono text-[11px] tabular-nums shrink-0">
-              {timeFormatted}
-            </span>
+            <span className="font-bold font-mono text-[11px] tabular-nums shrink-0">{timeFormatted}</span>
             {(() => {
               const branch = getBranchBadgeInfo(appt.storeId, appt.branchName);
               return (
@@ -491,18 +513,28 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
                 </Avatar>
               </Tooltip>
             )}
-            <span className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">
-              {customerName}
-            </span>
+            <span className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">{customerName}</span>
           </div>
           <Tooltip
             title={
-              isCompleted ? 'Đã hoàn thành' : isMissed ? 'Đã bỏ lỡ / Hủy lịch' : 'Chờ check-in'
+              isCompleted
+                ? '✅ Đã hoàn thành (đã tính tiền)'
+                : isPendingCheckout
+                  ? '💳 Đã nối xong — Chờ CC checkout / tính tiền'
+                  : isServicing
+                    ? '🔵 Đang phục vụ / Nối mi'
+                    : isMissed
+                      ? '❌ Đã hủy / Bỏ lỡ'
+                      : '🕒 Lịch hẹn chờ khách check-in'
             }
           >
             <div className="shrink-0 flex items-center justify-center cursor-help">
               {isCompleted ? (
                 <CheckCircleFilled className="text-emerald-500 text-xs" />
+              ) : isPendingCheckout ? (
+                <CreditCardFilled className="text-purple-500 text-xs" />
+              ) : isServicing ? (
+                <SyncOutlined spin className="text-blue-500 text-xs" />
               ) : isMissed ? (
                 <CloseCircleFilled className="text-rose-500 text-xs" />
               ) : (
