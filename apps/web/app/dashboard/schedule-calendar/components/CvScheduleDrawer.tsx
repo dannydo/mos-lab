@@ -163,9 +163,13 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
     // All Working Staff enriched with 100% Real-Time Availability
     const allWorkingStaffWithAvailability = useMemo(() => {
       const rawList = serverCap?.workingStaffList || [];
+      const offStaffIds = new Set((serverCap?.offStaffList || []).map((s: any) => Number(s.id)));
       const staffMap = new Map<number, any>();
 
       rawList.forEach((staff) => {
+        // Do not include staff if they are in offStaffList (OFF phép / OFF tuần)
+        if (offStaffIds.has(Number(staff.id))) return;
+
         const staffAppts = dayAppts.filter((a) => Number((a as any).technicianId) === Number(staff.id));
         const bookedCount = staff.bookedCount !== undefined ? staff.bookedCount : staffAppts.length;
         const doneCount =
@@ -188,9 +192,10 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
       });
 
       // Include any staff from realtimeData who might not be in serverCap.workingStaffList
+      // BUT SKIP ANY STAFF WHO ARE IN offStaffList (ON LEAVE/OFF TODAY)
       if (realtimeData?.staffStatuses) {
         realtimeData.staffStatuses.forEach((rt) => {
-          if (!staffMap.has(rt.staffId)) {
+          if (!staffMap.has(rt.staffId) && !offStaffIds.has(rt.staffId)) {
             const availability = realtimeStatusToAvailability(rt);
             staffMap.set(rt.staffId, {
               id: rt.staffId,
@@ -210,7 +215,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
       return Array.from(staffMap.values()).sort(
         (a, b) => b.bookedCount - a.bookedCount || b.doneCount - a.doneCount || a.name.localeCompare(b.name)
       );
-    }, [serverCap?.workingStaffList, dayAppts, currentDate, realtimeData]);
+    }, [serverCap?.workingStaffList, serverCap?.offStaffList, dayAppts, currentDate, realtimeData]);
 
     // Real-Time Store Summary Counts
     const statusCounts = useMemo(() => {
