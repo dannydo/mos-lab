@@ -83,6 +83,8 @@ import {
   ComboLiveParams,
   ComboLiveResponse,
   ServiceLiveComboCheckResult,
+  LashTypeBenchmark,
+  LashBenchmarkSeedResult,
   CreateServiceInput,
   UpdateServiceInput,
   CreateServicePriceInput,
@@ -309,6 +311,23 @@ export const apiClient = {
     getComboLive: async (params?: ComboLiveParams): Promise<ComboLiveResponse> => {
       const response = await api.get('/catalog/combo-live', { params });
       return response.data;
+    },
+    lashBenchmarks: {
+      list: async (): Promise<{ success: boolean; data: LashTypeBenchmark[] }> => {
+        const response = await api.get('/catalog/lash-benchmarks');
+        return response.data;
+      },
+      seed: async (): Promise<{ success: boolean; message: string; data: LashBenchmarkSeedResult }> => {
+        const response = await api.post('/catalog/lash-benchmarks/seed');
+        return response.data;
+      },
+      update: async (
+        id: number,
+        data: { benchmarkMinutes?: number; minMinutes?: number; maxMinutes?: number }
+      ): Promise<{ success: boolean; data: LashTypeBenchmark }> => {
+        const response = await api.put(`/catalog/lash-benchmarks/${id}`, data);
+        return response.data;
+      },
     },
   },
 

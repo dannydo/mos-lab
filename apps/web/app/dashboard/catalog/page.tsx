@@ -54,6 +54,7 @@ import CatalogReportHeader from './components/CatalogReportHeader';
 import CatalogLeaderboardCard from './components/CatalogLeaderboardCard';
 import CatalogItemDetailPanel from './components/CatalogItemDetailPanel';
 import CatalogComboLiveTab from './components/CatalogComboLiveTab';
+import CatalogBenchmarkTab from './components/CatalogBenchmarkTab';
 import { ServiceDeactivateConfirmModal } from './components/ServiceDeactivateConfirmModal';
 import {
   CatalogService,
@@ -1630,6 +1631,20 @@ export default function CatalogPage() {
                     }}
                     scroll={{ x: 700 }}
                   />
+                </div>
+              ),
+            },
+            {
+              key: 'benchmark',
+              label: (
+                <Space>
+                  <ClockCircleOutlined className="text-purple-500" />
+                  <span>Benchmark Mi</span>
+                </Space>
+              ),
+              children: (
+                <div className="p-4">
+                  <CatalogBenchmarkTab />
                 </div>
               ),
             },

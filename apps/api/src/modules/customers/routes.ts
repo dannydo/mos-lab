@@ -7977,7 +7977,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           workingKtvCount: number;
           maxCapacity: number;
           workingStaffList?: Array<{ id: number; name: string; branchName?: string; shift?: string }>;
-          offStaffList?: Array<{ id: number; name: string; branchName?: string; reason: string; type?: string }>;
+          offStaffList?: Array<{
+            id: number;
+            name: string;
+            avatarUrl?: string | null;
+            branchName?: string;
+            reason: string;
+            type?: string;
+          }>;
         }
       > = {};
       try {
@@ -7993,16 +8000,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
             SELECT user_id as id, full_name as name, client_store_id, avatar
             FROM user_profile
             WHERE user_id IN (${cvStaffIds.join(',')})
-              AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0
           `);
+          const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
+            where: { id: { in: cvStaffIds } },
+            select: { id: true, displayName: true, avatarUrl: true },
+          });
+
           const cvNameMap = new Map<number, string>();
           const cvProfileStoreMap = new Map<number, number>();
           const cvAvatarMap = new Map<number, string | null>();
-          cvProfiles.forEach((p) => {
-            const uid = Number(p.id);
-            cvNameMap.set(uid, String(p.name || '').trim());
-            if (p.client_store_id) cvProfileStoreMap.set(uid, Number(p.client_store_id));
-            cvAvatarMap.set(uid, p.avatar ? String(p.avatar) : null);
+          cvStaffIds.forEach((uid: number) => {
+            const p = cvProfiles.find((lp: SafeAny) => Number(lp.id) === uid);
+            const crmS = crmStaffList.find((cs: SafeAny) => Number(cs.id) === uid);
+            const name = (p?.name ? String(p.name).trim() : null) || crmS?.displayName || `CV #${uid}`;
+            const avatar = (p?.avatar ? String(p.avatar) : null) || crmS?.avatarUrl || null;
+            cvNameMap.set(uid, name);
+            if (p?.client_store_id) cvProfileStoreMap.set(uid, Number(p.client_store_id));
+            cvAvatarMap.set(uid, avatar);
           });
 
           // Query fixed store from staff_day_off_schedule master
@@ -8243,6 +8257,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             const offStaffList: Array<{
               id: number;
               name: string;
+              avatarUrl?: string | null;
               branchName?: string;
               reason: string;
               type?: string;
@@ -8256,6 +8271,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 offStaffList.push({
                   id,
                   name: cvNameMap.get(id) || `CV #${id}`,
+                  avatarUrl: cvAvatarMap.get(id) || null,
                   branchName: cvStoreMap.get(id) || 'Đề Thám',
                   reason: offInfo.reason,
                   type: offInfo.type,
@@ -8264,6 +8280,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 offStaffList.push({
                   id,
                   name: cvNameMap.get(id) || `CV #${id}`,
+                  avatarUrl: cvAvatarMap.get(id) || null,
                   branchName: cvStoreMap.get(id) || 'Đề Thám',
                   reason: `Nghỉ hàng tuần (${weekdayNames[legacyWeekday] || ''})`,
                   type: 'weekly_off',

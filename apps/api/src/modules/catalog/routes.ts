@@ -3,6 +3,7 @@ import { CATALOG_CURRENCY_SYSTEM_CONFIG } from '@mos-lab/shared';
 import { Prisma } from '../../generated/legacy-client/index.js';
 import { requireAuth, requireCatalogAdmin } from '../../middlewares/auth.js';
 import { parseComboDateBounds } from '../customers/services/combo-recognition.service.js';
+import { LashBenchmarkService } from './services/lash-benchmark.service.js';
 
 const CATALOG_DEFAULTS = {
   CLIENT_ID: 1,
@@ -1783,6 +1784,69 @@ export async function catalogRoutes(fastify: FastifyInstance) {
         },
         orders,
       };
+    } catch (error: any) {
+      fastify.log.error(error);
+      return reply.status(500).send({ success: false, error: 'Internal Server Error' });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Lash Type Benchmark Endpoints
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * GET /api/catalog/lash-benchmarks — List all benchmarks
+   */
+  fastify.get('/api/catalog/lash-benchmarks', { preHandler: [requireAuth] }, async (_request, reply) => {
+    try {
+      const benchmarks = await LashBenchmarkService.listBenchmarks(fastify);
+      return { success: true, data: benchmarks };
+    } catch (error: any) {
+      fastify.log.error(error);
+      return reply.status(500).send({ success: false, error: 'Internal Server Error' });
+    }
+  });
+
+  /**
+   * POST /api/catalog/lash-benchmarks/seed — Auto-calculate & seed from Legacy DB
+   */
+  fastify.post('/api/catalog/lash-benchmarks/seed', { preHandler: [requireCatalogAdmin] }, async (_request, reply) => {
+    try {
+      const result = await LashBenchmarkService.seedBenchmarks(fastify);
+      return {
+        success: true,
+        message: `Seed hoàn tất: ${result.inserted} mới, ${result.updated} cập nhật, tổng ${result.total} dòng`,
+        data: result,
+      };
+    } catch (error: any) {
+      fastify.log.error(error);
+      return reply.status(500).send({ success: false, error: 'Internal Server Error' });
+    }
+  });
+
+  /**
+   * PUT /api/catalog/lash-benchmarks/:id — Admin manual edit
+   */
+  fastify.put<{
+    Params: { id: string };
+    Body: { benchmarkMinutes?: number; minMinutes?: number; maxMinutes?: number };
+  }>('/api/catalog/lash-benchmarks/:id', { preHandler: [requireCatalogAdmin] }, async (request, reply) => {
+    try {
+      const id = parseInt(request.params.id, 10);
+      if (isNaN(id)) return reply.status(400).send({ success: false, error: 'Invalid ID' });
+
+      const { benchmarkMinutes, minMinutes, maxMinutes } = request.body || {};
+      const updateData: Record<string, number> = {};
+      if (benchmarkMinutes !== undefined) updateData.benchmarkMinutes = benchmarkMinutes;
+      if (minMinutes !== undefined) updateData.minMinutes = minMinutes;
+      if (maxMinutes !== undefined) updateData.maxMinutes = maxMinutes;
+
+      if (Object.keys(updateData).length === 0) {
+        return reply.status(400).send({ success: false, error: 'No fields to update' });
+      }
+
+      const updated = await LashBenchmarkService.updateBenchmark(fastify, id, updateData);
+      return { success: true, data: updated };
     } catch (error: any) {
       fastify.log.error(error);
       return reply.status(500).send({ success: false, error: 'Internal Server Error' });
