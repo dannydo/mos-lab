@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Avatar, Tag, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { StaffWorkingItem, CvAvailabilityInfo } from './cvDrawerUtils';
@@ -10,11 +10,60 @@ interface CvWorkingStaffCardProps {
   rankIndex: number;
 }
 
+/**
+ * Returns gradient color for progress bar based on percentage.
+ * Green (0-60%) → Yellow (60-85%) → Orange (85-100%) → Red (>100%)
+ */
+function getProgressColor(percent: number): {
+  barBg: string;
+  barGlow: string;
+  textColor: string;
+} {
+  if (percent >= 100) {
+    return {
+      barBg: 'bg-gradient-to-r from-rose-500 to-red-600',
+      barGlow: 'shadow-rose-500/40',
+      textColor: 'text-rose-400',
+    };
+  }
+  if (percent >= 85) {
+    return {
+      barBg: 'bg-gradient-to-r from-amber-500 to-orange-500',
+      barGlow: 'shadow-amber-500/30',
+      textColor: 'text-amber-400',
+    };
+  }
+  if (percent >= 60) {
+    return {
+      barBg: 'bg-gradient-to-r from-yellow-400 to-amber-500',
+      barGlow: 'shadow-yellow-500/20',
+      textColor: 'text-yellow-400',
+    };
+  }
+  return {
+    barBg: 'bg-gradient-to-r from-emerald-400 to-cyan-500',
+    barGlow: 'shadow-emerald-500/20',
+    textColor: 'text-emerald-400',
+  };
+}
+
+const LAYER_LABELS: Record<number, { label: string; color: string }> = {
+  1: { label: 'L1 Cao', color: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' },
+  2: { label: 'L2 TB', color: 'text-amber-400 bg-amber-500/15 border-amber-500/30' },
+  3: { label: 'L3 Ref', color: 'text-slate-400 bg-slate-500/15 border-slate-500/30' },
+};
+
 export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(({ staff, rankIndex }) => {
   const isTopBooked = rankIndex === 0 && (staff.bookedCount || 0) > 0;
+  const eta = staff.availability.etaInfo;
+
+  const progressColors = useMemo(() => {
+    if (!eta) return null;
+    return getProgressColor(eta.progressPercent);
+  }, [eta]);
 
   const tooltipContent = (
-    <div className="text-xs space-y-1.5 min-w-[180px]" role="tooltip">
+    <div className="text-xs space-y-1.5 min-w-[200px]" role="tooltip">
       <div className="font-bold text-slate-100 flex items-center justify-between">
         <span>{staff.name}</span>
         <span className="text-[10px] text-emerald-400">#{rankIndex + 1}</span>
@@ -33,20 +82,20 @@ export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(
         <div>
           Đã hoàn thành: <b className="text-emerald-300 tabular-nums">{staff.doneCount || 0}</b> đơn
         </div>
-        {staff.availability.etaInfo && (
+        {eta && (
           <div className="border-t border-slate-700/40 pt-1 mt-1 space-y-0.5">
-            {staff.availability.etaInfo.lashStyle && (
-              <div className="text-[11px] text-cyan-300">
-                🎀 Loại mi: <b>{staff.availability.etaInfo.lashStyle}</b>
-              </div>
-            )}
-            <div className="text-[11px] text-amber-300 tabular-nums">
-              ⏱ ETA: <b>{staff.availability.etaInfo.etaMinutes}p</b>
-              <span className="text-slate-400 ml-1">(Layer {staff.availability.etaInfo.layer})</span>
+            <div className="text-[11px] text-cyan-300">
+              🎀 Loại mi: <b>{eta.lashStyle}</b>
+              {eta.lashCount != null && <span className="text-slate-400 ml-1">({eta.lashCount} sợi)</span>}
             </div>
-            {staff.availability.etaInfo.source && (
-              <div className="text-[10px] text-slate-400 italic">{staff.availability.etaInfo.source}</div>
-            )}
+            <div className="text-[11px] text-amber-300 tabular-nums">
+              ⏱ ETA: <b>{eta.etaMinutes}p</b>
+              <span className="text-slate-400 mx-1">•</span>
+              Đã nối: <b>{eta.elapsedMinutes}p</b>
+              <span className="text-slate-400 mx-1">•</span>
+              Còn: <b>{eta.remainingMinutes}p</b>
+            </div>
+            <div className="text-[10px] text-slate-400 italic">{eta.source}</div>
           </div>
         )}
         {staff.avgDurationMinutes?.normalAvg && staff.avgDurationMinutes?.retainAvg && (
@@ -64,66 +113,132 @@ export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(
         tabIndex={0}
         role="listitem"
         aria-label={`Chuyên viên #${rankIndex + 1} ${staff.name}, ${staff.availability.label}, ${staff.bookedCount || 0} Đặt lịch, ${staff.doneCount || 0} Hoàn thành`}
-        className={`flex items-center justify-between text-xs p-2 rounded-xl border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${staff.availability.cardStyle}`}
+        className={`flex flex-col text-xs rounded-xl border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${staff.availability.cardStyle}`}
       >
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          {/* Avatar (Large, spanning 2 lines) */}
-          <Avatar
-            src={staff.avatarUrl}
-            icon={!staff.avatarUrl ? <UserOutlined /> : undefined}
-            size={38}
-            className="shrink-0 ring-1 ring-slate-300 dark:ring-slate-600 shadow-2xs bg-slate-700"
-          />
+        {/* Row 1: Avatar + Info + Branch */}
+        <div className="flex items-center justify-between p-2 pb-1">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            {/* Avatar */}
+            <Avatar
+              src={staff.avatarUrl}
+              icon={!staff.avatarUrl ? <UserOutlined /> : undefined}
+              size={38}
+              className="shrink-0 ring-1 ring-slate-300 dark:ring-slate-600 shadow-2xs bg-slate-700"
+            />
 
-          <div className="flex flex-col gap-1 min-w-0 flex-1">
-            {/* Line 1: Rank + Name + Top Booked + Status Badge */}
-            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-              <span
-                className={`font-bold text-[10px] min-w-[20px] text-center px-1 py-0.2 rounded tabular-nums shrink-0 ${
-                  isTopBooked
-                    ? 'bg-amber-500 text-white font-extrabold shadow-2xs'
-                    : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-                }`}
-              >
-                #{rankIndex + 1}
-              </span>
-
-              <span className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate">{staff.name}</span>
-
-              {isTopBooked && (
-                <Tag color="gold" className="m-0 text-[9px] px-1 py-0 font-bold shrink-0">
-                  🔥 Top Booked
-                </Tag>
-              )}
-
-              <span className={`text-[9px] px-1.5 py-0.2 rounded border shrink-0 ${staff.availability.badgeStyle}`}>
-                {staff.availability.label}
-              </span>
-            </div>
-
-            {/* Line 2: Metrics */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold tabular-nums">
-                📅 {staff.bookedCount || 0} Book
-              </span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold tabular-nums">
-                ✅ {staff.doneCount || 0} Done
-              </span>
-              {staff.avgDurationMinutes?.normalAvg && staff.avgDurationMinutes?.retainAvg && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-semibold tabular-nums">
-                  ⚡ {staff.avgDurationMinutes.normalAvg}p nối • {staff.avgDurationMinutes.retainAvg}p dặm
+            <div className="flex flex-col gap-1 min-w-0 flex-1">
+              {/* Line 1: Rank + Name + Top Booked + Status Badge */}
+              <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                <span
+                  className={`font-bold text-[10px] min-w-[20px] text-center px-1 py-0.2 rounded tabular-nums shrink-0 ${
+                    isTopBooked
+                      ? 'bg-amber-500 text-white font-extrabold shadow-2xs'
+                      : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                  }`}
+                >
+                  #{rankIndex + 1}
                 </span>
-              )}
+
+                <span className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate">{staff.name}</span>
+
+                {isTopBooked && (
+                  <Tag color="gold" className="m-0 text-[9px] px-1 py-0 font-bold shrink-0">
+                    🔥 Top Booked
+                  </Tag>
+                )}
+
+                <span className={`text-[9px] px-1.5 py-0.2 rounded border shrink-0 ${staff.availability.badgeStyle}`}>
+                  {staff.availability.label}
+                </span>
+              </div>
+
+              {/* Line 2: Metrics */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold tabular-nums">
+                  📅 {staff.bookedCount || 0} Book
+                </span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold tabular-nums">
+                  ✅ {staff.doneCount || 0} Done
+                </span>
+                {staff.avgDurationMinutes?.normalAvg && staff.avgDurationMinutes?.retainAvg && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-semibold tabular-nums">
+                    ⚡ {staff.avgDurationMinutes.normalAvg}p nối • {staff.avgDurationMinutes.retainAvg}p dặm
+                  </span>
+                )}
+              </div>
             </div>
+          </div>
+
+          <div className="text-right shrink-0 flex flex-col items-end gap-0.5 ml-2">
+            <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20">
+              {staff.branchName || 'Đề Thám'}
+            </span>
+            <span className="text-[10px] text-slate-400 font-medium">{staff.shift || 'Ca Full'}</span>
           </div>
         </div>
 
-        <div className="text-right shrink-0 flex flex-col items-end gap-0.5 ml-2">
-          <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20">
-            {staff.branchName || 'Đề Thám'}
-          </span>
-          <span className="text-[10px] text-slate-400 font-medium">{staff.shift || 'Ca Full'}</span>
-        </div>
+        {/* Row 2: ETA Progress Bar (only when BUSY with etaInfo) */}
+        {eta && progressColors && (
+          <div className="px-2 pb-2 pt-0.5">
+            <div className="rounded-lg bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/50 p-1.5">
+              {/* Label row: lash style + ETA + layer badge */}
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 truncate">
+                    🎀 {eta.lashStyle}
+                    {eta.lashCount != null && (
+                      <span className="text-slate-500 dark:text-slate-400 font-normal ml-0.5">{eta.lashCount} sợi</span>
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span
+                    className={`text-[9px] px-1 py-0 rounded border font-bold ${LAYER_LABELS[eta.layer]?.color || ''}`}
+                  >
+                    {LAYER_LABELS[eta.layer]?.label || `L${eta.layer}`}
+                  </span>
+                  <span className={`text-[10px] font-bold tabular-nums ${progressColors.textColor}`}>
+                    {eta.remainingMinutes > 0
+                      ? `còn ${eta.remainingMinutes}p`
+                      : `+${Math.abs(eta.remainingMinutes)}p quá giờ`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="relative w-full h-2.5 rounded-full bg-slate-200/80 dark:bg-slate-700/80 overflow-hidden">
+                <div
+                  className={`absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out ${progressColors.barBg} ${progressColors.barGlow} shadow-sm ${
+                    eta.progressPercent >= 100 ? 'animate-pulse' : ''
+                  }`}
+                  style={{
+                    width: `${Math.min(100, eta.progressPercent)}%`,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                />
+                {/* Percentage text inside bar */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span
+                    className="text-[8px] font-extrabold tabular-nums drop-shadow-sm"
+                    style={{
+                      color: eta.progressPercent > 50 ? '#fff' : undefined,
+                    }}
+                  >
+                    {eta.progressPercent}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Bottom label: elapsed / total */}
+              <div className="flex items-center justify-between mt-0.5">
+                <span className="text-[9px] text-slate-500 dark:text-slate-400 tabular-nums">
+                  {eta.elapsedMinutes}p / {eta.etaMinutes}p
+                </span>
+                <span className="text-[9px] text-slate-400 italic truncate max-w-[150px]">{eta.source}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Tooltip>
   );

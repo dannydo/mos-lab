@@ -12,6 +12,7 @@ import { registerLocaTouchpointRoutes } from './routes/loca-touchpoint.routes.js
 import { AllocationService } from '../allocation/allocation.service.js';
 import { TeamService } from '../teams/team.service.js';
 import { CampaignPromotionSyncService } from '../campaigns/campaign-promotion-sync.service.js';
+import { LashBenchmarkService, parseLashSpecs } from '../catalog/services/lash-benchmark.service.js';
 
 export async function customerRoutes(fastify: FastifyInstance) {
   // Start automated allocation expiration cronjob
@@ -8183,17 +8184,39 @@ export async function customerRoutes(fastify: FastifyInstance) {
             rangeDoneMap.get(dStr)!.set(Number(r.staff_id), Number(r.cnt || 0));
           });
 
-          // Batch query 5: Average lash extension speed duration (phút/bộ) per staff member
+          // Batch query 5: Average ACTUAL lash extension speed (phút/bộ) per staff member
+          // Uses report_order_service tracked time (iPad progress states) NOT catalog duration_minute
+          // actual_total = preparation + pre_servicing + cleaning + servicing (actual tracked minutes)
           const speedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
             SELECT
-              assigned_staff_id as staff_id,
-              service_type,
-              ROUND(AVG(duration_minute)) as avg_min
-            FROM order_service
-            WHERE duration_minute > 0 AND duration_minute < 300
-              AND date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-              AND assigned_staff_id IN (${activeCvStaffIds.join(',')})
-            GROUP BY assigned_staff_id, service_type
+              os.assigned_staff_id as staff_id,
+              s.service_type,
+              ROUND(AVG(
+                COALESCE(ros.preparation_minute, 0) +
+                COALESCE(ros.pre_servicing_minute, 0) +
+                COALESCE(ros.cleaning_minute, 0) +
+                COALESCE(ros.servicing_minute, 0)
+              )) as avg_min
+            FROM order_service os
+            JOIN \`order\` o ON os.order_id = o.id
+            JOIN service s ON os.service_id = s.id
+            JOIN report_order_service ros ON os.id = ros.order_service_id
+            WHERE o.order_state = 'Completed'
+              AND s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')
+              AND os.assigned_staff_id IN (${activeCvStaffIds.join(',')})
+              AND (COALESCE(ros.preparation_minute, 0) +
+                   COALESCE(ros.pre_servicing_minute, 0) +
+                   COALESCE(ros.cleaning_minute, 0) +
+                   COALESCE(ros.servicing_minute, 0)) > 15
+              AND (COALESCE(ros.preparation_minute, 0) +
+                   COALESCE(ros.pre_servicing_minute, 0) +
+                   COALESCE(ros.cleaning_minute, 0) +
+                   COALESCE(ros.servicing_minute, 0)) < 200
+              AND COALESCE(
+                (SELECT ro.actual_booking_date_start FROM report_order ro WHERE ro.order_id = o.id LIMIT 1),
+                o.booking_date_start
+              ) >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            GROUP BY os.assigned_staff_id, s.service_type
           `);
 
           const staffSpeedMap = new Map<
@@ -8419,6 +8442,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       // 5. Query real-time orders for today — format DATETIME as ICT string to avoid timezone parsing mismatch
+      // Includes service_key + service_name for benchmark ETA & customerId for history lookup
       const orderRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT
@@ -8427,9 +8451,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
           DATE_FORMAT(o.booking_date_start, '%Y-%m-%d %H:%i:%s') as bookStartStr,
           DATE_FORMAT(o.booking_date_end, '%Y-%m-%d %H:%i:%s') as bookEndStr,
           COALESCE(os.assigned_staff_id, os.booked_staff_id, osq.user_id) as ktvId,
-          cust_up.full_name as customerName
+          cust_up.full_name as customerName,
+          o.user_id as customerId,
+          s.service_key as serviceKey,
+          COALESCE(sl.service_name, s.service_key) as serviceName,
+          s.service_type as serviceType
         FROM \`order\` o
         LEFT JOIN order_service os ON o.id = os.order_id
+        LEFT JOIN service s ON os.service_id = s.id
+        LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
         LEFT JOIN order_staff_queue osq ON osq.order_id = o.id AND osq.date_assigned IS NOT NULL
         LEFT JOIN user_profile cust_up ON o.user_id = cust_up.user_id
         WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
@@ -8570,9 +8600,86 @@ export async function customerRoutes(fastify: FastifyInstance) {
             estimatedEndMinutes,
             liveStatus,
             liveLabel,
+            etaInfo: null as null | {
+              etaMinutes: number;
+              elapsedMinutes: number;
+              remainingMinutes: number;
+              progressPercent: number;
+              layer: 1 | 2 | 3;
+              confidence: 'high' | 'medium' | 'low';
+              lashStyle: string;
+              lashCount: number | null;
+              source: string;
+            },
           };
         })
         .filter(Boolean);
+
+      // ── 7. Batch ETA enrichment for BUSY CVs ──
+      try {
+        const busyCvEntries: Array<{
+          staffId: number;
+          customerId: number;
+          lashStyle: string;
+          serviceType: string;
+          lashCount: number | null;
+          bookingStartStr: string;
+        }> = [];
+
+        for (const ss of staffStatuses) {
+          if (!ss || !['BUSY', 'ENDING_SOON', 'OVERTIME'].includes(ss.liveStatus)) continue;
+          // Find the active order for this CV
+          const activeOrder = orderRows.find(
+            (o: SafeAny) => Number(o.ktvId) === ss.staffId && o.orderId === ss.currentOrderId
+          );
+          if (!activeOrder || !activeOrder.serviceKey) continue;
+
+          const specs = parseLashSpecs(String(activeOrder.serviceKey || ''), String(activeOrder.serviceName || ''));
+          if (!specs.lashStyle) continue;
+
+          busyCvEntries.push({
+            staffId: ss.staffId,
+            customerId: Number(activeOrder.customerId || 0),
+            lashStyle: specs.lashStyle,
+            serviceType: String(activeOrder.serviceType || 'Normal'),
+            lashCount: specs.lashCount,
+            bookingStartStr: String(activeOrder.bookStartStr || ''),
+          });
+        }
+
+        if (busyCvEntries.length > 0) {
+          const etaMap = await LashBenchmarkService.batchEstimateETA(fastify, busyCvEntries);
+
+          for (const ss of staffStatuses) {
+            if (!ss) continue;
+            const eta = etaMap.get(ss.staffId);
+            if (!eta) continue;
+
+            // Replace estimatedEndMinutes with benchmark-based remaining
+            ss.estimatedEndMinutes = eta.remainingMinutes;
+
+            // Attach etaInfo
+            ss.etaInfo = eta;
+
+            // Update liveLabel with benchmark info
+            const custLabel = ss.currentCustomerName ? ` • ${ss.currentCustomerName}` : '';
+            const styleShort = eta.lashStyle.length > 12 ? eta.lashStyle.slice(0, 12) + '…' : eta.lashStyle;
+
+            if (eta.remainingMinutes < -10) {
+              ss.liveStatus = 'OVERTIME';
+              ss.liveLabel = `🔴 Quá giờ (${Math.abs(eta.remainingMinutes)}p) • ${styleShort}${custLabel}`;
+            } else if (eta.remainingMinutes <= 15) {
+              ss.liveStatus = 'ENDING_SOON';
+              ss.liveLabel = `⚡ Sắp xong (còn ${Math.max(0, eta.remainingMinutes)}p) • ${styleShort}${custLabel}`;
+            } else {
+              ss.liveStatus = 'BUSY';
+              ss.liveLabel = `🔵 Đang nối (còn ${eta.remainingMinutes}p) • ${styleShort}${custLabel}`;
+            }
+          }
+        }
+      } catch (etaErr) {
+        fastify.log.warn(etaErr, 'Batch ETA enrichment failed, using booking_date_end fallback');
+      }
 
       // 6. Build queue by store — only include entries that are "waiting" (orderId = null, not skipped)
       const queueByStore: Record<number, SafeAny[]> = {};

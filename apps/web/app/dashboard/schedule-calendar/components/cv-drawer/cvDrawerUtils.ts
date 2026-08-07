@@ -14,9 +14,14 @@ export interface CvAvailabilityInfo {
   /** Benchmark-based ETA info when CV is busy */
   etaInfo?: {
     etaMinutes: number;
+    elapsedMinutes: number;
+    remainingMinutes: number;
+    progressPercent: number;
     layer: 1 | 2 | 3;
-    lashStyle?: string;
-    source?: string;
+    confidence: 'high' | 'medium' | 'low';
+    lashStyle: string;
+    lashCount: number | null;
+    source: string;
   };
 }
 
@@ -108,6 +113,19 @@ export function realtimeStatusToAvailability(status: CvStaffRealtimeStatus): CvA
     ...styles,
     customerName: status.currentCustomerName || undefined,
     minutesRemaining: status.estimatedEndMinutes ?? undefined,
+    etaInfo: status.etaInfo
+      ? {
+          etaMinutes: status.etaInfo.etaMinutes,
+          elapsedMinutes: status.etaInfo.elapsedMinutes,
+          remainingMinutes: status.etaInfo.remainingMinutes,
+          progressPercent: status.etaInfo.progressPercent,
+          layer: status.etaInfo.layer,
+          confidence: status.etaInfo.confidence,
+          lashStyle: status.etaInfo.lashStyle,
+          lashCount: status.etaInfo.lashCount,
+          source: status.etaInfo.source,
+        }
+      : undefined,
   };
 }
 

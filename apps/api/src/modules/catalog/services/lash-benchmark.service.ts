@@ -103,7 +103,8 @@ export class LashBenchmarkService {
    */
   static async calculateBenchmarks(fastify: FastifyInstance): Promise<BenchmarkCalcRow[]> {
     // Query all completed order_service records from the last 6 months
-    // Join with service + service_language to get service_key and service_name
+    // Uses report_order_service ACTUAL tracked time (iPad progress states)
+    // NOT os.duration_minute which is a catalog preset from service table
     const rows = await fastify.prisma.legacy.$queryRawUnsafe<
       Array<{
         service_key: string;
@@ -116,21 +117,25 @@ export class LashBenchmarkService {
         s.service_key,
         COALESCE(sl.service_name, s.service_key) as service_name,
         s.service_type,
-        os.duration_minute
+        (COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0) +
+         COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0)) as duration_minute
       FROM order_service os
       JOIN \`order\` o ON os.order_id = o.id
       JOIN service s ON os.service_id = s.id
+      JOIN report_order_service ros ON os.id = ros.order_service_id
       LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
       WHERE o.order_state = 'Completed'
         AND COALESCE(
           (SELECT ro.actual_booking_date_start FROM report_order ro WHERE ro.order_id = o.id LIMIT 1),
           o.booking_date_start
         ) >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-        AND os.duration_minute > 15
-        AND os.duration_minute < 200
+        AND (COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0) +
+             COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0)) > 15
+        AND (COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0) +
+             COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0)) < 200
         AND s.service_type IN ('Normal', 'Retain', 'Fix', 'Adjust', 'Removal', 'Log', 'Replace')
         AND s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')
-      ORDER BY s.service_key, s.service_type, os.duration_minute
+      ORDER BY s.service_key, s.service_type, duration_minute
     `);
 
     if (!rows.length) return [];
@@ -294,19 +299,23 @@ export class LashBenchmarkService {
     // Build lash style filter for SQL (match by service_key pattern)
     const styleFilter = this.buildStyleSqlFilter(lashStyle);
 
+    // Helper alias for actual tracked time
+    const actualDurExpr = `(COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0) + COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0))`;
+
     // ─── Layer 1: Check customer history for this lash style ─────────
     const customerHistory = await fastify.prisma.legacy.$queryRawUnsafe<Array<{ avg_duration: number; cnt: number }>>(`
       SELECT
-        ROUND(AVG(os.duration_minute)) as avg_duration,
+        ROUND(AVG(${actualDurExpr})) as avg_duration,
         COUNT(*) as cnt
       FROM order_service os
       JOIN \`order\` o ON os.order_id = o.id
       JOIN service s ON os.service_id = s.id
+      JOIN report_order_service ros ON os.id = ros.order_service_id
       LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
       WHERE o.order_state = 'Completed'
         AND o.user_id = ${customerId}
         AND s.service_type IN (${queryServiceTypes})
-        AND os.duration_minute > 15 AND os.duration_minute < 200
+        AND ${actualDurExpr} > 15 AND ${actualDurExpr} < 200
         AND ${styleFilter}
         AND COALESCE(
           (SELECT ro.actual_booking_date_start FROM report_order ro WHERE ro.order_id = o.id LIMIT 1),
@@ -316,18 +325,19 @@ export class LashBenchmarkService {
 
     const cvHistory = await fastify.prisma.legacy.$queryRawUnsafe<Array<{ avg_duration: number; cnt: number }>>(`
       SELECT
-        ROUND(AVG(os.duration_minute)) as avg_duration,
+        ROUND(AVG(${actualDurExpr})) as avg_duration,
         COUNT(*) as cnt
       FROM order_service os
       JOIN \`order\` o ON os.order_id = o.id
       JOIN service s ON os.service_id = s.id
+      JOIN report_order_service ros ON os.id = ros.order_service_id
       LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
       LEFT JOIN staff_bonus sb ON sb.order_service_id = os.id AND sb.staff_id != 0
       WHERE o.order_state = 'Completed'
         AND sb.staff_id = ${cvStaffId}
         AND sb.bonus_type = 'Banana'
         AND s.service_type IN (${queryServiceTypes})
-        AND os.duration_minute > 15 AND os.duration_minute < 200
+        AND ${actualDurExpr} > 15 AND ${actualDurExpr} < 200
         AND ${styleFilter}
         AND COALESCE(
           (SELECT ro.actual_booking_date_start FROM report_order ro WHERE ro.order_id = o.id LIMIT 1),
@@ -389,6 +399,197 @@ export class LashBenchmarkService {
   }
 
   /**
+   * Batch ETA estimation for multiple busy CVs — only 3 SQL queries total.
+   * Returns a Map<staffId, EtaResult> for each busy CV entry.
+   */
+  static async batchEstimateETA(
+    fastify: FastifyInstance,
+    busyCvEntries: Array<{
+      staffId: number;
+      customerId: number;
+      lashStyle: string;
+      serviceType: string;
+      lashCount: number | null;
+      bookingStartStr: string; // ICT formatted "YYYY-MM-DD HH:mm:ss"
+    }>
+  ): Promise<
+    Map<
+      number,
+      {
+        etaMinutes: number;
+        elapsedMinutes: number;
+        remainingMinutes: number;
+        progressPercent: number;
+        layer: 1 | 2 | 3;
+        confidence: 'high' | 'medium' | 'low';
+        lashStyle: string;
+        lashCount: number | null;
+        source: string;
+      }
+    >
+  > {
+    const result = new Map<number, any>();
+    if (busyCvEntries.length === 0) return result;
+
+    const staffIds = busyCvEntries.map((e) => e.staffId);
+    const customerIds = [...new Set(busyCvEntries.map((e) => e.customerId).filter((id) => id > 0))];
+
+    // Helper: actual tracked time from report_order_service (iPad progress states)
+    const adur = `(COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0) + COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0))`;
+
+    // ── Query 1: CV history — AVG(actual duration) per staff for lash services in 6 months ──
+    const cvHistoryRows = await fastify.prisma.legacy.$queryRawUnsafe<
+      Array<{ staff_id: number; service_type: string; avg_dur: number; cnt: number }>
+    >(`
+      SELECT
+        sb.staff_id,
+        s.service_type,
+        ROUND(AVG(${adur})) as avg_dur,
+        COUNT(*) as cnt
+      FROM staff_bonus sb
+      JOIN order_service os ON sb.order_service_id = os.id
+      JOIN \`order\` o ON os.order_id = o.id
+      JOIN service s ON os.service_id = s.id
+      JOIN report_order_service ros ON os.id = ros.order_service_id
+      WHERE o.order_state = 'Completed'
+        AND sb.bonus_type = 'Banana'
+        AND sb.staff_id IN (${staffIds.join(',')})
+        AND ${adur} > 15 AND ${adur} < 200
+        AND s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')
+        AND COALESCE(
+          (SELECT ro.actual_booking_date_start FROM report_order ro WHERE ro.order_id = o.id LIMIT 1),
+          o.booking_date_start
+        ) >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+      GROUP BY sb.staff_id, s.service_type
+    `);
+
+    // Build CV history map: staffId -> { serviceType -> { avg, cnt } }
+    const cvHistMap = new Map<number, Map<string, { avg: number; cnt: number }>>();
+    for (const r of cvHistoryRows) {
+      const sid = Number(r.staff_id);
+      if (!cvHistMap.has(sid)) cvHistMap.set(sid, new Map());
+      cvHistMap.get(sid)!.set(String(r.service_type), { avg: Number(r.avg_dur), cnt: Number(r.cnt) });
+    }
+
+    // ── Query 2: Customer history — AVG(actual duration) per customer for lash services in 6 months ──
+    const custHistMap = new Map<number, { avg: number; cnt: number }>();
+    if (customerIds.length > 0) {
+      const custHistoryRows = await fastify.prisma.legacy.$queryRawUnsafe<
+        Array<{ user_id: number; avg_dur: number; cnt: number }>
+      >(`
+        SELECT
+          o.user_id,
+          ROUND(AVG(${adur})) as avg_dur,
+          COUNT(*) as cnt
+        FROM order_service os
+        JOIN \`order\` o ON os.order_id = o.id
+        JOIN service s ON os.service_id = s.id
+        JOIN report_order_service ros ON os.id = ros.order_service_id
+        WHERE o.order_state = 'Completed'
+          AND o.user_id IN (${customerIds.join(',')})
+          AND ${adur} > 15 AND ${adur} < 200
+          AND s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')
+          AND COALESCE(
+            (SELECT ro.actual_booking_date_start FROM report_order ro WHERE ro.order_id = o.id LIMIT 1),
+            o.booking_date_start
+          ) >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+        GROUP BY o.user_id
+      `);
+      for (const r of custHistoryRows) {
+        custHistMap.set(Number(r.user_id), { avg: Number(r.avg_dur), cnt: Number(r.cnt) });
+      }
+    }
+
+    // ── Query 3: Load all benchmarks from CRM table ──
+    const benchmarks = await fastify.prisma.crm.crmLashTypeBenchmark.findMany();
+    const benchmarkMap = new Map<string, { minutes: number; sample: number }>();
+    for (const b of benchmarks) {
+      // Key with lashCount
+      const keyWithCount = `${b.lashStyle}|${b.serviceType}|${b.lashCount ?? 'null'}`;
+      benchmarkMap.set(keyWithCount, { minutes: b.benchmarkMinutes, sample: b.sampleSize });
+      // Key without lashCount (fallback)
+      const keyNoCount = `${b.lashStyle}|${b.serviceType}|null`;
+      if (!benchmarkMap.has(keyNoCount)) {
+        benchmarkMap.set(keyNoCount, { minutes: b.benchmarkMinutes, sample: b.sampleSize });
+      }
+    }
+
+    // ── Compute ETA per CV entry ──
+    const now = new Date();
+    const tzOffset = 7 * 60 * 60 * 1000; // ICT UTC+7
+    const nowMs = now.getTime() + tzOffset;
+
+    for (const entry of busyCvEntries) {
+      const { staffId, customerId, lashStyle, serviceType, lashCount, bookingStartStr } = entry;
+
+      // Calculate elapsed minutes
+      const startMs = new Date(bookingStartStr.replace(' ', 'T') + '+07:00').getTime();
+      const elapsedMinutes = Math.max(0, Math.round((nowMs - startMs) / 60000));
+
+      // Normalize service type for lookup
+      const normType = ['Adjust', 'Removal', 'Log'].includes(serviceType) ? 'Fix' : serviceType;
+
+      // Layer 1: Both customer (≥2 visits) and CV have history
+      const custHist = custHistMap.get(customerId);
+      const cvTypeHist = cvHistMap.get(staffId)?.get(normType);
+      const cvAllHist = cvHistMap.get(staffId)?.get('Normal') || cvHistMap.get(staffId)?.get('Retain');
+
+      let etaMinutes: number;
+      let layer: 1 | 2 | 3;
+      let confidence: 'high' | 'medium' | 'low';
+      let source: string;
+
+      if (custHist && custHist.cnt >= 2 && (cvTypeHist || cvAllHist)) {
+        const cvAvg = cvTypeHist?.avg ?? cvAllHist!.avg;
+        const cvCnt = cvTypeHist?.cnt ?? cvAllHist!.cnt;
+        etaMinutes = Math.round(0.6 * custHist.avg + 0.4 * cvAvg);
+        layer = 1;
+        confidence = 'high';
+        source = `Khách ${custHist.cnt} ca (${custHist.avg}p) × CV ${cvCnt} ca (${cvAvg}p)`;
+      } else if (cvTypeHist || cvAllHist) {
+        // Layer 2: CV has history
+        const cvAvg = cvTypeHist?.avg ?? cvAllHist!.avg;
+        const cvCnt = cvTypeHist?.cnt ?? cvAllHist!.cnt;
+        etaMinutes = Math.round(cvAvg);
+        layer = 2;
+        confidence = 'medium';
+        source = `CV trung bình ${cvCnt} ca ${lashStyle} (${cvAvg}p)`;
+      } else {
+        // Layer 3: Benchmark table fallback
+        const bmKey = `${lashStyle}|${normType}|${lashCount ?? 'null'}`;
+        const bmFallback = `${lashStyle}|${normType}|null`;
+        const bm = benchmarkMap.get(bmKey) || benchmarkMap.get(bmFallback);
+        if (bm) {
+          etaMinutes = bm.minutes;
+          source = `Benchmark ${lashStyle} (P50: ${bm.minutes}p, mẫu: ${bm.sample})`;
+        } else {
+          etaMinutes = normType === 'Retain' ? 75 : normType === 'Fix' ? 30 : 90;
+          source = `Fallback mặc định (${etaMinutes}p)`;
+        }
+        layer = 3;
+        confidence = 'low';
+      }
+
+      const remainingMinutes = etaMinutes - elapsedMinutes;
+      const progressPercent = etaMinutes > 0 ? Math.min(150, Math.round((elapsedMinutes / etaMinutes) * 100)) : 100;
+
+      result.set(staffId, {
+        etaMinutes,
+        elapsedMinutes,
+        remainingMinutes,
+        progressPercent,
+        layer,
+        confidence,
+        lashStyle,
+        lashCount,
+        source,
+      });
+    }
+
+    return result;
+  }
+
+  /**
    * Build SQL WHERE clause fragment to filter by lash style.
    */
   private static buildStyleSqlFilter(lashStyle: string): string {
@@ -406,6 +607,10 @@ export class LashBenchmarkService {
         "(s.service_key LIKE 'ultralight-%' AND LOWER(COALESCE(sl.service_name, '')) NOT LIKE '%3d%' AND LOWER(COALESCE(sl.service_name, '')) NOT LIKE '%4d%' AND LOWER(COALESCE(sl.service_name, '')) NOT LIKE '%5d%')",
       Hyperlight: "(s.service_key LIKE 'hyperlight-%')",
       Flawless: "(s.service_key LIKE 'flawless-%')",
+      Ivylight: "(s.service_key LIKE 'ivylight-%')",
+      'Ivylight 3L': "(s.service_key LIKE 'ivylight-%' AND LOWER(COALESCE(sl.service_name, '')) LIKE '%3l%')",
+      'Ivylight 4L': "(s.service_key LIKE 'ivylight-%' AND LOWER(COALESCE(sl.service_name, '')) LIKE '%4l%')",
+      'Ivylight 5L': "(s.service_key LIKE 'ivylight-%' AND LOWER(COALESCE(sl.service_name, '')) LIKE '%5l%')",
     };
     return styleMap[lashStyle] || '(1=1)';
   }

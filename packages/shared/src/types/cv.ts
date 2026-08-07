@@ -189,6 +189,18 @@ export interface CvStaffRealtimeStatus {
   // Derived status for UI
   liveStatus: CvLiveStatus;
   liveLabel: string;
+  // Benchmark-based ETA info (only when BUSY)
+  etaInfo?: {
+    etaMinutes: number;
+    elapsedMinutes: number;
+    remainingMinutes: number;
+    progressPercent: number;
+    layer: 1 | 2 | 3;
+    confidence: 'high' | 'medium' | 'low';
+    lashStyle: string;
+    lashCount: number | null;
+    source: string;
+  } | null;
 }
 
 export interface CvQueueEntry {
