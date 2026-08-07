@@ -201,6 +201,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
               bookedCount: 0,
               doneCount: 0,
               availability,
+              avgDurationMinutes: (rt as any).avgDurationMinutes,
             });
           }
         });

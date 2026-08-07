@@ -98,9 +98,17 @@ export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(
             <div className="text-[10px] text-slate-400 italic">{eta.source}</div>
           </div>
         )}
-        {staff.avgDurationMinutes?.normalAvg && staff.avgDurationMinutes?.retainAvg && (
+        {(staff.avgDurationMinutes?.normalAvg ||
+          staff.avgDurationMinutes?.retainAvg ||
+          staff.avgDurationMinutes?.removalAvg) && (
           <div className="text-[11px] text-purple-300 tabular-nums">
-            ⏱ TB Nối: {staff.avgDurationMinutes.normalAvg}p | Dặm: {staff.avgDurationMinutes.retainAvg}p
+            ⏱ TB Nối:{' '}
+            {[
+              staff.avgDurationMinutes.normalAvg ? `${staff.avgDurationMinutes.normalAvg}p` : null,
+              staff.avgDurationMinutes.retainAvg ? `Dặm: ${staff.avgDurationMinutes.retainAvg}p` : null,
+            ]
+              .filter(Boolean)
+              .join(' | ')}
           </div>
         )}
       </div>
@@ -160,9 +168,22 @@ export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(
                 <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold tabular-nums">
                   ✅ {staff.doneCount || 0} Done
                 </span>
-                {staff.avgDurationMinutes?.normalAvg && staff.avgDurationMinutes?.retainAvg && (
+                {(staff.avgDurationMinutes?.normalAvg ||
+                  staff.avgDurationMinutes?.retainAvg ||
+                  staff.avgDurationMinutes?.removalAvg) && (
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-semibold tabular-nums">
-                    ⚡ {staff.avgDurationMinutes.normalAvg}p nối • {staff.avgDurationMinutes.retainAvg}p dặm
+                    ⚡{' '}
+                    {[
+                      staff.avgDurationMinutes.normalAvg ? `${staff.avgDurationMinutes.normalAvg}p nối` : null,
+                      staff.avgDurationMinutes.retainAvg ? `${staff.avgDurationMinutes.retainAvg}p dặm` : null,
+                      !staff.avgDurationMinutes.normalAvg &&
+                      !staff.avgDurationMinutes.retainAvg &&
+                      staff.avgDurationMinutes.removalAvg
+                        ? `${staff.avgDurationMinutes.removalAvg}p tháo`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' • ')}
                   </span>
                 )}
               </div>

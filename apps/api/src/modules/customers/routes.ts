@@ -8490,6 +8490,52 @@ export async function customerRoutes(fastify: FastifyInstance) {
         todayEnd
       );
 
+      // Query average actual lash extension speed for effectiveCvStaffIds
+      const speedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT
+          os.assigned_staff_id as staff_id,
+          s.service_type,
+          ROUND(AVG(
+            COALESCE(ros.preparation_minute, 0) +
+            COALESCE(ros.pre_servicing_minute, 0) +
+            COALESCE(ros.cleaning_minute, 0) +
+            COALESCE(ros.servicing_minute, 0)
+          )) as avg_min
+        FROM order_service os
+        JOIN \`order\` o ON os.order_id = o.id
+        JOIN service s ON os.service_id = s.id
+        JOIN report_order_service ros ON os.id = ros.order_service_id
+        WHERE o.order_state = 'Completed'
+          AND s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')
+          AND os.assigned_staff_id IN (${effectiveCvStaffIds.join(',')})
+          AND (COALESCE(ros.preparation_minute, 0) +
+               COALESCE(ros.pre_servicing_minute, 0) +
+               COALESCE(ros.cleaning_minute, 0) +
+               COALESCE(ros.servicing_minute, 0)) BETWEEN 15 AND 200
+          AND COALESCE(
+            (SELECT ro.actual_booking_date_start FROM report_order ro WHERE ro.order_id = o.id LIMIT 1),
+            o.booking_date_start
+          ) >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+        GROUP BY os.assigned_staff_id, s.service_type
+      `);
+
+      const staffSpeedMap = new Map<
+        number,
+        { normalAvg?: number; retainAvg?: number; removalAvg?: number; overallAvg?: number }
+      >();
+      speedRows.forEach((r) => {
+        const sid = Number(r.staff_id);
+        const stype = String(r.service_type || '');
+        const avgVal = Math.round(Number(r.avg_min || 0));
+
+        if (!staffSpeedMap.has(sid)) staffSpeedMap.set(sid, {});
+        const item = staffSpeedMap.get(sid)!;
+
+        if (stype === 'Normal') item.normalAvg = avgVal;
+        else if (stype === 'Retain') item.retainAvg = avgVal;
+        else if (stype === 'Removal' || stype === 'Fix') item.removalAvg = avgVal;
+      });
+
       // 6. Build per-CV status with accurate time-slot & order_state recognition
       const staffStatuses = effectiveCvStaffIds
         .map((staffId: number) => {
@@ -8600,6 +8646,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             estimatedEndMinutes,
             liveStatus,
             liveLabel,
+            avgDurationMinutes: staffSpeedMap.get(staffId),
             etaInfo: null as null | {
               etaMinutes: number;
               elapsedMinutes: number;

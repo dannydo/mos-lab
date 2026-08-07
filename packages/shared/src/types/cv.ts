@@ -189,6 +189,13 @@ export interface CvStaffRealtimeStatus {
   // Derived status for UI
   liveStatus: CvLiveStatus;
   liveLabel: string;
+  // Staff average speed metrics
+  avgDurationMinutes?: {
+    normalAvg?: number;
+    retainAvg?: number;
+    removalAvg?: number;
+    overallAvg?: number;
+  };
   // Benchmark-based ETA info (only when BUSY)
   etaInfo?: {
     etaMinutes: number;
