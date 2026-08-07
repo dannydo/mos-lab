@@ -531,7 +531,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           (orderSvs.length > 0 ? orderSvs.find((cs) => cs.assigned_staff_id !== null)?.assigned_staff_id : null);
         const cvRequested = firstCvStaffId ? staffMap.get(Number(firstCvStaffId)) || 'Chuyên viên' : 'Chưa phân công';
 
-        let status: 'completed' | 'serving' | 'confirmed' | 'pending' | 'late' = 'pending';
+        let status: 'completed' | 'serving' | 'confirmed' | 'pending' | 'late' | 'checkout' = 'pending';
         if (o.order_state === 'Completed') {
           status = 'completed';
         } else if (
@@ -860,7 +860,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         const userBal = userBalances.filter((b) => b.user_id === o.user_id);
         const group = hasLiveCombo ? 'combo_live' : userBal.length > 0 ? 'combo_dead' : 'single';
 
-        let status: 'completed' | 'serving' | 'confirmed' | 'pending' | 'late' = 'pending';
+        let status: 'completed' | 'serving' | 'confirmed' | 'pending' | 'late' | 'checkout' = 'pending';
         if (o.order_state === 'Completed') {
           status = 'completed';
         } else if (
