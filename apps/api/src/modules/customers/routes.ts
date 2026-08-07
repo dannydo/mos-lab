@@ -8340,7 +8340,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return { staffStatuses: [], queueByStore: {}, timestamp: nowICT.toISOString() };
       }
 
-      // 2. Query today's queue from order_staff_queue for active CV staff IDs
+      // 2. Query today's staff shift check-in status from staff_working_shift
+      // (Only include CVs who HAVE checked in AND HAVE NOT checked out today)
+      const checkedInShiftRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `
+        SELECT DISTINCT user_id as staffId
+        FROM staff_working_shift
+        WHERE date = ?
+          AND check_in_staff_task_id IS NOT NULL
+          AND check_out_staff_task_id IS NULL
+      `,
+        todayStr
+      );
+      const checkedInStaffIds = new Set(checkedInShiftRows.map((r: SafeAny) => Number(r.staffId)));
+      const workingCvStaffIds = cvStaffIds.filter((id: number) => checkedInStaffIds.has(id));
+      const effectiveCvStaffIds = workingCvStaffIds.length > 0 ? workingCvStaffIds : cvStaffIds;
+
+      // 3. Query today's queue from order_staff_queue for working CV staff IDs
       const queueRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT osq.id as queueId, osq.client_store_id as storeId, osq.user_id as staffId,
@@ -8348,18 +8364,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
                osq.date_skipped as dateSkipped, osq.date_created as dateCreated
         FROM order_staff_queue osq
         WHERE osq.date_created >= ?
-          AND osq.user_id IN (${cvStaffIds.join(',')})
+          AND osq.user_id IN (${effectiveCvStaffIds.join(',')})
         ORDER BY osq.client_store_id ASC, osq.position ASC
       `,
         todayStart
       );
 
-      const allStaffIds = cvStaffIds;
+      const allStaffIds = effectiveCvStaffIds;
 
       // Current ICT local time string ("YYYY-MM-DD HH:mm:ss")
       const nowICTStr = nowICT.toISOString().replace('T', ' ').slice(0, 19);
 
-      // 3. Get CV profiles with avatar from legacy user_profile + CRM staff fallback
+      // 4. Get CV profiles with avatar from legacy user_profile + CRM staff fallback
       const cvProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT user_id, full_name, avatar, client_store_id
         FROM user_profile
@@ -8385,7 +8401,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         profileMap.set(sid, { name, avatar, storeId });
       });
 
-      // 4. Query real-time orders for today — format DATETIME as ICT string to avoid timezone parsing mismatch
+      // 5. Query real-time orders for today — format DATETIME as ICT string to avoid timezone parsing mismatch
       const orderRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT
@@ -8427,8 +8443,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         todayEnd
       );
 
-      // 5. Build per-CV status with accurate time-slot & order_state recognition
-      const staffStatuses = cvStaffIds
+      // 6. Build per-CV status with accurate time-slot & order_state recognition
+      const staffStatuses = effectiveCvStaffIds
         .map((staffId: number) => {
           const profile = profileMap.get(staffId);
           if (!profile) return null;
@@ -8450,7 +8466,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             return nowICTStr >= o.bookStartStr && nowICTStr <= o.bookEndStr;
           });
 
-          // Priority 2: Check for active order states
+          // Priority 2: Check for active order states (excluding stale orders ended > 60m ago)
           const ACTIVE_SERVICING_STATES = [
             'ServiceStart',
             'ServiceCleaned',
@@ -8460,7 +8476,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
             'ServiceCompleted',
             'ServiceEnd',
           ];
-          const stateActiveOrder = staffOrders.find((o: SafeAny) => ACTIVE_SERVICING_STATES.includes(o.orderState));
+          const stateActiveOrder = staffOrders.find((o: SafeAny) => {
+            if (!ACTIVE_SERVICING_STATES.includes(o.orderState)) return false;
+            if (o.bookEndStr) {
+              const endMs = new Date(o.bookEndStr.replace(' ', 'T') + '+07:00').getTime();
+              const endMins = Math.round((endMs - now.getTime()) / 60000);
+              if (endMins < -60) return false; // Ignore stale orders ended > 60 minutes ago
+            }
+            return true;
+          });
 
           const activeOrder = runningOrder || stateActiveOrder;
 
