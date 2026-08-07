@@ -114,14 +114,14 @@ function MultiDayColumnView({
   const { themeMode } = useTheme();
   const [draggedAppt, setDraggedAppt] = useState<Appointment | null>(null);
 
-  // Saved resizable Popover dimensions (Default 680px = 2x width)
+  // Saved resizable Popover dimensions (Default 544px - reduced 20% from 680px)
   const [popoverDimensions, setPopoverDimensions] = useState<{ width: number; height: number }>(() => {
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('mos_lab_cv_popover_size');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed?.width && parsed?.height && parsed.width >= 500 && parsed.height >= 300) {
+          if (parsed?.width && parsed?.height && parsed.width >= 400 && parsed.height >= 300) {
             return { width: Number(parsed.width), height: Number(parsed.height) };
           }
         }
@@ -129,7 +129,7 @@ function MultiDayColumnView({
         // ignore
       }
     }
-    return { width: 680, height: 520 };
+    return { width: 544, height: 520 };
   });
 
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -273,9 +273,9 @@ function MultiDayColumnView({
                 height: `${popoverDimensions.height}px`,
                 resize: 'both',
                 overflow: 'hidden',
-                minWidth: '500px',
+                minWidth: '420px',
                 minHeight: '350px',
-                maxWidth: '1000px',
+                maxWidth: '900px',
                 maxHeight: '85vh',
                 backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
               }}
