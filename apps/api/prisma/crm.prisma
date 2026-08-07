@@ -492,16 +492,17 @@ model CrmCampaignTouchpoint {
 }
 
 model CrmCampaignPromotion {
-  id          Int      @id @default(autoincrement())
-  campaignId  Int      @map("campaign_id")
-  name        String   @db.VarChar(150)
-  code        String?  @db.VarChar(50)
-  type        String   @db.VarChar(30) // PERCENT_DISCOUNT | FIXED_DISCOUNT | FREE_SERVICE | FREE_PRODUCT
-  value       Float    @default(0)
-  description String?  @db.Text
-  isActive    Boolean  @default(true) @map("is_active") @db.TinyInt
-  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+  id                Int      @id @default(autoincrement())
+  campaignId        Int      @map("campaign_id")
+  name              String   @db.VarChar(150)
+  code              String?  @db.VarChar(50)
+  type              String   @db.VarChar(30) // PERCENT_DISCOUNT | FIXED_DISCOUNT | FREE_SERVICE | FREE_PRODUCT
+  value             Float    @default(0)
+  description       String?  @db.Text
+  isActive          Boolean  @default(true) @map("is_active") @db.TinyInt
+  legacyPromotionId Int?     @map("legacy_promotion_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
   campaign CrmCustomCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 

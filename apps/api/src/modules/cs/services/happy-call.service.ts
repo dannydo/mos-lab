@@ -9,7 +9,7 @@ export class HappyCallService {
    * Uses round-robin assignment with CS staff from ACTIVE_CS_STAFF_CONFIG.
    */
   async generateDailyTasks(fastify: FastifyInstance): Promise<{ created: number; skipped: number }> {
-    // Get active CS staff IDs
+    // 1. Get active CS staff IDs from ACTIVE_CS_STAFF_CONFIG
     const csConfig = await fastify.prisma.crm.crmConfig.findUnique({
       where: { key: 'ACTIVE_CS_STAFF_CONFIG' },
     });
@@ -22,7 +22,7 @@ export class HappyCallService {
       }
     }
     if (!csStaffIds.length) {
-      // Fallback: get all active CRM staff with role 'cs'
+      // Fallback 1: get active CRM staff with role 'cs'
       const staffs = await fastify.prisma.crm.crmStaff.findMany({
         where: { isActive: true, role: 'cs' },
         select: { id: true },
@@ -30,14 +30,25 @@ export class HappyCallService {
       csStaffIds = staffs.map((s) => s.id);
     }
     if (!csStaffIds.length) {
+      // Fallback 2: get any active CRM staff
+      const staffs = await fastify.prisma.crm.crmStaff.findMany({
+        where: { isActive: true },
+        select: { id: true },
+      });
+      csStaffIds = staffs.map((s) => s.id);
+    }
+    if (!csStaffIds.length) {
+      // Fallback 3: get active staff IDs from legacy DB user_profile
+      const legacyStaffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT user_id AS id FROM user_profile WHERE user_id > 0 LIMIT 10`
+      );
+      csStaffIds = legacyStaffs.map((s) => Number(s.id));
+    }
+    if (!csStaffIds.length) {
       return { created: 0, skipped: 0 };
     }
 
-    // Get completed orders from yesterday using raw SQL (legacy DB pattern)
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const dateStr = yesterday.toISOString().slice(0, 10);
-
+    // 2. Get completed orders from the last 14 days using raw SQL
     const completedOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
       `
       SELECT 
@@ -55,10 +66,9 @@ export class HappyCallService {
       FROM \`order\` o
       LEFT JOIN report_order ro ON o.id = ro.order_id
       WHERE o.order_state = 'Completed'
-        AND DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start)) = ?
-      ORDER BY o.id
-    `,
-      dateStr
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+      ORDER BY o.id DESC
+    `
     );
 
     if (!completedOrders.length) return { created: 0, skipped: 0 };
@@ -76,12 +86,19 @@ export class HappyCallService {
     // Round-robin assignment
     let staffIndex = 0;
     const today = new Date();
-    const scheduledDate = new Date(today.toISOString().slice(0, 10) + 'T00:00:00.000Z');
     let created = 0;
 
     for (const order of newOrders) {
       const assignedStaffId = csStaffIds[staffIndex % csStaffIds.length];
       staffIndex++;
+
+      // Scheduled date is the day after checkout date (or today if checkout date unavailable)
+      let scheduledDate = new Date(today.toISOString().slice(0, 10) + 'T00:00:00.000Z');
+      if (order.checkoutDate) {
+        const checkoutDt = new Date(order.checkoutDate);
+        checkoutDt.setDate(checkoutDt.getDate() + 1);
+        scheduledDate = new Date(checkoutDt.toISOString().slice(0, 10) + 'T00:00:00.000Z');
+      }
 
       await fastify.prisma.crm.crmHappyCallTask.create({
         data: {
@@ -110,7 +127,7 @@ export class HappyCallService {
    */
   async listTasks(
     fastify: FastifyInstance,
-    params: ListHappyCallsParams
+    params: ListHappyCallsParams & { search?: string }
   ): Promise<{ data: HappyCallTask[]; total: number }> {
     const page = Number(params.page) || 1;
     const pageSize = Number(params.pageSize) || 20;

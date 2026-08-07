@@ -711,7 +711,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
       onClose();
     } catch (err) {
       console.error('[BookingWizard] Failed to create booking:', err);
-      message.error((err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi tạo lịch đặt hẹn.');
+      const serverMsg =
+        (err as SafeAny).response?.data?.message || (err as SafeAny).response?.data?.error || (err as Error).message;
+      message.error(serverMsg || 'Có lỗi xảy ra khi tạo lịch đặt hẹn. Vui lòng kiểm tra lại.');
     } finally {
       setCreatingBooking(false);
     }

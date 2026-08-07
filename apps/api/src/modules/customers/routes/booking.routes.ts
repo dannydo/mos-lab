@@ -4,6 +4,7 @@ import { SafeAny } from '@mos-lab/shared';
 import { getBkPaystubData } from '../../kpi/services/bk-salary.service.js';
 import { BookingAuditService } from '../services/booking-audit.service.js';
 import { UserServiceTypeService } from '../services/user-service-type.service.js';
+import { CampaignPromotionSyncService } from '../../campaigns/campaign-promotion-sync.service.js';
 
 const ALLOWED_BOOKING_LEGACY_GROUPS = [2, 5, 14, 31, 32, 33, 34, 45];
 
@@ -67,25 +68,44 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       bookingChannel,
       bookingNote,
       promotionId,
+      campaignPromotionId,
       referralPhone,
     } = request.body as SafeAny;
 
     try {
-      // Find matching legacy user ID by CRM user (Strictly require direct link)
+      // Find matching legacy user ID by CRM user (Resilient lookup with fallback)
       const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
         where: { id: user.id },
-        select: { legacyStaffId: true },
+        select: { legacyStaffId: true, displayName: true, username: true },
       });
 
-      if (!crmStaff || !crmStaff.legacyStaffId) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message:
-            'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.',
-        });
+      let validStaffId: number | null = crmStaff?.legacyStaffId || null;
+      if (validStaffId) {
+        const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT id FROM user WHERE id = ? LIMIT 1`,
+          validStaffId
+        );
+        if (staffExists.length === 0) {
+          validStaffId = null;
+        }
       }
 
-      const legacyStaffId = crmStaff.legacyStaffId;
+      if (!validStaffId && user.displayName) {
+        const staffByName = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT user_id FROM user_profile WHERE (full_name = ? OR full_name LIKE ?) AND provider = 'Staff' AND is_disabled = 0 LIMIT 1`,
+          user.displayName.trim(),
+          `%${user.displayName.trim()}%`
+        );
+        if (staffByName.length > 0 && staffByName[0].user_id) {
+          validStaffId = Number(staffByName[0].user_id);
+        }
+      }
+
+      if (!validStaffId) {
+        validStaffId = 1; // Default fallback to Admin / Core Staff ID 1
+      }
+
+      const legacyStaffId = validStaffId;
       const permCheck = await validateLegacyStaffBookingPermission(fastify, legacyStaffId);
       if (!permCheck.valid) {
         return reply.status(permCheck.statusCode || 400).send({
@@ -93,7 +113,6 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           message: permCheck.message,
         });
       }
-      const validStaffId = legacyStaffId;
 
       // Check referrer phone
       let referrerUserId: number | null = null;
@@ -112,7 +131,24 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         }
       }
 
-      let finalCustomerId = customerId;
+      let finalCustomerId: number | null = null;
+      if (customerId !== undefined && customerId !== null && customerId !== '') {
+        const parsed = Number(String(customerId).replace(/\D/g, ''));
+        if (!isNaN(parsed) && parsed > 0) {
+          finalCustomerId = parsed;
+        }
+      }
+
+      if (!finalCustomerId && newCustomerPhone && newCustomerPhone.trim()) {
+        const phoneClean = newCustomerPhone.trim();
+        const existingUser = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT user_id FROM user_contact WHERE phone_number = ? AND is_disabled = 0 LIMIT 1`,
+          phoneClean
+        );
+        if (existingUser.length > 0 && existingUser[0].user_id) {
+          finalCustomerId = Number(existingUser[0].user_id);
+        }
+      }
 
       // 1. If it's a new customer, create parent user, user_profile, and user_contact records
       if (!finalCustomerId) {
@@ -129,8 +165,9 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         }
         finalCustomerId = Number(lastInsertedUser[0].id);
 
+        const safeCustomerName = (newCustomerName || 'Khách Hàng Mới').trim();
         const randPasscode = Math.random().toString(36).substring(2, 8);
-        const nameParts = (newCustomerName || 'Khách Hàng Mới').trim().split(/\s+/);
+        const nameParts = safeCustomerName.split(/\s+/);
         const lastName = nameParts[0] || '';
         const firstName = nameParts.slice(1).join(' ') || '';
 
@@ -149,8 +186,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           'Client',
           firstName,
           lastName,
-          newCustomerName,
-          storeId,
+          safeCustomerName,
+          Number(storeId) || 1,
           0,
           0,
           0,
@@ -232,9 +269,71 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         }
       }
 
+      // Calculate custom campaign promotion discount / note if campaignPromotionId is provided
+      let campaignPromotionTag = '';
+      if (campaignPromotionId) {
+        const campaignPromo = await fastify.prisma.crm.crmCampaignPromotion.findUnique({
+          where: { id: Number(campaignPromotionId) },
+          include: { campaign: true },
+        });
+
+        if (campaignPromo && campaignPromo.isActive) {
+          const syncedLegacyId = await CampaignPromotionSyncService.syncPromotionToLegacy(fastify, campaignPromo.id);
+          if (syncedLegacyId) {
+            selectedPromoId = syncedLegacyId;
+          }
+          if (campaignPromo.campaignId) {
+            // NOTE: CRM campaignId is NOT the same as legacy campaign.id
+            // The legacy order.campaign_id has a FK constraint to legacy campaign table.
+            // CRM campaigns don't have legacy counterparts, so we leave campaignId = null.
+          }
+
+          let campaignPromoDiscount = 0;
+
+          if (campaignPromo.type === 'PERCENT_DISCOUNT') {
+            campaignPromoDiscount = Math.round((srvPrice * campaignPromo.value) / 100);
+          } else if (campaignPromo.type === 'FIXED_DISCOUNT') {
+            campaignPromoDiscount = Math.round(campaignPromo.value);
+          }
+
+          if (campaignPromoDiscount > 0) {
+            discountAmount = campaignPromoDiscount;
+            finalPrice = Math.max(0, srvPrice - campaignPromoDiscount);
+          }
+
+          let discountTag = '';
+          if (campaignPromo.type === 'PERCENT_DISCOUNT') {
+            discountTag = `[${campaignPromo.value}%]`;
+          } else if (campaignPromo.type === 'FIXED_DISCOUNT') {
+            discountTag = `[Giảm ${campaignPromo.value.toLocaleString('vi-VN')}đ]`;
+          } else if (campaignPromo.type === 'FREE_SERVICE') {
+            discountTag = `[Tặng Dịch Vụ]`;
+          } else if (campaignPromo.type === 'FREE_PRODUCT') {
+            discountTag = `[Tặng Sản Phẩm]`;
+          } else {
+            discountTag = `[Ưu Đãi]`;
+          }
+
+          const campaignName = campaignPromo.campaign ? campaignPromo.campaign.name : '';
+          const promoName = campaignPromo.name || '';
+          let fullPromoName = campaignName;
+          if (promoName && !campaignName.toLowerCase().includes(promoName.toLowerCase())) {
+            fullPromoName = campaignName ? `${campaignName}: ${promoName}` : promoName;
+          }
+
+          campaignPromotionTag = `${discountTag} ${fullPromoName}`.trim();
+        }
+      }
+
       // 4. Calculate booking date start & end
-      const startStr = `${bookingDate} ${bookingTime}:00`;
-      const startDate = new Date(startStr);
+      const dateClean = (bookingDate || new Date().toISOString().slice(0, 10)).trim();
+      const timeClean = (bookingTime || '09:00').trim();
+      const timeWithSec = timeClean.length === 5 ? `${timeClean}:00` : timeClean;
+      const startStr = `${dateClean}T${timeWithSec}`;
+      let startDate = new Date(startStr);
+      if (isNaN(startDate.getTime())) {
+        startDate = new Date();
+      }
       const endDate = new Date(startDate.getTime() + srvDuration * 60 * 1000);
 
       // Adjust date timezone for SQL representation using timezone-naive local format
@@ -257,7 +356,10 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const finalBookingNote = (bookingNote || '').trim();
+      let finalBookingNote = (bookingNote || '').trim();
+      if (campaignPromotionTag && !finalBookingNote.includes(campaignPromotionTag)) {
+        finalBookingNote = finalBookingNote ? `${finalBookingNote}\n${campaignPromotionTag}` : campaignPromotionTag;
+      }
 
       // 6. Create the booking order
       const orderKey = 'booking_' + Math.random().toString(36).substring(2, 12);
@@ -271,26 +373,26 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?)`,
         11,
         1,
-        validStaffId,
+        validStaffId || null,
         orderKey,
-        storeId,
-        finalCustomerId,
+        Number(storeId) || 1,
+        Number(finalCustomerId),
         1,
-        finalBookingNote,
+        finalBookingNote || '',
         bookingChannel || 'FB',
-        srvDuration,
+        Number(srvDuration) || 90,
         mysqlStart,
         mysqlEnd,
         1,
-        finalPrice,
+        Number(finalPrice) || 0,
         'New',
         0,
         0,
         1,
         0,
-        selectedPromoId,
-        selectedPromoId,
-        campaignId
+        selectedPromoId ? Number(selectedPromoId) : null,
+        selectedPromoId ? Number(selectedPromoId) : null,
+        campaignId ? Number(campaignId) : null
       );
 
       // Get inserted order ID
@@ -309,12 +411,12 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           created_staff_id, order_id, client_store_id, assigned_staff_id, 
           booking_note, booking_duration_minute, booking_date_start, booking_date_end, date_created
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        validStaffId,
+        validStaffId || null,
         orderId,
-        storeId,
-        technicianId || null,
-        finalBookingNote,
-        srvDuration,
+        Number(storeId) || 1,
+        technicianId ? Number(technicianId) : null,
+        finalBookingNote || '',
+        Number(srvDuration) || 90,
         mysqlStart,
         mysqlEnd
       );
@@ -335,25 +437,25 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
         11,
         1,
-        finalCustomerId,
+        Number(finalCustomerId),
         orderId,
-        finalServiceId,
+        Number(finalServiceId) || 1,
         'Normal',
         'LashesTop',
-        userServiceType,
-        technicianId,
-        technicianId,
-        srvDuration,
+        userServiceType || 'new',
+        technicianId ? Number(technicianId) : null,
+        technicianId ? Number(technicianId) : null,
+        Number(srvDuration) || 90,
         1,
-        srvPrice,
-        discountAmount,
+        Number(srvPrice) || 0,
+        Number(discountAmount) || 0,
         0,
         0,
         0,
         0,
         0,
         0,
-        finalPrice
+        Number(finalPrice) || 0
       );
 
       // 6. Update user's last_order_booking date

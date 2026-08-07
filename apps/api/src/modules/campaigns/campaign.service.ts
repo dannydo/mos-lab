@@ -18,6 +18,7 @@ import {
   ToggleCampaignTouchpointLogDto,
   UpdateCampaignDto,
 } from '@mos-lab/shared';
+import { CampaignPromotionSyncService } from './campaign-promotion-sync.service.js';
 
 function slugify(text: string): string {
   return text
@@ -348,7 +349,7 @@ export class CampaignService {
       // Create promotions if provided
       if (dto.promotions && dto.promotions.length > 0) {
         for (const p of dto.promotions) {
-          await tx.crmCampaignPromotion.create({
+          const createdPromo = await tx.crmCampaignPromotion.create({
             data: {
               campaignId: campaign.id,
               name: p.name,
@@ -359,6 +360,7 @@ export class CampaignService {
               isActive: true,
             },
           });
+          await CampaignPromotionSyncService.syncPromotionToLegacy(fastify, createdPromo.id);
         }
       }
 
@@ -512,12 +514,23 @@ export class CampaignService {
       }
 
       if (dto.promotions) {
+        const oldPromos = await tx.crmCampaignPromotion.findMany({
+          where: { campaignId: id },
+        });
+        for (const op of oldPromos) {
+          if (op.legacyPromotionId) {
+            await fastify.prisma.legacy.$executeRawUnsafe(
+              `UPDATE promotion SET is_disabled = 1, date_updated = NOW() WHERE id = ?`,
+              op.legacyPromotionId
+            );
+          }
+        }
         await tx.crmCampaignPromotion.deleteMany({
           where: { campaignId: id },
         });
 
         for (const p of dto.promotions) {
-          await tx.crmCampaignPromotion.create({
+          const createdPromo = await tx.crmCampaignPromotion.create({
             data: {
               campaignId: id,
               name: p.name,
@@ -528,9 +541,15 @@ export class CampaignService {
               isActive: true,
             },
           });
+          await CampaignPromotionSyncService.syncPromotionToLegacy(fastify, createdPromo.id);
         }
       }
     });
+
+    if (dto.status !== undefined) {
+      const isDisabled = dto.status !== 'ACTIVE';
+      await CampaignPromotionSyncService.updatePromotionsStatusForCampaign(fastify, id, isDisabled);
+    }
 
     const updated = await fastify.prisma.crm.crmCustomCampaign.findUnique({
       where: { id },
@@ -577,6 +596,8 @@ export class CampaignService {
       });
     });
 
+    await CampaignPromotionSyncService.updatePromotionsStatusForCampaign(fastify, id, true);
+
     return {
       success: true,
       message: 'Đã xóa chiến dịch thành công (Dữ liệu khách hàng và Booker được lưu giữ nguyên vẹn)',
@@ -614,6 +635,8 @@ export class CampaignService {
       },
     });
 
+    await CampaignPromotionSyncService.updatePromotionsStatusForCampaign(fastify, id, true);
+
     return this.mapCampaignToDto(updated);
   }
 
@@ -643,6 +666,7 @@ export class CampaignService {
         },
       },
     });
+    await CampaignPromotionSyncService.updatePromotionsStatusForCampaign(fastify, id, true);
     return this.mapCampaignToDto(updated);
   }
 
@@ -672,6 +696,7 @@ export class CampaignService {
         },
       },
     });
+    await CampaignPromotionSyncService.updatePromotionsStatusForCampaign(fastify, id, false);
     return this.mapCampaignToDto(updated);
   }
 
@@ -708,6 +733,7 @@ export class CampaignService {
         },
       },
     });
+    await CampaignPromotionSyncService.updatePromotionsStatusForCampaign(fastify, id, true);
     return this.mapCampaignToDto(updated);
   }
 
@@ -737,6 +763,7 @@ export class CampaignService {
         },
       },
     });
+    await CampaignPromotionSyncService.updatePromotionsStatusForCampaign(fastify, id, true);
     return this.mapCampaignToDto(updated);
   }
 
@@ -776,6 +803,7 @@ export class CampaignService {
         },
       },
     });
+    await CampaignPromotionSyncService.updatePromotionsStatusForCampaign(fastify, id, false);
     return this.mapCampaignToDto(updated);
   }
 
@@ -808,6 +836,7 @@ export class CampaignService {
         },
       },
     });
+    await CampaignPromotionSyncService.updatePromotionsStatusForCampaign(fastify, id, false);
     return this.mapCampaignToDto(updated);
   }
 
@@ -1667,6 +1696,8 @@ export class CampaignService {
       },
     });
 
+    const legacyId = await CampaignPromotionSyncService.syncPromotionToLegacy(fastify, promotion.id);
+
     return {
       id: promotion.id,
       campaignId: promotion.campaignId,
@@ -1676,6 +1707,7 @@ export class CampaignService {
       value: promotion.value,
       description: promotion.description,
       isActive: promotion.isActive,
+      legacyPromotionId: legacyId,
       createdAt: promotion.createdAt.toISOString(),
     };
   }
@@ -1694,6 +1726,13 @@ export class CampaignService {
 
     if (!promotion) {
       throw new Error('Ưu đãi khuyến mãi không tồn tại trong chiến dịch này');
+    }
+
+    if (promotion.legacyPromotionId) {
+      await fastify.prisma.legacy.$executeRawUnsafe(
+        `UPDATE promotion SET is_disabled = 1, date_updated = NOW() WHERE id = ?`,
+        promotion.legacyPromotionId
+      );
     }
 
     await fastify.prisma.crm.crmCampaignPromotion.delete({
@@ -1908,6 +1947,7 @@ export class CampaignService {
             description: p.description,
             isActive: p.isActive,
             label,
+            legacyPromotionId: p.legacyPromotionId || null,
           };
         }),
       }));

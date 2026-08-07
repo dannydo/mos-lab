@@ -28,6 +28,8 @@ import { campaignRoutes } from './modules/campaigns/routes.js';
 import { csRoutes } from './modules/cs/routes.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
+import { CampaignPromotionSyncService } from './modules/campaigns/campaign-promotion-sync.service.js';
+
 // Load environment variables
 dotenv.config();
 
@@ -190,6 +192,11 @@ const start = async () => {
 
     // Start background analyzer polling for AI laugh detection
     startRecordingAnalyzer(server);
+
+    // Run backfill migration for existing CRM promotions to sync to legacy DB
+    CampaignPromotionSyncService.backfillExistingPromotions(server).catch((err) => {
+      server.log.warn('Backfill campaign promotions error:', err);
+    });
 
     const port = Number(process.env.PORT) || 3001;
     await server.listen({ port, host: '0.0.0.0' });

@@ -57,6 +57,7 @@ export interface CampaignPromotion {
   value: number;
   description: string | null;
   isActive: boolean;
+  legacyPromotionId?: number | null;
   createdAt: string;
 }
 
@@ -196,6 +197,7 @@ export interface CustomerCampaignPromotionItem {
   description: string | null;
   isActive: boolean;
   label: string;
+  legacyPromotionId?: number | null;
 }
 
 export interface CustomerCampaignPromotionInfo {

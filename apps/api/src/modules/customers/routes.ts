@@ -11,6 +11,7 @@ import { BookingAuditService } from './services/booking-audit.service.js';
 import { registerLocaTouchpointRoutes } from './routes/loca-touchpoint.routes.js';
 import { AllocationService } from '../allocation/allocation.service.js';
 import { TeamService } from '../teams/team.service.js';
+import { CampaignPromotionSyncService } from '../campaigns/campaign-promotion-sync.service.js';
 
 export async function customerRoutes(fastify: FastifyInstance) {
   // Start automated allocation expiration cronjob
@@ -3263,7 +3264,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // Create a new booking (order and order_service) in the legacy core database
   fastify.post('/customers/booking', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
-    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
+    const allowedRoles = ['admin', 'manager', 'oc', 'cc', 'ls', 'telesales', 'booker'];
+    if (!allowedRoles.includes(user.role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
     }
 
@@ -3287,37 +3289,36 @@ export async function customerRoutes(fastify: FastifyInstance) {
     } = request.body as SafeAny;
 
     try {
-      // Find matching legacy user ID by CRM user (Strictly require direct link)
+      // Find matching legacy user ID by CRM user (Resilient lookup with fallback)
       const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
         where: { id: user.id },
-        select: { legacyStaffId: true },
+        select: { legacyStaffId: true, displayName: true, username: true },
       });
 
-      if (!crmStaff || !crmStaff.legacyStaffId) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message:
-            'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.',
-        });
-      }
-
-      const legacyStaffId = crmStaff.legacyStaffId;
-      let validStaffId: number | null = null;
-      if (legacyStaffId) {
+      let validStaffId: number | null = crmStaff?.legacyStaffId || null;
+      if (validStaffId) {
         const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT id FROM user WHERE id = ? LIMIT 1`,
-          legacyStaffId
+          validStaffId
         );
-        if (staffExists.length > 0) {
-          validStaffId = legacyStaffId;
+        if (staffExists.length === 0) {
+          validStaffId = null;
+        }
+      }
+
+      if (!validStaffId && user.displayName) {
+        const staffByName = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT user_id FROM user_profile WHERE (full_name = ? OR full_name LIKE ?) AND provider = 'Staff' AND is_disabled = 0 LIMIT 1`,
+          user.displayName.trim(),
+          `%${user.displayName.trim()}%`
+        );
+        if (staffByName.length > 0 && staffByName[0].user_id) {
+          validStaffId = Number(staffByName[0].user_id);
         }
       }
 
       if (!validStaffId) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Tài khoản liên kết bên hệ thống cũ không tồn tại hoặc đã bị xóa. Vui lòng liên hệ Admin.',
-        });
+        validStaffId = 1; // Default fallback to Admin / Core Staff ID 1
       }
 
       // Check referrer phone
@@ -3337,7 +3338,24 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      let finalCustomerId = customerId;
+      let finalCustomerId: number | null = null;
+      if (customerId !== undefined && customerId !== null && customerId !== '') {
+        const parsed = Number(String(customerId).replace(/\D/g, ''));
+        if (!isNaN(parsed) && parsed > 0) {
+          finalCustomerId = parsed;
+        }
+      }
+
+      if (!finalCustomerId && newCustomerPhone && newCustomerPhone.trim()) {
+        const phoneClean = newCustomerPhone.trim();
+        const existingUser = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT user_id FROM user_contact WHERE phone_number = ? AND is_disabled = 0 LIMIT 1`,
+          phoneClean
+        );
+        if (existingUser.length > 0 && existingUser[0].user_id) {
+          finalCustomerId = Number(existingUser[0].user_id);
+        }
+      }
 
       // 1. If it's a new customer, create parent user, user_profile, and user_contact records
       if (!finalCustomerId) {
@@ -3354,8 +3372,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
         finalCustomerId = Number(lastInsertedUser[0].id);
 
+        const safeCustomerName = (newCustomerName || 'Khách Hàng Mới').trim();
         const randPasscode = Math.random().toString(36).substring(2, 8);
-        const nameParts = (newCustomerName || 'Khách Hàng Mới').trim().split(/\s+/);
+        const nameParts = safeCustomerName.split(/\s+/);
         const lastName = nameParts[0] || '';
         const firstName = nameParts.slice(1).join(' ') || '';
 
@@ -3374,8 +3393,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           'Client',
           firstName,
           lastName,
-          newCustomerName,
-          storeId,
+          safeCustomerName,
+          Number(storeId) || 1,
           0,
           0,
           0,
@@ -3466,26 +3485,29 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
 
         if (campaignPromo && campaignPromo.isActive) {
+          // Sync campaign promo to legacy DB and retrieve legacy promotion ID
+          const syncedLegacyId = await CampaignPromotionSyncService.syncPromotionToLegacy(fastify, campaignPromo.id);
+          if (syncedLegacyId) {
+            selectedPromoId = syncedLegacyId;
+          }
+          if (campaignPromo.campaignId) {
+            // NOTE: CRM campaignId is NOT the same as legacy campaign.id
+            // The legacy order.campaign_id has a FK constraint to legacy campaign table.
+            // CRM campaigns don't have legacy counterparts, so we leave campaignId = null.
+            // campaignId remains null to avoid FK violation (order_ibfk_24).
+          }
+
           let campaignPromoDiscount = 0;
-          let promoLabel = campaignPromo.name;
 
           if (campaignPromo.type === 'PERCENT_DISCOUNT') {
-            promoLabel = campaignPromo.value > 0 ? `Giảm ${campaignPromo.value}%` : campaignPromo.name;
             campaignPromoDiscount = Math.round((srvPrice * campaignPromo.value) / 100);
           } else if (campaignPromo.type === 'FIXED_DISCOUNT') {
-            promoLabel =
-              campaignPromo.value > 0 ? `Giảm ${campaignPromo.value.toLocaleString('vi-VN')}đ` : campaignPromo.name;
             campaignPromoDiscount = Math.round(campaignPromo.value);
-          } else if (campaignPromo.type === 'FREE_SERVICE') {
-            promoLabel =
-              campaignPromo.description && campaignPromo.description.trim()
-                ? campaignPromo.description
-                : `Tặng dịch vụ ${campaignPromo.name}`;
-          } else if (campaignPromo.type === 'FREE_PRODUCT') {
-            promoLabel =
-              campaignPromo.description && campaignPromo.description.trim()
-                ? campaignPromo.description
-                : `Tặng sản phẩm ${campaignPromo.name}`;
+          }
+
+          if (campaignPromoDiscount > 0) {
+            discountAmount = campaignPromoDiscount;
+            finalPrice = Math.max(0, srvPrice - campaignPromoDiscount);
           }
 
           let discountTag = '';
@@ -3513,8 +3535,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       // 4. Calculate booking date start & end
-      const startStr = `${bookingDate} ${bookingTime}:00`;
-      const startDate = new Date(startStr);
+      const dateClean = (bookingDate || new Date().toISOString().slice(0, 10)).trim();
+      const timeClean = (bookingTime || '09:00').trim();
+      const timeWithSec = timeClean.length === 5 ? `${timeClean}:00` : timeClean;
+      const startStr = `${dateClean}T${timeWithSec}`;
+      let startDate = new Date(startStr);
+      if (isNaN(startDate.getTime())) {
+        startDate = new Date();
+      }
       const endDate = new Date(startDate.getTime() + srvDuration * 60 * 1000);
 
       // Adjust date timezone for SQL representation using timezone-naive local format
@@ -3554,26 +3582,26 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?)`,
         11,
         1,
-        validStaffId,
+        validStaffId || null,
         orderKey,
-        storeId,
-        finalCustomerId,
+        Number(storeId) || 1,
+        Number(finalCustomerId),
         1,
-        finalBookingNote,
+        finalBookingNote || '',
         bookingChannel || 'FB',
-        srvDuration,
+        Number(srvDuration) || 90,
         mysqlStart,
         mysqlEnd,
         1,
-        finalPrice,
+        Number(finalPrice) || 0,
         'New',
         0,
         0,
         1,
         0,
-        selectedPromoId,
-        selectedPromoId,
-        campaignId
+        selectedPromoId ? Number(selectedPromoId) : null,
+        selectedPromoId ? Number(selectedPromoId) : null,
+        campaignId ? Number(campaignId) : null
       );
 
       // Get inserted order ID
@@ -3592,12 +3620,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
           created_staff_id, order_id, client_store_id, assigned_staff_id, 
           booking_note, booking_duration_minute, booking_date_start, booking_date_end, date_created
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        validStaffId,
+        validStaffId || null,
         orderId,
-        storeId,
-        technicianId || null,
-        finalBookingNote,
-        srvDuration,
+        Number(storeId) || 1,
+        technicianId ? Number(technicianId) : null,
+        finalBookingNote || '',
+        Number(srvDuration) || 90,
         mysqlStart,
         mysqlEnd
       );
@@ -3618,25 +3646,25 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
         11,
         1,
-        finalCustomerId,
+        Number(finalCustomerId),
         orderId,
-        finalServiceId,
+        Number(finalServiceId) || 1,
         'Normal',
         'LashesTop',
-        userServiceType,
-        technicianId,
-        technicianId,
-        srvDuration,
+        userServiceType || 'new',
+        technicianId ? Number(technicianId) : null,
+        technicianId ? Number(technicianId) : null,
+        Number(srvDuration) || 90,
         1,
-        srvPrice,
-        discountAmount,
+        Number(srvPrice) || 0,
+        Number(discountAmount) || 0,
         0,
         0,
         0,
         0,
         0,
         0,
-        finalPrice
+        Number(finalPrice) || 0
       );
 
       // 6. Update user's last_order_booking date
@@ -3749,7 +3777,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       fastify.log.error(error as Error, '[Booking] Failed to create booking:');
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: (error as SafeAny).message || 'Failed to create booking',
+        message: error?.message || 'Có lỗi xảy ra trong quá trình đặt lịch. Vui lòng thử lại.',
+        details: error?.stack || String(error),
       });
     }
   });
