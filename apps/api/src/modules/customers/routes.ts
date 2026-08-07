@@ -8356,7 +8356,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
       });
 
-      // 3. Query real-time order states for today — get the LATEST active order per KTV
+      // 3. Query real-time orders for today — check both order_service and order_staff_queue
       const orderRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT
@@ -8364,37 +8364,28 @@ export async function customerRoutes(fastify: FastifyInstance) {
           o.order_state as orderState,
           o.booking_date_start as bookStart,
           o.booking_date_end as bookEnd,
-          COALESCE(os.assigned_staff_id, os.booked_staff_id) as ktvId,
+          COALESCE(os.assigned_staff_id, os.booked_staff_id, osq.user_id) as ktvId,
           cust_up.full_name as customerName
         FROM \`order\` o
         LEFT JOIN order_service os ON o.id = os.order_id
+        LEFT JOIN order_staff_queue osq ON osq.order_id = o.id AND osq.date_assigned IS NOT NULL
         LEFT JOIN user_profile cust_up ON o.user_id = cust_up.user_id
         WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
           AND o.order_state NOT IN ('Cancelled', 'Missed')
-          AND COALESCE(os.assigned_staff_id, os.booked_staff_id) IN (${cvStaffIds.join(',')})
+          AND COALESCE(os.assigned_staff_id, os.booked_staff_id, osq.user_id) IN (${cvStaffIds.join(',')})
         ORDER BY o.booking_date_start DESC
       `,
         todayStart,
         todayEnd
       );
 
-      // 4. Build per-CV status: find the most relevant active order
-      // Active states in priority order (most active first)
-      const ACTIVE_STATES = ['ServiceStart', 'ServiceCleaned', 'Consultation', 'ServiceCompleted'];
-      const CHECKOUT_STATE = 'CheckOut';
-
+      // 4. Build per-CV status with accurate time-slot & order_state recognition
       const staffStatuses = cvStaffIds
         .map((staffId: number) => {
           const profile = profileMap.get(staffId);
           if (!profile) return null;
 
           const staffOrders = orderRows.filter((r: SafeAny) => Number(r.ktvId) === staffId);
-
-          // Find the most "active" order for this CV
-          let activeOrder = staffOrders.find((o: SafeAny) => ACTIVE_STATES.includes(o.orderState));
-          if (!activeOrder) {
-            activeOrder = staffOrders.find((o: SafeAny) => o.orderState === CHECKOUT_STATE);
-          }
 
           let liveStatus = 'IDLE';
           let liveLabel = '🟢 Đang rảnh';
@@ -8404,7 +8395,31 @@ export async function customerRoutes(fastify: FastifyInstance) {
           let bookingDateEnd = null;
           let estimatedEndMinutes = null;
 
-          if (activeOrder && ACTIVE_STATES.includes(activeOrder.orderState)) {
+          // Priority 1: Check if there is an order currently running right now (now in [bookStart, bookEnd])
+          const runningOrder = staffOrders.find((o: SafeAny) => {
+            if (!o.bookStart || !o.bookEnd) return false;
+            if (o.orderState === 'Completed') return false;
+            const start = new Date(o.bookStart);
+            const end = new Date(o.bookEnd);
+            // Include a 5-minute buffer before start and 5-minute buffer after end
+            return now >= new Date(start.getTime() - 5 * 60000) && now < new Date(end.getTime() + 5 * 60000);
+          });
+
+          // Priority 2: Check for active order states (ServiceStart, ServiceCleaned, Consultation, Preparation, CheckIn, ServiceCompleted)
+          const ACTIVE_SERVICING_STATES = [
+            'ServiceStart',
+            'ServiceCleaned',
+            'Consultation',
+            'Preparation',
+            'CheckIn',
+            'ServiceCompleted',
+            'ServiceEnd',
+          ];
+          const stateActiveOrder = staffOrders.find((o: SafeAny) => ACTIVE_SERVICING_STATES.includes(o.orderState));
+
+          const activeOrder = runningOrder || stateActiveOrder;
+
+          if (activeOrder) {
             currentOrderId = Number(activeOrder.orderId);
             currentOrderState = activeOrder.orderState;
             currentCustomerName = activeOrder.customerName ? String(activeOrder.customerName).trim() : null;
@@ -8415,38 +8430,29 @@ export async function customerRoutes(fastify: FastifyInstance) {
               estimatedEndMinutes = Math.round((endTime.getTime() - now.getTime()) / 60000);
             }
 
-            switch (activeOrder.orderState) {
-              case 'ServiceStart':
-                liveStatus = 'BUSY';
-                liveLabel = `🔵 Đang nối mi${estimatedEndMinutes != null ? ` (còn ${Math.max(0, estimatedEndMinutes)}p)` : ''}`;
-                break;
-              case 'ServiceCleaned':
-                liveStatus = 'ENDING_SOON';
-                liveLabel = `🧹 Đang vệ sinh mi${estimatedEndMinutes != null ? ` (còn ${Math.max(0, estimatedEndMinutes)}p)` : ''}`;
-                break;
-              case 'Consultation':
-                liveStatus = 'BUSY';
-                liveLabel = `💬 Đang tư vấn`;
-                break;
-              case 'ServiceCompleted':
-                liveStatus = 'ENDING_SOON';
-                liveLabel = `🩺 Xong dịch vụ, chờ CC checkout`;
-                break;
-            }
-
-            // Check for overtime (> 10 minutes past estimated end)
-            if (estimatedEndMinutes != null && estimatedEndMinutes < -10) {
+            if (activeOrder.orderState === 'ServiceCleaned') {
+              liveStatus = 'ENDING_SOON';
+              liveLabel = `🧹 Đang vệ sinh mi${estimatedEndMinutes != null ? ` (còn ${Math.max(0, estimatedEndMinutes)}p)` : ''}`;
+            } else if (activeOrder.orderState === 'Consultation') {
+              liveStatus = 'BUSY';
+              liveLabel = `💬 Đang tư vấn${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
+            } else if (activeOrder.orderState === 'ServiceCompleted') {
+              liveStatus = 'ENDING_SOON';
+              liveLabel = `🩺 Xong dịch vụ, chờ CC checkout`;
+            } else if (estimatedEndMinutes != null && estimatedEndMinutes < -10) {
               liveStatus = 'OVERTIME';
               liveLabel = `🔴 Quá giờ (${Math.abs(estimatedEndMinutes)}p)`;
+            } else if (estimatedEndMinutes != null && estimatedEndMinutes <= 15) {
+              liveStatus = 'ENDING_SOON';
+              liveLabel = `⚡ Sắp xong (còn ${Math.max(0, estimatedEndMinutes)}p)${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
+            } else {
+              liveStatus = 'BUSY';
+              liveLabel = `🔵 Đang nối mi${estimatedEndMinutes != null ? ` (còn ${Math.max(0, estimatedEndMinutes)}p)` : ''}${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
             }
-          } else if (activeOrder && activeOrder.orderState === CHECKOUT_STATE) {
-            // CheckOut = CV is available (checkout is CC's job)
-            liveStatus = 'IDLE';
-            liveLabel = '🟢 Sẵn sàng (khách đang checkout)';
           } else {
-            // Check for upcoming bookings
+            // Check for upcoming bookings today
             const upcomingOrders = staffOrders
-              .filter((o: SafeAny) => o.orderState === 'New' || o.orderState === 'Confirmed')
+              .filter((o: SafeAny) => o.orderState !== 'Completed' && new Date(o.bookStart).getTime() > now.getTime())
               .sort((a: SafeAny, b: SafeAny) => new Date(a.bookStart).getTime() - new Date(b.bookStart).getTime());
 
             if (upcomingOrders.length > 0) {
@@ -8459,7 +8465,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 liveLabel = `🟡 Sắp có khách (${Math.max(0, diffMins)}p nữa)`;
                 currentCustomerName = nextOrder.customerName ? String(nextOrder.customerName).trim() : null;
                 bookingDateEnd = null;
-                estimatedEndMinutes = diffMins;
               }
             }
           }

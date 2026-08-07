@@ -463,30 +463,52 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
     // All Working Staff enriched with 100% Real-Time Availability
     const allWorkingStaffWithAvailability = useMemo(() => {
       const rawList = serverCap?.workingStaffList || [];
-      return rawList
-        .map((staff) => {
-          const staffAppts = dayAppts.filter((a) => Number((a as any).technicianId) === Number(staff.id));
-          const bookedCount = staff.bookedCount !== undefined ? staff.bookedCount : staffAppts.length;
-          const doneCount =
-            staff.doneCount !== undefined
-              ? staff.doneCount
-              : staffAppts.filter((a) => a.orderState === 'Completed').length;
+      const staffMap = new Map<number, any>();
 
-          // Use realtime API data if available (today only), else fallback to computed
-          const realtimeStatus = realtimeData?.staffStatuses?.find((s) => s.staffId === staff.id);
-          const availability = realtimeStatus
-            ? realtimeStatusToAvailability(realtimeStatus)
-            : computeCvAvailability(staff.id, dayAppts, currentDate);
+      rawList.forEach((staff) => {
+        const staffAppts = dayAppts.filter((a) => Number((a as any).technicianId) === Number(staff.id));
+        const bookedCount = staff.bookedCount !== undefined ? staff.bookedCount : staffAppts.length;
+        const doneCount =
+          staff.doneCount !== undefined
+            ? staff.doneCount
+            : staffAppts.filter((a) => a.orderState === 'Completed').length;
 
-          return {
-            ...staff,
-            bookedCount,
-            doneCount,
-            availability,
-            avatarUrl: staff.avatarUrl || realtimeStatus?.avatar || null,
-          };
-        })
-        .sort((a, b) => b.bookedCount - a.bookedCount || b.doneCount - a.doneCount || a.name.localeCompare(b.name));
+        const realtimeStatus = realtimeData?.staffStatuses?.find((s) => s.staffId === staff.id);
+        const availability = realtimeStatus
+          ? realtimeStatusToAvailability(realtimeStatus)
+          : computeCvAvailability(staff.id, dayAppts, currentDate);
+
+        staffMap.set(staff.id, {
+          ...staff,
+          bookedCount,
+          doneCount,
+          availability,
+          avatarUrl: staff.avatarUrl || realtimeStatus?.avatar || null,
+        });
+      });
+
+      // Include any staff from realtimeData who might not be in serverCap.workingStaffList
+      if (realtimeData?.staffStatuses) {
+        realtimeData.staffStatuses.forEach((rt) => {
+          if (!staffMap.has(rt.staffId)) {
+            const availability = realtimeStatusToAvailability(rt);
+            staffMap.set(rt.staffId, {
+              id: rt.staffId,
+              name: rt.name,
+              avatarUrl: rt.avatar,
+              branchName: rt.storeName,
+              shift: 'Ca Full',
+              bookedCount: 0,
+              doneCount: 0,
+              availability,
+            });
+          }
+        });
+      }
+
+      return Array.from(staffMap.values()).sort(
+        (a, b) => b.bookedCount - a.bookedCount || b.doneCount - a.doneCount || a.name.localeCompare(b.name)
+      );
     }, [serverCap?.workingStaffList, dayAppts, currentDate, realtimeData]);
 
     // Real-Time Store Summary Counts
