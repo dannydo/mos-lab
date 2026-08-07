@@ -8340,23 +8340,53 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return { staffStatuses: [], queueByStore: {}, timestamp: nowICT.toISOString() };
       }
 
-      // 2. Get CV profiles with avatar
+      // 2. Query today's queue from order_staff_queue first to collect all staff IDs
+      const queueRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `
+        SELECT osq.id as queueId, osq.client_store_id as storeId, osq.user_id as staffId,
+               osq.order_id as orderId, osq.position, osq.date_assigned as dateAssigned,
+               osq.date_skipped as dateSkipped, osq.date_created as dateCreated
+        FROM order_staff_queue osq
+        WHERE osq.date_created >= ?
+        ORDER BY osq.client_store_id ASC, osq.position ASC
+      `,
+        todayStart
+      );
+
+      // Collect all staff IDs in active config + queue
+      const queuedStaffIds = queueRows.map((q: SafeAny) => Number(q.staffId)).filter(Boolean);
+      const allStaffIds = Array.from(new Set([...cvStaffIds, ...queuedStaffIds]));
+
+      // Current ICT local time string ("YYYY-MM-DD HH:mm:ss")
+      const nowICTStr = nowICT.toISOString().replace('T', ' ').slice(0, 19);
+
+      // 3. Get CV profiles with avatar from legacy user_profile + CRM staff fallback
       const cvProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT user_id, full_name, avatar, client_store_id
         FROM user_profile
-        WHERE user_id IN (${cvStaffIds.join(',')})
-          AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0
+        WHERE user_id IN (${allStaffIds.join(',')})
       `);
+
+      const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
+        where: { id: { in: allStaffIds } },
+        select: { id: true, displayName: true, avatarUrl: true },
+      });
+      const crmStaffMap = new Map(crmStaffList.map((s: SafeAny) => [s.id, s]));
+
       const profileMap = new Map<number, { name: string; avatar: string | null; storeId: number }>();
-      cvProfiles.forEach((p) => {
-        profileMap.set(Number(p.user_id), {
-          name: String(p.full_name || '').trim(),
-          avatar: p.avatar ? String(p.avatar) : null,
-          storeId: Number(p.client_store_id || 6),
-        });
+      allStaffIds.forEach((sid) => {
+        const p = cvProfiles.find((row: SafeAny) => Number(row.user_id) === sid);
+        const crmS = crmStaffMap.get(sid);
+        const name =
+          (p?.full_name ? String(p.full_name).trim() : '') ||
+          (crmS?.displayName ? String(crmS.displayName).trim() : '') ||
+          `CV #${sid}`;
+        const avatar = (p?.avatar ? String(p.avatar) : null) || crmS?.avatarUrl || null;
+        const storeId = Number(p?.client_store_id || 6);
+        profileMap.set(sid, { name, avatar, storeId });
       });
 
-      // 3. Query real-time orders for today — format DATETIME as ICT string to avoid timezone parsing mismatch
+      // 4. Query real-time orders for today — format DATETIME as ICT string to avoid timezone parsing mismatch
       const orderRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT
@@ -8372,17 +8402,35 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_profile cust_up ON o.user_id = cust_up.user_id
         WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
           AND o.order_state NOT IN ('Cancelled', 'Missed')
-          AND COALESCE(os.assigned_staff_id, os.booked_staff_id, osq.user_id) IN (${cvStaffIds.join(',')})
+          AND COALESCE(os.assigned_staff_id, os.booked_staff_id, osq.user_id) IN (${allStaffIds.join(',')})
         ORDER BY o.booking_date_start DESC
       `,
         todayStart,
         todayEnd
       );
 
-      // Current ICT local time string ("YYYY-MM-DD HH:mm:ss")
-      const nowICTStr = nowICT.toISOString().replace('T', ' ').slice(0, 19);
+      // Query upcoming real store bookings today (sorted by booking_date_start ASC)
+      const upcomingStoreOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `
+        SELECT
+          o.id as orderId,
+          o.client_store_id as storeId,
+          o.order_state as orderState,
+          DATE_FORMAT(o.booking_date_start, '%Y-%m-%d %H:%i:%s') as bookStartStr,
+          cust_up.full_name as customerName
+        FROM \`order\` o
+        LEFT JOIN user_profile cust_up ON o.user_id = cust_up.user_id
+        WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
+          AND DATE_FORMAT(o.booking_date_start, '%Y-%m-%d %H:%i:%s') > ?
+          AND o.order_state IN ('New', 'Confirmed')
+        ORDER BY o.booking_date_start ASC
+      `,
+        todayStart,
+        todayEnd,
+        nowICTStr
+      );
 
-      // 4. Build per-CV status with accurate time-slot & order_state recognition
+      // 5. Build per-CV status with accurate time-slot & order_state recognition
       const staffStatuses = cvStaffIds
         .map((staffId: number) => {
           const profile = profileMap.get(staffId);
@@ -8458,7 +8506,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             if (upcomingOrders.length > 0) {
               const nextOrder = upcomingOrders[0];
               const nextStartMs = new Date(nextOrder.bookStartStr.replace(' ', 'T') + '+07:00').getTime();
-              const diffMins = Math.round((nextStartMs - nowICT.getTime()) / 60000);
+              const diffMins = Math.round((nextStartMs - now.getTime()) / 60000);
 
               if (diffMins <= 45) {
                 liveStatus = diffMins <= 15 ? 'UPCOMING' : 'LOCKED';
@@ -8489,28 +8537,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
         })
         .filter(Boolean);
 
-      // 5. Query today's queue from order_staff_queue
-      const queueRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `
-        SELECT osq.id as queueId, osq.client_store_id as storeId, osq.user_id as staffId,
-               osq.order_id as orderId, osq.position, osq.date_assigned as dateAssigned,
-               osq.date_skipped as dateSkipped, osq.date_created as dateCreated
-        FROM order_staff_queue osq
-        WHERE osq.date_created >= ?
-        ORDER BY osq.client_store_id ASC, osq.position ASC
-      `,
-        todayStart
-      );
-
       // 6. Build queue by store — only include entries that are "waiting" (orderId = null, not skipped)
       const queueByStore: Record<number, SafeAny[]> = {};
       const storeIds = [6, 16]; // Đề Thám, Estella Place
 
       storeIds.forEach((sid) => {
+        // Filter upcoming bookings for this store
+        const storeUpcomingBookings = upcomingStoreOrders.filter((o: SafeAny) => Number(o.storeId) === sid);
+
         // Get the latest queue entries for this store (only unassigned = waiting in queue)
         const storeQueue = queueRows
           .filter((q: SafeAny) => Number(q.storeId) === sid && !q.orderId && !q.dateSkipped)
-          .map((q: SafeAny) => {
+          .map((q: SafeAny, idx: number) => {
             const staffId = Number(q.staffId);
             const profile = profileMap.get(staffId);
             const staffStatus = staffStatuses.find((s: SafeAny) => s?.staffId === staffId);
@@ -8520,18 +8558,41 @@ export async function customerRoutes(fastify: FastifyInstance) {
               (o: SafeAny) =>
                 Number(o.ktvId) === staffId &&
                 (o.orderState === 'New' || o.orderState === 'Confirmed') &&
-                new Date(o.bookStart).getTime() > now.getTime()
+                new Date(o.bookStartStr.replace(' ', 'T') + '+07:00').getTime() > now.getTime()
             );
             const nextBooking = upcomingBookings.sort(
-              (a: SafeAny, b: SafeAny) => new Date(a.bookStart).getTime() - new Date(b.bookStart).getTime()
+              (a: SafeAny, b: SafeAny) =>
+                new Date(a.bookStartStr.replace(' ', 'T') + '+07:00').getTime() -
+                new Date(b.bookStartStr.replace(' ', 'T') + '+07:00').getTime()
             )[0];
             const nextBookingInMinutes = nextBooking
-              ? Math.round((new Date(nextBooking.bookStart).getTime() - now.getTime()) / 60000)
+              ? Math.round(
+                  (new Date(nextBooking.bookStartStr.replace(' ', 'T') + '+07:00').getTime() - now.getTime()) / 60000
+                )
               : null;
             const isLockedForBooking = nextBookingInMinutes != null && nextBookingInMinutes <= 45;
 
             // Check if CV is actually available now
             const isAvailableNow = staffStatus ? staffStatus.liveStatus === 'IDLE' : true;
+
+            // Calculate estimated wait time based on actual real booking schedule mapping for queue position
+            let estimatedWaitMinutes: number | null = null;
+            let mappedBookingTime: string | null = null;
+
+            if (isLockedForBooking && nextBookingInMinutes != null) {
+              estimatedWaitMinutes = Math.max(0, nextBookingInMinutes);
+              mappedBookingTime = nextBooking.bookStartStr ? String(nextBooking.bookStartStr).slice(11, 16) : null;
+            } else if (storeUpcomingBookings[idx]) {
+              const booking = storeUpcomingBookings[idx];
+              const startMs = new Date(booking.bookStartStr.replace(' ', 'T') + '+07:00').getTime();
+              const diffMins = Math.round((startMs - now.getTime()) / 60000);
+              estimatedWaitMinutes = Math.max(0, diffMins);
+              mappedBookingTime = booking.bookStartStr ? String(booking.bookStartStr).slice(11, 16) : null;
+            } else {
+              // Beyond scheduled bookings today for this store: leave blank (null)
+              estimatedWaitMinutes = null;
+              mappedBookingTime = null;
+            }
 
             return {
               queueId: Number(q.queueId),
@@ -8544,29 +8605,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
               dateAssigned: null,
               dateCreated: q.dateCreated ? new Date(q.dateCreated).toISOString() : '',
               isAvailableNow,
-              estimatedWaitMinutes: 0, // Will be calculated below
+              estimatedWaitMinutes,
+              mappedBookingTime,
               isLockedForBooking,
               nextBookingInMinutes,
             };
           });
-
-        // Calculate estimated wait time based on queue position
-        // For each CV in queue: if the CVs before them are busy, accumulate their remaining time
-        let accumulatedWait = 0;
-        storeQueue.forEach((entry, idx) => {
-          if (idx === 0) {
-            entry.estimatedWaitMinutes = entry.isAvailableNow ? 0 : 5;
-          } else {
-            // Look at CVs before in queue — if they're busy, the wait increases
-            const prevEntry = storeQueue[idx - 1];
-            if (!prevEntry.isAvailableNow) {
-              const prevStatus = staffStatuses.find((s: SafeAny) => s?.staffId === prevEntry.staffId);
-              const prevRemaining = prevStatus?.estimatedEndMinutes ? Math.max(0, prevStatus.estimatedEndMinutes) : 15; // default 15 min if unknown
-              accumulatedWait += prevRemaining;
-            }
-            entry.estimatedWaitMinutes = accumulatedWait;
-          }
-        });
 
         queueByStore[sid] = storeQueue;
       });

@@ -203,7 +203,8 @@ export interface CvQueueEntry {
   dateCreated: string;
   // Calculated
   isAvailableNow: boolean;
-  estimatedWaitMinutes: number;
+  estimatedWaitMinutes: number | null;
+  mappedBookingTime?: string | null;
   isLockedForBooking: boolean;
   nextBookingInMinutes: number | null;
 }

@@ -295,19 +295,31 @@ const QueueLane: React.FC<QueueLaneProps> = React.memo(({ storeName, storeId, en
             const staffStatus = staffStatuses.find((s) => s.staffId === entry.staffId);
             const borderColor = getQueueBorderColor(entry, staffStatus);
             const bgGlow = getQueueBgGlow(entry);
-            const waitText = entry.estimatedWaitMinutes <= 0 ? '0p' : `~${entry.estimatedWaitMinutes}p`;
+            const waitText =
+              entry.estimatedWaitMinutes == null
+                ? '-'
+                : entry.estimatedWaitMinutes <= 0
+                  ? '0p'
+                  : `~${entry.estimatedWaitMinutes}p`;
 
             const tooltipContent = (
               <div className="text-xs space-y-1 min-w-[140px]">
                 <div className="font-bold">{entry.name}</div>
                 {staffStatus && <div className="text-slate-300">{staffStatus.liveLabel}</div>}
                 {entry.isLockedForBooking && entry.nextBookingInMinutes != null && (
-                  <div className="text-amber-300">🔒 Khách book trong {entry.nextBookingInMinutes}p</div>
+                  <div className="text-amber-300">
+                    🔒 Khách book trong {entry.nextBookingInMinutes}p
+                    {entry.mappedBookingTime ? ` (${entry.mappedBookingTime})` : ''}
+                  </div>
                 )}
                 {staffStatus?.currentCustomerName && (
                   <div className="text-blue-300">👤 {staffStatus.currentCustomerName}</div>
                 )}
-                <div className="text-emerald-300 font-bold tabular-nums">Đợi: {waitText}</div>
+                <div className="text-emerald-300 font-bold tabular-nums">
+                  {entry.estimatedWaitMinutes == null
+                    ? 'Chờ: Chưa có lịch'
+                    : `Chờ tua: ${waitText}${entry.mappedBookingTime ? ` (${entry.mappedBookingTime})` : ''}`}
+                </div>
               </div>
             );
 
@@ -339,11 +351,13 @@ const QueueLane: React.FC<QueueLaneProps> = React.memo(({ storeName, storeId, en
                     </div>
                     <span
                       className={`text-[8px] tabular-nums font-bold leading-none ${
-                        entry.estimatedWaitMinutes <= 0
-                          ? 'text-emerald-400'
-                          : entry.estimatedWaitMinutes <= 15
-                            ? 'text-amber-400'
-                            : 'text-slate-400'
+                        entry.estimatedWaitMinutes == null
+                          ? 'text-slate-500 opacity-60'
+                          : entry.estimatedWaitMinutes <= 0
+                            ? 'text-emerald-400'
+                            : entry.estimatedWaitMinutes <= 15
+                              ? 'text-amber-400'
+                              : 'text-slate-400'
                       }`}
                     >
                       {waitText}

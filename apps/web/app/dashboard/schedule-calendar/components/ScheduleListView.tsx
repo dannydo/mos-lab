@@ -30,7 +30,7 @@ interface ScheduleListViewProps {
   currentPage: number;
   pageSize: number;
   onPageChange: (page: number, pageSize: number) => void;
-  onMakeCall: (phone: string, name: string) => void;
+  onMakeCall?: (phone: string, name: string) => void;
   onViewCustomerDetail?: (customerId: number) => void;
   onReschedule: (appointment: Appointment) => void;
   onCancelBooking?: (orderId: number) => void;
@@ -48,6 +48,7 @@ export default function ScheduleListView({
   onReschedule,
 }: ScheduleListViewProps) {
   const { makeCall } = useOmiCall();
+  const handleMakeCall = onMakeCall || makeCall;
   const { themeMode } = useTheme();
 
   const getStatusTag = (state?: string) => {
@@ -154,7 +155,7 @@ export default function ScheduleListView({
             className="font-semibold text-slate-800 dark:text-slate-100 hover:text-emerald-500 cursor-pointer transition-colors"
             onClick={() =>
               (record.customerId || (record as any).userId) &&
-              onViewCustomerDetail(record.customerId || (record as any).userId)
+              onViewCustomerDetail?.(record.customerId || (record as any).userId)
             }
           >
             {record.customerName || (record as any).userName || 'Chưa cập nhật'}
@@ -288,7 +289,7 @@ export default function ScheduleListView({
                 type="text"
                 size="small"
                 icon={<EyeOutlined />}
-                onClick={() => onViewCustomerDetail(record.customerId || (record as any).userId)}
+                onClick={() => onViewCustomerDetail?.(record.customerId || (record as any).userId)}
               />
             </Tooltip>
           )}
