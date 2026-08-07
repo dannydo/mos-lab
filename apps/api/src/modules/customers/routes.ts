@@ -8408,7 +8408,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         todayEnd
       );
 
-      // Query upcoming real store bookings today (sorted by booking_date_start ASC)
+      // Query real store bookings today (sorted by booking_date_start ASC)
       const upcomingStoreOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT
@@ -8420,13 +8420,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         FROM \`order\` o
         LEFT JOIN user_profile cust_up ON o.user_id = cust_up.user_id
         WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
-          AND DATE_FORMAT(o.booking_date_start, '%Y-%m-%d %H:%i:%s') > ?
           AND o.order_state IN ('New', 'Confirmed')
         ORDER BY o.booking_date_start ASC
       `,
         todayStart,
-        todayEnd,
-        nowICTStr
+        todayEnd
       );
 
       // 5. Build per-CV status with accurate time-slot & order_state recognition
