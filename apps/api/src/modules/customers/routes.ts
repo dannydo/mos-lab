@@ -8340,7 +8340,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return { staffStatuses: [], queueByStore: {}, timestamp: nowICT.toISOString() };
       }
 
-      // 2. Query today's queue from order_staff_queue first to collect all staff IDs
+      // 2. Query today's queue from order_staff_queue for active CV staff IDs
       const queueRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT osq.id as queueId, osq.client_store_id as storeId, osq.user_id as staffId,
@@ -8348,14 +8348,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
                osq.date_skipped as dateSkipped, osq.date_created as dateCreated
         FROM order_staff_queue osq
         WHERE osq.date_created >= ?
+          AND osq.user_id IN (${cvStaffIds.join(',')})
         ORDER BY osq.client_store_id ASC, osq.position ASC
       `,
         todayStart
       );
 
-      // Collect all staff IDs in active config + queue
-      const queuedStaffIds = queueRows.map((q: SafeAny) => Number(q.staffId)).filter(Boolean);
-      const allStaffIds = Array.from(new Set([...cvStaffIds, ...queuedStaffIds]));
+      const allStaffIds = cvStaffIds;
 
       // Current ICT local time string ("YYYY-MM-DD HH:mm:ss")
       const nowICTStr = nowICT.toISOString().replace('T', ' ').slice(0, 19);
