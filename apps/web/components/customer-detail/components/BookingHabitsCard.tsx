@@ -21,7 +21,7 @@ interface BookingHabitsCardProps {
   getRecentVisitTime: (bookings: SafeAny[]) => string;
 }
 
-export const BookingHabitsCard: React.FC<BookingHabitsCardProps> = ({
+export const BookingHabitsCard: React.FC<BookingHabitsCardProps> = React.memo(({
   themeMode,
   bookings,
   getFavoriteBranch,
@@ -141,4 +141,4 @@ export const BookingHabitsCard: React.FC<BookingHabitsCardProps> = ({
       </div>
     </Card>
   );
-};
+});

@@ -52,35 +52,49 @@ export class TeamService {
   }
 
   /**
-   * Read from crm_teams DB first, fallback to crmConfig key
+   * Read from crm_teams DB first, fallback to crmConfig key.
+   * Automatically validates candidate staff IDs against user_profile to exclude disabled, leaved, or deleted staff.
    */
   static async getActiveStaffIdsWithFallback(
     fastify: FastifyInstance,
     teamCode: string,
     fallbackConfigKey: string
   ): Promise<number[]> {
+    let candidateIds: number[] = [];
+
     // 1. Try new DB
     const activeIdsFromTeam = await this.getActiveStaffIds(fastify, teamCode);
     if (activeIdsFromTeam && activeIdsFromTeam.length > 0) {
-      return activeIdsFromTeam;
-    }
-
-    // 2. Fallback to crmConfig
-    try {
-      const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: fallbackConfigKey },
-      });
-      if (configRecord && configRecord.value) {
-        const parsed = JSON.parse(configRecord.value);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((id) => Number(id)).filter((id) => !isNaN(id));
+      candidateIds = activeIdsFromTeam;
+    } else {
+      // 2. Fallback to crmConfig
+      try {
+        const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
+          where: { key: fallbackConfigKey },
+        });
+        if (configRecord && configRecord.value) {
+          const parsed = JSON.parse(configRecord.value);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            candidateIds = parsed.map((id) => Number(id)).filter((id) => !isNaN(id));
+          }
         }
+      } catch (err) {
+        fastify.log.error(err as SafeAny, `Error fetching ${fallbackConfigKey} from crmConfig`);
       }
-    } catch (err) {
-      fastify.log.error(err as SafeAny, `Error fetching ${fallbackConfigKey} from crmConfig`);
     }
 
-    return [];
+    if (candidateIds.length === 0) return [];
+
+    // 3. Filter candidate IDs against legacy user_profile to ensure they are active (is_disabled = 0, is_leaved = 0, is_deleted = 0)
+    try {
+      const activeRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT user_id FROM user_profile WHERE user_id IN (${candidateIds.join(',')}) AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0`
+      );
+      const activeSet = new Set<number>(activeRows.map((r) => Number(r.user_id)));
+      return candidateIds.filter((id) => activeSet.has(id));
+    } catch {
+      return candidateIds;
+    }
   }
 
   /**

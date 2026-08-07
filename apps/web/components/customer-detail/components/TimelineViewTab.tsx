@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Tag, Segmented, Space, Avatar, Empty } from 'antd';
 import { CalendarOutlined, InfoCircleOutlined, EnvironmentOutlined, CheckOutlined } from '@ant-design/icons';
 
@@ -84,7 +84,7 @@ const getDaysDiffText = (bookingDate: string | Date) => {
   return `${Math.abs(diffDays)} ngày nữa`;
 };
 
-export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, notes, calls, themeMode }) => {
+export const TimelineViewTab: React.FC<TimelineViewTabProps> = React.memo(({ bookings, notes, calls, themeMode }) => {
   const [activeSegment, setActiveSegment] = useState<'all' | 'booking' | 'cc' | 'cs'>('all');
 
   // Load selection from localStorage
@@ -111,54 +111,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
     return `general-${y}-${m}-${d}`;
   };
 
-  // --- Grouping Logic ---
-
-  // 1. Initialize maps
-  const groupsMap = new Map<string, GroupedBooking>();
-
-  bookings.forEach((b) => {
-    const bDate = b.bookingDate ? new Date(b.bookingDate) : new Date();
-
-    let formattedDate = 'N/A';
-    if (b.bookingDate) {
-      const d = new Date(b.bookingDate);
-      const dayPrefixes = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-      const dayPrefix = dayPrefixes[d.getDay()];
-      const pad = (n: number) => n.toString().padStart(2, '0');
-      formattedDate = `${dayPrefix}, ${pad(d.getHours())}:${pad(d.getMinutes())}, ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
-    }
-
-    groupsMap.set(String(b.id), {
-      id: String(b.id),
-      bookingDate: bDate,
-      formattedDate,
-      services: b.services || [],
-      branchName: b.branchName,
-      technicianName: b.technicianName,
-      orderState: b.orderState,
-      notes: [],
-    });
-  });
-
-  // 2. Add Booking note
-  bookings.forEach((b: SafeAny) => {
-    if (b.bookingNote && b.bookingNote.trim() !== '') {
-      const group = groupsMap.get(String(b.id));
-      if (group) {
-        group.notes.push({
-          id: `bk-${b.id}`,
-          department: 'BK',
-          staffName: b.bookerName && b.bookerName !== 'Unknown' ? b.bookerName : 'Đặt trực tuyến',
-          note: b.bookingNote,
-          date: b.bookingDate ? new Date(b.bookingDate) : new Date(),
-          formattedTime: 'Đặt lịch',
-          staffAvatar: b.bookerAvatar || null,
-        });
-      }
-    }
-  });
-
-  // Helper to find closest booking within 5 days
+  // Helper to find closest booking within 2 days (48 hours = 172,800,000 ms)
   const findClosestBooking = (dateStr: string | null) => {
     if (!dateStr || bookings.length === 0) return null;
     const targetTime = new Date(dateStr).getTime();
@@ -166,234 +119,260 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
     let minDiff = Infinity;
 
     bookings.forEach((b: SafeAny) => {
-      if (!b.bookingDate) return;
-      const diff = Math.abs(new Date(b.bookingDate).getTime() - targetTime);
+      const dateVal = b.bookingDate || b.bookingDateStart;
+      if (!dateVal) return;
+      const diff = Math.abs(new Date(dateVal).getTime() - targetTime);
       if (diff < minDiff) {
         minDiff = diff;
         closestBooking = b;
       }
     });
 
-    // 5 days = 432,000,000 ms
-    if (minDiff <= 432000000) {
+    if (minDiff <= 172800000) {
       return closestBooking;
     }
     return null;
   };
 
-  // Helper to find the next booking (first booking on or after note date)
-  const findNextBooking = (dateStr: string | null) => {
-    if (!dateStr || bookings.length === 0) return null;
-    const targetTime = new Date(dateStr).getTime();
-    let nextBooking: SafeAny = null;
-    let minDiff = Infinity;
+  const { processedGroups, totalBookingsWithNotes, totalCcWithNotes, totalCsWithNotes, totalAllWithNotes } =
+    useMemo(() => {
+      const groupsMap = new Map<string, GroupedBooking>();
 
-    bookings.forEach((b: SafeAny) => {
-      if (!b.bookingDate) return;
-      const bTime = new Date(b.bookingDate).getTime();
-      const diff = bTime - targetTime;
-      if (diff >= 0 && diff < minDiff) {
-        minDiff = diff;
-        nextBooking = b;
-      }
-    });
+      // 1. Initialize booking groups
+      bookings.forEach((b) => {
+        const bDate = b.bookingDate ? new Date(b.bookingDate) : new Date();
 
-    return nextBooking;
-  };
+        let formattedDate = 'N/A';
+        if (b.bookingDate) {
+          const d = new Date(b.bookingDate);
+          const dayPrefixes = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+          const dayPrefix = dayPrefixes[d.getDay()];
+          const pad = (n: number) => n.toString().padStart(2, '0');
+          formattedDate = `${dayPrefix}, ${pad(d.getHours())}:${pad(d.getMinutes())}, ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+        }
 
-  // 3. Add CC notes (order_note)
-  notes.forEach((n: SafeAny) => {
-    if (n.noteFieldKey !== 'order_note') return;
-
-    let targetBookingId = n.orderId ? String(n.orderId) : null;
-    if (!targetBookingId) {
-      const closest = findClosestBooking(n.dateCreated);
-      if (closest) {
-        targetBookingId = String(closest.id);
-      } else {
-        const nextB = findNextBooking(n.dateCreated);
-        if (nextB) targetBookingId = String(nextB.id);
-      }
-    }
-
-    const item: NoteItem = {
-      id: `cc-${n.id}`,
-      department: 'CC',
-      staffName: n.staffName || 'CC Staff',
-      note: n.note,
-      date: n.dateCreated ? new Date(n.dateCreated) : new Date(),
-      formattedTime: n.dateCreated
-        ? new Date(n.dateCreated).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-        : '',
-      staffAvatar: n.staffAvatar || null,
-    };
-
-    if (targetBookingId && groupsMap.has(targetBookingId)) {
-      groupsMap.get(targetBookingId)!.notes.push(item);
-    } else {
-      const groupKey = getGeneralGroupKey(item.date);
-      let generalGroup = groupsMap.get(groupKey);
-      if (!generalGroup) {
-        generalGroup = {
-          id: groupKey,
-          bookingDate: item.date,
-          formattedDate: 'Ghi chú ngoài lịch',
+        groupsMap.set(String(b.id), {
+          id: String(b.id),
+          bookingDate: bDate,
+          formattedDate,
+          services: b.services || [],
+          branchName: b.branchName,
+          technicianName: b.technicianName,
+          orderState: b.orderState,
           notes: [],
-        };
-        groupsMap.set(groupKey, generalGroup);
-      }
-      generalGroup.notes.push(item);
-    }
-  });
-
-  // 4. Add CS notes (general + call logs)
-  notes.forEach((n: SafeAny) => {
-    if (n.noteFieldKey === 'order_note') return;
-
-    let targetBookingId = n.orderId ? String(n.orderId) : null;
-    if (!targetBookingId) {
-      const closest = findClosestBooking(n.dateCreated);
-      if (closest) {
-        targetBookingId = String(closest.id);
-      } else {
-        const nextB = findNextBooking(n.dateCreated);
-        if (nextB) targetBookingId = String(nextB.id);
-      }
-    }
-
-    const isTouchpoint = n.source === 'loca_touchpoint' || n.source === 'campaign_touchpoint';
-    let noteText = n.note;
-    if (isTouchpoint) {
-      const statusTitle =
-        n.status === 'MESSAGED'
-          ? '💬✓ Nhắn tin'
-          : n.status === 'FAILED'
-            ? '📞❌ Cuộc gọi thất bại'
-            : n.status === 'LOST'
-              ? '💔 Khách từ chối'
-              : '📞✓ Cuộc gọi thành công';
-      const labelStr = n.touchpointLabel ? `[${n.touchpointLabel}] ` : '';
-      noteText = `${labelStr}${statusTitle}: ${n.note}`;
-    }
-
-    const item: NoteItem = {
-      id: `cs-note-${n.id}`,
-      department: 'CS',
-      staffName: n.staffName || 'CS Staff',
-      note: noteText,
-      date: n.dateCreated ? new Date(n.dateCreated) : new Date(),
-      formattedTime: n.dateCreated
-        ? new Date(n.dateCreated).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-        : '',
-      staffAvatar: n.staffAvatar || null,
-    };
-
-    if (targetBookingId && groupsMap.has(targetBookingId)) {
-      groupsMap.get(targetBookingId)!.notes.push(item);
-    } else {
-      const groupKey = getGeneralGroupKey(item.date);
-      let generalGroup = groupsMap.get(groupKey);
-      if (!generalGroup) {
-        generalGroup = {
-          id: groupKey,
-          bookingDate: item.date,
-          formattedDate: 'Ghi chú ngoài lịch',
-          notes: [],
-        };
-        groupsMap.set(groupKey, generalGroup);
-      }
-      generalGroup.notes.push(item);
-    }
-  });
-
-  calls.forEach((c: SafeAny) => {
-    if (!c.note || c.note.trim() === '') return;
-
-    const closest = findClosestBooking(c.createdAt);
-    let targetBookingId = closest ? String(closest.id) : null;
-    if (!targetBookingId) {
-      const nextB = findNextBooking(c.createdAt);
-      if (nextB) targetBookingId = String(nextB.id);
-    }
-
-    const item: NoteItem = {
-      id: `cs-call-${c.id}`,
-      department: 'CS',
-      staffName: c.staffName || 'CSKH',
-      note: `[Cuộc gọi ${c.callType === 'OUTBOUND' ? 'đi' : 'đến'}] ${c.note}`,
-      date: c.createdAt ? new Date(c.createdAt) : new Date(),
-      formattedTime: c.createdAt
-        ? new Date(c.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-        : '',
-      staffAvatar: c.staffAvatar || null,
-    };
-
-    if (targetBookingId && groupsMap.has(targetBookingId)) {
-      groupsMap.get(targetBookingId)!.notes.push(item);
-    } else {
-      const groupKey = getGeneralGroupKey(item.date);
-      let generalGroup = groupsMap.get(groupKey);
-      if (!generalGroup) {
-        generalGroup = {
-          id: groupKey,
-          bookingDate: item.date,
-          formattedDate: 'Ghi chú ngoài lịch',
-          notes: [],
-        };
-        groupsMap.set(groupKey, generalGroup);
-      }
-      generalGroup.notes.push(item);
-    }
-  });
-
-  // Update general group dates to match highest note date for sorting, and set correct formattedDate
-  groupsMap.forEach((group, key) => {
-    if (key.startsWith('general-') && group.notes.length > 0) {
-      const dates = group.notes.map((n) => n.date.getTime());
-      const maxDate = new Date(Math.max(...dates));
-      group.bookingDate = maxDate;
-      const dayPrefixes = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-      const dayPrefix = dayPrefixes[maxDate.getDay()];
-      const pad = (n: number) => n.toString().padStart(2, '0');
-      group.formattedDate = `Ghi chú ngoài lịch (${dayPrefix}, ${pad(maxDate.getDate())}/${pad(maxDate.getMonth() + 1)})`;
-    }
-  });
-
-  // --- Filter and Sort Groups ---
-  const rawGroups = Array.from(groupsMap.values());
-
-  const processedGroups = rawGroups
-    .map((group) => {
-      // Filter notes in group based on segment
-      const filteredNotes = group.notes.filter((n) => {
-        if (activeSegment === 'all') return true;
-        const targetDept = activeSegment === 'booking' ? 'bk' : activeSegment;
-        return n.department.toLowerCase() === targetDept;
+        });
       });
 
-      // Sort notes: BK first, then CC, then CS
-      const sortedNotes = [...filteredNotes].sort((a, b) => {
-        const prioA = DEPT_PRIORITY[a.department] || 99;
-        const prioB = DEPT_PRIORITY[b.department] || 99;
-        if (prioA !== prioB) return prioA - prioB;
-        return a.date.getTime() - b.date.getTime();
+      // 2. Add Booking note
+      bookings.forEach((b: SafeAny) => {
+        if (b.bookingNote && b.bookingNote.trim() !== '') {
+          const group = groupsMap.get(String(b.id));
+          if (group) {
+            group.notes.push({
+              id: `bk-${b.id}`,
+              department: 'BK',
+              staffName: b.bookerName && b.bookerName !== 'Unknown' ? b.bookerName : 'Đặt trực tuyến',
+              note: b.bookingNote,
+              date: b.bookingDate ? new Date(b.bookingDate) : new Date(),
+              formattedTime: 'Đặt lịch',
+              staffAvatar: b.bookerAvatar || null,
+            });
+          }
+        }
       });
+
+      // 3. Add CC notes (order_note)
+      notes.forEach((n: SafeAny) => {
+        if (n.noteFieldKey !== 'order_note') return;
+
+        let targetBookingId = n.orderId && groupsMap.has(String(n.orderId)) ? String(n.orderId) : null;
+        if (!targetBookingId) {
+          const closest = findClosestBooking(n.dateCreated);
+          if (closest && groupsMap.has(String(closest.id))) {
+            targetBookingId = String(closest.id);
+          }
+        }
+
+        const item: NoteItem = {
+          id: `cc-${n.id}`,
+          department: 'CC',
+          staffName: n.staffName || 'CC Staff',
+          note: n.note,
+          date: n.dateCreated ? new Date(n.dateCreated) : new Date(),
+          formattedTime: n.dateCreated
+            ? new Date(n.dateCreated).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+            : '',
+          staffAvatar: n.staffAvatar || null,
+        };
+
+        if (targetBookingId && groupsMap.has(targetBookingId)) {
+          groupsMap.get(targetBookingId)!.notes.push(item);
+        } else {
+          const groupKey = getGeneralGroupKey(item.date);
+          let generalGroup = groupsMap.get(groupKey);
+          if (!generalGroup) {
+            generalGroup = {
+              id: groupKey,
+              bookingDate: item.date,
+              formattedDate: 'Ghi chú ngoài lịch',
+              notes: [],
+            };
+            groupsMap.set(groupKey, generalGroup);
+          }
+          generalGroup.notes.push(item);
+        }
+      });
+
+      // 4. Add CS notes (general + call logs)
+      notes.forEach((n: SafeAny) => {
+        if (n.noteFieldKey === 'order_note') return;
+
+        let targetBookingId = n.orderId && groupsMap.has(String(n.orderId)) ? String(n.orderId) : null;
+        if (!targetBookingId) {
+          const closest = findClosestBooking(n.dateCreated);
+          if (closest && groupsMap.has(String(closest.id))) {
+            targetBookingId = String(closest.id);
+          }
+        }
+
+        const isTouchpoint = n.source === 'loca_touchpoint' || n.source === 'campaign_touchpoint';
+        let noteText = n.note;
+        if (isTouchpoint) {
+          const statusTitle =
+            n.status === 'MESSAGED'
+              ? '💬✓ Nhắn tin'
+              : n.status === 'FAILED'
+                ? '📞❌ Cuộc gọi thất bại'
+                : n.status === 'LOST'
+                  ? '💔 Khách từ chối'
+                  : '📞✓ Cuộc gọi thành công';
+          const labelStr = n.touchpointLabel ? `[${n.touchpointLabel}] ` : '';
+          noteText = `${labelStr}${statusTitle}: ${n.note}`;
+        }
+
+        const item: NoteItem = {
+          id: `cs-note-${n.id}`,
+          department: 'CS',
+          staffName: n.staffName || 'CS Staff',
+          note: noteText,
+          date: n.dateCreated ? new Date(n.dateCreated) : new Date(),
+          formattedTime: n.dateCreated
+            ? new Date(n.dateCreated).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+            : '',
+          staffAvatar: n.staffAvatar || null,
+        };
+
+        if (targetBookingId && groupsMap.has(targetBookingId)) {
+          groupsMap.get(targetBookingId)!.notes.push(item);
+        } else {
+          const groupKey = getGeneralGroupKey(item.date);
+          let generalGroup = groupsMap.get(groupKey);
+          if (!generalGroup) {
+            generalGroup = {
+              id: groupKey,
+              bookingDate: item.date,
+              formattedDate: 'Ghi chú ngoài lịch',
+              notes: [],
+            };
+            groupsMap.set(groupKey, generalGroup);
+          }
+          generalGroup.notes.push(item);
+        }
+      });
+
+      calls.forEach((c: SafeAny) => {
+        if (!c.note || c.note.trim() === '') return;
+
+        const closest = findClosestBooking(c.createdAt);
+        let targetBookingId = closest && groupsMap.has(String(closest.id)) ? String(closest.id) : null;
+
+        const item: NoteItem = {
+          id: `cs-call-${c.id}`,
+          department: 'CS',
+          staffName: c.staffName || 'CSKH',
+          note: `[Cuộc gọi ${c.callType === 'OUTBOUND' ? 'đi' : 'đến'}] ${c.note}`,
+          date: c.createdAt ? new Date(c.createdAt) : new Date(),
+          formattedTime: c.createdAt
+            ? new Date(c.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+            : '',
+          staffAvatar: c.staffAvatar || null,
+        };
+
+        if (targetBookingId && groupsMap.has(targetBookingId)) {
+          groupsMap.get(targetBookingId)!.notes.push(item);
+        } else {
+          const groupKey = getGeneralGroupKey(item.date);
+          let generalGroup = groupsMap.get(groupKey);
+          if (!generalGroup) {
+            generalGroup = {
+              id: groupKey,
+              bookingDate: item.date,
+              formattedDate: 'Ghi chú ngoài lịch',
+              notes: [],
+            };
+            groupsMap.set(groupKey, generalGroup);
+          }
+          generalGroup.notes.push(item);
+        }
+      });
+
+      // Update general group dates to match highest note date for sorting, and set correct formattedDate
+      groupsMap.forEach((group, key) => {
+        if (key.startsWith('general-') && group.notes.length > 0) {
+          const dates = group.notes.map((n) => n.date.getTime());
+          const maxDate = new Date(Math.max(...dates));
+          group.bookingDate = maxDate;
+          const dayPrefixes = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+          const dayPrefix = dayPrefixes[maxDate.getDay()];
+          const pad = (n: number) => n.toString().padStart(2, '0');
+          group.formattedDate = `Ghi chú ngoài lịch (${dayPrefix}, ${pad(maxDate.getDate())}/${pad(maxDate.getMonth() + 1)})`;
+        }
+      });
+
+      // --- Filter and Sort Groups ---
+      const rawGroups = Array.from(groupsMap.values());
+
+      const processed = rawGroups
+        .map((group) => {
+          // Filter notes in group based on segment
+          const filteredNotes = group.notes.filter((n) => {
+            if (activeSegment === 'all') return true;
+            const targetDept = activeSegment === 'booking' ? 'bk' : activeSegment;
+            return n.department.toLowerCase() === targetDept;
+          });
+
+          // Sort notes: BK first, then CC, then CS
+          const sortedNotes = [...filteredNotes].sort((a, b) => {
+            const prioA = DEPT_PRIORITY[a.department] || 99;
+            const prioB = DEPT_PRIORITY[b.department] || 99;
+            if (prioA !== prioB) return prioA - prioB;
+            return a.date.getTime() - b.date.getTime();
+          });
+
+          return {
+            ...group,
+            notes: sortedNotes,
+          };
+        })
+        // Only show groups that have notes after filtering
+        .filter((group) => group.notes.length > 0)
+        // Sort groups newest booking first
+        .sort((a, b) => b.bookingDate.getTime() - a.bookingDate.getTime());
+
+      // Count totals for badges
+      const totalBookingsWithNotes = rawGroups.filter((g) => g.notes.some((n) => n.department === 'BK')).length;
+      const totalCcWithNotes = rawGroups.filter((g) => g.notes.some((n) => n.department === 'CC')).length;
+      const totalCsWithNotes = rawGroups.filter((g) => g.notes.some((n) => n.department === 'CS')).length;
+      const totalAllWithNotes = rawGroups.filter((g) => g.notes.length > 0).length;
 
       return {
-        ...group,
-        notes: sortedNotes,
+        processedGroups: processed,
+        totalBookingsWithNotes,
+        totalCcWithNotes,
+        totalCsWithNotes,
+        totalAllWithNotes,
       };
-    })
-    // Only show groups that have notes after filtering
-    .filter((group) => group.notes.length > 0)
-    // Sort groups newest booking first
-    .sort((a, b) => b.bookingDate.getTime() - a.bookingDate.getTime());
-
-  // Count totals for badges
-  const totalBookingsWithNotes = rawGroups.filter((g) => g.notes.some((n) => n.department === 'BK')).length;
-  const totalCcWithNotes = rawGroups.filter((g) => g.notes.some((n) => n.department === 'CC')).length;
-  const totalCsWithNotes = rawGroups.filter((g) => g.notes.some((n) => n.department === 'CS')).length;
-  const totalAllWithNotes = rawGroups.filter((g) => g.notes.length > 0).length;
+    }, [bookings, notes, calls, activeSegment]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -670,4 +649,4 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = ({ bookings, note
       </div>
     </div>
   );
-};
+});

@@ -9,7 +9,7 @@ interface ProfileDetailsCardProps {
   themeMode: 'light' | 'dark';
 }
 
-export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ customer, themeMode }) => {
+export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = React.memo(({ customer, themeMode }) => {
   return (
     <Card
       title={
@@ -66,4 +66,4 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ customer
       </div>
     </Card>
   );
-};
+});

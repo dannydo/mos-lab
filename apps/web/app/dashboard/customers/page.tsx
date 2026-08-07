@@ -364,6 +364,12 @@ function CustomersPageContent() {
               setReferralCountMin={data.setReferralCountMin}
               referralCountMax={data.referralCountMax}
               setReferralCountMax={data.setReferralCountMax}
+              callStatuses={data.callStatuses}
+              setCallStatuses={data.setCallStatuses}
+              lastCallDaysMin={data.lastCallDaysMin}
+              setLastCallDaysMin={data.setLastCallDaysMin}
+              lastCallDaysMax={data.lastCallDaysMax}
+              setLastCallDaysMax={data.setLastCallDaysMax}
               assignedStaffId={data.assignedStaffId}
               setAssignedStaffId={data.setAssignedStaffId}
               assignedDaysMin={data.assignedDaysMin}

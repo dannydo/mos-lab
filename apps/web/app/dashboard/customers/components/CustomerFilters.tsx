@@ -13,6 +13,7 @@ import {
   SaveOutlined,
   PushpinFilled,
   AimOutlined,
+  PhoneOutlined,
 } from '@ant-design/icons';
 import { vietnameseSearchFilter } from '@mos-lab/shared';
 
@@ -58,6 +59,12 @@ interface CustomerFiltersProps {
   setReferralCountMin: (val: number | undefined) => void;
   referralCountMax: number | undefined;
   setReferralCountMax: (val: number | undefined) => void;
+  callStatuses?: string[];
+  setCallStatuses?: (val: string[]) => void;
+  lastCallDaysMin?: number | undefined;
+  setLastCallDaysMin?: (val: number | undefined) => void;
+  lastCallDaysMax?: number | undefined;
+  setLastCallDaysMax?: (val: number | undefined) => void;
   assignedStaffId: string;
   setAssignedStaffId: (val: string) => void;
   assignedDaysMin?: number | undefined;
@@ -119,6 +126,12 @@ const CustomerFilters = React.memo(function CustomerFilters({
   setReferralCountMin,
   referralCountMax,
   setReferralCountMax,
+  callStatuses = [],
+  setCallStatuses,
+  lastCallDaysMin,
+  setLastCallDaysMin,
+  lastCallDaysMax,
+  setLastCallDaysMax,
   assignedStaffId,
   setAssignedStaffId,
   assignedDaysMin,
@@ -161,6 +174,9 @@ const CustomerFilters = React.memo(function CustomerFilters({
     referralUsed,
     referralCountMin,
     referralCountMax,
+    callStatuses: callStatuses.length > 0 ? callStatuses.join(',') : undefined,
+    lastCallDaysMin,
+    lastCallDaysMax,
     assignedStaffId,
     assignedDaysMin,
     assignedDaysMax,
@@ -232,6 +248,15 @@ const CustomerFilters = React.memo(function CustomerFilters({
         break;
       case 'ageMax':
         if (setAgeMax) setAgeMax(undefined);
+        break;
+      case 'callStatuses':
+        if (setCallStatuses) setCallStatuses([]);
+        break;
+      case 'lastCallDaysMin':
+        if (setLastCallDaysMin) setLastCallDaysMin(undefined);
+        break;
+      case 'lastCallDaysMax':
+        if (setLastCallDaysMax) setLastCallDaysMax(undefined);
         break;
     }
     setActiveFilterId(null);
@@ -1032,6 +1057,80 @@ const CustomerFilters = React.memo(function CustomerFilters({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* CARD 5: LỊCH SỬ & TRẠNG THÁI CUỘC GỌI */}
+          <div
+            style={{
+              background: themeMode === 'dark' ? '#141c2e' : '#ffffff',
+              border: `1px solid ${themeMode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+              borderRadius: '12px',
+              padding: '18px',
+              boxShadow: themeMode === 'dark' ? '0 4px 12px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.05)',
+            }}
+          >
+            <FilterSectionHeader
+              icon={<PhoneOutlined style={{ fontSize: '14px', color: '#3b82f6' }} />}
+              title="Lịch sử & Trạng thái Cuộc gọi"
+              themeMode={themeMode}
+            />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <Form.Item
+                  label={
+                    <span style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                      Trạng thái Cuộc gọi gần nhất (Chọn nhiều)
+                    </span>
+                  }
+                  style={{ marginBottom: 0 }}
+                >
+                  <Select
+                    mode="multiple"
+                    allowClear
+                    placeholder="Chọn các trạng thái cuộc gọi..."
+                    value={callStatuses}
+                    style={{ width: '100%' }}
+                    onChange={(val) => {
+                      if (setCallStatuses) setCallStatuses(val || []);
+                      setActiveFilterId(null);
+                    }}
+                    maxTagCount="responsive"
+                    options={[
+                      { value: 'BOOKED', label: '📅 BOOKED (Đã đặt hẹn)' },
+                      { value: 'AGREED', label: '✅ AGREED (Đã đồng ý)' },
+                      { value: 'BUSY', label: '📵 BUSY (Bận máy)' },
+                      { value: 'NO_ANSWER', label: '🔇 NO_ANSWER (Không nghe máy)' },
+                      { value: 'CALLBACK', label: '⏰ CALLBACK (Hẹn gọi lại)' },
+                      { value: 'WRONG_NUMBER', label: '⚠️ WRONG_NUMBER (Sai số / Tắt máy)' },
+                      { value: 'REJECTED', label: '❌ REJECTED (Từ chối / Khách hủy)' },
+                      { value: 'CONSIDERING', label: '🤔 CONSIDERING (Cần suy nghĩ)' },
+                      { value: 'NOT_CALLED', label: '⚪ NOT_CALLED (Chưa từng gọi)' },
+                    ]}
+                  />
+                </Form.Item>
+              </div>
+
+              <div>
+                <RangeFilterField
+                  minLabel="Ngày gọi gần nhất (ít nhất)"
+                  maxLabel="Ngày gọi gần nhất (nhiều nhất)"
+                  minPlaceholder="VD: 1 ngày"
+                  maxPlaceholder="VD: 30 ngày"
+                  minValue={lastCallDaysMin}
+                  maxValue={lastCallDaysMax}
+                  onChangeMin={(val: number | undefined) => {
+                    if (setLastCallDaysMin) setLastCallDaysMin(val);
+                    setActiveFilterId(null);
+                  }}
+                  onChangeMax={(val: number | undefined) => {
+                    if (setLastCallDaysMax) setLastCallDaysMax(val);
+                    setActiveFilterId(null);
+                  }}
+                  themeMode={themeMode}
+                />
+              </div>
+            </div>
           </div>
         </Form>
       </Drawer>

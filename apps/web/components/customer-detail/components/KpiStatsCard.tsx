@@ -13,7 +13,7 @@ interface KpiStatsCardProps {
   onOpenRevenueModal: () => void;
 }
 
-export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
+export const KpiStatsCard: React.FC<KpiStatsCardProps> = React.memo(({
   stats,
   themeMode,
   onOpenGemModal,
@@ -245,4 +245,4 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = ({
       </div>
     </Card>
   );
-};
+});

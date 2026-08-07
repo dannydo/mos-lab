@@ -17,7 +17,7 @@ interface ComboBalancesCardProps {
   onOpenComboModal: () => void;
 }
 
-export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = ({
+export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(({
   comboBalances,
   customerName,
   themeMode,
@@ -242,4 +242,4 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = ({
       />
     </>
   );
-};
+});

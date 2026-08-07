@@ -39,6 +39,9 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
     birthdayPreset,
     ageMin,
     ageMax,
+    callStatuses,
+    lastCallDaysMin,
+    lastCallDaysMax,
   } = filterParams;
 
   const isAnyActive =
@@ -46,7 +49,10 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
     dobMonth !== undefined ||
     birthdayPreset !== undefined ||
     ageMin !== undefined ||
-    ageMax !== undefined;
+    ageMax !== undefined ||
+    (callStatuses && callStatuses.length > 0) ||
+    lastCallDaysMin !== undefined ||
+    lastCallDaysMax !== undefined;
 
   if (!isAnyActive) return null;
 
@@ -197,6 +203,24 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
         {ageMax !== undefined && (
           <Tag color="geekblue" closable onClose={() => onClearFilter('ageMax')}>
             Tuổi &lt;= {ageMax}
+          </Tag>
+        )}
+
+        {callStatuses && callStatuses.length > 0 && (
+          <Tag color="volcano" closable onClose={() => onClearFilter('callStatuses')}>
+            Trạng thái gọi: {callStatuses.split(',').join(', ')}
+          </Tag>
+        )}
+
+        {lastCallDaysMin !== undefined && (
+          <Tag color="volcano" closable onClose={() => onClearFilter('lastCallDaysMin')}>
+            Gọi gần nhất &gt;= {lastCallDaysMin} ngày
+          </Tag>
+        )}
+
+        {lastCallDaysMax !== undefined && (
+          <Tag color="volcano" closable onClose={() => onClearFilter('lastCallDaysMax')}>
+            Gọi gần nhất &lt;= {lastCallDaysMax} ngày
           </Tag>
         )}
       </Space>

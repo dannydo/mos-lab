@@ -134,6 +134,9 @@ export interface ListCustomersParams {
   birthdayPreset?: 'today' | 'this_month' | 'next_month';
   ageMin?: number | string;
   ageMax?: number | string;
+  callStatuses?: string;
+  lastCallDaysMin?: number | string;
+  lastCallDaysMax?: number | string;
   trash?: string | boolean;
   ids?: string;
 }

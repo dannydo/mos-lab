@@ -148,6 +148,32 @@ import {
   UpdateCsCampaignDto,
 } from '@mos-lab/shared';
 
+// In-flight request deduplication & short-term cache map for GET endpoints
+const inFlightRequests = new Map<string, { promise: Promise<any>; timestamp: number }>();
+
+export async function dedupeApiGet<T>(url: string, params?: Record<string, unknown>, ttlMs: number = 3000): Promise<T> {
+  const cacheKey = `${url}_${JSON.stringify(params || {})}`;
+  const now = Date.now();
+  const existing = inFlightRequests.get(cacheKey);
+
+  if (existing && now - existing.timestamp < ttlMs) {
+    return existing.promise as Promise<T>;
+  }
+
+  const promise = (async () => {
+    try {
+      const response = await api.get(url, { params });
+      return response.data as T;
+    } catch (err) {
+      inFlightRequests.delete(cacheKey);
+      throw err;
+    }
+  })();
+
+  inFlightRequests.set(cacheKey, { promise, timestamp: now });
+  return promise as Promise<T>;
+}
+
 // API Client SDK for mos-lab
 export const apiClient = {
   auth: {
@@ -421,8 +447,8 @@ export const apiClient = {
       return response.data;
     },
     getAppointments: async (params: Record<string, unknown>): Promise<ListAppointmentsResponse> => {
-      const response = await api.get('/customers/appointments', { params });
-      return response.data;
+      const data = await dedupeApiGet<ListAppointmentsResponse>('/customers/appointments', params, 2000);
+      return data;
     },
     getMissedSummary: async (params?: {
       dateFrom?: string;
@@ -573,8 +599,8 @@ export const apiClient = {
       scope: 'all' | 'me' | 'nyc';
       staffId?: string;
     }): Promise<DailyCallEntry[]> => {
-      const response = await api.get('/calls/daily', { params });
-      return response.data;
+      const data = await dedupeApiGet<DailyCallEntry[]>('/calls/daily', params as Record<string, unknown>, 5000);
+      return data;
     },
   },
 
@@ -762,8 +788,8 @@ export const apiClient = {
   staff: {
     list: async (params?: Record<string, unknown>): Promise<Staff[]> => {
       try {
-        const response = await api.get('/staff', { params });
-        return Array.isArray(response.data) ? response.data : [];
+        const data = await dedupeApiGet<Staff[]>('/staff', params, 10000);
+        return Array.isArray(data) ? data : [];
       } catch (_err) {
         return [];
       }
@@ -1126,8 +1152,8 @@ export const apiClient = {
       return response.data;
     },
     getPendingBatches: async (): Promise<CustomerAllocationBatch[]> => {
-      const response = await api.get('/allocation/pending');
-      return response.data;
+      const data = await dedupeApiGet<CustomerAllocationBatch[]>('/allocation/pending', undefined, 5000);
+      return data;
     },
     getMyBatches: async (): Promise<BookerAllocationBatchSummary[]> => {
       const response = await api.get('/allocation/my-batches');
@@ -1175,8 +1201,8 @@ export const apiClient = {
 
   campaigns: {
     list: async (params?: ListCampaignsParams) => {
-      const response = await api.get('/campaigns', { params });
-      return response.data;
+      const data = await dedupeApiGet<unknown[]>('/campaigns', params as Record<string, unknown>, 5000);
+      return data;
     },
     getById: async (id: number) => {
       const response = await api.get(`/campaigns/${id}`);

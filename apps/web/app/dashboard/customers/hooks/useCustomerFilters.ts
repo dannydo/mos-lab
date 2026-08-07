@@ -66,6 +66,11 @@ export const useCustomerFilters = (
   const [ageMin, setAgeMin] = useState<number | undefined>(undefined);
   const [ageMax, setAgeMax] = useState<number | undefined>(undefined);
 
+  // Call status & last call date filters state
+  const [callStatuses, setCallStatuses] = useState<string[]>([]);
+  const [lastCallDaysMin, setLastCallDaysMin] = useState<number | undefined>(undefined);
+  const [lastCallDaysMax, setLastCallDaysMax] = useState<number | undefined>(undefined);
+
   const prevScopeRef = useRef<string | null>(scopeParam);
   const prevUserRoleRef = useRef<string | undefined>(currentUser?.role);
 
@@ -392,6 +397,9 @@ export const useCustomerFilters = (
     setBirthdayPreset(undefined);
     setAgeMin(undefined);
     setAgeMax(undefined);
+    setCallStatuses([]);
+    setLastCallDaysMin(undefined);
+    setLastCallDaysMax(undefined);
     setRetainedOnly(false);
     setFilterCustomerIds(undefined);
 
@@ -507,6 +515,9 @@ export const useCustomerFilters = (
       birthdayPreset,
       ageMin,
       ageMax,
+      callStatuses: callStatuses.length > 0 ? callStatuses.join(',') : undefined,
+      lastCallDaysMin,
+      lastCallDaysMax,
     }),
     [
       activeTab,
@@ -535,6 +546,9 @@ export const useCustomerFilters = (
       birthdayPreset,
       ageMin,
       ageMax,
+      callStatuses,
+      lastCallDaysMin,
+      lastCallDaysMax,
     ]
   );
 
@@ -578,6 +592,12 @@ export const useCustomerFilters = (
     setAssignedStaffId,
     assignedDaysMin,
     setAssignedDaysMin,
+    callStatuses,
+    setCallStatuses,
+    lastCallDaysMin,
+    setLastCallDaysMin,
+    lastCallDaysMax,
+    setLastCallDaysMax,
     assignedDaysMax,
     setAssignedDaysMax,
     retainedOnly,

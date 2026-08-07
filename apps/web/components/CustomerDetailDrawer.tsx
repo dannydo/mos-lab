@@ -241,6 +241,10 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       return null;
     };
 
+    if (notes.length === 0 && calls.length === 0) {
+      return bookingIdsWithNotes.size;
+    }
+
     let hasGeneralNotes = false;
 
     notes.forEach((n: SafeAny) => {

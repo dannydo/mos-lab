@@ -24,7 +24,7 @@ interface NotesTabProps {
   onLoadMore?: () => void;
 }
 
-export const NotesTab: React.FC<NotesTabProps> = ({
+export const NotesTab: React.FC<NotesTabProps> = React.memo(({
   notes,
   themeMode,
   currentUser,
@@ -207,4 +207,4 @@ export const NotesTab: React.FC<NotesTabProps> = ({
       )}
     </div>
   );
-};
+});

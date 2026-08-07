@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Tag, Button, Skeleton, Tooltip } from 'antd';
 import { CloseCircleOutlined, CalendarOutlined, CheckOutlined, HistoryOutlined, EditOutlined } from '@ant-design/icons';
 import { CancelBookingModal } from '../../booking/CancelBookingModal';
@@ -93,7 +93,7 @@ export const BookingsTab: React.FC<
     onLoadMore?: () => void;
     onRefreshDetails?: () => void;
   }
-> = ({
+> = React.memo(({
   bookings,
   notes,
   themeMode,
@@ -114,43 +114,47 @@ export const BookingsTab: React.FC<
   const [auditDrawerOpen, setAuditDrawerOpen] = useState(false);
   const [selectedOrderIdForAudit, setSelectedOrderIdForAudit] = useState<{ id: number; key?: string } | null>(null);
 
-  const notesByBookingMap = new Map<string, SafeAny[]>();
+  const notesByBookingMap = useMemo(() => {
+    const map = new Map<string, SafeAny[]>();
 
-  if (notes && notes.length > 0 && bookings.length > 0) {
-    notes.forEach((n: SafeAny) => {
-      let targetBookingId: string | null = n.orderId ? String(n.orderId) : null;
+    if (notes && notes.length > 0 && bookings.length > 0) {
+      notes.forEach((n: SafeAny) => {
+        let targetBookingId: string | null = n.orderId ? String(n.orderId) : null;
 
-      if (!targetBookingId) {
-        const nDate = safeParseDate(n.dateCreated);
-        if (nDate) {
-          const nTime = nDate.getTime();
-          let closestB: SafeAny = null;
-          let minDiff = Infinity;
+        if (!targetBookingId) {
+          const nDate = safeParseDate(n.dateCreated);
+          if (nDate) {
+            const nTime = nDate.getTime();
+            let closestB: SafeAny = null;
+            let minDiff = Infinity;
 
-          bookings.forEach((b: SafeAny) => {
-            const bDate = safeParseDate(b.bookingDate);
-            if (!bDate) return;
-            const diff = Math.abs(bDate.getTime() - nTime);
-            if (diff < minDiff) {
-              minDiff = diff;
-              closestB = b;
+            bookings.forEach((b: SafeAny) => {
+              const bDate = safeParseDate(b.bookingDate);
+              if (!bDate) return;
+              const diff = Math.abs(bDate.getTime() - nTime);
+              if (diff < minDiff) {
+                minDiff = diff;
+                closestB = b;
+              }
+            });
+
+            // Only attach to booking card if note was created within 12 hours of appointment
+            if (closestB && minDiff <= 12 * 60 * 60 * 1000) {
+              targetBookingId = String(closestB.id);
             }
-          });
-
-          // Only attach to booking card if note was created within 12 hours of appointment
-          if (closestB && minDiff <= 12 * 60 * 60 * 1000) {
-            targetBookingId = String(closestB.id);
           }
         }
-      }
 
-      if (targetBookingId) {
-        const list = notesByBookingMap.get(targetBookingId) || [];
-        list.push(n);
-        notesByBookingMap.set(targetBookingId, list);
-      }
-    });
-  }
+        if (targetBookingId) {
+          const list = map.get(targetBookingId) || [];
+          list.push(n);
+          map.set(targetBookingId, list);
+        }
+      });
+    }
+
+    return map;
+  }, [notes, bookings]);
 
   return (
     <div
@@ -623,4 +627,4 @@ export const BookingsTab: React.FC<
       />
     </div>
   );
-};
+});

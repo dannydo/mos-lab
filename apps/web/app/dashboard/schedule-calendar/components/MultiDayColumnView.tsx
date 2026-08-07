@@ -22,6 +22,7 @@ import { Appointment } from '@mos-lab/shared';
 import { formatVND } from '../../../../lib/format-utils';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 import { useTheme } from '../../../../context/ThemeContext';
+import { CvScheduleDrawer } from './CvScheduleDrawer';
 
 const { Text, Title } = Typography;
 
@@ -114,51 +115,9 @@ function MultiDayColumnView({
   const { themeMode } = useTheme();
   const [draggedAppt, setDraggedAppt] = useState<Appointment | null>(null);
 
-  // Saved resizable Popover dimensions (Default 544px - reduced 20% from 680px)
-  const [popoverDimensions, setPopoverDimensions] = useState<{ width: number; height: number }>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('mos_lab_cv_popover_size');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed?.width && parsed?.height && parsed.width >= 400 && parsed.height >= 300) {
-            return { width: Number(parsed.width), height: Number(parsed.height) };
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-    return { width: 544, height: 520 };
-  });
-
-  const observerRef = useRef<ResizeObserver | null>(null);
-
-  const setPopoverRef = useCallback((node: HTMLDivElement | null) => {
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-      observerRef.current = null;
-    }
-    if (node) {
-      const observer = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const rect = entry.target.getBoundingClientRect();
-          const w = Math.round(rect.width);
-          const h = Math.round(rect.height);
-          if (w >= 280 && h >= 300) {
-            const newSize = { width: w, height: h };
-            try {
-              localStorage.setItem('mos_lab_cv_popover_size', JSON.stringify(newSize));
-            } catch (e) {
-              // ignore
-            }
-          }
-        }
-      });
-      observer.observe(node);
-      observerRef.current = observer;
-    }
-  }, []);
+  // Side Slide Drawer state for Lịch CV
+  const [cvDrawerOpen, setCvDrawerOpen] = useState(false);
+  const [selectedCvDrawerDate, setSelectedCvDrawerDate] = useState<dayjs.Dayjs>(startDate);
 
   // Generate array of days
   const daysList = React.useMemo(() => {
@@ -265,222 +224,6 @@ function MultiDayColumnView({
           const capInfo = getCapacityBadge(dayAppts.length, dynamicMaxCapacity);
           const isToday = day.isSame(dayjs(), 'day');
 
-          const cvListPopoverContent = (
-            <div
-              ref={setPopoverRef}
-              style={{
-                width: `${popoverDimensions.width}px`,
-                height: `${popoverDimensions.height}px`,
-                resize: 'both',
-                overflow: 'hidden',
-                minWidth: '420px',
-                minHeight: '350px',
-                maxWidth: '900px',
-                maxHeight: '85vh',
-                backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-              }}
-              className="p-3 space-y-3 relative group text-xs flex flex-col h-full select-none rounded-xl border border-slate-700/80 shadow-2xl text-slate-800 dark:text-slate-100"
-            >
-              <div className="font-bold text-slate-800 dark:text-slate-100 text-xs border-b border-slate-100 dark:border-slate-800 pb-2 flex justify-between items-center shrink-0">
-                <span className="font-bold text-sm">Lịch CV ({day.format('DD/MM')})</span>
-                <div className="flex items-center gap-1">
-                  <Tag color="emerald" className="m-0 text-[10px] font-bold">
-                    {ktvCount} Đi làm
-                  </Tag>
-                  {serverCap?.offStaffList && serverCap.offStaffList.length > 0 && (
-                    <Tag color="rose" className="m-0 text-[10px] font-bold">
-                      {serverCap.offStaffList.length} OFF
-                    </Tag>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
-                {/* Section 1: Working CVs sorted by Most Booked */}
-                {(() => {
-                  const enrichedWorkingStaff = (serverCap?.workingStaffList || [])
-                    .map((staff) => {
-                      const staffAppts = dayAppts.filter((a) => Number(a.technicianId) === Number(staff.id));
-                      const bookedCount = staff.bookedCount !== undefined ? staff.bookedCount : staffAppts.length;
-                      const doneCount =
-                        staff.doneCount !== undefined
-                          ? staff.doneCount
-                          : staffAppts.filter((a) => a.orderState === 'Completed').length;
-                      const doneRate = bookedCount > 0 ? Math.round((doneCount / bookedCount) * 100) : 0;
-                      return {
-                        ...staff,
-                        bookedCount,
-                        doneCount,
-                        doneRate,
-                      };
-                    })
-                    .sort(
-                      (a, b) =>
-                        b.bookedCount - a.bookedCount || b.doneCount - a.doneCount || a.name.localeCompare(b.name)
-                    );
-
-                  return (
-                    <div className="space-y-1.5">
-                      <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center justify-between">
-                        <span>🟢 CV Đi Làm ({enrichedWorkingStaff.length})</span>
-                        <span className="text-[10px] font-normal text-slate-400 normal-case">
-                          (Xếp theo Lịch book giảm dần)
-                        </span>
-                      </div>
-                      {enrichedWorkingStaff.map((staff, idx) => (
-                        <div
-                          key={staff.id}
-                          className={`flex items-center justify-between text-xs p-2 rounded-lg border transition-all ${
-                            staff.bookedCount > 0
-                              ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs'
-                              : 'bg-slate-50/40 dark:bg-slate-900/30 border-slate-200/40 dark:border-slate-800/40'
-                          }`}
-                        >
-                          <div className="flex flex-col gap-1 min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span
-                                className={`font-bold text-[10px] min-w-[20px] text-center px-1 rounded tabular-nums shrink-0 ${
-                                  idx === 0 && staff.bookedCount > 0
-                                    ? 'bg-amber-500 text-white font-extrabold'
-                                    : 'text-emerald-600 dark:text-emerald-400'
-                                }`}
-                              >
-                                #{idx + 1}
-                              </span>
-                              <span className="font-bold text-slate-800 dark:text-slate-100 truncate text-xs">
-                                {staff.name}
-                              </span>
-                              {idx === 0 && staff.bookedCount > 0 && (
-                                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
-                                  🔥 Top Booked
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Booked & Done counts */}
-                            <div className="flex items-center gap-1.5 pl-6 flex-wrap">
-                              <span
-                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded border tabular-nums ${
-                                  staff.bookedCount > 0
-                                    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                                    : 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 border-slate-200 dark:border-slate-700/50'
-                                }`}
-                              >
-                                📅 {staff.bookedCount} Book
-                              </span>
-                              <span
-                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded border tabular-nums ${
-                                  staff.doneCount > 0
-                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                                    : 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 border-slate-200 dark:border-slate-700/50'
-                                }`}
-                              >
-                                ✅ {staff.doneCount} Done
-                              </span>
-
-                              {staff.avgDurationMinutes &&
-                                (staff.avgDurationMinutes.normalAvg || staff.avgDurationMinutes.retainAvg) && (
-                                  <Tooltip
-                                    title={
-                                      <div className="text-xs space-y-1 p-0.5">
-                                        <div className="font-bold text-amber-300 border-b border-amber-500/30 pb-0.5 mb-1">
-                                          ⏱️ Tốc độ nối mi trung bình ({staff.name})
-                                        </div>
-                                        {staff.avgDurationMinutes.normalAvg && (
-                                          <div>
-                                            • Nối mới:{' '}
-                                            <span className="font-bold text-white">
-                                              {staff.avgDurationMinutes.normalAvg} phút/bộ
-                                            </span>
-                                          </div>
-                                        )}
-                                        {staff.avgDurationMinutes.retainAvg && (
-                                          <div>
-                                            • Dặm mi:{' '}
-                                            <span className="font-bold text-white">
-                                              {staff.avgDurationMinutes.retainAvg} phút/bộ
-                                            </span>
-                                          </div>
-                                        )}
-                                        {staff.avgDurationMinutes.removalAvg && (
-                                          <div>
-                                            • Tháo / Sửa:{' '}
-                                            <span className="font-bold text-white">
-                                              {staff.avgDurationMinutes.removalAvg} phút/ca
-                                            </span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    }
-                                  >
-                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-purple-500/10 text-purple-600 dark:text-purple-300 border-purple-500/20 tabular-nums cursor-help">
-                                      ⚡{' '}
-                                      {staff.avgDurationMinutes.normalAvg
-                                        ? `${staff.avgDurationMinutes.normalAvg}p mới`
-                                        : ''}
-                                      {staff.avgDurationMinutes.normalAvg && staff.avgDurationMinutes.retainAvg
-                                        ? ' • '
-                                        : ''}
-                                      {staff.avgDurationMinutes.retainAvg
-                                        ? `${staff.avgDurationMinutes.retainAvg}p dặm`
-                                        : ''}
-                                    </span>
-                                  </Tooltip>
-                                )}
-                            </div>
-                          </div>
-
-                          <div className="text-right shrink-0 ml-2">
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                              {staff.branchName || 'Đề Thám'}
-                            </span>
-                            <div className="text-[9px] text-slate-400 mt-0.5 tabular-nums">
-                              {staff.shift || 'Ca Full'}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-
-                {/* Section 2: OFF CVs with Reasons */}
-                {serverCap?.offStaffList && serverCap.offStaffList.length > 0 && (
-                  <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider flex items-center gap-1">
-                      <span>🔴 CV Nghỉ / OFF ({serverCap.offStaffList.length})</span>
-                    </div>
-                    {serverCap.offStaffList.map((staff, idx) => (
-                      <div
-                        key={staff.id}
-                        className="flex items-center justify-between text-xs p-2 rounded-lg bg-rose-50/40 dark:bg-rose-950/20 border border-rose-100/60 dark:border-rose-900/40"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-rose-500 text-[10px] w-4">#{idx + 1}</span>
-                          <div>
-                            <div className="font-semibold text-slate-800 dark:text-slate-100">{staff.name}</div>
-                            <div className="text-[10px] text-rose-600 dark:text-rose-400 font-medium">
-                              {staff.reason}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                            {staff.branchName || 'Đề Thám'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="text-[9px] text-slate-400 text-right pt-1.5 border-t border-slate-100 dark:border-slate-800 shrink-0">
-                Kéo góc phải dưới để resize • Tự lưu F5
-              </div>
-            </div>
-          );
-
           return (
             <div
               key={dayKey}
@@ -513,27 +256,17 @@ function MultiDayColumnView({
                     <span className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">
                       {dayAppts.length} / {dynamicMaxCapacity} ({fillPercentage}%)
                     </span>
-                    <Popover
-                      content={cvListPopoverContent}
-                      title={undefined}
-                      trigger="click"
-                      placement="bottom"
-                      styles={{
-                        body: {
-                          padding: 0,
-                          overflow: 'hidden',
-                          backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-                        },
+                    <Tag
+                      color="cyan"
+                      className="m-0 text-[10px] px-1.5 py-0 cursor-pointer font-bold hover:opacity-80 transition-opacity"
+                      onClick={() => {
+                        setSelectedCvDrawerDate(day);
+                        setCvDrawerOpen(true);
                       }}
-                      overlayStyle={{ maxWidth: 'none' }}
+                      title="Mở Side Slide Lịch CV"
                     >
-                      <Tag
-                        color="cyan"
-                        className="m-0 text-[10px] px-1.5 py-0 cursor-pointer font-bold hover:opacity-80 transition-opacity"
-                      >
-                        • {ktvCount} CV
-                      </Tag>
-                    </Popover>
+                      • {ktvCount} CV
+                    </Tag>
                   </div>
                 </div>
                 <Progress
@@ -599,143 +332,17 @@ function MultiDayColumnView({
                       </Button>
                     </div>
                   ) : (
-                    slotAppts.map((appt) => {
-                      const customerName = appt.customerName || (appt as any).userName || 'Khách hàng';
-                      const phone = appt.customerPhone || (appt as any).phone || '';
-                      const service = appt.serviceName || (appt as any).packageName || 'Lịch dịch vụ';
-                      const timeFormatted = appt.bookingDateStart
-                        ? dayjs(appt.bookingDateStart).format('HH:mm')
-                        : hourStr;
-                      const isCompleted = appt.orderState === 'Completed';
-                      const isMissed = appt.orderState === 'Missed' || appt.orderState === 'Cancelled';
-
-                      const cardPopoverContent = (
-                        <div className="p-1 max-w-[240px] space-y-2">
-                          <div className="border-b border-slate-100 dark:border-slate-800 pb-1.5">
-                            <div className="font-bold text-slate-800 dark:text-slate-100 text-sm">{customerName}</div>
-                            <div className="text-xs text-slate-400 tabular-nums">SĐT: {phone || '-'}</div>
-                          </div>
-                          <div className="text-xs space-y-1">
-                            <div>
-                              <span className="text-slate-400">Dịch vụ:</span>{' '}
-                              <span className="font-medium text-slate-700 dark:text-slate-200">{service}</span>
-                            </div>
-                            <div>
-                              <span className="text-slate-400">Thời gian:</span>{' '}
-                              <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                                {timeFormatted}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-slate-400">CV:</span>{' '}
-                              <span className="text-slate-700 dark:text-slate-300">
-                                {appt.technicianName || 'Chưa gán'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-slate-400">Ước tính:</span>{' '}
-                              <span className="font-semibold text-emerald-600 tabular-nums">
-                                {formatVND(appt.totalPrice || (appt as any).orderPrice || 0)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex gap-1 justify-end">
-                            {phone && (
-                              <Button
-                                size="small"
-                                icon={<PhoneOutlined className="text-emerald-500" />}
-                                onClick={() => makeCall(phone, customerName)}
-                              >
-                                Gọi
-                              </Button>
-                            )}
-                            {(appt.customerId || (appt as any).userId) && onViewCustomerDetail && (
-                              <Button
-                                size="small"
-                                icon={<EyeOutlined />}
-                                onClick={() => onViewCustomerDetail(appt.customerId || (appt as any).userId)}
-                              >
-                                Xem
-                              </Button>
-                            )}
-                            {onReschedule && (
-                              <Button size="small" icon={<SwapOutlined />} onClick={() => onReschedule(appt)}>
-                                Đổi lịch
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      );
-
-                      return (
-                        <Popover
-                          key={String(appt.id || (appt as any).orderId || Math.random())}
-                          content={cardPopoverContent}
-                          title={undefined}
-                          trigger="click"
-                        >
-                          <div
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, appt)}
-                            className={`p-2 rounded-lg border text-xs shadow-2xs cursor-grab active:cursor-grabbing transition-all hover:scale-[1.02] ${
-                              isCompleted
-                                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
-                                : isMissed
-                                  ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-200'
-                                  : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60 text-blue-900 dark:text-blue-200'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-1.5 min-w-0 mb-1">
-                              <div className="flex items-center gap-1 min-w-0 flex-1">
-                                <span className="font-bold font-mono text-[11px] tabular-nums shrink-0">
-                                  {timeFormatted}
-                                </span>
-                                {(() => {
-                                  const branch = getBranchBadgeInfo(appt.storeId, appt.branchName);
-                                  return (
-                                    <span
-                                      className={`text-[9px] font-extrabold px-1 py-0 rounded border uppercase tracking-tighter shrink-0 ${branch.bgClass}`}
-                                    >
-                                      {branch.code}
-                                    </span>
-                                  );
-                                })()}
-                                {appt.technicianName && (
-                                  <Tooltip title={`CV chỉ định: ${appt.technicianName}`}>
-                                    <Avatar
-                                      src={appt.technicianAvatar || undefined}
-                                      size={18}
-                                      className="shrink-0 border border-emerald-500/40 text-[9px] font-bold bg-emerald-600 text-white shadow-2xs"
-                                    >
-                                      {appt.technicianName.trim().slice(0, 1).toUpperCase()}
-                                    </Avatar>
-                                  </Tooltip>
-                                )}
-                                <span className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">
-                                  {customerName}
-                                </span>
-                              </div>
-                              <Tooltip
-                                title={
-                                  isCompleted ? 'Đã hoàn thành' : isMissed ? 'Đã bỏ lỡ / Hủy lịch' : 'Chờ check-in'
-                                }
-                              >
-                                <div className="shrink-0 flex items-center justify-center cursor-help">
-                                  {isCompleted ? (
-                                    <CheckCircleFilled className="text-emerald-500 text-xs" />
-                                  ) : isMissed ? (
-                                    <CloseCircleFilled className="text-rose-500 text-xs" />
-                                  ) : (
-                                    <ClockCircleFilled className="text-amber-500 text-xs" />
-                                  )}
-                                </div>
-                              </Tooltip>
-                            </div>
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{service}</div>
-                          </div>
-                        </Popover>
-                      );
-                    })
+                    slotAppts.map((appt) => (
+                      <AppointmentCardItem
+                        key={String(appt.id || (appt as any).orderId || Math.random())}
+                        appt={appt}
+                        hourStr={hourStr}
+                        onHandleDragStart={handleDragStart}
+                        onMakeCall={makeCall}
+                        onViewCustomerDetail={onViewCustomerDetail}
+                        onReschedule={onReschedule}
+                      />
+                    ))
                   )}
                 </div>
               );
@@ -743,8 +350,171 @@ function MultiDayColumnView({
           </React.Fragment>
         ))}
       </div>
+
+      <CvScheduleDrawer
+        open={cvDrawerOpen}
+        onClose={() => setCvDrawerOpen(false)}
+        currentDate={selectedCvDrawerDate}
+        onDateChange={setSelectedCvDrawerDate}
+        dailyCapacities={dailyCapacities}
+        appointmentsByDay={appointmentsByDay}
+      />
     </div>
   );
 }
+
+interface AppointmentCardItemProps {
+  appt: Appointment;
+  hourStr: string;
+  onHandleDragStart: (e: React.DragEvent, appt: Appointment) => void;
+  onMakeCall: (phone: string, name: string) => void;
+  onViewCustomerDetail?: (customerId: number) => void;
+  onReschedule?: (appt: Appointment) => void;
+}
+
+const AppointmentCardItem = React.memo(function AppointmentCardItem({
+  appt,
+  hourStr,
+  onHandleDragStart,
+  onMakeCall,
+  onViewCustomerDetail,
+  onReschedule,
+}: AppointmentCardItemProps) {
+  const customerName = appt.customerName || (appt as any).userName || 'Khách hàng';
+  const phone = appt.customerPhone || (appt as any).phone || '';
+  const service = appt.serviceName || (appt as any).packageName || 'Lịch dịch vụ';
+  const timeFormatted = appt.bookingDateStart
+    ? dayjs(appt.bookingDateStart).format('HH:mm')
+    : hourStr;
+  const isCompleted = appt.orderState === 'Completed';
+  const isMissed = appt.orderState === 'Missed' || appt.orderState === 'Cancelled';
+
+  const cardPopoverContent = (
+    <div className="p-1 max-w-[240px] space-y-2">
+      <div className="border-b border-slate-100 dark:border-slate-800 pb-1.5">
+        <div className="font-bold text-slate-800 dark:text-slate-100 text-sm">{customerName}</div>
+        <div className="text-xs text-slate-400 tabular-nums">SĐT: {phone || '-'}</div>
+      </div>
+      <div className="text-xs space-y-1">
+        <div>
+          <span className="text-slate-400">Dịch vụ:</span>{' '}
+          <span className="font-medium text-slate-700 dark:text-slate-200">{service}</span>
+        </div>
+        <div>
+          <span className="text-slate-400">Thời gian:</span>{' '}
+          <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+            {timeFormatted}
+          </span>
+        </div>
+        <div>
+          <span className="text-slate-400">CV:</span>{' '}
+          <span className="text-slate-700 dark:text-slate-300">
+            {appt.technicianName || 'Chưa gán'}
+          </span>
+        </div>
+        <div>
+          <span className="text-slate-400">Ước tính:</span>{' '}
+          <span className="font-semibold text-emerald-600 tabular-nums">
+            {formatVND(appt.totalPrice || (appt as any).orderPrice || 0)}
+          </span>
+        </div>
+      </div>
+      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex gap-1 justify-end">
+        {phone && (
+          <Button
+            size="small"
+            icon={<PhoneOutlined className="text-emerald-500" />}
+            onClick={() => onMakeCall(phone, customerName)}
+          >
+            Gọi
+          </Button>
+        )}
+        {(appt.customerId || (appt as any).userId) && onViewCustomerDetail && (
+          <Button
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => onViewCustomerDetail(appt.customerId || (appt as any).userId)}
+          >
+            Xem
+          </Button>
+        )}
+        {onReschedule && (
+          <Button size="small" icon={<SwapOutlined />} onClick={() => onReschedule(appt)}>
+            Đổi lịch
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <Popover
+      key={String(appt.id || (appt as any).orderId || Math.random())}
+      content={cardPopoverContent}
+      title={undefined}
+      trigger="click"
+    >
+      <div
+        draggable
+        onDragStart={(e) => onHandleDragStart(e, appt)}
+        className={`p-2 rounded-lg border text-xs shadow-2xs cursor-grab active:cursor-grabbing transition-all hover:scale-[1.02] ${
+          isCompleted
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
+            : isMissed
+              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-200'
+              : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60 text-blue-900 dark:text-blue-200'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-1.5 min-w-0 mb-1">
+          <div className="flex items-center gap-1 min-w-0 flex-1">
+            <span className="font-bold font-mono text-[11px] tabular-nums shrink-0">
+              {timeFormatted}
+            </span>
+            {(() => {
+              const branch = getBranchBadgeInfo(appt.storeId, appt.branchName);
+              return (
+                <span
+                  className={`text-[9px] font-extrabold px-1 py-0 rounded border uppercase tracking-tighter shrink-0 ${branch.bgClass}`}
+                >
+                  {branch.code}
+                </span>
+              );
+            })()}
+            {appt.technicianName && (
+              <Tooltip title={`CV chỉ định: ${appt.technicianName}`}>
+                <Avatar
+                  src={appt.technicianAvatar || undefined}
+                  size={18}
+                  className="shrink-0 border border-emerald-500/40 text-[9px] font-bold bg-emerald-600 text-white shadow-2xs"
+                >
+                  {appt.technicianName.trim().slice(0, 1).toUpperCase()}
+                </Avatar>
+              </Tooltip>
+            )}
+            <span className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">
+              {customerName}
+            </span>
+          </div>
+          <Tooltip
+            title={
+              isCompleted ? 'Đã hoàn thành' : isMissed ? 'Đã bỏ lỡ / Hủy lịch' : 'Chờ check-in'
+            }
+          >
+            <div className="shrink-0 flex items-center justify-center cursor-help">
+              {isCompleted ? (
+                <CheckCircleFilled className="text-emerald-500 text-xs" />
+              ) : isMissed ? (
+                <CloseCircleFilled className="text-rose-500 text-xs" />
+              ) : (
+                <ClockCircleFilled className="text-amber-500 text-xs" />
+              )}
+            </div>
+          </Tooltip>
+        </div>
+        <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{service}</div>
+      </div>
+    </Popover>
+  );
+});
 
 export default React.memo(MultiDayColumnView);

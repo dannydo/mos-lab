@@ -11,7 +11,7 @@ interface CallsTabProps {
   onLoadMore?: () => void;
 }
 
-export const CallsTab: React.FC<CallsTabProps> = ({
+export const CallsTab: React.FC<CallsTabProps> = React.memo(({
   calls,
   themeMode,
   loading = false,
@@ -143,4 +143,4 @@ export const CallsTab: React.FC<CallsTabProps> = ({
       )}
     </div>
   );
-};
+});

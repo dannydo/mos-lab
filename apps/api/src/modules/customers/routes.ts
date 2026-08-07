@@ -67,6 +67,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       birthdayPreset,
       ageMin,
       ageMax,
+      callStatuses,
+      lastCallDaysMin,
+      lastCallDaysMax,
     } = request.query as {
       bucket?: BucketType | 'ALL' | 'NEW_LOCA';
       search?: string;
@@ -106,6 +109,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       birthdayPreset?: 'today' | 'this_month' | 'next_month';
       ageMin?: string;
       ageMax?: string;
+      callStatuses?: string;
+      lastCallDaysMin?: string;
+      lastCallDaysMax?: string;
     };
 
     let limitNum = parseInt(limit, 10) || 20;
@@ -753,6 +759,54 @@ export async function customerRoutes(fastify: FastifyInstance) {
             WHERE ccl.legacy_user_id = u.id
           )`);
         }
+      }
+
+      // Call Status Multi-Select Filter & Last Call Days Filter
+      if (callStatuses && callStatuses.trim() !== '') {
+        const statusList = callStatuses.split(',').map((s) => s.trim()).filter(Boolean);
+        const hasNotCalled = statusList.includes('NOT_CALLED');
+        const realStatuses = statusList.filter((s) => s !== 'NOT_CALLED');
+
+        const callConds: string[] = [];
+        if (realStatuses.length > 0) {
+          const placeholders = realStatuses.map(() => '?').join(',');
+          callConds.push(`EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
+            WHERE ccl_latest.legacy_user_id = u.id 
+              AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
+              AND ccl_latest.call_result IN (${placeholders})
+          )`);
+          innerParams.push(...realStatuses);
+        }
+        if (hasNotCalled) {
+          callConds.push(`NOT EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl_all WHERE ccl_all.legacy_user_id = u.id
+          )`);
+        }
+
+        if (callConds.length > 0) {
+          innerWhereClauses.push(`(${callConds.join(' OR ')})`);
+        }
+      }
+
+      if (lastCallDaysMin !== undefined && lastCallDaysMin !== '') {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
+          WHERE ccl_latest.legacy_user_id = u.id
+            AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
+            AND DATEDIFF(NOW(), ccl_latest.created_at) >= ?
+        )`);
+        innerParams.push(parseInt(lastCallDaysMin, 10));
+      }
+
+      if (lastCallDaysMax !== undefined && lastCallDaysMax !== '') {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
+          WHERE ccl_latest.legacy_user_id = u.id
+            AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
+            AND DATEDIFF(NOW(), ccl_latest.created_at) <= ?
+        )`);
+        innerParams.push(parseInt(lastCallDaysMax, 10));
       }
 
       const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
@@ -1408,6 +1462,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       birthdayPreset,
       ageMin,
       ageMax,
+      callStatuses,
+      lastCallDaysMin,
+      lastCallDaysMax,
     } = request.query as {
       bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE' | 'NEW_LOCA';
       search?: string;
@@ -1443,6 +1500,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       birthdayPreset?: 'today' | 'this_month' | 'next_month';
       ageMin?: string;
       ageMax?: string;
+      callStatuses?: string;
+      lastCallDaysMin?: string;
+      lastCallDaysMax?: string;
     };
 
     const adminUser = request.user as { id: number; role: string };
@@ -1848,6 +1908,54 @@ export async function customerRoutes(fastify: FastifyInstance) {
             WHERE ccl.legacy_user_id = u.id
           )`);
         }
+      }
+
+      // Call Status Multi-Select Filter & Last Call Days Filter
+      if (callStatuses && callStatuses.trim() !== '') {
+        const statusList = callStatuses.split(',').map((s) => s.trim()).filter(Boolean);
+        const hasNotCalled = statusList.includes('NOT_CALLED');
+        const realStatuses = statusList.filter((s) => s !== 'NOT_CALLED');
+
+        const callConds: string[] = [];
+        if (realStatuses.length > 0) {
+          const placeholders = realStatuses.map(() => '?').join(',');
+          callConds.push(`EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
+            WHERE ccl_latest.legacy_user_id = u.id 
+              AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
+              AND ccl_latest.call_result IN (${placeholders})
+          )`);
+          innerParams.push(...realStatuses);
+        }
+        if (hasNotCalled) {
+          callConds.push(`NOT EXISTS (
+            SELECT 1 FROM mos_lab.crm_call_logs ccl_all WHERE ccl_all.legacy_user_id = u.id
+          )`);
+        }
+
+        if (callConds.length > 0) {
+          innerWhereClauses.push(`(${callConds.join(' OR ')})`);
+        }
+      }
+
+      if (lastCallDaysMin !== undefined && lastCallDaysMin !== '') {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
+          WHERE ccl_latest.legacy_user_id = u.id
+            AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
+            AND DATEDIFF(NOW(), ccl_latest.created_at) >= ?
+        )`);
+        innerParams.push(parseInt(lastCallDaysMin, 10));
+      }
+
+      if (lastCallDaysMax !== undefined && lastCallDaysMax !== '') {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
+          WHERE ccl_latest.legacy_user_id = u.id
+            AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
+            AND DATEDIFF(NOW(), ccl_latest.created_at) <= ?
+        )`);
+        innerParams.push(parseInt(lastCallDaysMax, 10));
       }
 
       const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
@@ -7867,19 +7975,19 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       > = {};
       try {
-        const cvConfig = await fastify.prisma.crm.crmConfig.findUnique({ where: { key: 'ACTIVE_CV_STAFF_CONFIG' } });
-        const cvStaffIds = cvConfig ? JSON.parse(cvConfig.value).map(Number) : [];
+        const cvStaffIds = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
 
         if (cvStaffIds.length > 0) {
           const startDateObj = new Date(cleanDateFrom.split(' ')[0]);
           const endDateObj = new Date(cleanDateTo.split(' ')[0]);
           const cur = new Date(startDateObj);
 
-          // Query fixed store & name for all CV staff from DB master tables (user_profile & staff_day_off_schedule)
+          // Query fixed store & name for all active CV staff from DB master tables
           const cvProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
             SELECT user_id as id, full_name as name, client_store_id
             FROM user_profile
             WHERE user_id IN (${cvStaffIds.join(',')})
+              AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0
           `);
           const cvNameMap = new Map<number, string>();
           const cvProfileStoreMap = new Map<number, number>();
@@ -7962,17 +8070,43 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
           // Batch query 2: Approved leave requests for date range
           const dateOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-            SELECT from_user_id as user_id, DATE_FORMAT(from_date, '%Y-%m-%d') as date_str, note
+            SELECT 
+              from_user_id as user_id, 
+              DATE_FORMAT(from_date, '%Y-%m-%d') as date_str, 
+              note,
+              attribute_option_id as attributeOptionId,
+              DATEDIFF(from_date, date_created) as daysAhead
             FROM staff_day_off
             WHERE request_state = 'Approved'
               AND from_date >= '${cleanDateFrom}' AND from_date <= '${cleanDateTo}'
               AND from_user_id IN (${activeCvStaffIds.join(',')})
           `);
-          const dateOffMap = new Map<string, Map<number, string>>();
+          const dateOffMap = new Map<
+            string,
+            Map<number, { reason: string; type: 'urgent_off' | 'planned_off'; daysAhead: number }>
+          >();
           dateOffs.forEach((r) => {
             const dStr = String(r.date_str);
             if (!dateOffMap.has(dStr)) dateOffMap.set(dStr, new Map());
-            dateOffMap.get(dStr)!.set(Number(r.user_id), String(r.note || 'Xin nghỉ phép (Đã duyệt)').trim());
+
+            const attrOptId = Number(r.attributeOptionId || 0);
+            const daysAhead = Number(r.daysAhead || 0);
+            const noteText = String(r.note || '').trim();
+
+            const isUrgent =
+              attrOptId === 113 || // Bị bệnh / get-sick
+              daysAhead <= 0 || // Đăng ký trong ngày
+              /gấp|đột xuất|bệnh|ốm|khẩn|cấp cứu/i.test(noteText);
+
+            const offType: 'urgent_off' | 'planned_off' = isUrgent ? 'urgent_off' : 'planned_off';
+            const defaultReason = isUrgent ? 'Xin nghỉ phép đột xuất (Gấp)' : 'Xin nghỉ phép (Đã duyệt)';
+            const reason = noteText ? noteText : defaultReason;
+
+            dateOffMap.get(dStr)!.set(Number(r.user_id), {
+              reason,
+              type: offType,
+              daysAhead,
+            });
           });
 
           // Batch query 3: Booked orders grouped by date and assigned_staff_id
@@ -8074,7 +8208,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
               continue;
             }
 
-            const dayDateOffMap = dateOffMap.get(dateStr) || new Map<number, string>();
+            const dayDateOffMap = dateOffMap.get(dateStr) || new Map<number, { reason: string; type: 'urgent_off' | 'planned_off'; daysAhead: number }>();
             const dayBookedMap = rangeBookedMap.get(dateStr) || new Map<number, number>();
             const dayDoneMap = rangeDoneMap.get(dateStr) || new Map<number, number>();
 
@@ -8107,12 +8241,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
               const userWeeklyOffs = weeklyOffMap.get(id);
               const isWeeklyOff = userWeeklyOffs ? userWeeklyOffs.has(legacyWeekday) : false;
               if (dayDateOffMap.has(id)) {
+                const offInfo = dayDateOffMap.get(id)!;
                 offStaffList.push({
                   id,
                   name: cvNameMap.get(id) || `CV #${id}`,
                   branchName: cvStoreMap.get(id) || 'Đề Thám',
-                  reason: dayDateOffMap.get(id) || 'Xin nghỉ phép (Đã duyệt)',
-                  type: 'date_off',
+                  reason: offInfo.reason,
+                  type: offInfo.type,
                 });
               } else if (isWeeklyOff) {
                 offStaffList.push({

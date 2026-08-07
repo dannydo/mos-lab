@@ -89,6 +89,13 @@ export const useCustomerList = (
         if (filterParams.ageMax !== undefined) {
           params.ageMax = filterParams.ageMax.toString();
         }
+        if (filterParams.callStatuses && filterParams.callStatuses.trim() !== '') {
+          params.callStatuses = filterParams.callStatuses;
+        }
+        if (filterParams.lastCallDaysMin !== undefined)
+          params.lastCallDaysMin = filterParams.lastCallDaysMin.toString();
+        if (filterParams.lastCallDaysMax !== undefined)
+          params.lastCallDaysMax = filterParams.lastCallDaysMax.toString();
 
         const data = await apiClient.customers.getStats(params);
         setStats(data);
@@ -174,6 +181,13 @@ export const useCustomerList = (
         if (filterParams.ageMax !== undefined) {
           params.ageMax = filterParams.ageMax.toString();
         }
+        if (filterParams.callStatuses && filterParams.callStatuses.trim() !== '') {
+          params.callStatuses = filterParams.callStatuses;
+        }
+        if (filterParams.lastCallDaysMin !== undefined)
+          params.lastCallDaysMin = filterParams.lastCallDaysMin.toString();
+        if (filterParams.lastCallDaysMax !== undefined)
+          params.lastCallDaysMax = filterParams.lastCallDaysMax.toString();
 
         const data = await apiClient.customers.list(params);
 
