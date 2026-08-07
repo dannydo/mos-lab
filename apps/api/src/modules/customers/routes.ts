@@ -8356,14 +8356,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
       });
 
-      // 3. Query real-time orders for today — check both order_service and order_staff_queue
+      // 3. Query real-time orders for today — format DATETIME as ICT string to avoid timezone parsing mismatch
       const orderRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
         SELECT
           o.id as orderId,
           o.order_state as orderState,
-          o.booking_date_start as bookStart,
-          o.booking_date_end as bookEnd,
+          DATE_FORMAT(o.booking_date_start, '%Y-%m-%d %H:%i:%s') as bookStartStr,
+          DATE_FORMAT(o.booking_date_end, '%Y-%m-%d %H:%i:%s') as bookEndStr,
           COALESCE(os.assigned_staff_id, os.booked_staff_id, osq.user_id) as ktvId,
           cust_up.full_name as customerName
         FROM \`order\` o
@@ -8378,6 +8378,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         todayStart,
         todayEnd
       );
+
+      // Current ICT local time string ("YYYY-MM-DD HH:mm:ss")
+      const nowICTStr = nowICT.toISOString().replace('T', ' ').slice(0, 19);
 
       // 4. Build per-CV status with accurate time-slot & order_state recognition
       const staffStatuses = cvStaffIds
@@ -8395,17 +8398,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
           let bookingDateEnd = null;
           let estimatedEndMinutes = null;
 
-          // Priority 1: Check if there is an order currently running right now (now in [bookStart, bookEnd])
+          // Priority 1: Check if there is an order currently running right now in ICT time
           const runningOrder = staffOrders.find((o: SafeAny) => {
-            if (!o.bookStart || !o.bookEnd) return false;
+            if (!o.bookStartStr || !o.bookEndStr) return false;
             if (o.orderState === 'Completed') return false;
-            const start = new Date(o.bookStart);
-            const end = new Date(o.bookEnd);
-            // Include a 5-minute buffer before start and 5-minute buffer after end
-            return now >= new Date(start.getTime() - 5 * 60000) && now < new Date(end.getTime() + 5 * 60000);
+            return nowICTStr >= o.bookStartStr && nowICTStr <= o.bookEndStr;
           });
 
-          // Priority 2: Check for active order states (ServiceStart, ServiceCleaned, Consultation, Preparation, CheckIn, ServiceCompleted)
+          // Priority 2: Check for active order states
           const ACTIVE_SERVICING_STATES = [
             'ServiceStart',
             'ServiceCleaned',
@@ -8423,11 +8423,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
             currentOrderId = Number(activeOrder.orderId);
             currentOrderState = activeOrder.orderState;
             currentCustomerName = activeOrder.customerName ? String(activeOrder.customerName).trim() : null;
-            const endTime = activeOrder.bookEnd ? new Date(activeOrder.bookEnd) : null;
-            bookingDateEnd = endTime ? endTime.toISOString() : null;
 
-            if (endTime) {
-              estimatedEndMinutes = Math.round((endTime.getTime() - now.getTime()) / 60000);
+            if (activeOrder.bookEndStr) {
+              const endMs = new Date(activeOrder.bookEndStr.replace(' ', 'T') + '+07:00').getTime();
+              bookingDateEnd = new Date(endMs).toISOString();
+              estimatedEndMinutes = Math.round((endMs - nowICT.getTime()) / 60000);
             }
 
             if (activeOrder.orderState === 'ServiceCleaned') {
@@ -8452,13 +8452,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
           } else {
             // Check for upcoming bookings today
             const upcomingOrders = staffOrders
-              .filter((o: SafeAny) => o.orderState !== 'Completed' && new Date(o.bookStart).getTime() > now.getTime())
-              .sort((a: SafeAny, b: SafeAny) => new Date(a.bookStart).getTime() - new Date(b.bookStart).getTime());
+              .filter((o: SafeAny) => o.orderState !== 'Completed' && o.bookStartStr && o.bookStartStr > nowICTStr)
+              .sort((a: SafeAny, b: SafeAny) => String(a.bookStartStr).localeCompare(String(b.bookStartStr)));
 
             if (upcomingOrders.length > 0) {
               const nextOrder = upcomingOrders[0];
-              const nextStart = new Date(nextOrder.bookStart);
-              const diffMins = Math.round((nextStart.getTime() - now.getTime()) / 60000);
+              const nextStartMs = new Date(nextOrder.bookStartStr.replace(' ', 'T') + '+07:00').getTime();
+              const diffMins = Math.round((nextStartMs - nowICT.getTime()) / 60000);
 
               if (diffMins <= 45) {
                 liveStatus = diffMins <= 15 ? 'UPCOMING' : 'LOCKED';
