@@ -53,20 +53,22 @@ export const CvHeaderToolbar: React.FC<CvHeaderToolbarProps> = React.memo(
           <Tooltip title={`Có ${ktvCount} chuyên viên đi làm trong ca này`} placement="bottom">
             <Tag
               color="emerald"
-              className="m-0 text-[11px] font-bold py-0.5 px-2 rounded-full cursor-help tabular-nums"
+              className="m-0 text-[11px] font-bold py-0.5 px-2 rounded-full cursor-help tabular-nums inline-flex items-center"
               aria-label={`${ktvCount} Chuyên viên đi làm`}
             >
-              🟢 {ktvCount} Đi làm
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 inline-block animate-pulse mr-1.5" />
+              <span>{ktvCount} Đi làm</span>
             </Tag>
           </Tooltip>
           {offCount > 0 && (
             <Tooltip title={`Có ${offCount} chuyên viên xin nghỉ/OFF trong ngày`} placement="bottom">
               <Tag
                 color="rose"
-                className="m-0 text-[11px] font-bold py-0.5 px-2 rounded-full cursor-help tabular-nums"
+                className="m-0 text-[11px] font-bold py-0.5 px-2 rounded-full cursor-help tabular-nums inline-flex items-center"
                 aria-label={`${offCount} Chuyên viên OFF`}
               >
-                🔴 {offCount} OFF
+                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 inline-block mr-1.5" />
+                <span>{offCount} OFF</span>
               </Tag>
             </Tooltip>
           )}
