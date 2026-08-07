@@ -1810,19 +1810,23 @@ export async function catalogRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/catalog/lash-benchmarks/seed — Auto-calculate & seed from Legacy DB
    */
-  fastify.post('/catalog/lash-benchmarks/seed', { preHandler: [requireCatalogAdmin] }, async (_request, reply) => {
-    try {
-      const result = await LashBenchmarkService.seedBenchmarks(fastify);
-      return {
-        success: true,
-        message: `Seed hoàn tất: ${result.inserted} mới, ${result.updated} cập nhật, tổng ${result.total} dòng`,
-        data: result,
-      };
-    } catch (error: any) {
-      fastify.log.error(error);
-      return reply.status(500).send({ success: false, error: 'Internal Server Error' });
+  fastify.post(
+    '/catalog/lash-benchmarks/seed',
+    { preHandler: [requireAuth, requireCatalogAdmin] },
+    async (_request, reply) => {
+      try {
+        const result = await LashBenchmarkService.seedBenchmarks(fastify);
+        return {
+          success: true,
+          message: `Seed hoàn tất: ${result.inserted} mới, ${result.updated} cập nhật, tổng ${result.total} dòng`,
+          data: result,
+        };
+      } catch (error: any) {
+        fastify.log.error(error);
+        return reply.status(500).send({ success: false, error: 'Internal Server Error' });
+      }
     }
-  });
+  );
 
   /**
    * PUT /api/catalog/lash-benchmarks/:id — Admin manual edit
@@ -1830,7 +1834,7 @@ export async function catalogRoutes(fastify: FastifyInstance) {
   fastify.put<{
     Params: { id: string };
     Body: { benchmarkMinutes?: number; minMinutes?: number; maxMinutes?: number };
-  }>('/catalog/lash-benchmarks/:id', { preHandler: [requireCatalogAdmin] }, async (request, reply) => {
+  }>('/catalog/lash-benchmarks/:id', { preHandler: [requireAuth, requireCatalogAdmin] }, async (request, reply) => {
     try {
       const id = parseInt(request.params.id, 10);
       if (isNaN(id)) return reply.status(400).send({ success: false, error: 'Invalid ID' });

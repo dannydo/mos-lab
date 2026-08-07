@@ -217,11 +217,25 @@ export class LashBenchmarkService {
 
   /**
    * List all benchmarks from CRM table.
+   * Auto-seeds if the table is currently empty.
    */
   static async listBenchmarks(fastify: FastifyInstance): Promise<LashTypeBenchmark[]> {
-    const rows = await fastify.prisma.crm.crmLashTypeBenchmark.findMany({
+    let rows = await fastify.prisma.crm.crmLashTypeBenchmark.findMany({
       orderBy: [{ lashStyle: 'asc' }, { serviceType: 'asc' }, { lashCount: 'asc' }],
     });
+
+    if (rows.length === 0) {
+      fastify.log.info('[LashBenchmarkService] crm_lash_type_benchmarks is empty, auto-seeding from Legacy DB...');
+      try {
+        await this.seedBenchmarks(fastify);
+        rows = await fastify.prisma.crm.crmLashTypeBenchmark.findMany({
+          orderBy: [{ lashStyle: 'asc' }, { serviceType: 'asc' }, { lashCount: 'asc' }],
+        });
+      } catch (err) {
+        fastify.log.error(err, '[LashBenchmarkService] Auto-seed benchmarks failed');
+      }
+    }
+
     return rows.map((r) => ({
       id: r.id,
       lashStyle: r.lashStyle,
