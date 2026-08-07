@@ -67,3 +67,5 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = React.memo(
     </Card>
   );
 });
+
+ProfileDetailsCard.displayName = 'ProfileDetailsCard';

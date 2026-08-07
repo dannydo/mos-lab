@@ -650,3 +650,5 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = React.memo(({ boo
     </div>
   );
 });
+
+TimelineViewTab.displayName = 'TimelineViewTab';
