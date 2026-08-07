@@ -40,12 +40,16 @@ export const CvOffStaffCard: React.FC<CvOffStaffCardProps> = React.memo(({ staff
       ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
       : 'bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30';
 
-  const typeLabel = isWeeklyOff ? '🟡 OFF Tuần' : isUrgentOff ? '🔴 OFF Gấp' : '🟠 OFF Phép';
+  const typeLabel = isWeeklyOff ? 'OFF Tuần' : isUrgentOff ? 'OFF Gấp' : 'OFF Phép';
+  const dotColor = isWeeklyOff ? 'bg-amber-400' : isUrgentOff ? 'bg-rose-500 animate-pulse' : 'bg-orange-400';
 
   const tooltipContent = (
     <div className="text-xs space-y-1 min-w-[160px]" role="tooltip">
       <div className="font-bold text-slate-100">{staff.name}</div>
-      <div className="text-amber-300 font-semibold">{typeLabel}</div>
+      <div className="text-amber-300 font-semibold flex items-center gap-1">
+        <span className={`w-1.5 h-1.5 rounded-full ${dotColor} inline-block`} />
+        <span>{typeLabel}</span>
+      </div>
       <div className="text-slate-300">Lý do: {staff.reason || 'Chưa ghi lý do'}</div>
       <div className="text-slate-400 text-[11px]">Chi nhánh: {staff.branchName || 'Đề Thám'}</div>
     </div>
@@ -73,7 +77,10 @@ export const CvOffStaffCard: React.FC<CvOffStaffCardProps> = React.memo(({ staff
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className={`font-bold text-[10px] tabular-nums shrink-0 ${numColor}`}>#{rankIndex + 1}</span>
               <span className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate">{staff.name}</span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border shrink-0 ${badgeStyleOff}`}>
+              <span
+                className={`text-[9px] font-bold px-1.5 py-0.2 rounded border shrink-0 inline-flex items-center gap-1 ${badgeStyleOff}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${dotColor} inline-block`} />
                 {typeLabel}
               </span>
             </div>

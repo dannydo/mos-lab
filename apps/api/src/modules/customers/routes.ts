@@ -8545,7 +8545,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           const staffOrders = orderRows.filter((r: SafeAny) => Number(r.ktvId) === staffId);
 
           let liveStatus = 'IDLE';
-          let liveLabel = '🟢 Đang rảnh';
+          let liveLabel = 'Đang rảnh';
           let currentOrderId = null;
           let currentOrderState = null;
           let currentCustomerName = null;
@@ -8593,22 +8593,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
             if (activeOrder.orderState === 'ServiceCleaned') {
               liveStatus = 'ENDING_SOON';
-              liveLabel = `🧹 Đang vệ sinh mi${estimatedEndMinutes != null ? ` (còn ${Math.max(0, estimatedEndMinutes)}p)` : ''}`;
+              liveLabel = `Đang vệ sinh mi${estimatedEndMinutes != null ? ` (còn ${Math.max(0, estimatedEndMinutes)}p)` : ''}`;
             } else if (activeOrder.orderState === 'Consultation') {
               liveStatus = 'BUSY';
-              liveLabel = `💬 Đang tư vấn${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
+              liveLabel = `Đang tư vấn${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
             } else if (activeOrder.orderState === 'ServiceEnd') {
               liveStatus = 'ENDING_SOON';
-              liveLabel = `📷 Xong nối mi, chụp ảnh After${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
+              liveLabel = `Xong nối mi, chụp ảnh After${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
             } else if (estimatedEndMinutes != null && estimatedEndMinutes < -10) {
               liveStatus = 'OVERTIME';
-              liveLabel = `🔴 Quá giờ (${Math.abs(estimatedEndMinutes)}p)`;
+              liveLabel = `Quá giờ (${Math.abs(estimatedEndMinutes)}p)`;
             } else if (estimatedEndMinutes != null && estimatedEndMinutes <= 15) {
               liveStatus = 'ENDING_SOON';
-              liveLabel = `⚡ Sắp xong (còn ${Math.max(0, estimatedEndMinutes)}p)${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
+              liveLabel = `Sắp xong (còn ${Math.max(0, estimatedEndMinutes)}p)${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
             } else {
               liveStatus = 'BUSY';
-              liveLabel = `🔵 Đang nối mi${estimatedEndMinutes != null ? ` (còn ${Math.max(0, estimatedEndMinutes)}p)` : ''}${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
+              liveLabel = `Đang nối mi${estimatedEndMinutes != null ? ` (còn ${Math.max(0, estimatedEndMinutes)}p)` : ''}${currentCustomerName ? ` • ${currentCustomerName}` : ''}`;
             }
           } else {
             // Check for upcoming bookings today
@@ -8623,7 +8623,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
               if (diffMins <= 45) {
                 liveStatus = diffMins <= 15 ? 'UPCOMING' : 'LOCKED';
-                liveLabel = `🟡 Sắp có khách (${Math.max(0, diffMins)}p nữa)`;
+                liveLabel = `Sắp có khách (${Math.max(0, diffMins)}p nữa)`;
                 currentCustomerName = nextOrder.customerName ? String(nextOrder.customerName).trim() : null;
                 bookingDateEnd = null;
               }

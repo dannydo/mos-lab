@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Tooltip } from 'antd';
+import { ThunderboltOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 
 interface CvStatusSummaryBarProps {
   statusCounts: { IDLE: number; UPCOMING: number; BUSY: number; ENDING_SOON: number; OVERTIME: number };
@@ -16,7 +17,8 @@ export const CvStatusSummaryBar: React.FC<CvStatusSummaryBarProps> = React.memo(
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-2 rounded-xl border border-slate-700/80 shadow-md text-white">
         <div className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between px-0.5">
           <span className="flex items-center gap-1">
-            <span>⚡ Trạng Thái Real-Time</span>
+            <ThunderboltOutlined className="text-amber-400" />
+            <span>Trạng Thái Real-Time</span>
           </span>
           <span className="text-[9px] font-mono text-emerald-400 font-normal">
             {isLive ? '● Live order_state' : 'Auto NOW()'}
@@ -33,7 +35,10 @@ export const CvStatusSummaryBar: React.FC<CvStatusSummaryBarProps> = React.memo(
                   : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
               }`}
             >
-              <div>🟢 Rảnh</div>
+              <div className="flex items-center justify-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Rảnh</span>
+              </div>
               <div className="text-xs font-extrabold tabular-nums">{statusCounts.IDLE}</div>
             </button>
           </Tooltip>
@@ -48,7 +53,10 @@ export const CvStatusSummaryBar: React.FC<CvStatusSummaryBarProps> = React.memo(
                   : 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30 hover:bg-yellow-500/25'
               }`}
             >
-              <div>🟡 Sắp hẹn</div>
+              <div className="flex items-center justify-center gap-1">
+                <ClockCircleOutlined className="text-yellow-400 text-[10px]" />
+                <span>Sắp hẹn</span>
+              </div>
               <div className="text-xs font-extrabold tabular-nums">{statusCounts.UPCOMING}</div>
             </button>
           </Tooltip>
@@ -63,7 +71,10 @@ export const CvStatusSummaryBar: React.FC<CvStatusSummaryBarProps> = React.memo(
                   : 'bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25'
               }`}
             >
-              <div>🔵 Đang nối</div>
+              <div className="flex items-center justify-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-blue-400" />
+                <span>Đang nối</span>
+              </div>
               <div className="text-xs font-extrabold tabular-nums">{statusCounts.BUSY}</div>
             </button>
           </Tooltip>
@@ -78,7 +89,10 @@ export const CvStatusSummaryBar: React.FC<CvStatusSummaryBarProps> = React.memo(
                   : 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
               }`}
             >
-              <div>⚡ Sắp xong</div>
+              <div className="flex items-center justify-center gap-1">
+                <ThunderboltOutlined className="text-amber-400 text-[10px]" />
+                <span>Sắp xong</span>
+              </div>
               <div className="text-xs font-extrabold tabular-nums">{statusCounts.ENDING_SOON}</div>
             </button>
           </Tooltip>
@@ -93,7 +107,10 @@ export const CvStatusSummaryBar: React.FC<CvStatusSummaryBarProps> = React.memo(
                   : 'bg-rose-500/15 text-rose-300 border-rose-500/30 hover:bg-rose-500/25'
               }`}
             >
-              <div>🔴 Quá giờ</div>
+              <div className="flex items-center justify-center gap-1">
+                <ExclamationCircleOutlined className="text-rose-400 text-[10px]" />
+                <span>Quá giờ</span>
+              </div>
               <div className="text-xs font-extrabold tabular-nums">{statusCounts.OVERTIME}</div>
             </button>
           </Tooltip>

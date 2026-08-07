@@ -371,7 +371,10 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
           {/* Section 1: Working CVs */}
           <div className="space-y-1.5" role="region" aria-label="Danh sách Chuyên viên Đi Làm">
             <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center justify-between px-1">
-              <span className="tabular-nums">🟢 CV Đi Làm ({filteredWorkingStaff.length})</span>
+              <span className="tabular-nums flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 inline-block animate-pulse" />
+                <span>CV Đi Làm ({filteredWorkingStaff.length})</span>
+              </span>
               <span className="text-[10px] font-normal text-slate-400 normal-case">(Xếp theo Lịch book giảm dần)</span>
             </div>
 
@@ -395,9 +398,20 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
             aria-label="Danh sách Chuyên viên Nghỉ"
           >
             <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center justify-between px-1">
-              <span className="tabular-nums">🔴 CV Nghỉ / OFF ({filteredOffStaff.length})</span>
-              <span className="text-[10px] font-normal text-slate-400 normal-case">
-                (🟡 OFF Tuần | 🔴 OFF Gấp | 🟠 OFF Phép)
+              <span className="tabular-nums flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0 inline-block" />
+                <span>CV Nghỉ / OFF ({filteredOffStaff.length})</span>
+              </span>
+              <span className="text-[10px] font-normal text-slate-400 normal-case inline-flex items-center gap-2">
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> OFF Tuần
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> OFF Gấp
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> OFF Phép
+                </span>
               </span>
             </div>
 

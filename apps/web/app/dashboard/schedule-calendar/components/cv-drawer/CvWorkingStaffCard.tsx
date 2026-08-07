@@ -2,7 +2,13 @@
 
 import React, { useMemo } from 'react';
 import { Avatar, Tag, Tooltip } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  FireOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import { StaffWorkingItem, CvAvailabilityInfo } from './cvDrawerUtils';
 
 interface CvWorkingStaffCardProps {
@@ -56,6 +62,7 @@ const LAYER_LABELS: Record<number, { label: string; color: string }> = {
 export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(({ staff, rankIndex }) => {
   const isTopBooked = rankIndex === 0 && (staff.bookedCount || 0) > 0;
   const eta = staff.availability.etaInfo;
+  const cleanLabel = (staff.availability.label || '').replace(/^[🟢🔴🟡🔵💬🧹📷⚡🏁📅]\s*/, '');
 
   const progressColors = useMemo(() => {
     if (!eta) return null;
@@ -63,55 +70,47 @@ export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(
   }, [eta]);
 
   const tooltipContent = (
-    <div className="text-xs space-y-1.5 min-w-[200px]" role="tooltip">
+    <div className="text-xs space-y-1.5 min-w-[210px]" role="tooltip">
       <div className="font-bold text-slate-100 flex items-center justify-between">
         <span>{staff.name}</span>
-        <span className="text-[10px] text-emerald-400">#{rankIndex + 1}</span>
+        <span className="text-[10px] font-mono text-slate-400">#{rankIndex + 1}</span>
       </div>
-      <div className="text-slate-300 flex items-center gap-1">
-        <span>Trạng thái:</span>
-        <span className="font-bold">{staff.availability.label}</span>
+      <div className="text-emerald-400 font-semibold">{cleanLabel}</div>
+      <div className="text-slate-300 grid grid-cols-2 gap-1 text-[11px] pt-1 border-t border-slate-700">
+        <div>Booked: {staff.bookedCount || 0}</div>
+        <div>Đã xong: {staff.doneCount || 0}</div>
       </div>
-      {staff.availability.customerName && (
-        <div className="text-cyan-300 font-semibold">👤 Đang làm: {staff.availability.customerName}</div>
+      {eta && (
+        <div className="text-[11px] pt-1 border-t border-slate-700 space-y-1">
+          <div className="text-amber-300 font-semibold flex items-center justify-between">
+            <span>
+              ETA: ~{eta.etaMinutes}p ({eta.lashStyle})
+            </span>
+            <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300">
+              Layer {eta.layer} ({eta.confidence})
+            </span>
+          </div>
+          <div className="text-slate-300">
+            Đã làm: <b>{eta.elapsedMinutes}p</b> ({eta.progressPercent}%)
+            <span className="text-slate-400 mx-1">•</span>
+            Còn: <b>{eta.remainingMinutes}p</b>
+          </div>
+          <div className="text-[10px] text-slate-400 italic">{eta.source}</div>
+        </div>
       )}
-      <div className="border-t border-slate-700/60 pt-1 space-y-0.5 text-slate-300">
-        <div>
-          Lịch book ca: <b className="text-blue-300 tabular-nums">{staff.bookedCount || 0}</b> đơn
+      {(staff.avgDurationMinutes?.normalAvg ||
+        staff.avgDurationMinutes?.retainAvg ||
+        staff.avgDurationMinutes?.removalAvg) && (
+        <div className="text-[11px] text-purple-300 tabular-nums">
+          TB Nối:{' '}
+          {[
+            staff.avgDurationMinutes.normalAvg ? `${staff.avgDurationMinutes.normalAvg}p` : null,
+            staff.avgDurationMinutes.retainAvg ? `Dặm: ${staff.avgDurationMinutes.retainAvg}p` : null,
+          ]
+            .filter(Boolean)
+            .join(' | ')}
         </div>
-        <div>
-          Đã hoàn thành: <b className="text-emerald-300 tabular-nums">{staff.doneCount || 0}</b> đơn
-        </div>
-        {eta && (
-          <div className="border-t border-slate-700/40 pt-1 mt-1 space-y-0.5">
-            <div className="text-[11px] text-cyan-300">
-              🎀 Loại mi: <b>{eta.lashStyle}</b>
-              {eta.lashCount != null && <span className="text-slate-400 ml-1">({eta.lashCount} sợi)</span>}
-            </div>
-            <div className="text-[11px] text-amber-300 tabular-nums">
-              ⏱ ETA: <b>{eta.etaMinutes}p</b>
-              <span className="text-slate-400 mx-1">•</span>
-              Đã nối: <b>{eta.elapsedMinutes}p</b>
-              <span className="text-slate-400 mx-1">•</span>
-              Còn: <b>{eta.remainingMinutes}p</b>
-            </div>
-            <div className="text-[10px] text-slate-400 italic">{eta.source}</div>
-          </div>
-        )}
-        {(staff.avgDurationMinutes?.normalAvg ||
-          staff.avgDurationMinutes?.retainAvg ||
-          staff.avgDurationMinutes?.removalAvg) && (
-          <div className="text-[11px] text-purple-300 tabular-nums">
-            ⏱ TB Nối:{' '}
-            {[
-              staff.avgDurationMinutes.normalAvg ? `${staff.avgDurationMinutes.normalAvg}p` : null,
-              staff.avgDurationMinutes.retainAvg ? `Dặm: ${staff.avgDurationMinutes.retainAvg}p` : null,
-            ]
-              .filter(Boolean)
-              .join(' | ')}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 
@@ -120,7 +119,7 @@ export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(
       <div
         tabIndex={0}
         role="listitem"
-        aria-label={`Chuyên viên #${rankIndex + 1} ${staff.name}, ${staff.availability.label}, ${staff.bookedCount || 0} Đặt lịch, ${staff.doneCount || 0} Hoàn thành`}
+        aria-label={`Chuyên viên #${rankIndex + 1} ${staff.name}, ${cleanLabel}, ${staff.bookedCount || 0} Đặt lịch, ${staff.doneCount || 0} Hoàn thành`}
         className={`flex flex-col text-xs rounded-xl border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${staff.availability.cardStyle}`}
       >
         {/* Row 1: Avatar + Info + Branch */}
@@ -150,29 +149,34 @@ export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(
                 <span className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate">{staff.name}</span>
 
                 {isTopBooked && (
-                  <Tag color="gold" className="m-0 text-[9px] px-1 py-0 font-bold shrink-0">
-                    🔥 Top Booked
+                  <Tag color="gold" className="m-0 text-[9px] px-1.5 py-0 font-bold shrink-0 inline-flex items-center">
+                    <FireOutlined className="mr-0.5 text-amber-500" /> Top Booked
                   </Tag>
                 )}
 
-                <span className={`text-[9px] px-1.5 py-0.2 rounded border shrink-0 ${staff.availability.badgeStyle}`}>
-                  {staff.availability.label}
+                <span
+                  className={`text-[9px] px-1.5 py-0.2 rounded border shrink-0 inline-flex items-center gap-1 ${staff.availability.badgeStyle}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+                  {cleanLabel}
                 </span>
               </div>
 
               {/* Line 2: Metrics */}
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold tabular-nums">
-                  📅 {staff.bookedCount || 0} Book
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold tabular-nums inline-flex items-center">
+                  <CalendarOutlined className="mr-1 text-blue-500" />
+                  {staff.bookedCount || 0} Book
                 </span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold tabular-nums">
-                  ✅ {staff.doneCount || 0} Done
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold tabular-nums inline-flex items-center">
+                  <CheckCircleOutlined className="mr-1 text-emerald-500" />
+                  {staff.doneCount || 0} Done
                 </span>
                 {(staff.avgDurationMinutes?.normalAvg ||
                   staff.avgDurationMinutes?.retainAvg ||
                   staff.avgDurationMinutes?.removalAvg) && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-semibold tabular-nums">
-                    ⚡{' '}
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-semibold tabular-nums inline-flex items-center">
+                    <ThunderboltOutlined className="mr-1 text-purple-500" />
                     {[
                       staff.avgDurationMinutes.normalAvg ? `${staff.avgDurationMinutes.normalAvg}p nối` : null,
                       staff.avgDurationMinutes.retainAvg ? `${staff.avgDurationMinutes.retainAvg}p dặm` : null,

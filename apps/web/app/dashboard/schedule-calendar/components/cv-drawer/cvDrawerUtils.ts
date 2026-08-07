@@ -109,7 +109,7 @@ export function realtimeStatusToAvailability(status: CvStaffRealtimeStatus): CvA
   const styles = getStatusStyles(state);
   return {
     state,
-    label: status.liveLabel || '🟢 Đang rảnh',
+    label: status.liveLabel ? status.liveLabel.replace(/^[🟢🔴🟡🔵💬🧹📷⚡🏁📅]\s*/, '') : 'Đang rảnh',
     ...styles,
     customerName: status.currentCustomerName || undefined,
     minutesRemaining: status.estimatedEndMinutes ?? undefined,
@@ -144,7 +144,7 @@ export function computeCvAvailability(
     const isPast = currentDate.isBefore(now, 'day');
     return {
       state: 'IDLE',
-      label: isPast ? '🏁 Đã xong ca' : '📅 Đã sẵn sàng ca',
+      label: isPast ? 'Đã xong ca' : 'Đã sẵn sàng ca',
       badgeStyle: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20 font-medium',
       cardStyle: 'bg-white dark:bg-slate-900/60 border-slate-200/60 dark:border-slate-800/60',
     };
@@ -179,7 +179,7 @@ export function computeCvAvailability(
       const styles = getStatusStyles('OVERTIME');
       return {
         state: 'OVERTIME',
-        label: `🔴 Quá giờ (${Math.abs(diffMinutes)}p) • ${custName}`,
+        label: `Quá giờ (${Math.abs(diffMinutes)}p) • ${custName}`,
         ...styles,
         customerName: custName,
         minutesRemaining: diffMinutes,
@@ -188,7 +188,7 @@ export function computeCvAvailability(
       const styles = getStatusStyles('ENDING_SOON');
       return {
         state: 'ENDING_SOON',
-        label: `⚡ Sắp xong (còn ${Math.max(1, diffMinutes)}p) • ${custName}`,
+        label: `Sắp xong (còn ${Math.max(1, diffMinutes)}p) • ${custName}`,
         ...styles,
         customerName: custName,
         minutesRemaining: diffMinutes,
@@ -197,7 +197,7 @@ export function computeCvAvailability(
       const styles = getStatusStyles('BUSY');
       return {
         state: 'BUSY',
-        label: `🔵 Đang nối (còn ${diffMinutes}p) • ${custName}`,
+        label: `Đang nối (còn ${diffMinutes}p) • ${custName}`,
         ...styles,
         customerName: custName,
         minutesRemaining: diffMinutes,
@@ -226,7 +226,7 @@ export function computeCvAvailability(
       const styles = getStatusStyles('UPCOMING');
       return {
         state: 'UPCOMING',
-        label: `🟡 Sắp có khách (trong ${Math.max(1, diffToStart)}p) • ${custName}`,
+        label: `Sắp có khách (trong ${Math.max(1, diffToStart)}p) • ${custName}`,
         ...styles,
         customerName: custName,
         minutesUntilNext: diffToStart,
@@ -235,7 +235,7 @@ export function computeCvAvailability(
   }
 
   const styles = getStatusStyles('IDLE');
-  return { state: 'IDLE', label: '🟢 Đang rảnh', ...styles };
+  return { state: 'IDLE', label: 'Đang rảnh', ...styles };
 }
 
 export function getQueueBorderColor(entry: CvQueueEntry, staffStatus?: CvStaffRealtimeStatus): string {
