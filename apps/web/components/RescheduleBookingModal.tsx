@@ -365,12 +365,17 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       setSelectedCN(matchedStore);
 
       // Set date & note & slot
-      const rawDate = booking.bookingDate || booking.bookingDateStart || booking.booking_date_start || booking.date;
+      const targetDateStr = booking.targetBookingDate || booking.target_booking_date;
+      const targetTimeStr = booking.targetBookingTime || booking.target_booking_time;
+
+      const rawDate =
+        targetDateStr || booking.bookingDate || booking.bookingDateStart || booking.booking_date_start || booking.date;
       const bDate = rawDate ? dayjs(rawDate) : dayjs();
       setBookingDate(bDate);
       setBookingNote(booking.bookingNote || booking.note || '');
 
       const rawTime =
+        targetTimeStr ||
         booking.bookingTime ||
         booking.time ||
         (rawDate && String(rawDate).includes(' ') ? String(rawDate).split(' ')[1]?.slice(0, 5) : null);

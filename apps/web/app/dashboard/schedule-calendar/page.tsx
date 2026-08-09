@@ -563,8 +563,17 @@ export default function ScheduleCalendarPage() {
             setDetailCustomerId(customerId);
             setCustomerDrawerOpen(true);
           }}
-          onReschedule={(appt) => {
-            setSelectedRescheduleAppt(appt);
+          onReschedule={(appt, newDateTime) => {
+            if (newDateTime) {
+              const targetDay = dayjs(newDateTime);
+              setSelectedRescheduleAppt({
+                ...appt,
+                targetBookingDate: targetDay.format('YYYY-MM-DD'),
+                targetBookingTime: targetDay.format('HH:mm'),
+              });
+            } else {
+              setSelectedRescheduleAppt(appt);
+            }
             setRescheduleModalOpen(true);
           }}
         />

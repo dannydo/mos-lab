@@ -204,6 +204,8 @@ export interface Appointment {
   ccOutAvatar?: string | null;
   bookerAvatar?: string | null;
   missedLog?: MissedLog | null;
+  targetBookingDate?: string;
+  targetBookingTime?: string;
 }
 
 export interface CustomerHistoryEntry {
