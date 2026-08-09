@@ -316,10 +316,10 @@ const TodayComingTable = React.memo(function TodayComingTable({
           localStorage.setItem('today_coming_category', key);
         }}
         items={[
-          { key: 'all', label: `Tất cả khách đến (${tabCounts.all})` },
-          { key: 'combo', label: `Khách gói Combo (${tabCounts.combo})` },
-          { key: 'oc', label: `Khách Telesales (${tabCounts.oc})` },
-          { key: 'other', label: `Khách Lẻ / Khác (${tabCounts.other})` },
+          { key: 'all', label: `All Booking (${tabCounts.all})` },
+          { key: 'combo', label: `Combo Live (${tabCounts.combo})` },
+          { key: 'oc', label: `by Telesales (${tabCounts.oc})` },
+          { key: 'other', label: `by Other (${tabCounts.other})` },
         ]}
         size="small"
         style={{ marginBottom: '12px' }}
@@ -329,12 +329,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
         <div className="flex items-center gap-2 mb-3 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs">
           <span className="text-slate-500 dark:text-slate-400 font-medium">Bộ lọc đang mở:</span>
           {comingBranch !== 'all' && (
-            <Tag
-              color="cyan"
-              closable
-              onClose={() => setComingBranch('all')}
-              className="font-semibold text-xs py-0.5"
-            >
+            <Tag color="cyan" closable onClose={() => setComingBranch('all')} className="font-semibold text-xs py-0.5">
               Chi nhánh: {comingBranch === 'detham' ? 'Đề Thám' : comingBranch === 'pxl' ? 'PXL' : 'Estella'}
             </Tag>
           )}

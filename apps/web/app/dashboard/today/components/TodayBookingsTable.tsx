@@ -378,10 +378,10 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
         activeKey={bookingFilter}
         onChange={(key) => setBookingFilter(key as SafeAny)}
         items={[
-          { key: 'all', label: `Tất cả booking (${tabCounts.all})` },
-          { key: 'combo', label: `Booking gói Combo (${tabCounts.combo})` },
-          { key: 'oc', label: `Booking Telesales (${tabCounts.oc})` },
-          { key: 'other', label: `Lẻ / Khác (${tabCounts.other})` },
+          { key: 'all', label: `All Booking (${tabCounts.all})` },
+          { key: 'combo', label: `Combo Live (${tabCounts.combo})` },
+          { key: 'oc', label: `by Telesales (${tabCounts.oc})` },
+          { key: 'other', label: `by Other (${tabCounts.other})` },
         ]}
         size="small"
         style={{ marginBottom: '12px' }}

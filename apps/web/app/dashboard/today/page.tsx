@@ -1,4 +1,5 @@
 'use client';
+// Touch for Turbopack cache refresh - tab labels update
 
 import '../../suppress-warnings';
 import React, { useEffect, useState } from 'react';
