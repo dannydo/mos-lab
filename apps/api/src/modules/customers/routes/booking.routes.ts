@@ -991,10 +991,9 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           o.client_store_id as storeId,
           COALESCE(up.full_name, 'No Name') as customerName,
           up.avatar as customerAvatar,
-          (
-            SELECT COALESCE(MAX(uc.phone_number), '')
-            FROM user_contact uc
-            WHERE uc.user_id = o.user_id AND uc.is_disabled = 0
+          COALESCE(
+            (SELECT phone_number FROM user_contact WHERE user_id = o.user_id AND is_disabled = 0 AND phone_number IS NOT NULL AND phone_number != '' ORDER BY id DESC LIMIT 1),
+            ''
           ) as customerPhone
         FROM \`order\` o
         LEFT JOIN report_order ro ON o.id = ro.order_id

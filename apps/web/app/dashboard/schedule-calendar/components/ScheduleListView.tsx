@@ -328,6 +328,10 @@ export default function ScheduleListView({
     },
   ];
 
+  const totalItems = appointments.length;
+  const maxPage = Math.max(1, Math.ceil(totalItems / (pageSize || 10)));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), maxPage);
+
   return (
     <div className="schedule-list-view-container w-full bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-4">
       <Table
@@ -342,9 +346,9 @@ export default function ScheduleListView({
         }}
         scroll={{ x: 1200 }}
         pagination={{
-          current: currentPage,
+          current: safeCurrentPage,
           pageSize: pageSize,
-          total: total,
+          total: totalItems,
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50', '100'],
           onChange: onPageChange,

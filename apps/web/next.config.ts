@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+// Touch next.config.ts to trigger dev server reload
 import withBundleAnalyzer from '@next/bundle-analyzer';
 
 const nextConfig: NextConfig = {

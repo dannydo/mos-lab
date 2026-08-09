@@ -1,5 +1,5 @@
 'use client';
-
+// Touch file for Turbopack HMR refresh - 15-min slots active
 import React, { useState, useRef, useCallback } from 'react';
 import { Card, Tag, Button, Tooltip, Progress, Badge, Popover, Space, Typography, Avatar, message } from 'antd';
 import {
@@ -308,67 +308,96 @@ function MultiDayColumnView({
         })}
 
         {/* Time Rows */}
-        {HOURS_RANGE.map((hourStr) => (
-          <React.Fragment key={hourStr}>
-            {/* Time Slot Label Column */}
-            <div className="sticky left-0 z-10 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/60 rounded-lg p-2 flex items-center justify-center font-mono text-xs font-bold text-slate-600 dark:text-slate-300 tabular-nums shadow-xs">
-              {hourStr}
-            </div>
+        {HOURS_RANGE.map((hourStr) => {
+          const hourNumStr = hourStr.split(':')[0];
+          const targetHourNum = parseInt(hourNumStr, 10);
+          const MINUTE_SLOTS = ['00', '15', '30', '45'];
 
-            {/* Slots per Day */}
-            {daysList.map((day) => {
-              const dayKey = day.format('YYYY-MM-DD');
-              const dayAppts = appointmentsByDay[dayKey] || [];
-              const targetHourNum = parseInt(hourStr.split(':')[0], 10);
-
-              // Filter appointments in this hour slot
-              const slotAppts = dayAppts.filter((a) => {
-                if (!a.bookingDateStart) return false;
-                const h = dayjs(a.bookingDateStart).hour();
-                return h === targetHourNum;
-              });
-
-              return (
-                <div
-                  key={`${dayKey}-${hourStr}`}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, day, hourStr)}
-                  onClick={() => slotAppts.length === 0 && onSelectSlot && onSelectSlot(day, hourStr)}
-                  className={`min-h-[76px] p-1.5 rounded-lg border transition-all relative group flex flex-col gap-1.5 ${
-                    slotAppts.length === 0
-                      ? 'border-dashed border-slate-200 dark:border-slate-800/70 hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/10 cursor-pointer'
-                      : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50'
-                  }`}
-                >
-                  {slotAppts.length === 0 ? (
-                    <div className="h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        type="dashed"
-                        size="small"
-                        icon={<PlusOutlined />}
-                        className="text-[11px] text-emerald-600 border-emerald-400"
-                      >
-                        Thêm lịch
-                      </Button>
-                    </div>
-                  ) : (
-                    slotAppts.map((appt) => (
-                      <AppointmentCardItem
-                        key={String(appt.id || (appt as any).orderId || Math.random())}
-                        appt={appt}
-                        hourStr={hourStr}
-                        onHandleDragStart={handleDragStart}
-                        onMakeCall={makeCall}
-                        onViewCustomerDetail={onViewCustomerDetail}
-                        onReschedule={onReschedule}
-                      />
-                    ))
-                  )}
+          return (
+            <React.Fragment key={hourStr}>
+              {/* Time Slot Label Column */}
+              <div className="sticky left-0 z-10 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/60 rounded-lg p-1.5 flex flex-col justify-between items-center font-mono text-xs font-bold text-slate-600 dark:text-slate-300 tabular-nums shadow-xs min-h-[140px]">
+                <div className="text-center font-extrabold text-sm text-slate-800 dark:text-slate-100">{hourStr}</div>
+                <div className="w-full flex flex-col gap-1 mt-1 text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                  <div className="flex justify-between items-center border-t border-slate-200/60 dark:border-slate-700/60 pt-0.5">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">:00</span>
+                    <span>:15</span>
+                  </div>
+                  <div className="flex justify-between items-center border-t border-slate-200/60 dark:border-slate-700/60 pt-0.5">
+                    <span>:30</span>
+                    <span>:45</span>
+                  </div>
                 </div>
-              );
-            })}
-          </React.Fragment>
-        ))}
+              </div>
+
+              {/* Slots per Day */}
+              {daysList.map((day) => {
+                const dayKey = day.format('YYYY-MM-DD');
+                const dayAppts = appointmentsByDay[dayKey] || [];
+
+                return (
+                  <div
+                    key={`${dayKey}-${hourStr}`}
+                    className="p-1 rounded-lg border border-slate-200/80 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col gap-1 min-h-[140px]"
+                  >
+                    {MINUTE_SLOTS.map((minStr) => {
+                      const subSlotTimeStr = `${hourNumStr}:${minStr}`;
+                      const minTarget = parseInt(minStr, 10);
+
+                      // Filter appointments in this 15-minute sub-slot
+                      const subSlotAppts = dayAppts.filter((a) => {
+                        if (!a.bookingDateStart) return false;
+                        const d = dayjs(a.bookingDateStart);
+                        if (d.hour() !== targetHourNum) return false;
+                        const m = d.minute();
+                        return m >= minTarget && m < minTarget + 15;
+                      });
+
+                      const isEmpty = subSlotAppts.length === 0;
+
+                      return (
+                        <div
+                          key={subSlotTimeStr}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, day, subSlotTimeStr)}
+                          onClick={() => isEmpty && onSelectSlot && onSelectSlot(day, subSlotTimeStr)}
+                          className={`sub-slot-zone relative rounded-md p-1 border transition-all flex flex-col gap-1 min-h-[28px] ${
+                            isEmpty
+                              ? 'border-dashed border-slate-200/60 dark:border-slate-800/40 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 cursor-pointer group/slot'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60 shadow-2xs'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 dark:text-slate-500 px-0.5 select-none pointer-events-none">
+                            <span className="font-bold text-slate-500 dark:text-slate-400 text-[10px]">
+                              {subSlotTimeStr}
+                            </span>
+                            {isEmpty && (
+                              <span className="opacity-0 group-hover/slot:opacity-100 transition-opacity text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5 text-[10px]">
+                                <PlusOutlined style={{ fontSize: '9px' }} /> Đặt {subSlotTimeStr}
+                              </span>
+                            )}
+                          </div>
+
+                          {subSlotAppts.map((appt) => (
+                            <AppointmentCardItem
+                              key={String(appt.id || (appt as any).orderId || Math.random())}
+                              appt={appt}
+                              hourStr={subSlotTimeStr}
+                              onHandleDragStart={handleDragStart}
+                              onMakeCall={makeCall}
+                              onViewCustomerDetail={onViewCustomerDetail}
+                              onReschedule={onReschedule}
+                            />
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </React.Fragment>
+          );
+        })}
       </div>
 
       <CvScheduleDrawer

@@ -83,7 +83,7 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
     }
   }, [rawStatus, currentNote, initialDiamond, customer.callbackDate]);
 
-  const days = customer.daysInCampaign ?? customer.daysSinceAdded ?? customer.daysSinceLastVisit ?? 0;
+  const days = customer.daysInCampaign ?? customer.daysSinceAdded ?? 0;
   const tpKey = touchpoint.key;
 
   // Determine active & overdue system windows dynamically from setup

@@ -38,14 +38,10 @@ export const useSlotMatrix = (selectedCN: SafeAny, selectedCV: SafeAny, initialD
     return getNextAvailableDate(initialDate, selectedCV);
   });
 
-  const setBookingDate = useCallback(
-    (newDate: dayjs.Dayjs) => {
-      if (!newDate) return;
-      const sanitized = getNextAvailableDate(newDate, selectedCV);
-      setBookingDateState(sanitized);
-    },
-    [selectedCV, getNextAvailableDate]
-  );
+  const setBookingDate = useCallback((newDate: dayjs.Dayjs) => {
+    if (!newDate) return;
+    setBookingDateState(newDate);
+  }, []);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [slotMatrix, setSlotMatrix] = useState<{ [time: string]: { available: number; roster: number } }>({});
   const [loadingSlots, setLoadingSlots] = useState(false);

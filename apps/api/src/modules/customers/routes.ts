@@ -7682,6 +7682,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
           COALESCE(csl.client_store_name, 'Estella Place') as branchName,
           COALESCE(up.full_name, 'No Name') as customerName,
           up.avatar as customerAvatar,
+          COALESCE(
+            (SELECT phone_number FROM user_contact WHERE user_id = o.user_id AND is_disabled = 0 AND phone_number IS NOT NULL AND phone_number != '' ORDER BY id DESC LIMIT 1),
+            ''
+          ) as customerPhone,
           up_created.full_name as bookerName,
           o.created_staff_id as createdStaffId
         FROM \`order\` o

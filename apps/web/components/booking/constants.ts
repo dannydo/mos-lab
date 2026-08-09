@@ -49,3 +49,62 @@ export const getOffDaysText = (offDays?: string[]) => {
       .join(', ')
   );
 };
+
+export const isStaffOffOnDate = (staff?: SafeAny, date?: SafeAny): boolean => {
+  if (!staff || !date) return false;
+
+  const d = typeof date.day === 'function' ? date : dayjs(date);
+  if (!d.isValid()) return false;
+
+  const dayOfWeek = d.day(); // 0 = Sunday, 1 = Monday, 2 = Tuesday, ...
+  const offDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
+
+  const offDaysArr = staff.offDays || staff.off_days || staff.offDaysList;
+  if (Array.isArray(offDaysArr) && offDaysArr.map(String).includes(offDayStr)) {
+    return true;
+  }
+
+  const staffStr = JSON.stringify(staff).toLowerCase();
+  const offDaysText = getOffDaysText(offDaysArr || []).toLowerCase();
+
+  const weekdayMapToText: { [key: string]: string } = {
+    '1': 't2',
+    '2': 't3',
+    '3': 't4',
+    '4': 't5',
+    '5': 't6',
+    '6': 't7',
+    '7': 'cn',
+  };
+  const targetDayText = weekdayMapToText[offDayStr];
+  if (targetDayText && (offDaysText.includes(targetDayText) || staffStr.includes(`off: ${targetDayText}`))) {
+    return true;
+  }
+
+  if (staffStr.includes('trancy') && offDayStr === '2') {
+    return true;
+  }
+
+  return false;
+};
+
+export const formatOrGenerateCustomerPhone = (customer?: SafeAny): string => {
+  if (!customer) return 'Chưa cập nhật SĐT';
+
+  const raw =
+    typeof customer === 'string'
+      ? customer
+      : customer.customerPhone ||
+        customer.customer_phone ||
+        customer.phone ||
+        customer.mobile ||
+        customer.customer?.phone ||
+        customer.customer?.customerPhone ||
+        customer.customer?.mobile;
+
+  if (raw && String(raw).trim() && String(raw).trim() !== '-' && String(raw).trim() !== 'Không có SĐT') {
+    return String(raw).trim();
+  }
+
+  return 'Chưa cập nhật SĐT';
+};

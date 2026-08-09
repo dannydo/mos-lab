@@ -1,5 +1,7 @@
 'use client';
 
+import { formatOrGenerateCustomerPhone } from './booking/constants';
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Table,
@@ -266,7 +268,7 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
                   {record.customer.name}
                 </span>
                 <div style={{ fontSize: '11px', color: 'var(--client-phone-color)' }}>
-                  {record.customer.phone || 'Không có SĐT'}
+                  {formatOrGenerateCustomerPhone(record.customer)}
                 </div>
               </div>
             </Space>

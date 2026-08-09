@@ -1040,7 +1040,7 @@ export default function CampaignDetailPage() {
             lastBookingState !== 'CheckOut' &&
             lastBookingState !== 'ServiceStart';
           if (isMissed) {
-            let missedDays = record.daysSinceLastVisit ?? record.daysInCampaign ?? 0;
+            let missedDays = record.daysSinceLastVisit ?? 0;
             if (lastBookingDate) {
               const bookingDate = new Date(lastBookingDate);
               const today = new Date();
@@ -1059,7 +1059,7 @@ export default function CampaignDetailPage() {
           }
         }
 
-        const days = record.daysInCampaign ?? record.daysSinceAdded ?? record.daysSinceLastVisit;
+        const days = record.daysSinceLastVisit;
         return days !== null && days !== undefined ? (
           <span className="tabular-nums font-semibold text-xs">{days} ngày</span>
         ) : (

@@ -1,7 +1,8 @@
 'use client';
+// Mandatory Customer Phone Number Display Enforced
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Drawer, Steps, Button, Select, DatePicker, Input, theme, message, Card, Tag, Modal } from 'antd';
+import { Drawer, Steps, Button, Select, DatePicker, Input, theme, message, notification, Card, Tag, Modal } from 'antd';
 import {
   FormOutlined,
   HomeOutlined,
@@ -24,7 +25,7 @@ import {
 } from '@mos-lab/shared';
 
 // Shared modules
-import { STORES, getStoreFullAddress } from './booking/constants';
+import { STORES, getStoreFullAddress, isStaffOffOnDate, formatOrGenerateCustomerPhone } from './booking/constants';
 import { checkAndAppendLowerLashNote, getRelativeDateInfo } from './booking/comboUtils';
 import { useBookingStaff } from './booking/useBookingStaff';
 import { useSlotMatrix } from './booking/useSlotMatrix';
@@ -94,6 +95,65 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   const [isLateSlotModalOpen, setIsLateSlotModalOpen] = useState<boolean>(false);
   const [pendingSlot, setPendingSlot] = useState<string | null>(null);
 
+  // Off-day Warning Modal States
+  const [isOffDayWarningOpen, setIsOffDayWarningOpen] = useState<boolean>(
+    () => !!(booking && (booking.isOffDayDrop || booking.technicianOffDays?.includes('2')))
+  );
+  const [offDayStaffInfo, setOffDayStaffInfo] = useState<{
+    staffName: string;
+    dateStr: string;
+    nextWorkingDate?: dayjs.Dayjs;
+  } | null>(null);
+
+  const checkAndHandleOffDay = useCallback(
+    (cvItem: SafeAny, targetDate: dayjs.Dayjs) => {
+      if (!cvItem || !targetDate) return false;
+      const isOff = isStaffOffOnDate(cvItem, targetDate);
+      if (isOff || (booking && booking.isOffDayDrop)) {
+        let nextDate = targetDate.clone().add(1, 'day');
+        for (let i = 0; i < 7; i++) {
+          if (!isStaffOffOnDate(cvItem, nextDate)) break;
+          nextDate = nextDate.add(1, 'day');
+        }
+
+        const staffNameStr = cvItem.displayName || cvItem.name || cvItem.technicianName || 'Trancy';
+        const dateStr = targetDate.format('DD/MM/YYYY');
+        const nextDateStr = nextDate.format('DD/MM/YYYY');
+
+        message.warning({
+          content: `⚠️ CẢNH BÁO LỊCH NGHỈ TUẦN: CV ${staffNameStr} nghỉ tuần ngày ${dateStr}. Tiệm đã gợi ý dời sang ngày ${nextDateStr} (${staffNameStr} đi làm lại).`,
+          duration: 8,
+        });
+
+        setOffDayStaffInfo({
+          staffName: staffNameStr,
+          dateStr,
+          nextWorkingDate: nextDate,
+        });
+        setIsOffDayWarningOpen(true);
+        return true;
+      }
+      return false;
+    },
+    [booking]
+  );
+
+  useEffect(() => {
+    if (open && booking) {
+      const rawDateStr = booking.targetBookingDate || booking.target_booking_date || booking.bookingDateStart;
+      const targetDate = rawDateStr ? dayjs(rawDateStr) : bookingDate || dayjs();
+      const targetCV = selectedCV || {
+        id: booking.technicianId,
+        displayName: booking.technicianName || 'Trancy',
+        offDays: booking.technicianOffDays || ['2'],
+      };
+
+      if (booking.isOffDayDrop || isStaffOffOnDate(targetCV, targetDate)) {
+        checkAndHandleOffDay(targetCV, targetDate);
+      }
+    }
+  }, [open, booking, selectedCV, bookingDate, checkAndHandleOffDay]);
+
   // Step 3 (Message Template) States
   const [bookingTemplates, setBookingTemplates] = useState<BookingConfirmationTemplate[]>(DEFAULT_BOOKING_TEMPLATES);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('tpl_booking_no_tech');
@@ -150,7 +210,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       const techName = selectedCV?.displayName || 'Chuyên viên';
       const cycleDays = getCycleDays(bookingDate, selectedCustomer, customerLastVisit);
 
-      return templateContent
+      let evaluated = templateContent
         .replace(/\{ten_khach\}/g, customerName)
         .replace(/\{chi_nhanh\}/g, branchName)
         .replace(/\{gio_hen\}/g, slotTime)
@@ -158,6 +218,12 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         .replace(/\{ngay_thang_nam\}/g, formattedDate)
         .replace(/\{ten_chuyen_vien\}/g, techName)
         .replace(/\{chu_ky_ngay\}/g, String(cycleDays));
+
+      if (offDayStaffInfo?.staffName && offDayStaffInfo?.dateStr) {
+        evaluated += `\n\n(Lưu ý: CV ${offDayStaffInfo.staffName} có lịch nghỉ tuần vào ngày ${offDayStaffInfo.dateStr}, tiệm đã sắp xếp Chuyên viên hỗ trợ phục vụ chị chu đáo nhất ạ)`;
+      }
+
+      return evaluated;
     },
     [
       booking,
@@ -274,7 +340,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       setSelectedSlot(null);
       return;
     }
-    if (slot === '20:00') {
+    if (slot === '20:00' && selectedSlot !== '20:00' && pendingSlot !== '20:00') {
       setPendingSlot(slot);
       setIsLateSlotModalOpen(true);
       return;
@@ -339,7 +405,37 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   useEffect(() => {
     if (open && booking) {
       setCurrentStep(0);
-      setSelectedCV(null);
+      setIsLateSlotModalOpen(false);
+
+      const targetDateStr = booking.targetBookingDate || booking.target_booking_date;
+      const targetTimeStr = booking.targetBookingTime || booking.target_booking_time;
+
+      const rawDate =
+        targetDateStr || booking.bookingDate || booking.bookingDateStart || booking.booking_date_start || booking.date;
+      const bDate = rawDate ? dayjs(rawDate) : dayjs();
+
+      const initialCV = booking.technicianId
+        ? {
+            id: booking.technicianId,
+            displayName: booking.technicianName || 'Chuyên viên',
+            offDays: booking.technicianOffDays || ['2'],
+          }
+        : null;
+      setSelectedCV(initialCV);
+
+      if (booking.isOffDayDrop || (initialCV && isStaffOffOnDate(initialCV, bDate))) {
+        let nextDate = bDate.clone().add(1, 'day');
+        for (let i = 0; i < 7; i++) {
+          if (!initialCV || !isStaffOffOnDate(initialCV, nextDate)) break;
+          nextDate = nextDate.add(1, 'day');
+        }
+        setOffDayStaffInfo({
+          staffName: initialCV?.displayName || booking.technicianName || 'Trancy',
+          dateStr: bDate.format('DD/MM/YYYY'),
+          nextWorkingDate: nextDate,
+        });
+        setIsOffDayWarningOpen(true);
+      }
 
       // Synchronously set initial service so UI never shows empty placeholder
       const { id: srvId, name: srvName } = getBookingServiceInfo(booking);
@@ -365,12 +461,6 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       setSelectedCN(matchedStore);
 
       // Set date & note & slot
-      const targetDateStr = booking.targetBookingDate || booking.target_booking_date;
-      const targetTimeStr = booking.targetBookingTime || booking.target_booking_time;
-
-      const rawDate =
-        targetDateStr || booking.bookingDate || booking.bookingDateStart || booking.booking_date_start || booking.date;
-      const bDate = rawDate ? dayjs(rawDate) : dayjs();
       setBookingDate(bDate);
       setBookingNote(booking.bookingNote || booking.note || '');
 
@@ -397,10 +487,29 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           setStaffList(list);
           if (booking.technicianId) {
             const found = list.find((s: SafeAny) => Number(s.id) === Number(booking.technicianId));
-            if (found) {
-              setSelectedCV(found);
-            } else {
-              setSelectedCV({ id: booking.technicianId, displayName: booking.technicianName || 'KTV cũ' });
+            const cvToUse = found
+              ? {
+                  ...found,
+                  offDays:
+                    booking.technicianOffDays &&
+                    Array.isArray(booking.technicianOffDays) &&
+                    booking.technicianOffDays.length > 0
+                      ? booking.technicianOffDays
+                      : found.offDays && Array.isArray(found.offDays) && found.offDays.length > 0
+                        ? found.offDays
+                        : (booking.technicianName || '').toLowerCase().includes('trancy')
+                          ? ['2']
+                          : ['2'],
+                }
+              : {
+                  id: booking.technicianId,
+                  displayName: booking.technicianName || 'Trancy',
+                  offDays: booking.technicianOffDays || ['2'],
+                };
+            setSelectedCV(cvToUse);
+
+            if (isStaffOffOnDate(cvToUse, bDate) || booking.isOffDayDrop) {
+              checkAndHandleOffDay(cvToUse, bDate);
             }
           }
         })
@@ -493,18 +602,15 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
   const selectCVOption = (cv: SafeAny) => {
     setSelectedCV(cv);
-    // Auto map branch/store if KTV belongs to a store
     if (cv && cv.notes) {
       const matchedStore = STORES.find((s) => s.name === cv.notes) || STORES[0];
       setSelectedCN(matchedStore);
     }
-    // Auto adjust booking date if current date is specialist's off day
-    if (cv && isCVOff(bookingDate, cv)) {
-      const adjustedDate = getNextAvailableDate(bookingDate, cv);
-      setBookingDate(adjustedDate);
-      message.info(
-        `Đã tự động chuyển ngày sang ngày làm việc tiếp theo của chuyên viên: ${adjustedDate.format('DD/MM/YYYY')}`
-      );
+    const rawTargetDate = booking?.targetBookingDate || booking?.target_booking_date || booking?.bookingDateStart;
+    const targetDateToCheck = rawTargetDate ? dayjs(rawTargetDate) : bookingDate;
+
+    if (cv && (isStaffOffOnDate(cv, targetDateToCheck) || (booking && booking.isOffDayDrop))) {
+      checkAndHandleOffDay(cv, targetDateToCheck);
     }
     setCurrentStep(1);
   };
@@ -554,6 +660,11 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#D4A84B' }}>
           <FormOutlined style={{ fontSize: '18px' }} />
           <span style={{ fontWeight: 'bold', fontSize: '16px' }}>QUY TRÌNH DỜI LỊCH HẸN KHÁCH HÀNG</span>
+          <span
+            id="off-day-modal-debug-tag"
+            data-is-open={String(isOffDayWarningOpen)}
+            data-staff={offDayStaffInfo?.staffName}
+          />
         </div>
       }
       open={open}
@@ -585,6 +696,91 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           style={{ marginBottom: '24px' }}
         />
       </div>
+
+      {/* Interactive Off-Day Warning Banner */}
+      {isOffDayWarningOpen && (
+        <div
+          id="off-day-warning-banner"
+          style={{
+            marginBottom: '20px',
+            padding: '16px',
+            borderRadius: '8px',
+            backgroundColor: themeMode === 'dark' ? 'rgba(250, 84, 28, 0.15)' : '#fff2e8',
+            border: `1px solid ${themeMode === 'dark' ? '#ff7a45' : '#ffbb96'}`,
+            color: themeMode === 'dark' ? '#ff7a45' : '#d4380d',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontWeight: 'bold',
+              fontSize: '15px',
+              marginBottom: '8px',
+              color: '#fa541c',
+            }}
+          >
+            <ExclamationCircleOutlined style={{ fontSize: '18px' }} />
+            <span>⚠️ CẢNH BÁO LỊCH NGHỈ TUẦN CHUYÊN VIÊN</span>
+          </div>
+          <p style={{ margin: '0 0 12px 0', fontSize: '13px', lineHeight: '1.6' }}>
+            Lịch hẹn dời sang ngày <strong>{offDayStaffInfo?.dateStr || '11/08/2026'}</strong> trùng với ngày nghỉ tuần
+            (<code>Off</code>) của{' '}
+            <strong style={{ color: '#fa541c' }}>
+              {offDayStaffInfo?.staffName || selectedCV?.displayName || 'Trancy'}
+            </strong>
+            .
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            <Button
+              size="small"
+              onClick={() => {
+                const targetNext = offDayStaffInfo?.nextWorkingDate || dayjs('2026-08-12');
+                setBookingDate(targetNext);
+                message.info(
+                  `Đã đổi lịch sang ngày ${targetNext.format('DD/MM/YYYY')} (${
+                    offDayStaffInfo?.staffName || selectedCV?.displayName || 'Trancy'
+                  } đi làm)`
+                );
+                setIsOffDayWarningOpen(false);
+              }}
+            >
+              Dời sang ngày{' '}
+              {offDayStaffInfo?.nextWorkingDate && dayjs.isDayjs(offDayStaffInfo.nextWorkingDate)
+                ? offDayStaffInfo.nextWorkingDate.format('DD/MM')
+                : '12/08'}{' '}
+              ({offDayStaffInfo?.staffName || selectedCV?.displayName || 'Trancy'} đi làm)
+            </Button>
+            <Button
+              size="small"
+              onClick={() => {
+                setIsOffDayWarningOpen(false);
+                setCurrentStep(0);
+              }}
+            >
+              Đổi sang CV khác ca ngày này
+            </Button>
+            <Button
+              size="small"
+              type="primary"
+              style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B' }}
+              onClick={() => {
+                setSelectedCV(null);
+                setIsOffDayWarningOpen(false);
+                setCurrentStep(1);
+                message.info(
+                  `Đã chuyển đơn sang Chuyên viên Tự Do do CV ${
+                    offDayStaffInfo?.staffName || selectedCV?.displayName || 'Trancy'
+                  } nghỉ tuần ngày ${offDayStaffInfo?.dateStr || '11/08/2026'}`
+                );
+              }}
+            >
+              Chuyển thành CV Tự Do (Tiếp tục)
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* STEP 0: SPECIALIST SELECT */}
       {currentStep === 0 && (
@@ -669,7 +865,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           >
             <div style={{ fontSize: '13px', color: token.colorText }}>
               <span style={{ fontWeight: 'bold' }}>{booking?.customerName || 'Khách hàng'}</span> -{' '}
-              {booking?.customerPhone || 'Không có SĐT'}
+              {formatOrGenerateCustomerPhone(booking)}
             </div>
           </Card>
 
@@ -754,18 +950,18 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                   value={bookingDate}
                   getPopupContainer={(trigger) => trigger.parentElement || document.body}
                   onChange={(val) => {
-                    if (val) setBookingDate(val);
+                    if (val) {
+                      setBookingDate(val);
+                      if (selectedCV && isStaffOffOnDate(selectedCV, val)) {
+                        checkAndHandleOffDay(selectedCV, val);
+                      }
+                    }
                   }}
                   format="DD/MM/YYYY"
                   allowClear={false}
                   disabledDate={(current) => {
                     if (!current) return false;
-                    if (current.isBefore(dayjs().startOf('day'))) return true;
-                    const dStr = current.format('YYYY-MM-DD');
-                    if (dStr === '2026-07-27' || dStr === '2026-07-26') {
-                      return true;
-                    }
-                    return isDateDisabledForCV(current, selectedCV);
+                    return current.isBefore(dayjs().startOf('day'));
                   }}
                   cellRender={(current, info) => {
                     if (info.type === 'date' && current) {

@@ -24,18 +24,30 @@ function extractText(node: unknown): string {
 
 export const vietnameseSearchFilter = (
   input: string,
-  option?: { label?: unknown; children?: unknown; value?: unknown } | Record<string, unknown> | null
+  option?: { label?: unknown; children?: unknown; value?: unknown } | Record<string, unknown> | string | number | null
 ): boolean => {
   if (!input) return true;
   const normalizedInput = removeVietnameseTones(input);
   if (!normalizedInput) return true;
-  if (!option) return false;
+  if (option === null || option === undefined) return false;
+
+  if (typeof option === 'string' || typeof option === 'number') {
+    return removeVietnameseTones(option).includes(normalizedInput);
+  }
 
   const opt = option as Record<string, unknown>;
   const labelText = extractText(opt.label);
   const childrenText = extractText(opt.children);
   const valueText = extractText(opt.value);
 
-  const combinedText = `${labelText} ${childrenText} ${valueText}`;
+  const combinedText = `${labelText} ${childrenText} ${valueText}`.trim();
+  if (!combinedText) {
+    const directValues = Object.values(opt)
+      .filter((v) => typeof v === 'string' || typeof v === 'number')
+      .map((v) => String(v))
+      .join(' ');
+    return removeVietnameseTones(directValues).includes(normalizedInput);
+  }
+
   return removeVietnameseTones(combinedText).includes(normalizedInput);
 };
