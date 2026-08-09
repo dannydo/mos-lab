@@ -61,6 +61,14 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({ open, onCa
           />
         </Form.Item>
 
+        <Form.Item
+          name="isForeign"
+          label={<span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563' }}>Phân loại Quốc tịch</span>}
+          valuePropName="checked"
+        >
+          <Switch checkedChildren="🌐 Khách nước ngoài" unCheckedChildren="🇻🇳 Khách Việt Nam" />
+        </Form.Item>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <Form.Item
             name="gender"

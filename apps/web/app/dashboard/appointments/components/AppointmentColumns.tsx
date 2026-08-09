@@ -76,8 +76,25 @@ export const getPendingColumns = ({
             }}
           />
           <div>
-            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline">
-              {record.customerName}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+              <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline">
+                {record.customerName}
+              </div>
+              {(record as any).isForeign && (
+                <Tag
+                  color="purple"
+                  style={{
+                    margin: 0,
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    padding: '0 4px',
+                    borderRadius: '4px',
+                    lineHeight: '16px',
+                  }}
+                >
+                  🌐 Nước ngoài
+                </Tag>
+              )}
             </div>
             <div style={{ fontSize: '12px', color: token.colorTextDescription }}>ID: {record.customerId}</div>
           </div>

@@ -5,6 +5,7 @@ import { getBkPaystubData } from '../../kpi/services/bk-salary.service.js';
 import { BookingAuditService } from '../services/booking-audit.service.js';
 import { UserServiceTypeService } from '../services/user-service-type.service.js';
 import { CampaignPromotionSyncService } from '../../campaigns/campaign-promotion-sync.service.js';
+import { isForeignPhoneNumber, resolveIsForeign } from '../services/foreign-customer.service.js';
 
 const ALLOWED_BOOKING_LEGACY_GROUPS = [2, 5, 14, 31, 32, 33, 34, 45];
 
@@ -70,7 +71,20 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       promotionId,
       campaignPromotionId,
       referralPhone,
+      isForeign,
+      is_foreign,
     } = request.body as SafeAny;
+
+    const explicitForeign = isForeign !== undefined ? isForeign : is_foreign;
+    let finalIsForeign = 0;
+    let finalIsForeignOverridden = 0;
+    if (typeof explicitForeign === 'boolean') {
+      finalIsForeign = explicitForeign ? 1 : 0;
+      finalIsForeignOverridden = 1;
+    } else if (newCustomerPhone) {
+      finalIsForeign = isForeignPhoneNumber(newCustomerPhone) ? 1 : 0;
+      finalIsForeignOverridden = 0;
+    }
 
     try {
       // Find matching legacy user ID by CRM user (Resilient lookup with fallback)
@@ -176,8 +190,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
             user_id, client_id, client_business_id, user_group_id, passcode, provider, 
             first_name, last_name, full_name, client_store_id, is_disabled, 
             is_leaved, is_deleted, date_created, language_id, access_user_group_ids,
-            is_academy, is_temporary, referrer_user_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
+            is_academy, is_temporary, referrer_user_id, is_foreign, is_foreign_overridden
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?)`,
           finalCustomerId,
           11,
           1,
@@ -195,7 +209,9 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           '',
           0,
           0,
-          referrerUserId
+          referrerUserId,
+          finalIsForeign,
+          finalIsForeignOverridden
         );
 
         if (newCustomerPhone) {
@@ -207,7 +223,14 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           );
         }
       } else {
-        // If existing customer, update referrer if they don't have one yet
+        // If existing customer, update referrer and is_foreign if explicitly passed
+        if (typeof explicitForeign === 'boolean') {
+          await fastify.prisma.legacy.$executeRawUnsafe(
+            `UPDATE user_profile SET is_foreign = ?, is_foreign_overridden = 1 WHERE user_id = ?`,
+            explicitForeign ? 1 : 0,
+            finalCustomerId
+          );
+        }
         if (referrerUserId) {
           await fastify.prisma.legacy.$executeRawUnsafe(
             `UPDATE user_profile SET referrer_user_id = ? WHERE user_id = ? AND referrer_user_id IS NULL`,
@@ -991,6 +1014,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           o.client_store_id as storeId,
           COALESCE(up.full_name, 'No Name') as customerName,
           up.avatar as customerAvatar,
+          up.is_foreign as isForeign,
+          up.is_foreign_overridden as isForeignOverridden,
           COALESCE(
             (SELECT phone_number FROM user_contact WHERE user_id = o.user_id AND is_disabled = 0 AND phone_number IS NOT NULL AND phone_number != '' ORDER BY id DESC LIMIT 1),
             ''
@@ -1226,6 +1251,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           customerName: row.customerName,
           customerAvatar: row.customerAvatar,
           customerPhone: row.customerPhone,
+          isForeign: resolveIsForeign(row.isForeign, row.isForeignOverridden, row.customerPhone),
           serviceName,
           servicePrice: Number(price || 0),
           discountPercent: Number(discountPercent || 0),

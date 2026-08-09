@@ -36,6 +36,8 @@ export interface Customer {
   totalPromotionsUsed?: number;
   totalReferrals?: number;
   avatar?: string | null;
+  isForeign?: boolean;
+  isForeignOverridden?: boolean;
 
   // Specific combo info if available
   comboBalance?: {
@@ -139,6 +141,7 @@ export interface ListCustomersParams {
   lastCallDaysMax?: number | string;
   trash?: string | boolean;
   ids?: string;
+  isForeign?: 'all' | 'foreign' | 'local' | boolean | string;
 }
 
 export interface ListCustomersResponse {

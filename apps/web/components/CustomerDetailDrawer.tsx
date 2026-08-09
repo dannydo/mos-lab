@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import dayjs from 'dayjs';
-import { Drawer, Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message } from 'antd';
+import { Drawer, Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message, Tag } from 'antd';
 import {
   PhoneOutlined,
   UserOutlined,
@@ -141,6 +141,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     handleOpenEditModal,
 
     handleSaveEdit,
+    handleToggleForeign,
     handleDeleteCustomer,
     handleRestoreCustomer,
     handleCancelBooking,
@@ -337,10 +338,26 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
+                    flexWrap: 'wrap',
                   }}
                 >
                   {customer.name}
                   <span style={{ color: '#D4A84B', fontSize: '14px' }}>⭐⭐⭐⭐•</span>
+                  {customer.isForeign && (
+                    <Tag
+                      color="purple"
+                      style={{
+                        margin: 0,
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        padding: '0 6px',
+                        borderRadius: '4px',
+                        lineHeight: '20px',
+                      }}
+                    >
+                      🌐 Nước ngoài
+                    </Tag>
+                  )}
                 </div>
                 <div
                   style={{
@@ -612,7 +629,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   onOpenRevenueModal={() => setIsRevenueModalOpen(true)}
                 />
 
-                <ProfileDetailsCard customer={customer} themeMode={themeMode} />
+                <ProfileDetailsCard customer={customer} themeMode={themeMode} onToggleForeign={handleToggleForeign} />
 
                 <BookingHabitsCard
                   themeMode={themeMode}

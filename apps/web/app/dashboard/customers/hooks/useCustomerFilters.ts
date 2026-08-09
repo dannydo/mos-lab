@@ -71,6 +71,9 @@ export const useCustomerFilters = (
   const [lastCallDaysMin, setLastCallDaysMin] = useState<number | undefined>(undefined);
   const [lastCallDaysMax, setLastCallDaysMax] = useState<number | undefined>(undefined);
 
+  // Foreign customer filter state ('all' | 'foreign' | 'local')
+  const [isForeignFilter, setIsForeignFilter] = useState<'all' | 'foreign' | 'local'>('all');
+
   const prevScopeRef = useRef<string | null>(scopeParam);
   const prevUserRoleRef = useRef<string | undefined>(currentUser?.role);
 
@@ -400,6 +403,7 @@ export const useCustomerFilters = (
     setCallStatuses([]);
     setLastCallDaysMin(undefined);
     setLastCallDaysMax(undefined);
+    setIsForeignFilter('all');
     setRetainedOnly(false);
     setFilterCustomerIds(undefined);
 
@@ -518,6 +522,7 @@ export const useCustomerFilters = (
       callStatuses: callStatuses.length > 0 ? callStatuses.join(',') : undefined,
       lastCallDaysMin,
       lastCallDaysMax,
+      isForeign: isForeignFilter !== 'all' ? isForeignFilter : undefined,
     }),
     [
       activeTab,
@@ -549,6 +554,7 @@ export const useCustomerFilters = (
       callStatuses,
       lastCallDaysMin,
       lastCallDaysMax,
+      isForeignFilter,
     ]
   );
 
@@ -614,6 +620,10 @@ export const useCustomerFilters = (
     setAgeMin,
     ageMax,
     setAgeMax,
+
+    // Foreign Filter State
+    isForeignFilter,
+    setIsForeignFilter,
 
     // UI Drawer state
     filterDrawerVisible,

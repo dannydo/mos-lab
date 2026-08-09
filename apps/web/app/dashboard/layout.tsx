@@ -74,7 +74,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const fetchWorkingCvCount = useCallback(async () => {
     try {
       const res = await apiClient.customers.getCvRealtimeStatus();
-      if (res?.staffStatuses) {
+      if (res?.workingCvCount !== undefined) {
+        setWorkingCvCount(res.workingCvCount);
+      } else if (res?.staffStatuses) {
         setWorkingCvCount(res.staffStatuses.length);
       }
     } catch (err) {

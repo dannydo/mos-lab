@@ -1,7 +1,21 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Drawer, Steps, Button, Select, DatePicker, Radio, Input, theme, message, Card, Tag, Modal } from 'antd';
+import {
+  Drawer,
+  Steps,
+  Button,
+  Select,
+  DatePicker,
+  Radio,
+  Input,
+  theme,
+  message,
+  Card,
+  Tag,
+  Modal,
+  Switch,
+} from 'antd';
 import {
   PhoneOutlined,
   UserOutlined,
@@ -93,6 +107,28 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   const [isNewLead, setIsNewLead] = useState(false);
   const [leadName, setLeadName] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
+  const [isForeignCustomer, setIsForeignCustomer] = useState(false);
+
+  // Auto detect foreign customer status from phone or selectedCustomer
+  useEffect(() => {
+    if (isNewLead && leadPhone) {
+      const clean = leadPhone.replace(/[\s\-\(\)\.]/g, '').trim();
+      if (clean) {
+        const isVn = /^(0|\+?84)[35789]\d{8}$/.test(clean);
+        setIsForeignCustomer(!isVn);
+      }
+    } else if (!isNewLead && selectedCustomer) {
+      if (selectedCustomer.isForeign !== undefined) {
+        setIsForeignCustomer(Boolean(selectedCustomer.isForeign));
+      } else if (selectedCustomer.phone) {
+        const clean = String(selectedCustomer.phone)
+          .replace(/[\s\-\(\)\.]/g, '')
+          .trim();
+        const isVn = /^(0|\+?84)[35789]\d{8}$/.test(clean);
+        setIsForeignCustomer(!isVn);
+      }
+    }
+  }, [isNewLead, leadPhone, selectedCustomer]);
 
   const [selectedService, setSelectedService] = useState<SafeAny>(null);
   const [services, setServices] = useState<SafeAny[]>(FALLBACK_SERVICES);
@@ -722,6 +758,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
         promotionId: selectedPromotion?.id || null,
         campaignPromotionId: selectedCampaignPromotion?.id || null,
         referralPhone: referralPhone ? referralPhone.trim() : null,
+        isForeign: isForeignCustomer,
       };
 
       await apiClient.customers.createBooking(payload);
@@ -990,6 +1027,20 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                 />
               </div>
             )}
+
+            <div
+              style={{
+                marginTop: '10px',
+                paddingTop: '8px',
+                borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span style={{ fontSize: '12px', fontWeight: 600, color: token.colorText }}>🌐 Khách nước ngoài</span>
+              <Switch checked={isForeignCustomer} onChange={(checked) => setIsForeignCustomer(checked)} size="small" />
+            </div>
           </Card>
 
           {/* Service Select */}

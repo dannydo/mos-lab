@@ -504,6 +504,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
       name: customer.name,
       email: customer.email,
       gender: customer.gender,
+      isForeign: Boolean(customer.isForeign),
       dob: customer.dob ? dayjs(customer.dob) : null,
       phones:
         customer.phones && customer.phones.length > 0
@@ -541,10 +542,12 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
         });
       }
 
-      await apiClient.customers.update(customerId!, {
+      const targetId = Number(customer?.legacyUserId || customer?.id || customerId);
+      await apiClient.customers.update(targetId, {
         name: values.name,
         email: values.email || null,
         gender: values.gender || null,
+        isForeign: values.isForeign,
         dob: values.dob ? values.dob.format('YYYY-MM-DD') : null,
         phones: phonesPayload,
       });
@@ -559,6 +562,39 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
       optionsRef.current?.onError?.(
         (err as SafeAny).response?.data?.message || 'Không thể cập nhật thông tin khách hàng.'
       );
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleToggleForeign = async () => {
+    if (!customerId || !customer) return;
+    try {
+      setSaveLoading(true);
+      const newStatus = !customer.isForeign;
+      const targetId = Number(customer?.legacyUserId || customer?.id || customerId);
+      await apiClient.customers.update(targetId, {
+        name: customer.name,
+        email: customer.email || null,
+        gender: customer.gender || null,
+        isForeign: newStatus,
+        dob: customer.dob ? dayjs(customer.dob).format('YYYY-MM-DD') : null,
+        phones: (customer.phones || []).map((p: SafeAny) => ({
+          id: p.id,
+          phone_number: p.phone_number,
+          is_disabled: Boolean(p.is_disabled),
+        })),
+      });
+
+      optionsRef.current?.onSuccess?.(
+        newStatus ? 'Đã đổi thành Khách nước ngoài 🌐' : 'Đã đổi thành Khách Việt Nam 🇻🇳'
+      );
+      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'customer-edit' } }));
+      await refreshAllDetails();
+    } catch (err) {
+      console.error('Toggle foreign status failed:', err);
+      optionsRef.current?.onError?.('Không thể đổi trạng thái quốc tịch khách hàng.');
     } finally {
       setSaveLoading(false);
     }
@@ -913,6 +949,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     handleRevenueModalDragStart,
     handleOpenEditModal,
     handleSaveEdit,
+    handleToggleForeign,
     handleDeleteCustomer,
     handleRestoreCustomer,
     handleCancelBooking,

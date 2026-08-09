@@ -547,6 +547,7 @@ export const apiClient = {
         name: string;
         email: string | null;
         gender: string | null;
+        isForeign?: boolean;
         dob: string | null;
         phones: Array<{ id?: number; phone_number: string; is_disabled?: boolean; is_deleted?: boolean }>;
       }

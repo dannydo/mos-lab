@@ -214,6 +214,8 @@ model user_profile {
   is_disabled                                       Boolean
   is_leaved                                         Boolean
   is_deleted                                        Boolean
+  is_foreign                                        Boolean           @default(false)
+  is_foreign_overridden                             Boolean           @default(false)
   last_order_booking                                DateTime?         @db.DateTime(0)
   referrer_date_created                             DateTime?         @db.DateTime(0)
   username_date_created                             DateTime?         @db.DateTime(0)

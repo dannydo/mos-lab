@@ -138,8 +138,25 @@ const CustomerTable = React.memo(
                 }}
               />
               <div>
-                <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline transition-all">
-                  {text}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline transition-all">
+                    {text}
+                  </div>
+                  {record.isForeign && (
+                    <Tag
+                      color="purple"
+                      style={{
+                        margin: 0,
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        padding: '0 4px',
+                        borderRadius: '4px',
+                        lineHeight: '18px',
+                      }}
+                    >
+                      🌐 Nước ngoài
+                    </Tag>
+                  )}
                 </div>
                 {record.phone && (
                   <div

@@ -229,6 +229,8 @@ export interface CvQueueEntry {
 }
 
 export interface CvRealtimeStatusResponse {
+  workingCvCount?: number;
+  offCvCount?: number;
   staffStatuses: CvStaffRealtimeStatus[];
   queueByStore: Record<number, CvQueueEntry[]>;
   timestamp: string;

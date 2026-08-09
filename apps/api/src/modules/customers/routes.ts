@@ -13,6 +13,7 @@ import { AllocationService } from '../allocation/allocation.service.js';
 import { TeamService } from '../teams/team.service.js';
 import { CampaignPromotionSyncService } from '../campaigns/campaign-promotion-sync.service.js';
 import { LashBenchmarkService, parseLashSpecs } from '../catalog/services/lash-benchmark.service.js';
+import { resolveIsForeign, getForeignSqlFilter } from './services/foreign-customer.service.js';
 
 export async function customerRoutes(fastify: FastifyInstance) {
   // Start automated allocation expiration cronjob
@@ -71,6 +72,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       callStatuses,
       lastCallDaysMin,
       lastCallDaysMax,
+      isForeign,
     } = request.query as {
       bucket?: BucketType | 'ALL' | 'NEW_LOCA';
       search?: string;
@@ -113,6 +115,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       callStatuses?: string;
       lastCallDaysMin?: string;
       lastCallDaysMax?: string;
+      isForeign?: 'all' | 'foreign' | 'local' | string | boolean;
     };
 
     let limitNum = parseInt(limit, 10) || 20;
@@ -580,6 +583,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
         innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
       }
 
+      const foreignFilterSql = getForeignSqlFilter(isForeign);
+      if (foreignFilterSql) {
+        innerWhereClauses.push(foreignFilterSql);
+      }
+
       // 1. Filter by Search (Name or Phone using EXISTS for contact to avoid GROUP BY)
       if (search && search.trim() !== '') {
         const searchLike = `%${search.trim()}%`;
@@ -880,6 +888,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           u.id, 
           COALESCE(up.full_name, 'No Name') as name, 
           up.avatar as avatar, 
+          up.is_foreign as isForeign,
+          up.is_foreign_overridden as isForeignOverridden,
           (
             SELECT COALESCE(MAX(uc.phone_number), '') 
             FROM user_contact uc 
@@ -1373,6 +1383,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
               }
             : null;
 
+        const isForeignVal = resolveIsForeign(row.isForeign, row.isForeignOverridden, row.phone);
+
         return {
           id: Number(row.id),
           name: row.name,
@@ -1387,6 +1399,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           totalVisits: Number(row.totalVisits || 0),
           totalPromotionsUsed: Number(row.totalPromotionsUsed || 0),
           totalReferrals: Number(row.totalReferrals || 0),
+          isForeign: isForeignVal,
+          isForeignOverridden: Boolean(row.isForeignOverridden),
           bucket: row.bucket as BucketType,
           comboBalance:
             row.bucket !== 'SINGLE'
@@ -1469,6 +1483,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       callStatuses,
       lastCallDaysMin,
       lastCallDaysMax,
+      isForeign,
     } = request.query as {
       bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE' | 'NEW_LOCA';
       search?: string;
@@ -1507,6 +1522,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       callStatuses?: string;
       lastCallDaysMin?: string;
       lastCallDaysMax?: string;
+      isForeign?: 'all' | 'foreign' | 'local' | string | boolean;
     };
 
     const adminUser = request.user as { id: number; role: string };
@@ -1726,6 +1742,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
       if (excludedUserIds !== null && excludedUserIds.length > 0) {
         innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
+      }
+
+      const foreignFilterSqlStats = getForeignSqlFilter(isForeign);
+      if (foreignFilterSqlStats) {
+        innerWhereClauses.push(foreignFilterSqlStats);
       }
 
       // 1. Filter by Search (Name or Phone using EXISTS for contact to avoid GROUP BY)
@@ -5687,12 +5708,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
 
-    const { name, email, gender, dob, phones } = request.body as {
+    const { name, email, gender, dob, phones, isForeign, is_foreign } = request.body as {
       name: string;
       email: string | null;
       gender: string | null;
       dob: string | null;
       phones: Array<{ id?: number; phone_number: string; is_disabled?: boolean; is_deleted?: boolean }>;
+      isForeign?: boolean;
+      is_foreign?: boolean;
     };
 
     if (!name || name.trim() === '') {
@@ -5712,33 +5735,49 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
+      const explicitForeign = isForeign !== undefined ? isForeign : is_foreign;
       const profileCount = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT id FROM user_profile WHERE user_id = ? LIMIT 1`,
+        `SELECT id, is_foreign_overridden FROM user_profile WHERE user_id = ? LIMIT 1`,
         customerId
       );
 
       if (profileCount.length > 0) {
-        await fastify.prisma.legacy.$executeRawUnsafe(
-          `UPDATE user_profile SET full_name = ?, first_name = ?, last_name = ? WHERE user_id = ?`,
-          name,
-          firstName,
-          lastName,
-          customerId
-        );
+        if (typeof explicitForeign === 'boolean') {
+          await fastify.prisma.legacy.$executeRawUnsafe(
+            `UPDATE user_profile SET full_name = ?, first_name = ?, last_name = ?, is_foreign = ?, is_foreign_overridden = 1 WHERE user_id = ?`,
+            name,
+            firstName,
+            lastName,
+            explicitForeign ? 1 : 0,
+            customerId
+          );
+        } else {
+          await fastify.prisma.legacy.$executeRawUnsafe(
+            `UPDATE user_profile SET full_name = ?, first_name = ?, last_name = ? WHERE user_id = ?`,
+            name,
+            firstName,
+            lastName,
+            customerId
+          );
+        }
       } else {
         const randPasscode = Math.random().toString(36).substring(2, 8);
+        const initIsForeign = typeof explicitForeign === 'boolean' ? (explicitForeign ? 1 : 0) : 0;
+        const initIsOverridden = typeof explicitForeign === 'boolean' ? 1 : 0;
         await fastify.prisma.legacy.$executeRawUnsafe(
           `INSERT INTO user_profile (
             user_id, client_id, client_business_id, user_group_id, passcode, provider, 
             first_name, last_name, full_name, client_store_id, is_disabled, 
             is_leaved, is_deleted, date_created, language_id, access_user_group_ids,
-            is_academy, is_temporary
-          ) VALUES (?, 11, 1, 1, ?, 'Client', ?, ?, ?, 1, 0, 0, 0, NOW(), 1, '', 0, 0)`,
+            is_academy, is_temporary, is_foreign, is_foreign_overridden
+          ) VALUES (?, 11, 1, 1, ?, 'Client', ?, ?, ?, 1, 0, 0, 0, NOW(), 1, '', 0, 0, ?, ?)`,
           customerId,
           randPasscode,
           firstName,
           lastName,
-          name
+          name,
+          initIsForeign,
+          initIsOverridden
         );
       }
 
@@ -5838,6 +5877,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           COALESCE(up.full_name, 'No Name') as name, 
           up.avatar as avatar,
           COALESCE(up.is_deleted, 0) as isDeleted,
+          up.is_foreign as is_foreign,
+          up.is_foreign_overridden as is_foreign_overridden,
           COALESCE(uc.phone_number, '') as phone, 
           u.email,
           u.gender,
@@ -6618,6 +6659,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           onlineConsultant: onlineConsultantName,
           onlineConsultantId: assigned?.staffId || null,
           isDeleted: row.isDeleted === 1,
+          isForeign: resolveIsForeign(row.is_foreign, row.is_foreign_overridden, row.phone),
+          isForeignOverridden: Boolean(row.is_foreign_overridden),
         },
         stats: {
           totalSpent: totalSpent,
@@ -8415,7 +8458,29 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return { staffStatuses: [], queueByStore: {}, timestamp: nowICT.toISOString() };
       }
 
-      // 2. Query today's staff shift check-in status from staff_working_shift
+      // 2. Query Day-Offs and Weekly-Offs today to exclude OFF staff
+      const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND COALESCE(to_date, from_date) AND request_state = 'Approved'`,
+        todayStr
+      );
+      const offStaffUserIds = new Set(dayOffs.map((d) => Number(d.from_user_id)));
+
+      const weekdayNumber = new Date(todayStr).getDay();
+      const legacyWeekday = weekdayNumber === 0 ? 7 : weekdayNumber;
+      const schedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT user_id, type, type_value FROM staff_working_shift_schedule WHERE is_disabled = 0 AND user_id IN (${cvStaffIds.join(',')})`
+      );
+      cvStaffIds.forEach((id) => {
+        const staffScheds = schedules.filter((s) => Number(s.user_id) === id);
+        if (staffScheds.length > 0) {
+          const isWeeklyOff = staffScheds.some((s) => s.type === 'WeeklyOff' && Number(s.type_value) === legacyWeekday);
+          if (isWeeklyOff) offStaffUserIds.add(id);
+        }
+      });
+
+      const activeDutyStaffIds = cvStaffIds.filter((id) => !offStaffUserIds.has(id));
+
+      // 3. Query today's staff shift check-in status from staff_working_shift
       // (Only include CVs who HAVE checked in AND HAVE NOT checked out today)
       const checkedInShiftRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
@@ -8428,8 +8493,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         todayStr
       );
       const checkedInStaffIds = new Set(checkedInShiftRows.map((r: SafeAny) => Number(r.staffId)));
-      const workingCvStaffIds = cvStaffIds.filter((id: number) => checkedInStaffIds.has(id));
-      const effectiveCvStaffIds = workingCvStaffIds.length > 0 ? workingCvStaffIds : cvStaffIds;
+      const checkedInCvStaffIds = activeDutyStaffIds.filter((id: number) => checkedInStaffIds.has(id));
+      const effectiveCvStaffIds = checkedInCvStaffIds.length > 0 ? checkedInCvStaffIds : activeDutyStaffIds;
 
       // 3. Query today's queue from order_staff_queue for working CV staff IDs
       const queueRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
@@ -8852,6 +8917,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       return {
+        workingCvCount: effectiveCvStaffIds.length,
+        offCvCount: offStaffUserIds.size,
         staffStatuses,
         queueByStore,
         timestamp: nowICT.toISOString(),

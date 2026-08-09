@@ -116,6 +116,7 @@ function MultiDayColumnView({
   const { makeCall } = useOmiCall();
   const { themeMode } = useTheme();
   const [draggedAppt, setDraggedAppt] = useState<Appointment | null>(null);
+  const [activeDragOverSlotKey, setActiveDragOverSlotKey] = useState<string | null>(null);
 
   // Side Slide Drawer state for Lịch CV
   const [cvDrawerOpen, setCvDrawerOpen] = useState(false);
@@ -157,12 +158,37 @@ function MultiDayColumnView({
     setDraggedAppt(appt);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragEnterSlot = (e: React.DragEvent, slotKey: string) => {
     e.preventDefault();
+    setActiveDragOverSlotKey(slotKey);
+  };
+
+  const handleDragOverSlot = (e: React.DragEvent, slotKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (activeDragOverSlotKey !== slotKey) {
+      setActiveDragOverSlotKey(slotKey);
+    }
+  };
+
+  const handleDragLeaveSlot = (e: React.DragEvent, slotKey: string) => {
+    e.preventDefault();
+    const currentTarget = e.currentTarget;
+    const relatedTarget = e.relatedTarget as Node | null;
+    if (currentTarget && relatedTarget && currentTarget.contains(relatedTarget)) {
+      return;
+    }
+    setActiveDragOverSlotKey((prev) => (prev === slotKey ? null : prev));
+  };
+
+  const handleDragEndCard = () => {
+    setDraggedAppt(null);
+    setActiveDragOverSlotKey(null);
   };
 
   const handleDrop = (e: React.DragEvent, targetDate: dayjs.Dayjs, targetHour: string) => {
     e.preventDefault();
+    setActiveDragOverSlotKey(null);
 
     let apptToUse = draggedAppt;
     if (!apptToUse) {
@@ -316,17 +342,14 @@ function MultiDayColumnView({
           return (
             <React.Fragment key={hourStr}>
               {/* Time Slot Label Column */}
-              <div className="sticky left-0 z-10 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/60 rounded-lg p-1.5 flex flex-col justify-between items-center font-mono text-xs font-bold text-slate-600 dark:text-slate-300 tabular-nums shadow-xs min-h-[140px]">
-                <div className="text-center font-extrabold text-sm text-slate-800 dark:text-slate-100">{hourStr}</div>
-                <div className="w-full flex flex-col gap-1 mt-1 text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                  <div className="flex justify-between items-center border-t border-slate-200/60 dark:border-slate-700/60 pt-0.5">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">:00</span>
-                    <span>:15</span>
-                  </div>
-                  <div className="flex justify-between items-center border-t border-slate-200/60 dark:border-slate-700/60 pt-0.5">
-                    <span>:30</span>
-                    <span>:45</span>
-                  </div>
+              <div className="sticky left-0 z-10 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/60 rounded-xl p-2 flex flex-col justify-center items-center font-mono shadow-2xs min-h-[140px] group transition-all">
+                <div className="w-5 h-1 rounded-full bg-emerald-500/70 dark:bg-emerald-400/70 mb-2 group-hover:w-8 transition-all duration-300" />
+                <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold tracking-wider mb-1">
+                  <ClockCircleOutlined className="text-emerald-500 dark:text-emerald-400 text-xs" />
+                  <span>Giờ ca</span>
+                </div>
+                <div className="text-center font-black text-base text-slate-800 dark:text-slate-100 tracking-tight tabular-nums">
+                  {hourStr}
                 </div>
               </div>
 
@@ -354,27 +377,57 @@ function MultiDayColumnView({
                       });
 
                       const isEmpty = subSlotAppts.length === 0;
+                      const slotKey = `${dayKey}-${subSlotTimeStr}`;
+                      const isDragOver = activeDragOverSlotKey === slotKey;
 
                       return (
                         <div
                           key={subSlotTimeStr}
-                          onDragOver={handleDragOver}
+                          onDragEnter={(e) => handleDragEnterSlot(e, slotKey)}
+                          onDragOver={(e) => handleDragOverSlot(e, slotKey)}
+                          onDragLeave={(e) => handleDragLeaveSlot(e, slotKey)}
                           onDrop={(e) => handleDrop(e, day, subSlotTimeStr)}
                           onClick={() => isEmpty && onSelectSlot && onSelectSlot(day, subSlotTimeStr)}
                           className={`sub-slot-zone relative rounded-md p-1 border transition-all flex flex-col gap-1 min-h-[28px] ${
-                            isEmpty
-                              ? 'border-dashed border-slate-200/60 dark:border-slate-800/40 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 cursor-pointer group/slot'
-                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60 shadow-2xs'
+                            isDragOver
+                              ? isEmpty
+                                ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/15 dark:bg-emerald-950/70 shadow-lg shadow-emerald-500/20 scale-[1.02] z-20'
+                                : 'ring-2 ring-amber-500 border-amber-500 bg-amber-500/15 dark:bg-amber-950/70 shadow-lg shadow-amber-500/20 scale-[1.02] z-20'
+                              : isEmpty
+                                ? 'border-dashed border-slate-200/60 dark:border-slate-800/40 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 cursor-pointer group/slot'
+                                : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60 shadow-2xs'
                           }`}
                         >
                           <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 dark:text-slate-500 px-0.5 select-none pointer-events-none">
-                            <span className="font-bold text-slate-500 dark:text-slate-400 text-[10px]">
+                            <span
+                              className={`font-bold text-[10px] ${
+                                isDragOver
+                                  ? isEmpty
+                                    ? 'text-emerald-700 dark:text-emerald-300'
+                                    : 'text-amber-700 dark:text-amber-300'
+                                  : 'text-slate-500 dark:text-slate-400'
+                              }`}
+                            >
                               {subSlotTimeStr}
                             </span>
-                            {isEmpty && (
-                              <span className="opacity-0 group-hover/slot:opacity-100 transition-opacity text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5 text-[10px]">
-                                <PlusOutlined style={{ fontSize: '9px' }} /> Đặt {subSlotTimeStr}
+                            {isDragOver ? (
+                              <span
+                                className={`font-extrabold flex items-center gap-1 text-[10px] animate-pulse ${
+                                  isEmpty
+                                    ? 'text-emerald-700 dark:text-emerald-300'
+                                    : 'text-amber-700 dark:text-amber-300'
+                                }`}
+                              >
+                                {isEmpty
+                                  ? `🎯 Thả để chuyển sang ${subSlotTimeStr}`
+                                  : `⚡ Thả để ghép ca ${subSlotTimeStr}`}
                               </span>
+                            ) : (
+                              isEmpty && (
+                                <span className="opacity-0 group-hover/slot:opacity-100 transition-opacity text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5 text-[10px]">
+                                  <PlusOutlined style={{ fontSize: '9px' }} /> Đặt {subSlotTimeStr}
+                                </span>
+                              )
                             )}
                           </div>
 
@@ -383,7 +436,9 @@ function MultiDayColumnView({
                               key={String(appt.id || (appt as any).orderId || Math.random())}
                               appt={appt}
                               hourStr={subSlotTimeStr}
+                              draggedAppt={draggedAppt}
                               onHandleDragStart={handleDragStart}
+                              onHandleDragEnd={handleDragEndCard}
                               onMakeCall={makeCall}
                               onViewCustomerDetail={onViewCustomerDetail}
                               onReschedule={onReschedule}
@@ -415,7 +470,9 @@ function MultiDayColumnView({
 interface AppointmentCardItemProps {
   appt: Appointment;
   hourStr: string;
+  draggedAppt: Appointment | null;
   onHandleDragStart: (e: React.DragEvent, appt: Appointment) => void;
+  onHandleDragEnd: () => void;
   onMakeCall: (phone: string, name: string) => void;
   onViewCustomerDetail?: (customerId: number) => void;
   onReschedule?: (appt: Appointment) => void;
@@ -424,7 +481,9 @@ interface AppointmentCardItemProps {
 const AppointmentCardItem = React.memo(function AppointmentCardItem({
   appt,
   hourStr,
+  draggedAppt,
   onHandleDragStart,
+  onHandleDragEnd,
   onMakeCall,
   onViewCustomerDetail,
   onReschedule,
@@ -440,6 +499,13 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
   const isCheckInConsult = appt.orderState === 'CheckIn' || appt.orderState === 'Consultation';
   const isCancelled = appt.orderState === 'Cancelled';
   const isMissed = appt.orderState === 'Missed';
+
+  const isBeingDragged =
+    draggedAppt &&
+    ((draggedAppt.id && appt.id && draggedAppt.id === appt.id) ||
+      ((draggedAppt as any)?.orderId &&
+        (appt as any)?.orderId &&
+        (draggedAppt as any).orderId === (appt as any).orderId));
 
   const cardPopoverContent = (
     <div className="p-1 max-w-[240px] space-y-2">
@@ -525,16 +591,19 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
       <div
         draggable
         onDragStart={(e) => onHandleDragStart(e, appt)}
+        onDragEnd={onHandleDragEnd}
         className={`p-2 rounded-lg border text-xs shadow-2xs cursor-grab active:cursor-grabbing transition-all hover:scale-[1.02] ${
-          isCompleted
-            ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
-            : isPendingCheckout
-              ? 'bg-purple-50/80 dark:bg-purple-950/40 border-purple-300 dark:border-purple-800/70 text-purple-900 dark:text-purple-200 shadow-xs'
-              : isServicing
-                ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800/60 text-blue-900 dark:text-blue-200'
-                : isMissed
-                  ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800/60 text-rose-900 dark:text-rose-200'
-                  : 'bg-slate-50/80 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/60 text-slate-800 dark:text-slate-200'
+          isBeingDragged
+            ? 'opacity-50 scale-95 border-dashed border-emerald-500 dark:border-emerald-400 shadow-none ring-2 ring-emerald-400/40'
+            : isCompleted
+              ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
+              : isPendingCheckout
+                ? 'bg-purple-50/80 dark:bg-purple-950/40 border-purple-300 dark:border-purple-800/70 text-purple-900 dark:text-purple-200 shadow-xs'
+                : isServicing
+                  ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800/60 text-blue-900 dark:text-blue-200'
+                  : isMissed
+                    ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800/60 text-rose-900 dark:text-rose-200'
+                    : 'bg-slate-50/80 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/60 text-slate-800 dark:text-slate-200'
         }`}
       >
         <div className="flex items-center justify-between gap-1.5 min-w-0 mb-1">

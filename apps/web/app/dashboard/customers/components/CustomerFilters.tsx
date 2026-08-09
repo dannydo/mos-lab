@@ -81,6 +81,8 @@ interface CustomerFiltersProps {
   setAgeMin?: (val: number | undefined) => void;
   ageMax?: number | undefined;
   setAgeMax?: (val: number | undefined) => void;
+  isForeignFilter?: 'all' | 'foreign' | 'local';
+  setIsForeignFilter?: (val: 'all' | 'foreign' | 'local') => void;
   setActiveFilterId: (id: string | null) => void;
   staffList: SafeAny[];
   saveFilterModalVisible: boolean;
@@ -148,6 +150,8 @@ const CustomerFilters = React.memo(function CustomerFilters({
   setAgeMin,
   ageMax,
   setAgeMax,
+  isForeignFilter,
+  setIsForeignFilter,
   setActiveFilterId,
   staffList,
   saveFilterModalVisible,
@@ -732,6 +736,39 @@ const CustomerFilters = React.memo(function CustomerFilters({
                   })}
                 </div>
               </div>
+            </div>
+
+            {/* Foreign Customer Filter */}
+            <div
+              style={{
+                marginTop: '14px',
+                paddingTop: '12px',
+                borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#cbd5e1'}`,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  marginBottom: '6px',
+                  color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                }}
+              >
+                🌐 Phân loại Quốc tịch
+              </div>
+              <Select
+                value={isForeignFilter || 'all'}
+                onChange={(val) => {
+                  setIsForeignFilter?.(val as any);
+                  setActiveFilterId(null);
+                }}
+                style={{ width: '100%' }}
+                options={[
+                  { label: 'Tất cả (Việt Nam & Nước ngoài)', value: 'all' },
+                  { label: '🌐 Chỉ Khách nước ngoài', value: 'foreign' },
+                  { label: '🇻🇳 Chỉ Khách Việt Nam', value: 'local' },
+                ]}
+              />
             </div>
           </div>
 
