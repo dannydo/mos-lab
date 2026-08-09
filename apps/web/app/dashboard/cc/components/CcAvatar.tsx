@@ -19,7 +19,10 @@ export default function CcAvatar({ name = '', src, size = 36, isSelected, classN
   if (src && src.trim()) {
     let s = src.trim();
     s = s.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com');
-    if (s.startsWith('http://') || s.startsWith('https://') || s.startsWith('data:')) {
+    if (s.startsWith('http://')) {
+      s = s.replace('http://', 'https://');
+    }
+    if (s.startsWith('https://') || s.startsWith('data:')) {
       formattedSrc = s;
     } else {
       formattedSrc = s.startsWith('/') ? `https://cdn.wingslashes.com${s}` : `https://cdn.wingslashes.com/${s}`;

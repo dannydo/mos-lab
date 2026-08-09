@@ -34,6 +34,7 @@ import {
   RightOutlined,
   SafetyOutlined,
   HistoryOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';

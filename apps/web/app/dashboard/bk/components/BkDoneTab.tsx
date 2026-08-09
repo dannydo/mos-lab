@@ -64,6 +64,8 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
   const [detailRecords, setDetailRecords] = useState<BkDoneRecord[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
@@ -115,6 +117,10 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
   useEffect(() => {
     fetchDetails();
   }, [dateRange, selectedStore, selectedBookerId, filterStatus]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dateRange, selectedStore, selectedBookerId, filterStatus, searchText]);
 
   // Instantly refresh BK Done Leaderboard & Details when calls/bookings are saved
   useEffect(() => {
@@ -323,6 +329,17 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
   ];
 
   const detailColumns = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 55,
+      align: 'center' as const,
+      render: (_: any, __: BkDoneRecord, index: number) => (
+        <span className="tabular-nums font-semibold text-xs text-slate-500 dark:text-slate-400">
+          {(currentPage - 1) * pageSize + index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Khách hàng',
       key: 'client',
@@ -649,9 +666,14 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
           rowKey="rowKeyId"
           loading={detailsLoading}
           pagination={{
-            defaultPageSize: 50,
+            current: currentPage,
+            pageSize: pageSize,
             pageSizeOptions: ['20', '50', '100', '200'],
             showSizeChanger: true,
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            },
             showTotal: (total) => `Tổng cộng ${total} đơn hàng`,
           }}
           size="small"

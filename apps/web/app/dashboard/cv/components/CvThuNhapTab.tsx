@@ -737,7 +737,9 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
 
             <Space wrap>
               <Input
-                placeholder="Tìm tên Chuyên viên..."
+                id="cv-thunhap-search-input"
+                name="cvThuNhapSearch"
+                placeholder="Tìm tên KTV..."
                 prefix={<SearchOutlined />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}

@@ -531,7 +531,9 @@ export default function CvTipTab({
                 onChange={(val) => setTipFilter(val as 'ALL' | 'TIPPED' | 'NO_TIP')}
               />
               <Input
-                placeholder="Tìm CV, khách..."
+                id="cv-tip-search-input"
+                name="cvTipSearch"
+                placeholder="Tìm tên KTV..."
                 prefix={<SearchOutlined />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}

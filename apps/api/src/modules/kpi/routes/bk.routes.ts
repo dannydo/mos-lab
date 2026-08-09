@@ -267,16 +267,18 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           up.avatar as avatar,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COUNT(DISTINCT CASE WHEN o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0 THEN o.id END) as doneCount,
-          COUNT(DISTINCT CASE WHEN o.booking_date_start <= NOW() AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') THEN o.id END) as missedCount,
-          COUNT(DISTINCT CASE WHEN o.booking_date_start <= NOW() OR o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0 THEN o.id END) as totalCount
+          COUNT(DISTINCT CASE WHEN COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW() AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut') THEN o.id END) as missedCount,
+          COUNT(DISTINCT CASE WHEN COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW() OR o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0 THEN o.id END) as totalCount
         FROM \`user_profile\` up
         LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
         LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
-          AND o.booking_date_start >= '${startPart} 00:00:00' 
-          AND o.booking_date_start <= '${endPart} 23:59:59'
-          ${storeFilter}
         LEFT JOIN report_order ro ON ro.order_id = o.id
         WHERE up.user_id IN (${activeBkIds.join(',')})
+          AND (o.id IS NULL OR (
+            COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
+            ${storeFilter}
+          ))
         GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key
         ORDER BY doneCount DESC
       `;
@@ -422,7 +424,12 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         ) uc_c ON uc_c.user_id = o.user_id
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = COALESCE(o.client_store_id, up_b.client_store_id)
-        LEFT JOIN \`staff_tip\` st ON st.order_id = o.id AND st.tip_percentage = 20
+        LEFT JOIN (
+          SELECT order_id, SUM(tip_amount) as tip_amount
+          FROM staff_tip
+          WHERE tip_percentage = 20
+          GROUP BY order_id
+        ) st ON st.order_id = o.id
         LEFT JOIN report_order ro ON o.id = ro.order_id
         LEFT JOIN (
           SELECT os_sub.order_id, MAX(sl.service_name) as service_name

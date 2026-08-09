@@ -23,3 +23,4 @@ export * from './types/campaign.js';
 export * from './theme/tokens.js';
 export * from './utils/wheel-cap.js';
 export * from './types/cs.js';
+export * from './types/cv-speed.js';

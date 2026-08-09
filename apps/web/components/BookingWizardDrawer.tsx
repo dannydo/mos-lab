@@ -46,9 +46,24 @@ interface BookingWizardDrawerProps {
   onClose: () => void;
   onSuccess: () => void;
   initialCustomer?: SafeAny;
+  initialCV?: SafeAny;
+  initialBranch?: SafeAny;
+  initialDate?: dayjs.Dayjs | string;
+  initialSlot?: string;
+  initialIsOverbook?: boolean;
 }
 
-const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose, onSuccess, initialCustomer }) => {
+const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
+  open,
+  onClose,
+  onSuccess,
+  initialCustomer,
+  initialCV,
+  initialBranch,
+  initialDate,
+  initialSlot,
+  initialIsOverbook,
+}) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
 
@@ -448,8 +463,8 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
   const resetForm = () => {
     setCurrentStep(0);
     setBookingCreated(false);
-    setSelectedCV(null);
-    setSelectedCN(null);
+    setSelectedCV(initialCV || null);
+    setSelectedCN(initialBranch || null);
     if (initialCustomer) {
       const normalizedCust = {
         ...initialCustomer,
@@ -470,16 +485,28 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({ open, onClose
     }
     setLeadName('');
     setLeadPhone('');
-    const checkCV =
-      selectedCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
-    const initialAvailable = getNextAvailableDate(dayjs(), checkCV);
-    const safeInitial =
-      initialAvailable.date() === 27 || initialAvailable.date() === 26 || initialAvailable.day() === 2
-        ? getNextAvailableDate(dayjs(), checkCV)
-        : initialAvailable;
-    setRawBookingDate(safeInitial);
+
+    if (initialDate) {
+      setRawBookingDate(dayjs(initialDate));
+    } else {
+      const checkCV =
+        initialCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
+      const initialAvailable = getNextAvailableDate(dayjs(), checkCV);
+      const safeInitial =
+        initialAvailable.date() === 27 || initialAvailable.date() === 26 || initialAvailable.day() === 2
+          ? getNextAvailableDate(dayjs(), checkCV)
+          : initialAvailable;
+      setRawBookingDate(safeInitial);
+    }
+
+    if (initialSlot) {
+      setSelectedSlot(initialSlot);
+    } else {
+      setSelectedSlot(null);
+    }
+
     setBookingChannel('FB');
-    setBookingNote('');
+    setBookingNote(initialIsOverbook ? '[⚠️ Ép lịch Overbook]' : '');
     setSelectedPromotion(null);
     setCustomerCampaignPromotions([]);
     setSelectedCampaignPromotion(null);

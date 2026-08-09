@@ -149,6 +149,16 @@ import {
   CreateCsCampaignDto,
   UpdateCsCampaignDto,
   CvRealtimeStatusResponse,
+  CvSpeedProfile,
+  CvSpeedMatrix,
+  CvSpeedRanking,
+  CvSpeedMonthlyTrend,
+  CvSpeedTrend,
+  CvSpeedDetail,
+  CvSpeedPrediction,
+  CvSpeedSeedResult,
+  CvSpeedSeedStatus,
+  CvSpeedStyles,
 } from '@mos-lab/shared';
 
 // In-flight request deduplication & short-term cache map for GET endpoints
@@ -784,6 +794,64 @@ export const apiClient = {
     ): Promise<{ success: boolean; rules: { minMonths: number; bonusPercent: number }[] }> => {
       const response = await api.post('/kpi/cv-seniority-config', { rules });
       return response.data;
+    },
+    cvSpeed: {
+      getProfiles: async (params?: {
+        staffId?: number;
+        lashStyle?: string;
+        serviceMode?: string;
+        speedRating?: string;
+      }): Promise<CvSpeedProfile[]> => {
+        const response = await api.get('/kpi/cv-speed/profiles', { params });
+        return response.data;
+      },
+      getMatrix: async (params?: { lashStyle?: string; serviceMode?: string }): Promise<CvSpeedMatrix> => {
+        const response = await api.get('/kpi/cv-speed/matrix', { params });
+        return response.data;
+      },
+      getRanking: async (params?: {
+        lashStyle?: string;
+        serviceMode?: string;
+        lashCount?: number;
+      }): Promise<CvSpeedRanking[]> => {
+        const response = await api.get('/kpi/cv-speed/ranking', { params });
+        return response.data;
+      },
+      getTrend: async (
+        staffId: number,
+        params?: { lashStyle?: string; serviceMode?: string }
+      ): Promise<CvSpeedMonthlyTrend[]> => {
+        const response = await api.get(`/kpi/cv-speed/trend/${staffId}`, { params });
+        return response.data;
+      },
+      getDetail: async (
+        staffId: number,
+        params?: { dateFrom?: string; dateTo?: string; limit?: number }
+      ): Promise<CvSpeedDetail> => {
+        const response = await api.get(`/kpi/cv-speed/detail/${staffId}`, { params });
+        return response.data;
+      },
+      predict: async (params: {
+        staffId: number;
+        lashStyle: string;
+        serviceMode: string;
+        lashCount: number;
+      }): Promise<CvSpeedPrediction> => {
+        const response = await api.get('/kpi/cv-speed/predict', { params });
+        return response.data;
+      },
+      seed: async (): Promise<CvSpeedSeedResult> => {
+        const response = await api.post('/kpi/cv-speed/seed');
+        return response.data;
+      },
+      getSeedStatus: async (): Promise<CvSpeedSeedStatus> => {
+        const response = await api.get('/kpi/cv-speed/seed/status');
+        return response.data;
+      },
+      getStyles: async (): Promise<CvSpeedStyles> => {
+        const response = await api.get('/kpi/cv-speed/styles');
+        return response.data;
+      },
     },
   },
 

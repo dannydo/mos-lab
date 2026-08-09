@@ -1059,7 +1059,7 @@ export default function CampaignDetailPage() {
           }
         }
 
-        const days = record.daysSinceLastVisit ?? record.daysInCampaign ?? record.daysSinceAdded;
+        const days = record.daysInCampaign ?? record.daysSinceAdded ?? record.daysSinceLastVisit;
         return days !== null && days !== undefined ? (
           <span className="tabular-nums font-semibold text-xs">{days} ngày</span>
         ) : (

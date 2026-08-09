@@ -7,13 +7,26 @@ import { useTheme } from '../../../../context/ThemeContext';
 import { Appointment, CvRealtimeStatusResponse } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 
-import { DailyCapInfo, computeCvAvailability, realtimeStatusToAvailability } from './cv-drawer/cvDrawerUtils';
+import nextDynamic from 'next/dynamic';
+import {
+  DailyCapInfo,
+  StaffWorkingItem,
+  computeCvAvailability,
+  realtimeStatusToAvailability,
+} from './cv-drawer/cvDrawerUtils';
 import { CvHeaderToolbar } from './cv-drawer/CvHeaderToolbar';
 import { CvStatusSummaryBar } from './cv-drawer/CvStatusSummaryBar';
 import { CvQueueLaneSection } from './cv-drawer/CvQueueLaneSection';
 import { CvSearchFilterBar } from './cv-drawer/CvSearchFilterBar';
 import { CvWorkingStaffCard } from './cv-drawer/CvWorkingStaffCard';
 import { CvOffStaffCard } from './cv-drawer/CvOffStaffCard';
+import { CvTimePickerDrawer } from './cv-drawer/CvTimePickerDrawer';
+
+const BookingWizardDrawer = nextDynamic(() => import('../../../../components/BookingWizardDrawer'), { ssr: false });
+const UpdateBookingModal = nextDynamic(
+  () => import('../../../../components/UpdateBookingModal').then((m) => m.UpdateBookingModal),
+  { ssr: false }
+);
 
 export interface CvScheduleDrawerProps {
   open: boolean;
@@ -44,6 +57,52 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
 
     // Real-time status from API
     const [realtimeData, setRealtimeData] = useState<CvRealtimeStatusResponse | null>(null);
+
+    // Quick CV Booking states
+    const [selectedCvForBooking, setSelectedCvForBooking] = useState<StaffWorkingItem | null>(null);
+    const [isTimePickerOpen, setIsTimePickerOpen] = useState<boolean>(false);
+
+    // Booking SOP Drawer states
+    const [isBookingWizardOpen, setIsBookingWizardOpen] = useState<boolean>(false);
+    const [bookingPreFill, setBookingPreFill] = useState<{
+      cv: StaffWorkingItem | null;
+      branch: any;
+      date: Dayjs;
+      timeSlot: string;
+      isOverbook: boolean;
+    } | null>(null);
+
+    const handleBookCv = useCallback((staffItem: StaffWorkingItem) => {
+      setSelectedCvForBooking(staffItem);
+      setIsTimePickerOpen(true);
+    }, []);
+
+    const handleSelectSlotFromPicker = useCallback(
+      (slotInfo: { cv: StaffWorkingItem; date: Dayjs; timeSlot: string; isOverbook: boolean }) => {
+        setIsTimePickerOpen(false);
+        const branchNameStr = (slotInfo.cv.branchName || '').toLowerCase();
+        const storeId = branchNameStr.includes('estella') ? '6' : '16';
+
+        setBookingPreFill({
+          cv: slotInfo.cv,
+          branch: storeId,
+          date: slotInfo.date,
+          timeSlot: slotInfo.timeSlot,
+          isOverbook: slotInfo.isOverbook,
+        });
+        setIsBookingWizardOpen(true);
+      },
+      []
+    );
+
+    // Update Booking Modal states
+    const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
+
+    const handleEditAppointment = useCallback((appt: Appointment) => {
+      setEditingAppointment(appt);
+      setIsUpdateModalOpen(true);
+    }, []);
 
     // Fallback capacities and appointments fetched internally when props are not provided
     const [fetchedCapacities, setFetchedCapacities] = useState<Record<string, DailyCapInfo>>({});
@@ -118,6 +177,35 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
         fetchScheduleData();
       }
     }, [open, currentDate, dailyCapacities, appointmentsByDay]);
+
+    // Listen for booking updates to refresh drawer schedule data immediately
+    useEffect(() => {
+      const handleRefresh = async () => {
+        if (!open) return;
+        const dayKey = currentDate.format('YYYY-MM-DD');
+        try {
+          const res = await apiClient.customers.getAppointments({
+            dateFrom: dayKey,
+            dateTo: dayKey,
+          });
+          if (res.dailyCapacities) {
+            setFetchedCapacities((prev) => ({ ...prev, ...res.dailyCapacities }));
+          }
+          if (res.data) {
+            setFetchedAppointments((prev) => ({ ...prev, [dayKey]: res.data }));
+          }
+        } catch (err) {
+          console.warn('Failed to refresh drawer appointments:', err);
+        }
+      };
+
+      window.addEventListener('mos-booking-updated', handleRefresh);
+      window.addEventListener('mos-data-updated', handleRefresh);
+      return () => {
+        window.removeEventListener('mos-booking-updated', handleRefresh);
+        window.removeEventListener('mos-data-updated', handleRefresh);
+      };
+    }, [open, currentDate]);
 
     // Mouse drag resize handler
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -385,7 +473,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
             ) : (
               <div className="space-y-1.5" role="list">
                 {filteredWorkingStaff.map((staff, idx) => (
-                  <CvWorkingStaffCard key={staff.id} staff={staff} rankIndex={idx} />
+                  <CvWorkingStaffCard key={staff.id} staff={staff} rankIndex={idx} onBookCv={handleBookCv} />
                 ))}
               </div>
             )}
@@ -428,6 +516,58 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
             )}
           </div>
         </div>
+
+        {/* CvTimePickerDrawer: 15-min visual timeline picker */}
+        <CvTimePickerDrawer
+          open={isTimePickerOpen}
+          onClose={() => setIsTimePickerOpen(false)}
+          staff={selectedCvForBooking}
+          currentDate={currentDate}
+          onDateChange={onDateChange}
+          appointments={dayAppts}
+          onSelectSlot={handleSelectSlotFromPicker}
+          onEditAppointment={handleEditAppointment}
+        />
+
+        {/* BookingWizardDrawer: Standard Booking SOP with Pre-filled data */}
+        {isBookingWizardOpen && bookingPreFill && (
+          <BookingWizardDrawer
+            open={isBookingWizardOpen}
+            onClose={() => setIsBookingWizardOpen(false)}
+            onSuccess={() => {
+              setIsBookingWizardOpen(false);
+              onClose();
+            }}
+            initialCV={{
+              id: bookingPreFill.cv?.id,
+              displayName: bookingPreFill.cv?.name,
+              avatarUrl: bookingPreFill.cv?.avatarUrl,
+            }}
+            initialBranch={bookingPreFill.branch}
+            initialDate={bookingPreFill.date}
+            initialSlot={bookingPreFill.timeSlot}
+            initialIsOverbook={bookingPreFill.isOverbook}
+          />
+        )}
+
+        {/* UpdateBookingModal for editing lash service / technician */}
+        {isUpdateModalOpen && editingAppointment && (
+          <UpdateBookingModal
+            visible={isUpdateModalOpen}
+            onClose={() => {
+              setIsUpdateModalOpen(false);
+              setEditingAppointment(null);
+            }}
+            onSuccess={() => {
+              setIsUpdateModalOpen(false);
+              setEditingAppointment(null);
+              // Dispatch refresh events to update timeline & drawer data immediately
+              window.dispatchEvent(new CustomEvent('mos-booking-updated'));
+              window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'booking' } }));
+            }}
+            booking={editingAppointment}
+          />
+        )}
       </Drawer>
     );
   }

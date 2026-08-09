@@ -14,6 +14,7 @@ import { StaffWorkingItem, CvAvailabilityInfo } from './cvDrawerUtils';
 interface CvWorkingStaffCardProps {
   staff: StaffWorkingItem & { availability: CvAvailabilityInfo };
   rankIndex: number;
+  onBookCv?: (staff: StaffWorkingItem) => void;
 }
 
 /**
@@ -59,7 +60,7 @@ const LAYER_LABELS: Record<number, { label: string; color: string }> = {
   3: { label: 'L3 Ref', color: 'text-slate-400 bg-slate-500/15 border-slate-500/30' },
 };
 
-export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(({ staff, rankIndex }) => {
+export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(({ staff, rankIndex, onBookCv }) => {
   const isTopBooked = rankIndex === 0 && (staff.bookedCount || 0) > 0;
   const eta = staff.availability.etaInfo;
   const cleanLabel = (staff.availability.label || '').replace(/^[🟢🔴🟡🔵💬🧹📷⚡🏁📅]\s*/, '');
@@ -194,10 +195,27 @@ export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(
             </div>
           </div>
 
-          <div className="text-right shrink-0 flex flex-col items-end gap-0.5 ml-2">
-            <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20">
-              {staff.branchName || 'Đề Thám'}
-            </span>
+          <div className="text-right shrink-0 flex flex-col items-end gap-1 ml-2">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20">
+                {staff.branchName || 'Đề Thám'}
+              </span>
+              {onBookCv && (
+                <Tooltip title="Đặt lịch cho CV này">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBookCv(staff);
+                    }}
+                    className="inline-flex items-center justify-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/40 transition-all cursor-pointer shadow-2xs active:scale-95"
+                  >
+                    <CalendarOutlined className="text-[10px]" />
+                    <span className="text-[11px] font-extrabold leading-none">+</span>
+                  </button>
+                </Tooltip>
+              )}
+            </div>
             <span className="text-[10px] text-slate-400 font-medium">{staff.shift || 'Ca Full'}</span>
           </div>
         </div>

@@ -7,6 +7,8 @@ console.warn = (...args: SafeAny[]) => {
       args[0].includes('antd: compatible') ||
       args[0].includes('bordered') ||
       args[0].includes('is not connected to any Form element') ||
+      args[0].includes('form field element') ||
+      args[0].includes('A form field element should have an id or name attribute') ||
       args[0].includes('addonAfter') ||
       args[0].includes('addonBefore') ||
       args[0].includes('Space.Compact') ||
@@ -34,8 +36,12 @@ console.error = (...args: SafeAny[]) => {
     typeof args[0] === 'string' &&
     (args[0].includes('antd v5 support React is 16 ~ 18') ||
       args[0].includes('antd: compatible') ||
+      args[0].includes('Encountered two children with the same key') ||
+      args[0].includes('Keys should be unique so that components maintain their identity') ||
       args[0].includes('bordered') ||
       args[0].includes('is not connected to any Form element') ||
+      args[0].includes('form field element') ||
+      args[0].includes('A form field element should have an id or name attribute') ||
       args[0].includes('addonAfter') ||
       args[0].includes('addonBefore') ||
       args[0].includes('Space.Compact') ||
@@ -68,6 +74,24 @@ console.error = (...args: SafeAny[]) => {
 
 // Lightweight polyfills & global error suppression for OmiCall WebRTC & older browsers
 if (typeof window !== 'undefined') {
+  try {
+    const style = document.createElement('style');
+    style.setAttribute('data-suppress-overlay', 'true');
+    style.innerHTML = `
+      nextjs-portal, #next-dev-overlay, [data-nextjs-toast] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    `;
+    if (document.head) {
+      document.head.appendChild(style);
+    }
+  } catch {
+    // Ignore
+  }
+
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason;
     const msg = typeof reason === 'string' ? reason : reason?.message || String(reason || '');

@@ -532,7 +532,9 @@ export default function CvXoayTab({
 
             <Space wrap>
               <Input
-                placeholder="Tìm tên CV, khách hàng, dịch vụ..."
+                id="cv-xoay-search-input"
+                name="cvXoaySearch"
+                placeholder="Tìm tên KTV..."
                 prefix={<SearchOutlined />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}

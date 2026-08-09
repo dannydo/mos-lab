@@ -1,91 +1,70 @@
-# Victory Audit Report: Custom Campaign Batch Allocation & History Tracking Unification
+# VICTORY AUDIT REPORT — CV Lash Extension Speed Model
 
-**Working Directory:** `/Users/dannydo/projects/mos-lab/.agents/victory_auditor`  
-**Auditor Archetype:** `victory_auditor`  
-**Verdict:** 🟢 **VICTORY CONFIRMED**
-
----
-
-## 1. Executive Summary
-
-An independent, rigorous audit was conducted on the implementation of batch allocation and allocation history tracking unification for Custom Campaign customers in `mos-lab`. All 5 audit criteria (R1, R2, R3, R4, and Monorepo Build Verification) were independently inspected and validated through code verification, database transaction analysis, empirical test execution, and full monorepo compilation.
+**Audit Date**: 2026-08-08  
+**Auditor**: Victory Auditor (Independent)  
+**Target Feature**: CV Lash Extension Speed Model (Logarithmic Speed Profile, CRM Storage, Backend API, Dashboard UI, Shared Types)  
+**Final Verdict**: `VICTORY CONFIRMED`
 
 ---
 
-## 2. Detailed Audit Findings per Criterion
+## 1. Observation & Evidence Chains
 
-### R1: Unified Customer ID Identification (`legacyUserId`) — 🟢 PASS
-
-- **File Verified:** `apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx`
-- **Table `rowKey` Evaluation:** Verified at Line 978: `rowKey={(record) => record.legacyUserId || record.customerId || record.id}`.
-- **Selection Keys & Payload Extraction:** In `handleBatchAllocate` (Lines 391–408), selection keys are mapped to their true numeric `legacyUserId` (e.g. `982962666`) before passing to `apiClient.allocation.createBatch`.
-- **Consistency Across UI:** All customer detail drawer triggers, remove actions, and candidate filtering fall back strictly across `legacyUserId || customerId || id`.
-
-### R2: Complete Batch Allocation & 24h Booker Acceptance Workflow — 🟢 PASS
-
-- **File Verified:** `apps/api/src/modules/allocation/allocation.service.ts`
-- **`AllocationService.createBatch` Signature & Execution:** Passes `bookerId`, `customerIds` (array of numeric `legacyUserId`s), `campaignId`, `sourceType: 'MANUAL'`, and `sourceFilterSummary: 'Chiến dịch [Tên] ([X] KH)'`.
-- **Database Artifact Creation:** Inside a Prisma `$transaction` (Lines 185–273):
-  1. `crm_allocation_batches` created with `campaignId`, `status = 'PENDING_ACCEPT'`, and 24h `expiresAt`.
-  2. `crm_allocation_batch_items` created for each customer with `status = 'PENDING_ACCEPT'`.
-  3. `crm_assignment_histories` records created with `actionType = 'ASSIGN'` (or `'RANDOM_SELECT'`).
-- **24h Expiration Timer:** `expiresAt` automatically enforced by `checkAndExpireBatches`.
-
-### R3: Full Traceability in Allocation History & Drawers — 🟢 PASS
-
-- **Files Verified:** `apps/api/src/modules/allocation/allocation.service.ts`, `apps/api/src/modules/customers/routes.ts`, `apps/web/components/customer-detail/components/CustomerAssignmentTimeline.tsx`, `apps/web/app/dashboard/customers/components/AssignmentHistoryDrawer.tsx`.
-- **Booker Acceptance:** On `acceptBatch`, `crm_customer_assignments` is updated/upserted and `crm_assignment_histories` logs `actionType = 'ACCEPT_ALLOCATION'`. Alias helper `ACCEPT_ACTION_TYPES = ['ACCEPT', 'ACCEPT_ALLOCATION']` ensures unified querying.
-- **Customer Detail Drawer:** `CustomerAssignmentTimeline.tsx` renders colored badges, action titles, campaign names, and `sourceFilterSummary` tags for `ACCEPT`, `DECLINE`, `RECALL`, `EXPIRE`, `TRANSFER`, `ASSIGN`, etc.
-- **Global & Campaign Tables:** `AssignmentHistoryDrawer.tsx` provides filter radio buttons for `ACCEPT`, `DECLINE`, `EXPIRED`, `REVOKE`, etc. The Campaign Customer Table renders "Đã phân bổ" elapsed days accurately via `assignedAt`.
-
-### R4: Campaign Expiration & Assignment Clean-up — 🟢 PASS
-
-- **File Verified:** `apps/api/src/modules/campaigns/campaign.service.ts`
-- **Atomic Multi-Table Transaction Cleanup:** In both `endCampaign` (Lines 545–676) and `deleteCampaign` (Lines 418–538):
-  1. Identifies active allocation batches (`PENDING_ACCEPT`, `ACCEPTED`) linked to campaign.
-  2. Creates `crm_assignment_histories` records with `actionType = 'EXPIRED'` and reason `Chiến dịch <name> đã kết thúc`.
-  3. Atomically deletes active `crm_customer_assignments` entries.
-  4. Expires active `crm_allocation_batches` and `crm_allocation_batch_items` (`status = 'EXPIRED'`).
-  5. Updates `crm_campaign_customers` with `removedAt = now` and `removedReason = 'Chiến dịch <name> đã kết thúc'`, returning unbooked customers to the main NYC pool while preserving participation logs.
-
-### Monorepo Build Verification — 🟢 PASS
-
-- **`pnpm build` Compilation:** Completed with **0 errors** across all monorepo packages (`@mos-lab/shared`, `apps/api`, `apps/web`).
-- **Empirical Test Suite (`apps/api/test-r1-r4-empirical.ts`):** Executed 7 automated tests covering R1, R2, R3, R4 against the live database environment. Result: **7/7 PASSED (0 failures)**.
+| Requirement                                       | Implementation File(s)                                                                       | Status   | Evidence / Verification Notes                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **R1: Logarithmic Speed Model**                   | `apps/api/src/modules/kpi/services/cv-speed-model.service.ts`                                | **PASS** | Implements non-linear regression $y = a + b \ln(n)$, 3-layer cascade (Layer 1 P50 match, Layer 2 regression, Layer 3 benchmark fallback), monotonicity constraint ($b > 0$ check & $n_1 < n_2 \implies t_1 < t_2$), adaptive rolling windows (Junior 3m, Mid 4m, Senior 6m via `getCvRollingWindowMonths`), and 3 service modes (`normal_clean`, `normal_removal`, `retain`).                      |
+| **R2: CRM Storage & Nightly Seeding**             | `apps/api/prisma/crm.prisma`<br>`apps/api/src/modules/kpi/services/cv-speed-seed.service.ts` | **PASS** | Model `CrmCvSpeedProfile` (`crm_cv_speed_profile` table) created with exact schema & unique constraint `[staffId, lashStyle, serviceMode, lashCount]`. `runNightlyCvSpeedSeed()` processes active CVs across standard styles, modes, and counts `[30, 60, 70, 80, 90, 100, 120, 140]` with speed rating calculation (`fast` <-10%, `normal` ±10%, `slow` >+10%) and monotonicity post-enforcement. |
+| **R3: Backend API Endpoints**                     | `apps/api/src/modules/kpi/routes/cv-speed.routes.ts`<br>`apps/api/src/modules/kpi/routes.ts` | **PASS** | All 7 required endpoints (`/profiles`, `/matrix`, `/ranking`, `/trend/:staffId`, `/detail/:staffId`, `/predict`, `/seed`) implemented and registered with `/api/kpi/cv-speed` & `/api/cv-speed` prefixes. Uses `ACTIVE_CV_STAFF_CONFIG` and Rule #15 `COALESCE(ro.actual_booking_date_start, o.booking_date_start)`.                                                                               |
+| **R4: Dashboard UI ("CV Speed / Tốc Độ CV" tab)** | `apps/web/app/dashboard/kpi/components/cv-speed/*`<br>`apps/web/app/dashboard/kpi/page.tsx`  | **PASS** | 4-section layout: (1) Overview Speed Matrix, (2) Ranking Table with trend arrows, (3) CV Detail Modal with stacked phase bar chart & history, (4) ETA Booking Predictor Widget. Fully styled with Ant Design + Tailwind v4, Light/Dark theme support, `tabular-nums` for jitter prevention, and controlled pagination persisted in `localStorage`.                                                 |
+| **R5: Shared Type Definitions**                   | `packages/shared/src/types/cv-speed.ts`<br>`packages/shared/src/index.ts`                    | **PASS** | `CvSpeedProfile`, `CvSpeedMatrix`, `CvSpeedRanking`, `CvSpeedDetail`, `CvSpeedTrend`, `CvSpeedPrediction`, `CvSpeedSeedResult` defined and exported in barrel.                                                                                                                                                                                                                                     |
+| **Build Verification**                            | Monorepo root                                                                                | **PASS** | Clean compilation across all 3 packages: `pnpm --filter @mos-lab/shared build` (0 errors), `pnpm --filter @mos-lab/api build` (0 errors), `pnpm --filter @mos-lab/web build` (0 errors, 61 static pages generated).                                                                                                                                                                                |
 
 ---
 
-## 3. Verification Method & Output Summary
+## 2. Technical Logic Verification
 
-1. **Empirical DB Verification Suite:**
+1. **Logarithmic Regression Accuracy & Constraints**:
+   - Tested mathematical solver `fitLogarithmicModel`:
+     - Standard logarithmic curve $y = 15 + 12 \ln(n)$ yields $a = 15.00$, $b = 12.00$, $R^2 = 1.00$, `isMonotonic = true`.
+     - Inverted curve yields $b < 0$, `isMonotonic = false` (triggers Layer 3 fallback as specified).
+     - Insufficient data points (< 2) returns fallback result with $R^2 = 0$.
+   - Tested monotonicity enforcer `enforceMonotonicity`:
+     - Guarantees $t(30) < t(60) < t(70) < t(80) < t(90) < t(100) < t(120) < t(140)$ across noisy empirical medians.
 
-   ```
-   ================================================================
-   SUMMARY OF EMPIRICAL VERIFICATION RESULTS (R1, R2, R3, R4)
-   ================================================================
-   [PASS] [R1] Selection Key Fallback Chain (legacyUserId || customerId || id)
-   [PASS] [R1] Batch Allocation Payload ID Extraction
-   [PASS] [R2] AllocationService.createBatch parameters, 24h PENDING_ACCEPT, items & actionType = ASSIGN
-   [PASS] [R3] Global Allocation History Drawer Data Retrieval (get30DayHistory)
-   [PASS] [R3] Campaign Table "Đã phân bổ" Column Elapsed Days Calculation
-   [PASS] [R4] endCampaign batch expiration, assignment deletion, removedAt & actionType=EXPIRED history
-   [PASS] [R4] deleteCampaign batch expiration, assignment deletion, campaign deletion & actionType=EXPIRED history
+2. **Database Integrity & Rule Alignment**:
+   - `COALESCE(ro.actual_booking_date_start, o.booking_date_start)` consistently applied across all legacy queries per Rule #15.
+   - `ACTIVE_CV_STAFF_CONFIG` correctly extracted from `crmConfig` with legacy query fallback.
+   - Seed operations are idempotent via Prisma `.upsert()`.
 
-   TOTAL: 7 tests | PASSED: 7 | FAILED: 0
-   ```
-
-2. **Monorepo Build:**
-   ```
-   ✓ Compiled successfully in 9.5s
-   Running TypeScript ...
-   Finished TypeScript in 6.8s ...
-   Generating static pages (24/24) ...
-   Route (app)                              Size     First Load JS
-   ...
-   ```
+3. **UI / UX Compliance**:
+   - Light/Dark theme adaptivity uses `token.colorBgContainer`, `token.colorBorderSecondary`, `useTheme()`.
+   - All time counters and predictions format with `tabular-nums`.
+   - `removeVietnameseTones` applied to CV name search inputs in Matrix section and Predictor dropdown per Rule # Vietnamese Search.
 
 ---
 
-## 4. Final Verdict
+## 3. Caveats & Notes
 
-**VICTORY CONFIRMED**: The Project Orchestrator's implementation of batch allocation and allocation history tracking unification for Custom Campaign customers fulfills all specified requirements (R1–R4 and Build Verification) without defects, code duplication, or schema inconsistencies.
+- **Empty CRM Table Auto-Seeding**: If `crm_cv_speed_profile` is unpopulated on first load, `/api/kpi/cv-speed/profiles` automatically triggers `runNightlyCvSpeedSeed` to self-heal and populate default profiles without manual intervention.
+- **Prisma Client Output**: `rm -rf dist/generated && cp -r src/generated dist/generated` postbuild step in `apps/api` ensures generated legacy and CRM Prisma clients compile seamlessly in production builds.
+
+---
+
+## 4. Verification Methods Executed
+
+```bash
+# 1. Monorepo Package Builds
+pnpm --filter @mos-lab/shared build   # SUCCESS (0 errors)
+pnpm --filter @mos-lab/api build      # SUCCESS (0 errors)
+pnpm --filter @mos-lab/web build      # SUCCESS (0 errors, 61 static pages)
+
+# 2. Mathematical & Empirical Model Unit Tests
+node scripts/test-cv-speed-empirical.js # SUCCESS (All tests passed)
+```
+
+---
+
+## 5. Final Verdict
+
+**Verdict**: `VICTORY CONFIRMED`
+
+All requirements R1-R5, user rules, and acceptance criteria in `ORIGINAL_REQUEST.md` have been fully met and verified.

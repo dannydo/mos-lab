@@ -125,6 +125,8 @@ export default function CvConfigDrawer({ open, onClose, onSaveSuccess }: CvConfi
         </Text>
 
         <Input
+          id="cv-config-drawer-search-input"
+          name="cvConfigSearch"
           prefix={<SearchOutlined />}
           placeholder="Tìm tên hoặc mã nhân viên..."
           value={searchText}

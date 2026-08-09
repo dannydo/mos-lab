@@ -1,90 +1,88 @@
-# BRIEFING — 2026-07-31T15:49:00Z
+# BRIEFING — 2026-08-08T08:54:36Z
 
 ## Mission
 
-Implement complete unification of batch allocation (crm_allocation_batches, crm_allocation_batch_items) and allocation history tracking (crm_assignment_histories) for Custom Campaign customers in mos-lab.
+Build CV Lash Extension Speed Model (R1-R5) including logarithmic regression speed profile model, CRM DB storage & nightly seeding, Fastify API endpoints (M3), Ant Design + Tailwind v4 Dashboard UI tab (M4), and E2E verification & audit (M5).
 
 ## 🔒 My Identity
 
-- Archetype: teamwork_preview_orchestrator
+- Archetype: self
 - Roles: orchestrator, user_liaison, human_reporter, successor
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/orchestrator
 - Original parent: top-level
-- Original parent conversation ID: 915e37cf-6079-4c81-953b-ec764558a385
+- Original parent conversation ID: 5b45317b-041f-4796-90ae-ed3905083f27
 
 ## 🔒 My Workflow
 
-- **Pattern**: Project Pattern
-- **Scope document**: /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md
+- **Pattern**: Project
+- **Scope document**: .agents/orchestrator/plan.md
 
-1. **Decompose**: Scope broken into 4 implementation milestones + 1 E2E testing / build verification milestone.
-2. **Dispatch & Execute**: Direct iteration loop per milestone (Explorer -> Worker -> Reviewer -> Challenger -> Auditor gate).
-3. **On failure**: Retry -> Replace -> Skip -> Redistribute -> Redesign -> Escalate.
-4. **Succession**: Threshold at 16 spawns, write handoff.md, spawn successor.
+1. **Decompose**: Survey codebase via Explorers/Spec Miners -> Plan Milestones -> Delegate/Iterate (Explorer -> Worker -> Reviewer -> Challenger -> Auditor)
+2. **Dispatch & Execute**:
+   - Iteration loop per milestone
+3. **On failure**: Retry -> Replace -> Skip -> Redistribute -> Redesign -> Escalate
+4. **Succession**: Spawn successor at 20 spawns
 
 - **Work items**:
-  1. Milestone 1: Exploration & Codebase Audit (R1, R2, R3, R4) [pending]
-  2. Milestone 2: Backend Unification & API Updates (R1, R2, R3, R4) [pending]
-  3. Milestone 3: Frontend Unification & Drawer/Table Integration (R1, R2, R3) [pending]
-  4. Milestone 4: Campaign Expiration Clean-up & Verification (R4, Monorepo Build) [pending]
-- **Current phase**: 1
-- **Current focus**: Milestone 1 - Exploration & Codebase Audit
-  1. Milestone 1: Exploration & Codebase Audit (R1, R2, R3, R4) [completed]
-  2. Milestone 2: Backend Unification & API Updates (R1, R2, R3, R4) [completed]
-  3. Milestone 3: Frontend Unification & Drawer/Table Integration (R1, R2, R3) [completed]
-  4. Milestone 4: Campaign Expiration Clean-up & Verification (R4, Monorepo Build) [completed]
-- **Current phase**: 4
-- **Current focus**: Complete & Verified
+  - Phase 0: Survey codebase & map requirements [DONE]
+  - Milestone 1 (M1): Shared Types & Database Schema (`crm_cv_speed_profile`) [DONE]
+  - Milestone 2 (M2): Logarithmic Speed Model Core Service & Seeding logic [DONE]
+  - Milestone 3 (M3): Backend API Endpoints (7 routes in Fastify) [DONE]
+  - Milestone 4 (M4): Dashboard UI & Booking Predictor Widget [DONE]
+  - Milestone 5 (M5): End-to-End Verification & Gate Approval [DONE]
+- **Current phase**: Milestone 5 (Completed)
+- **Current focus**: Report final results to parent agent
 
 ## 🔒 Key Constraints
 
-- Never write or modify source code files directly (DISPATCH-ONLY).
-- Never run build/test commands directly.
-- File-editing tools permitted ONLY for metadata/state files (.md) in .agents/ folder.
-- Never reuse a subagent after handoff.
-- Mandatory Forensic Auditor check before milestone completion.
+- Never write, modify, or create source code files directly.
+- Only edit .md files in .agents/ folder.
+- Never reuse subagents after handoff — spawn fresh.
+- Always include path to ORIGINAL_REQUEST.md in subagent dispatches.
+- Forensic Auditor verdict is a HARD BINARY VETO.
+- Follow all AGENTS.md rules (NodeNext .js imports, tabular-nums, Light/Dark theme, controlled pagination, etc.).
 
 ## Current Parent
 
-- Conversation ID: 915e37cf-6079-4c81-953b-ec764558a385
-- Updated: 2026-07-31T15:59:46+07:00
+- Conversation ID: 5b45317b-041f-4796-90ae-ed3905083f27
+- Updated: 2026-08-08T08:54:36Z
 
 ## Key Decisions Made
 
-- Use Project Pattern with explicit milestone breakdown.
-- Execute direct iteration loop per milestone.
-- Perform empirical verification & forensic integrity audit (Verdict: CLEAN).
+- Resumed orchestration as Generation 2 successor.
+- Milestone 1 & Milestone 2 verified complete.
+- Fastify API endpoints created and registered in `apps/api/src/modules/kpi/routes.ts`.
+- Dispatched worker_m4 for M4 Dashboard UI, apiClient SDK, CvSpeedTrend shared type fix, and full monorepo build verification.
 
 ## Team Roster
 
-| Agent        | Type                        | Work Item                        | Status    | Conv ID                              |
-| ------------ | --------------------------- | -------------------------------- | --------- | ------------------------------------ |
-| Explorer 1   | teamwork_preview_explorer   | Backend Allocation Audit         | completed | 070f7af4-e622-4bb9-8118-3da2e23d19bf |
-| Explorer 2   | teamwork_preview_explorer   | Frontend Campaign Audit          | completed | 8c3adc5f-9f08-47a3-8cec-075bf7cdb388 |
-| Explorer 3   | teamwork_preview_explorer   | Traceability & Expiration Audit  | completed | 028eccc5-b775-456b-95ef-0556fcddcc93 |
-| Worker 1     | teamwork_preview_worker     | Backend Allocation Unification   | completed | 8f232570-ada0-4492-bb5e-a9ce266d785c |
-| Worker 2     | teamwork_preview_worker     | Frontend Campaign UI Unification | completed | 48bae431-c67b-40d0-9f18-337b1aeae3eb |
-| Challenger 1 | teamwork_preview_challenger | Monorepo Build Verification      | completed | 58c00ee3-0584-4739-b2b5-10ee44bbe2bb |
-| Challenger 2 | teamwork_preview_challenger | Requirements Logic Verification  | completed | 47c7ea48-6320-4c0f-b520-b81c2baf5bb6 |
-| Auditor 1    | teamwork_preview_auditor    | Forensic Integrity Audit         | completed | 3fd339ca-4b5a-4694-b0f4-bae8aacb6d16 |
-| Worker 3     | teamwork_preview_worker     | Lint Cleanup                     | completed | 472d2b87-c68c-4679-89da-a3e968400173 |
+| Agent             | Type                        | Work Item                               | Status                  | Conv ID                              |
+| ----------------- | --------------------------- | --------------------------------------- | ----------------------- | ------------------------------------ |
+| worker_m4         | teamwork_preview_worker     | Implement KPI Dashboard UI & SDK        | completed               | aadd3341-c3a6-46c0-ae46-c9aa71ebda53 |
+| reviewer_m3m4_1   | teamwork_preview_reviewer   | Code Reviewer 1 (M2-M4 Codebase)        | completed (APPROVE)     | 7782506f-864c-43e1-b16c-cde28ef82d73 |
+| reviewer_m3m4_2   | teamwork_preview_reviewer   | Code Reviewer 2 (M2-M4 Robustness)      | completed (REQ_CHANGES) | 634e01ff-adc8-4305-bc42-f8f75d20d8ed |
+| challenger_m3m4_1 | teamwork_preview_challenger | Monorepo Build Challenger               | in-progress             | dda90ac3-283a-4b67-80b2-f9deb891627d |
+| challenger_m3m4_2 | teamwork_preview_challenger | Math & Log Regression Challenger        | completed (REQ_CHANGES) | eb58be42-b8c1-4bc9-aa3c-7c7b9b26da5b |
+| auditor_m3m4      | teamwork_preview_auditor    | Forensic Integrity Auditor              | in-progress             | bd325444-2fd9-43f5-bde3-a2f0e3906e57 |
+| worker_m3m4_fix   | teamwork_preview_worker     | Remediation Worker (Math & Route Fixes) | in-progress             | 4246a261-b2c6-4bfb-9b9a-c9f80c14e291 |
 
 ## Succession Status
 
 - Succession required: no
-- Spawn count: 9 / 16
-- Pending subagents: none
-- Predecessor: none
+- Spawn count: 13 / 20 (Gen 2)
+- Pending subagents: 4246a261-b2c6-4bfb-9b9a-c9f80c14e291
+- Predecessor: Gen 1 (20 spawns completed)
 - Successor: not yet spawned
 
 ## Active Timers
 
-- Heartbeat cron: terminated
-- Safety timer: none
+- Heartbeat cron: task-189
+- Safety timer: task-217
 
 ## Artifact Index
 
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/ORIGINAL_REQUEST.md — User request record
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/BRIEFING.md — Persistent briefing index
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/progress.md — Liveness & status checkpoint
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md — Architecture & Milestone breakdown
+- `.agents/orchestrator/plan.md` — Master Plan & Milestone tracking
+- `.agents/orchestrator/progress.md` — Liveness & Progress log
+- `.agents/orchestrator/BRIEFING.md` — Orchestrator briefing state
+- `.agents/orchestrator/DISPATCH.md` — User dispatch record
+- `.agents/orchestrator/handoff.md` — Gen 1 Soft Handoff Report

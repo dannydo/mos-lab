@@ -241,6 +241,21 @@ export default function ScheduleCalendarPage() {
     fetchAppointments();
   }, [fetchAppointments]);
 
+  // Listen for real-time booking updates and clear stale cache
+  useEffect(() => {
+    const handleDataChanged = () => {
+      appointmentsCacheRef.current.clear();
+      fetchAppointments();
+    };
+
+    window.addEventListener('mos-booking-updated', handleDataChanged);
+    window.addEventListener('mos-data-updated', handleDataChanged);
+    return () => {
+      window.removeEventListener('mos-booking-updated', handleDataChanged);
+      window.removeEventListener('mos-data-updated', handleDataChanged);
+    };
+  }, [fetchAppointments]);
+
   // Filtered appointments client-side for fast search, branch, and channel filter
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appt) => {

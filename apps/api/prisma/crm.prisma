@@ -737,3 +737,34 @@ model CrmLashTypeBenchmark {
   @@unique([lashStyle, serviceType, lashCount], name: "style_type_count")
   @@map("crm_lash_type_benchmarks")
 }
+
+model CrmCvSpeedProfile {
+  id                    Int      @id @default(autoincrement())
+  staffId               Int      @map("staff_id")
+  staffName             String?  @map("staff_name") @db.VarChar(100)
+  lashStyle             String   @map("lash_style") @db.VarChar(50)
+  serviceMode           String   @map("service_mode") @db.VarChar(20)
+  lashCount             Int      @map("lash_count")
+  cleaningMinutes       Float    @map("cleaning_minutes")
+  extensionMinutes      Float    @map("extension_minutes")
+  prepQcMinutes         Float    @map("prep_qc_minutes")
+  totalMinutes          Float    @map("total_minutes")
+  modelLayer            Int      @map("model_layer")
+  sampleSize            Int      @map("sample_size")
+  confidence            String   @db.VarChar(10)
+  regA                  Float?   @map("reg_a")
+  regB                  Float?   @map("reg_b")
+  regRSquared           Float?   @map("reg_r_squared")
+  benchmarkTotalMinutes Float?   @map("benchmark_total_minutes")
+  speedDeltaPercent     Float?   @map("speed_delta_percent")
+  speedRating           String   @map("speed_rating") @db.VarChar(10)
+  createdAt             DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@unique([staffId, lashStyle, serviceMode, lashCount], name: "staffId_lashStyle_serviceMode_lashCount")
+  @@index([staffId])
+  @@index([lashStyle])
+  @@index([speedRating])
+  @@map("crm_cv_speed_profile")
+}
+

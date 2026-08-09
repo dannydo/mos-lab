@@ -1146,8 +1146,8 @@ export class CampaignService {
       const staff = assignment?.staff || pendingItem?.batch?.booker || null;
       const isPendingAccept = !assignment && !!pendingItem;
 
-      const addedAt = new Date(cc.addedAt);
-      const diffMs = now.getTime() - addedAt.getTime();
+      const baseDate = campaign.startDate ? new Date(campaign.startDate) : new Date(cc.addedAt);
+      const diffMs = now.getTime() - baseDate.getTime();
       const daysInCampaign = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 
       // Active touchpoints matching daysInCampaign

@@ -4093,23 +4093,44 @@ export async function customerRoutes(fastify: FastifyInstance) {
       );
 
       if (serviceId !== undefined && serviceId !== null) {
-        await fastify.prisma.legacy.$executeRawUnsafe(
-          `UPDATE order_service 
-           SET service_id = ?,
-               duration_minute = ?,
-               service_price = ?,
-               assigned_staff_id = ?, 
-               booked_staff_id = ?,
-               user_service_type = ?
-           WHERE order_id = ?`,
-          finalServiceId,
-          duration,
-          totalPrice,
-          technicianId || null,
-          technicianId || null,
-          userServiceType,
+        const existingServices = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT id FROM order_service WHERE order_id = ? LIMIT 1`,
           orderId
         );
+
+        if (existingServices.length > 0) {
+          await fastify.prisma.legacy.$executeRawUnsafe(
+            `UPDATE order_service 
+             SET service_id = ?,
+                 duration_minute = ?,
+                 service_price = ?,
+                 assigned_staff_id = ?, 
+                 booked_staff_id = ?,
+                 user_service_type = ?
+             WHERE order_id = ?`,
+            finalServiceId,
+            duration,
+            totalPrice,
+            technicianId || null,
+            technicianId || null,
+            userServiceType,
+            orderId
+          );
+        } else {
+          await fastify.prisma.legacy.$executeRawUnsafe(
+            `INSERT INTO order_service (
+               order_id, service_id, duration_minute, service_price, 
+               assigned_staff_id, booked_staff_id, user_service_type, date_created
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+            orderId,
+            finalServiceId,
+            duration,
+            totalPrice,
+            technicianId || null,
+            technicianId || null,
+            userServiceType
+          );
+        }
       } else {
         await fastify.prisma.legacy.$executeRawUnsafe(
           `UPDATE order_service 

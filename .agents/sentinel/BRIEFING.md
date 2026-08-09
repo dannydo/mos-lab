@@ -1,26 +1,28 @@
-# BRIEFING — 2026-07-31T11:23:00+07:00
+# BRIEFING — 2026-08-08T01:52:00Z
 
 ## Mission
 
-Record user request, spawn Project Orchestrator to implement Custom Campaign System under NYC campaign, configure monitoring crons, and perform victory audit upon completion.
+Sentinel monitoring and orchestration dispatch for CV Lash Extension Speed Model.
 
 ## 🔒 My Identity
 
 - Archetype: sentinel
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/sentinel
-- Orchestrator: f0d51af5-f283-407c-acf5-24a48a0a3ed8
-- Victory Auditor: e539c755-cde9-4a54-a626-180154209079
+- Orchestrator: d3d9b188-ba89-48ed-b9b1-36fef7e66301
+- Victory Auditor: d7c5b583-3111-41c4-a847-0ac358985d8c
 
 ## 🔒 Key Constraints
 
 - No technical decisions — relay only
 - Victory Audit is MANDATORY before reporting completion
+- Must record user requests to ORIGINAL_REQUEST.md
+- Scan recently modified files and report progress via cron
 
 ## User Context
 
-- **Last user request**: Build Custom Campaign System under NYC campaign (R1-R7: Campaign CRUD, customer selection & exclusive assignment, custom touchpoint pipeline, campaign page UI & navigation, flexible promotions, shared types/API client, booker batch allocation).
+- **Last user request**: Build CV Lash Extension Speed Model (R1-R5) including backend API, database table, seed service, and frontend dashboard.
 - **Pending clarifications**: none
-- **Delivered results**: Complete Custom Campaign System under NYC campaign with 5 Prisma CRM tables, exclusive customer selection filter, custom touchpoint pipeline tracking, campaign page & collapsible sidebar navigation, flexible promotions in Booking Wizard, booker batch allocation, and VICTORY CONFIRMED verdict.
+- **Delivered results**: Initialized ORIGINAL_REQUEST.md and BRIEFING.md
 
 ## Project Status
 
@@ -34,8 +36,5 @@ Record user request, spawn Project Orchestrator to implement Custom Campaign Sys
 
 ## Artifact Index
 
-- /Users/dannydo/projects/mos-lab/.agents/ORIGINAL_REQUEST.md — Verbatim user request record
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/plan.md — Orchestrator project plan
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/progress.md — Orchestrator progress tracking
-- /Users/dannydo/projects/mos-lab/.agents/orchestrator/handoff.md — Orchestrator completion handoff
-- /Users/dannydo/projects/mos-lab/.agents/victory_auditor/handoff.md — Victory Auditor report (VICTORY CONFIRMED)
+- /Users/dannydo/projects/mos-lab/ORIGINAL_REQUEST.md — Verbatim record of original user request
+- /Users/dannydo/projects/mos-lab/.agents/sentinel/BRIEFING.md — Sentinel briefing file

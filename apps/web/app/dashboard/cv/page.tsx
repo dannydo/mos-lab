@@ -11,6 +11,7 @@ import {
   ThunderboltOutlined,
   GiftOutlined,
   WalletOutlined,
+  DashboardOutlined,
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -24,6 +25,9 @@ const CvXoayTab = dynamic(() => import('./components/CvXoayTab'), { ssr: false }
 const CvTipTab = dynamic(() => import('./components/CvTipTab'), { ssr: false });
 const CvThuNhapTab = dynamic(() => import('./components/CvThuNhapTab'), { ssr: false });
 const CvConfigDrawer = dynamic(() => import('./components/CvConfigDrawer'), { ssr: false });
+const CvSpeedTab = dynamic(() => import('./components/cv-speed/CvSpeedTab').then((m) => ({ default: m.CvSpeedTab })), {
+  ssr: false,
+});
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -107,7 +111,7 @@ export default function CvReportPage() {
       const savedTab = localStorage.getItem('cv_active_tab');
       const initialTab = tabParam || savedTab;
 
-      if (initialTab && ['xoay', 'tip', 'thunhap'].includes(initialTab)) {
+      if (initialTab && ['xoay', 'tip', 'thunhap', 'speed'].includes(initialTab)) {
         return initialTab;
       }
     }
@@ -374,6 +378,12 @@ export default function CvReportPage() {
                 activeTab === 'thunhap' ? (
                   <CvThuNhapTab dateRange={dateRange} selectedStore={selectedStore} currentUser={currentUser} />
                 ) : null,
+            },
+            {
+              key: 'speed',
+              icon: <DashboardOutlined />,
+              label: 'Tốc Độ CV',
+              children: activeTab === 'speed' ? <CvSpeedTab /> : null,
             },
           ]}
         />

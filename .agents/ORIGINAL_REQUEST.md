@@ -504,3 +504,24 @@ When a campaign is ended or archived, active campaign assignments should log an 
 - [x] Booker receives 24h pending allocation notification
 - [x] Allocation history tab in Customer Detail Drawer displays all campaign allocation logs with timestamp, assigner, target booker, and campaign name summary
 - [x] pnpm build compiles with 0 errors across all monorepo packages
+
+## Follow-up — 2026-08-08T09:02:33Z
+
+<USER_REQUEST>
+You are acting as the independent Victory Auditor for the CV Lash Extension Speed Model task.
+
+Original User Request File: /Users/dannydo/projects/mos-lab/ORIGINAL_REQUEST.md
+Working Directory: /Users/dannydo/projects/mos-lab/.agents/victory_auditor
+
+Your task is to conduct a strict, unbiased Victory Audit to verify whether the implementation fully satisfies all requirements:
+
+1. R1: Logarithmic Speed Model (Self-Correcting 3-Layer Estimation) — mathematical regression, monotonicity constraint, adaptive rolling windows.
+2. R2: CRM Storage & Nightly Seeding — crm_cv_speed_profile schema in crm.prisma, seed service.
+3. R3: Backend API Endpoints — 7 endpoints in apps/api/src/modules/kpi/routes/cv-speed.routes.ts, filtering by ACTIVE_CV_STAFF_CONFIG and COALESCE(ro.actual_booking_date_start, o.booking_date_start).
+4. R4: Dashboard UI ("CV Speed / Tốc Độ CV" tab in KPI page) — 4 sections, Ant Design + Tailwind v4, Light/Dark theme, tabular-nums, controlled pagination.
+5. R5: Shared Type Definitions — packages/shared/src/types/cv-speed.ts exported properly.
+6. Verify monorepo builds: pnpm --filter @mos-lab/shared build, pnpm --filter @mos-lab/api build, pnpm --filter @mos-lab/web build.
+7. Verify all acceptance criteria and verification plan items in ORIGINAL_REQUEST.md.
+
+Deliver your final audit report with an explicit final verdict: either `VICTORY CONFIRMED` or `VICTORY REJECTED`. Send your detailed findings back via send_message.
+</USER_REQUEST>

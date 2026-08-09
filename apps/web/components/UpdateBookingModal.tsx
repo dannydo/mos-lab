@@ -43,16 +43,48 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
       setLoadingOptions(true);
       Promise.all([apiClient.customers.getStaff().catch(() => []), apiClient.customers.getServices().catch(() => [])])
         .then(([staffData, serviceData]) => {
+          const rawServices = serviceData || [];
+          let currentServicesList = [...rawServices];
           setStaffList(staffData || []);
-          setServiceList(serviceData || []);
 
           // Pre-fill initial values
-          const matchedService = (serviceData || []).find(
-            (s: SafeAny) =>
-              (booking.services || []).includes(s.name) ||
-              (booking.services || []).includes(s.serviceName) ||
-              (s.name && String(s.name).toLowerCase() === String(booking.serviceName || '').toLowerCase())
-          );
+          const bookingServiceName =
+            booking.serviceName || (booking as any).user_service_name || (booking as any).service || '';
+          const bookingServiceId = booking.serviceId || (booking as any).user_service_id || (booking as any).service_id;
+
+          let matchedService = currentServicesList.find((s: SafeAny) => {
+            if (
+              bookingServiceId &&
+              (Number(s.id) === Number(bookingServiceId) || String(s.id) === String(bookingServiceId))
+            )
+              return true;
+            if (
+              s.name &&
+              bookingServiceName &&
+              String(s.name).toLowerCase().trim() === String(bookingServiceName).toLowerCase().trim()
+            )
+              return true;
+            if (
+              Array.isArray(booking.services) &&
+              (booking.services.includes(s.name) || booking.services.includes(s.serviceName))
+            )
+              return true;
+            return false;
+          });
+
+          // Fallback if appointment has a service name/ID that is not in serviceData catalog
+          if (!matchedService && (bookingServiceName || bookingServiceId)) {
+            const fallbackService = {
+              id: bookingServiceId || `srv_fb_${Date.now()}`,
+              name: bookingServiceName || `Dịch vụ #${bookingServiceId}`,
+              price: booking.servicePrice || booking.totalPrice || 0,
+              duration: 90,
+            };
+            currentServicesList = [fallbackService, ...currentServicesList];
+            matchedService = fallbackService;
+          }
+
+          setServiceList(currentServicesList);
 
           const matchedStaff = (staffData || []).find((st: SafeAny) => {
             if (booking.technicianId && Number(st.id) === Number(booking.technicianId)) return true;
@@ -69,7 +101,7 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
 
           form.setFieldsValue({
             technicianId: matchedStaff ? matchedStaff.id : booking.technicianId || null,
-            serviceId: matchedService?.id || null,
+            serviceId: matchedService ? matchedService.id : null,
             bookingNote: booking.bookingNote || '',
           });
         })
@@ -80,13 +112,15 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
   if (!booking) return null;
 
   const isDark = themeMode === 'dark';
-  const bookingDateObj = booking.bookingDate ? dayjs(booking.bookingDate) : dayjs();
+  const rawBookingDateStr = booking.bookingDateStart || booking.bookingDate || booking.date;
+  const bookingDateObj = rawBookingDateStr ? dayjs(rawBookingDateStr) : dayjs();
   const formattedDateStr = bookingDateObj.format('DD/MM/YYYY');
   const formattedTimeStr = bookingDateObj.format('HH:mm');
   const dayOfWeekStr = getVietnameseDayOfWeek(bookingDateObj);
 
   // Find store address
-  const storeInfo = STORES.find((s) => s.id === booking.storeId) || { name: booking.branchName || 'Estella Place' };
+  const storeId = Number(booking.storeId || (booking as any).client_store_id || (booking as any).clientStoreId || 16);
+  const storeInfo = STORES.find((s) => s.id === storeId) || { name: booking.branchName || 'Estella Place' };
   const fullBranchAddress = getStoreFullAddress(storeInfo);
 
   const handleSubmit = async () => {
@@ -94,13 +128,21 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
       const values = await form.validateFields();
       setSubmitting(true);
 
+      let finalServiceId: number | null = null;
+      if (values.serviceId !== undefined && values.serviceId !== null && values.serviceId !== '') {
+        const p = Number(values.serviceId);
+        if (!isNaN(p) && p >= 0) {
+          finalServiceId = p;
+        }
+      }
+
       const payload = {
-        storeId: booking.storeId || 16,
-        technicianId: values.technicianId || null,
+        storeId,
+        technicianId: values.technicianId ? Number(values.technicianId) : null,
         bookingDate: bookingDateObj.format('YYYY-MM-DD'),
         bookingTime: formattedTimeStr,
         bookingNote: values.bookingNote || '',
-        serviceId: values.serviceId || null,
+        serviceId: finalServiceId,
         reasonCategory: 'Cập nhật thông tin đơn hàng',
         reasonNote: 'Cập nhật KTV/Dịch vụ/Ghi chú từ CRM',
       };
