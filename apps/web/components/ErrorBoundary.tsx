@@ -24,6 +24,16 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[ErrorBoundary] Uncaught client error:', error, errorInfo);
+    if (
+      typeof window !== 'undefined' &&
+      (error?.name === 'ChunkLoadError' ||
+        error?.message?.includes('Failed to load chunk') ||
+        error?.message?.includes('Loading chunk') ||
+        error?.message?.includes('CSS_CHUNK_LOAD_FAILED'))
+    ) {
+      console.warn('[ErrorBoundary] ChunkLoadError detected. Reloading page to fetch latest assets...');
+      window.location.reload();
+    }
   }
 
   private handleReload = () => {
