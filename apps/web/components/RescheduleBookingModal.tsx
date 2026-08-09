@@ -282,20 +282,46 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     setSelectedSlot(slot);
   };
 
-  // Load Services
+  // Load Services & preserve existing booking service
   const fetchServices = async () => {
     try {
       const list = (await apiClient.customers.getServices()) || [];
-      setServices(list);
 
-      if (booking?.services && booking.services.length > 0) {
-        const currentSrvName = booking.services[0];
-        const matched = list.find((s: SafeAny) => s.name.toLowerCase() === currentSrvName.toLowerCase());
-        if (matched) {
-          setSelectedService(matched);
-        } else {
-          setSelectedService({ id: 0, name: currentSrvName, price: 0, duration: 90 });
-        }
+      // Extract existing service ID or Name from booking object
+      const currentSrvId = booking?.serviceId || booking?.service_id;
+      const currentSrvName =
+        booking?.serviceName ||
+        booking?.service_name ||
+        (typeof booking?.service === 'string' ? booking.service : booking?.service?.name) ||
+        (Array.isArray(booking?.services) && booking.services.length > 0
+          ? typeof booking.services[0] === 'string'
+            ? booking.services[0]
+            : booking.services[0]?.name || booking.services[0]?.serviceName
+          : null);
+
+      let matched = null;
+      if (currentSrvId) {
+        matched = list.find((s: SafeAny) => Number(s.id) === Number(currentSrvId));
+      }
+      if (!matched && currentSrvName) {
+        const cleanTarget = String(currentSrvName).trim().toLowerCase();
+        matched = list.find((s: SafeAny) => s.name.trim().toLowerCase() === cleanTarget);
+      }
+
+      if (matched) {
+        setSelectedService(matched);
+        setServices(list);
+      } else if (currentSrvName) {
+        const customService = {
+          id: currentSrvId ? Number(currentSrvId) : 999999,
+          name: currentSrvName,
+          price: booking?.servicePrice || booking?.price || 0,
+          duration: 90,
+        };
+        setSelectedService(customService);
+        setServices([customService, ...list.filter((s: SafeAny) => s.id !== customService.id)]);
+      } else {
+        setServices(list);
       }
     } catch (err) {
       console.error('[Reschedule] Failed to fetch services:', err);
@@ -315,14 +341,19 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       setSelectedCN(matchedStore);
 
       // Set date & note & slot
-      setBookingDate(booking.bookingDate ? dayjs(booking.bookingDate) : dayjs());
-      setBookingNote(booking.bookingNote || '');
-      setSelectedSlot(booking.bookingTime || null);
+      const rawDate = booking.bookingDate || booking.bookingDateStart || booking.booking_date_start || booking.date;
+      const bDate = rawDate ? dayjs(rawDate) : dayjs();
+      setBookingDate(bDate);
+      setBookingNote(booking.bookingNote || booking.note || '');
+
+      const rawTime =
+        booking.bookingTime ||
+        booking.time ||
+        (rawDate && String(rawDate).includes(' ') ? String(rawDate).split(' ')[1]?.slice(0, 5) : null);
+      setSelectedSlot(rawTime || null);
 
       // Fetch staff directory
-      const dateStr = booking.bookingDate
-        ? dayjs(booking.bookingDate).format('YYYY-MM-DD')
-        : dayjs().format('YYYY-MM-DD');
+      const dateStr = bDate.format('YYYY-MM-DD');
 
       setLoadingStaff(true);
       apiClient.customers
