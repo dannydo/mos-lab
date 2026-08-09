@@ -150,6 +150,9 @@ function MultiDayColumnView({
 
   // Drag & drop handlers
   const handleDragStart = (e: React.DragEvent, appt: Appointment) => {
+    try {
+      e.dataTransfer.setData('application/json', JSON.stringify(appt));
+    } catch (_) {}
     e.dataTransfer.setData('text/plain', String(appt.id || (appt as any).orderId));
     setDraggedAppt(appt);
   };
@@ -160,13 +163,28 @@ function MultiDayColumnView({
 
   const handleDrop = (e: React.DragEvent, targetDate: dayjs.Dayjs, targetHour: string) => {
     e.preventDefault();
-    if (!draggedAppt) return;
 
-    const [hourNum] = targetHour.split(':');
-    const newDateTime = targetDate.clone().hour(parseInt(hourNum, 10)).minute(0).format('YYYY-MM-DD HH:mm:ss');
+    let apptToUse = draggedAppt;
+    if (!apptToUse) {
+      try {
+        const rawJson = e.dataTransfer.getData('application/json');
+        if (rawJson) {
+          apptToUse = JSON.parse(rawJson);
+        }
+      } catch (_) {}
+    }
+
+    if (!apptToUse) return;
+
+    const [hourNum, minNum] = targetHour.split(':');
+    const newDateTime = targetDate
+      .clone()
+      .hour(parseInt(hourNum || '0', 10))
+      .minute(minNum ? parseInt(minNum, 10) : 0)
+      .format('YYYY-MM-DD HH:mm:ss');
 
     if (onReschedule) {
-      onReschedule(draggedAppt, newDateTime);
+      onReschedule(apptToUse, newDateTime);
     }
     setDraggedAppt(null);
   };

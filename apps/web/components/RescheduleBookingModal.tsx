@@ -374,11 +374,16 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       setBookingDate(bDate);
       setBookingNote(booking.bookingNote || booking.note || '');
 
-      const rawTime =
+      let rawTime =
         targetTimeStr ||
         booking.bookingTime ||
         booking.time ||
-        (rawDate && String(rawDate).includes(' ') ? String(rawDate).split(' ')[1]?.slice(0, 5) : null);
+        (rawDate && String(rawDate).includes(' ') ? String(rawDate).split(' ')[1] : null);
+
+      if (rawTime && rawTime.includes(':')) {
+        const parts = rawTime.split(':');
+        rawTime = `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+      }
       setSelectedSlot(rawTime || null);
 
       // Fetch staff directory
