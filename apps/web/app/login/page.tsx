@@ -23,7 +23,8 @@ export default function LoginPage() {
   // Check if already logged in
   useEffect(() => {
     const token = localStorage.getItem('mos_token');
-    if (token) {
+    const user = localStorage.getItem('mos_user');
+    if (token && user) {
       router.push('/dashboard/customers');
     }
   }, [router]);

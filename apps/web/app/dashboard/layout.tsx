@@ -222,10 +222,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       localStorage.removeItem('mos_omicall_auto_init');
       localStorage.removeItem('mos_original_token');
       localStorage.removeItem('mos_original_user');
-      router.push('/login');
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
     } else {
       try {
         const parsed = JSON.parse(storedUser);
+        if (!parsed || typeof parsed !== 'object') {
+          throw new Error('Invalid user payload in storage');
+        }
         setUser(parsed);
         setIsImpersonating(hasOriginal);
         setLoading(false);
@@ -252,7 +257,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         localStorage.removeItem('mos_omicall_auto_init');
         localStorage.removeItem('mos_original_token');
         localStorage.removeItem('mos_original_user');
-        router.push('/login');
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login';
+        }
       }
     }
   }, [router]);
