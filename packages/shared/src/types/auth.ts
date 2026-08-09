@@ -28,6 +28,9 @@ export interface Staff {
   baseSalary?: number | null;
   hourlyWage?: number | null;
   seniorityOffset?: number | null;
+  offDays?: string[] | null;
+  off_days?: string[] | null;
+  offDaysList?: string[] | null;
 }
 
 export interface LoginRequest {
