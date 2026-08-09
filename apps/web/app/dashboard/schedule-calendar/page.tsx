@@ -436,6 +436,7 @@ export default function ScheduleCalendarPage() {
             </Radio.Group>
 
             <RangePicker
+              aria-label="Chọn khoảng ngày tìm kiếm"
               size="small"
               className="w-56"
               format="DD/MM/YYYY"
@@ -452,7 +453,13 @@ export default function ScheduleCalendarPage() {
             />
 
             <Tooltip title="Tải lại dữ liệu">
-              <Button icon={<ReloadOutlined />} onClick={fetchAppointments} size="small" loading={loading} />
+              <Button
+                icon={<ReloadOutlined />}
+                aria-label="Tải lại dữ liệu lịch hẹn"
+                onClick={fetchAppointments}
+                size="small"
+                loading={loading}
+              />
             </Tooltip>
           </div>
         </div>
@@ -460,6 +467,9 @@ export default function ScheduleCalendarPage() {
         {/* Multi-dimensional Filters Row */}
         <div className="flex items-center gap-2.5 w-full">
           <Input
+            id="calendar-search-input"
+            name="calendarSearch"
+            aria-label="Tìm theo Tên KH, SĐT, Dịch vụ"
             placeholder="Tìm theo Tên KH, SĐT, Dịch vụ..."
             prefix={<SearchOutlined className="text-slate-400" />}
             value={searchQuery}
@@ -470,6 +480,7 @@ export default function ScheduleCalendarPage() {
           />
 
           <Select
+            aria-label="Lọc theo Chuyên viên"
             value={selectedStaffId}
             onChange={setSelectedStaffId}
             size="small"
@@ -481,6 +492,7 @@ export default function ScheduleCalendarPage() {
           />
 
           <Select
+            aria-label="Lọc theo trạng thái"
             value={selectedStatus}
             onChange={setSelectedStatus}
             size="small"
@@ -495,6 +507,7 @@ export default function ScheduleCalendarPage() {
           />
 
           <Select
+            aria-label="Lọc theo Kênh đặt"
             value={selectedChannel}
             onChange={setSelectedChannel}
             size="small"
