@@ -282,45 +282,52 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     setSelectedSlot(slot);
   };
 
+  // Extract existing service ID or Name helper from booking object
+  const getBookingServiceInfo = (bookingObj: SafeAny) => {
+    if (!bookingObj) return { id: null, name: null };
+    const id = bookingObj.serviceId || bookingObj.service_id || null;
+    const name =
+      bookingObj.serviceName ||
+      bookingObj.service_name ||
+      bookingObj.packageName ||
+      bookingObj.package_name ||
+      (typeof bookingObj.service === 'string' ? bookingObj.service : bookingObj.service?.name) ||
+      (Array.isArray(bookingObj.services) && bookingObj.services.length > 0
+        ? typeof bookingObj.services[0] === 'string'
+          ? bookingObj.services[0]
+          : bookingObj.services[0]?.name || bookingObj.services[0]?.serviceName
+        : null) ||
+      null;
+    return { id, name };
+  };
+
   // Load Services & preserve existing booking service
-  const fetchServices = async () => {
+  const fetchServices = async (targetId: SafeAny, targetName: SafeAny) => {
     try {
       const list = (await apiClient.customers.getServices()) || [];
 
-      // Extract existing service ID or Name from booking object
-      const currentSrvId = booking?.serviceId || booking?.service_id;
-      const currentSrvName =
-        booking?.serviceName ||
-        booking?.service_name ||
-        (typeof booking?.service === 'string' ? booking.service : booking?.service?.name) ||
-        (Array.isArray(booking?.services) && booking.services.length > 0
-          ? typeof booking.services[0] === 'string'
-            ? booking.services[0]
-            : booking.services[0]?.name || booking.services[0]?.serviceName
-          : null);
-
       let matched = null;
-      if (currentSrvId) {
-        matched = list.find((s: SafeAny) => Number(s.id) === Number(currentSrvId));
+      if (targetId) {
+        matched = list.find((s: SafeAny) => Number(s.id) === Number(targetId));
       }
-      if (!matched && currentSrvName) {
-        const cleanTarget = String(currentSrvName).trim().toLowerCase();
+      if (!matched && targetName) {
+        const cleanTarget = String(targetName).trim().toLowerCase();
         matched = list.find((s: SafeAny) => s.name.trim().toLowerCase() === cleanTarget);
       }
 
       if (matched) {
         setSelectedService(matched);
-        setServices(list);
-      } else if (currentSrvName) {
+        setServices((prev) => (prev.some((s) => s.id === matched.id) ? prev : [matched, ...list]));
+      } else if (targetName) {
         const customService = {
-          id: currentSrvId ? Number(currentSrvId) : 999999,
-          name: currentSrvName,
+          id: targetId ? Number(targetId) : 999999,
+          name: targetName,
           price: booking?.servicePrice || booking?.price || 0,
           duration: 90,
         };
         setSelectedService(customService);
         setServices([customService, ...list.filter((s: SafeAny) => s.id !== customService.id)]);
-      } else {
+      } else if (list.length > 0) {
         setServices(list);
       }
     } catch (err) {
@@ -333,7 +340,24 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     if (open && booking) {
       setCurrentStep(0);
       setSelectedCV(null);
-      fetchServices();
+
+      // Synchronously set initial service so UI never shows empty placeholder
+      const { id: srvId, name: srvName } = getBookingServiceInfo(booking);
+      if (srvName || srvId) {
+        const initialSrv = {
+          id: srvId ? Number(srvId) : 999999,
+          name: srvName || 'Dịch vụ đã chọn',
+          price: booking.servicePrice || booking.price || 0,
+          duration: 90,
+        };
+        setSelectedService(initialSrv);
+        setServices([initialSrv]);
+      } else {
+        setSelectedService(null);
+        setServices([]);
+      }
+
+      fetchServices(srvId, srvName);
 
       // Map branch name to store object
       const matchedStore =
