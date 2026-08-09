@@ -275,8 +275,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         LEFT JOIN report_order ro ON ro.order_id = o.id
         WHERE up.user_id IN (${activeBkIds.join(',')})
           AND (o.id IS NULL OR (
-            COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
+            ((ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
+             OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59'))
             ${storeFilter}
           ))
         GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key
@@ -411,9 +411,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COALESCE(o.total_price, 0) as totalPrice,
           up_b.full_name as bookerName,
-          COALESCE(st.tip_amount, 0) as tipAmount,
-          o.order_state as orderState,
-          COALESCE(s.service_name, 'Đặt lịch dịch vụ') as serviceName
+          o.order_state as orderState
         FROM \`order\` o
         LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
         LEFT JOIN (
@@ -424,19 +422,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         ) uc_c ON uc_c.user_id = o.user_id
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = COALESCE(o.client_store_id, up_b.client_store_id)
-        LEFT JOIN (
-          SELECT order_id, SUM(tip_amount) as tip_amount
-          FROM staff_tip
-          WHERE tip_percentage = 20
-          GROUP BY order_id
-        ) st ON st.order_id = o.id
         LEFT JOIN report_order ro ON o.id = ro.order_id
-        LEFT JOIN (
-          SELECT os_sub.order_id, MAX(sl.service_name) as service_name
-          FROM order_service os_sub
-          JOIN service_language sl ON sl.service_id = os_sub.service_id AND sl.language_id = 1
-          GROUP BY os_sub.order_id
-        ) s ON s.order_id = o.id
         WHERE ${dateField} >= '${startPart} 00:00:00' 
           AND ${dateField} <= '${endPart} 23:59:59'
           ${stateCondition}
@@ -447,6 +433,18 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       `;
 
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
+
+      const returnedOrderIds = rows.map((r) => Number(r.orderId)).filter((id) => !!id);
+      const tipMap = new Map<number, number>();
+      if (returnedOrderIds.length > 0) {
+        const tips = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT order_id, SUM(tip_amount) as tip_amount
+          FROM staff_tip
+          WHERE order_id IN (${returnedOrderIds.join(',')}) AND tip_percentage = 20
+          GROUP BY order_id
+        `);
+        tips.forEach((t) => tipMap.set(Number(t.order_id), Number(t.tip_amount || 0)));
+      }
 
       let totalDoneBonusSum = 0;
 
@@ -459,7 +457,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           checkinCategory: 'Single (0đ)',
           discountRate: 0,
           isCombo: false,
-          serviceName: String(r.serviceName || 'Đặt lịch dịch vụ'),
+          serviceName: 'Đặt lịch dịch vụ',
           servicePrice: 0,
           discountPercent: 0,
         };
@@ -475,6 +473,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
         const isCompletedOrder = String(r.orderState) === 'Completed';
         const netRev = isCompletedOrder ? totalPrice : 0;
+        const tipAmount = tipMap.get(orderId) || 0;
+        const serviceName = checkinInfo.serviceName || 'Đặt lịch dịch vụ';
 
         return {
           orderId,
@@ -554,26 +554,16 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COUNT(DISTINCT o.id) as totalBookingsCount,
           COUNT(DISTINCT CASE WHEN st.tip_amount > 0 THEN o.id END) as tippedBookingsCount,
-          COALESCE(SUM(st.customer_tip_100), 0) as totalCustomerTip
+          COALESCE(SUM(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE 0 END), 0) as totalCustomerTip
         FROM \`user_profile\` up
         LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
-        LEFT JOIN (
-          SELECT o2.*, COALESCE(ro.actual_booking_date_start, o2.booking_date_start) as final_date
-          FROM \`order\` o2
-          LEFT JOIN report_order ro ON o2.id = ro.order_id
-        ) o ON o.created_staff_id = up.user_id 
-          AND o.final_date >= '${startPart} 00:00:00' 
-          AND o.final_date <= '${endPart} 23:59:59'
+        LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${storeFilter}
-        LEFT JOIN (
-          SELECT 
-            order_id, 
-            MAX(tip_amount) as tip_amount,
-            MAX(CASE WHEN tip_percentage > 0 THEN tip_amount / (tip_percentage / 100) ELSE 0 END) as customer_tip_100
-          FROM staff_tip
-          GROUP BY order_id
-        ) st ON st.order_id = o.id
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        LEFT JOIN staff_tip st ON st.order_id = o.id
         WHERE up.user_id IN (${bkIdsStr})
         GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key
         ORDER BY totalCustomerTip DESC

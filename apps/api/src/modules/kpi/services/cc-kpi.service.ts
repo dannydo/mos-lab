@@ -454,6 +454,8 @@ export class CcKpiService {
     };
   }
 
+  private static leaderboardCache = new Map<string, { data: SafeAny[]; timestamp: number }>();
+
   /**
    * 2. GET Realtime CC Leaderboard rankings
    */
@@ -464,6 +466,12 @@ export class CcKpiService {
 
     const startStr = `${startDateStr} 00:00:00`;
     const endStr = `${endDateStr} 23:59:59`;
+
+    const cacheKey = `${startStr}_${endStr}_${activeCcIds.join(',')}`;
+    const cached = this.leaderboardCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 20000) {
+      return { data: cached.data };
+    }
 
     let activeCcFilter = '';
     if (activeCcIds && activeCcIds.length > 0) {
@@ -490,9 +498,6 @@ export class CcKpiService {
           COALESCE(
             osc.check_in_staff_id,
             osc.check_out_staff_id,
-            (SELECT os2.check_in_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.check_in_staff_id IS NOT NULL LIMIT 1),
-            (SELECT os2.check_out_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.check_out_staff_id IS NOT NULL LIMIT 1),
-            (SELECT os2.assigned_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.assigned_staff_id IS NOT NULL LIMIT 1),
             o.assigned_staff_id,
             o.created_staff_id
           ) as staff_id,
@@ -500,10 +505,9 @@ export class CcKpiService {
           SUM(COALESCE(osc.quantity, 1)) as combo_count
         FROM \`order\` o
         JOIN \`order_service_combo\` osc ON osc.order_id = o.id
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
+          AND o.booking_date_start >= ?
+          AND o.booking_date_start <= ?
         GROUP BY staff_id
       ) combo ON combo.staff_id = sb.user_id
       WHERE sb.date_created >= ? AND sb.date_created <= ? ${activeCcFilter}
@@ -511,6 +515,8 @@ export class CcKpiService {
       ORDER BY totalPointsAccu DESC
       LIMIT 30
     `,
+      startStr,
+      endStr,
       startStr,
       endStr
     );
@@ -582,6 +588,8 @@ export class CcKpiService {
     } catch (capErr) {
       fastify.log.warn(capErr as Error, 'Failed to enrich leaderboard with wheel cap data (non-blocking)');
     }
+
+    this.leaderboardCache.set(cacheKey, { data: leaderboard, timestamp: Date.now() });
 
     return {
       data: leaderboard,

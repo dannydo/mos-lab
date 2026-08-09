@@ -199,8 +199,8 @@ export async function computeBkOrderCheckins(
     FROM \`order\` o
     LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
     LEFT JOIN report_order ro ON o.id = ro.order_id
-    WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
-      AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
+    WHERE ((ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
+        OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59'))
       AND o.order_state = 'Completed'
       AND o.created_staff_id IN (${bkIdsStr})
       ${storeFilter}
@@ -268,6 +268,7 @@ export async function computeBkOrderCheckins(
     LEFT JOIN \`order\` o ON o.id = usbt.order_id
     LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
     WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
+      AND usbt.date_created <= '${endPart} 23:59:59'
   `)
       : [];
 

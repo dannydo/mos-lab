@@ -91,7 +91,7 @@ export class TeamService {
       if (teamCode === 'CV') {
         groupFilter = ' AND user_group_id IN (4, 45)';
       } else if (teamCode === 'CC') {
-        groupFilter = ' AND user_group_id = 2';
+        groupFilter = ' AND user_group_id IN (2, 5)';
       } else if (teamCode === 'BK') {
         groupFilter = ' AND user_group_id IN (3, 359)';
       }

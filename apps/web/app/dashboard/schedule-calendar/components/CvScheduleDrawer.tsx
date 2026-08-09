@@ -207,24 +207,35 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
       };
     }, [open, currentDate]);
 
-    // Mouse drag resize handler
+    // Mouse drag resize handler optimized with requestAnimationFrame (60fps smooth drag)
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
       e.preventDefault();
       isResizingRef.current = true;
       document.body.style.cursor = 'ew-resize';
       document.body.style.userSelect = 'none';
 
+      let animationFrameId: number | null = null;
+
       const handleMouseMove = (moveEvent: MouseEvent) => {
         if (!isResizingRef.current) return;
-        const newWidth = window.innerWidth - moveEvent.clientX;
-        if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
-          setDrawerWidth(newWidth);
-        }
+        if (animationFrameId !== null) return;
+
+        animationFrameId = requestAnimationFrame(() => {
+          animationFrameId = null;
+          const newWidth = window.innerWidth - moveEvent.clientX;
+          if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
+            setDrawerWidth(newWidth);
+          }
+        });
       };
 
       const handleMouseUp = () => {
         if (isResizingRef.current) {
           isResizingRef.current = false;
+          if (animationFrameId !== null) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+          }
           document.body.style.cursor = '';
           document.body.style.userSelect = '';
           setDrawerWidth((prev) => {
@@ -248,6 +259,19 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
     const ktvCount = serverCap?.workingKtvCount ?? 14;
     const isToday = currentDate.isSame(dayjs(), 'day');
 
+    // Pre-index dayAppts by technicianId for O(1) lookups during staff list rendering
+    const apptsByStaffMap = useMemo(() => {
+      const map = new Map<number, Appointment[]>();
+      (dayAppts || []).forEach((a) => {
+        const tid = Number((a as any).technicianId);
+        if (!tid) return;
+        const list = map.get(tid) || [];
+        list.push(a);
+        map.set(tid, list);
+      });
+      return map;
+    }, [dayAppts]);
+
     // All Working Staff enriched with 100% Real-Time Availability
     const allWorkingStaffWithAvailability = useMemo(() => {
       const rawList = serverCap?.workingStaffList || [];
@@ -258,7 +282,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
         // Do not include staff if they are in offStaffList (OFF phép / OFF tuần)
         if (offStaffIds.has(Number(staff.id))) return;
 
-        const staffAppts = dayAppts.filter((a) => Number((a as any).technicianId) === Number(staff.id));
+        const staffAppts = apptsByStaffMap.get(Number(staff.id)) || [];
         const bookedCount = staff.bookedCount !== undefined ? staff.bookedCount : staffAppts.length;
         const doneCount =
           staff.doneCount !== undefined

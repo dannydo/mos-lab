@@ -3,7 +3,7 @@
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Typography, Card, theme, DatePicker, Select, Radio, Space, Button, Tabs } from 'antd';
+import { Typography, Card, theme, DatePicker, Select, Radio, Space, Button, Tabs, Tooltip } from 'antd';
 import {
   CalendarOutlined,
   LeftOutlined,
@@ -318,19 +318,19 @@ export default function BkDashboardPage() {
             />
 
             {/* Config Button → Team Management */}
-            <Button
-              type="primary"
-              icon={<SettingOutlined />}
-              onClick={() => router.push('/dashboard/staff/teams?selected=BK')}
-              style={{
-                backgroundColor: token.colorPrimary,
-                borderColor: token.colorPrimary,
-                color: '#000',
-                fontWeight: '600',
-              }}
-            >
-              Cấu hình BK
-            </Button>
+            <Tooltip title="Cấu hình BK">
+              <Button
+                type="primary"
+                icon={<SettingOutlined />}
+                onClick={() => router.push('/dashboard/staff/teams?selected=BK')}
+                style={{
+                  backgroundColor: token.colorPrimary,
+                  borderColor: token.colorPrimary,
+                  color: '#000',
+                  fontWeight: '600',
+                }}
+              />
+            </Tooltip>
           </Space>
         </div>
       </div>

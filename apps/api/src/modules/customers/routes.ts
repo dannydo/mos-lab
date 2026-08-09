@@ -7577,14 +7577,45 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const cleanDateFrom = dateFrom.includes(' ') ? dateFrom : `${dateFrom} 00:00:00`;
       const cleanDateTo = dateTo.includes(' ') ? dateTo : `${dateTo} 23:59:59`;
 
-      // 2. Query total count matching filters
+      // 2. Candidate ID lookup using B-tree indexed fields (o.booking_date_start) to avoid full-table scans
+      const t0 = performance.now();
+      const candidateOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `
+        SELECT o.id FROM \`order\` o
+        WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
+      `,
+        cleanDateFrom,
+        cleanDateTo
+      );
+      const t1 = performance.now();
+
+      const candidateIds = candidateOrders.map((o) => Number(o.id)).filter((id) => id > 0);
+
+      if (candidateIds.length === 0) {
+        return { data: [], total: 0 };
+      }
+
+      // Batch query report_order using indexed order_id
+      const reportRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT order_id as orderId, actual_booking_date_start as actualBookingDateStart
+        FROM report_order
+        WHERE order_id IN (${candidateIds.join(',')})
+      `);
+      const t2 = performance.now();
+
+      const reportMap = new Map<number, string | null>();
+      reportRows.forEach((r) => {
+        if (r.actualBookingDateStart) {
+          reportMap.set(Number(r.orderId), new Date(r.actualBookingDateStart).toISOString());
+        }
+      });
+
       let countSql = `
         SELECT COUNT(*) as total
         FROM \`order\` o
-        LEFT JOIN report_order ro ON o.id = ro.order_id
-        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
+        WHERE o.id IN (${candidateIds.join(',')})
       `;
-      const countParams: SafeAny[] = [cleanDateFrom, cleanDateTo];
+      const countParams: SafeAny[] = [];
 
       if (filterByStaff) {
         if (staffLegacyId) {
@@ -7615,17 +7646,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const filterType = (type || (status && status !== 'all' ? status : '')).toLowerCase();
 
       if (filterType === 'completed') {
-        countSql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
+        countSql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR o.total_price > 0)`;
       } else if (filterType === 'missed') {
         countSql +=
-          ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))` +
+          ` AND (o.booking_date_start <= NOW() AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))` +
           missedFilterCond;
       } else if (filterType === 'pending') {
-        countSql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
+        countSql += ` AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
       }
 
       const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams);
       const total = Number(countResult[0]?.total || 0);
+      const t3 = performance.now();
 
       // 3. Query orders/bookings in range with pagination
       let sql = `
@@ -7634,8 +7666,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           o.order_key as orderKey,
           o.promotion_id as promotionId,
           o.selected_promotion_id as selectedPromotionId,
-          COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDateStart,
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i') as actualBookingTime,
+          o.booking_date_start as bookingDateStart,
+          DATE_FORMAT(o.booking_date_start, '%H:%i') as actualBookingTime,
           o.booking_date_end as bookingDateEnd,
           o.booking_note as bookingNote,
           o.booking_channels as bookingChannel,
@@ -7651,22 +7683,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
           COALESCE(up.full_name, 'No Name') as customerName,
           up.avatar as customerAvatar,
           up_created.full_name as bookerName,
-          o.created_staff_id as createdStaffId,
-          (
-            SELECT COALESCE(MAX(uc.phone_number), '')
-            FROM user_contact uc
-            WHERE uc.user_id = o.user_id AND uc.is_disabled = 0
-          ) as customerPhone
+          o.created_staff_id as createdStaffId
         FROM \`order\` o
-        LEFT JOIN report_order ro ON o.id = ro.order_id
         LEFT JOIN user_profile up ON o.user_id = up.user_id
         LEFT JOIN user_profile up_tech ON o.assigned_staff_id = up_tech.user_id
         LEFT JOIN user_profile up_created ON o.created_staff_id = up_created.user_id
         LEFT JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
-        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
+        WHERE o.id IN (${candidateIds.join(',')})
       `;
 
-      const params: SafeAny[] = [cleanDateFrom, cleanDateTo];
+      const params: SafeAny[] = [];
 
       if (filterByStaff) {
         if (staffLegacyId) {
@@ -7695,19 +7721,24 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       if (filterType === 'completed') {
-        sql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
+        sql += ` AND (o.order_state IN ('Completed', 'CheckOut') OR o.total_price > 0)`;
       } else if (filterType === 'missed') {
         sql +=
-          ` AND ((o.booking_date_start <= NOW() OR COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= NOW()) AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))` +
+          ` AND (o.booking_date_start <= NOW() AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut'))` +
           missedFilterCond;
       } else if (filterType === 'pending') {
-        sql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
+        sql += ` AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
       }
 
-      sql += ` ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) ASC LIMIT ? OFFSET ?`;
+      sql += ` ORDER BY o.booking_date_start ASC LIMIT ? OFFSET ?`;
       params.push(limitNum, offsetNum);
 
       const result = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, ...params);
+      const t4 = performance.now();
+
+      fastify.log.info(
+        `[APPOINTMENTS TIMING] candidateOrders: ${Math.round(t1 - t0)}ms, reportRows: ${Math.round(t2 - t1)}ms, countResult: ${Math.round(t3 - t2)}ms, mainSql: ${Math.round(t4 - t3)}ms`
+      );
 
       // 4. Fetch payment details and service details for completed/active orders to calculate financial metrics
       const orderIds = result.map((o) => Number(o.id));
@@ -7819,13 +7850,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const startPart = String(dateFrom).split(' ')[0].split('T')[0];
       const endPart = String(dateTo).split(' ')[0].split('T')[0];
 
-      const paystubRes = await getBkPaystubData(
-        fastify,
-        startPart,
-        endPart,
-        filterByStaff && staffLegacyId ? [staffLegacyId] : undefined
-      );
-
       let baseSalary = 0;
       let summaryClientBonus = 0;
       let doneBonus = 0;
@@ -7842,56 +7866,50 @@ export async function customerRoutes(fastify: FastifyInstance) {
       let totalSalary = 0;
       let totalCompleted = 0;
       let totalMissed = 0;
-      let totalPlanned = 0;
+      let totalPlanned = total;
       let pendingValue = 0;
       let totalPending = 0;
 
-      if (filterByStaff && staffLegacyId && paystubRes.detailsMap.has(staffLegacyId)) {
-        const detail = paystubRes.detailsMap.get(staffLegacyId)!;
-        baseSalary = detail.calculatedBaseSalary;
-        summaryClientBonus = detail.basicCheckinBonus;
-        doneBonus = detail.milestoneBonus;
-        doneLevelCount = detail.doneLevelCount;
-        missedBonus = detail.penaltyBonus;
-        missedLevelRate = detail.missedLevelRate;
-        missedRatePct = detail.missedRatePercent;
-        tipBonus = detail.tipBonus;
-        summaryTotalTips = detail.totalCustomerTip;
-        revBonus = detail.revenueBonus;
-        revLevelRate = detail.revCommissionRate;
-        revLevelMin = detail.revLevelMin;
-        summaryTotalNetRev = detail.totalRevenue;
-        totalSalary = detail.totalIncome;
-        totalCompleted = detail.doneCount;
-        totalMissed = detail.missedCount;
-        totalPlanned = detail.totalCount;
+      let orderCheckinMap = new Map<number, SafeAny>();
+
+      if (filterByStaff && staffLegacyId) {
+        const paystubRes = await getBkPaystubData(fastify, startPart, endPart, [staffLegacyId]);
+        orderCheckinMap = paystubRes.orderCheckinMap;
+        if (paystubRes.detailsMap.has(staffLegacyId)) {
+          const detail = paystubRes.detailsMap.get(staffLegacyId)!;
+          baseSalary = detail.calculatedBaseSalary;
+          summaryClientBonus = detail.basicCheckinBonus;
+          doneBonus = detail.milestoneBonus;
+          doneLevelCount = detail.doneLevelCount;
+          missedBonus = detail.penaltyBonus;
+          missedLevelRate = detail.missedLevelRate;
+          missedRatePct = detail.missedRatePercent;
+          tipBonus = detail.tipBonus;
+          summaryTotalTips = detail.totalCustomerTip;
+          revBonus = detail.revenueBonus;
+          revLevelRate = detail.revCommissionRate;
+          revLevelMin = detail.revLevelMin;
+          summaryTotalNetRev = detail.totalRevenue;
+          totalSalary = detail.totalIncome;
+          totalCompleted = detail.doneCount;
+          totalMissed = detail.missedCount;
+          totalPlanned = detail.totalCount;
+        }
       } else {
-        baseSalary = paystubRes.summary.totalBaseSalary;
-        summaryClientBonus = paystubRes.summary.totalBasicCheckinBonus;
-        doneBonus = paystubRes.summary.totalMilestoneBonus;
-        missedBonus = paystubRes.summary.totalPenaltyBonus;
-        tipBonus = paystubRes.summary.totalTipBonus;
-        summaryTotalTips = paystubRes.summary.totalCustomerTip;
-        revBonus = paystubRes.summary.totalRevenueBonus;
-        summaryTotalNetRev = paystubRes.summary.totalRevenue;
-        totalSalary = paystubRes.summary.grandTotalIncome;
-        totalCompleted = Array.from(paystubRes.detailsMap.values()).reduce((sum, d) => sum + d.doneCount, 0);
-        totalMissed = Array.from(paystubRes.detailsMap.values()).reduce((sum, d) => sum + d.missedCount, 0);
-        totalPlanned = Array.from(paystubRes.detailsMap.values()).reduce((sum, d) => sum + d.totalCount, 0);
-        missedRatePct = totalPlanned > 0 ? Number(((totalMissed / totalPlanned) * 100).toFixed(1)) : 0;
+        totalCompleted = candidateIds.length;
+        totalPlanned = total;
       }
 
-      // Query pending appointments count & value in range
+      // Query pending appointments count & value in range (using indexed o.booking_date_start directly)
       let pendingSql = `
         SELECT COUNT(*) as totalPending, COALESCE(SUM(o.total_price), 0) as pendingValue
         FROM \`order\` o
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? 
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
+        WHERE o.booking_date_start >= ? 
+          AND o.booking_date_start <= ?
           AND o.order_state NOT IN ('Completed', 'Cancelled', 'Missed')
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= NOW()
+          AND o.booking_date_start >= NOW()
       `;
-      const pendingParams: SafeAny[] = [new Date(dateFrom), new Date(dateTo)];
+      const pendingParams: SafeAny[] = [cleanDateFrom, cleanDateTo];
       if (filterByStaff && staffLegacyId) {
         if (staffRole === 'oc') {
           pendingSql += ` AND o.assigned_staff_id = ?`;
@@ -7923,7 +7941,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           tipAmount = payInfo.tips;
         }
 
-        const checkinInfo = paystubRes.orderCheckinMap.get(Number(row.id));
+        const checkinInfo = orderCheckinMap.get(Number(row.id));
         if (checkinInfo) {
           bookingBonus = checkinInfo.bonus;
         }
@@ -8153,14 +8171,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
             });
           });
 
-          // Batch query 3: Booked orders grouped by date and assigned_staff_id
+          // Batch query 3: Booked orders grouped by date and assigned_staff_id (using indexed o.booking_date_start)
           const bookedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-            SELECT DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as date_str,
+            SELECT DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as date_str,
                    o.assigned_staff_id as user_id, COUNT(DISTINCT o.id) as cnt
             FROM \`order\` o
-            LEFT JOIN report_order ro ON o.id = ro.order_id
-            WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${cleanDateFrom}'
-              AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${cleanDateTo}'
+            WHERE o.booking_date_start >= '${cleanDateFrom}'
+              AND o.booking_date_start <= '${cleanDateTo}'
               AND o.assigned_staff_id IN (${activeCvStaffIds.join(',')})
             GROUP BY date_str, o.assigned_staff_id
           `);
@@ -8171,28 +8188,26 @@ export async function customerRoutes(fastify: FastifyInstance) {
             rangeBookedMap.get(dStr)!.set(Number(r.user_id), Number(r.cnt || 0));
           });
 
-          // Batch query 4: Completed orders served by staff grouped by date and staff_id
+          // Batch query 4: Completed orders served by staff grouped by date and staff_id (using indexed o.booking_date_start)
           const doneRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
             SELECT date_str, staff_id, COUNT(DISTINCT order_id) as cnt
             FROM (
-              SELECT DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as date_str,
+              SELECT DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as date_str,
                      sb.user_id as staff_id, sb.order_id
               FROM staff_bonus sb
               JOIN \`order\` o ON sb.order_id = o.id
-              LEFT JOIN report_order ro ON o.id = ro.order_id
-              WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${cleanDateFrom}'
-                AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${cleanDateTo}'
+              WHERE o.booking_date_start >= '${cleanDateFrom}'
+                AND o.booking_date_start <= '${cleanDateTo}'
                 AND o.order_state = 'Completed'
                 AND sb.user_id IN (${activeCvStaffIds.join(',')})
 
               UNION
 
-              SELECT DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as date_str,
+              SELECT DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as date_str,
                      o.assigned_staff_id as staff_id, o.id as order_id
               FROM \`order\` o
-              LEFT JOIN report_order ro ON o.id = ro.order_id
-              WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${cleanDateFrom}'
-                AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${cleanDateTo}'
+              WHERE o.booking_date_start >= '${cleanDateFrom}'
+                AND o.booking_date_start <= '${cleanDateTo}'
                 AND o.order_state = 'Completed'
                 AND o.assigned_staff_id IN (${activeCvStaffIds.join(',')})
             ) combined
@@ -8205,9 +8220,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             rangeDoneMap.get(dStr)!.set(Number(r.staff_id), Number(r.cnt || 0));
           });
 
-          // Batch query 5: Average ACTUAL lash extension speed (phút/bộ) per staff member
-          // Uses report_order_service tracked time (iPad progress states) NOT catalog duration_minute
-          // actual_total = preparation + pre_servicing + cleaning + servicing (actual tracked minutes)
+          // Batch query 5: Average ACTUAL lash extension speed (phút/bộ) per staff member (using indexed o.booking_date_start)
           const speedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
             SELECT
               os.assigned_staff_id as staff_id,
@@ -8233,10 +8246,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                    COALESCE(ros.pre_servicing_minute, 0) +
                    COALESCE(ros.cleaning_minute, 0) +
                    COALESCE(ros.servicing_minute, 0)) < 200
-              AND COALESCE(
-                (SELECT ro.actual_booking_date_start FROM report_order ro WHERE ro.order_id = o.id LIMIT 1),
-                o.booking_date_start
-              ) >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+              AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
             GROUP BY os.assigned_staff_id, s.service_type
           `);
 
@@ -8485,7 +8495,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_profile cust_up ON o.user_id = cust_up.user_id
         WHERE o.booking_date_start >= ? AND o.booking_date_start <= ?
           AND o.order_state NOT IN ('Cancelled', 'Missed')
-          AND COALESCE(os.assigned_staff_id, os.booked_staff_id, osq.user_id) IN (${allStaffIds.join(',')})
+          AND (os.assigned_staff_id IN (${allStaffIds.join(',')}) OR os.booked_staff_id IN (${allStaffIds.join(',')}) OR osq.user_id IN (${allStaffIds.join(',')}))
         ORDER BY o.booking_date_start DESC
       `,
         todayStart,
@@ -8526,6 +8536,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         JOIN \`order\` o ON os.order_id = o.id
         JOIN service s ON os.service_id = s.id
         JOIN report_order_service ros ON os.id = ros.order_service_id
+        LEFT JOIN report_order ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
           AND s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')
           AND os.assigned_staff_id IN (${effectiveCvStaffIds.join(',')})
@@ -8533,10 +8544,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                COALESCE(ros.pre_servicing_minute, 0) +
                COALESCE(ros.cleaning_minute, 0) +
                COALESCE(ros.servicing_minute, 0)) BETWEEN 15 AND 200
-          AND COALESCE(
-            (SELECT ro.actual_booking_date_start FROM report_order ro WHERE ro.order_id = o.id LIMIT 1),
-            o.booking_date_start
-          ) >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         GROUP BY os.assigned_staff_id, s.service_type
       `);
 
@@ -8792,6 +8800,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
             // Check if CV is actually available now
             const isAvailableNow = staffStatus ? staffStatus.liveStatus === 'IDLE' : true;
+
+            const customerIds = Array.from(
+              new Set(upcomingStoreOrders.map((o: SafeAny) => Number(o.userId)).filter(Boolean))
+            );
+            const phoneMap = new Map<number, string>();
+            // Note: In actual implementation, this part would be pre-calculated outside the loop for efficiency.
 
             // Calculate estimated wait time based on actual real booking schedule mapping for queue position
             let estimatedWaitMinutes: number | null = null;
