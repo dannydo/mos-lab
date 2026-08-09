@@ -224,26 +224,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       localStorage.removeItem('mos_original_user');
       router.push('/login');
     } else {
-      const parsed = JSON.parse(storedUser);
-      setUser(parsed);
-      setIsImpersonating(hasOriginal);
-      setLoading(false);
+      try {
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        setIsImpersonating(hasOriginal);
+        setLoading(false);
 
-      // Background profile sync to fetch latest user config & auto-init roles
-      apiClient.auth
-        .me()
-        .then((res: SafeAny) => {
-          if (res?.user) {
-            localStorage.setItem('mos_user', JSON.stringify(res.user));
-            if (res.resolvedOmicallAutoInit !== undefined) {
-              localStorage.setItem('mos_omicall_auto_init', String(!!res.resolvedOmicallAutoInit));
+        // Background profile sync to fetch latest user config & auto-init roles
+        apiClient.auth
+          .me()
+          .then((res: SafeAny) => {
+            if (res?.user) {
+              localStorage.setItem('mos_user', JSON.stringify(res.user));
+              if (res.resolvedOmicallAutoInit !== undefined) {
+                localStorage.setItem('mos_omicall_auto_init', String(!!res.resolvedOmicallAutoInit));
+              }
+              setUser(res.user);
             }
-            setUser(res.user);
-          }
-        })
-        .catch((err) => {
-          console.error('Failed to sync profile in background:', err);
-        });
+          })
+          .catch((err) => {
+            console.error('Failed to sync profile in background:', err);
+          });
+      } catch (err) {
+        console.error('Failed to parse stored user JSON:', err);
+        localStorage.removeItem('mos_token');
+        localStorage.removeItem('mos_user');
+        localStorage.removeItem('mos_omicall_auto_init');
+        localStorage.removeItem('mos_original_token');
+        localStorage.removeItem('mos_original_user');
+        router.push('/login');
+      }
     }
   }, [router]);
 
