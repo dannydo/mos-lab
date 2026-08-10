@@ -3,7 +3,6 @@ import dayjs from 'dayjs';
 export const STORES = [
   { id: 16, name: 'Estella Place', fullAddress: 'L5-08, 09 Estella Place, 88 Song Hành, Quận 2' },
   { id: 6, name: 'De Tham', fullAddress: '159 - 159A Đề Thám, Quận 1' },
-  { id: 2, name: 'Phan Xích Long', fullAddress: 'Phan Xích Long, Phú Nhuận' },
 ];
 
 export const getStoreFullAddress = (store: SafeAny): string => {

@@ -478,9 +478,8 @@ export default function CcDashboardPage() {
               style={{ width: 140 }}
               options={[
                 { value: 'ALL', label: 'Tất cả tiệm' },
-                { value: '1', label: 'Phan Xích Long' },
-                { value: '2', label: 'Estella Place' },
-                { value: '3', label: 'Đề Thám' },
+                { value: '6', label: 'Đề Thám' },
+                { value: '16', label: 'Estella Place' },
               ]}
             />
 

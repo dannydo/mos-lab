@@ -55,7 +55,9 @@ import CatalogLeaderboardCard from './components/CatalogLeaderboardCard';
 import CatalogItemDetailPanel from './components/CatalogItemDetailPanel';
 import CatalogComboLiveTab from './components/CatalogComboLiveTab';
 import CatalogBenchmarkTab from './components/CatalogBenchmarkTab';
+import CatalogBranchTab from './components/CatalogBranchTab';
 import { ServiceDeactivateConfirmModal } from './components/ServiceDeactivateConfirmModal';
+
 import {
   CatalogService,
   CatalogServicePrice,
@@ -1645,6 +1647,20 @@ export default function CatalogPage() {
               children: (
                 <div className="p-4">
                   <CatalogBenchmarkTab />
+                </div>
+              ),
+            },
+            {
+              key: 'branches',
+              label: (
+                <Space>
+                  <ShopOutlined className="text-blue-500" />
+                  <span>Chi Nhánh</span>
+                </Space>
+              ),
+              children: (
+                <div className="p-4">
+                  <CatalogBranchTab />
                 </div>
               ),
             },

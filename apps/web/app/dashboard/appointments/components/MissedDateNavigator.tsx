@@ -32,8 +32,8 @@ export default function MissedDateNavigator({
   onStoreChange,
   stores = [
     { id: 'ALL', name: 'Tất cả chi nhánh' },
-    { id: '1', name: 'Chi nhánh Quận 1' },
-    { id: '2', name: 'Chi nhánh Phú Nhuận' },
+    { id: '6', name: 'Đề Thám' },
+    { id: '16', name: 'Estella Place' },
   ],
 }: MissedDateNavigatorProps) {
   const { themeMode } = useTheme();

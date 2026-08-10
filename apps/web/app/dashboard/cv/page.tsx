@@ -297,9 +297,10 @@ export default function CvReportPage() {
               style={{ width: 160 }}
               options={[
                 { value: 'ALL', label: 'Tất cả chi nhánh' },
-                { value: 'PXL', label: 'CN Phan Xích Long' },
-                { value: 'NYC', label: 'CN Nguyễn Thị Thập' },
+                { value: '6', label: 'CN Đề Thám' },
+                { value: '16', label: 'CN Estella Place' },
               ]}
+
               placeholder="Chọn Chi Nhánh"
             />
 

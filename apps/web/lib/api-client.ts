@@ -85,6 +85,11 @@ import {
   ServiceLiveComboCheckResult,
   LashTypeBenchmark,
   LashBenchmarkSeedResult,
+  CrmBranch,
+  CreateBranchDto,
+  UpdateBranchDto,
+  BranchFilterParams,
+  BranchStats,
   CreateServiceInput,
   UpdateServiceInput,
   CreateServicePriceInput,
@@ -336,6 +341,35 @@ export const apiClient = {
         data: { benchmarkMinutes?: number; minMinutes?: number; maxMinutes?: number }
       ): Promise<{ success: boolean; data: LashTypeBenchmark }> => {
         const response = await api.put(`/catalog/lash-benchmarks/${id}`, data);
+        return response.data;
+      },
+    },
+    branches: {
+      list: async (params?: BranchFilterParams): Promise<CatalogListResponse<CrmBranch>> => {
+        const response = await api.get('/catalog/branches', { params });
+        return response.data;
+      },
+      getStats: async (): Promise<{ success: boolean; data: BranchStats }> => {
+        const response = await api.get('/catalog/branches/stats');
+        return response.data;
+      },
+      get: async (id: number): Promise<{ success: boolean; data: CrmBranch }> => {
+        const response = await api.get(`/catalog/branches/${id}`);
+        return response.data;
+      },
+      create: async (data: CreateBranchDto): Promise<{ success: boolean; data: CrmBranch; message: string }> => {
+        const response = await api.post('/catalog/branches', data);
+        return response.data;
+      },
+      update: async (
+        id: number,
+        data: UpdateBranchDto
+      ): Promise<{ success: boolean; data: CrmBranch; message: string }> => {
+        const response = await api.put(`/catalog/branches/${id}`, data);
+        return response.data;
+      },
+      toggleActive: async (id: number): Promise<{ success: boolean; data: CrmBranch; message: string }> => {
+        const response = await api.patch(`/catalog/branches/${id}/toggle-active`);
         return response.data;
       },
     },

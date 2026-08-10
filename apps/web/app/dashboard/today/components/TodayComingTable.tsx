@@ -296,9 +296,9 @@ const TodayComingTable = React.memo(function TodayComingTable({
               options={[
                 { value: 'all', label: 'Tất cả chi nhánh' },
                 { value: 'detham', label: 'Đề Thám' },
-                { value: 'pxl', label: 'Phan Xích Long' },
-                { value: 'estella', label: 'Estella' },
+                { value: 'estella', label: 'Estella Place' },
               ]}
+
               style={{ width: '180px' }}
             />
             <Button icon={<SettingOutlined />} onClick={openComingConfig}>

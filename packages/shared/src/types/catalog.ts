@@ -373,3 +373,72 @@ export interface LashBenchmarkSeedResult {
   updated: number;
   total: number;
 }
+
+// ─── Branch Management Types ─────────────────────────────────────────────
+
+export type BranchType = 'SALON' | 'ACADEMY' | 'OFFICE';
+
+export interface CrmBranch {
+  id: number;
+  code: string;
+  name: string;
+  nameEn: string | null;
+  storeType: BranchType;
+  addressMap: string | null;
+  addressSms: string | null;
+  addressWeb: string | null;
+  addressCity: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  legacyClientStoreId: number | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  // Computed / Joined fields
+  staffCount?: number;
+  customerCount?: number;
+  completedOrdersCount?: number;
+  staffList?: BranchStaffInfo[];
+}
+
+export interface BranchStaffInfo {
+  id: number;
+  displayName: string;
+  role: string;
+  isActive: boolean;
+  avatarUrl?: string | null;
+  phone?: string | null;
+}
+
+export interface CreateBranchDto {
+  code: string;
+  name: string;
+  nameEn?: string | null;
+  storeType?: BranchType;
+  addressMap?: string | null;
+  addressSms?: string | null;
+  addressWeb?: string | null;
+  addressCity?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+  notes?: string | null;
+}
+
+export type UpdateBranchDto = Partial<CreateBranchDto>;
+
+export interface BranchFilterParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  isActive?: boolean;
+  onlyHidden?: boolean;
+}
+
+export interface BranchStats {
+  totalBranches: number;
+  activeBranches: number;
+  inactiveBranches: number;
+  totalStaff: number;
+  totalCustomers: number;
+  totalCompletedOrders: number;
+}

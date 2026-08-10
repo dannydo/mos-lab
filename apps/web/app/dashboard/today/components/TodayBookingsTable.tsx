@@ -361,9 +361,9 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
               options={[
                 { value: 'all', label: `Tất cả chi nhánh (${bookingBranchCounts.total})` },
                 { value: 'detham', label: `Đề Thám (${bookingBranchCounts.dt})` },
-                { value: 'pxl', label: `Phan Xích Long (${bookingBranchCounts.pxl})` },
-                { value: 'estella', label: `Estella (${bookingBranchCounts.ep})` },
+                { value: 'estella', label: `Estella Place (${bookingBranchCounts.ep})` },
               ]}
+
               style={{ width: '200px' }}
             />
             <Button icon={<SettingOutlined />} onClick={openBookingConfig}>

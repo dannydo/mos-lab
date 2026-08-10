@@ -379,9 +379,9 @@ export default function TodayDashboard() {
                           options={[
                             { value: 'all', label: 'Tất cả chi nhánh' },
                             { value: 'detham', label: 'Chi nhánh Đề Thám' },
-                            { value: 'pxl', label: 'Chi nhánh Phan Xích Long' },
-                            { value: 'estella', label: 'Chi nhánh Estella' },
+                            { value: 'estella', label: 'Chi nhánh Estella Place' },
                           ]}
+
                           style={{ width: '200px' }}
                         />
 

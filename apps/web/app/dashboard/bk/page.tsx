@@ -312,8 +312,8 @@ export default function BkDashboardPage() {
               style={{ width: 140 }}
               options={[
                 { value: 'ALL', label: 'Tất cả CS' },
-                { value: 'PXL', label: 'Phan Xích Long' },
-                { value: 'Q1', label: 'Quận 1' },
+                { value: '6', label: 'Đề Thám' },
+                { value: '16', label: 'Estella Place' },
               ]}
             />
 

@@ -126,3 +126,13 @@ export function calculateFractionToday(currentHour: number): number {
   if (currentHour > endHour) return 1;
   return (currentHour - startHour + 1) / OPERATIONAL_SHIFT_SYSTEM_CONFIG.CASHFLOW_SHIFT_DURATION_HOURS;
 }
+
+/**
+ * 🪷 ACTIVE LASH SALON CONFIGURATION
+ * @description Active physical Lash Extension salons currently open for customer services.
+ * Excludes Academies (is_academy = 1) and Offices (hq/hardware/ctv).
+ */
+export const ACTIVE_LASH_SALONS = [
+  { id: 6, code: 'DT', name: 'Đề Thám', legacyId: 6, key: 'detham' },
+  { id: 16, code: 'EP', name: 'Estella Place', legacyId: 16, key: 'estella' },
+] as const;

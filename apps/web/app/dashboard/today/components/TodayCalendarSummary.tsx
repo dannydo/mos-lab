@@ -372,8 +372,7 @@ export default function TodayCalendarSummary({
                 options={[
                   { value: 'all', label: 'Tất cả chi nhánh' },
                   { value: 'detham', label: 'Chi nhánh Đề Thám' },
-                  { value: 'pxl', label: 'Phan Xích Long' },
-                  { value: 'estella', label: 'Estella' },
+                  { value: 'estella', label: 'Chi nhánh Estella Place' },
                 ]}
               />
             </Space>

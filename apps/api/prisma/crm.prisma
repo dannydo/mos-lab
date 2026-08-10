@@ -768,3 +768,31 @@ model CrmCvSpeedProfile {
   @@map("crm_cv_speed_profile")
 }
 
+// ═══════════════════════════════════════════
+// Branch Management (Catalog Stores)
+// ═══════════════════════════════════════════
+model CrmStore {
+  id                  Int      @id @default(autoincrement())
+  code                String   @unique @db.VarChar(30)
+  name                String   @db.VarChar(100)
+  nameEn              String?  @map("name_en") @db.VarChar(100)
+  storeType           String   @default("SALON") @map("store_type") @db.VarChar(20)
+  addressMap          String?  @map("address_map") @db.VarChar(255)
+  addressSms          String?  @map("address_sms") @db.VarChar(255)
+  addressWeb          String?  @map("address_web") @db.VarChar(255)
+  addressCity         String?  @map("address_city") @db.VarChar(255)
+  sortOrder           Int      @default(0) @map("sort_order")
+  isActive            Boolean  @default(true) @map("is_active") @db.TinyInt
+  legacyClientStoreId Int?     @unique @map("legacy_client_store_id")
+  notes               String?  @db.Text
+  createdAt           DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([code])
+  @@index([isActive])
+  @@index([storeType])
+  @@map("crm_stores")
+}
+
+
+

@@ -4,6 +4,7 @@ import { Prisma } from '../../generated/legacy-client/index.js';
 import { requireAuth, requireCatalogAdmin } from '../../middlewares/auth.js';
 import { parseComboDateBounds } from '../customers/services/combo-recognition.service.js';
 import { LashBenchmarkService } from './services/lash-benchmark.service.js';
+import { BranchService } from './services/branch.service.js';
 
 const CATALOG_DEFAULTS = {
   CLIENT_ID: 1,
@@ -1856,4 +1857,164 @@ export async function catalogRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ success: false, error: 'Internal Server Error' });
     }
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Branch Management (Catalog Stores) Endpoints
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const branchService = new BranchService(fastify);
+
+  /**
+   * GET /api/catalog/branches — List all branches with search, filters, pagination
+   */
+  fastify.get<{
+    Querystring: {
+      page?: string;
+      pageSize?: string;
+      search?: string;
+      isActive?: string;
+      onlyHidden?: string;
+    };
+  }>('/catalog/branches', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const page = request.query.page ? parseInt(request.query.page, 10) : 1;
+      const pageSize = request.query.pageSize ? parseInt(request.query.pageSize, 10) : 20;
+      const search = request.query.search;
+      const isActive = request.query.isActive !== undefined ? request.query.isActive === 'true' : undefined;
+      const onlyHidden = request.query.onlyHidden === 'true';
+
+      const result = await branchService.listBranches({
+        page,
+        pageSize,
+        search,
+        isActive,
+        onlyHidden,
+      });
+
+      return result;
+    } catch (error: any) {
+      fastify.log.error(error);
+      return reply.status(500).send({ success: false, error: error.message || 'Internal Server Error' });
+    }
+  });
+
+  /**
+   * GET /api/catalog/branches/stats — Overall branch KPI statistics
+   */
+  fastify.get('/catalog/branches/stats', { preHandler: [requireAuth] }, async (_request, reply) => {
+    try {
+      const stats = await branchService.getBranchStats();
+      return { success: true, data: stats };
+    } catch (error: any) {
+      fastify.log.error(error);
+      return reply.status(500).send({ success: false, error: 'Internal Server Error' });
+    }
+  });
+
+  /**
+   * GET /api/catalog/branches/:id — Get branch detail + staff list
+   */
+  fastify.get<{ Params: { id: string } }>(
+    '/catalog/branches/:id',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      try {
+        const id = parseInt(request.params.id, 10);
+        if (isNaN(id)) return reply.status(400).send({ success: false, error: 'Invalid Branch ID' });
+
+        const branch = await branchService.getBranchById(id);
+        if (!branch) return reply.status(404).send({ success: false, error: 'Chi nhánh không tồn tại' });
+
+        return { success: true, data: branch };
+      } catch (error: any) {
+        fastify.log.error(error);
+        return reply.status(500).send({ success: false, error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  /**
+   * POST /api/catalog/branches — Create a new branch (Admin & Manager)
+   */
+  fastify.post<{
+    Body: {
+      code: string;
+      name: string;
+      nameEn?: string;
+      addressMap?: string;
+      addressSms?: string;
+      addressWeb?: string;
+      addressCity?: string;
+      sortOrder?: number;
+      isActive?: boolean;
+      notes?: string;
+    };
+  }>('/catalog/branches', { preHandler: [requireAuth, requireCatalogAdmin] }, async (request, reply) => {
+    try {
+      const { code, name } = request.body || {};
+      if (!code || !code.trim()) {
+        return reply.status(400).send({ success: false, error: 'Mã chi nhánh (code) là bắt buộc' });
+      }
+      if (!name || !name.trim()) {
+        return reply.status(400).send({ success: false, error: 'Tên chi nhánh (name) là bắt buộc' });
+      }
+
+      const created = await branchService.createBranch(request.body);
+      return reply.status(201).send({ success: true, data: created, message: 'Tạo chi nhánh mới thành công' });
+    } catch (error: any) {
+      fastify.log.error(error);
+      return reply.status(400).send({ success: false, error: error.message || 'Lỗi tạo chi nhánh' });
+    }
+  });
+
+  /**
+   * PUT /api/catalog/branches/:id — Update a branch (Admin & Manager)
+   */
+  fastify.put<{
+    Params: { id: string };
+    Body: {
+      code?: string;
+      name?: string;
+      nameEn?: string;
+      addressMap?: string;
+      addressSms?: string;
+      addressWeb?: string;
+      addressCity?: string;
+      sortOrder?: number;
+      isActive?: boolean;
+      notes?: string;
+    };
+  }>('/catalog/branches/:id', { preHandler: [requireAuth, requireCatalogAdmin] }, async (request, reply) => {
+    try {
+      const id = parseInt(request.params.id, 10);
+      if (isNaN(id)) return reply.status(400).send({ success: false, error: 'Invalid Branch ID' });
+
+      const updated = await branchService.updateBranch(id, request.body);
+      return { success: true, data: updated, message: 'Cập nhật chi nhánh thành công' };
+    } catch (error: any) {
+      fastify.log.error(error);
+      return reply.status(400).send({ success: false, error: error.message || 'Lỗi cập nhật chi nhánh' });
+    }
+  });
+
+  /**
+   * PATCH /api/catalog/branches/:id/toggle-active — Toggle active status (Soft delete protection)
+   */
+  fastify.patch<{ Params: { id: string } }>(
+    '/catalog/branches/:id/toggle-active',
+    { preHandler: [requireAuth, requireCatalogAdmin] },
+    async (request, reply) => {
+      try {
+        const id = parseInt(request.params.id, 10);
+        if (isNaN(id)) return reply.status(400).send({ success: false, error: 'Invalid Branch ID' });
+
+        const updated = await branchService.toggleActiveBranch(id);
+        const statusText = updated.isActive ? 'Đã kích hoạt' : 'Đã vô hiệu hóa';
+        return { success: true, data: updated, message: `${statusText} chi nhánh '${updated.name}'` };
+      } catch (error: any) {
+        fastify.log.error(error);
+        return reply.status(400).send({ success: false, error: error.message || 'Lỗi chuyển trạng thái chi nhánh' });
+      }
+    }
+  );
 }

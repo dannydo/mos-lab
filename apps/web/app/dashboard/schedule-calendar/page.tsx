@@ -474,10 +474,10 @@ export default function ScheduleCalendarPage() {
             onChange={(val) => setSelectedBranch(val as string)}
             options={[
               { label: `Tất cả Chi nhánh (${branchCounts.all})`, value: 'all' },
-              { label: `EP (${branchCounts.EP})`, value: 'EP' },
-              { label: `DT (${branchCounts.DT})`, value: 'DT' },
-              { label: `PXL (${branchCounts.PXL})`, value: 'PXL' },
+              { label: `Đề Thám (${branchCounts.DT})`, value: 'DT' },
+              { label: `Estella Place (${branchCounts.EP})`, value: 'EP' },
             ]}
+
             className="bg-slate-100 dark:bg-slate-800 p-1 font-semibold text-xs"
           />
 
