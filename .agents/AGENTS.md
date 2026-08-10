@@ -567,6 +567,22 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
    - **Tuần bắt đầu từ Thứ 2 (`Monday-First`)**: Đảm bảo tiêu đề bảng thứ hiển thị `T2 T3 T4 T5 T6 T7 CN` theo Rule #22.
    - **Tự động chuyển ngày hợp lệ (`getNextAvailableDate`)**: Nếu ngày được chọn rơi vào ngày off, tự động nhảy sang ngày làm việc tiếp theo gần nhất của CV.
 
+---
+
+# 🪷 Active Lash Salons Invariant & Operational Dropdowns Rule
+
+1. **Danh sách Tiệm Nối Mi Hoạt Động (`ACTIVE_LASH_SALONS`)**: Chỉ có 2 tiệm nối mi vật lý đang phục vụ khách hàng thực tế trên môi trường Local & Prod:
+   - 🪷 **Đề Thám** (Store ID `#6` / Code `DT`)
+   - 🪷 **Estella Place** (Store ID `#16` / Code `EP`)
+2. **Phân biệt Chi nhánh Không phục vụ Nối mi**:
+   - `Academy - Đề Thám` (`storeType = 'ACADEMY'`, `is_academy = 1`): Trường đào tạo.
+   - `HQ` (`storeType = 'OFFICE'`, key `hq`): Trụ sở / Văn phòng.
+   - `Phan Xích Long` và các chi nhánh cũ: Đã ngắt hoạt động (`is_disabled = 1`).
+3. **Phạm vi Áp dụng Bắt buộc (Strict Operational Scope)**:
+   - Mọi dropdown chọn tiệm trên các giao diện vận hành nối mi (Book lịch khách hàng `BookingWizardDrawer`, Đổi lịch `RescheduleBookingModal`, Cập nhật đơn `UpdateBookingModal`, Lịch hẹn `schedule-calendar`, Báo cáo Booker `bk/page`, Báo cáo CC `cc/page`, Báo cáo CV/KTV `cv/page`, Báo cáo Hôm nay `today/page`) **BẮT BUỘC CHỈ HIỂN THỊ 2 TIỆM NỐI MI ĐANG HOẠT ĐỘNG** (`Đề Thám` và `Estella Place`).
+   - Single Source of Truth: Lấy từ `ACTIVE_LASH_SALONS` trong `@mos-lab/shared` và mảng `STORES` trong `apps/web/components/booking/constants.ts`. Tuyệt đối không hardcode thêm các chi nhánh đã ẩn hay chi nhánh văn phòng/học viện vào dropdown chọn tiệm nối mi.
+
+
 
 
 
