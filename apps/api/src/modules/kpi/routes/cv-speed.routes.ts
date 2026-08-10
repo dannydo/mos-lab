@@ -237,8 +237,17 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
         getStaffOverallSpeedFactors(fastify.prisma.legacy, activeCvIds),
       ]);
 
-      const baseMin = lashStyle.includes('Volume') || lashStyle.includes('Ultralight') ? 35 : 30;
-      const benchmarkTotal = baseMin + Math.round(countNum * 0.6) + (serviceMode === 'normal_removal' ? 5 : 0);
+      let styleMultiplier = 1.0;
+      if (lashStyle === 'Under Mink') styleMultiplier = 0.55;
+      else if (lashStyle === 'Classic') styleMultiplier = 0.95;
+      else if (lashStyle === 'Mink' || lashStyle === 'Flawless') styleMultiplier = 1.0;
+      else if (lashStyle === 'Ivylight') styleMultiplier = 1.05;
+      else if (lashStyle === 'Volume') styleMultiplier = 1.15;
+      else if (lashStyle === 'Hyperlight') styleMultiplier = 1.25;
+      else if (lashStyle === 'Ultralight') styleMultiplier = 1.35;
+
+      const baseMin = Math.round((30 + Math.round(countNum * 0.6)) * styleMultiplier);
+      const benchmarkTotal = baseMin + (serviceMode === 'normal_removal' ? 5 : 0);
 
       const rankingEntries = [];
 

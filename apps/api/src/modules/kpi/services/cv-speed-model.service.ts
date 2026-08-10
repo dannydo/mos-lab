@@ -256,14 +256,15 @@ export async function predictCvSpeed(
   lashCount: number,
   preFetchedCases?: Array<{
     lashStyle: string;
-    serviceMode: LashServiceMode;
+    serviceMode?: LashServiceMode;
     lashCount: number;
     cleaning: number;
     extension: number;
     prepQc: number;
     total: number;
   }>,
-  preFetchedBenchmarkMinutes?: number
+  preFetchedBenchmarkMinutes?: number,
+  overallStaffSpeedFactor?: number
 ): Promise<CvSpeedPrediction> {
   let parsedCases: Array<{
     lashStyle: string;
@@ -443,8 +444,8 @@ export async function predictCvSpeed(
     }
   }
 
-  // Layer 3: Global Benchmark Fallback (with CV overall speed factor if available)
-  let speedRatio = 1.0;
+  // Layer 3: Global Benchmark Fallback (with CV overall relative speed factor)
+  let speedRatio = overallStaffSpeedFactor && overallStaffSpeedFactor > 0 ? overallStaffSpeedFactor : 1.0;
   if (parsedCases.length > 0) {
     const cvAvg = parsedCases.reduce((acc, c) => acc + c.total, 0) / parsedCases.length;
     const bmAvg = benchmarkTotalMinutes || 60;
@@ -502,11 +503,23 @@ function getFallbackBenchmark(lashStyle: string, serviceMode: LashServiceMode, l
   if (lashCount <= 30) base = 35;
   else if (lashCount <= 60) base = 50;
   else if (lashCount <= 70) base = 55;
-  else if (lashCount <= 80) base = 60;
-  else if (lashCount <= 90) base = 65;
-  else if (lashCount <= 100) base = 70;
-  else if (lashCount <= 120) base = 80;
-  else base = 90;
+  else if (lashCount <= 80) base = 62;
+  else if (lashCount <= 90) base = 70;
+  else if (lashCount <= 100) base = 78;
+  else if (lashCount <= 120) base = 90;
+  else base = 105;
+
+  // Lash Style Difficulty Multipliers
+  let styleMultiplier = 1.0;
+  if (lashStyle === 'Under Mink') styleMultiplier = 0.55;
+  else if (lashStyle === 'Classic') styleMultiplier = 0.95;
+  else if (lashStyle === 'Mink' || lashStyle === 'Flawless') styleMultiplier = 1.0;
+  else if (lashStyle === 'Ivylight') styleMultiplier = 1.05;
+  else if (lashStyle === 'Volume') styleMultiplier = 1.15;
+  else if (lashStyle === 'Hyperlight') styleMultiplier = 1.25;
+  else if (lashStyle === 'Ultralight') styleMultiplier = 1.35;
+
+  base = Math.round(base * styleMultiplier);
 
   if (serviceMode === 'retain') base = Math.round(base * 0.75);
   if (serviceMode === 'normal_removal') base = Math.round(base * 1.15);
