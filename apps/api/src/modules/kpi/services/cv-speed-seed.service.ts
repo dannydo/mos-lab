@@ -5,6 +5,7 @@ import {
   computeSpeedRating,
   computeConfidence,
   predictCvSpeed,
+  StaffPhaseMetrics,
 } from './cv-speed-model.service.js';
 import { parseLashSpecs } from '../../catalog/services/lash-benchmark.service.js';
 
@@ -177,13 +178,16 @@ export async function runNightlyCvSpeedSeed(crmPrisma: any, legacyPrisma: any): 
     benchmarkMap.set(`${b.lashStyle}_${b.lashCount}`, b.benchmarkMinutes);
   });
 
-  // Pre-calculate overall speed factor for each staff member relative to peer global average
-  const staffSpeedFactorMap = new Map<number, number>();
+  // Pre-calculate overall speed factor and real phase breakdown for each staff member relative to peer global average
+  const staffPhaseMetricsMap = new Map<number, StaffPhaseMetrics>();
   try {
     const avgRows = (await legacyPrisma.$queryRawUnsafe(`
       SELECT
         sb.user_id AS staff_id,
-        AVG(COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) AS avg_min
+        ROUND(AVG(COALESCE(ros.cleaning_minute, 0))) AS avg_clean,
+        ROUND(AVG(COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0))) AS avg_prep,
+        ROUND(AVG(COALESCE(ros.servicing_minute, 0))) AS avg_ext,
+        ROUND(AVG(COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0))) AS avg_min
       FROM order_service os
       JOIN \`order\` o ON os.order_id = o.id
       JOIN report_order_service ros ON os.id = ros.order_service_id
@@ -195,14 +199,19 @@ export async function runNightlyCvSpeedSeed(crmPrisma: any, legacyPrisma: any): 
           o.booking_date_start
         ) >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
       GROUP BY sb.user_id
-    `)) as Array<{ staff_id: number; avg_min: number }>;
+    `)) as Array<{ staff_id: number; avg_clean: number; avg_prep: number; avg_ext: number; avg_min: number }>;
 
     const validRows = avgRows.filter((r) => r.staff_id && Number(r.avg_min) > 0);
     if (validRows.length > 0) {
       const globalAvg = validRows.reduce((acc, r) => acc + Number(r.avg_min), 0) / validRows.length;
       validRows.forEach((r) => {
         const factor = Math.max(0.75, Math.min(1.3, Number(r.avg_min) / (globalAvg || 60)));
-        staffSpeedFactorMap.set(Number(r.staff_id), factor);
+        staffPhaseMetricsMap.set(Number(r.staff_id), {
+          ratio: factor,
+          avgCleaning: Math.max(3, Math.min(25, Number(r.avg_clean || 10))),
+          avgPrepQc: Math.max(3, Math.min(35, Number(r.avg_prep || 10))),
+          avgExtension: Math.max(15, Number(r.avg_ext || 45)),
+        });
       });
     }
   } catch (err) {
@@ -215,7 +224,7 @@ export async function runNightlyCvSpeedSeed(crmPrisma: any, legacyPrisma: any): 
     const staffInfo = staffMap.get(staffId);
     const staffName = staffInfo?.name || `Chuyên viên ${staffId}`;
     const windowMonths = await getCvRollingWindowMonths(legacyPrisma, staffId);
-    const staffFactor = staffSpeedFactorMap.get(staffId) || 1.0;
+    const staffMetrics = staffPhaseMetricsMap.get(staffId) || { ratio: 1.0, avgCleaning: 10, avgPrepQc: 8 };
 
     // 2. Pre-fetch ALL historical cases for this staff member in 1 fast query
     let staffCases: Array<{
@@ -307,7 +316,7 @@ export async function runNightlyCvSpeedSeed(crmPrisma: any, legacyPrisma: any): 
             count,
             staffCases,
             bmMinutes,
-            staffFactor
+            staffMetrics
           );
           rawPredictions.push(pred);
         }

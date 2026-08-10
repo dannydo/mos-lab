@@ -16,7 +16,12 @@ import {
   ModelLayer,
   SafeAny,
 } from '@mos-lab/shared';
-import { predictCvSpeed, detectServiceMode, detectServiceModeBatch } from '../services/cv-speed-model.service.js';
+import {
+  predictCvSpeed,
+  detectServiceMode,
+  detectServiceModeBatch,
+  StaffPhaseMetrics,
+} from '../services/cv-speed-model.service.js';
 import { runNightlyCvSpeedSeed, getActiveCvStaffList } from '../services/cv-speed-seed.service.js';
 import { parseLashSpecs } from '../../catalog/services/lash-benchmark.service.js';
 
@@ -145,7 +150,7 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
 
       for (const cv of activeCvs) {
         const rowProfiles: Record<string, CvSpeedMatrixCell> = {};
-        const cvRatio = speedFactorMap.get(cv.id) || 1.0;
+        const cvRatio = speedFactorMap.get(cv.id)?.ratio || 1.0;
 
         for (const style of STANDARD_STYLES) {
           for (const count of STANDARD_COUNTS) {
@@ -265,7 +270,8 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
           speedRating = dbProf.speedRating as SpeedRating;
         } else {
           // Dynamic fallback adjusted by staff member's overall 12-month historical working pace
-          const staffRatio = speedFactorMap.get(cv.id) || 1.0;
+          const staffMetrics = speedFactorMap.get(cv.id);
+          const staffRatio = staffMetrics?.ratio || 1.0;
           predictedTime = Math.round(benchmarkTotal * staffRatio);
           sampleSize = 0;
           confidence = 'low';
@@ -277,9 +283,10 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
                 : 'normal';
         }
 
-        const cleaningMinutes = Math.round(dbProf ? dbProf.cleaningMinutes : predictedTime * 0.15);
-        const prepQcMinutes = Math.round(dbProf ? dbProf.prepQcMinutes : predictedTime * 0.1);
-        const extensionMinutes = Math.max(1, predictedTime - cleaningMinutes - prepQcMinutes);
+        const staffMetrics = speedFactorMap.get(cv.id);
+        const cleaningMinutes = Math.round(dbProf ? dbProf.cleaningMinutes : staffMetrics?.avgCleaning || 10);
+        const prepQcMinutes = Math.round(dbProf ? dbProf.prepQcMinutes : staffMetrics?.avgPrepQc || 8);
+        const extensionMinutes = Math.max(5, predictedTime - cleaningMinutes - prepQcMinutes);
 
         const trend = trendMap.get(cv.id) || 'stable';
 
@@ -737,27 +744,34 @@ async function getStaffTrendsBatch(
   return map;
 }
 
-async function getStaffOverallSpeedFactors(legacyPrisma: SafeAny, staffIds: number[]): Promise<Map<number, number>> {
-  const map = new Map<number, number>();
+async function getStaffOverallSpeedFactors(
+  legacyPrisma: SafeAny,
+  staffIds: number[]
+): Promise<Map<number, StaffPhaseMetrics>> {
+  const map = new Map<number, StaffPhaseMetrics>();
   if (!staffIds || staffIds.length === 0) return map;
 
   try {
     const rows = (await legacyPrisma.$queryRawUnsafe(`
       SELECT
-        os.assigned_staff_id AS staff_id,
-        AVG(COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) AS avg_time
+        sb.user_id AS staff_id,
+        ROUND(AVG(COALESCE(ros.cleaning_minute, 0))) AS avg_clean,
+        ROUND(AVG(COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0))) AS avg_prep,
+        ROUND(AVG(COALESCE(ros.servicing_minute, 0))) AS avg_ext,
+        ROUND(AVG(COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0))) AS avg_time
       FROM order_service os
       JOIN \`order\` o ON os.order_id = o.id
       JOIN report_order_service ros ON os.id = ros.order_service_id
+      JOIN staff_bonus sb ON sb.order_service_id = os.id
       WHERE o.order_state = 'Completed'
-        AND os.assigned_staff_id IN (${staffIds.join(',')})
+        AND sb.user_id IN (${staffIds.join(',')})
         AND (COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) BETWEEN 15 AND 200
         AND COALESCE(
           (SELECT ro.actual_booking_date_start FROM report_order ro WHERE ro.order_id = o.id LIMIT 1),
           o.booking_date_start
         ) >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-      GROUP BY os.assigned_staff_id
-    `)) as Array<{ staff_id: number; avg_time: number | null }>;
+      GROUP BY sb.user_id
+    `)) as Array<{ staff_id: number; avg_clean: number; avg_prep: number; avg_ext: number; avg_time: number | null }>;
 
     const validRows = rows.filter((r) => r.staff_id && Number(r.avg_time) > 0);
     if (validRows.length > 0) {
@@ -765,7 +779,12 @@ async function getStaffOverallSpeedFactors(legacyPrisma: SafeAny, staffIds: numb
       validRows.forEach((r) => {
         const staffAvg = Number(r.avg_time);
         const ratio = Math.max(0.75, Math.min(1.3, staffAvg / (globalAvg || 60)));
-        map.set(Number(r.staff_id), ratio);
+        map.set(Number(r.staff_id), {
+          ratio,
+          avgCleaning: Math.max(3, Math.min(25, Number(r.avg_clean || 10))),
+          avgPrepQc: Math.max(3, Math.min(35, Number(r.avg_prep || 10))),
+          avgExtension: Math.max(15, Number(r.avg_ext || 45)),
+        });
       });
     }
   } catch (err) {

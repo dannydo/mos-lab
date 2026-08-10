@@ -247,6 +247,13 @@ export function computeConfidence(sampleSize: number, layer: number): Confidence
 /**
  * 3-Layer Speed Estimation Cascade per CV per (lashStyle, serviceMode, lashCount)
  */
+export interface StaffPhaseMetrics {
+  ratio: number;
+  avgCleaning: number;
+  avgPrepQc: number;
+  avgExtension?: number;
+}
+
 export async function predictCvSpeed(
   crmPrisma: SafeAny,
   legacyPrisma: SafeAny,
@@ -264,7 +271,7 @@ export async function predictCvSpeed(
     total: number;
   }>,
   preFetchedBenchmarkMinutes?: number,
-  overallStaffSpeedFactor?: number
+  staffPhaseMetrics?: StaffPhaseMetrics
 ): Promise<CvSpeedPrediction> {
   let parsedCases: Array<{
     lashStyle: string;
@@ -444,8 +451,8 @@ export async function predictCvSpeed(
     }
   }
 
-  // Layer 3: Global Benchmark Fallback (with CV overall relative speed factor)
-  let speedRatio = overallStaffSpeedFactor && overallStaffSpeedFactor > 0 ? overallStaffSpeedFactor : 1.0;
+  // Layer 3: Global Benchmark Fallback (with CV overall relative speed factor and real staff phase breakdown)
+  let speedRatio = staffPhaseMetrics?.ratio && staffPhaseMetrics.ratio > 0 ? staffPhaseMetrics.ratio : 1.0;
   if (parsedCases.length > 0) {
     const cvAvg = parsedCases.reduce((acc, c) => acc + c.total, 0) / parsedCases.length;
     const bmAvg = benchmarkTotalMinutes || 60;
@@ -453,9 +460,23 @@ export async function predictCvSpeed(
   }
 
   const predTotal = Math.max(25, Math.round(benchmarkTotalMinutes * speedRatio));
-  const predClean = Math.round(predTotal * 0.15);
-  const predPrep = Math.round(predTotal * 0.1);
-  const predExt = predTotal - predClean - predPrep;
+
+  let predClean = 10;
+  let predPrep = 8;
+  if (parsedCases.length > 0) {
+    const sortedClean = parsedCases.map((c) => c.cleaning).sort((a, b) => a - b);
+    const sortedPrep = parsedCases.map((c) => c.prepQc).sort((a, b) => a - b);
+    predClean = sortedClean[Math.floor(sortedClean.length / 2)] || 10;
+    predPrep = sortedPrep[Math.floor(sortedPrep.length / 2)] || 8;
+  } else if (staffPhaseMetrics) {
+    predClean = staffPhaseMetrics.avgCleaning || 10;
+    predPrep = staffPhaseMetrics.avgPrepQc || 8;
+  } else {
+    predClean = Math.max(5, Math.round(predTotal * 0.15));
+    predPrep = Math.max(5, Math.round(predTotal * 0.1));
+  }
+
+  const predExt = Math.max(10, predTotal - predClean - predPrep);
 
   const speedDeltaPercent = Math.round(((predTotal - benchmarkTotalMinutes) / benchmarkTotalMinutes) * 1000) / 10;
   const speedRating = computeSpeedRating(predTotal, benchmarkTotalMinutes);
