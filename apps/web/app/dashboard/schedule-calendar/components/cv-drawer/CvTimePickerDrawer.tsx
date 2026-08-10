@@ -16,6 +16,8 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import { Appointment } from '@mos-lab/shared';
 import { useTheme } from '../../../../../context/ThemeContext';
+import { CvDatePicker } from '../../../../../components/booking/CvDatePicker';
+import CalendarPlusIcon from '../../../../../components/icons/CalendarPlusIcon';
 import { StaffWorkingItem } from './cvDrawerUtils';
 
 export interface CvTimePickerDrawerProps {
@@ -178,6 +180,18 @@ export const CvTimePickerDrawer: React.FC<CvTimePickerDrawerProps> = ({
     });
   };
 
+  const selectedCV = useMemo(() => {
+    if (!staff) return undefined;
+    return {
+      id: staff.id,
+      displayName: staff.name,
+      offDays: (staff as any).offDays || [],
+      approvedOffDates: (staff as any).approvedOffDates || [],
+      pendingOffDates: (staff as any).pendingOffDates || [],
+      rejectedOffDates: (staff as any).rejectedOffDates || [],
+    };
+  }, [staff]);
+
   return (
     <Drawer
       title={null}
@@ -229,27 +243,33 @@ export const CvTimePickerDrawer: React.FC<CvTimePickerDrawerProps> = ({
         </div>
 
         {/* Date Selector bar */}
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800">
+        <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-800">
           <button
             type="button"
             onClick={() => onDateChange(currentDate.subtract(1, 'day'))}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors cursor-pointer shrink-0"
+            title="Ngày trước đó"
           >
             <LeftOutlined />
           </button>
 
-          <div className="flex items-center gap-2">
-            <DatePicker
-              value={currentDate}
-              onChange={(d) => d && onDateChange(d)}
-              format="DD/MM/YYYY"
-              allowClear={false}
-              className="bg-slate-800 border-slate-700 text-slate-100 text-xs font-semibold tabular-nums"
-            />
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-center">
+            <div className="shrink-0 min-w-[130px]">
+              <CvDatePicker
+                value={currentDate}
+                onChange={(d) => d && onDateChange(d)}
+                selectedCV={selectedCV}
+                themeMode={themeMode}
+                format="DD/MM/YYYY"
+                allowClear={false}
+                className="bg-slate-800 border-slate-700 text-slate-100 text-xs font-semibold tabular-nums w-full"
+              />
+            </div>
+
             <button
               type="button"
               onClick={() => onDateChange(dayjs())}
-              className="px-2 py-1 text-[11px] font-semibold rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors cursor-pointer"
+              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all cursor-pointer whitespace-nowrap shrink-0 border border-emerald-500/30"
             >
               Hôm nay
             </button>
@@ -258,7 +278,8 @@ export const CvTimePickerDrawer: React.FC<CvTimePickerDrawerProps> = ({
           <button
             type="button"
             onClick={() => onDateChange(currentDate.add(1, 'day'))}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors cursor-pointer shrink-0"
+            title="Ngày tiếp theo"
           >
             <RightOutlined />
           </button>
@@ -348,17 +369,18 @@ export const CvTimePickerDrawer: React.FC<CvTimePickerDrawerProps> = ({
                       </button>
                     </>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleConfirmBooking(slotStr, false);
-                      }}
-                      className="px-2.5 py-1 text-[11px] font-bold rounded-md bg-emerald-500 hover:bg-emerald-600 text-white transition-all shadow-2xs active:scale-95 cursor-pointer flex items-center gap-1"
-                    >
-                      <CalendarOutlined />
-                      <span>+ Chọn mốc</span>
-                    </button>
+                    <Tooltip title={`Đặt lịch mốc ${slotStr}`} placement="left">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleConfirmBooking(slotStr, false);
+                        }}
+                        className="w-[26px] h-[26px] rounded-md bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-2xs hover:shadow-xs hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center shrink-0 border border-amber-400/40"
+                      >
+                        <CalendarPlusIcon fontSize={14} badgeBg="#10B981" badgeColor="#FFFFFF" />
+                      </button>
+                    </Tooltip>
                   )}
                 </div>
               </div>

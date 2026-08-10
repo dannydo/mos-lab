@@ -405,3 +405,15 @@ mos-lab/
   - `service_type IN ('Removal', 'Fix')` $\rightarrow$ `removalAvg` (Thời gian tháo mi trung bình).
 - **Đồng bộ Backend API & Giao diện Linh hoạt**: Cả 2 API `/api/customers/ktv-daily-capacities` và `/api/customers/cv-realtime-status` bắt buộc đính kèm `avgDurationMinutes` cho tất cả nhân viên CV đang hoạt động. Component Frontend (`CvWorkingStaffCard`) hiển thị Badge tốc độ linh hoạt nếu nhân sự có bất kỳ chỉ số nào trong 3 loại (`normalAvg`, `retainAvg`, hoặc `removalAvg`), tuyệt đối không hardcode tốc độ thủ công hoặc ẩn badge khi nhân sự chỉ làm dặm/tháo mi.
 
+### 53. Technician (CV) DatePicker Standardization & Off-Day / Warning Invariants
+- **Thành phần dùng chung bắt buộc (`<CvDatePicker>`)**: Tất cả các ô chọn ngày làm việc/đặt lịch liên quan đến Chuyên viên (CV/KTV) trên toàn bộ giao diện Frontend bắt buộc phải sử dụng component dùng chung `<CvDatePicker>` tại `apps/web/components/booking/CvDatePicker.tsx`.
+- **Nghiêm cấm dùng raw `<DatePicker>` cho CV**: Tuyệt đối **KHÔNG** sử dụng trực tiếp thẻ `<DatePicker>` mặc định của Ant Design cho CV mà thiếu logic gạch ngang ngày off (`isCVOff`) hoặc khóa ngày quá khứ.
+- **Các quy chuẩn bắt buộc của `<CvDatePicker>`**:
+  - **Khóa ngày quá khứ**: Tự động vô hiệu hóa tất cả các ngày trước hôm nay (`isBefore(dayjs().startOf('day'))`).
+  - **Gạch ngang ngày off của CV**: Tự động gạch ngang (`line-through`), mờ nền và chặn click đối với ngày nghỉ cố định tuần (`offDays`) và ngày nghỉ phép đã được duyệt (`approvedOffDates`).
+  - **Cảnh báo đơn xin nghỉ phép chưa duyệt (`New`)**: Hiển thị chấm màu cam (`#f59e0b`) trên ô ngày + Tooltip + Alert Banner cảnh báo: *"CV [Tên] có đơn xin nghỉ phép đang chờ duyệt vào ngày này!"*.
+  - **Cảnh báo đơn xin nghỉ phép bị từ chối (`Rejected`)**: Hiển thị chấm màu đỏ (`#ef4444`) trên ô ngày + Tooltip + Alert Banner cảnh báo: *"CV [Tên] có đơn xin nghỉ phép bị từ chối/không được duyệt vào ngày này!"*.
+  - **Tuần bắt đầu từ Thứ 2 (`Monday-First`)**: Đảm bảo tiêu đề bảng thứ hiển thị `T2 T3 T4 T5 T6 T7 CN` theo Rule #22.
+  - **Tự động chuyển ngày hợp lệ (`getNextAvailableDate`)**: Nếu ngày được chọn rơi vào ngày off, tự động nhảy sang ngày làm việc tiếp theo gần nhất của CV.
+
+

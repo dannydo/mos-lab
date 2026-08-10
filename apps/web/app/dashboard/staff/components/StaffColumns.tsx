@@ -20,6 +20,8 @@ import { ColumnsType } from 'antd/es/table';
 const { Text } = Typography;
 
 interface StaffColumnsOptions {
+  currentPage?: number;
+  pageSize?: number;
   roles: Role[];
   token: SafeAny;
   handleToggleActive: (record: Staff, checked: boolean) => void;
@@ -32,6 +34,8 @@ interface StaffColumnsOptions {
 }
 
 export const getStaffColumns = ({
+  currentPage = 1,
+  pageSize = 10,
   roles,
   token,
   handleToggleActive,
@@ -43,6 +47,17 @@ export const getStaffColumns = ({
   onRoleClick,
 }: StaffColumnsOptions): ColumnsType<Staff> => {
   const columns: ColumnsType<Staff> = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 55,
+      align: 'center' as const,
+      render: (_: SafeAny, __: Staff, index: number) => (
+        <span className="tabular-nums font-mono text-xs text-slate-400 font-semibold">
+          {(currentPage - 1) * pageSize + index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Nhân viên',
       key: 'name',

@@ -110,7 +110,9 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
       return reply.send(response);
     } catch (err) {
       fastify.log.error(err as Error, 'Error fetching CV speed profiles');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể lấy danh sách CV speed profiles.' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: 'Không thể lấy danh sách CV speed profiles.' });
     }
   });
 
@@ -128,6 +130,13 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
           serviceMode,
         },
       });
+
+      if (dbProfiles.length === 0) {
+        fastify.log.info('[CvSpeedRoutes] dbProfiles is empty in /matrix, triggering background seed...');
+        runNightlyCvSpeedSeed(fastify.prisma.crm, fastify.prisma.legacy).catch((e) =>
+          fastify.log.error(e, 'Error during background seed from /matrix')
+        );
+      }
 
       const profileMap = new Map<string, CvSpeedMatrixCell>();
       dbProfiles.forEach((p) => {
@@ -269,7 +278,9 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
       return reply.send(response);
     } catch (err) {
       fastify.log.error(err as Error, 'Error fetching CV speed ranking');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể lấy bảng xếp hạng tốc độ CV.' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: 'Không thể lấy bảng xếp hạng tốc độ CV.' });
     }
   });
 
@@ -330,16 +341,11 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      const staffProfileRow = (await fastify.prisma.legacy.$queryRawUnsafe(`
+      const staffProfilePromise = fastify.prisma.legacy.$queryRawUnsafe(`
         SELECT full_name, avatar FROM user_profile WHERE user_id = ${cvId} LIMIT 1
-      `)) as Array<{ full_name: string | null; avatar: string | null }>;
-      const staffName = staffProfileRow[0]?.full_name?.trim() || `Chuyên viên ${cvId}`;
-      let avatarUrl = staffProfileRow[0]?.avatar || null;
-      if (avatarUrl && avatarUrl.startsWith('http://')) {
-        avatarUrl = avatarUrl.replace('http://', 'https://');
-      }
+      `) as Promise<Array<{ full_name: string | null; avatar: string | null }>>;
 
-      const recentRows = (await fastify.prisma.legacy.$queryRawUnsafe(`
+      const recentRowsPromise = fastify.prisma.legacy.$queryRawUnsafe(`
         SELECT
           os.id as order_service_id,
           o.id as order_id,
@@ -367,19 +373,51 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
           AND (COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) < 200
         ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC
         LIMIT 50
-      `)) as Array<{
-        order_service_id: number;
-        order_id: number;
-        user_id: number;
-        date_str: string;
-        service_key: string;
-        service_name: string;
-        service_type: string;
-        cleaning_minute: number;
-        servicing_minute: number;
-        preparation_minute: number;
-        pre_servicing_minute: number;
-      }>;
+      `) as Promise<
+        Array<{
+          order_service_id: number;
+          order_id: number;
+          user_id: number;
+          date_str: string;
+          service_key: string;
+          service_name: string;
+          service_type: string;
+          cleaning_minute: number;
+          servicing_minute: number;
+          preparation_minute: number;
+          pre_servicing_minute: number;
+        }>
+      >;
+
+      const monthlyRowsPromise = fastify.prisma.legacy.$queryRawUnsafe(`
+        SELECT
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m') as month_str,
+          ROUND(AVG(COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0))) as avg_time
+        FROM order_service os
+        JOIN \`order\` o ON os.order_id = o.id
+        JOIN report_order_service ros ON os.id = ros.order_service_id
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        WHERE o.order_state = 'Completed'
+          AND (
+            os.assigned_staff_id = ${cvId}
+            OR EXISTS (SELECT 1 FROM staff_bonus sb WHERE sb.order_service_id = os.id AND sb.user_id = ${cvId})
+          )
+          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+        GROUP BY month_str
+        ORDER BY month_str ASC
+      `) as Promise<Array<{ month_str: string; avg_time: number }>>;
+
+      const [staffProfileRow, recentRows, monthlyRows] = await Promise.all([
+        staffProfilePromise,
+        recentRowsPromise,
+        monthlyRowsPromise,
+      ]);
+
+      const staffName = staffProfileRow[0]?.full_name?.trim() || `Chuyên viên ${cvId}`;
+      let avatarUrl = staffProfileRow[0]?.avatar || null;
+      if (avatarUrl && avatarUrl.startsWith('http://')) {
+        avatarUrl = avatarUrl.replace('http://', 'https://');
+      }
 
       // Batch resolve service mode in 1 SQL query (0ms)
       const itemsToResolve = recentRows.map((r) => ({
@@ -425,24 +463,6 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
         extension: Math.round(totalExt / caseCnt),
         prepQc: Math.round(totalPrep / caseCnt),
       };
-
-      const monthlyRows = (await fastify.prisma.legacy.$queryRawUnsafe(`
-        SELECT
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m') as month_str,
-          ROUND(AVG(COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0))) as avg_time
-        FROM order_service os
-        JOIN \`order\` o ON os.order_id = o.id
-        JOIN report_order_service ros ON os.id = ros.order_service_id
-        LEFT JOIN report_order ro ON o.id = ro.order_id
-        WHERE o.order_state = 'Completed'
-          AND (
-            os.assigned_staff_id = ${cvId}
-            OR EXISTS (SELECT 1 FROM staff_bonus sb WHERE sb.order_service_id = os.id AND sb.user_id = ${cvId})
-          )
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-        GROUP BY month_str
-        ORDER BY month_str ASC
-      `)) as Array<{ month_str: string; avg_time: number }>;
 
       const monthlyTrend: CvSpeedMonthlyTrend[] = monthlyRows.map((r) => ({
         month: r.month_str,
@@ -592,7 +612,9 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
       return reply.send(result);
     } catch (err) {
       fastify.log.error(err as Error, 'Error triggering CV speed seed');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi khi chạy tính toán dữ liệu mẫu tốc độ CV.' });
+      return reply
+        .status(500)
+        .send({ error: 'Internal Server Error', message: 'Lỗi khi chạy tính toán dữ liệu mẫu tốc độ CV.' });
     }
   });
 

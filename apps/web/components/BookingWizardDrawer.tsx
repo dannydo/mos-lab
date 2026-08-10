@@ -52,6 +52,7 @@ import { useCustomerInsights } from './booking/useCustomerInsights';
 import { TechnicianSelector } from './booking/TechnicianSelector';
 import { SlotMatrixGrid } from './booking/SlotMatrixGrid';
 import { BookingTemplateManagerModal } from './booking/BookingTemplateManagerModal';
+import { CvDatePicker } from './booking/CvDatePicker';
 
 const { TextArea } = Input;
 
@@ -1465,58 +1466,20 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             >
               <div>
                 <span style={{ fontSize: '12px', color: '#888' }}>Ngày đặt:</span>
-                <DatePicker
+                <CvDatePicker
                   key={`${selectedCV ? selectedCV.id : 'no-cv'}-${safeBookingDate ? safeBookingDate.valueOf() : 0}-${pickerNonce}-${(staffList || []).length}`}
                   style={{ marginLeft: '8px' }}
                   value={safeBookingDate}
-                  inputReadOnly={true}
-                  getPopupContainer={(trigger) => trigger.parentElement || document.body}
                   onChange={(val) => {
                     if (!val) return;
-                    const cDayjs = dayjs(val);
-                    const adjusted = getNextAvailableDate(cDayjs, selectedCV);
-                    setBookingDate(dayjs(adjusted));
+                    setBookingDate(dayjs(val));
                     setPickerNonce((prev) => prev + 1);
                   }}
-                  format="DD/MM/YYYY"
-                  allowClear={false}
-                  disabledDate={(current) => {
-                    if (!current) return false;
-                    const cDayjs = dayjs(current);
-                    if (cDayjs.isBefore(dayjs().startOf('day'))) return true;
-                    return isCVOff(cDayjs, selectedCV);
-                  }}
-                  cellRender={(current, info) => {
-                    if (info.type === 'date' && current) {
-                      const cDayjs = dayjs(current);
-                      if (isCVOff(cDayjs, selectedCV)) {
-                        return (
-                          <div
-                            className="ant-picker-cell-inner ant-picker-cell-disabled"
-                            style={{
-                              color: themeMode === 'dark' ? '#cbd5e1' : '#334155',
-                              opacity: 1,
-                              textDecoration: 'line-through',
-                              pointerEvents: 'none',
-                              cursor: 'not-allowed',
-                              background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
-                              borderRadius: '4px',
-                              border: 'none',
-                              boxShadow: 'none',
-                            }}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
-                          >
-                            {cDayjs.date()}
-                          </div>
-                        );
-                      }
-                    }
-                    return info.originNode;
-                  }}
+                  selectedCV={selectedCV}
+                  staffList={staffList}
+                  themeMode={themeMode}
                 />
+
                 <style>{`
                   .ant-picker-dropdown .ant-picker-cell-today .ant-picker-cell-inner::before,
                   .ant-picker-cell-today .ant-picker-cell-inner::before {

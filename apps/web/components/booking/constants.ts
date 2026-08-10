@@ -32,6 +32,11 @@ export const CHANNELS = [
   { key: 'GB', label: 'GB (Google Business)' },
 ];
 
+export const HARDCODED_OFF_DATES: { [name: string]: string[] } = {
+  'cẩm tiên': ['2026-07-26', '2026-07-27'],
+  'cam tien': ['2026-07-26', '2026-07-27'],
+};
+
 export const getOffDaysText = (offDays?: string[]) => {
   if (!offDays || offDays.length === 0) return '';
   const weekdayMap: { [key: string]: string } = {

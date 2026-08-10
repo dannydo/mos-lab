@@ -152,6 +152,8 @@ export default function StaffPage() {
 
   // Table columns for Staff Directory
   const staffColumns = getStaffColumns({
+    currentPage,
+    pageSize,
     roles,
     token,
     handleToggleActive,

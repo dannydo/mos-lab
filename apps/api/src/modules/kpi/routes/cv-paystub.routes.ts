@@ -8,6 +8,7 @@ import {
   SafeAny,
 } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
+import { StaffOffDayService } from '../../staff/services/staff-off-day.service.js';
 
 const getLocalDate = (dStr: string) => {
   const p = dStr.split('-');
@@ -227,13 +228,6 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           AND rs.working_minute > 0
       `;
 
-      // Query day-off schedules for all users
-      const dayOffsQuery = `
-        SELECT user_id as staff_id, weekday 
-        FROM \`staff_day_off_schedule\` 
-        WHERE is_disabled = 0 AND user_id IN (${validStaffListStr})
-      `;
-
       // 4. Query CV Xoay Cash Bonus
       const cvXoayBonusQuery = `
         SELECT 
@@ -280,14 +274,14 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         GROUP BY sb.user_id
       `;
 
-      const [hourlyRatesRows, reportStaffRows, dayOffsRows, cvXoayBonusRows, cvTipBonusRows, techPointsRows] =
+      const [hourlyRatesRows, reportStaffRows, cvXoayBonusRows, cvTipBonusRows, techPointsRows, staffOffDayBatchMap] =
         await Promise.all([
           fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
           fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(reportStaffQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(dayOffsQuery),
           fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvXoayBonusQuery),
           fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvTipBonusQuery),
           fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(techPointsQuery),
+          StaffOffDayService.getBatchStaffOffDays(fastify, validStaffIds),
         ]);
 
       const techPointsMap = new Map<number, number>();
@@ -301,11 +295,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       });
 
       const staffDayOffMap = new Map<number, Set<number>>();
-      dayOffsRows.forEach((r: SafeAny) => {
-        const uid = Number(r.staff_id);
-        const wd = Number(r.weekday);
-        if (!staffDayOffMap.has(uid)) staffDayOffMap.set(uid, new Set());
-        staffDayOffMap.get(uid)!.add(wd);
+      staffOffDayBatchMap.forEach((info, uid) => {
+        staffDayOffMap.set(uid, new Set(info.weeklyOffDays));
       });
 
       // Group by user -> week Monday -> Set of date strings
@@ -553,7 +544,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       const extendedEndStr = extendedEndSunday.toISOString().split('T')[0];
 
       // 2. Query Shifts from report_staff for the requested range, and also pull extended attendance for week sizing
-      const [shiftsRaw, reportStaffRows, dayOffsRows] = await Promise.all([
+      const [shiftsRaw, reportStaffRows, staffOffDayInfo] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT 
             DATE_FORMAT(rs.date, '%Y-%m-%d') as date,
@@ -579,19 +570,14 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
             AND date <= '${extendedEndStr}'
             AND working_minute > 0
         `),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT weekday 
-          FROM \`staff_day_off_schedule\` 
-          WHERE is_disabled = 0 AND user_id = ${numStaffId}
-        `),
+        StaffOffDayService.getStaffOffDays(fastify, numStaffId),
       ]);
 
-      const offDaysConfig = new Set<number>();
-      dayOffsRows.forEach((r) => offDaysConfig.add(Number(r.weekday)));
+      const offDaysConfig = new Set<number>(staffOffDayInfo.weeklyOffDays);
 
       // Group extended report by week Monday -> Set of date strings
       const weekDaysMap = new Map<string, Set<string>>();
-      reportStaffRows.forEach((r) => {
+      reportStaffRows.forEach((r: SafeAny) => {
         const dateStr = String(r.dateStr);
         const d = getLocalDate(dateStr);
         const monStr = getMondayStr(d);
@@ -615,7 +601,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
 
       let totalWorkHours = 0;
       let totalWage = 0;
-      const logs: CvWorkLogDetailRecord[] = shiftsRaw.map((s) => {
+      const logs: CvWorkLogDetailRecord[] = shiftsRaw.map((s: SafeAny) => {
         const hours = Number(s.workHours || 0);
         totalWorkHours += hours;
         const isOffDayWork = offDayWorkDates.has(s.date);

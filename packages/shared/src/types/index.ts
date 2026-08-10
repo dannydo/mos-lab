@@ -19,3 +19,4 @@ export * from './revenue-hourly.js';
 export * from './sms.js';
 export * from './table-config.js';
 export * from './team.js';
+export * from './staff.js';

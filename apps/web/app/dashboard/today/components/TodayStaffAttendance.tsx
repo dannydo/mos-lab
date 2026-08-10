@@ -84,6 +84,15 @@ const TodayStaffAttendance = React.memo(
     const cvColumns = React.useMemo(
       () => [
         {
+          title: 'STT',
+          key: 'stt',
+          width: 50,
+          align: 'center' as const,
+          render: (_: SafeAny, __: ShopCVData, idx: number) => (
+            <span className="tabular-nums font-mono text-xs text-slate-400 font-semibold">#{idx + 1}</span>
+          ),
+        },
+        {
           title: 'Ca',
           key: 'shift_attendance',
           render: (_: SafeAny, rec: ShopCVData) => renderShiftAndAttendance(rec.shift, rec.attendance),
@@ -98,22 +107,48 @@ const TodayStaffAttendance = React.memo(
           title: 'Chi nhánh',
           dataIndex: 'branchName',
           key: 'branchName',
-          render: (b: string) => <StatusTag status="cyan" label={b} />,
+          render: (b: string) => <StatusTag status="cyan" label={b || 'Đề Thám'} />,
         },
         {
           title: 'Đang làm gì?',
           dataIndex: 'doing',
           key: 'doing',
-          render: (doing: string, rec: ShopCVData) => (
-            <Badge status={rec.status === 'busy' ? 'warning' : 'success'} text={doing} />
-          ),
+          render: (doing: string, rec: ShopCVData) => {
+            if (rec.isOff || rec.shift === 'off') {
+              return (
+                <Tag color="volcano" style={{ fontWeight: 500 }}>
+                  {doing || rec.offReason || 'Nghỉ phép'}
+                </Tag>
+              );
+            }
+            if (rec.attendance === 'checked_out') {
+              return <Tag color="default">{doing || 'Đã về'}</Tag>;
+            }
+            return <Badge status={rec.status === 'busy' ? 'warning' : 'success'} text={doing} />;
+          },
         },
         {
           title: 'Khách hôm nay',
           dataIndex: 'clients',
           key: 'clients',
           align: 'center' as const,
-          render: (n: number) => <strong className="tabular-nums text-xs font-mono">{n} khách</strong>,
+          render: (_: number, rec: ShopCVData) => {
+            const booked = rec.bookedCount ?? rec.clients ?? 0;
+            const done = rec.doneCount ?? 0;
+            if (rec.isOff || rec.shift === 'off') {
+              return <span className="text-slate-400 text-xs font-mono">-</span>;
+            }
+            return (
+              <span className="tabular-nums font-mono text-xs inline-flex items-center gap-1">
+                <Tag color="success" style={{ margin: 0, padding: '0 4px', fontSize: '11px' }}>
+                  {done} Done
+                </Tag>
+                <Tag color="processing" style={{ margin: 0, padding: '0 4px', fontSize: '11px' }}>
+                  {booked} Book
+                </Tag>
+              </span>
+            );
+          },
         },
       ],
       []
@@ -121,6 +156,15 @@ const TodayStaffAttendance = React.memo(
 
     const ccColumns = React.useMemo(
       () => [
+        {
+          title: 'STT',
+          key: 'stt',
+          width: 50,
+          align: 'center' as const,
+          render: (_: SafeAny, __: ShopCCData, idx: number) => (
+            <span className="tabular-nums font-mono text-xs text-slate-400 font-semibold">#{idx + 1}</span>
+          ),
+        },
         {
           title: 'Ca',
           key: 'shift_attendance',

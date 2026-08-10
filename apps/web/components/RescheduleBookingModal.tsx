@@ -23,6 +23,7 @@ import {
   DEFAULT_BOOKING_TEMPLATES,
   BOOKING_TEMPLATE_TAGS,
 } from '@mos-lab/shared';
+import { CvDatePicker } from './booking/CvDatePicker';
 
 // Shared modules
 import { STORES, getStoreFullAddress, isStaffOffOnDate, formatOrGenerateCustomerPhone } from './booking/constants';
@@ -944,11 +945,10 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             >
               <div>
                 <span style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Ngày đặt:</span>
-                <DatePicker
+                <CvDatePicker
                   key={`${selectedCV ? selectedCV.id : 'no-cv'}-${(staffList || []).length}`}
                   style={{ marginLeft: '8px' }}
                   value={bookingDate}
-                  getPopupContainer={(trigger) => trigger.parentElement || document.body}
                   onChange={(val) => {
                     if (val) {
                       setBookingDate(val);
@@ -957,44 +957,12 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                       }
                     }
                   }}
-                  format="DD/MM/YYYY"
-                  allowClear={false}
-                  disabledDate={(current) => {
-                    if (!current) return false;
-                    return current.isBefore(dayjs().startOf('day'));
-                  }}
-                  cellRender={(current, info) => {
-                    if (info.type === 'date' && current) {
-                      const cDayjs = dayjs(current);
-                      const checkCV =
-                        selectedCV ||
-                        (staffList || []).find((s: SafeAny) =>
-                          (s.displayName || '').toLowerCase().includes('cẩm tiên')
-                        );
-
-                      if (checkCV && isCVOff(cDayjs, checkCV)) {
-                        return (
-                          <div
-                            className="ant-picker-cell-inner ant-picker-cell-disabled"
-                            style={{
-                              color: themeMode === 'dark' ? '#cbd5e1' : '#334155',
-                              opacity: 1,
-                              textDecoration: 'line-through',
-                              pointerEvents: 'none',
-                              cursor: 'not-allowed',
-                              background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
-                              borderRadius: '4px',
-                              border: 'none',
-                              boxShadow: 'none',
-                            }}
-                          >
-                            {cDayjs.date()}
-                          </div>
-                        );
-                      }
-                    }
-                    return info.originNode;
-                  }}
+                  selectedCV={
+                    selectedCV ||
+                    (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'))
+                  }
+                  staffList={staffList}
+                  themeMode={themeMode}
                 />
               </div>
               <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1890ff' }}>

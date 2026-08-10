@@ -93,14 +93,28 @@ export class TeamService {
       } else if (teamCode === 'CC') {
         groupFilter = ' AND user_group_id IN (2, 5)';
       } else if (teamCode === 'BK') {
-        groupFilter = ' AND user_group_id IN (3, 359)';
+        groupFilter =
+          ' AND (user_group_id IN (2, 3, 14, 31, 32, 45, 359) OR FIND_IN_SET("2", access_user_group_ids) OR FIND_IN_SET("31", access_user_group_ids) OR FIND_IN_SET("32", access_user_group_ids) OR FIND_IN_SET("45", access_user_group_ids))';
       }
 
       const activeRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT user_id FROM user_profile WHERE user_id IN (${candidateIds.join(',')}) AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0${groupFilter}`
       );
       const activeSet = new Set<number>(activeRows.map((r) => Number(r.user_id)));
-      return candidateIds.filter((id) => activeSet.has(id));
+
+      // Also filter out any staff whose crmStaff record is explicitly set to isActive = false
+      const disabledCrmStaff = await fastify.prisma.crm.crmStaff.findMany({
+        where: {
+          isActive: false,
+          legacyStaffId: { in: candidateIds },
+        },
+        select: { legacyStaffId: true },
+      });
+      const disabledCrmSet = new Set(
+        disabledCrmStaff.map((s) => Number(s.legacyStaffId)).filter((id) => !isNaN(id) && id > 0)
+      );
+
+      return candidateIds.filter((id) => activeSet.has(id) && !disabledCrmSet.has(id));
     } catch {
       return candidateIds;
     }

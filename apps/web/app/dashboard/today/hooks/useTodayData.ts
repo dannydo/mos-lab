@@ -106,12 +106,20 @@ export interface ShopCCData {
 }
 
 export interface ShopCVData {
+  id?: number;
   name: string;
+  avatarUrl?: string | null;
+  branchName?: string;
   doing: string;
   clients: number;
+  bookedCount?: number;
+  doneCount?: number;
   shift: 'sáng' | 'chiều' | 'full' | 'off';
   attendance: 'none' | 'checked_in' | 'checked_out' | 'late';
   status: 'busy' | 'available';
+  isOff?: boolean;
+  offReason?: string;
+  offType?: string;
 }
 
 export interface BranchDetail {
@@ -579,6 +587,22 @@ export function useTodayData(options?: UseTodayDataOptions) {
             })),
           };
 
+    const rawCvList = raw.cv || [];
+    const sortedCv = [...rawCvList].sort((a: ShopCVData, b: ShopCVData) => {
+      const aIsWorking = !a.isOff && a.attendance !== 'checked_out';
+      const bIsWorking = !b.isOff && b.attendance !== 'checked_out';
+
+      if (aIsWorking && !bIsWorking) return -1;
+      if (!aIsWorking && bIsWorking) return 1;
+
+      const aBooked = a.bookedCount ?? a.clients ?? 0;
+      const bBooked = b.bookedCount ?? b.clients ?? 0;
+      const aDone = a.doneCount ?? a.clients ?? 0;
+      const bDone = b.doneCount ?? b.clients ?? 0;
+
+      return bBooked - aBooked || bDone - aDone || (a.name || '').localeCompare(b.name || '');
+    });
+
     return {
       revLe: showTax ? raw.revLe || 0 : raw.netLe || 0,
       revCombo: showTax ? raw.revCombo || 0 : raw.netCombo || 0,
@@ -590,7 +614,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
         revProduct: showTax ? c.revProduct || 0 : c.netProduct || 0,
         revenue: showTax ? c.revenue || 0 : c.netRevenue || 0,
       })),
-      cv: raw.cv || [],
+      cv: sortedCv,
       coming: raw.coming || [],
     };
   }, [branchesData, shopBranch, showTax]);

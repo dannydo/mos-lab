@@ -553,17 +553,30 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           up.avatar as avatar,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COUNT(DISTINCT o.id) as totalBookingsCount,
-          COUNT(DISTINCT CASE WHEN st.tip_amount > 0 THEN o.id END) as tippedBookingsCount,
-          COALESCE(SUM(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE 0 END), 0) as totalCustomerTip
+          COUNT(DISTINCT CASE WHEN o.customer_tip_100 > 0 THEN o.id END) as tippedBookingsCount,
+          COALESCE(SUM(o.customer_tip_100), 0) as totalCustomerTip
         FROM \`user_profile\` up
         LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
-        LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
-          AND o.order_state = 'Completed'
-          ${storeFilter}
-        LEFT JOIN report_order ro ON o.id = ro.order_id
-        LEFT JOIN staff_tip st ON st.order_id = o.id
+        LEFT JOIN (
+          SELECT 
+            o.id,
+            o.created_staff_id,
+            st.customer_tip_100
+          FROM \`order\` o
+          LEFT JOIN report_order ro ON o.id = ro.order_id
+          JOIN (
+            SELECT 
+              order_id, 
+              MAX(CASE WHEN tip_percentage > 0 THEN tip_amount / (tip_percentage / 100) ELSE tip_amount END) as customer_tip_100
+            FROM staff_tip
+            WHERE tip_amount > 0
+            GROUP BY order_id
+          ) st ON st.order_id = o.id
+          WHERE o.order_state = 'Completed'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
+            ${storeFilter}
+        ) o ON o.created_staff_id = up.user_id
         WHERE up.user_id IN (${bkIdsStr})
         GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key
         ORDER BY totalCustomerTip DESC

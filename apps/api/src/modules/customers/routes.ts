@@ -14,6 +14,7 @@ import { TeamService } from '../teams/team.service.js';
 import { CampaignPromotionSyncService } from '../campaigns/campaign-promotion-sync.service.js';
 import { LashBenchmarkService, parseLashSpecs } from '../catalog/services/lash-benchmark.service.js';
 import { resolveIsForeign, getForeignSqlFilter } from './services/foreign-customer.service.js';
+import { StaffOffDayService } from '../staff/services/staff-off-day.service.js';
 
 export async function customerRoutes(fastify: FastifyInstance) {
   // Start automated allocation expiration cronjob
@@ -3033,100 +3034,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // 2. Fetch KTVs from legacy core tables
       let mappedKTVs: SafeAny[] = [];
 
-      // Query active schedules to compute weekly off days
-      const allSchedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT user_id, type, type_value 
-         FROM staff_working_shift_schedule 
-         WHERE is_disabled = 0 AND user_id IS NOT NULL`
-      );
-
-      const schedulesByUserId: { [uid: number]: SafeAny[] } = {};
-      for (const s of allSchedules) {
-        const uid = Number(s.user_id);
-        if (!schedulesByUserId[uid]) schedulesByUserId[uid] = [];
-        schedulesByUserId[uid].push(s);
-      }
-
-      // 1. Primary Source of Truth: Fixed weekly off schedule from staff_day_off_schedule
-      const fixedWeekOffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT user_id as userId, weekday
-         FROM staff_day_off_schedule
-         WHERE is_disabled = 0 AND user_id IS NOT NULL`
-      );
-
-      const fixedWeekOffsByUserId: { [uid: number]: string[] } = {};
-      for (const r of fixedWeekOffRows) {
-        const uid = Number(r.userId);
-        const dayStr = String(r.weekday);
-        if (!fixedWeekOffsByUserId[uid]) fixedWeekOffsByUserId[uid] = [];
-        if (!fixedWeekOffsByUserId[uid].includes(dayStr)) {
-          fixedWeekOffsByUserId[uid].push(dayStr);
-        }
-      }
-
-      // 2. Query approved week-off requests from staff_day_off (fallback)
-      const weekOffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT from_user_id as userId, weekday, COUNT(*) as cnt
-         FROM staff_day_off
-         WHERE attribute_option_id = 110 AND request_state = 'Approved' AND from_user_id IS NOT NULL AND from_date >= DATE_SUB(NOW(), INTERVAL 90 DAY)
-         GROUP BY from_user_id, weekday`
-      );
-
-      const weekOffsByUserId: { [uid: number]: { weekday: number; cnt: number }[] } = {};
-      for (const r of weekOffRows) {
-        const uid = Number(r.userId);
-        const day = Number(r.weekday);
-        const cnt = Number(r.cnt);
-        if (!weekOffsByUserId[uid]) weekOffsByUserId[uid] = [];
-        weekOffsByUserId[uid].push({ weekday: day, cnt });
-      }
-
-      // Query specific approved day-off dates from staff_day_off
-      const approvedOffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT from_user_id as userId, 
-                DATE_FORMAT(from_date, '%Y-%m-%d') as fromDate, 
-                DATE_FORMAT(COALESCE(to_date, from_date), '%Y-%m-%d') as toDate
-         FROM staff_day_off
-         WHERE request_state = 'Approved' AND from_user_id IS NOT NULL AND from_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
-      );
-
-      const approvedOffDatesByUserId: { [uid: number]: string[] } = {};
-      for (const r of approvedOffRows) {
-        const uid = Number(r.userId);
-        if (!approvedOffDatesByUserId[uid]) approvedOffDatesByUserId[uid] = [];
-        const start = new Date(r.fromDate);
-        const end = new Date(r.toDate);
-        const cur = new Date(start);
-        while (cur <= end) {
-          const yyyy = cur.getFullYear();
-          const mm = String(cur.getMonth() + 1).padStart(2, '0');
-          const dd = String(cur.getDate()).padStart(2, '0');
-          const dateStr = `${yyyy}-${mm}-${dd}`;
-          if (!approvedOffDatesByUserId[uid].includes(dateStr)) {
-            approvedOffDatesByUserId[uid].push(dateStr);
-          }
-          cur.setDate(cur.getDate() + 1);
-        }
-      }
-
-      const getKTVOffDays = (userId: number) => {
-        if (fixedWeekOffsByUserId[userId] && fixedWeekOffsByUserId[userId].length > 0) {
-          return fixedWeekOffsByUserId[userId];
-        }
-        const weekOffs = weekOffsByUserId[userId] || [];
-        if (weekOffs.length > 0) {
-          const sorted = [...weekOffs].sort((a, b) => b.cnt - a.cnt);
-          return [String(sorted[0].weekday)];
-        }
-
-        const list = schedulesByUserId[userId] || [];
-        const worksAll = list.some((s) => s.type === 'Day' && s.type_value === 'All');
-        if (worksAll) return [];
-        const workingWeekdays = list.filter((s) => s.type === 'Weekday').map((s) => s.type_value);
-        if (workingWeekdays.length === 0) return [];
-        const allWeekdays = ['1', '2', '3', '4', '5', '6', '7'];
-        return allWeekdays.filter((w) => !workingWeekdays.includes(w));
-      };
+      // Query staff off days from unified StaffOffDayService (Single Source of Truth)
+      const staffOffDayBatchMap = await StaffOffDayService.getBatchStaffOffDays(fastify);
 
       // Always fetch all active KTVs so technician metadata (offDays, approvedOffDates) is complete for all dates
       const activeKTVs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
@@ -3142,6 +3051,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (storeId === 2) storeNotes = 'Phan Xích Long';
 
         const uid = Number(ktv.user_id);
+        const offDayInfo = staffOffDayBatchMap.get(uid);
+        const offDays = offDayInfo ? offDayInfo.weeklyOffDays.map(String) : [];
+        const baseApprovedOffDates = offDayInfo ? offDayInfo.approvedOffDates : [];
+
         return {
           id: uid,
           username: `ktv_${ktv.full_name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
@@ -3149,15 +3062,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
           role: 'technician',
           notes: storeNotes,
           avatar: ktv.avatar,
-          offDays: getKTVOffDays(uid),
+          offDays,
           approvedOffDates: Array.from(
             new Set([
-              ...(approvedOffDatesByUserId[uid] || []),
+              ...baseApprovedOffDates,
               ...(ktv.full_name.toLowerCase().includes('cẩm tiên') || ktv.full_name.toLowerCase().includes('cam tien')
                 ? ['2026-07-26', '2026-07-27']
                 : []),
             ])
           ),
+          pendingOffDates: offDayInfo?.pendingOffDates || [],
+          rejectedOffDates: offDayInfo?.rejectedOffDates || [],
         };
       });
 
@@ -8192,7 +8107,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           `);
           const dateOffMap = new Map<
             string,
-            Map<number, { reason: string; type: 'urgent_off' | 'planned_off'; daysAhead: number }>
+            Map<number, { reason: string; type: 'weekly_off' | 'urgent_off' | 'planned_off'; daysAhead: number }>
           >();
           dateOffs.forEach((r) => {
             const dStr = String(r.date_str);
@@ -8202,13 +8117,25 @@ export async function customerRoutes(fastify: FastifyInstance) {
             const daysAhead = Number(r.daysAhead || 0);
             const noteText = String(r.note || '').trim();
 
+            const isWeeklyOffRecord = attrOptId === 110 || /hàng tuần|off tuần/i.test(noteText);
             const isUrgent =
-              attrOptId === 113 || // Bị bệnh / get-sick
-              daysAhead <= 0 || // Đăng ký trong ngày
-              /gấp|đột xuất|bệnh|ốm|khẩn|cấp cứu/i.test(noteText);
+              !isWeeklyOffRecord &&
+              (attrOptId === 113 || // Bị bệnh / get-sick
+                (daysAhead <= 0 && noteText.length > 0) || // Đăng ký đột xuất có ghi chú trong ngày
+                /gấp|đột xuất|bệnh|ốm|khẩn|cấp cứu/i.test(noteText));
 
-            const offType: 'urgent_off' | 'planned_off' = isUrgent ? 'urgent_off' : 'planned_off';
-            const defaultReason = isUrgent ? 'Xin nghỉ phép đột xuất (Gấp)' : 'Xin nghỉ phép (Đã duyệt)';
+            const offType: 'weekly_off' | 'urgent_off' | 'planned_off' = isWeeklyOffRecord
+              ? 'weekly_off'
+              : isUrgent
+                ? 'urgent_off'
+                : 'planned_off';
+
+            const defaultReason = isWeeklyOffRecord
+              ? 'Nghỉ hàng tuần (OFF Tuần)'
+              : isUrgent
+                ? 'Xin nghỉ phép đột xuất (Gấp)'
+                : 'Xin nghỉ phép (Đã duyệt)';
+
             const reason = noteText ? noteText : defaultReason;
 
             dateOffMap.get(dStr)!.set(Number(r.user_id), {
@@ -8369,13 +8296,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
               const isWeeklyOff = userWeeklyOffs ? userWeeklyOffs.has(legacyWeekday) : false;
               if (dayDateOffMap.has(id)) {
                 const offInfo = dayDateOffMap.get(id)!;
+                const finalType =
+                  (isWeeklyOff || offInfo.type === 'weekly_off') && offInfo.type !== 'urgent_off'
+                    ? 'weekly_off'
+                    : offInfo.type;
+                const finalReason =
+                  isWeeklyOff && offInfo.reason.includes('Gấp')
+                    ? `Nghỉ hàng tuần (${weekdayNames[legacyWeekday] || ''})`
+                    : offInfo.reason;
+
                 offStaffList.push({
                   id,
                   name: cvNameMap.get(id) || `CV #${id}`,
                   avatarUrl: cvAvatarMap.get(id) || null,
                   branchName: cvStoreMap.get(id) || 'Đề Thám',
-                  reason: offInfo.reason,
-                  type: offInfo.type,
+                  reason: finalReason,
+                  type: finalType,
                 });
               } else if (isWeeklyOff) {
                 offStaffList.push({
