@@ -482,22 +482,17 @@ export async function predictCvSpeed(
 function getStyleSqlFilter(lashStyle: string): string {
   const map: Record<string, string> = {
     Classic: "(s.service_key LIKE 'classic-%')",
-    Mink: "(s.service_key LIKE 'mink-%' AND s.service_key NOT LIKE 'under-mink-%')",
+    Mink: "((s.service_key LIKE 'mink-%' AND s.service_key NOT LIKE 'under-mink-%') OR s.service_key LIKE 'flawless-%')",
+    Flawless:
+      "((s.service_key LIKE 'mink-%' AND s.service_key NOT LIKE 'under-mink-%') OR s.service_key LIKE 'flawless-%')",
     'Under Mink': "(s.service_key LIKE 'under-mink-%' OR s.service_group = 'LashesUnder')",
-    'Volume 3D':
-      "((s.service_key LIKE 'volume-%' OR s.service_key LIKE 'ultralight-%') AND LOWER(COALESCE(sl.service_name, '')) LIKE '%3d%')",
-    'Volume 4D':
-      "((s.service_key LIKE 'volume-%' OR s.service_key LIKE 'ultralight-%') AND LOWER(COALESCE(sl.service_name, '')) LIKE '%4d%')",
-    'Volume 5D':
-      "((s.service_key LIKE 'volume-%' OR s.service_key LIKE 'ultralight-%') AND LOWER(COALESCE(sl.service_name, '')) LIKE '%5d%')",
-    Ultralight:
-      "(s.service_key LIKE 'ultralight-%' AND LOWER(COALESCE(sl.service_name, '')) NOT LIKE '%3d%' AND LOWER(COALESCE(sl.service_name, '')) NOT LIKE '%4d%' AND LOWER(COALESCE(sl.service_name, '')) NOT LIKE '%5d%')",
+    Volume: "(s.service_key LIKE 'volume-%')",
+    'Volume 3D': "(s.service_key LIKE 'volume-%')",
+    'Volume 4D': "(s.service_key LIKE 'volume-%')",
+    'Volume 5D': "(s.service_key LIKE 'volume-%')",
+    Ultralight: "(s.service_key LIKE 'ultralight-%')",
     Hyperlight: "(s.service_key LIKE 'hyperlight-%')",
-    Flawless: "(s.service_key LIKE 'flawless-%')",
     Ivylight: "(s.service_key LIKE 'ivylight-%')",
-    'Ivylight 3L': "(s.service_key LIKE 'ivylight-%' AND LOWER(COALESCE(sl.service_name, '')) LIKE '%3l%')",
-    'Ivylight 4L': "(s.service_key LIKE 'ivylight-%' AND LOWER(COALESCE(sl.service_name, '')) LIKE '%4l%')",
-    'Ivylight 5L': "(s.service_key LIKE 'ivylight-%' AND LOWER(COALESCE(sl.service_name, '')) LIKE '%5l%')",
   };
   return map[lashStyle] || '(1=1)';
 }

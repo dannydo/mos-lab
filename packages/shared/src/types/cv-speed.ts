@@ -55,6 +55,11 @@ export interface CvSpeedRanking {
   staffName: string;
   avatarUrl?: string | null;
   predictedTime: number;
+  phaseBreakdown?: {
+    cleaning: number;
+    extension: number;
+    prepQc: number;
+  };
   sampleSize: number;
   confidence: ConfidenceLevel;
   speedRating: SpeedRating;

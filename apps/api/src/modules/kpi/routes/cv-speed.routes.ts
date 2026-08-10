@@ -20,18 +20,7 @@ import { predictCvSpeed, detectServiceMode, detectServiceModeBatch } from '../se
 import { runNightlyCvSpeedSeed, getActiveCvStaffList } from '../services/cv-speed-seed.service.js';
 import { parseLashSpecs } from '../../catalog/services/lash-benchmark.service.js';
 
-const STANDARD_STYLES = [
-  'Classic',
-  'Mink',
-  'Volume 3D',
-  'Volume 4D',
-  'Volume 5D',
-  'Ultralight',
-  'Hyperlight',
-  'Flawless',
-  'Ivylight',
-  'Under Mink',
-];
+const STANDARD_STYLES = ['Classic', 'Mink', 'Volume', 'Ultralight', 'Hyperlight', 'Ivylight', 'Under Mink'];
 
 const STANDARD_MODES: LashServiceMode[] = ['normal_clean', 'normal_removal', 'retain'];
 const STANDARD_COUNTS = [30, 60, 70, 80, 90, 100, 120, 140];
@@ -254,6 +243,10 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
           speedRating = 'normal';
         }
 
+        const cleaningMinutes = Math.round(dbProf ? dbProf.cleaningMinutes : predictedTime * 0.15);
+        const prepQcMinutes = Math.round(dbProf ? dbProf.prepQcMinutes : predictedTime * 0.1);
+        const extensionMinutes = Math.max(1, predictedTime - cleaningMinutes - prepQcMinutes);
+
         const trend = trendMap.get(cv.id) || 'stable';
 
         rankingEntries.push({
@@ -261,6 +254,11 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
           staffName: cv.name,
           avatarUrl: cv.avatarUrl,
           predictedTime,
+          phaseBreakdown: {
+            cleaning: cleaningMinutes,
+            extension: extensionMinutes,
+            prepQc: prepQcMinutes,
+          },
           sampleSize,
           confidence,
           speedRating,

@@ -11,12 +11,9 @@ import { parseLashSpecs } from '../../catalog/services/lash-benchmark.service.js
 export const STANDARD_LASH_STYLES: string[] = [
   'Classic',
   'Mink',
-  'Volume 3D',
-  'Volume 4D',
-  'Volume 5D',
+  'Volume',
   'Ultralight',
   'Hyperlight',
-  'Flawless',
   'Ivylight',
   'Under Mink',
 ];

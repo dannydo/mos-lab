@@ -13,18 +13,7 @@ import {
   removeVietnameseTones,
 } from '@mos-lab/shared';
 
-const LASH_STYLES = [
-  'Classic',
-  'Mink',
-  'Volume 3D',
-  'Volume 4D',
-  'Volume 5D',
-  'Ultralight',
-  'Hyperlight',
-  'Flawless',
-  'Ivylight',
-  'Under Mink',
-];
+const LASH_STYLES = ['Classic', 'Mink', 'Volume', 'Ultralight', 'Hyperlight', 'Ivylight', 'Under Mink'];
 
 const LASH_COUNTS = [30, 60, 70, 80, 90, 100, 120, 140];
 

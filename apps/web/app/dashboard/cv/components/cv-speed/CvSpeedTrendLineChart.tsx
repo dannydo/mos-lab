@@ -26,10 +26,10 @@ export function CvSpeedTrendLineChart({
 
   // SVG dimensions
   const width = 380;
-  const height = 130;
+  const height = 135;
   const paddingLeft = 32;
-  const paddingRight = 20;
-  const paddingTop = 20;
+  const paddingRight = 24;
+  const paddingTop = 28;
   const paddingBottom = 28;
 
   const chartWidth = width - paddingLeft - paddingRight;
@@ -81,9 +81,16 @@ export function CvSpeedTrendLineChart({
         } Z`
       : '';
 
+  // Hovered Point Calculations
+  const hoveredPoint = hoveredIdx !== null && points[hoveredIdx] ? points[hoveredIdx] : null;
+  const isNearTop = hoveredPoint ? hoveredPoint.y < 42 : false;
+  const rawXPercent = hoveredPoint ? (hoveredPoint.x / width) * 100 : 50;
+  // Clamp left percent to prevent tooltip from clipping on left/right edges
+  const leftPercent = Math.max(18, Math.min(82, rawXPercent));
+
   return (
     <div
-      className="relative w-full overflow-hidden select-none"
+      className="relative w-full overflow-visible select-none pt-1"
       role="img"
       aria-label="Biểu đồ đường xu hướng tốc độ nối mi 6 tháng gần đây"
     >
@@ -147,10 +154,10 @@ export function CvSpeedTrendLineChart({
               {isHovered && (
                 <line
                   x1={pt.x}
-                  y1={paddingTop}
+                  y1={paddingTop - 10}
                   x2={pt.x}
                   y2={paddingTop + chartHeight}
-                  stroke={isDark ? '#475569' : '#cbd5e1'}
+                  stroke={isDark ? '#64748b' : '#cbd5e1'}
                   strokeWidth="1"
                   strokeDasharray="2 2"
                 />
@@ -172,7 +179,7 @@ export function CvSpeedTrendLineChart({
               {/* Month Label below */}
               <text
                 x={pt.x}
-                y={height - 8}
+                y={height - 6}
                 textAnchor="middle"
                 fontSize="10"
                 fontWeight="500"
@@ -186,34 +193,62 @@ export function CvSpeedTrendLineChart({
         })}
       </svg>
 
-      {/* HOVER TOOLTIP POPUP */}
-      {hoveredIdx !== null && points[hoveredIdx] && (
+      {/* HIGH CONTRAST HOVER TOOLTIP POPUP */}
+      {hoveredPoint && (
         <div
-          className="absolute z-30 px-2.5 py-1.5 rounded-lg shadow-xl text-xs font-semibold pointer-events-none transform -translate-x-1/2 -translate-y-full border backdrop-blur-md transition-all duration-150"
+          className="absolute z-50 px-3 py-2 rounded-xl shadow-2xl text-xs font-semibold pointer-events-none transition-all duration-150 border whitespace-nowrap min-w-[150px]"
           style={{
-            left: `${(points[hoveredIdx].x / width) * 100}%`,
-            top: `${(points[hoveredIdx].y / height) * 100 - 8}%`,
-            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-            borderColor: isDark ? 'rgba(51, 65, 85, 0.8)' : 'rgba(203, 213, 225, 0.8)',
+            left: `${leftPercent}%`,
+            top: isNearTop ? `${(hoveredPoint.y / height) * 100 + 12}%` : `${(hoveredPoint.y / height) * 100 - 8}%`,
+            transform: isNearTop ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+            backgroundColor: isDark ? '#1e293b' : '#ffffff',
+            borderColor: isDark ? '#475569' : '#cbd5e1',
+            boxShadow: isDark ? '0 12px 28px -4px rgba(0, 0, 0, 0.85)' : '0 12px 28px -4px rgba(0, 0, 0, 0.15)',
             color: isDark ? '#f8fafc' : '#0f172a',
           }}
         >
-          <div className="flex items-center justify-between gap-3 text-[11px]">
-            <span className="text-slate-400 font-mono tabular-nums">{points[hoveredIdx].data.month}</span>
+          <div className="flex items-center justify-between gap-3 pb-1 border-b border-slate-200 dark:border-slate-700/80">
             <span
-              className={`font-bold tabular-nums ${
-                points[hoveredIdx].data.avgTotalMinutes <= benchmarkMinutes ? 'text-emerald-500' : 'text-rose-500'
+              className={isDark ? 'text-slate-200 font-bold tabular-nums' : 'text-slate-700 font-bold tabular-nums'}
+            >
+              Tháng {hoveredPoint.data.month}
+            </span>
+            <span
+              className={`font-extrabold text-xs tabular-nums ${
+                hoveredPoint.data.avgTotalMinutes <= benchmarkMinutes
+                  ? isDark
+                    ? 'text-emerald-400'
+                    : 'text-emerald-600'
+                  : isDark
+                    ? 'text-rose-400'
+                    : 'text-rose-600'
               }`}
             >
-              {points[hoveredIdx].data.avgTotalMinutes}p
+              {hoveredPoint.data.avgTotalMinutes}p
             </span>
           </div>
-          <div className="text-[10px] text-slate-400 font-normal mt-0.5">
-            Benchmark: {benchmarkMinutes}p (
-            {points[hoveredIdx].data.avgTotalMinutes <= benchmarkMinutes
-              ? `Nhanh hơn ${benchmarkMinutes - points[hoveredIdx].data.avgTotalMinutes}p`
-              : `Chậm hơn ${points[hoveredIdx].data.avgTotalMinutes - benchmarkMinutes}p`}
-            )
+
+          <div
+            className={`text-[11px] font-medium mt-1.5 flex items-center justify-between gap-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
+          >
+            <span>BM: {benchmarkMinutes}p</span>
+            <span
+              className={`font-bold tabular-nums ${
+                hoveredPoint.data.avgTotalMinutes <= benchmarkMinutes
+                  ? isDark
+                    ? 'text-emerald-400'
+                    : 'text-emerald-600'
+                  : isDark
+                    ? 'text-rose-400'
+                    : 'text-rose-600'
+              }`}
+            >
+              (
+              {hoveredPoint.data.avgTotalMinutes <= benchmarkMinutes
+                ? `Nhanh hơn ${benchmarkMinutes - hoveredPoint.data.avgTotalMinutes}p`
+                : `Chậm hơn ${hoveredPoint.data.avgTotalMinutes - benchmarkMinutes}p`}
+              )
+            </span>
           </div>
         </div>
       )}

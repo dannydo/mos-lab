@@ -21,28 +21,25 @@ export function parseLashSpecs(serviceKey: string, serviceName: string): ParsedL
   // Determine lash style from service_key prefix
   let lashStyle = 'Classic';
   if (key.startsWith('ivylight-') || combined.includes('ivylight')) {
-    if (combined.includes('3l')) lashStyle = 'Ivylight 3L';
-    else if (combined.includes('4l')) lashStyle = 'Ivylight 4L';
-    else if (combined.includes('5l')) lashStyle = 'Ivylight 5L';
-    else lashStyle = 'Ivylight';
-  } else if (key.startsWith('flawless-') || combined.includes('flawless')) {
-    lashStyle = 'Flawless';
+    lashStyle = 'Ivylight';
+  } else if (
+    key.startsWith('flawless-') ||
+    combined.includes('flawless') ||
+    key.startsWith('mink-') ||
+    combined.includes('mink')
+  ) {
+    // Mink and Flawless are pooled together as single lash extension
+    lashStyle = 'Mink';
   } else if (key.startsWith('hyperlight-') || combined.includes('hyperlight')) {
     lashStyle = 'Hyperlight';
   } else if (key.startsWith('ultralight-') || combined.includes('ultralight') || combined.includes('ultra light')) {
-    // Detect fan density for ultralight
-    if (combined.includes('5d')) lashStyle = 'Volume 5D';
-    else if (combined.includes('4d')) lashStyle = 'Volume 4D';
-    else if (combined.includes('3d')) lashStyle = 'Volume 3D';
-    else lashStyle = 'Ultralight';
+    // Ultralight (3-5D, 0.05mm, higher difficulty)
+    lashStyle = 'Ultralight';
   } else if (key.startsWith('volume-') || combined.includes('volume')) {
-    if (combined.includes('5d')) lashStyle = 'Volume 5D';
-    else if (combined.includes('4d')) lashStyle = 'Volume 4D';
-    else lashStyle = 'Volume 3D';
+    // Volume (2-3D, 0.07mm)
+    lashStyle = 'Volume';
   } else if (key.startsWith('under-mink-') || combined.includes('under mink') || combined.includes('lashes under')) {
     lashStyle = 'Under Mink';
-  } else if (key.startsWith('mink-') || combined.includes('mink')) {
-    lashStyle = 'Mink';
   } else if (key.startsWith('classic-') || combined.includes('classic')) {
     lashStyle = 'Classic';
   }
