@@ -2807,24 +2807,24 @@ export default function QaShopPage() {
                                     }`}
                                   >
                                     <div className="flex items-center justify-between gap-2.5">
-                                      {/* Left Side: Title + Severity Dot + Requirement */}
+                                      {/* Left Side: Title on Line 1, Severity Dot + Metadata on Line 2 */}
                                       <div className="flex-1 min-w-0 space-y-0.5">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="font-semibold text-xs text-slate-100 truncate max-w-[200px]">
-                                            {itm.title}
-                                          </span>
+                                        <div className="font-semibold text-xs text-slate-100 leading-snug break-words">
+                                          {itm.title}
+                                        </div>
+                                        <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-slate-400 pt-0.5">
                                           {renderSeverityDot(itm.severity)}
                                           {itm.unitQty && itm.unitQty > 1 && (
-                                            <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-800/60 tabular-nums">
+                                            <span className="font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-800/60 tabular-nums">
                                               SL: {itm.unitQty}
                                             </span>
                                           )}
+                                          {itm.standardRequirement && (
+                                            <span className="line-clamp-1 text-slate-400">
+                                              {itm.standardRequirement}
+                                            </span>
+                                          )}
                                         </div>
-                                        {itm.standardRequirement && (
-                                          <div className="text-[10px] text-slate-400 line-clamp-1">
-                                            {itm.standardRequirement}
-                                          </div>
-                                        )}
                                       </div>
 
                                       {/* Right Side: Compact 32px Icon-only Button Group */}
