@@ -1803,7 +1803,17 @@ export default function QaShopPage() {
 
                                                   {/* Photo Proof Action Bar (Camera & Upload & Preview) */}
                                                   <div className="flex flex-wrap items-center gap-2">
-                                                    {/* Native Hidden File Input for Camera & Gallery */}
+                                                    {/* Native Hidden Camera Input */}
+                                                    <input
+                                                      type="file"
+                                                      accept="image/*"
+                                                      capture="environment"
+                                                      style={{ display: 'none' }}
+                                                      id={`camera-input-${itm.id}`}
+                                                      onChange={(e) => handleFileInputChange(e, itm.id)}
+                                                    />
+
+                                                    {/* Native Hidden File Gallery Input */}
                                                     <input
                                                       type="file"
                                                       accept="image/*"
@@ -1813,9 +1823,9 @@ export default function QaShopPage() {
                                                     />
 
                                                     <label
-                                                      htmlFor={`file-input-${itm.id}`}
+                                                      htmlFor={`camera-input-${itm.id}`}
                                                       className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900 text-xs font-semibold cursor-pointer active:scale-95 transition-transform"
-                                                      title="Chụp ảnh trực tiếp hoặc chọn ảnh từ thiết bị"
+                                                      title="Mở trực tiếp Máy ảnh thiết bị để chụp hình"
                                                     >
                                                       <CameraOutlined />
                                                       <span>Chụp Ảnh</span>
@@ -1824,52 +1834,51 @@ export default function QaShopPage() {
                                                     <label
                                                       htmlFor={`file-input-${itm.id}`}
                                                       className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 text-slate-200 border border-slate-700 hover:bg-slate-800 text-xs font-medium cursor-pointer active:scale-95 transition-transform"
-                                                      title="Tải ảnh bằng chứng từ thư viện tệp"
+                                                      title="Mở Thư viện ảnh chọn hình từ máy"
                                                     >
                                                       <CloudUploadOutlined />
-                                                      <span>Tải Ảnh</span>
+                                                      <span>Tải Ảnh Từ Máy</span>
                                                     </label>
-
-                                                    {/* Image Thumbnail Preview & Delete Button */}
-                                                    {currentSt.photoUrl && (
-                                                      <div className="flex items-center gap-1.5 p-1 bg-rose-500/10 rounded-md border border-rose-500/20">
-                                                        <img
-                                                          src={currentSt.photoUrl}
-                                                          alt="Bằng chứng vi phạm"
-                                                          className="w-7 h-7 rounded object-cover border border-rose-400 cursor-pointer hover:scale-105 transition-transform"
-                                                          onClick={() => {
-                                                            Modal.info({
-                                                              title: `Bằng chứng vi phạm: ${subject}`,
-                                                              width: 600,
-                                                              content: (
-                                                                <div className="pt-2 text-center">
-                                                                  <img
-                                                                    src={currentSt.photoUrl}
-                                                                    alt="Preview"
-                                                                    className="max-h-[450px] mx-auto rounded border"
-                                                                  />
-                                                                </div>
-                                                              ),
-                                                            });
-                                                          }}
-                                                        />
-                                                        <Tooltip title="Xóa ảnh bằng chứng này">
-                                                          <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                              setItemStatuses((prev) => ({
-                                                                ...prev,
-                                                                [itm.id]: { ...prev[itm.id], photoUrl: '' },
-                                                              }))
-                                                            }
-                                                            className="text-rose-600 dark:text-rose-400 hover:text-rose-800 p-0.5"
-                                                          >
-                                                            <DeleteOutlined className="text-xs" />
-                                                          </button>
-                                                        </Tooltip>
-                                                      </div>
-                                                    )}
                                                   </div>
+                                                  {/* Image Thumbnail Preview & Delete Button */}
+                                                  {currentSt.photoUrl && (
+                                                    <div className="flex items-center gap-1.5 p-1 bg-rose-500/10 rounded-md border border-rose-500/20">
+                                                      <img
+                                                        src={currentSt.photoUrl}
+                                                        alt="Bằng chứng vi phạm"
+                                                        className="w-7 h-7 rounded object-cover border border-rose-400 cursor-pointer hover:scale-105 transition-transform"
+                                                        onClick={() => {
+                                                          Modal.info({
+                                                            title: `Bằng chứng vi phạm: ${subject}`,
+                                                            width: 600,
+                                                            content: (
+                                                              <div className="pt-2 text-center">
+                                                                <img
+                                                                  src={currentSt.photoUrl}
+                                                                  alt="Preview"
+                                                                  className="max-h-[450px] mx-auto rounded border"
+                                                                />
+                                                              </div>
+                                                            ),
+                                                          });
+                                                        }}
+                                                      />
+                                                      <Tooltip title="Xóa ảnh bằng chứng này">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() =>
+                                                            setItemStatuses((prev) => ({
+                                                              ...prev,
+                                                              [itm.id]: { ...prev[itm.id], photoUrl: '' },
+                                                            }))
+                                                          }
+                                                          className="text-rose-600 dark:text-rose-400 hover:text-rose-800 p-0.5"
+                                                        >
+                                                          <DeleteOutlined className="text-xs" />
+                                                        </button>
+                                                      </Tooltip>
+                                                    </div>
+                                                  )}
                                                 </div>
 
                                                 {/* Violation Note Input */}
@@ -2915,11 +2924,29 @@ export default function QaShopPage() {
                                           className="text-xs bg-slate-950 text-white border-rose-900/60 rounded-md focus:border-rose-500"
                                         />
 
-                                        {/* Native Hidden File Input for iOS / Android / Desktop Camera & Gallery */}
+                                        {/* Native Hidden Camera Input (Opens Camera Directly) */}
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          capture="environment"
+                                          id={`mobile-camera-input-${itm.id}`}
+                                          style={{ display: 'none' }}
+                                          onChange={(e) => handleFileInputChange(e, itm.id)}
+                                        />
+
+                                        {/* Native Hidden File Gallery Input (Opens Photo Library Directly) */}
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          id={`mobile-file-input-${itm.id}`}
+                                          style={{ display: 'none' }}
+                                          onChange={(e) => handleFileInputChange(e, itm.id)}
+                                        />
+
                                         <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
                                           <div className="flex items-center gap-2 w-full">
                                             <label
-                                              htmlFor={`mobile-file-input-${itm.id}`}
+                                              htmlFor={`mobile-camera-input-${itm.id}`}
                                               className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900 text-xs font-medium cursor-pointer active:scale-95 transition-transform"
                                             >
                                               <CameraOutlined />
@@ -2935,13 +2962,6 @@ export default function QaShopPage() {
                                             </label>
                                           </div>
                                         </div>
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          id={`mobile-file-input-${itm.id}`}
-                                          style={{ display: 'none' }}
-                                          onChange={(e) => handleFileInputChange(e, itm.id)}
-                                        />
 
                                         {/* Thumbnail Image Preview */}
                                         {currentSt.photoUrl && (
