@@ -2646,243 +2646,759 @@ export default function QaShopPage() {
             </Col>
           </Row>
         </Form>
-        {/* 📱 Full-screen Dedicated Mobile Inspection Focus Mode Overlay */}
-        {isMobileFocusMode && (
-          <div className="fixed inset-0 z-[9999] bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-sans">
-            {/* 1. Mobile Sticky Header */}
-            <div className="px-3 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
-              <div className="flex items-center gap-2">
-                <Select
-                  size="small"
-                  value={selectedBranch}
-                  onChange={setSelectedBranch}
-                  style={{ width: 140 }}
-                  options={STORE_BRANCHES.map((b) => ({ value: b.code, label: b.name }))}
-                />
-                <Select
-                  size="small"
-                  value={selectedShift}
-                  onChange={(v) => setSelectedShift(v as any)}
-                  style={{ width: 95 }}
-                  options={[
-                    { value: 'Sáng', label: 'Ca Sáng' },
-                    { value: 'Chiều', label: 'Ca Chiều' },
-                    { value: 'Tối', label: 'Ca Tối' },
-                    { value: 'Toàn ngày', label: 'Cả Ngày' },
-                  ]}
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800 tabular-nums">
-                  {inspectionStats.passRate}%
-                </span>
-                <Button
-                  size="small"
-                  icon={<DesktopOutlined />}
-                  onClick={() => setIsMobileFocusMode(false)}
-                  className="text-xs font-semibold bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700"
-                >
-                  Về Desktop
-                </Button>
-              </div>
-            </div>
-
-            {/* 2. Mobile Main Scrollable Inspection Area */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-4">
-              {/* Informative Sub-header Banner */}
-              <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-800/60 flex items-center justify-between text-xs">
-                <div>
-                  <span className="font-bold text-purple-300 block">📱 Chế Độ Kiểm Tra Mobile Tập Trung</span>
-                  <span className="text-[11px] text-purple-400">
-                    {activeTemplate?.branchName || selectedBranch} · {inspectionStats.passed + inspectionStats.failed}/
-                    {inspectionStats.total} Tiêu chí
-                  </span>
-                </div>
-                <Tag color="purple" className="font-bold tabular-nums text-xs">
-                  {inspectionStats.passRate}% Đạt
-                </Tag>
-              </div>
-
-              {/* Accordions for Lobby & Lashroom Core Areas */}
-              <Collapse
-                defaultActiveKey={['area-lobby', 'area-lashroom']}
-                ghost
-                className="space-y-3"
-                items={groupedAreas.map((area: SafeAny) => ({
-                  key: area.id,
-                  label: (
-                    <div className="flex items-center justify-between py-1">
-                      <span className="font-bold text-sm text-slate-100">{area.title}</span>
-                      <span className="text-xs text-emerald-400 font-semibold">{area.totalItems} tiêu chí</span>
-                    </div>
-                  ),
-                  children: (
-                    <div className="space-y-3 pt-1">
-                      {area.subSections.map((sec: SafeAny, secIdx: number) => {
-                        const secItems = sec.items || [];
-                        return (
-                          <div key={sec.id || `m-sec-${secIdx}`} className="space-y-2">
-                            <div className="text-xs font-bold text-purple-400 uppercase tracking-wide px-1">
-                              {sec.title} ({secItems.length})
-                            </div>
-                            {secItems.map((itm: SafeAny) => {
-                              const currentSt = itemStatuses[itm.id] || { result: undefined, note: '', photoUrl: '' };
-                              const isFail = currentSt.result === 'FAIL';
-                              const isPass = currentSt.result === 'PASS';
-                              const isNa = currentSt.result === 'NA';
-
-                              return (
-                                <div
-                                  key={`m-itm-${itm.id}`}
-                                  className={`p-3 rounded-xl border space-y-2.5 transition-all ${
-                                    isFail
-                                      ? 'bg-rose-950/40 border-rose-800/80 shadow-md'
-                                      : isPass
-                                        ? 'bg-slate-900/90 border-emerald-900/50'
-                                        : 'bg-slate-900/60 border-slate-800'
-                                  }`}
-                                >
-                                  {/* Line 1: Header */}
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="space-y-0.5">
-                                      <div className="font-semibold text-xs text-slate-100">{itm.title}</div>
-                                      {itm.area && (
-                                        <span className="text-[10px] text-purple-400 font-bold uppercase">
-                                          [{itm.area}]
-                                        </span>
-                                      )}
-                                    </div>
-                                    {renderSeverityDot(itm.severity)}
-                                  </div>
-
-                                  {/* Line 2: Requirement */}
-                                  <div className="text-[11px] text-slate-400 line-clamp-2">
-                                    {itm.standardRequirement || 'Kiểm tra quy chuẩn chất lượng.'}
-                                  </div>
-
-                                  {/* Line 3: Touch-friendly large action buttons */}
-                                  <div className="grid grid-cols-3 gap-2 pt-1">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setItemStatuses((prev) => ({
-                                          ...prev,
-                                          [itm.id]: { ...prev[itm.id], result: 'PASS' },
-                                        }))
-                                      }
-                                      className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
-                                        isPass
-                                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
-                                          : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-750'
-                                      }`}
-                                    >
-                                      <CheckOutlined className="text-sm" /> ĐẠT
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setItemStatuses((prev) => ({
-                                          ...prev,
-                                          [itm.id]: { ...prev[itm.id], result: 'FAIL' },
-                                        }))
-                                      }
-                                      className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
-                                        isFail
-                                          ? 'bg-rose-600 text-white border-rose-500 shadow-md'
-                                          : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-750'
-                                      }`}
-                                    >
-                                      <CloseOutlined className="text-sm" /> LỖI
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setItemStatuses((prev) => ({
-                                          ...prev,
-                                          [itm.id]: { ...prev[itm.id], result: 'NA' },
-                                        }))
-                                      }
-                                      className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
-                                        isNa
-                                          ? 'bg-slate-700 text-slate-100 border-slate-600 shadow-md'
-                                          : 'bg-slate-850 text-slate-400 border-slate-750 hover:bg-slate-750'
-                                      }`}
-                                    >
-                                      <MinusOutlined className="text-sm" /> N/A
-                                    </button>
-                                  </div>
-
-                                  {/* Line 4: Failure details if FAIL */}
-                                  {isFail && (
-                                    <div className="space-y-2 pt-2 border-t border-rose-900/40">
-                                      <Input.TextArea
-                                        placeholder="Ghi chú lỗi chi tiết..."
-                                        value={currentSt.note || ''}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          setItemStatuses((prev) => ({
-                                            ...prev,
-                                            [itm.id]: { ...prev[itm.id], note: val },
-                                          }));
-                                        }}
-                                        rows={2}
-                                        className="text-xs bg-slate-950 text-white border-rose-900/60"
-                                      />
-
-                                      <div className="flex items-center justify-between gap-2">
-                                        <Button
-                                          size="small"
-                                          icon={<CameraOutlined />}
-                                          onClick={() => openCameraForItem(itm.id)}
-                                          className="bg-rose-950 text-rose-300 border-rose-800 text-xs font-medium"
-                                        >
-                                          Chụp Ảnh
-                                        </Button>
-                                        {currentSt.photoUrl && (
-                                          <span className="text-[10px] text-emerald-400 font-bold">✓ Đã chụp ảnh</span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ),
-                }))}
+      </Modal>
+      {/* 📱 Full-screen Dedicated Mobile Inspection Focus Mode Overlay (100% Screen Tab 1) */}
+      {isMobileFocusMode && (
+        <div className="fixed inset-0 z-[9999] bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-sans">
+          {/* 1. Mobile Sticky Top Header */}
+          <div className="px-3 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0 shadow-md">
+            <div className="flex items-center gap-2">
+              <Select
+                size="small"
+                value={selectedBranch}
+                onChange={setSelectedBranch}
+                style={{ width: 145 }}
+                options={STORE_BRANCHES.map((b) => ({ value: b.code, label: b.name }))}
+              />
+              <Select
+                size="small"
+                value={selectedShift}
+                onChange={(v) => setSelectedShift(v as any)}
+                style={{ width: 95 }}
+                options={[
+                  { value: 'Sáng', label: 'Ca Sáng' },
+                  { value: 'Chiều', label: 'Ca Chiều' },
+                  { value: 'Tối', label: 'Ca Tối' },
+                  { value: 'Toàn ngày', label: 'Cả Ngày' },
+                ]}
               />
             </div>
 
-            {/* 3. Mobile Sticky Bottom Action Bar */}
-            <div className="p-3 bg-slate-900 border-t border-slate-800 flex items-center gap-2 shrink-0">
-              <Button
-                type="primary"
-                size="large"
-                icon={<SaveOutlined />}
-                onClick={handleSaveChecklistAudit}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-500 font-bold text-sm h-12 rounded-xl"
+            <div className="flex items-center gap-2">
+              <span
+                className="text-[11px] font-bold px-2 py-0.5 rounded border tabular-nums"
+                style={{
+                  color:
+                    inspectionStats.passRate >= 90 ? '#34d399' : inspectionStats.passRate >= 80 ? '#fbbf24' : '#f87171',
+                  borderColor:
+                    inspectionStats.passRate >= 90
+                      ? 'rgba(52,211,153,0.3)'
+                      : inspectionStats.passRate >= 80
+                        ? 'rgba(251,191,36,0.3)'
+                        : 'rgba(248,113,113,0.3)',
+                  backgroundColor: 'rgba(15,23,42,0.8)',
+                }}
               >
-                {`Lưu Biên Bản (${inspectionStats.passRate}%)`}
-              </Button>
-
+                {inspectionStats.passRate.toFixed(1)}%
+              </span>
               <Button
-                size="large"
+                size="small"
                 icon={<DesktopOutlined />}
                 onClick={() => setIsMobileFocusMode(false)}
-                className="bg-slate-800 text-slate-200 border-slate-700 font-semibold text-xs h-12 rounded-xl"
+                className="text-xs font-semibold bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700"
               >
-                Desktop
+                Về Desktop
               </Button>
             </div>
           </div>
-        )}
+
+          {/* 2. Mobile Main Scrollable Content Area (Overlay 100% Screen Tab 1) */}
+          <div className="flex-1 overflow-y-auto p-3.5 space-y-4">
+            {/* Informative Sub-header Banner */}
+            <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-800/60 flex items-center justify-between text-xs">
+              <div>
+                <span className="font-bold text-purple-300 block">📱 Bảng Kiểm Tra Từng Phần (Mobile 100%)</span>
+                <span className="text-[11px] text-purple-400">
+                  {activeTemplate?.branchName || selectedBranch} · {inspectionStats.passed + inspectionStats.failed}/
+                  {inspectionStats.total} Tiêu chí đã chọn
+                </span>
+              </div>
+              <div className="flex items-center gap-1 tabular-nums font-bold text-xs">
+                <span className="text-emerald-400">{inspectionStats.passed} Đạt</span> ·{' '}
+                <span className="text-rose-400">{inspectionStats.failed} Lỗi</span>
+              </div>
+            </div>
+
+            {/* Accordion List for Core Store Areas & 32 Sub-sections */}
+            {groupedAreas && groupedAreas.length > 0 ? (
+              <Collapse
+                defaultActiveKey={groupedAreas.map((a: SafeAny) => a.id)}
+                ghost
+                className="space-y-3"
+                items={groupedAreas.map((area: SafeAny) => {
+                  let areaPassed = 0;
+                  let areaFailed = 0;
+
+                  area.subSections.forEach((sec: SafeAny) => {
+                    (sec.items || []).forEach((i: SafeAny) => {
+                      const res = itemStatuses[i.id]?.result;
+                      if (res === 'PASS') areaPassed++;
+                      else if (res === 'FAIL') areaFailed++;
+                    });
+                  });
+
+                  return {
+                    key: area.id,
+                    label: (
+                      <div className="flex items-center justify-between py-1 w-full pr-2">
+                        <span className="font-bold text-sm text-slate-100">{area.title}</span>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="text-emerald-400 font-semibold">{areaPassed} Đạt</span>
+                          {areaFailed > 0 && (
+                            <span className="text-rose-400 font-bold bg-rose-950/80 px-2 py-0.5 rounded border border-rose-800">
+                              {areaFailed} Lỗi
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ),
+                    children: (
+                      <div className="space-y-4 pt-1">
+                        {area.subSections.map((sec: SafeAny, secIdx: number) => {
+                          const secItems = sec.items || [];
+                          return (
+                            <div key={sec.id || `m-sec-${secIdx}`} className="space-y-2.5">
+                              <div className="text-xs font-bold text-purple-400 uppercase tracking-wide px-1 flex items-center justify-between">
+                                <span>{sec.title}</span>
+                                <span className="text-slate-500 font-normal">({secItems.length} tiêu chí)</span>
+                              </div>
+
+                              {secItems.map((itm: SafeAny) => {
+                                const currentSt = itemStatuses[itm.id] || { result: undefined, note: '', photoUrl: '' };
+                                const isFail = currentSt.result === 'FAIL';
+                                const isPass = currentSt.result === 'PASS';
+                                const isNa = currentSt.result === 'NA';
+
+                                return (
+                                  <div
+                                    key={`m-itm-${itm.id}`}
+                                    className={`p-3.5 rounded-xl border space-y-2.5 transition-all ${
+                                      isFail
+                                        ? 'bg-rose-950/40 border-rose-800/90 shadow-md'
+                                        : isPass
+                                          ? 'bg-slate-900/90 border-emerald-900/60'
+                                          : 'bg-slate-900/60 border-slate-800'
+                                    }`}
+                                  >
+                                    {/* Line 1: Header */}
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="space-y-0.5">
+                                        <div className="font-bold text-xs text-slate-100">{itm.title}</div>
+                                        {itm.area && (
+                                          <span className="text-[10px] text-purple-400 font-bold uppercase block">
+                                            [{itm.area}]
+                                          </span>
+                                        )}
+                                      </div>
+                                      {renderSeverityDot(itm.severity)}
+                                    </div>
+
+                                    {/* Line 2: Requirement */}
+                                    {itm.standardRequirement && (
+                                      <div className="text-[11px] text-slate-400 line-clamp-2">
+                                        {itm.standardRequirement}
+                                      </div>
+                                    )}
+
+                                    {/* Line 3: Touch-friendly large action buttons */}
+                                    <div className="grid grid-cols-3 gap-2 pt-1">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setItemStatuses((prev) => ({
+                                            ...prev,
+                                            [itm.id]: { ...prev[itm.id], result: 'PASS' },
+                                          }))
+                                        }
+                                        className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
+                                          isPass
+                                            ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-750'
+                                        }`}
+                                      >
+                                        <CheckOutlined className="text-sm" /> ĐẠT
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setItemStatuses((prev) => ({
+                                            ...prev,
+                                            [itm.id]: { ...prev[itm.id], result: 'FAIL' },
+                                          }))
+                                        }
+                                        className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
+                                          isFail
+                                            ? 'bg-rose-600 text-white border-rose-500 shadow-md'
+                                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-750'
+                                        }`}
+                                      >
+                                        <CloseOutlined className="text-sm" /> LỖI
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setItemStatuses((prev) => ({
+                                            ...prev,
+                                            [itm.id]: { ...prev[itm.id], result: 'NA' },
+                                          }))
+                                        }
+                                        className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
+                                          isNa
+                                            ? 'bg-slate-700 text-slate-100 border-slate-600 shadow-md'
+                                            : 'bg-slate-800 text-slate-400 border-slate-750 hover:bg-slate-750'
+                                        }`}
+                                      >
+                                        <MinusOutlined className="text-sm" /> N/A
+                                      </button>
+                                    </div>
+
+                                    {/* Line 4: Failure details if FAIL */}
+                                    {isFail && (
+                                      <div className="space-y-2 pt-2 border-t border-rose-900/40">
+                                        <Input.TextArea
+                                          placeholder="Ghi chú lỗi chi tiết..."
+                                          value={currentSt.note || ''}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setItemStatuses((prev) => ({
+                                              ...prev,
+                                              [itm.id]: { ...prev[itm.id], note: val },
+                                            }));
+                                          }}
+                                          rows={2}
+                                          className="text-xs bg-slate-950 text-white border-rose-900/60"
+                                        />
+
+                                        <div className="flex items-center justify-between gap-2">
+                                          <Button
+                                            size="small"
+                                            icon={<CameraOutlined />}
+                                            onClick={() => openCameraForItem(itm.id)}
+                                            className="bg-rose-950 text-rose-300 border-rose-800 text-xs font-medium"
+                                          >
+                                            Chụp Ảnh
+                                          </Button>
+                                          {currentSt.photoUrl && (
+                                            <span className="text-[10px] text-emerald-400 font-bold">
+                                              ✓ Đã chụp ảnh
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ),
+                  };
+                })}
+              />
+            ) : (
+              <Empty description="Chưa có dữ liệu tiêu chuẩn kiểm tra cho chi nhánh này." />
+            )}
+          </div>
+
+          {/* 3. Mobile Sticky Bottom Action Bar */}
+          <div className="p-3 bg-slate-900 border-t border-slate-800 flex items-center gap-2 shrink-0 shadow-lg">
+            <Button
+              type="primary"
+              size="large"
+              icon={<SaveOutlined />}
+              onClick={handleSaveChecklistAudit}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-500 font-bold text-sm h-12 rounded-xl"
+            >
+              {`Lưu Biên Bản (${inspectionStats.passRate.toFixed(1)}%)`}
+            </Button>
+
+            <Button
+              size="large"
+              icon={<DesktopOutlined />}
+              onClick={() => setIsMobileFocusMode(false)}
+              className="bg-slate-800 text-slate-200 border-slate-700 font-semibold text-xs h-12 rounded-xl"
+            >
+              Desktop
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 1: Manage Checklist Table (Bảng Quản Lý Tất Cả Tiêu Chí) */}
+      <Modal
+        title={
+          <div className="flex items-center justify-between pr-6">
+            <span className="flex items-center gap-2 text-base font-bold text-slate-800 dark:text-slate-200">
+              <SettingOutlined className="text-blue-500" /> Bảng Quản Lý Tiêu Chí Kiểm Tra QA ({selectedBranch})
+            </span>
+            <Button
+              type="primary"
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={() => handleOpenItemModal()}
+              className="bg-emerald-600 hover:bg-emerald-500 font-medium text-xs"
+            >
+              Thêm Tiêu Chí Mới
+            </Button>
+          </div>
+        }
+        open={isManageModalOpen}
+        onCancel={() => setIsManageModalOpen(false)}
+        footer={null}
+        width={900}
+        destroyOnClose
+        getContainer={() => document.body}
+      >
+        <div className="space-y-4 py-2">
+          {/* Search bar inside modal */}
+          <div className="flex items-center justify-between gap-3">
+            <Input
+              placeholder="Tìm kiếm tiêu chí theo tên, mô tả, phân vùng..."
+              prefix={<FilterOutlined className="text-slate-400 text-xs" />}
+              value={manageSearchText}
+              onChange={(e) => setManageSearchText(e.target.value)}
+              allowClear
+              size="small"
+              className="max-w-md text-xs"
+            />
+            <span className="text-xs text-slate-500 tabular-nums">
+              Tổng số:{' '}
+              {activeTemplate?.sections?.reduce((acc: number, s: SafeAny) => acc + (s.items?.length || 0), 0) || 0} tiêu
+              chí
+            </span>
+          </div>
+
+          {/* Table displaying all items */}
+          <Table
+            dataSource={
+              activeTemplate?.sections
+                ?.flatMap((sec: SafeAny) =>
+                  (sec.items || []).map((itm: SafeAny) => ({
+                    ...itm,
+                    key: itm.id,
+                    sectionId: sec.id,
+                    sectionTitle: sec.title,
+                  }))
+                )
+                .filter((itm: SafeAny) => {
+                  if (!manageSearchText) return true;
+                  const q = manageSearchText.toLowerCase();
+                  return (
+                    (itm.title || '').toLowerCase().includes(q) ||
+                    (itm.standardRequirement || '').toLowerCase().includes(q) ||
+                    (itm.sectionTitle || '').toLowerCase().includes(q) ||
+                    (itm.area || '').toLowerCase().includes(q)
+                  );
+                }) || []
+            }
+            columns={[
+              {
+                title: 'Nhóm Tiêu Chí',
+                dataIndex: 'sectionTitle',
+                key: 'sectionTitle',
+                width: 180,
+                render: (val: string) => (
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{val}</span>
+                ),
+              },
+              {
+                title: 'Tên Tiêu Chí',
+                dataIndex: 'title',
+                key: 'title',
+                render: (val: string, record: SafeAny) => (
+                  <div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{val}</div>
+                    {record.area && (
+                      <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold uppercase">
+                        [{record.area}]
+                      </span>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                title: 'Yêu Cầu Chuẩn',
+                dataIndex: 'standardRequirement',
+                key: 'standardRequirement',
+                render: (val: string) => (
+                  <span className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{val || '-'}</span>
+                ),
+              },
+              {
+                title: 'Mức Độ',
+                dataIndex: 'severity',
+                key: 'severity',
+                width: 110,
+                render: (val: string) => renderSeverityDot(val),
+              },
+              {
+                title: 'SL',
+                dataIndex: 'unitQty',
+                key: 'unitQty',
+                width: 60,
+                align: 'center',
+                render: (val: number, record: SafeAny) => (
+                  <span className="text-xs font-bold tabular-nums">{val || record.weight || 1}</span>
+                ),
+              },
+              {
+                title: 'Hành Động',
+                key: 'actions',
+                width: 100,
+                align: 'center',
+                render: (_: any, record: SafeAny) => (
+                  <Space size="small">
+                    <Tooltip title="Chỉnh sửa">
+                      <Button
+                        size="small"
+                        type="text"
+                        icon={<EditOutlined className="text-blue-600 text-xs" />}
+                        onClick={() => handleOpenItemModal(record, record.sectionId)}
+                      />
+                    </Tooltip>
+                    <Popconfirm
+                      title="Xóa tiêu chí này?"
+                      onConfirm={() => handleDeleteItem(record.id)}
+                      okText="Xóa"
+                      cancelText="Hủy"
+                      okButtonProps={{ danger: true, size: 'small' }}
+                      cancelButtonProps={{ size: 'small' }}
+                    >
+                      <Tooltip title="Xóa">
+                        <Button size="small" type="text" danger icon={<DeleteOutlined className="text-xs" />} />
+                      </Tooltip>
+                    </Popconfirm>
+                  </Space>
+                ),
+              },
+            ]}
+            pagination={{ pageSize: 8, size: 'small', showSizeChanger: false }}
+            size="small"
+            className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden"
+          />
+        </div>
       </Modal>
+
+      {/* Modal 2: Create & Edit Item Form (Form Thêm / Sửa Tiêu Chí) */}
+      <Modal
+        title={
+          <span className="flex items-center gap-2 text-base font-bold text-slate-800 dark:text-slate-200">
+            {editingItem ? <EditOutlined className="text-blue-500" /> : <PlusOutlined className="text-emerald-500" />}
+            {editingItem ? 'Chỉnh Sửa Tiêu Chí Kiểm Tra' : 'Thêm Tiêu Chí Kiểm Tra Mới'}
+          </span>
+        }
+        open={isItemModalOpen}
+        onCancel={() => setIsItemModalOpen(false)}
+        onOk={handleSaveItem}
+        okText={editingItem ? 'Cập Nhật' : 'Thêm Mới'}
+        cancelText="Hủy"
+        width={580}
+        destroyOnClose
+        getContainer={() => document.body}
+      >
+        <Form form={crudForm} layout="vertical" className="mt-3 space-y-2">
+          <Form.Item
+            name="sectionId"
+            label="Thuộc Nhóm / Khu Vực Tiêu Chí:"
+            rules={[{ required: true, message: 'Vui lòng chọn nhóm tiêu chí' }]}
+          >
+            <Select
+              placeholder="Chọn nhóm tiêu chí..."
+              getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+              options={
+                activeTemplate?.sections?.map((s: SafeAny) => ({
+                  value: s.id,
+                  label: s.title,
+                })) || []
+              }
+            />
+          </Form.Item>
+
+          <Row gutter={12}>
+            <Col span={16}>
+              <Form.Item
+                name="title"
+                label="Tên Tiêu Chí (Tên ngắn):"
+                rules={[{ required: true, message: 'Vui lòng nhập tên tiêu chí' }]}
+              >
+                <Input placeholder="Ví dụ: Cửa kính, Sàn nhà, Máy hút bụi..." />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="area" label="Khu Vực Tag (Không bắt buộc):">
+                <Input placeholder="Ví dụ: LOBBY, TOILET..." />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item name="standardRequirement" label="Mô Tả Yêu Cầu Chuẩn Quy Định:">
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập yêu cầu tiêu chuẩn chi tiết (ví dụ: Sạch bóng không có vệt vân tay, lau chùi 2 tiếng/lần)..."
+            />
+          </Form.Item>
+
+          <Row gutter={12}>
+            <Col span={14}>
+              <Form.Item name="severity" label="Mức Độ Nghiêm Trọng (Severity):">
+                <Select
+                  getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                  options={[
+                    { value: 'CRITICAL', label: '🔴 CRITICAL (Nghiêm Trọng)' },
+                    { value: 'HIGH', label: '🟠 HIGH (Mức Độ Cao)' },
+                    { value: 'MID', label: '🟡 MID (Trung Bình)' },
+                    { value: 'LOW', label: '🔵 LOW (Mức Thấp)' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={10}>
+              <Form.Item name="unitQty" label="Số Lượng Quy Định (SL):">
+                <InputNumber min={1} max={99} className="w-full" placeholder="SL: 1" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
+      {isMobileFocusMode && (
+        <div className="fixed inset-0 z-[9999] bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-sans">
+          {/* 1. Mobile Sticky Header */}
+          <div className="px-3 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center gap-2">
+              <Select
+                size="small"
+                value={selectedBranch}
+                onChange={setSelectedBranch}
+                style={{ width: 140 }}
+                options={STORE_BRANCHES.map((b) => ({ value: b.code, label: b.name }))}
+              />
+              <Select
+                size="small"
+                value={selectedShift}
+                onChange={(v) => setSelectedShift(v as any)}
+                style={{ width: 95 }}
+                options={[
+                  { value: 'Sáng', label: 'Ca Sáng' },
+                  { value: 'Chiều', label: 'Ca Chiều' },
+                  { value: 'Tối', label: 'Ca Tối' },
+                  { value: 'Toàn ngày', label: 'Cả Ngày' },
+                ]}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800 tabular-nums">
+                {inspectionStats.passRate}%
+              </span>
+              <Button
+                size="small"
+                icon={<DesktopOutlined />}
+                onClick={() => setIsMobileFocusMode(false)}
+                className="text-xs font-semibold bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700"
+              >
+                Về Desktop
+              </Button>
+            </div>
+          </div>
+
+          {/* 2. Mobile Main Scrollable Inspection Area */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-4">
+            {/* Informative Sub-header Banner */}
+            <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-800/60 flex items-center justify-between text-xs">
+              <div>
+                <span className="font-bold text-purple-300 block">📱 Chế Độ Kiểm Tra Mobile Tập Trung</span>
+                <span className="text-[11px] text-purple-400">
+                  {activeTemplate?.branchName || selectedBranch} · {inspectionStats.passed + inspectionStats.failed}/
+                  {inspectionStats.total} Tiêu chí
+                </span>
+              </div>
+              <Tag color="purple" className="font-bold tabular-nums text-xs">
+                {inspectionStats.passRate}% Đạt
+              </Tag>
+            </div>
+
+            {/* Accordions for Lobby & Lashroom Core Areas */}
+            <Collapse
+              defaultActiveKey={['area-lobby', 'area-lashroom']}
+              ghost
+              className="space-y-3"
+              items={groupedAreas.map((area: SafeAny) => ({
+                key: area.id,
+                label: (
+                  <div className="flex items-center justify-between py-1">
+                    <span className="font-bold text-sm text-slate-100">{area.title}</span>
+                    <span className="text-xs text-emerald-400 font-semibold">{area.totalItems} tiêu chí</span>
+                  </div>
+                ),
+                children: (
+                  <div className="space-y-3 pt-1">
+                    {area.subSections.map((sec: SafeAny, secIdx: number) => {
+                      const secItems = sec.items || [];
+                      return (
+                        <div key={sec.id || `m-sec-${secIdx}`} className="space-y-2">
+                          <div className="text-xs font-bold text-purple-400 uppercase tracking-wide px-1">
+                            {sec.title} ({secItems.length})
+                          </div>
+                          {secItems.map((itm: SafeAny) => {
+                            const currentSt = itemStatuses[itm.id] || { result: undefined, note: '', photoUrl: '' };
+                            const isFail = currentSt.result === 'FAIL';
+                            const isPass = currentSt.result === 'PASS';
+                            const isNa = currentSt.result === 'NA';
+
+                            return (
+                              <div
+                                key={`m-itm-${itm.id}`}
+                                className={`p-3 rounded-xl border space-y-2.5 transition-all ${
+                                  isFail
+                                    ? 'bg-rose-950/40 border-rose-800/80 shadow-md'
+                                    : isPass
+                                      ? 'bg-slate-900/90 border-emerald-900/50'
+                                      : 'bg-slate-900/60 border-slate-800'
+                                }`}
+                              >
+                                {/* Line 1: Header */}
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="space-y-0.5">
+                                    <div className="font-semibold text-xs text-slate-100">{itm.title}</div>
+                                    {itm.area && (
+                                      <span className="text-[10px] text-purple-400 font-bold uppercase">
+                                        [{itm.area}]
+                                      </span>
+                                    )}
+                                  </div>
+                                  {renderSeverityDot(itm.severity)}
+                                </div>
+
+                                {/* Line 2: Requirement */}
+                                <div className="text-[11px] text-slate-400 line-clamp-2">
+                                  {itm.standardRequirement || 'Kiểm tra quy chuẩn chất lượng.'}
+                                </div>
+
+                                {/* Line 3: Touch-friendly large action buttons */}
+                                <div className="grid grid-cols-3 gap-2 pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setItemStatuses((prev) => ({
+                                        ...prev,
+                                        [itm.id]: { ...prev[itm.id], result: 'PASS' },
+                                      }))
+                                    }
+                                    className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
+                                      isPass
+                                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-750'
+                                    }`}
+                                  >
+                                    <CheckOutlined className="text-sm" /> ĐẠT
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setItemStatuses((prev) => ({
+                                        ...prev,
+                                        [itm.id]: { ...prev[itm.id], result: 'FAIL' },
+                                      }))
+                                    }
+                                    className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
+                                      isFail
+                                        ? 'bg-rose-600 text-white border-rose-500 shadow-md'
+                                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-750'
+                                    }`}
+                                  >
+                                    <CloseOutlined className="text-sm" /> LỖI
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setItemStatuses((prev) => ({
+                                        ...prev,
+                                        [itm.id]: { ...prev[itm.id], result: 'NA' },
+                                      }))
+                                    }
+                                    className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
+                                      isNa
+                                        ? 'bg-slate-700 text-slate-100 border-slate-600 shadow-md'
+                                        : 'bg-slate-850 text-slate-400 border-slate-750 hover:bg-slate-750'
+                                    }`}
+                                  >
+                                    <MinusOutlined className="text-sm" /> N/A
+                                  </button>
+                                </div>
+
+                                {/* Line 4: Failure details if FAIL */}
+                                {isFail && (
+                                  <div className="space-y-2 pt-2 border-t border-rose-900/40">
+                                    <Input.TextArea
+                                      placeholder="Ghi chú lỗi chi tiết..."
+                                      value={currentSt.note || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setItemStatuses((prev) => ({
+                                          ...prev,
+                                          [itm.id]: { ...prev[itm.id], note: val },
+                                        }));
+                                      }}
+                                      rows={2}
+                                      className="text-xs bg-slate-950 text-white border-rose-900/60"
+                                    />
+
+                                    <div className="flex items-center justify-between gap-2">
+                                      <Button
+                                        size="small"
+                                        icon={<CameraOutlined />}
+                                        onClick={() => openCameraForItem(itm.id)}
+                                        className="bg-rose-950 text-rose-300 border-rose-800 text-xs font-medium"
+                                      >
+                                        Chụp Ảnh
+                                      </Button>
+                                      {currentSt.photoUrl && (
+                                        <span className="text-[10px] text-emerald-400 font-bold">✓ Đã chụp ảnh</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ),
+              }))}
+            />
+          </div>
+
+          {/* 3. Mobile Sticky Bottom Action Bar */}
+          <div className="p-3 bg-slate-900 border-t border-slate-800 flex items-center gap-2 shrink-0 shadow-lg">
+            <Button
+              type="primary"
+              size="large"
+              icon={<SaveOutlined />}
+              onClick={handleSaveChecklistAudit}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-500 font-bold text-sm h-12 rounded-xl"
+            >
+              {`Lưu Biên Bản (${inspectionStats.passRate.toFixed(1)}%)`}
+            </Button>
+
+            <Button
+              size="large"
+              icon={<DesktopOutlined />}
+              onClick={() => setIsMobileFocusMode(false)}
+              className="bg-slate-800 text-slate-200 border-slate-700 font-semibold text-xs h-12 rounded-xl"
+            >
+              Desktop Mode
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
