@@ -461,29 +461,32 @@ export default function CatalogComboLiveTab() {
         className="shadow-sm rounded-xl border border-slate-800 bg-slate-900/40"
         styles={{ body: { padding: '12px 16px' } }}
       >
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <Space size="middle" className="w-full sm:w-auto flex-wrap">
-            <Input
-              placeholder="Tìm theo tên Combo / Khách / SĐT..."
-              prefix={<SearchOutlined className="text-slate-400" />}
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              allowClear
-              className="w-full sm:w-80 rounded-lg"
-            />
+        <div className="flex flex-row items-center gap-3 flex-nowrap overflow-x-auto">
+          <Input
+            placeholder="Tìm theo tên Combo / Khách / SĐT..."
+            prefix={<SearchOutlined className="text-slate-400" />}
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            allowClear
+            style={{ width: 280 }}
+            className="rounded-lg shrink-0"
+          />
 
-            <Space size="small" className="bg-slate-950/60 px-3 py-1.5 rounded-lg border border-slate-800">
-              <Switch checked={expiringSoon} onChange={(checked) => handleExpiringSoonChange(checked)} size="small" />
-              <Text
-                className="text-xs text-slate-600 dark:text-slate-300 font-medium cursor-pointer"
-                onClick={() => handleExpiringSoonChange(!expiringSoon)}
-              >
-                Chỉ hiện Combo sắp hết hạn (&lt; 30 ngày)
-              </Text>
-            </Space>
-          </Space>
+          <div className="inline-flex items-center gap-2 bg-slate-950/60 px-3 py-1.5 rounded-lg border border-slate-800 shrink-0 whitespace-nowrap">
+            <Switch checked={expiringSoon} onChange={(checked) => handleExpiringSoonChange(checked)} size="small" />
+            <Text
+              className="text-xs text-slate-600 dark:text-slate-300 font-medium cursor-pointer select-none"
+              onClick={() => handleExpiringSoonChange(!expiringSoon)}
+            >
+              Chỉ hiện Combo sắp hết hạn (&lt; 30 ngày)
+            </Text>
+          </div>
 
-          <Button icon={<ReloadOutlined spin={loading} />} onClick={() => fetchComboLive()} className="rounded-lg">
+          <Button
+            icon={<ReloadOutlined spin={loading} />}
+            onClick={() => fetchComboLive()}
+            className="rounded-lg shrink-0"
+          >
             Làm mới
           </Button>
         </div>

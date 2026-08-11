@@ -26,6 +26,7 @@ import { smsRoutes } from './modules/sms/routes.js';
 import { allocationRoutes } from './modules/allocation/routes.js';
 import { campaignRoutes } from './modules/campaigns/routes.js';
 import { csRoutes } from './modules/cs/routes.js';
+import { qaShopRoutes } from './modules/qa-shop/routes.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
 import { CampaignPromotionSyncService } from './modules/campaigns/campaign-promotion-sync.service.js';
@@ -166,9 +167,37 @@ const start = async () => {
             isSystem: true,
             description: 'Chuyên viên',
           },
+          {
+            key: 'qa_qc',
+            name: 'QA & QC',
+            color: 'purple',
+            viewKPI: true,
+            viewTeamKPI: true,
+            manageStaff: false,
+            isSystem: true,
+            description: 'Kiểm soát & Đảm bảo chất lượng',
+          },
         ],
       });
       server.log.info('Seeded default roles successfully');
+    } else {
+      // Ensure qa_qc role exists for existing databases
+      const existingQaQc = await server.prisma.crm.crmRole.findUnique({ where: { key: 'qa_qc' } });
+      if (!existingQaQc) {
+        await server.prisma.crm.crmRole.create({
+          data: {
+            key: 'qa_qc',
+            name: 'QA & QC',
+            color: 'purple',
+            viewKPI: true,
+            viewTeamKPI: true,
+            manageStaff: false,
+            isSystem: true,
+            description: 'Kiểm soát & Đảm bảo chất lượng',
+          },
+        });
+        server.log.info('Auto-seeded missing qa_qc role successfully');
+      }
     }
 
     // Register routes
@@ -189,6 +218,7 @@ const start = async () => {
     await server.register(allocationRoutes, { prefix: '/api' });
     await server.register(campaignRoutes, { prefix: '/api' });
     await server.register(csRoutes, { prefix: '/api' });
+    await server.register(qaShopRoutes, { prefix: '/api' });
 
     // Start background analyzer polling for AI laugh detection
     startRecordingAnalyzer(server);

@@ -54,7 +54,11 @@ import type {
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-export default function CatalogBranchTab() {
+interface CatalogBranchTabProps {
+  onRegisterCreate?: (fn: () => void) => void;
+}
+
+export default function CatalogBranchTab({ onRegisterCreate }: CatalogBranchTabProps = {}) {
   const { themeMode } = useTheme();
   const { token } = antdTheme.useToken();
 
@@ -161,7 +165,7 @@ export default function CatalogBranchTab() {
   };
 
   // Open Create Drawer
-  const handleOpenCreate = () => {
+  const handleOpenCreate = useCallback(() => {
     form.resetFields();
     form.setFieldsValue({
       isActive: true,
@@ -172,7 +176,13 @@ export default function CatalogBranchTab() {
     setDrawerMode('create');
     setActiveDrawerTab('info');
     setDrawerVisible(true);
-  };
+  }, [form]);
+
+  useEffect(() => {
+    if (onRegisterCreate) {
+      onRegisterCreate(handleOpenCreate);
+    }
+  }, [onRegisterCreate, handleOpenCreate]);
 
   // Open Edit / View Drawer
   const handleOpenEditOrView = async (branch: CrmBranch, mode: 'edit' | 'view') => {
@@ -541,17 +551,6 @@ export default function CatalogBranchTab() {
                 Làm mới
               </Button>
             </Space>
-          </Col>
-
-          <Col xs={24} md={8} className="text-right">
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleOpenCreate}
-              className="bg-blue-600 hover:bg-blue-500 shadow-md transition-all font-medium"
-            >
-              Thêm Chi Nhánh Mới
-            </Button>
           </Col>
         </Row>
       </Card>

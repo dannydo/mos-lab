@@ -1,22 +1,30 @@
-# Project: Campaign Allocation Unification
+# Project: QA Shop Inspection UI Refactoring
 
 ## Architecture
 
-- Backend: Fastify 5 + TypeScript (`apps/api`), Prisma ORM with DB models (`crm_allocation_batches`, `crm_allocation_batch_items`, `crm_assignment_histories`, `crm_customer_assignments`, `crm_campaign_customers`, `crm_custom_campaigns`).
-- Frontend: Next.js 15 + Ant Design 5 (`apps/web`), Custom Campaign Customer Table (`/dashboard/nyc/campaigns/[slug]`), Customer Detail Drawer (`AllocationHistoryTab`), Global Allocation History (`/dashboard/customers/history`).
-- Shared: `@mos-lab/shared` types & API SDK (`apps/web/lib/api-client.ts`).
+- Frontend: Next.js 15 App Router (`apps/web/app/dashboard/qa-shop/page.tsx` & `apps/web/app/dashboard/qa-shop/components/`)
+- Styling: Ant Design 5 + Tailwind CSS v4 + custom CSS theme variables (`.light-theme` & `.dark-theme`)
+- Shared SDK & Types: `@mos-lab/shared` (`packages/shared/src/types/qa-shop.ts`)
+- API Endpoints: Fastify 5 (`apps/api/src/modules/qa-shop/routes.ts`)
+
+## Feature Inventory
+
+| #   | Feature                                        | Description                                                                                                                                                                                                                  | Milestone | Source |
+| --- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------ |
+| 1   | Minimalist Vector Icon Toggle System           | `[✓ Đạt] [✕ Không đạt] [- N/A]` toggle buttons with `CheckOutlined`, `CloseOutlined`, `MinusOutlined`, soft feedback, tooltips, `aria-pressed`, and `focus-visible:ring-2`.                                                  | M1        | R1     |
+| 2   | Refined Dot Indicators & Minimal Section Cards | 1px subtle borders (`border-slate-200/60` / `dark:border-slate-800/60`), vector icon headers (`BuildOutlined`), dot indicators for severity (`CRITICAL`, `HIGH`, `MEDIUM`/`MID`, `LOW`), WCAG AA compliant muted typography. | M1        | R2     |
+| 3   | Flat Minimal Stat Cards & Soft Alert Strip     | Top KPI stat cards with `tabular-nums` digits and vector icon container pills. Soft alert strip summarizing failed items with `role="alert"` and `aria-live="polite"`.                                                       | M1        | R3     |
+| 4   | Accessibility & Theme Integration (a11y)       | WCAG AA contrast standards, keyboard focus rings (`focus-visible:ring-2`), semantic HTML, dual Light/Dark theme support, `tabular-nums` on dynamic counters, `getPopupContainer` on `<Select>` inside `<Modal>`.             | M1        | R4     |
+| 5   | Shared Type Alignment & Code Modularization    | Align `'MID'` vs `'MEDIUM'` severity type definitions between `page.tsx` and `@mos-lab/shared`, and ensure `page.tsx` and subcomponents in `components/` are synchronized and clean.                                         | M1        | Audit  |
 
 ## Milestones
 
-| #   | Name                                     | Scope                                                                                                                                                | Dependencies | Status |
-| --- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------ |
-| 1   | Exploration & Codebase Audit             | Investigate current campaign allocation flow, allocation service, drawer logs, history table, and ID mappings                                        | None         | DONE   |
-| 2   | Backend Unification & API Updates        | Update AllocationService, campaign customer allocation route, campaign expiry worker/route, ensure legacyUserId and crm_assignment_histories logging | M1           | DONE   |
-| 3   | Frontend Unification & UI Components     | Update Custom Campaign Table rowKeys, batch allocation invocation, customer detail drawer allocation history tab, status columns                     | M2           | DONE   |
-| 4   | Expiration & Monorepo Build Verification | Implement campaign end/archive assignment cleanup + log EXPIRED action, verify pnpm build across all packages                                        | M3           | DONE   |
+| #   | Name                               | Scope                                                                                                                                                                                 | Dependencies | Status |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------ |
+| 1   | M1: Refactor QA Shop Inspection UI | Implement R1 vector toggle, R2 dot indicators & section cards, R3 flat stat cards & soft alert strip, R4 a11y & theme compliance, type alignment in `apps/web/app/dashboard/qa-shop/` | None         | DONE   |
 
-## Interface Contracts
+## Code Layout
 
-- `AllocationService.createBatch({ bookerId, customerIds, campaignId, sourceType, sourceFilterSummary })`: Accepts true `legacyUserIds` (number[]). Creates `crm_allocation_batches` (with `campaignId`), `crm_allocation_batch_items`, logs `crm_assignment_histories` with `actionType = 'ASSIGN'`, and triggers 24h Booker notification.
-- Customer Detail Drawer Allocation History Tab: Displays `crm_assignment_histories` records filtered by `legacyUserId` / `customerId`, showing campaign name summaries, assigner, target booker, status, and action timestamps.
-- Campaign Customer Table `rowKey`: `record.legacyUserId || record.customerId || record.id`. Selection array uses true `legacyUserId`.
+- Page: `apps/web/app/dashboard/qa-shop/page.tsx`
+- Subcomponents: `apps/web/app/dashboard/qa-shop/components/DailyAuditTab.tsx`, `ActionTicketsTab.tsx`, `ComplianceAnalyticsTab.tsx`, `HistoryLogsTab.tsx`, `GoogleSheetImportDrawer.tsx`
+- Types: `packages/shared/src/types/qa-shop.ts`

@@ -22,58 +22,27 @@ export function parseLashSpecs(serviceKey: string, serviceName: string): ParsedL
   let lashStyle = 'Classic';
   if (key.startsWith('ivylight-') || combined.includes('ivylight')) {
     lashStyle = 'Ivylight';
-  } else if (
-    key.startsWith('flawless-') ||
-    combined.includes('flawless') ||
-    key.startsWith('mink-') ||
-    combined.includes('mink')
-  ) {
-    // Mink and Flawless are pooled together as single lash extension
+  } else if (key.startsWith('flawless-') || combined.includes('flawless')) {
+    lashStyle = 'Flawless';
+  } else if (key.startsWith('mink-') || combined.includes('mink')) {
     lashStyle = 'Mink';
   } else if (key.startsWith('hyperlight-') || combined.includes('hyperlight')) {
     lashStyle = 'Hyperlight';
   } else if (key.startsWith('ultralight-') || combined.includes('ultralight') || combined.includes('ultra light')) {
-    // Ultralight (3-5D, 0.05mm, higher difficulty)
     lashStyle = 'Ultralight';
   } else if (key.startsWith('volume-') || combined.includes('volume')) {
-    // Volume (2-3D, 0.07mm)
-    lashStyle = 'Volume';
+    lashStyle = 'Volume 3D';
   } else if (key.startsWith('under-mink-') || combined.includes('under mink') || combined.includes('lashes under')) {
     lashStyle = 'Under Mink';
   } else if (key.startsWith('classic-') || combined.includes('classic')) {
     lashStyle = 'Classic';
   }
 
-  // Detect lash count from service name (e.g. "100 sợi", "70 soi", "120 lashes")
+  // Detect lash count ONLY if explicitly written with "sợi" / "lashes" in name or explicit suffix
   let lashCount: number | null = null;
   const countMatch = combined.match(/(\d{2,3})\s*(sợi|soi|lashes|sợ)/);
   if (countMatch) {
     lashCount = parseInt(countMatch[1], 10);
-  } else {
-    // Detect price tier or explicit count suffix from service_key (e.g. 'new-classic-440', 'classic-70')
-    const keyNumMatch = combined.match(/[-_\s](\d{2,4})(?:\s|$|[-_])/);
-    if (keyNumMatch) {
-      const num = parseInt(keyNumMatch[1], 10);
-      // Explicit count (50-200)
-      if (num >= 50 && num <= 200 && !key.includes('new-') && !key.includes('ivylight-')) {
-        lashCount = num;
-      } else {
-        // Map price tier to standard lash count (SOP Menu Mapping)
-        if (num <= 250)
-          lashCount = 30; // Under mink trial
-        else if (num <= 450)
-          lashCount = 60; // 390k / 440k -> 60 sợi
-        else if (num <= 590)
-          lashCount = 80; // 490k / 550k -> 80 sợi
-        else if (num <= 700)
-          lashCount = 90; // 660k / 690k -> 90 sợi
-        else if (num <= 900)
-          lashCount = 100; // 770k / 790k / 880k -> 100 sợi
-        else if (num <= 1150)
-          lashCount = 120; // 990k / 1090k / 1110k -> 120 sợi
-        else lashCount = 140; // 1220k / 1440k / 1550k / 1770k+ -> 140 sợi
-      }
-    }
   }
 
   return { lashStyle, lashCount };

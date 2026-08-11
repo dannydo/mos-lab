@@ -1,7 +1,7 @@
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type SafeAny = any;
 
-export type UserRole = 'telesales' | 'manager' | 'admin' | 'oc' | 'cc' | 'ls' | 'technician';
+export type UserRole = 'telesales' | 'manager' | 'admin' | 'oc' | 'cc' | 'ls' | 'technician' | 'qa' | 'qc' | 'qa_qc';
 
 export interface Staff {
   id: number;

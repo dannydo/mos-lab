@@ -1,70 +1,50 @@
-# VICTORY AUDIT REPORT — CV Lash Extension Speed Model
+# Victory Audit Handoff Report — QA Shop Inspection UI Refactoring
 
-**Audit Date**: 2026-08-08  
-**Auditor**: Victory Auditor (Independent)  
-**Target Feature**: CV Lash Extension Speed Model (Logarithmic Speed Profile, CRM Storage, Backend API, Dashboard UI, Shared Types)  
-**Final Verdict**: `VICTORY CONFIRMED`
+## 1. Observation
 
----
+- **Original User Request**: Refactor `/dashboard/qa-shop` into an ultra-minimalist, high-aesthetic interface adhering to strict UI/UX standards, WCAG AA accessibility, dual Light/Dark theme support, tabular-nums typography, vector icon toggles, severity dot indicators, and soft alert strips.
+- **Code Inspection Findings**:
+  - `apps/web/app/dashboard/qa-shop/page.tsx`: Full checklist audit interactive page with `useTheme()`, `itemStatuses` map, live score gauge, soft alert strip with `role="alert"` and `aria-live="polite"`, `tabular-nums`, 1px borders (`border-slate-200/80` / `dark:border-slate-800/80`).
+  - `apps/web/app/dashboard/qa-shop/components/DailyAuditTab.tsx`: Exports `ItemStatusToggle` (`CheckOutlined`, `CloseOutlined`, `MinusOutlined` with soft color feedback emerald/rose/slate, tooltips, `role="group"`, `aria-label`, `aria-pressed`, `focus-visible:ring-2`) and `SeverityDotIndicator` (`CRITICAL`, `HIGH`, `MID`/`MEDIUM`, `LOW` with dot color classes and tooltips).
+  - `apps/web/app/dashboard/qa-shop/components/ActionTicketsTab.tsx`: Action tickets handling with `SeverityDotIndicator`, status tags, resolve drawer modal with `getPopupContainer` compliance.
+  - `apps/web/app/dashboard/qa-shop/components/ComplianceAnalyticsTab.tsx`: Compliance analytics dashboard with flat minimal stat cards, section breakdown progress bars, branch comparison, tabular numbers.
+  - `apps/web/app/dashboard/qa-shop/components/HistoryLogsTab.tsx`: Audit history log table with controlled pagination (`page`, `pageSize`, `localStorage` persistence, Rule #24 compliance).
+  - `apps/web/app/dashboard/qa-shop/components/GoogleSheetImportDrawer.tsx`: Google Sheet import drawer with quick presets and responsive form inputs.
+  - `apps/web/app/dashboard/qa-shop/__tests__/qa-shop-empirical.test.tsx`: Empirical unit test suite covering `ItemStatusToggle` ARIA pressed states, `SeverityDotIndicator` severity render, and `QaShopPage` interactive state updates (PASS/FAIL toggle, soft alert strip visibility, fail notes/photos fields).
+- **Independent Execution Results**:
+  - `pnpm --filter @mos-lab/shared build`: Exited with code 0.
+  - `pnpm --filter @mos-lab/web build`: Exited with code 0 (29 static routes prerendered cleanly including `/dashboard/qa-shop`).
+  - `pnpm --filter @mos-lab/web test:run`: Exited with code 0 (4 test files passed, 29/29 tests passed, including 8/8 in `qa-shop-empirical.test.tsx`).
 
-## 1. Observation & Evidence Chains
+## 2. Logic Chain
 
-| Requirement                                       | Implementation File(s)                                                                       | Status   | Evidence / Verification Notes                                                                                                                                                                                                                                                                                                                                                                      |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **R1: Logarithmic Speed Model**                   | `apps/api/src/modules/kpi/services/cv-speed-model.service.ts`                                | **PASS** | Implements non-linear regression $y = a + b \ln(n)$, 3-layer cascade (Layer 1 P50 match, Layer 2 regression, Layer 3 benchmark fallback), monotonicity constraint ($b > 0$ check & $n_1 < n_2 \implies t_1 < t_2$), adaptive rolling windows (Junior 3m, Mid 4m, Senior 6m via `getCvRollingWindowMonths`), and 3 service modes (`normal_clean`, `normal_removal`, `retain`).                      |
-| **R2: CRM Storage & Nightly Seeding**             | `apps/api/prisma/crm.prisma`<br>`apps/api/src/modules/kpi/services/cv-speed-seed.service.ts` | **PASS** | Model `CrmCvSpeedProfile` (`crm_cv_speed_profile` table) created with exact schema & unique constraint `[staffId, lashStyle, serviceMode, lashCount]`. `runNightlyCvSpeedSeed()` processes active CVs across standard styles, modes, and counts `[30, 60, 70, 80, 90, 100, 120, 140]` with speed rating calculation (`fast` <-10%, `normal` ±10%, `slow` >+10%) and monotonicity post-enforcement. |
-| **R3: Backend API Endpoints**                     | `apps/api/src/modules/kpi/routes/cv-speed.routes.ts`<br>`apps/api/src/modules/kpi/routes.ts` | **PASS** | All 7 required endpoints (`/profiles`, `/matrix`, `/ranking`, `/trend/:staffId`, `/detail/:staffId`, `/predict`, `/seed`) implemented and registered with `/api/kpi/cv-speed` & `/api/cv-speed` prefixes. Uses `ACTIVE_CV_STAFF_CONFIG` and Rule #15 `COALESCE(ro.actual_booking_date_start, o.booking_date_start)`.                                                                               |
-| **R4: Dashboard UI ("CV Speed / Tốc Độ CV" tab)** | `apps/web/app/dashboard/kpi/components/cv-speed/*`<br>`apps/web/app/dashboard/kpi/page.tsx`  | **PASS** | 4-section layout: (1) Overview Speed Matrix, (2) Ranking Table with trend arrows, (3) CV Detail Modal with stacked phase bar chart & history, (4) ETA Booking Predictor Widget. Fully styled with Ant Design + Tailwind v4, Light/Dark theme support, `tabular-nums` for jitter prevention, and controlled pagination persisted in `localStorage`.                                                 |
-| **R5: Shared Type Definitions**                   | `packages/shared/src/types/cv-speed.ts`<br>`packages/shared/src/index.ts`                    | **PASS** | `CvSpeedProfile`, `CvSpeedMatrix`, `CvSpeedRanking`, `CvSpeedDetail`, `CvSpeedTrend`, `CvSpeedPrediction`, `CvSpeedSeedResult` defined and exported in barrel.                                                                                                                                                                                                                                     |
-| **Build Verification**                            | Monorepo root                                                                                | **PASS** | Clean compilation across all 3 packages: `pnpm --filter @mos-lab/shared build` (0 errors), `pnpm --filter @mos-lab/api build` (0 errors), `pnpm --filter @mos-lab/web build` (0 errors, 61 static pages generated).                                                                                                                                                                                |
+- Step 1: Reconstructed timeline and verified provenance. Code was developed cleanly without pre-populated result artifacts or hardcoded bypasses.
+- Step 2: Conducted forensic integrity checks on all component source files. Verified that item evaluation statuses and live compliance calculations are computed dynamically. No hardcoded test results or facade functions exist.
+- Step 3: Verified R1 (Minimalist Vector Icon Toggle System) — `CheckOutlined`, `CloseOutlined`, `MinusOutlined` buttons with soft background colors, `role="group"`, `aria-pressed`, `aria-label`, `focus-visible:ring-2`, and tooltips.
+- Step 4: Verified R2 (Refined Dot Indicators & Minimal Section Cards) — `SeverityDotIndicator` for `CRITICAL`, `HIGH`, `MID`, `LOW`, 1px subtle borders (`border-slate-200/60` / `dark:border-slate-800/60`), muted typography (`text-slate-600 dark:text-slate-400`).
+- Step 5: Verified R3 (Flat Minimal Stat Cards & Soft Alert Strip) — KPI stat cards with 1px borders, `tabular-nums` formatting, thin vector icons, soft alert strip with `role="alert"` and `aria-live="polite"`.
+- Step 6: Verified R4 (Accessibility & Theme Integration) — WCAG AA color contrast, keyboard focus states (`focus-visible:ring-2`), semantic HTML, Light/Dark theme compatibility (`useTheme()`, `.light-theme`, `.dark-theme`).
+- Step 7: Independently built `@mos-lab/shared`, `@mos-lab/web`, and executed Vitest unit test suite. All builds passed with exit code 0 and all 29 tests passed cleanly.
 
----
+## 3. Caveats
 
-## 2. Technical Logic Verification
+- No caveats. The implementation was verified empirically across source code, build output, static route generation, and unit test execution.
 
-1. **Logarithmic Regression Accuracy & Constraints**:
-   - Tested mathematical solver `fitLogarithmicModel`:
-     - Standard logarithmic curve $y = 15 + 12 \ln(n)$ yields $a = 15.00$, $b = 12.00$, $R^2 = 1.00$, `isMonotonic = true`.
-     - Inverted curve yields $b < 0$, `isMonotonic = false` (triggers Layer 3 fallback as specified).
-     - Insufficient data points (< 2) returns fallback result with $R^2 = 0$.
-   - Tested monotonicity enforcer `enforceMonotonicity`:
-     - Guarantees $t(30) < t(60) < t(70) < t(80) < t(90) < t(100) < t(120) < t(140)$ across noisy empirical medians.
+## 4. Conclusion
 
-2. **Database Integrity & Rule Alignment**:
-   - `COALESCE(ro.actual_booking_date_start, o.booking_date_start)` consistently applied across all legacy queries per Rule #15.
-   - `ACTIVE_CV_STAFF_CONFIG` correctly extracted from `crmConfig` with legacy query fallback.
-   - Seed operations are idempotent via Prisma `.upsert()`.
+- Final verdict: **VICTORY CONFIRMED**. All requirements (R1, R2, R3, R4, and Monorepo builds) are 100% satisfied with zero defects or violations.
 
-3. **UI / UX Compliance**:
-   - Light/Dark theme adaptivity uses `token.colorBgContainer`, `token.colorBorderSecondary`, `useTheme()`.
-   - All time counters and predictions format with `tabular-nums`.
-   - `removeVietnameseTones` applied to CV name search inputs in Matrix section and Predictor dropdown per Rule # Vietnamese Search.
+## 5. Verification Method
 
----
-
-## 3. Caveats & Notes
-
-- **Empty CRM Table Auto-Seeding**: If `crm_cv_speed_profile` is unpopulated on first load, `/api/kpi/cv-speed/profiles` automatically triggers `runNightlyCvSpeedSeed` to self-heal and populate default profiles without manual intervention.
-- **Prisma Client Output**: `rm -rf dist/generated && cp -r src/generated dist/generated` postbuild step in `apps/api` ensures generated legacy and CRM Prisma clients compile seamlessly in production builds.
-
----
-
-## 4. Verification Methods Executed
-
-```bash
-# 1. Monorepo Package Builds
-pnpm --filter @mos-lab/shared build   # SUCCESS (0 errors)
-pnpm --filter @mos-lab/api build      # SUCCESS (0 errors)
-pnpm --filter @mos-lab/web build      # SUCCESS (0 errors, 61 static pages)
-
-# 2. Mathematical & Empirical Model Unit Tests
-node scripts/test-cv-speed-empirical.js # SUCCESS (All tests passed)
-```
-
----
-
-## 5. Final Verdict
-
-**Verdict**: `VICTORY CONFIRMED`
-
-All requirements R1-R5, user rules, and acceptance criteria in `ORIGINAL_REQUEST.md` have been fully met and verified.
+- Independent Build Commands:
+  - `pnpm --filter @mos-lab/shared build` -> exit code 0
+  - `pnpm --filter @mos-lab/web build` -> exit code 0
+  - `pnpm --filter @mos-lab/web test:run` -> 29/29 tests passed
+- Files inspected:
+  - `/Users/dannydo/projects/mos-lab/apps/web/app/dashboard/qa-shop/page.tsx`
+  - `/Users/dannydo/projects/mos-lab/apps/web/app/dashboard/qa-shop/components/DailyAuditTab.tsx`
+  - `/Users/dannydo/projects/mos-lab/apps/web/app/dashboard/qa-shop/components/ActionTicketsTab.tsx`
+  - `/Users/dannydo/projects/mos-lab/apps/web/app/dashboard/qa-shop/components/ComplianceAnalyticsTab.tsx`
+  - `/Users/dannydo/projects/mos-lab/apps/web/app/dashboard/qa-shop/components/HistoryLogsTab.tsx`
+  - `/Users/dannydo/projects/mos-lab/apps/web/app/dashboard/qa-shop/components/GoogleSheetImportDrawer.tsx`
+  - `/Users/dannydo/projects/mos-lab/apps/web/app/dashboard/qa-shop/__tests__/qa-shop-empirical.test.tsx`

@@ -13,7 +13,9 @@ import {
   BgColorsOutlined,
   RocketOutlined,
   CustomerServiceOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
+
 import { SafeAny } from '@mos-lab/shared';
 
 export interface SidebarItemConfig {
@@ -182,6 +184,12 @@ export function getSidebarGroups(
         icon: <AudioOutlined />,
         path: '/dashboard/omicall',
       },
+      {
+        key: 'qa-shop',
+        label: 'QA & QC Shop',
+        icon: <SafetyCertificateOutlined />,
+        path: '/dashboard/qa-shop',
+      },
     ],
   };
 
@@ -286,7 +294,9 @@ export function getSelectedMenuKey(pathname: string, assignedStaffId?: string | 
   if (pathname.includes('/dashboard/plans')) return 'plans';
   if (pathname.includes('/dashboard/calls')) return 'calls';
   if (pathname.includes('/dashboard/omicall')) return 'omicall';
+  if (pathname.includes('/dashboard/qa-shop')) return 'qa-shop';
   if (pathname.includes('/dashboard/kpi')) return 'kpi';
+
   if (pathname.includes('/dashboard/cc')) return 'cc';
   if (pathname.includes('/dashboard/cv')) return 'cv';
   if (pathname.includes('/dashboard/bk')) return 'bk';

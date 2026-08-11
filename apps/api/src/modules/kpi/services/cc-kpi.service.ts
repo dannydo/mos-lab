@@ -36,46 +36,62 @@ export function formatStoreCode(store?: string | null): string {
   return s;
 }
 
-export function parseServiceSpecs(serviceName: string) {
+export function parseServiceSpecs(
+  serviceName: string,
+  serviceKey?: string,
+  durationMinute?: number,
+  rawServiceType?: string,
+  realAttrMap?: Map<number, number>,
+  cvBenchmarkList: any[] = [],
+  serviceId?: number
+) {
   const sLower = (serviceName || '').toLowerCase();
+  const kLower = (serviceKey || '').toLowerCase();
+  const combined = `${kLower} ${sLower}`;
+
   let className = 'classic-440';
   let classPts = 0;
-  if (sLower.includes('flawless-1110')) {
+  if (combined.includes('flawless-1110') || combined.includes('flawless 1110')) {
     className = 'flawless-1110';
     classPts = 5;
-  } else if (sLower.includes('flawless-880')) {
+  } else if (combined.includes('flawless-880') || combined.includes('flawless 880')) {
     className = 'flawless-880';
     classPts = 5;
-  } else if (sLower.includes('flawless-770')) {
+  } else if (combined.includes('flawless-770') || combined.includes('flawless 770')) {
     className = 'flawless-770';
     classPts = 5;
-  } else if (sLower.includes('flawless-390')) {
+  } else if (combined.includes('flawless-390') || combined.includes('flawless 390')) {
     className = 'flawless-390';
     classPts = 5;
-  } else if (sLower.includes('hyperlight-990')) {
+  } else if (combined.includes('hyperlight-990') || combined.includes('hyperlight 990')) {
     className = 'hyperlight-990';
     classPts = 4;
-  } else if (sLower.includes('classic-440')) {
+  } else if (combined.includes('classic-440') || combined.includes('classic 440')) {
     className = 'classic-440';
     classPts = 0;
   }
 
   let fan = '3D';
   let fanPts = 1;
-  if (sLower.includes('5d')) {
+  if (combined.includes('5d')) {
     fan = '5D';
     fanPts = 3;
-  } else if (sLower.includes('4d')) {
+  } else if (combined.includes('4d')) {
     fan = '4D';
     fanPts = 2;
-  } else if (sLower.includes('3d')) {
+  } else if (combined.includes('3d')) {
     fan = '3D';
     fanPts = 1;
   }
 
   let serviceType: 'Refill' | 'Retain' | 'New Set';
   let typePts: number;
-  if (sLower.includes('refill') || sLower.includes('dặm') || sLower.includes('dam')) {
+  if (
+    combined.includes('refill') ||
+    combined.includes('dặm') ||
+    combined.includes('dam') ||
+    rawServiceType === 'Retain'
+  ) {
     serviceType = 'Refill';
     typePts = 0;
   } else {
@@ -83,29 +99,69 @@ export function parseServiceSpecs(serviceName: string) {
     typePts = 1;
   }
 
+  // Determine Lash Style for benchmark lookup
+  let lashStyle = 'Classic';
+  if (combined.includes('ivylight')) lashStyle = 'Ivylight';
+  else if (combined.includes('flawless')) lashStyle = 'Flawless';
+  else if (combined.includes('mink')) lashStyle = 'Mink';
+  else if (combined.includes('hyperlight')) lashStyle = 'Hyperlight';
+  else if (combined.includes('ultralight') || combined.includes('ultra light')) lashStyle = 'Ultralight';
+  else if (combined.includes('volume')) lashStyle = 'Volume 3D';
+  else if (combined.includes('under')) lashStyle = 'Under Mink';
+
+  // Resolve real lash count from Single Source of Truth
   let lashCount = 100;
-  let lashPts = 0;
-  const countMatch = sLower.match(/(\d+)\s*(sợi|soi|lashes)/);
-  if (countMatch) {
-    lashCount = parseInt(countMatch[1], 10);
-    if (lashCount >= 160) lashPts = 3;
-    else if (lashCount >= 140) lashPts = 2;
-    else if (lashCount >= 120) lashPts = 1;
+  let resolvedFromRealData = false;
+
+  // Source 1: Real DB item_attribute_value
+  if (serviceId && realAttrMap && realAttrMap.has(serviceId)) {
+    lashCount = realAttrMap.get(serviceId)!;
+    resolvedFromRealData = true;
   }
+  // Source 2: CV Xoay Speed Model Benchmarks matching
+  else if (cvBenchmarkList && cvBenchmarkList.length > 0 && durationMinute && durationMinute > 0) {
+    const normType = rawServiceType === 'Retain' || serviceType === 'Refill' ? 'Retain' : 'Normal';
+    const matchedBm = cvBenchmarkList.find(
+      (b: any) =>
+        (b.lashStyle === lashStyle ||
+          (b.lashStyle === 'Mink' && lashStyle === 'Flawless') ||
+          (b.lashStyle === 'Volume 3D' && lashStyle === 'Volume')) &&
+        b.serviceType === normType &&
+        b.lashCount !== null &&
+        Math.abs(b.benchmarkMinutes - durationMinute) <= 5
+    );
+    if (matchedBm && matchedBm.lashCount) {
+      lashCount = matchedBm.lashCount;
+      resolvedFromRealData = true;
+    }
+  }
+
+  // Source 3: Explicit name regex ("100 sợi")
+  if (!resolvedFromRealData) {
+    const countMatch = combined.match(/(\d+)\s*(sợi|soi|lashes)/);
+    if (countMatch) {
+      lashCount = parseInt(countMatch[1], 10);
+    }
+  }
+
+  let lashPts = 0;
+  if (lashCount >= 160) lashPts = 3;
+  else if (lashCount >= 140) lashPts = 2;
+  else if (lashCount >= 120) lashPts = 1;
 
   let design = 'Tự nhiên';
   let designPts = 0;
-  if (sLower.includes('mắt mèo') || sLower.includes('cat eye')) {
+  if (combined.includes('mắt mèo') || combined.includes('cat eye')) {
     design = 'Mắt Mèo';
     designPts = 1;
-  } else if (sLower.includes('búp bê') || sLower.includes('doll eye')) {
+  } else if (combined.includes('búp bê') || combined.includes('doll eye')) {
     design = 'Búp Bê';
     designPts = 1;
   }
 
   let color = 'Đen';
   let colorPts = 0;
-  if (sLower.includes('màu') || sLower.includes('nâu') || sLower.includes('omber')) {
+  if (combined.includes('màu') || combined.includes('nâu') || combined.includes('omber')) {
     color = 'Nâu / Thiết kế';
     colorPts = 1;
   }
@@ -220,6 +276,9 @@ export class CcKpiService {
     const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
       SELECT 
         os.id AS order_service_id,
+        s.id AS service_id,
+        s.duration_minute AS durationMinute,
+        s.service_type AS rawServiceType,
         CAST(ro.date AS CHAR) AS dateOnlyStr,
         CAST(ro.actual_booking_date_start AS CHAR) AS checkinStr,
         TIME_FORMAT(ro.actual_booking_date_start, '%H:%i') AS checkinTimeStr,
@@ -264,6 +323,33 @@ export class CcKpiService {
         summary: { totalCheckins: 0, totalBonus: 0, totalPoints: 0 },
       };
     }
+
+    // Batch-fetch real DB attributes & CV benchmarks for accurate Lash Count resolution
+    const serviceIds = Array.from(new Set(rows.map((r) => Number(r.service_id)).filter((id) => id > 0)));
+    const [realAttrMap, cvBenchmarks] = await Promise.all([
+      fastify.prisma.legacy
+        .$queryRawUnsafe<SafeAny[]>(
+          `
+          SELECT s.id as service_id, aol.attribute_option_value as count
+          FROM service s
+          JOIN item_attribute_value iav ON s.id = iav.item_id AND iav.type = 'service-attribute'
+          JOIN attribute a ON iav.attribute_id = a.id AND a.attribute_key = 'extension-lash-count'
+          JOIN attribute_option ao ON iav.attribute_option_id = ao.id
+          JOIN attribute_option_language aol ON ao.id = aol.attribute_option_id
+          WHERE s.id IN (${serviceIds.length > 0 ? serviceIds.join(',') : '0'})
+        `
+        )
+        .then((attrRows) => {
+          const map = new Map<number, number>();
+          (attrRows || []).forEach((r) => {
+            const num = parseInt(r.count, 10);
+            if (!isNaN(num) && num > 0) map.set(Number(r.service_id), num);
+          });
+          return map;
+        })
+        .catch(() => new Map<number, number>()),
+      fastify.prisma.crm.crmLashTypeBenchmark.findMany().catch(() => []),
+    ]);
 
     // Query staff_bonus grouped by order_service_id and user_id for fast lookup via direct JOIN
     const bonusRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
@@ -381,7 +467,15 @@ export class CcKpiService {
         const newTotal = prevPoints + consultantPoints;
         staffPointsAccu[staffKey] = newTotal;
 
-        const specs = parseServiceSpecs(row.serviceName || '');
+        const specs = parseServiceSpecs(
+          row.serviceName || '',
+          row.serviceType || '',
+          Number(row.durationMinute || 0),
+          String(row.rawServiceType || ''),
+          realAttrMap,
+          cvBenchmarks,
+          Number(row.service_id || 0)
+        );
         const calculatedLevel = this.calculateCcLevel(prevPoints);
 
         const ccInName = String(row.ccInName || '');

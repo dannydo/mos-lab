@@ -525,3 +525,42 @@ Your task is to conduct a strict, unbiased Victory Audit to verify whether the i
 
 Deliver your final audit report with an explicit final verdict: either `VICTORY CONFIRMED` or `VICTORY REJECTED`. Send your detailed findings back via send_message.
 </USER_REQUEST>
+
+## Follow-up — 2026-08-11T05:03:24Z
+
+Refactor the QA Shop Inspection UI (`/dashboard/qa-shop`) into an ultra-minimalist, high-aesthetic interface featuring sleek vector icons, subtle borders, refined typography, soft alert strips, and strict accessibility (a11y).
+
+Working directory: /Users/dannydo/projects/mos-lab/apps/web
+
+## Requirements
+
+### R1. Minimalist Vector Icon Toggle System
+
+Replace heavy badges, dark bulky cards, and chunky radio buttons with clean vector icon toggle buttons (`[✓ Đạt] [✕ Không đạt] [- N/A]`) with soft color feedback, smooth transitions, and tooltips.
+
+### R2. Refined Dot Indicators & Minimal Section Cards
+
+Organize checklist items into lightweight collapsible sections (`border-slate-200/60` / `dark:border-slate-800/60`). Replace heavy tags with subtle dot indicators (red/orange/gold dots) and muted slate-400 typography.
+
+### R3. Flat Minimal Stat Cards & Soft Alert Strip
+
+Redesign top KPI stat cards with sharp `tabular-nums` typography and thin vector icons. Replace heavy dark alert banners with a sleek, non-intrusive soft alert strip summarizing failed items.
+
+### R4. Accessibility & Theme Integration (a11y)
+
+Enforce WCAG color contrast standards, semantic HTML structure, keyboard focus states (`focus-visible:ring-2`), and seamless Light/Dark theme compatibility.
+
+## Acceptance Criteria
+
+### Visual Aesthetics & Vector Icons
+
+- [ ] Item status selector uses minimalist vector icon buttons (`CheckOutlined`, `CloseOutlined`, `MinusOutlined`) with soft active state colors (emerald, red, slate).
+- [ ] Checklist items feature subtle dot indicators for severity levels (`CRITICAL`, `HIGH`, `MID`, `LOW`) and muted text labels.
+- [ ] Accordion panels use lightweight 1px borders, subtle hover effects, and clean group titles.
+- [ ] Top Stat Cards feature clean vector icons, no heavy shadows, and `tabular-nums` digits.
+
+### Functional Integrity & Accessibility (a11y)
+
+- [ ] Zero TypeScript or compilation errors (`pnpm --filter @mos-lab/web build` passes with code 0).
+- [ ] All interactive elements have appropriate ARIA attributes, tooltips, and keyboard focus states.
+- [ ] Dual theme support (Light & Dark) functions seamlessly.

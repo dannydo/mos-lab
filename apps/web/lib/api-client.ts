@@ -166,6 +166,13 @@ import {
   CvSpeedSeedResult,
   CvSpeedSeedStatus,
   CvSpeedStyles,
+  QaChecklistTemplate,
+  QaDailyAudit,
+  QaActionTicket,
+  QaComplianceStats,
+  QaSaveAuditInput,
+  QaImportSheetInput,
+  QaShopBranchCode,
 } from '@mos-lab/shared';
 
 // In-flight request deduplication & short-term cache map for GET endpoints
@@ -318,11 +325,11 @@ export const apiClient = {
       const response = await api.delete(`/catalog/products/${id}`);
       return response.data;
     },
-    getGroups: async (): Promise<{ success: boolean; data: { key: string; name: string }[] }> => {
+    getGroups: async (): Promise<{ success: boolean; data: string[] }> => {
       const response = await api.get('/catalog/groups');
       return response.data;
     },
-    getTypes: async (): Promise<{ success: boolean; data: { key: string; label: string }[] }> => {
+    getTypes: async (): Promise<{ success: boolean; data: string[] }> => {
       const response = await api.get('/catalog/types');
       return response.data;
     },
@@ -1560,6 +1567,69 @@ export const apiClient = {
     },
     getCsStaffPerformance: async (params?: any) => {
       const response = await api.get('/cs/dashboard/staff-performance', { params });
+      return response.data;
+    },
+  },
+  // QA & QC Shop API Methods
+  qaShop: {
+    getTemplates: async (params?: { branchCode?: QaShopBranchCode }): Promise<QaChecklistTemplate[]> => {
+      const response = await api.get('/qa-shop/templates', { params });
+      return response.data;
+    },
+    getTemplateByIdOrCode: async (idOrCode: string): Promise<QaChecklistTemplate> => {
+      const response = await api.get(`/qa-shop/templates/${idOrCode}`);
+      return response.data;
+    },
+    importSheetTemplate: async (input: QaImportSheetInput): Promise<QaChecklistTemplate> => {
+      const response = await api.post('/qa-shop/templates/import-sheet', input);
+      return response.data;
+    },
+    updateTemplate: async (branchCode: string, sections: SafeAny[]): Promise<QaChecklistTemplate> => {
+      const response = await api.put(`/qa-shop/templates/${branchCode}`, { sections });
+      return response.data;
+    },
+    cloneTemplate: async (data: {
+      sourceBranchCode: string;
+      targetBranchCode: string;
+      overwrite?: boolean;
+    }): Promise<QaChecklistTemplate> => {
+      const response = await api.post('/qa-shop/templates/clone', data);
+      return response.data;
+    },
+    getAudits: async (params?: {
+      branchCode?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    }): Promise<QaDailyAudit[]> => {
+      const response = await api.get('/qa-shop/audits', { params });
+      return response.data;
+    },
+    getAuditById: async (id: string): Promise<QaDailyAudit> => {
+      const response = await api.get(`/qa-shop/audits/${id}`);
+      return response.data;
+    },
+    saveAudit: async (input: QaSaveAuditInput): Promise<QaDailyAudit> => {
+      const response = await api.post('/qa-shop/audits', input);
+      return response.data;
+    },
+    getTickets: async (params?: { branchCode?: string; status?: string }): Promise<QaActionTicket[]> => {
+      const response = await api.get('/qa-shop/tickets', { params });
+      return response.data;
+    },
+    updateTicket: async (
+      ticketId: string,
+      updates: {
+        status?: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'VERIFIED';
+        resolutionNotes?: string;
+        resolutionPhotoUrls?: string[];
+        resolvedByStaffName?: string;
+      }
+    ): Promise<QaActionTicket> => {
+      const response = await api.patch(`/qa-shop/tickets/${ticketId}`, updates);
+      return response.data;
+    },
+    getAnalytics: async (): Promise<QaComplianceStats> => {
+      const response = await api.get('/qa-shop/analytics');
       return response.data;
     },
   },

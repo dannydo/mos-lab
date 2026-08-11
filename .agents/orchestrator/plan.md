@@ -1,40 +1,25 @@
-# Master Plan: CV Lash Extension Speed Model
+# QA Shop Inspection UI Refactoring — Orchestration Plan
 
-## Objective
+## Overview
 
-Implement a per-CV non-linear (logarithmic) speed estimation model with 3-layer self-correcting logic, CRM database storage (`crm_cv_speed_profile`), nightly seeding background task, 7 backend API endpoints in Fastify, and a rich interactive dashboard tab on Next.js CRM frontend.
+Refactor the QA Shop Inspection UI (`/dashboard/qa-shop`) in `apps/web` into an ultra-minimalist, high-aesthetic interface adhering to strict UI/UX standards, WCAG AA accessibility, dual Light/Dark theme support, and tabular-nums formatting.
 
-## Feature Inventory
+## Objectives & Requirements
 
-| #   | Feature                      | Description                                                                                                                | Requirement | Milestone |
-| --- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------- | --------- |
-| 1   | Shared Types                 | TypeScript definitions for CvSpeedProfile, Matrix, Ranking, Detail, Trend, Prediction, SeedResult                          | R5          | M1        |
-| 2   | DB Schema & Migration        | Prisma model `crm_cv_speed_profile` in `apps/api/prisma/crm.prisma` & migration                                            | R2          | M1        |
-| 3   | Logarithmic Speed Model Core | Fit $a + b \ln(n)$, phase breakdown, self-correcting 3-layer estimation, monotonicity enforcement, adaptive rolling window | R1          | M2        |
-| 4   | Nightly Seed Service         | Seeding logic per CV/style/mode/count, idempotency, speed rating calculation                                               | R2          | M2        |
-| 5   | Backend API Endpoints        | 7 Fastify endpoints in `cv-speed.routes.ts` with filters, active CC config, date parsing                                   | R3          | M3        |
-| 6   | Speed Matrix Overview        | Section 1 UI: Grid of CVs vs Lash Styles/Counts with Green/Yellow/Red indicators                                           | R4          | M4        |
-| 7   | Speed Ranking Table          | Section 2 UI: Sortable ranking table with speed rating, sample size, trend arrows                                          | R4          | M4        |
-| 8   | CV Speed Detail Modal        | Section 3 UI: Summary card, phase breakdown chart, per-case timeline, monthly trend chart                                  | R4          | M4        |
-| 9   | Booking Predictor Widget     | Section 4 UI: Interactive calculator predicting ETA and phase breakdown for selected inputs                                | R4          | M4        |
-| 10  | E2E Verification & Auditing  | Automated build, unit/integration verification, monotonicity checks, forensic audit                                        | Acceptance  | M5        |
+1. **R1: Minimalist Vector Icon Toggle System**: Replace heavy badges/chunky radio buttons with clean vector icon buttons (`CheckOutlined`, `CloseOutlined`, `MinusOutlined`) with soft color feedback (emerald, red, slate), smooth transitions, tooltips, and keyboard accessibility.
+2. **R2: Refined Dot Indicators & Minimal Section Cards**: Section cards with 1px subtle borders (`border-slate-200/60` / `dark:border-slate-800/60`), subtle severity dot indicators (`CRITICAL`, `HIGH`, `MID`, `LOW`), and muted typography (`text-slate-400`).
+3. **R3: Flat Minimal Stat Cards & Soft Alert Strip**: Sharp `tabular-nums` typography and thin vector icons on top stat cards. Soft, non-intrusive alert strip summarizing failed items.
+4. **R4: Accessibility (a11y) & Theme Integration**: Dual Light & Dark theme support, WCAG AA contrast standards, keyboard focus states (`focus-visible:ring-2`), semantic HTML structure.
+5. **Verification**: `pnpm --filter @mos-lab/web build` passes with zero errors.
 
-## Milestones
+## Phase Breakdown
 
-| #   | Name                           | Scope                                                                         | Dependencies   | Status  |
-| --- | ------------------------------ | ----------------------------------------------------------------------------- | -------------- | ------- |
-| M1  | Shared Types & DB Schema       | `packages/shared/src/types/cv-speed.ts`, Prisma schema `crm_cv_speed_profile` | None           | DONE    |
-| M2  | Logarithmic Speed Model & Seed | Logarithmic regression service, 3-layer estimation, seed service              | M1             | DONE    |
-| M3  | Backend API Endpoints          | 7 Fastify endpoints in `apps/api/src/modules/kpi/routes/cv-speed.routes.ts`   | M1, M2         | PLANNED |
-| M4  | KPI Dashboard UI               | "CV Speed / Tốc Độ CV" tab in KPI page (4 sections)                           | M1, M3         | PLANNED |
-| M5  | Verification & Audit           | Automated tests, monotonicity verification, audit check                       | M1, M2, M3, M4 | PLANNED |
-
-## Code Layout & Boundaries
-
-- `packages/shared/src/types/cv-speed.ts` — Shared TypeScript types & export in index
-- `apps/api/prisma/crm.prisma` — Prisma schema addition `crm_cv_speed_profile`
-- `apps/api/src/modules/kpi/services/cv-speed-model.service.ts` — Logarithmic speed regression & 3-layer estimation engine
-- `apps/api/src/modules/kpi/services/cv-speed-seed.service.ts` — Nightly seeding & calculation runner
-- `apps/api/src/modules/kpi/routes/cv-speed.routes.ts` — Fastify API endpoints
-- `apps/web/app/(dashboard)/kpi/components/cv-speed/` — React UI components (Speed Matrix, Ranking, Detail Modal, Booking Predictor)
-- `apps/web/app/(dashboard)/kpi/page.tsx` — Add "CV Speed / Tốc Độ CV" tab
+- **Phase 0: Codebase Survey**: Dispatch 3 parallel Explorers to inspect existing page/component implementation at `/dashboard/qa-shop`, data structures, current styling, icon imports, theme handling, and accessibility status.
+- **Phase 1: Feature Inventory & Decomposition**: Create `PROJECT.md` with detailed feature inventory, code layout, and milestone definitions.
+- **Phase 2: Milestone Execution Loop**:
+  - Explorer: Plan exact implementation strategy.
+  - Worker: Implement UI refactoring according to requirements R1-R4 and AGENTS.md rules.
+  - Reviewers: 2 independent reviewers for UI aesthetic quality, WCAG AA contrast, theme compatibility, and code correctness.
+  - Challengers: 2 challengers to verify interactive states, keyboard navigation, and edge case rendering.
+  - Forensic Auditor: Verify integrity (no hardcoded/fake states or cheating).
+- **Phase 3: Verification & Sentinel Completion Report**: Confirm `pnpm --filter @mos-lab/web build` succeeds, aggregate all gate results, and report completion to Sentinel.

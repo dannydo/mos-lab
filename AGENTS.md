@@ -428,5 +428,12 @@ mos-lab/
   - Mọi dropdown chọn tiệm trên các giao diện vận hành nối mi (Book lịch khách hàng `BookingWizardDrawer`, Đổi lịch `RescheduleBookingModal`, Cập nhật đơn `UpdateBookingModal`, Lịch hẹn `schedule-calendar`, Báo cáo Booker `bk/page`, Báo cáo CC `cc/page`, Báo cáo CV/KTV `cv/page`, Báo cáo Hôm nay `today/page`) **BẮT BUỘC CHỈ HIỂN THỊ 2 TIỆM NỐI MI ĐANG HOẠT ĐỘNG** (`Đề Thám` và `Estella Place`).
   - Single Source of Truth: Lấy từ `ACTIVE_LASH_SALONS` trong `@mos-lab/shared` và mảng `STORES` trong `apps/web/components/booking/constants.ts`. Tuyệt đối không hardcode thêm các chi nhánh đã ẩn hay chi nhánh văn phòng/học viện vào dropdown chọn tiệm nối mi.
 
+### 42. Lash Style Domain Terminology & System Mapping Standard (Quy tắc Thuật ngữ Dòng Mi / Dáng Mi)
+- **Thuật ngữ Nghiệp vụ Salon (Domain Terms)**: Các tên gọi như `Classic`, `Mink`, `Volume` (3D, 4D, 5D), `Ultralight`, `Hyperlight`, `Flawless`, `Ivylight` (3L, 4L, 5L), `Under Mink` được gọi là **Dòng Mi** (hoặc **Dáng Mi** / **Kiểu Mi** / **Dòng Dịch Vụ Mi**).
+- **Thuật ngữ Kỹ thuật System (Codebase Mapping)**:
+  - Khai báo chuẩn tại `@mos-lab/shared` (`packages/shared/src/types/catalog.ts`): đối tượng `LASH_STYLES` và kiểu dữ liệu `LashStyle`.
+  - Service backend (`LashBenchmarkService.parseLashSpecs()`) phân tích `service_key` / `service_name` thành `{ lashStyle, lashCount }`.
+  - Không nhầm lẫn **Dòng Mi / Dáng Mi** (`lashStyle`: Classic, Mink, Volume, Ivylight...) với **Loại Dịch Vụ** (`serviceType`: Normal, Retain, Fix, Adjust, Removal) hay **Nhóm Dịch Vụ** (`serviceGroup`: LashesTop, LashesUnder, Sauna...).
+
 
 

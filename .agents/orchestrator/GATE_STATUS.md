@@ -1,26 +1,19 @@
-## Gate — Milestone 1 (Shared Types & DB Schema)
+## Gate — Iteration 1 (Milestone 1: QA Shop Inspection UI Refactoring)
 
-| Agent           | Role                        | Verdict             | Source             |
-| --------------- | --------------------------- | ------------------- | ------------------ |
-| worker_m1_retry | teamwork_preview_worker     | DONE (build passed) | handoff.md         |
-| reviewer_m1_1   | teamwork_preview_reviewer   | APPROVE             | message/handoff.md |
-| reviewer_m1_2   | teamwork_preview_reviewer   | APPROVE             | message/handoff.md |
-| challenger_m1_1 | teamwork_preview_challenger | APPROVE             | message/handoff.md |
-| challenger_m1_2 | teamwork_preview_challenger | APPROVE             | message/handoff.md |
-| auditor_m1      | teamwork_preview_auditor    | CLEAN               | message/handoff.md |
+| Agent           | Role                        | Verdict                    | Source     |
+| --------------- | --------------------------- | -------------------------- | ---------- |
+| worker_m1       | teamwork_preview_worker     | DONE (build passed code 0) | handoff.md |
+| reviewer_m1_1   | teamwork_preview_reviewer   | APPROVE                    | handoff.md |
+| reviewer_m1_2   | teamwork_preview_reviewer   | APPROVE                    | handoff.md |
+| challenger_m1_1 | teamwork_preview_challenger | APPROVE                    | handoff.md |
+| challenger_m1_2 | teamwork_preview_challenger | APPROVE                    | handoff.md |
+| auditor_m1_1    | teamwork_preview_auditor    | CLEAN                      | handoff.md |
 
-Gate Result: **PASS** (Milestone 1 Completed)
+Gate Result: **PASS**
 
-## Gate — Milestones 2, 3, 4 & 5 (Logarithmic Speed Model, API Endpoints, Dashboard UI & E2E Verification)
+### Gate Evaluation Details:
 
-| Agent             | Role                        | Verdict             | Source             |
-| ----------------- | --------------------------- | ------------------- | ------------------ |
-| worker_m2_fresh   | teamwork_preview_worker     | DONE (build passed) | handoff.md         |
-| worker_m3         | teamwork_preview_worker     | DONE (build passed) | handoff.md         |
-| worker_m4         | teamwork_preview_worker     | DONE (build passed) | handoff.md         |
-| reviewer_m3m4_1   | teamwork_preview_reviewer   | APPROVE             | message/handoff.md |
-| reviewer_m3m4_2   | teamwork_preview_reviewer   | APPROVE             | message/handoff.md |
-| challenger_m3m4_2 | teamwork_preview_challenger | APPROVE             | message/handoff.md |
-| auditor_m3m4      | teamwork_preview_auditor    | CLEAN               | handoff.md         |
-
-Gate Result: **PASS** (Milestones 1-5 Completed)
+1. Build & Tests: `pnpm --filter @mos-lab/shared build` and `pnpm --filter @mos-lab/web build` passed with exit code 0.
+2. Reviewers: 2/2 APPROVE (reviewer_m1_1, reviewer_m1_2).
+3. Challengers: 2/2 APPROVE (challenger_m1_1, challenger_m1_2).
+4. Forensic Auditor: CLEAN (auditor_m1_1).

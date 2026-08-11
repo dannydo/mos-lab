@@ -1,88 +1,87 @@
-# BRIEFING — 2026-08-08T08:54:36Z
+# BRIEFING — 2026-08-11T12:04:21+07:00
 
 ## Mission
 
-Build CV Lash Extension Speed Model (R1-R5) including logarithmic regression speed profile model, CRM DB storage & nightly seeding, Fastify API endpoints (M3), Ant Design + Tailwind v4 Dashboard UI tab (M4), and E2E verification & audit (M5).
+Refactor the QA Shop Inspection UI (`/dashboard/qa-shop`) in mos-lab into an ultra-minimalist, high-aesthetic interface with vector icons, refined typography, subtle borders, soft alert strip, and WCAG AA accessibility.
 
 ## 🔒 My Identity
 
-- Archetype: self
+- Archetype: Project Orchestrator
 - Roles: orchestrator, user_liaison, human_reporter, successor
 - Working directory: /Users/dannydo/projects/mos-lab/.agents/orchestrator
-- Original parent: top-level
-- Original parent conversation ID: 5b45317b-041f-4796-90ae-ed3905083f27
+- Original parent: Sentinel
+- Original parent conversation ID: 5d83512c-6830-4869-86ec-52cfed53d43f
 
 ## 🔒 My Workflow
 
 - **Pattern**: Project
-- **Scope document**: .agents/orchestrator/plan.md
+- **Scope document**: /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md
 
-1. **Decompose**: Survey codebase via Explorers/Spec Miners -> Plan Milestones -> Delegate/Iterate (Explorer -> Worker -> Reviewer -> Challenger -> Auditor)
+1. **Decompose**: Survey codebase via Explorers -> Define Feature Inventory & Milestones -> Run Iteration Loops.
 2. **Dispatch & Execute**:
-   - Iteration loop per milestone
+   - **Direct (iteration loop)**: Survey -> Explorer -> Worker -> Reviewer / Challenger / Auditor -> Gate
 3. **On failure**: Retry -> Replace -> Skip -> Redistribute -> Redesign -> Escalate
-4. **Succession**: Spawn successor at 20 spawns
+4. **Succession**: Self-succeed at 20 spawns or context limit.
 
 - **Work items**:
-  - Phase 0: Survey codebase & map requirements [DONE]
-  - Milestone 1 (M1): Shared Types & Database Schema (`crm_cv_speed_profile`) [DONE]
-  - Milestone 2 (M2): Logarithmic Speed Model Core Service & Seeding logic [DONE]
-  - Milestone 3 (M3): Backend API Endpoints (7 routes in Fastify) [DONE]
-  - Milestone 4 (M4): Dashboard UI & Booking Predictor Widget [DONE]
-  - Milestone 5 (M5): End-to-End Verification & Gate Approval [DONE]
-- **Current phase**: Milestone 5 (Completed)
-- **Current focus**: Report final results to parent agent
+  1. Survey & Map QA Shop UI codebase [in-progress]
+  2. Implement R1-R4 Refactoring [pending]
+  3. Verify Build & Verification Gate [pending]
+- **Current phase**: 0 (Survey)
+- **Current focus**: Parallel exploration of `/dashboard/qa-shop` UI codebase and components.
 
 ## 🔒 Key Constraints
 
-- Never write, modify, or create source code files directly.
-- Only edit .md files in .agents/ folder.
-- Never reuse subagents after handoff — spawn fresh.
-- Always include path to ORIGINAL_REQUEST.md in subagent dispatches.
-- Forensic Auditor verdict is a HARD BINARY VETO.
-- Follow all AGENTS.md rules (NodeNext .js imports, tabular-nums, Light/Dark theme, controlled pagination, etc.).
+- NEVER write, modify, or create source code files directly.
+- NEVER run build/test commands yourself — require workers to do so.
+- NEVER investigate or explore problem at code level directly — dispatch Explorers.
+- Dual theme support (Light & Dark), WCAG AA contrast, tabular-nums.
+- pnpm --filter @mos-lab/web build must pass with zero errors.
 
 ## Current Parent
 
-- Conversation ID: 5b45317b-041f-4796-90ae-ed3905083f27
-- Updated: 2026-08-08T08:54:36Z
+- Conversation ID: 5d83512c-6830-4869-86ec-52cfed53d43f
+- Updated: not yet
 
 ## Key Decisions Made
 
-- Resumed orchestration as Generation 2 successor.
-- Milestone 1 & Milestone 2 verified complete.
-- Fastify API endpoints created and registered in `apps/api/src/modules/kpi/routes.ts`.
-- Dispatched worker_m4 for M4 Dashboard UI, apiClient SDK, CvSpeedTrend shared type fix, and full monorepo build verification.
+- Initiated top-level Survey phase with 3 parallel Explorers to investigate current QA Shop UI implementation, component layout, state management, and accessibility gaps.
 
 ## Team Roster
 
-| Agent             | Type                        | Work Item                               | Status                  | Conv ID                              |
-| ----------------- | --------------------------- | --------------------------------------- | ----------------------- | ------------------------------------ |
-| worker_m4         | teamwork_preview_worker     | Implement KPI Dashboard UI & SDK        | completed               | aadd3341-c3a6-46c0-ae46-c9aa71ebda53 |
-| reviewer_m3m4_1   | teamwork_preview_reviewer   | Code Reviewer 1 (M2-M4 Codebase)        | completed (APPROVE)     | 7782506f-864c-43e1-b16c-cde28ef82d73 |
-| reviewer_m3m4_2   | teamwork_preview_reviewer   | Code Reviewer 2 (M2-M4 Robustness)      | completed (REQ_CHANGES) | 634e01ff-adc8-4305-bc42-f8f75d20d8ed |
-| challenger_m3m4_1 | teamwork_preview_challenger | Monorepo Build Challenger               | in-progress             | dda90ac3-283a-4b67-80b2-f9deb891627d |
-| challenger_m3m4_2 | teamwork_preview_challenger | Math & Log Regression Challenger        | completed (REQ_CHANGES) | eb58be42-b8c1-4bc9-aa3c-7c7b9b26da5b |
-| auditor_m3m4      | teamwork_preview_auditor    | Forensic Integrity Auditor              | in-progress             | bd325444-2fd9-43f5-bde3-a2f0e3906e57 |
-| worker_m3m4_fix   | teamwork_preview_worker     | Remediation Worker (Math & Route Fixes) | in-progress             | 4246a261-b2c6-4bfb-9b9a-c9f80c14e291 |
+| Agent             | Type                        | Work Item                            | Status    | Conv ID                              |
+| ----------------- | --------------------------- | ------------------------------------ | --------- | ------------------------------------ |
+| explorer_survey_1 | teamwork_preview_explorer   | Survey codebase & page layout        | completed | d406c7f4-3e16-40e4-9c63-48d8688dedd5 |
+| explorer_survey_2 | teamwork_preview_explorer   | Investigate UI components R1-R3      | completed | f3267327-e316-44f6-9d79-d1d5ae08610a |
+| explorer_survey_3 | teamwork_preview_explorer   | Audit a11y, theme & tabular-nums R4  | completed | 9f485f35-451d-4915-b1fc-4bff75254a3a |
+| explorer_m1_r1_1  | teamwork_preview_explorer   | Strategy for R1 & R2 refactoring     | completed | 768aae86-637c-40a8-a9c9-9b3e6066c6c3 |
+| explorer_m1_r1_2  | teamwork_preview_explorer   | Strategy for R3 & type alignment     | completed | 49579a1d-25d3-4170-988d-bc1a5fd89d1d |
+| explorer_m1_r1_3  | teamwork_preview_explorer   | Strategy for R4 & a11y compliance    | completed | c1881de9-220b-474f-aea9-63a17679fc8b |
+| worker_m1         | teamwork_preview_worker     | Implement M1 R1-R4 UI Refactoring    | completed | ebd910fb-5e9c-4302-91ee-22a585eadd77 |
+| reviewer_m1_1     | teamwork_preview_reviewer   | Review UI aesthetic & R1-R3          | completed | 8f2aa5a3-ed88-4ed9-8158-ea0bd0d1b260 |
+| reviewer_m1_2     | teamwork_preview_reviewer   | Review a11y, theme & AGENTS.md rules | completed | a668ac5f-9153-4f74-a31c-9bf67c921e87 |
+| challenger_m1_1   | teamwork_preview_challenger | Challenge interactive states & ARIA  | completed | 9b83b909-52d0-41da-8a1b-10007ef76467 |
+| challenger_m1_2   | teamwork_preview_challenger | Challenge edge cases & types         | completed | 99edb8aa-6971-4fce-941a-9cca1801419c |
+| auditor_m1_1      | teamwork_preview_auditor    | Forensic integrity audit             | completed | fc7c2ad1-fb45-46f8-96e6-2ac89f40d6e8 |
 
 ## Succession Status
 
 - Succession required: no
-- Spawn count: 13 / 20 (Gen 2)
-- Pending subagents: 4246a261-b2c6-4bfb-9b9a-c9f80c14e291
-- Predecessor: Gen 1 (20 spawns completed)
+- Spawn count: 0 / 20
+- Pending subagents: none
+- Predecessor: none
 - Successor: not yet spawned
 
 ## Active Timers
 
-- Heartbeat cron: task-189
-- Safety timer: task-217
+- Heartbeat cron: task-7
+- Safety timer: none
 
 ## Artifact Index
 
-- `.agents/orchestrator/plan.md` — Master Plan & Milestone tracking
-- `.agents/orchestrator/progress.md` — Liveness & Progress log
-- `.agents/orchestrator/BRIEFING.md` — Orchestrator briefing state
-- `.agents/orchestrator/DISPATCH.md` — User dispatch record
-- `.agents/orchestrator/handoff.md` — Gen 1 Soft Handoff Report
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/DISPATCH.md — Task assignment
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/BRIEFING.md — Persistent memory index
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/PROJECT.md — Global project index & feature inventory
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/plan.md — Execution plan
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/progress.md — Liveness & status tracking
+- /Users/dannydo/projects/mos-lab/.agents/orchestrator/context.md — Shared context

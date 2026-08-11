@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "pnpm prisma:generate && tsc && pnpm postbuild",
-    "postbuild": "rm -rf dist/generated && cp -r src/generated dist/generated",
+    "postbuild": "rm -rf dist/generated && cp -r src/generated dist/generated && mkdir -p dist/modules/qa-shop && cp src/modules/qa-shop/*.json dist/modules/qa-shop/ 2>/dev/null || true",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate --schema=prisma/legacy.prisma && prisma generate --schema=prisma/crm.prisma",
     "prisma:migrate:crm": "prisma migrate dev --schema=prisma/crm.prisma --name init",

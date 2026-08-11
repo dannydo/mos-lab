@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Tabs,
   Table,
@@ -73,6 +73,74 @@ import {
 
 dayjs.extend(isoWeek);
 
+const LASH_STYLE_OPTIONS = [
+  { value: 'Classic', label: 'Classic' },
+  { value: 'Mink', label: 'Mink' },
+  { value: 'Volume 3D', label: 'Volume 3D' },
+  { value: 'Volume 4D', label: 'Volume 4D' },
+  { value: 'Volume 5D', label: 'Volume 5D' },
+  { value: 'Ultralight', label: 'Ultralight' },
+  { value: 'Hyperlight', label: 'Hyperlight' },
+  { value: 'Flawless', label: 'Flawless' },
+  { value: 'Ivylight', label: 'Ivylight' },
+  { value: 'Under Mink', label: 'Under Mink' },
+];
+
+const inferLashStyle = (serviceKey?: string, serviceName?: string): string | null => {
+  const key = (serviceKey || '').toLowerCase();
+  const name = (serviceName || '').toLowerCase();
+  if (key === 'any-service-product' || key.includes('product') || name.includes('shopping cart')) {
+    return null;
+  }
+  const combined = `${key} ${name}`;
+  if (key.startsWith('ivylight-') || combined.includes('ivylight')) return 'Ivylight';
+  if (
+    key.startsWith('flawless-') ||
+    combined.includes('flawless') ||
+    key.startsWith('mink-') ||
+    combined.includes('mink')
+  )
+    return 'Mink';
+  if (key.startsWith('hyperlight-') || combined.includes('hyperlight')) return 'Hyperlight';
+  if (key.startsWith('ultralight-') || combined.includes('ultralight') || combined.includes('ultra light'))
+    return 'Ultralight';
+  if (key.startsWith('volume-') || combined.includes('volume')) return 'Volume 3D';
+  if (key.startsWith('under-mink-') || combined.includes('under mink') || combined.includes('lashes under'))
+    return 'Under Mink';
+  if (key.startsWith('classic-') || combined.includes('classic')) return 'Classic';
+  return 'Classic';
+};
+
+const inferLashCount = (serviceKey?: string, serviceName?: string): number | null => {
+  const key = (serviceKey || '').toLowerCase();
+  const name = (serviceName || '').toLowerCase();
+  if (key === 'any-service-product' || key.includes('product') || name.includes('shopping cart')) {
+    return null;
+  }
+  const combined = `${key} ${name}`;
+
+  const countMatch = combined.match(/(\d{2,3})\s*(sợi|soi|lashes|sợ)/);
+  if (countMatch) {
+    return parseInt(countMatch[1], 10);
+  }
+
+  return null;
+};
+
+const getLashStyleTagColor = (style?: string) => {
+  if (!style) return 'default';
+  const lower = style.toLowerCase();
+  if (lower.includes('classic')) return 'green';
+  if (lower.includes('mink') && !lower.includes('under')) return 'orange';
+  if (lower.includes('ivylight')) return 'purple';
+  if (lower.includes('ultralight')) return 'cyan';
+  if (lower.includes('hyperlight')) return 'magenta';
+  if (lower.includes('flawless')) return 'gold';
+  if (lower.includes('volume')) return 'blue';
+  if (lower.includes('under')) return 'volcano';
+  return 'geekblue';
+};
+
 export type CatalogViewMode = 'month' | 'week' | 'day';
 export type CatalogFilterItemType = 'all' | 'service' | 'combo' | 'product';
 
@@ -136,6 +204,10 @@ export default function CatalogPage() {
   const [serviceTypeFilter, setServiceTypeFilter] = useState<string>('all');
   const [productSearch, setProductSearch] = useState('');
 
+  // Dynamic Metadata Options (Master Services only)
+  const [dynamicGroups, setDynamicGroups] = useState<string[]>(['LashesTop', 'LashesUnder', 'Product']);
+  const [dynamicTypes, setDynamicTypes] = useState<string[]>(['Normal', 'Retain', 'Removal']);
+
   // Stats
   const [stats, setStats] = useState({
     totalServices: 0,
@@ -167,6 +239,7 @@ export default function CatalogPage() {
 
   const [productDrawerOpen, setProductDrawerOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<CatalogProduct | null>(null);
+  const openBranchCreateRef = useRef<(() => void) | null>(null);
 
   // Form instances
   const [serviceForm] = Form.useForm();
@@ -264,7 +337,23 @@ export default function CatalogPage() {
     if (savedProductPage) setProductPage(Number(savedProductPage));
     const savedProductSize = localStorage.getItem('catalog_product_pageSize');
     if (savedProductSize) setProductPageSize(Number(savedProductSize));
+
+    fetchGroupsAndTypes();
   }, []);
+
+  const fetchGroupsAndTypes = async () => {
+    try {
+      const [groupsRes, typesRes] = await Promise.all([apiClient.catalog.getGroups(), apiClient.catalog.getTypes()]);
+      if (groupsRes?.success && Array.isArray(groupsRes.data) && groupsRes.data.length > 0) {
+        setDynamicGroups(groupsRes.data);
+      }
+      if (typesRes?.success && Array.isArray(typesRes.data) && typesRes.data.length > 0) {
+        setDynamicTypes(typesRes.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch catalog groups and types:', err);
+    }
+  };
 
   const handleViewModeChange = (mode: CatalogViewMode) => {
     setViewMode(mode);
@@ -546,11 +635,21 @@ export default function CatalogPage() {
     if (record) {
       setEditingService(record);
       const firstPrice = record.prices && record.prices.length > 0 ? record.prices[0].servicePrice : undefined;
+      const isProduct =
+        record.serviceGroup === 'Product' ||
+        record.serviceType === 'Product' ||
+        record.serviceKey === 'any-service-product';
       serviceForm.setFieldsValue({
         serviceName: record.serviceName,
         serviceKey: record.serviceKey,
         serviceGroup: record.serviceGroup,
         serviceType: record.serviceType,
+        lashStyle: isProduct
+          ? undefined
+          : record.lashStyle || inferLashStyle(record.serviceKey, record.serviceName) || undefined,
+        lashCount: isProduct
+          ? undefined
+          : record.lashCount || inferLashCount(record.serviceKey, record.serviceName) || undefined,
         durationMinute: record.durationMinute,
         durationMinuteStandard: record.durationMinuteStandard || record.durationMinute,
         remindingIntervalDay: record.remindingIntervalDay,
@@ -563,6 +662,8 @@ export default function CatalogPage() {
       serviceForm.setFieldsValue({
         serviceGroup: 'LashesTop',
         serviceType: 'Normal',
+        lashStyle: 'Classic',
+        lashCount: 80,
         durationMinute: 60,
         durationMinuteStandard: 60,
         remindingIntervalDay: 21,
@@ -912,7 +1013,7 @@ export default function CatalogPage() {
         let label = type;
         if (type === 'Normal') {
           color = 'blue';
-          label = 'Normal (Thường)';
+          label = 'Normal (Nối mới)';
         } else if (type === 'Retain') {
           color = 'purple';
           label = 'Retain (Dặm mi)';
@@ -928,6 +1029,9 @@ export default function CatalogPage() {
         } else if (type === 'Removal') {
           color = 'red';
           label = 'Removal (Tháo mi)';
+        } else if (type === 'Product') {
+          color = 'geekblue';
+          label = 'Product';
         }
         return <Tag color={color}>{label}</Tag>;
       },
@@ -937,6 +1041,49 @@ export default function CatalogPage() {
       dataIndex: 'serviceGroup',
       key: 'serviceGroup',
       render: (group: string) => <Tag color="blue">{group}</Tag>,
+    },
+    {
+      title: 'Dòng mi',
+      dataIndex: 'lashStyle',
+      key: 'lashStyle',
+      render: (style: string, record: CatalogService) => {
+        if (
+          record.serviceGroup === 'Product' ||
+          record.serviceType === 'Product' ||
+          record.serviceKey === 'any-service-product'
+        ) {
+          return <span className="text-slate-400">-</span>;
+        }
+        const displayStyle = style || inferLashStyle(record.serviceKey, record.serviceName);
+        return displayStyle ? (
+          <Tag color={getLashStyleTagColor(displayStyle)}>{displayStyle}</Tag>
+        ) : (
+          <span className="text-slate-400">-</span>
+        );
+      },
+    },
+    {
+      title: 'Số sợi mi',
+      dataIndex: 'lashCount',
+      key: 'lashCount',
+      align: 'right' as const,
+      render: (count: number | null, record: CatalogService) => {
+        if (
+          record.serviceGroup === 'Product' ||
+          record.serviceType === 'Product' ||
+          record.serviceKey === 'any-service-product'
+        ) {
+          return <span className="text-slate-400">-</span>;
+        }
+        const displayCount = count || inferLashCount(record.serviceKey, record.serviceName);
+        return displayCount ? (
+          <Tag color="geekblue" className="tabular-nums font-medium">
+            {displayCount} sợi
+          </Tag>
+        ) : (
+          <span className="text-slate-400">-</span>
+        );
+      },
     },
     {
       title: 'Thời lượng (phút)',
@@ -1339,6 +1486,11 @@ export default function CatalogPage() {
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenProductDrawer()} />
               </Tooltip>
             )}
+            {isCatalogAdmin && activeTab === 'branches' && (
+              <Tooltip title="Thêm chi nhánh mới">
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => openBranchCreateRef.current?.()} />
+              </Tooltip>
+            )}
           </Space>
         }
       />
@@ -1442,13 +1594,13 @@ export default function CatalogPage() {
                           setServicePage(1);
                           localStorage.setItem('catalog_service_page', '1');
                         }}
-                        style={{ width: 150 }}
+                        style={{ width: 210 }}
                         options={[
                           { value: 'all', label: 'Tất cả nhóm' },
-                          { value: 'LashesTop', label: 'LashesTop' },
-                          { value: 'LashesUnder', label: 'LashesUnder' },
-                          { value: 'Lashes', label: 'Lashes' },
-                          { value: 'Sauna', label: 'Sauna' },
+                          { value: 'Lashes', label: 'Lashes (Tất cả Mi)' },
+                          { value: 'LashesTop', label: 'LashesTop (Mi trên)' },
+                          { value: 'LashesUnder', label: 'LashesUnder (Mi dưới)' },
+                          { value: 'Product', label: 'Product (Giỏ hàng)' },
                         ]}
                       />
                       <Select
@@ -1458,15 +1610,13 @@ export default function CatalogPage() {
                           setServicePage(1);
                           localStorage.setItem('catalog_service_page', '1');
                         }}
-                        style={{ width: 170 }}
+                        style={{ width: 210 }}
                         options={[
                           { value: 'all', label: 'Tất cả loại dịch vụ' },
-                          { value: 'Normal', label: 'Normal (Thường)' },
+                          { value: 'Normal', label: 'Normal (Nối mới)' },
                           { value: 'Retain', label: 'Retain (Dặm mi)' },
-                          { value: 'Fix', label: 'Fix (Sửa mi hỏng)' },
-                          { value: 'Adjust', label: 'Adjust (Chỉnh dáng)' },
-                          { value: 'Log', label: 'Log (Ghi nhận)' },
                           { value: 'Removal', label: 'Removal (Tháo mi)' },
+                          { value: 'Product', label: 'Product (Giỏ hàng)' },
                         ]}
                       />
                       <Space className="ml-2">
@@ -1483,10 +1633,6 @@ export default function CatalogPage() {
                         />
                       </Space>
                     </Space>
-
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenServiceDrawer()}>
-                      Thêm Dịch Vụ
-                    </Button>
                   </div>
 
                   <Table
@@ -1536,10 +1682,6 @@ export default function CatalogPage() {
                         />
                       </Space>
                     </Space>
-
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenComboDrawer()}>
-                      Thêm Gói Combo
-                    </Button>
                   </div>
 
                   <Table
@@ -1612,10 +1754,6 @@ export default function CatalogPage() {
                         />
                       </Space>
                     </Space>
-
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenProductDrawer()}>
-                      Thêm Sản Phẩm
-                    </Button>
                   </div>
 
                   <Table
@@ -1660,7 +1798,11 @@ export default function CatalogPage() {
               ),
               children: (
                 <div className="p-4">
-                  <CatalogBranchTab />
+                  <CatalogBranchTab
+                    onRegisterCreate={(fn) => {
+                      openBranchCreateRef.current = fn;
+                    }}
+                  />
                 </div>
               ),
             },
@@ -1680,7 +1822,44 @@ export default function CatalogPage() {
           </Button>
         }
       >
-        <Form form={serviceForm} layout="vertical" onFinish={handleSaveService}>
+        <Form
+          form={serviceForm}
+          layout="vertical"
+          onFinish={handleSaveService}
+          onValuesChange={(changedValues, allValues) => {
+            const key = allValues.serviceKey;
+            const name = allValues.serviceName;
+            const type = allValues.serviceType;
+            const group = allValues.serviceGroup;
+            const isProd = group === 'Product' || type === 'Product' || key === 'any-service-product';
+
+            if (isProd) {
+              serviceForm.setFieldsValue({ lashStyle: undefined, lashCount: undefined });
+              return;
+            }
+
+            if (
+              changedValues.serviceKey !== undefined ||
+              changedValues.serviceName !== undefined ||
+              changedValues.serviceType !== undefined ||
+              changedValues.serviceGroup !== undefined
+            ) {
+              const inferredStyle = changedValues.lashStyle || inferLashStyle(key, name);
+              const inferredCount = inferLashCount(key, name);
+              const updates: any = {};
+              updates.lashStyle = inferredStyle || undefined;
+              updates.lashCount = inferredCount || undefined;
+
+              const noTouchupStyles = ['Mink', 'Ivylight', 'Flawless'];
+              if (inferredStyle && noTouchupStyles.includes(inferredStyle) && type === 'Retain') {
+                updates.durationMinute = 103;
+                updates.durationMinuteStandard = 103;
+              }
+
+              serviceForm.setFieldsValue(updates);
+            }
+          }}
+        >
           <Form.Item
             name="serviceName"
             label="Tên dịch vụ"
@@ -1698,40 +1877,58 @@ export default function CatalogPage() {
           </Form.Item>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="serviceGroup" label="Nhóm dịch vụ" rules={[{ required: true }]}>
                 <Select
-                  options={[
-                    { value: 'LashesTop', label: 'LashesTop' },
-                    { value: 'LashesUnder', label: 'LashesUnder' },
-                    { value: 'Lashes', label: 'Lashes' },
-                    { value: 'Sauna', label: 'Sauna' },
-                  ]}
+                  options={dynamicGroups.map((g) => {
+                    const labels: Record<string, string> = {
+                      LashesTop: 'LashesTop (Mi trên)',
+                      LashesUnder: 'LashesUnder (Mi dưới)',
+                      Product: 'Product (Giỏ hàng)',
+                    };
+                    return { value: g, label: labels[g] || g };
+                  })}
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="serviceType" label="Loại dịch vụ" rules={[{ required: true }]}>
                 <Select
-                  options={[
-                    { value: 'Normal', label: 'Normal' },
-                    { value: 'Retain', label: 'Retain' },
-                    { value: 'Fix', label: 'Fix' },
-                    { value: 'Adjust', label: 'Adjust' },
-                    { value: 'Removal', label: 'Removal' },
-                  ]}
+                  options={dynamicTypes.map((t) => {
+                    const labels: Record<string, string> = {
+                      Normal: 'Normal (Nối mới)',
+                      Retain: 'Retain (Dặm mi)',
+                      Removal: 'Removal (Tháo mi)',
+                      Product: 'Product (Giỏ hàng)',
+                    };
+                    return { value: t, label: labels[t] || t };
+                  })}
                 />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="lashStyle" label="Dòng mi">
+                <Select options={LASH_STYLE_OPTIONS} placeholder="Chọn Dòng Mi" allowClear />
               </Form.Item>
             </Col>
           </Row>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="durationMinute" label="Thời lượng (phút)" rules={[{ required: true }]}>
                 <InputNumber min={5} max={300} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
+              <Form.Item name="lashCount" label="Số sợi mi">
+                <Select
+                  options={[30, 60, 70, 80, 90, 100, 120, 140].map((c) => ({ value: c, label: `${c} sợi` }))}
+                  placeholder="Chọn số sợi"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item name="servicePrice" label="Giá bán lẻ (VNĐ)">
                 <InputNumber
                   min={0}

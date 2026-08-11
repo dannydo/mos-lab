@@ -3,7 +3,7 @@ import { CATALOG_CURRENCY_SYSTEM_CONFIG } from '@mos-lab/shared';
 import { Prisma } from '../../generated/legacy-client/index.js';
 import { requireAuth, requireCatalogAdmin } from '../../middlewares/auth.js';
 import { parseComboDateBounds } from '../customers/services/combo-recognition.service.js';
-import { LashBenchmarkService } from './services/lash-benchmark.service.js';
+import { LashBenchmarkService, parseLashSpecs } from './services/lash-benchmark.service.js';
 import { BranchService } from './services/branch.service.js';
 
 const CATALOG_DEFAULTS = {
@@ -15,7 +15,68 @@ const CATALOG_DEFAULTS = {
 
 // ─── DTO Helper Transformers ────────────────────────────────────────────────
 
-function mapServiceDto(s: any, lang?: any, prices: any[] = []): any {
+// Helper: Fetch real extension-lash-count attributes from legacy DB item_attribute_value
+async function fetchRealServiceLashCounts(legacyPrisma: any, serviceIds: number[]): Promise<Map<number, number>> {
+  const map = new Map<number, number>();
+  if (!serviceIds || serviceIds.length === 0) return map;
+  try {
+    const rows = (await legacyPrisma.$queryRawUnsafe(`
+      SELECT s.id as service_id, aol.attribute_option_value as count
+      FROM service s
+      JOIN item_attribute_value iav ON s.id = iav.item_id AND iav.type = 'service-attribute'
+      JOIN attribute a ON iav.attribute_id = a.id AND a.attribute_key = 'extension-lash-count'
+      JOIN attribute_option ao ON iav.attribute_option_id = ao.id
+      JOIN attribute_option_language aol ON ao.id = aol.attribute_option_id
+      WHERE s.id IN (${serviceIds.join(',')})
+    `)) as Array<{ service_id: number; count: string }>;
+    for (const r of rows) {
+      const num = parseInt(r.count, 10);
+      if (!isNaN(num) && num > 0) {
+        map.set(Number(r.service_id), num);
+      }
+    }
+  } catch (err) {
+    // Ignore if table missing or query error
+  }
+  return map;
+}
+
+function mapServiceDto(
+  s: any,
+  lang?: any,
+  prices: any[] = [],
+  realAttrMap?: Map<number, number>,
+  cvBenchmarkList: any[] = []
+): any {
+  const isProduct =
+    s.service_type === 'Product' || s.service_group === 'Product' || s.service_key === 'any-service-product';
+  let { lashStyle, lashCount } = isProduct
+    ? { lashStyle: null, lashCount: null }
+    : parseLashSpecs(s.service_key, lang?.service_name || s.service_key);
+
+  if (!isProduct) {
+    // Source 1: Real DB item_attribute_value
+    if (realAttrMap && realAttrMap.has(s.id)) {
+      lashCount = realAttrMap.get(s.id)!;
+    }
+    // Source 2: CV Xoay Speed Model Benchmarks matching
+    else if (cvBenchmarkList && cvBenchmarkList.length > 0 && !lashCount) {
+      const normType = s.service_type === 'Retain' ? 'Retain' : 'Normal';
+      const matchedBm = cvBenchmarkList.find(
+        (b: any) =>
+          (b.lashStyle === lashStyle ||
+            (b.lashStyle === 'Mink' && lashStyle === 'Flawless') ||
+            (b.lashStyle === 'Volume 3D' && lashStyle === 'Volume')) &&
+          b.serviceType === normType &&
+          b.lashCount !== null &&
+          Math.abs(b.benchmarkMinutes - s.duration_minute) <= 5
+      );
+      if (matchedBm) {
+        lashCount = matchedBm.lashCount;
+      }
+    }
+  }
+
   return {
     id: s.id,
     clientId: s.client_id,
@@ -37,6 +98,8 @@ function mapServiceDto(s: any, lang?: any, prices: any[] = []): any {
     serviceName: lang?.service_name || s.service_key,
     serviceShortDescription: lang?.service_short_description,
     serviceDescription: lang?.service_description,
+    lashStyle,
+    lashCount,
     prices: prices.map((p) => mapComboDto(p)),
   };
 }
@@ -114,11 +177,9 @@ export async function catalogRoutes(fastify: FastifyInstance) {
 
   fastify.get('/catalog/groups', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      const groups = await fastify.prisma.legacy.service.findMany({
-        select: { service_group: true },
-        distinct: ['service_group'],
-      });
-      return { success: true, data: groups.map((g: any) => g.service_group).filter(Boolean) };
+      // Active Master Service Groups: LashesTop, LashesUnder, Product (Sauna is deprecated)
+      const validMasterGroups = ['LashesTop', 'LashesUnder', 'Product'];
+      return { success: true, data: validMasterGroups };
     } catch (error: any) {
       fastify.log.error(error);
       return reply.status(500).send({ success: false, error: 'Internal Server Error' });
@@ -127,11 +188,9 @@ export async function catalogRoutes(fastify: FastifyInstance) {
 
   fastify.get('/catalog/types', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      const types = await fastify.prisma.legacy.service.findMany({
-        select: { service_type: true },
-        distinct: ['service_type'],
-      });
-      return { success: true, data: types.map((t: any) => t.service_type).filter(Boolean) };
+      // Master Catalog Services consist of Normal (Nối mới), Retain (Dặm mi), Removal (Tháo mi), and Product (Giỏ hàng/Sản phẩm)
+      const validMasterTypes = ['Normal', 'Retain', 'Removal', 'Product'];
+      return { success: true, data: validMasterTypes };
     } catch (error: any) {
       fastify.log.error(error);
       return reply.status(500).send({ success: false, error: 'Internal Server Error' });
@@ -148,7 +207,13 @@ export async function catalogRoutes(fastify: FastifyInstance) {
     const take = Number(pageSize);
 
     const where: any = {};
-    if (group) where.service_group = group;
+    if (group) {
+      if (group === 'Lashes') {
+        where.service_group = { in: ['LashesTop', 'LashesUnder', 'Lashes'] };
+      } else {
+        where.service_group = group;
+      }
+    }
     if (isDisabled !== undefined) where.is_disabled = isDisabled === 'true';
 
     try {
@@ -169,19 +234,21 @@ export async function catalogRoutes(fastify: FastifyInstance) {
       });
 
       const serviceIds = services.map((s: any) => s.id);
-      const [langs, prices] = await Promise.all([
+      const [langs, prices, realAttrMap, cvBenchmarks] = await Promise.all([
         fastify.prisma.legacy.service_language.findMany({
           where: { service_id: { in: serviceIds } },
         }),
         fastify.prisma.legacy.service_price.findMany({
           where: { service_id: { in: serviceIds }, is_disabled: false },
         }),
+        fetchRealServiceLashCounts(fastify.prisma.legacy, serviceIds),
+        fastify.prisma.crm.crmLashTypeBenchmark.findMany().catch(() => []),
       ]);
 
       const data = services.map((s: any) => {
         const lang = langs.find((l: any) => l.service_id === s.id);
         const priceList = prices.filter((p: any) => p.service_id === s.id);
-        return mapServiceDto(s, lang, priceList);
+        return mapServiceDto(s, lang, priceList, realAttrMap, cvBenchmarks);
       });
 
       return {
@@ -208,19 +275,21 @@ export async function catalogRoutes(fastify: FastifyInstance) {
       });
       const serviceIds = services.map((s: any) => s.id);
 
-      const [langs, prices] = await Promise.all([
+      const [langs, prices, realAttrMap, cvBenchmarks] = await Promise.all([
         fastify.prisma.legacy.service_language.findMany({
           where: { service_id: { in: serviceIds } },
         }),
         fastify.prisma.legacy.service_price.findMany({
           where: { service_id: { in: serviceIds }, is_disabled: false },
         }),
+        fetchRealServiceLashCounts(fastify.prisma.legacy, serviceIds),
+        fastify.prisma.crm.crmLashTypeBenchmark.findMany().catch(() => []),
       ]);
 
       const data = services.map((s: any) => {
         const lang = langs.find((l: any) => l.service_id === s.id);
         const priceList = prices.filter((p: any) => p.service_id === s.id);
-        return mapServiceDto(s, lang, priceList);
+        return mapServiceDto(s, lang, priceList, realAttrMap, cvBenchmarks);
       });
       return { success: true, data };
     } catch (error: any) {
@@ -237,17 +306,19 @@ export async function catalogRoutes(fastify: FastifyInstance) {
       });
       if (!service) return reply.status(404).send({ success: false, error: 'Not Found' });
 
-      const [langs, prices] = await Promise.all([
+      const [langs, prices, realAttrMap, cvBenchmarks] = await Promise.all([
         fastify.prisma.legacy.service_language.findMany({
           where: { service_id: service.id },
         }),
         fastify.prisma.legacy.service_price.findMany({
           where: { service_id: service.id },
         }),
+        fetchRealServiceLashCounts(fastify.prisma.legacy, [service.id]),
+        fastify.prisma.crm.crmLashTypeBenchmark.findMany().catch(() => []),
       ]);
 
       const lang = langs.find((l: any) => l.language_id === CATALOG_DEFAULTS.DEFAULT_LANGUAGE_ID) || langs[0];
-      return { success: true, data: mapServiceDto(service, lang, prices) };
+      return { success: true, data: mapServiceDto(service, lang, prices, realAttrMap, cvBenchmarks) };
     } catch (error: any) {
       fastify.log.error(error);
       return reply.status(500).send({ success: false, error: 'Internal Server Error' });

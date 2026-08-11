@@ -358,7 +358,7 @@ export async function registerCallAnalysisRoutes(fastify: FastifyInstance) {
   // QA verification endpoint (Admin or Manager only)
   fastify.post(
     '/omicall/logs/:id/verify',
-    { preHandler: [requireAuth, requireRole(['admin', 'manager'])] },
+    { preHandler: [requireAuth, requireRole(['admin', 'manager', 'qa', 'qc', 'qa_qc'])] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const {
