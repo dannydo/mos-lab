@@ -460,6 +460,7 @@ export default function QaShopPage() {
   const [reviewFilterTab, setReviewFilterTab] = useState<'ALL' | 'PASS' | 'FAIL' | 'NA' | 'PHOTO'>('ALL');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [newlySavedAudit, setNewlySavedAudit] = useState<SafeAny | null>(null);
+  const [isSavingAudit, setIsSavingAudit] = useState(false);
   const [auditTabNextPage, setAuditTabNextPage] = useState(1);
   const [auditTabNextSize, setAuditTabNextSize] = useState(10);
   const [ticketTabNextPage, setTicketTabNextPage] = useState(1);
@@ -720,7 +721,8 @@ export default function QaShopPage() {
 
   // Submit Interactive Accordion Checklist Audit
   const handleSaveChecklistAudit = async () => {
-    if (!activeTemplate) return;
+    if (!activeTemplate || isSavingAudit) return;
+    setIsSavingAudit(true);
     try {
       const auditItems = Object.entries(itemStatuses).map(([itemId, st]) => ({
         itemId,
@@ -736,6 +738,7 @@ export default function QaShopPage() {
           message.error(
             `Chế Độ Ép Chụp Hình 100% đang BẬT: Còn ${missingPhotos.length} tiêu chí chưa được chụp ảnh bằng chứng! Vui lòng chụp đủ ảnh trước khi nộp.`
           );
+          setIsSavingAudit(false);
           return;
         }
       }
@@ -757,32 +760,22 @@ export default function QaShopPage() {
       const res = await apiClient.qaShop.saveAudit(auditPayload);
       const savedRecord = (res as any)?.data || { ...auditPayload, id: `AUD-${Date.now().toString().slice(-6)}` };
       setNewlySavedAudit(savedRecord);
+      setSelectedAudit(savedRecord);
 
       message.success({
-        content: (
-          <span className="flex items-center gap-2">
-            <span>Đã lưu thành công Biên bản Kiểm tra QA Shop ${selectedBranch}!</span>
-            <Button
-              size="small"
-              type="primary"
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setSelectedAudit(savedRecord);
-                setAuditReviewModalOpen(true);
-              }}
-              className="bg-purple-600 hover:bg-purple-500 font-semibold text-xs ml-2 border-none"
-            >
-              Xem Lại Biên Bản
-            </Button>
-          </span>
-        ),
-        duration: 8,
+        content: `Đã lưu thành công Biên bản Kiểm tra QA Shop ${selectedBranch}!`,
+        duration: 4,
       });
 
+      // Close mobile focus overlay and open Audit Review Modal directly
+      setIsMobileFocusMode(false);
+      setAuditReviewModalOpen(true);
       fetchData();
     } catch (err: SafeAny) {
       console.error('Save checklist audit error:', err);
       message.error(err.message || 'Lỗi khi lưu biên bản kiểm tra');
+    } finally {
+      setIsSavingAudit(false);
     }
   };
 
@@ -1095,6 +1088,8 @@ export default function QaShopPage() {
             }}
             className="focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 focus-visible:outline-none"
             onClick={handleSaveChecklistAudit}
+            loading={isSavingAudit}
+            disabled={isSavingAudit}
           >
             {`Lưu Biên Bản (${inspectionStats.passRate}%)`}
           </Button>
@@ -2146,6 +2141,7 @@ export default function QaShopPage() {
           </Button>,
         ]}
         destroyOnClose
+        zIndex={10050}
         getContainer={() => document.body}
       >
         {selectedAudit && (
@@ -3029,6 +3025,8 @@ export default function QaShopPage() {
               size="large"
               icon={<SaveOutlined />}
               onClick={handleSaveChecklistAudit}
+              loading={isSavingAudit}
+              disabled={isSavingAudit}
               className="flex-1 bg-emerald-600 hover:bg-emerald-500 font-bold text-sm h-12 rounded-xl"
             >
               {`Lưu Biên Bản (${inspectionStats.passRate.toFixed(1)}%)`}
