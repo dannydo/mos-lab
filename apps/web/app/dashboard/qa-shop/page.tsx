@@ -112,6 +112,17 @@ const parseNormalizedItem = (itm: SafeAny) => {
   return { subject, detailRequirement, unitQty, area, dept };
 };
 
+const formatReqWithoutArea = (req?: string) => {
+  if (!req) return '';
+  return req
+    .replace(/\|\s*Khu vực:\s*[^|]+/gi, '')
+    .replace(/Khu vực:\s*[^|]+\|\s*/gi, '')
+    .replace(/Khu vực:\s*[^|]+/gi, '')
+    .replace(/^\s*\|\s*/, '')
+    .replace(/\s*\|\s*$/, '')
+    .trim();
+};
+
 // Zero-lag native textarea for 195 items (0ms typing latency, direct ref sync)
 const ItemNoteInput: React.FC<{
   itemId: string;
@@ -2821,7 +2832,7 @@ export default function QaShopPage() {
                                           )}
                                           {itm.standardRequirement && (
                                             <span className="line-clamp-1 text-slate-400">
-                                              {itm.standardRequirement}
+                                              {formatReqWithoutArea(itm.standardRequirement)}
                                             </span>
                                           )}
                                         </div>
