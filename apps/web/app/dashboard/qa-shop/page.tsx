@@ -2737,10 +2737,10 @@ export default function QaShopPage() {
                 size="small"
                 icon={<DesktopOutlined />}
                 onClick={() => setIsMobileFocusMode(false)}
-                className="text-xs font-semibold bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700"
-              >
-                Về Desktop
-              </Button>
+                aria-label="Về Desktop"
+                title="Về Desktop"
+                className="text-xs font-semibold bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700 shrink-0"
+              />
             </div>
           </div>
 
@@ -3020,10 +3020,10 @@ export default function QaShopPage() {
               size="large"
               icon={<DesktopOutlined />}
               onClick={() => setIsMobileFocusMode(false)}
-              className="bg-slate-800 text-slate-200 border-slate-700 font-semibold text-xs h-12 rounded-xl"
-            >
-              Desktop
-            </Button>
+              aria-label="Về Desktop"
+              title="Về Desktop"
+              className="bg-slate-800 text-slate-200 border-slate-700 font-semibold text-xs h-12 w-12 flex items-center justify-center p-0 rounded-xl shrink-0"
+            />
           </div>
         </div>
       )}
