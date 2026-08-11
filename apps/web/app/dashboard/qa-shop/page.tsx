@@ -2686,7 +2686,10 @@ export default function QaShopPage() {
       </Modal>
       {/* 📱 Full-screen Dedicated Mobile Inspection Focus Mode Overlay (100% Screen Tab 1) */}
       {isMobileFocusMode && (
-        <div className="fixed inset-0 z-[9999] bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-sans">
+        <div
+          id="mobile-focus-overlay"
+          className="fixed inset-0 z-[9999] bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-sans"
+        >
           {/* 1. Mobile Sticky Top Header */}
           <div className="px-3 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0 shadow-md">
             <div className="flex items-center gap-2">
@@ -2695,6 +2698,7 @@ export default function QaShopPage() {
                 value={selectedBranch}
                 onChange={setSelectedBranch}
                 style={{ width: 145 }}
+                getPopupContainer={() => document.getElementById('mobile-focus-overlay') || document.body}
                 options={STORE_BRANCHES.map((b) => ({ value: b.code, label: b.name }))}
               />
               <Select
@@ -2702,6 +2706,7 @@ export default function QaShopPage() {
                 value={selectedShift}
                 onChange={(v) => setSelectedShift(v as any)}
                 style={{ width: 95 }}
+                getPopupContainer={() => document.getElementById('mobile-focus-overlay') || document.body}
                 options={[
                   { value: 'Sáng', label: 'Ca Sáng' },
                   { value: 'Chiều', label: 'Ca Chiều' },
