@@ -352,13 +352,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <h1 className="sr-only">WINGS LASHES Management System</h1>
           <div
-            className="flex items-center justify-center"
+            className="flex items-center justify-center transition-all duration-200"
             style={{
-              height: '64px',
+              height: collapsed ? '44px' : '52px',
               background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
               borderBottom: `1px solid ${token.colorBorderSecondary}`,
               color: token.colorPrimary,
-              fontSize: collapsed ? '16px' : '18px',
+              fontSize: collapsed ? '15px' : '17px',
               fontWeight: 'bold',
               letterSpacing: '1px',
             }}
@@ -659,6 +659,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
 
         <style jsx global>{`
+          /* Ultra-Compact Left Nav Sidebar Menu */
+          .antd-custom-menu .ant-menu-item,
+          .antd-custom-menu .ant-menu-submenu-title {
+            height: 36px !important;
+            line-height: 36px !important;
+            margin-block: 2px !important;
+            margin-inline: 4px !important;
+            padding-inline: 10px !important;
+            border-radius: 8px !important;
+          }
+          .antd-custom-menu .ant-menu-item .anticon,
+          .antd-custom-menu .ant-menu-submenu-title .anticon {
+            font-size: 15px !important;
+            line-height: 36px !important;
+          }
+          .antd-custom-menu .ant-menu-item-group-title {
+            padding-block: 2px 2px !important;
+            margin-top: 4px !important;
+            margin-bottom: 2px !important;
+            font-size: 10px !important;
+            line-height: 1.2 !important;
+          }
+          .antd-custom-menu .ant-menu-item-group-list {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
           /* Override Ant Design dark sidebar menu hover/select colors */
           .antd-custom-menu .ant-menu-item-selected {
             background-color: #d4a84b !important;
