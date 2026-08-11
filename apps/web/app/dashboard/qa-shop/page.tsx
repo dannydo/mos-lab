@@ -112,29 +112,54 @@ const parseNormalizedItem = (itm: SafeAny) => {
   return { subject, detailRequirement, unitQty, area, dept };
 };
 
-// Fast, zero-lag debounced/local note input for 195 items
+// Zero-lag debounced + onBlur note input for 195 items (0ms input latency)
 const ItemNoteInput: React.FC<{
   value: string;
   onChange: (val: string) => void;
   placeholder?: string;
   className?: string;
-}> = React.memo(({ value, onChange, placeholder, className }) => {
+  isTextArea?: boolean;
+}> = React.memo(({ value, onChange, placeholder, className, isTextArea = true }) => {
   const [localVal, setLocalVal] = useState(value || '');
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setLocalVal(value || '');
   }, [value]);
 
+  const handleTextChange = (val: string) => {
+    setLocalVal(val);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onChange(val);
+    }, 400);
+  };
+
+  const handleBlur = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    onChange(localVal);
+  };
+
+  if (isTextArea) {
+    return (
+      <Input.TextArea
+        value={localVal}
+        onChange={(e) => handleTextChange(e.target.value)}
+        onBlur={handleBlur}
+        placeholder={placeholder || 'Ghi chú lỗi chi tiết...'}
+        rows={1}
+        className={className}
+      />
+    );
+  }
+
   return (
-    <Input.TextArea
+    <Input
+      size="small"
       value={localVal}
-      onChange={(e) => {
-        const val = e.target.value;
-        setLocalVal(val);
-        onChange(val);
-      }}
-      placeholder={placeholder || 'Ghi chú lỗi chi tiết...'}
-      rows={1}
+      onChange={(e) => handleTextChange(e.target.value)}
+      onBlur={handleBlur}
+      placeholder={placeholder || 'Ghi chú chi tiết lý do vi phạm...'}
       className={className}
     />
   );
@@ -1871,14 +1896,14 @@ export default function QaShopPage() {
 
                                                 {/* Violation Note Input */}
                                                 <div>
-                                                  <Input
-                                                    size="small"
+                                                  <ItemNoteInput
+                                                    isTextArea={false}
                                                     placeholder="Ghi chú chi tiết lý do vi phạm (ví dụ: Cửa kính dính nhiều vết tay mờ ở lề dưới)..."
                                                     value={currentSt.note || ''}
-                                                    onChange={(e) =>
+                                                    onChange={(val) =>
                                                       setItemStatuses((prev) => ({
                                                         ...prev,
-                                                        [itm.id]: { ...prev[itm.id], note: e.target.value },
+                                                        [itm.id]: { ...prev[itm.id], note: val },
                                                       }))
                                                     }
                                                     className="border-rose-200 dark:border-rose-900/60 dark:bg-slate-900/80 text-xs text-slate-800 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:outline-none"
