@@ -2218,26 +2218,43 @@ export default function QaShopPage() {
               {/* 2. Mobile Filter Pills (Horizontal Scrollable Chips) */}
               <div className="px-3 py-2 bg-slate-900/60 border-b border-slate-800 shrink-0 overflow-x-auto no-scrollbar flex items-center gap-1.5">
                 {(['ALL', 'PASS', 'FAIL', 'NA', 'PHOTO'] as const).map((tab) => {
-                  const labels = {
-                    ALL: 'Tất Cả',
-                    PASS: '🟢 Đạt',
-                    FAIL: '🔴 Lỗi Vi Phạm',
-                    NA: '⚪ N/A',
-                    PHOTO: '📷 Có Ảnh',
-                  };
                   const active = reviewFilterTab === tab;
                   return (
                     <button
                       key={`m-tab-${tab}`}
                       type="button"
                       onClick={() => setReviewFilterTab(tab)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all active:scale-95 ${
+                      className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1 active:scale-95 ${
                         active
                           ? 'bg-purple-600 text-white shadow-sm'
                           : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
                       }`}
                     >
-                      {labels[tab]}
+                      {tab === 'ALL' && 'Tất Cả'}
+                      {tab === 'PASS' && (
+                        <>
+                          <CheckOutlined className="text-emerald-400" />
+                          <span>Đạt</span>
+                        </>
+                      )}
+                      {tab === 'FAIL' && (
+                        <>
+                          <CloseOutlined className="text-rose-400" />
+                          <span>Lỗi</span>
+                        </>
+                      )}
+                      {tab === 'NA' && (
+                        <>
+                          <MinusOutlined className="text-slate-400" />
+                          <span>-</span>
+                        </>
+                      )}
+                      {tab === 'PHOTO' && (
+                        <>
+                          <CameraOutlined className="text-purple-400" />
+                          <span>Có Ảnh</span>
+                        </>
+                      )}
                     </button>
                   );
                 })}
@@ -2447,13 +2464,6 @@ export default function QaShopPage() {
                 </div>
                 <Space size="small">
                   {(['ALL', 'PASS', 'FAIL', 'NA', 'PHOTO'] as const).map((tab) => {
-                    const labels = {
-                      ALL: 'Tất Cả Tiêu Chí',
-                      PASS: '🟢 Đạt',
-                      FAIL: '🔴 Lỗi Vi Phạm',
-                      NA: '⚪ N/A',
-                      PHOTO: '📷 Có Ảnh Chụp',
-                    };
                     const active = reviewFilterTab === tab;
                     return (
                       <Button
@@ -2463,7 +2473,27 @@ export default function QaShopPage() {
                         onClick={() => setReviewFilterTab(tab)}
                         className={`text-xs font-medium ${active ? 'bg-purple-600 hover:bg-purple-500 border-none' : ''}`}
                       >
-                        {labels[tab]}
+                        {tab === 'ALL' && 'Tất Cả Tiêu Chí'}
+                        {tab === 'PASS' && (
+                          <span className="inline-flex items-center gap-1">
+                            <CheckOutlined className="text-emerald-500" /> Đạt
+                          </span>
+                        )}
+                        {tab === 'FAIL' && (
+                          <span className="inline-flex items-center gap-1">
+                            <CloseOutlined className="text-rose-500" /> Lỗi
+                          </span>
+                        )}
+                        {tab === 'NA' && (
+                          <span className="inline-flex items-center gap-1">
+                            <MinusOutlined className="text-slate-400" /> -
+                          </span>
+                        )}
+                        {tab === 'PHOTO' && (
+                          <span className="inline-flex items-center gap-1">
+                            <CameraOutlined className="text-purple-400" /> Có Ảnh
+                          </span>
+                        )}
                       </Button>
                     );
                   })}
