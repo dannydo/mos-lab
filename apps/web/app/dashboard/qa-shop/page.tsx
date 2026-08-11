@@ -1803,23 +1803,36 @@ export default function QaShopPage() {
 
                                                   {/* Photo Proof Action Bar (Camera & Upload & Preview) */}
                                                   <div className="flex flex-wrap items-center gap-2">
-                                                    {/* Native Hidden File Input for Mobile/Desktop Camera Pick */}
+                                                    {/* Native Hidden Camera Input */}
                                                     <input
                                                       type="file"
                                                       accept="image/*"
                                                       capture="environment"
                                                       style={{ display: 'none' }}
+                                                      id={`camera-input-${itm.id}`}
+                                                      onChange={(e) => handleFileInputChange(e, itm.id)}
+                                                    />
+
+                                                    {/* Native Hidden File Gallery Input */}
+                                                    <input
+                                                      type="file"
+                                                      accept="image/*"
+                                                      style={{ display: 'none' }}
                                                       id={`file-input-${itm.id}`}
                                                       onChange={(e) => handleFileInputChange(e, itm.id)}
                                                     />
 
-                                                    <Tooltip title="Mở WebRTC Camera chụp ảnh trực tiếp từ thiết bị">
+                                                    <Tooltip title="Mở máy ảnh thiết bị chụp hình trực tiếp">
                                                       <Button
                                                         size="small"
                                                         type="primary"
                                                         danger
                                                         icon={<CameraOutlined />}
-                                                        onClick={() => openCameraForItem(itm.id)}
+                                                        onClick={() => {
+                                                          const el = document.getElementById(`camera-input-${itm.id}`);
+                                                          if (el) el.click();
+                                                          else openCameraForItem(itm.id);
+                                                        }}
                                                         className="text-xs font-semibold"
                                                       >
                                                         Chụp Ảnh
@@ -2916,7 +2929,17 @@ export default function QaShopPage() {
                                     {/* Failure details if FAIL */}
                                     {isFail && (
                                       <div className="space-y-2.5 pt-2 mt-2 border-t border-rose-900/40">
-                                        {/* Hidden File Input for Native Photo Upload */}
+                                        {/* Native Hidden Camera Input */}
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          capture="environment"
+                                          id={`mobile-camera-input-${itm.id}`}
+                                          style={{ display: 'none' }}
+                                          onChange={(e) => handleFileInputChange(e, itm.id)}
+                                        />
+
+                                        {/* Native Hidden File Gallery Input */}
                                         <input
                                           type="file"
                                           accept="image/*"
