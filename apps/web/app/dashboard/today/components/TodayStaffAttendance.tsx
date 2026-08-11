@@ -115,9 +115,11 @@ const TodayStaffAttendance = React.memo(
           key: 'doing',
           render: (doing: string, rec: ShopCVData) => {
             if (rec.isOff || rec.shift === 'off') {
+              const text = doing || rec.offReason || 'Nghỉ phép';
+              const tagColor = text.includes('OFF Gấp') ? 'error' : text.includes('OFF Tuần') ? 'default' : 'volcano';
               return (
-                <Tag color="volcano" style={{ fontWeight: 500 }}>
-                  {doing || rec.offReason || 'Nghỉ phép'}
+                <Tag color={tagColor} style={{ fontWeight: 500 }}>
+                  {text}
                 </Tag>
               );
             }

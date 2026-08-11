@@ -13,6 +13,8 @@ import {
   CreateCallRequest,
   KPISummary,
   CustomerWeeklyProgress,
+  LocaStaffActivityStats,
+  LocaStaffActivityLogItem,
   ColumnConfig,
   BulkDeleteCustomersResponse,
   CustomerHistoryEntry,
@@ -190,6 +192,17 @@ export async function dedupeApiGet<T>(url: string, params?: Record<string, unkno
 
   inFlightRequests.set(cacheKey, { promise, timestamp: now });
   return promise as Promise<T>;
+}
+
+export interface LocaStaffActivityResponse {
+  stats: LocaStaffActivityStats;
+  logs: LocaStaffActivityLogItem[];
+  pagination: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
 }
 
 // API Client SDK for mos-lab
@@ -479,6 +492,10 @@ export const apiClient = {
     },
     getStaff: async (params?: Record<string, unknown>): Promise<Staff[]> => {
       const response = await api.get('/customers/staff', { params });
+      return response.data;
+    },
+    getLocaStaffActivity: async (params?: Record<string, unknown>): Promise<LocaStaffActivityResponse> => {
+      const response = await api.get('/customers/loca-staff-activity', { params });
       return response.data;
     },
     getAssignmentHistory: async (params: Record<string, unknown>): Promise<AssignmentHistoryResponse> => {

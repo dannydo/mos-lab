@@ -520,3 +520,41 @@ export interface BookingAuditSummary {
   totalCrossCancels: number;
   totalCrossReschedules: number;
 }
+
+export interface LocaStaffActivityStats {
+  totalCalls: number;
+  answeredCalls: number;
+  answerRate: number; // percentage (0-100)
+  totalTouchpointsChecked: number;
+  totalBooked: number;
+  totalDurationSec: number;
+  formattedDuration: string;
+  touchpointBreakdown: Record<string, number>;
+  conversionRates: {
+    callToAnswer: number;
+    answerToTouchpoint: number;
+    touchpointToBooked: number;
+    overallConversion: number;
+  };
+}
+
+export interface LocaStaffActivityLogItem {
+  id: string;
+  timestamp: string; // ISO string
+  staffId: number;
+  staffName: string;
+  legacyUserId: number;
+  customerName: string;
+  customerPhone: string;
+  customerAvatar?: string | null;
+  actionType: 'CALL' | 'TOUCHPOINT' | 'BOOKED' | 'NOTE_CALLBACK' | 'TAB_STATUS_CHANGE';
+  actionTitle: string;
+  actionDetail: string;
+  badgeColor?: string;
+  callResult?: string;
+  durationSec?: number;
+  recordingUrl?: string | null;
+  touchpointKey?: string;
+  bookingDate?: string;
+  orderId?: number;
+}

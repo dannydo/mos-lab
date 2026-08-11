@@ -108,12 +108,17 @@ export class CvAttendanceService {
       const daysAhead = Number(r.daysAhead || 0);
       const noteText = String(r.note || r.reason || '').trim();
 
-      const isUrgent = attrOptId === 113 || daysAhead <= 0 || /gấp|đột xuất|bệnh|ốm|khẩn|cấp cứu/i.test(noteText);
+      const isWeeklyOffRecord = attrOptId === 110 || /hàng tuần|off tuần/i.test(noteText);
+      const isUrgent = !isWeeklyOffRecord && (attrOptId === 113 || /gấp|đột xuất|bệnh|ốm|khẩn|cấp cứu/i.test(noteText));
 
       const offType: 'urgent_off' | 'planned_off' = isUrgent ? 'urgent_off' : 'planned_off';
-      const labelPrefix = isUrgent ? 'OFF Gấp' : 'OFF Phép';
-      const defaultReason = isUrgent ? 'Xin nghỉ phép đột xuất (Gấp)' : 'Xin nghỉ phép';
-      const reasonLabel = noteText ? `${labelPrefix}: ${noteText}` : `${labelPrefix}: ${defaultReason}`;
+      const labelPrefix = isWeeklyOffRecord ? 'OFF Tuần' : isUrgent ? 'OFF Gấp' : 'OFF Phép';
+      const defaultReason = isWeeklyOffRecord
+        ? 'Nghỉ hàng tuần (OFF Tuần)'
+        : isUrgent
+          ? 'Xin nghỉ phép đột xuất (Gấp)'
+          : 'Xin nghỉ phép';
+      const reasonLabel = noteText ? `${labelPrefix}: ${noteText}` : `${defaultReason}`;
 
       dateOffMap.set(uid, { reason: reasonLabel, type: offType });
     });

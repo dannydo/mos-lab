@@ -9,6 +9,7 @@ import { registerDashboardRoutes } from './routes/dashboard.routes.js';
 import { bookingAuditRoutes } from './routes/booking-audit.routes.js';
 import { BookingAuditService } from './services/booking-audit.service.js';
 import { registerLocaTouchpointRoutes } from './routes/loca-touchpoint.routes.js';
+import { registerLocaStaffActivityRoutes } from './routes/loca-staff-activity.routes.js';
 import { AllocationService } from '../allocation/allocation.service.js';
 import { TeamService } from '../teams/team.service.js';
 import { CampaignPromotionSyncService } from '../campaigns/campaign-promotion-sync.service.js';
@@ -24,6 +25,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   await registerDashboardRoutes(fastify);
   await bookingAuditRoutes(fastify);
   await registerLocaTouchpointRoutes(fastify);
+  await registerLocaStaffActivityRoutes(fastify);
 
   const getNewLocaUserIds = async (dFrom?: string, dTo?: string): Promise<number[]> => {
     return ComboRecognitionService.getNewLoCaCustomerIds(fastify, dFrom, dTo);
@@ -3027,6 +3029,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           username: true,
           displayName: true,
           role: true,
+          legacyStaffId: true,
         },
         orderBy: { displayName: 'asc' },
       });
@@ -3099,6 +3102,38 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       const result = Array.from(uniqueStaffMap.values());
+
+      if (role === 'cs' || role === 'coca' || role === 'loca') {
+        const csConfigIds = await TeamService.getActiveStaffIdsWithFallback(
+          fastify,
+          'BK_CS',
+          'ACTIVE_BK_CS_STAFF_CONFIG'
+        );
+        const locaConfigIds = await TeamService.getActiveStaffIdsWithFallback(
+          fastify,
+          'LOCA',
+          'ACTIVE_LOCA_STAFF_CONFIG'
+        );
+        const allCsConfigIds = Array.from(new Set([...(csConfigIds || []), ...(locaConfigIds || [])]));
+
+        const strictCsRoles = ['cs', 'coca', 'loca', 'cskh', 'customer-support', 'customer-service'];
+
+        return result.filter((s) => {
+          const r = (s.role || '').toLowerCase();
+          const legId = Number(s.legacyStaffId);
+          const sysId = Number(s.id);
+
+          if (allCsConfigIds.includes(legId) || allCsConfigIds.includes(sysId)) {
+            if (r === 'admin' && (s.displayName || '').toLowerCase().includes('han huynh')) {
+              return false;
+            }
+            return true;
+          }
+
+          return strictCsRoles.includes(r);
+        });
+      }
+
       if (role === 'booker' || role === 'telesales') {
         const bkIds = await TeamService.getActiveStaffIdsWithFallback(fastify, 'BK', 'ACTIVE_BK_STAFF_CONFIG');
         const teleIds = await TeamService.getActiveStaffIdsWithFallback(

@@ -3,7 +3,14 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
-import { Customer, Staff, TouchpointStatus, LASH_TOUCHUP_SYSTEM_CONFIG } from '@mos-lab/shared';
+import {
+  Customer,
+  Staff,
+  TouchpointStatus,
+  LASH_TOUCHUP_SYSTEM_CONFIG,
+  LocaStaffActivityStats,
+  LocaStaffActivityLogItem,
+} from '@mos-lab/shared';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 
 export interface Touchpoint {
@@ -39,6 +46,11 @@ export const TAB_KEYS = [
   { id: 'HSD_30', name: 'HSD 30', description: 'Hạn sử dụng Combo <= 30 ngày' },
   { id: 'LSD_1', name: 'LSD 1', description: 'Lần sử dụng Combo còn 1' },
   { id: 'SP', name: 'SP', description: 'Khách hàng có mua sản phẩm' },
+  {
+    id: 'STAFF_ACTIVITY',
+    name: '📊 Báo cáo Nhân viên',
+    description: 'Chi tiết công việc & hiệu suất hoạt động từng ngày/tuần/tháng',
+  },
 ];
 
 export interface UseLocaDataOptions {
@@ -250,6 +262,221 @@ export function useLocaData(options?: UseLocaDataOptions) {
     totalBookedToday: 0,
   });
 
+  // Staff Activity Report States (Persistent on F5 reload & URL search params)
+  const [selectedActivityStaffId, setSelectedActivityStaffIdState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlStaff = urlParams.get('activityStaffId');
+      const savedStaff = urlStaff || localStorage.getItem('mos_loca_activity_staffId');
+      if (savedStaff) return savedStaff;
+    }
+    return 'ALL';
+  });
+
+  const setSelectedActivityStaffId = useCallback((staffId: string) => {
+    setSelectedActivityStaffIdState(staffId);
+    setActivityPageState(1);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mos_loca_activity_staffId', staffId);
+      localStorage.setItem('mos_loca_activity_page', '1');
+      const url = new URL(window.location.href);
+      url.searchParams.set('activityStaffId', staffId);
+      url.searchParams.set('activityPage', '1');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const [activityViewMode, setActivityViewModeState] = useState<'month' | 'week' | 'day'>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlMode = urlParams.get('activityViewMode');
+      const savedMode = urlMode || localStorage.getItem('mos_loca_activity_viewMode');
+      if (savedMode && ['month', 'week', 'day'].includes(savedMode)) {
+        return savedMode as 'month' | 'week' | 'day';
+      }
+    }
+    return 'month';
+  });
+
+  const setActivityViewMode = useCallback((mode: 'month' | 'week' | 'day') => {
+    setActivityViewModeState(mode);
+    setActivityPageState(1);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mos_loca_activity_viewMode', mode);
+      localStorage.setItem('mos_loca_activity_page', '1');
+      const url = new URL(window.location.href);
+      url.searchParams.set('activityViewMode', mode);
+      url.searchParams.set('activityPage', '1');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const [activityReferenceDate, setActivityReferenceDateState] = useState<dayjs.Dayjs>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlRefDate = urlParams.get('activityRefDate');
+      const savedRefDate = urlRefDate || localStorage.getItem('mos_loca_activity_refDate');
+      if (savedRefDate && dayjs(savedRefDate).isValid()) {
+        return dayjs(savedRefDate);
+      }
+    }
+    return dayjs();
+  });
+
+  const setActivityReferenceDate = useCallback((date: dayjs.Dayjs) => {
+    setActivityReferenceDateState(date);
+    setActivityPageState(1);
+    if (typeof window !== 'undefined') {
+      const dateStr = date.format('YYYY-MM-DD');
+      localStorage.setItem('mos_loca_activity_refDate', dateStr);
+      localStorage.setItem('mos_loca_activity_page', '1');
+      const url = new URL(window.location.href);
+      url.searchParams.set('activityRefDate', dateStr);
+      url.searchParams.set('activityPage', '1');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const handleNavigateActivityDate = useCallback(
+    (direction: number) => {
+      const unit = activityViewMode === 'month' ? 'month' : activityViewMode === 'week' ? 'week' : 'day';
+      const nextDate = direction > 0 ? activityReferenceDate.add(1, unit) : activityReferenceDate.subtract(1, unit);
+      setActivityReferenceDate(nextDate);
+    },
+    [activityViewMode, activityReferenceDate, setActivityReferenceDate]
+  );
+
+  const [activitySearchQuery, setActivitySearchQueryState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlSearch = urlParams.get('activitySearch');
+      const savedSearch = urlSearch || localStorage.getItem('mos_loca_activity_search');
+      if (savedSearch) return savedSearch;
+    }
+    return '';
+  });
+
+  const setActivitySearchQuery = useCallback((query: string) => {
+    setActivitySearchQueryState(query);
+    setActivityPageState(1);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mos_loca_activity_search', query);
+      localStorage.setItem('mos_loca_activity_page', '1');
+      const url = new URL(window.location.href);
+      if (query) {
+        url.searchParams.set('activitySearch', query);
+      } else {
+        url.searchParams.delete('activitySearch');
+      }
+      url.searchParams.set('activityPage', '1');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const [activityActionTypeFilter, setActivityActionTypeFilterState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlType = urlParams.get('activityActionType');
+      const savedType = urlType || localStorage.getItem('mos_loca_activity_actionType');
+      if (savedType) return savedType;
+    }
+    return 'ALL';
+  });
+
+  const setActivityActionTypeFilter = useCallback((type: string) => {
+    setActivityActionTypeFilterState(type);
+    setActivityPageState(1);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mos_loca_activity_actionType', type);
+      localStorage.setItem('mos_loca_activity_page', '1');
+      const url = new URL(window.location.href);
+      url.searchParams.set('activityActionType', type);
+      url.searchParams.set('activityPage', '1');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const [activityTouchpointKey, setActivityTouchpointKeyState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlKey = urlParams.get('activityTouchpointKey');
+      const savedKey = urlKey || localStorage.getItem('mos_loca_activity_touchpointKey');
+      if (savedKey) return savedKey;
+    }
+    return 'ALL';
+  });
+
+  const setActivityTouchpointKey = useCallback((key: string) => {
+    setActivityTouchpointKeyState(key);
+    setActivityPageState(1);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mos_loca_activity_touchpointKey', key);
+      localStorage.setItem('mos_loca_activity_page', '1');
+      const url = new URL(window.location.href);
+      url.searchParams.set('activityTouchpointKey', key);
+      url.searchParams.set('activityPage', '1');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const [activityPage, setActivityPageState] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlPage = urlParams.get('activityPage');
+      const savedPage = urlPage || localStorage.getItem('mos_loca_activity_page');
+      if (savedPage && !isNaN(Number(savedPage))) return Number(savedPage);
+    }
+    return 1;
+  });
+
+  const setActivityPage = useCallback(
+    (p: number) => {
+      setActivityPageState(p);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mos_loca_activity_page', String(p));
+        const url = new URL(window.location.href);
+        url.searchParams.set('activityPage', String(p));
+        window.history.replaceState(null, '', url.pathname + url.search);
+      }
+    },
+    [setActivityPageState]
+  );
+
+  const [activityPageSize, setActivityPageSizeState] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlSize = urlParams.get('activityPageSize');
+      const savedSize = urlSize || localStorage.getItem('mos_loca_activity_pageSize');
+      if (savedSize && !isNaN(Number(savedSize))) return Number(savedSize);
+    }
+    return 20;
+  });
+
+  const setActivityPageSize = useCallback(
+    (s: number) => {
+      setActivityPageSizeState((prevSize) => {
+        if (prevSize !== s) {
+          setActivityPageState(1);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('mos_loca_activity_pageSize', String(s));
+            localStorage.setItem('mos_loca_activity_page', '1');
+            const url = new URL(window.location.href);
+            url.searchParams.set('activityPageSize', String(s));
+            url.searchParams.set('activityPage', '1');
+            window.history.replaceState(null, '', url.pathname + url.search);
+          }
+        }
+        return s;
+      });
+    },
+    [setActivityPageState]
+  );
+
+  const [staffActivityStats, setStaffActivityStats] = useState<LocaStaffActivityStats | null>(null);
+  const [staffActivityLogs, setStaffActivityLogs] = useState<LocaStaffActivityLogItem[]>([]);
+  const [staffActivityTotal, setStaffActivityTotal] = useState(0);
+  const [staffActivityLoading, setStaffActivityLoading] = useState(false);
+
   // Dropdown lists
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [configs, setConfigs] = useState<TabConfigs>(DEFAULT_LOCA_CONFIGS);
@@ -280,7 +507,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
   const fetchStaffList = useCallback(async () => {
     if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'manager')) return;
     try {
-      const data = await apiClient.customers.getStaff();
+      const data = await apiClient.customers.getStaff({ role: 'cs' });
       setStaffList(data);
     } catch (err) {
       console.error('Failed to load staff list:', err);
@@ -530,18 +757,63 @@ export function useLocaData(options?: UseLocaDataOptions) {
     return () => {
       if (customerDebounceRef.current) clearTimeout(customerDebounceRef.current);
     };
+  }, [configs, currentPage, pageSize, activeTab, activeTouchpointKey, assignedStaffId, fetchCustomerList]);
+
+  // Fetch Staff Activity Data
+  const fetchStaffActivityData = useCallback(async () => {
+    setStaffActivityLoading(true);
+    try {
+      let startDateStr: string;
+      let endDateStr: string;
+
+      if (activityViewMode === 'month') {
+        startDateStr = activityReferenceDate.startOf('month').format('YYYY-MM-DD');
+        endDateStr = activityReferenceDate.endOf('month').format('YYYY-MM-DD');
+      } else if (activityViewMode === 'week') {
+        startDateStr = activityReferenceDate.startOf('isoWeek').format('YYYY-MM-DD');
+        endDateStr = activityReferenceDate.endOf('isoWeek').format('YYYY-MM-DD');
+      } else {
+        startDateStr = activityReferenceDate.startOf('day').format('YYYY-MM-DD');
+        endDateStr = activityReferenceDate.endOf('day').format('YYYY-MM-DD');
+      }
+
+      const params: Record<string, unknown> = {
+        staffId: selectedActivityStaffId,
+        datePreset: 'custom',
+        startDate: startDateStr,
+        endDate: endDateStr,
+        page: activityPage,
+        pageSize: activityPageSize,
+        actionType: activityActionTypeFilter,
+        touchpointKey: activityTouchpointKey,
+        search: activitySearchQuery,
+      };
+
+      const res = await apiClient.customers.getLocaStaffActivity(params);
+      setStaffActivityStats(res.stats);
+      setStaffActivityLogs(res.logs || []);
+      setStaffActivityTotal(res.pagination?.total || 0);
+    } catch (err) {
+      console.error('Failed to load staff activity data:', err);
+    } finally {
+      setStaffActivityLoading(false);
+    }
   }, [
-    configs,
-    currentPage,
-    pageSize,
-    activeTab,
-    activeTouchpointKey,
-    contactSubTab,
-    searchQuery,
-    sortField,
-    assignedStaffId,
-    fetchCustomerList,
+    selectedActivityStaffId,
+    activityViewMode,
+    activityReferenceDate,
+    activitySearchQuery,
+    activityActionTypeFilter,
+    activityTouchpointKey,
+    activityPage,
+    activityPageSize,
   ]);
+
+  useEffect(() => {
+    if (activeTab === 'STAFF_ACTIVITY') {
+      fetchStaffActivityData();
+    }
+  }, [activeTab, fetchStaffActivityData]);
 
   // Actions
   const handleAddToPlan = async (customerId: number) => {
@@ -774,6 +1046,19 @@ export function useLocaData(options?: UseLocaDataOptions) {
     selectedDate,
     customTouchpoints,
     bookingStatusFilter,
+    // Staff Activity Report States
+    selectedActivityStaffId,
+    activityViewMode,
+    activityReferenceDate,
+    activitySearchQuery,
+    activityActionTypeFilter,
+    activityTouchpointKey,
+    activityPage,
+    activityPageSize,
+    staffActivityStats,
+    staffActivityLogs,
+    staffActivityTotal,
+    staffActivityLoading,
     // setters
     setActiveTab: changeActiveTab,
     setActiveTouchpointKey,
@@ -782,6 +1067,16 @@ export function useLocaData(options?: UseLocaDataOptions) {
     setSearchQuery,
     setSortField,
     setAssignedStaffId,
+    setSelectedActivityStaffId,
+    setActivityViewMode,
+    setActivityReferenceDate,
+    handleNavigateActivityDate,
+    setActivitySearchQuery,
+    setActivityActionTypeFilter,
+    setActivityTouchpointKey,
+    setActivityPage,
+    setActivityPageSize,
+    fetchStaffActivityData,
     setBookingStatusFilter: (val: 'ALL' | 'BOOKED' | 'NOT_BOOKED') => {
       setBookingStatusFilterState(val);
       setCurrentPage(1);

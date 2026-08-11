@@ -71,6 +71,10 @@ import { Customer, CALL_RESULT_LABELS, vietnameseSearchFilter } from '@mos-lab/s
 import dayjs from 'dayjs';
 import { useLocaData, TAB_KEYS } from './hooks/useLocaData';
 import { getLocaColumns, getNewLocaColumns } from './components/LocaColumns';
+const LocaStaffActivityTab = dynamic(
+  () => import('./components/LocaStaffActivityTab').then((m) => m.LocaStaffActivityTab),
+  { ssr: false }
+);
 import { formatDuration, formatVND } from '../../../lib/format-utils';
 import { useOmiCall } from '../../../context/OmiCallContext';
 
@@ -193,6 +197,19 @@ export default function LocaCampaignPage() {
     selectedDate,
     bookingStatusFilter,
     customTouchpoints,
+    // Staff Activity Report States
+    selectedActivityStaffId,
+    activityViewMode,
+    activityReferenceDate,
+    activitySearchQuery,
+    activityActionTypeFilter,
+    activityTouchpointKey,
+    activityPage,
+    activityPageSize,
+    staffActivityStats,
+    staffActivityLogs,
+    staffActivityTotal,
+    staffActivityLoading,
     // setters
     setActiveTab,
     setActiveTouchpointKey,
@@ -201,6 +218,15 @@ export default function LocaCampaignPage() {
     setSearchQuery,
     setSortField,
     setAssignedStaffId,
+    setSelectedActivityStaffId,
+    setActivityViewMode,
+    setActivityReferenceDate,
+    handleNavigateActivityDate,
+    setActivitySearchQuery,
+    setActivityActionTypeFilter,
+    setActivityTouchpointKey,
+    setActivityPage,
+    setActivityPageSize,
     setBookingStatusFilter,
     setCurrentPage,
     setPageSize,
@@ -615,102 +641,232 @@ export default function LocaCampaignPage() {
         }))}
       />
 
-      {/* FILTER & PIPELINE SECTION (MINIMALIST SINGLE ROW FILTER) */}
-      <div className="flex flex-col gap-4 mb-6">
-        {/* PIPELINE FOR LOCA_ALL TAB */}
-        {activeTab === 'LOCA_ALL' && (
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <Text
-                style={{ fontWeight: '700', color: token.colorText, fontSize: '12px', letterSpacing: '0.05em' }}
-                className="uppercase"
-              >
-                QUY TRÌNH CHĂM SÓC THEO CHẠM
-              </Text>
-              {activeTouchpointKey !== 'ALL' && (
-                <Button type="link" size="small" onClick={() => setActiveTouchpointKey('ALL')} style={{ padding: 0 }}>
-                  Xem tất cả khách hàng
-                </Button>
-              )}
-            </div>
+      {activeTab === 'STAFF_ACTIVITY' ? (
+        <LocaStaffActivityTab
+          staffList={staffList}
+          selectedStaffId={selectedActivityStaffId}
+          onSelectStaff={setSelectedActivityStaffId}
+          viewMode={activityViewMode}
+          onViewModeChange={setActivityViewMode}
+          referenceDate={activityReferenceDate}
+          onNavigateDate={handleNavigateActivityDate}
+          onReferenceDateChange={setActivityReferenceDate}
+          searchQuery={activitySearchQuery}
+          onSearchChange={setActivitySearchQuery}
+          actionTypeFilter={activityActionTypeFilter}
+          onActionTypeChange={setActivityActionTypeFilter}
+          selectedTouchpointKey={activityTouchpointKey}
+          onTouchpointKeyChange={setActivityTouchpointKey}
+          stats={staffActivityStats}
+          logs={staffActivityLogs}
+          loading={staffActivityLoading}
+          total={staffActivityTotal}
+          currentPage={activityPage}
+          pageSize={activityPageSize}
+          onPageChange={(page, size) => {
+            if (size !== activityPageSize) {
+              setActivityPageSize(size);
+            } else {
+              setActivityPage(page);
+            }
+          }}
+          onOpenCustomerDetail={(customerId) => {
+            setSelectedCustomer({ id: customerId } as any);
+            setDetailModalVisible(true);
+          }}
+        />
+      ) : (
+        <>
+          {/* FILTER & PIPELINE SECTION (MINIMALIST SINGLE ROW FILTER) */}
+          <div className="flex flex-col gap-4 mb-6">
+            {/* PIPELINE FOR LOCA_ALL TAB */}
+            {activeTab === 'LOCA_ALL' && (
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <Text
+                    style={{ fontWeight: '700', color: token.colorText, fontSize: '12px', letterSpacing: '0.05em' }}
+                    className="uppercase"
+                  >
+                    QUY TRÌNH CHĂM SÓC THEO CHẠM
+                  </Text>
+                  {activeTouchpointKey !== 'ALL' && (
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={() => setActiveTouchpointKey('ALL')}
+                      style={{ padding: 0 }}
+                    >
+                      Xem tất cả khách hàng
+                    </Button>
+                  )}
+                </div>
 
-            <div
-              className={`p-2 rounded-xl border scroll-smooth overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
-                themeMode === 'dark' ? 'bg-[#1a1a1a] border-white/5' : 'bg-slate-50/50 border-slate-100'
-              }`}
-              style={{
-                display: 'inline-flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                gap: '5px',
-                minHeight: '62px',
-                maxWidth: '100%',
-              }}
-            >
-              {/* All touchpoints capsule */}
-              <div
-                role="button"
-                tabIndex={0}
-                aria-pressed={activeTouchpointKey === 'ALL'}
-                aria-label="Lọc tất cả điểm chạm"
-                onClick={() => setActiveTouchpointKey('ALL')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setActiveTouchpointKey('ALL');
-                  }
-                }}
-                className={`rounded-xl cursor-pointer text-center select-none transition-all duration-300 border-2 focus:outline-none focus:ring-2 focus:ring-amber-400/60 ${
-                  activeTouchpointKey === 'ALL'
-                    ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
-                    : themeMode === 'dark'
-                      ? 'border-transparent bg-white/[0.02] hover:bg-white/[0.04]'
-                      : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
-                }`}
-                style={{
-                  minWidth: '72px',
-                  flexShrink: 0,
-                  padding: '5px 9px',
-                }}
-              >
                 <div
+                  className={`p-2 rounded-xl border scroll-smooth overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+                    themeMode === 'dark' ? 'bg-[#1a1a1a] border-white/5' : 'bg-slate-50/50 border-slate-100'
+                  }`}
                   style={{
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    color: '#888',
-                    textTransform: 'uppercase',
-                    whiteSpace: 'nowrap',
+                    display: 'inline-flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    gap: '5px',
+                    minHeight: '62px',
+                    maxWidth: '100%',
                   }}
                 >
-                  Tất cả chạm
-                </div>
-                <div
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: '900',
-                    marginTop: '1px',
-                    fontVariantNumeric: 'tabular-nums',
-                    fontFeatureSettings: '"tnum"',
-                    color:
-                      activeTouchpointKey === 'ALL' ? (themeMode === 'dark' ? '#D4A84B' : '#87640a') : token.colorText,
-                  }}
-                >
-                  {tabCounts['LOCA_ALL'] || 0}
-                </div>
-              </div>
+                  {/* All touchpoints capsule */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={activeTouchpointKey === 'ALL'}
+                    aria-label="Lọc tất cả điểm chạm"
+                    onClick={() => setActiveTouchpointKey('ALL')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveTouchpointKey('ALL');
+                      }
+                    }}
+                    className={`rounded-xl cursor-pointer text-center select-none transition-all duration-300 border-2 focus:outline-none focus:ring-2 focus:ring-amber-400/60 ${
+                      activeTouchpointKey === 'ALL'
+                        ? 'border-gold bg-gold/10 shadow-[0_2px_10px_rgba(212,168,75,0.15)] scale-[1.02]'
+                        : themeMode === 'dark'
+                          ? 'border-transparent bg-white/[0.02] hover:bg-white/[0.04]'
+                          : 'border-transparent bg-white hover:bg-white hover:border-slate-200'
+                    }`}
+                    style={{
+                      minWidth: '72px',
+                      flexShrink: 0,
+                      padding: '5px 9px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                        color: '#888',
+                        textTransform: 'uppercase',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Tất cả chạm
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: '900',
+                        marginTop: '1px',
+                        fontVariantNumeric: 'tabular-nums',
+                        fontFeatureSettings: '"tnum"',
+                        color:
+                          activeTouchpointKey === 'ALL'
+                            ? themeMode === 'dark'
+                              ? '#D4A84B'
+                              : '#87640a'
+                            : token.colorText,
+                      }}
+                    >
+                      {tabCounts['LOCA_ALL'] || 0}
+                    </div>
+                  </div>
 
-              {/* Individual touchpoints up to 30 days */}
-              {activeTouchpointsList
-                .filter((tp) => tp.daysMax <= 30)
-                .map((tp, idx) => {
-                  const isSelected = activeTouchpointKey === tp.key;
-                  const count = touchpointCounts[tp.key] || 0;
-                  const palette = getTouchpointPalette(tp.color, themeMode);
+                  {/* Individual touchpoints up to 30 days */}
+                  {activeTouchpointsList
+                    .filter((tp) => tp.daysMax <= 30)
+                    .map((tp, idx) => {
+                      const isSelected = activeTouchpointKey === tp.key;
+                      const count = touchpointCounts[tp.key] || 0;
+                      const palette = getTouchpointPalette(tp.color, themeMode);
 
-                  return (
-                    <React.Fragment key={tp.key}>
-                      {idx > 0 && (
+                      return (
+                        <React.Fragment key={tp.key}>
+                          {idx > 0 && (
+                            <div
+                              style={{
+                                width: '3px',
+                                height: '2px',
+                                backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                                flexShrink: 0,
+                              }}
+                            />
+                          )}
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            aria-pressed={isSelected}
+                            aria-label={`Lọc chạm ${tp.label}`}
+                            onClick={() => setActiveTouchpointKey(tp.key)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setActiveTouchpointKey(tp.key);
+                              }
+                            }}
+                            className={`rounded-xl cursor-pointer text-center select-none transition-all duration-300 border focus:outline-none focus:ring-2 focus:ring-amber-400/60 ${
+                              isSelected
+                                ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-md scale-[1.03]'
+                                : 'hover:scale-[1.01]'
+                            }`}
+                            style={{
+                              minWidth: '68px',
+                              flexShrink: 0,
+                              padding: '5px 9px',
+                              backgroundColor: isSelected
+                                ? themeMode === 'dark'
+                                  ? 'rgba(212,168,75,0.15)'
+                                  : '#fffbeb'
+                                : palette.bg,
+                              borderColor: isSelected ? '#f59e0b' : palette.border,
+                            }}
+                          >
+                            <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                              <span
+                                style={{
+                                  width: '5px',
+                                  height: '5px',
+                                  borderRadius: '50%',
+                                  backgroundColor: palette.dot,
+                                  flexShrink: 0,
+                                  boxShadow: `0 0 4px ${palette.dot}80`,
+                                }}
+                              />
+                              <span
+                                style={{
+                                  fontSize: '10px',
+                                  fontWeight: '800',
+                                  whiteSpace: 'nowrap',
+                                  color: palette.text,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.02em',
+                                }}
+                              >
+                                {tp.label}
+                              </span>
+                            </div>
+                            <div
+                              style={{
+                                fontSize: '14px',
+                                fontWeight: '900',
+                                fontVariantNumeric: 'tabular-nums',
+                                fontFeatureSettings: '"tnum"',
+                                color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : palette.text,
+                              }}
+                            >
+                              {count}
+                            </div>
+                          </div>
+                        </React.Fragment>
+                      );
+                    })}
+
+                  {/* 3 Custom Minimalist Day Filter Capsules after Chạm 30 */}
+                  {customTouchpoints.map((ctp, idx) => {
+                    const isSelected = activeTouchpointKey === ctp.key;
+                    const count = touchpointCounts[ctp.key] || touchpointCounts[`tp_${ctp.key}`] || 0;
+
+                    return (
+                      <React.Fragment key={ctp.key}>
                         <div
                           style={{
                             width: '3px',
@@ -719,492 +875,418 @@ export default function LocaCampaignPage() {
                             flexShrink: 0,
                           }}
                         />
-                      )}
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        aria-pressed={isSelected}
-                        aria-label={`Lọc chạm ${tp.label}`}
-                        onClick={() => setActiveTouchpointKey(tp.key)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setActiveTouchpointKey(tp.key);
-                          }
-                        }}
-                        className={`rounded-xl cursor-pointer text-center select-none transition-all duration-300 border focus:outline-none focus:ring-2 focus:ring-amber-400/60 ${
-                          isSelected
-                            ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-md scale-[1.03]'
-                            : 'hover:scale-[1.01]'
-                        }`}
-                        style={{
-                          minWidth: '68px',
-                          flexShrink: 0,
-                          padding: '5px 9px',
-                          backgroundColor: isSelected
-                            ? themeMode === 'dark'
-                              ? 'rgba(212,168,75,0.15)'
-                              : '#fffbeb'
-                            : palette.bg,
-                          borderColor: isSelected ? '#f59e0b' : palette.border,
-                        }}
-                      >
-                        <div className="flex items-center justify-center gap-1.5 mb-0.5">
-                          <span
-                            style={{
-                              width: '5px',
-                              height: '5px',
-                              borderRadius: '50%',
-                              backgroundColor: palette.dot,
-                              flexShrink: 0,
-                              boxShadow: `0 0 4px ${palette.dot}80`,
-                            }}
-                          />
-                          <span
-                            style={{
-                              fontSize: '10px',
-                              fontWeight: '800',
-                              whiteSpace: 'nowrap',
-                              color: palette.text,
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.02em',
-                            }}
-                          >
-                            {tp.label}
-                          </span>
-                        </div>
                         <div
-                          style={{
-                            fontSize: '14px',
-                            fontWeight: '900',
-                            fontVariantNumeric: 'tabular-nums',
-                            fontFeatureSettings: '"tnum"',
-                            color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : palette.text,
-                          }}
-                        >
-                          {count}
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-
-              {/* 3 Custom Minimalist Day Filter Capsules after Chạm 30 */}
-              {customTouchpoints.map((ctp, idx) => {
-                const isSelected = activeTouchpointKey === ctp.key;
-                const count = touchpointCounts[ctp.key] || touchpointCounts[`tp_${ctp.key}`] || 0;
-
-                return (
-                  <React.Fragment key={ctp.key}>
-                    <div
-                      style={{
-                        width: '3px',
-                        height: '2px',
-                        backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                        flexShrink: 0,
-                      }}
-                    />
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={isSelected}
-                      aria-label={`Lọc tùy chỉnh từ ${ctp.daysMin} đến ${ctp.daysMax} ngày`}
-                      onClick={() => setActiveTouchpointKey(ctp.key)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setActiveTouchpointKey(ctp.key);
-                        }
-                      }}
-                      className={`rounded-xl cursor-pointer text-center select-none transition-all duration-300 border focus:outline-none focus:ring-2 focus:ring-amber-400/60 ${
-                        isSelected
-                          ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-md scale-[1.03]'
-                          : 'hover:scale-[1.01]'
-                      }`}
-                      style={{
-                        minWidth: '105px',
-                        flexShrink: 0,
-                        padding: '5px 7px',
-                        backgroundColor: isSelected
-                          ? themeMode === 'dark'
-                            ? 'rgba(212,168,75,0.15)'
-                            : '#fffbeb'
-                          : themeMode === 'dark'
-                            ? 'rgba(255,255,255,0.02)'
-                            : '#ffffff',
-                        borderColor: isSelected
-                          ? '#f59e0b'
-                          : themeMode === 'dark'
-                            ? 'rgba(255,255,255,0.08)'
-                            : '#e2e8f0',
-                      }}
-                    >
-                      <div className="flex items-center justify-center gap-1 mb-0.5">
-                        <span
-                          style={{
-                            width: '5px',
-                            height: '5px',
-                            borderRadius: '50%',
-                            backgroundColor: isSelected ? '#f59e0b' : '#3b82f6',
-                            flexShrink: 0,
-                            boxShadow: `0 0 4px ${isSelected ? '#f59e0b' : '#3b82f6'}80`,
-                          }}
-                        />
-                        <div
-                          className="flex items-center gap-0.5 text-[11px] font-semibold [&_.ant-input-number-input]:!bg-transparent [&_.ant-input-number-input]:!p-0 [&_.ant-input-number-input]:!h-auto [&_.ant-input-number-input]:!text-center [&_.ant-input-number]:!border-none [&_.ant-input-number]:!bg-transparent [&_.ant-input-number]:!shadow-none [&_.ant-input-number-focused]:!shadow-none"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (activeTouchpointKey !== ctp.key) {
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={isSelected}
+                          aria-label={`Lọc tùy chỉnh từ ${ctp.daysMin} đến ${ctp.daysMax} ngày`}
+                          onClick={() => setActiveTouchpointKey(ctp.key)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
                               setActiveTouchpointKey(ctp.key);
                             }
                           }}
+                          className={`rounded-xl cursor-pointer text-center select-none transition-all duration-300 border focus:outline-none focus:ring-2 focus:ring-amber-400/60 ${
+                            isSelected
+                              ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-md scale-[1.03]'
+                              : 'hover:scale-[1.01]'
+                          }`}
+                          style={{
+                            minWidth: '105px',
+                            flexShrink: 0,
+                            padding: '5px 7px',
+                            backgroundColor: isSelected
+                              ? themeMode === 'dark'
+                                ? 'rgba(212,168,75,0.15)'
+                                : '#fffbeb'
+                              : themeMode === 'dark'
+                                ? 'rgba(255,255,255,0.02)'
+                                : '#ffffff',
+                            borderColor: isSelected
+                              ? '#f59e0b'
+                              : themeMode === 'dark'
+                                ? 'rgba(255,255,255,0.08)'
+                                : '#e2e8f0',
+                          }}
                         >
-                          <InputNumber
-                            size="small"
-                            min={0}
-                            max={999}
-                            controls={false}
-                            value={ctp.daysMin}
-                            aria-label={`Số ngày bắt đầu khoảng tùy chỉnh ${idx + 1}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (activeTouchpointKey !== ctp.key) {
-                                setActiveTouchpointKey(ctp.key);
-                              }
-                            }}
-                            onFocus={() => {
-                              if (activeTouchpointKey !== ctp.key) {
-                                setActiveTouchpointKey(ctp.key);
-                              }
-                            }}
-                            onChange={(val) => {
-                              if (val !== null && val !== undefined) {
-                                updateCustomTouchpoint(idx, Number(val), ctp.daysMax);
-                              }
-                            }}
+                          <div className="flex items-center justify-center gap-1 mb-0.5">
+                            <span
+                              style={{
+                                width: '5px',
+                                height: '5px',
+                                borderRadius: '50%',
+                                backgroundColor: isSelected ? '#f59e0b' : '#3b82f6',
+                                flexShrink: 0,
+                                boxShadow: `0 0 4px ${isSelected ? '#f59e0b' : '#3b82f6'}80`,
+                              }}
+                            />
+                            <div
+                              className="flex items-center gap-0.5 text-[11px] font-semibold [&_.ant-input-number-input]:!bg-transparent [&_.ant-input-number-input]:!p-0 [&_.ant-input-number-input]:!h-auto [&_.ant-input-number-input]:!text-center [&_.ant-input-number]:!border-none [&_.ant-input-number]:!bg-transparent [&_.ant-input-number]:!shadow-none [&_.ant-input-number-focused]:!shadow-none"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (activeTouchpointKey !== ctp.key) {
+                                  setActiveTouchpointKey(ctp.key);
+                                }
+                              }}
+                            >
+                              <InputNumber
+                                size="small"
+                                min={0}
+                                max={999}
+                                controls={false}
+                                value={ctp.daysMin}
+                                aria-label={`Số ngày bắt đầu khoảng tùy chỉnh ${idx + 1}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (activeTouchpointKey !== ctp.key) {
+                                    setActiveTouchpointKey(ctp.key);
+                                  }
+                                }}
+                                onFocus={() => {
+                                  if (activeTouchpointKey !== ctp.key) {
+                                    setActiveTouchpointKey(ctp.key);
+                                  }
+                                }}
+                                onChange={(val) => {
+                                  if (val !== null && val !== undefined) {
+                                    updateCustomTouchpoint(idx, Number(val), ctp.daysMax);
+                                  }
+                                }}
+                                style={{
+                                  width: '22px',
+                                  textAlign: 'center',
+                                  color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : token.colorText,
+                                  fontWeight: '800',
+                                  fontSize: '11px',
+                                  lineHeight: '1.2',
+                                }}
+                              />
+                              <span
+                                style={{
+                                  color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : '#888',
+                                  fontSize: '10px',
+                                  fontWeight: 'bold',
+                                }}
+                              >
+                                -
+                              </span>
+                              <InputNumber
+                                size="small"
+                                min={0}
+                                max={999}
+                                controls={false}
+                                value={ctp.daysMax}
+                                aria-label={`Số ngày kết thúc khoảng tùy chỉnh ${idx + 1}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (activeTouchpointKey !== ctp.key) {
+                                    setActiveTouchpointKey(ctp.key);
+                                  }
+                                }}
+                                onFocus={() => {
+                                  if (activeTouchpointKey !== ctp.key) {
+                                    setActiveTouchpointKey(ctp.key);
+                                  }
+                                }}
+                                onChange={(val) => {
+                                  if (val !== null && val !== undefined) {
+                                    updateCustomTouchpoint(idx, ctp.daysMin, Number(val));
+                                  }
+                                }}
+                                style={{
+                                  width: '22px',
+                                  textAlign: 'center',
+                                  color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : token.colorText,
+                                  fontWeight: '800',
+                                  fontSize: '11px',
+                                  lineHeight: '1.2',
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div
                             style={{
-                              width: '22px',
-                              textAlign: 'center',
+                              fontSize: '14px',
+                              fontWeight: '900',
+                              fontVariantNumeric: 'tabular-nums',
+                              fontFeatureSettings: '"tnum"',
                               color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : token.colorText,
-                              fontWeight: '800',
-                              fontSize: '11px',
-                              lineHeight: '1.2',
-                            }}
-                          />
-                          <span
-                            style={{
-                              color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : '#888',
-                              fontSize: '10px',
-                              fontWeight: 'bold',
                             }}
                           >
-                            -
-                          </span>
-                          <InputNumber
-                            size="small"
-                            min={0}
-                            max={999}
-                            controls={false}
-                            value={ctp.daysMax}
-                            aria-label={`Số ngày kết thúc khoảng tùy chỉnh ${idx + 1}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (activeTouchpointKey !== ctp.key) {
-                                setActiveTouchpointKey(ctp.key);
-                              }
-                            }}
-                            onFocus={() => {
-                              if (activeTouchpointKey !== ctp.key) {
-                                setActiveTouchpointKey(ctp.key);
-                              }
-                            }}
-                            onChange={(val) => {
-                              if (val !== null && val !== undefined) {
-                                updateCustomTouchpoint(idx, ctp.daysMin, Number(val));
-                              }
-                            }}
-                            style={{
-                              width: '22px',
-                              textAlign: 'center',
-                              color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : token.colorText,
-                              fontWeight: '800',
-                              fontSize: '11px',
-                              lineHeight: '1.2',
-                            }}
-                          />
+                            {count}
+                          </div>
                         </div>
-                      </div>
-                      <div
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: '900',
-                          fontVariantNumeric: 'tabular-nums',
-                          fontFeatureSettings: '"tnum"',
-                          color: isSelected ? (themeMode === 'dark' ? '#fbbf24' : '#b45309') : token.colorText,
-                        }}
-                      >
-                        {count}
-                      </div>
-                    </div>
-                  </React.Fragment>
-                );
-              })}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* CONTACTED SUB-TAB SELECTOR */}
+            {activeTab === 'CONTACTED' && (
+              <div className="flex items-center gap-3 py-1">
+                <Text style={{ fontWeight: '600', fontSize: '13px' }}>Hình thức liên hệ:</Text>
+                <Segmented
+                  value={contactSubTab}
+                  onChange={(val) => setContactSubTab(val as 'ALL' | 'CALL' | 'TEXT')}
+                  options={[
+                    { value: 'ALL', label: 'Tất cả' },
+                    { value: 'CALL', label: 'Cuộc gọi', icon: <PhoneOutlined /> },
+                    { value: 'TEXT', label: 'Tin nhắn', icon: <MessageOutlined /> },
+                  ]}
+                  style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5' }}
+                />
+              </div>
+            )}
+
+            {/* MINIMALIST FILTER BAR (SINGLE ROW - RIGHT ALIGNED) */}
+            <div className="flex flex-wrap items-center justify-end gap-2.5 py-2 border-b border-slate-100 dark:border-slate-800/60 w-full">
+              {/* Segmented Preset (NEW_LOCA only) */}
+              {activeTab === 'NEW_LOCA' && (
+                <ConfigProvider
+                  theme={{
+                    components: {
+                      Segmented: {
+                        itemSelectedBg: '#D4A84B',
+                        itemSelectedColor: '#000000',
+                        trackBg: themeMode === 'dark' ? '#141414' : '#f5f5f5',
+                        itemColor: themeMode === 'dark' ? '#aaa' : '#555',
+                      },
+                    },
+                  }}
+                >
+                  <Segmented
+                    value={datePreset}
+                    onChange={(val) => setDatePreset(val as 'today' | 'week' | 'month')}
+                    options={[
+                      { value: 'month', label: 'Tháng' },
+                      { value: 'week', label: 'Tuần' },
+                      { value: 'today', label: 'Ngày' },
+                    ]}
+                    style={{
+                      height: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontWeight: '600',
+                    }}
+                  />
+                </ConfigProvider>
+              )}
+
+              {/* DatePicker with minimalist arrows (NEW_LOCA only) */}
+              {activeTab === 'NEW_LOCA' && (
+                <div className="flex items-center border border-slate-200 dark:border-slate-800/60 bg-slate-500/5 h-8 rounded-lg overflow-hidden transition-colors hover:border-slate-300 dark:hover:border-slate-700">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<LeftOutlined style={{ fontSize: '10px', color: '#888' }} />}
+                    onClick={handlePrevDate}
+                    style={{
+                      width: 28,
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 0,
+                    }}
+                    className="hover:bg-slate-500/10"
+                  />
+                  <DatePicker
+                    value={selectedDate}
+                    onChange={(date) => {
+                      if (date) setSelectedDate(date);
+                    }}
+                    picker={datePreset === 'month' ? 'month' : datePreset === 'week' ? 'week' : 'date'}
+                    format={
+                      datePreset === 'month'
+                        ? '[Tháng] MM/YYYY'
+                        : datePreset === 'week'
+                          ? '[Tuần] ww/YYYY'
+                          : 'DD/MM/YYYY'
+                    }
+                    allowClear={false}
+                    variant="borderless"
+                    suffixIcon={<CalendarOutlined style={{ color: '#D4A84B', fontSize: '13px' }} />}
+                    style={{
+                      width: 150,
+                      padding: '0 8px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                    }}
+                    className="text-center font-semibold"
+                  />
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<RightOutlined style={{ fontSize: '10px', color: '#888' }} />}
+                    onClick={handleNextDate}
+                    style={{
+                      width: 28,
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 0,
+                    }}
+                    className="hover:bg-slate-500/10"
+                  />
+                </div>
+              )}
+
+              {/* Minimalist Booking Status Filter Buttons (Square Buttons matching Gear Button style) */}
+              <div className="flex items-center gap-1.5">
+                <Tooltip title="Tất cả khách hàng (Cả đã book & chưa book)">
+                  <button
+                    type="button"
+                    onClick={() => setBookingStatusFilter('ALL')}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                      bookingStatusFilter === 'ALL'
+                        ? 'bg-blue-50 text-blue-600 border-blue-300 shadow-xs dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/40'
+                        : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
+                    }`}
+                  >
+                    <UnorderedListOutlined
+                      style={{
+                        fontSize: '14px',
+                        color:
+                          bookingStatusFilter === 'ALL' ? (themeMode === 'dark' ? '#60a5fa' : '#2563eb') : undefined,
+                      }}
+                    />
+                  </button>
+                </Tooltip>
+
+                <Tooltip title="Đã book (Có lịch hẹn tương lai)">
+                  <button
+                    type="button"
+                    onClick={() => setBookingStatusFilter('BOOKED')}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                      bookingStatusFilter === 'BOOKED'
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-300 shadow-xs dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/40'
+                        : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
+                    }`}
+                  >
+                    <CalendarOutlined
+                      style={{
+                        fontSize: '14px',
+                        color:
+                          bookingStatusFilter === 'BOOKED' ? (themeMode === 'dark' ? '#34d399' : '#059669') : undefined,
+                      }}
+                    />
+                  </button>
+                </Tooltip>
+
+                <Tooltip title="Chưa book (Chưa có lịch hẹn tương lai)">
+                  <button
+                    type="button"
+                    onClick={() => setBookingStatusFilter('NOT_BOOKED')}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                      bookingStatusFilter === 'NOT_BOOKED'
+                        ? 'bg-rose-50 text-rose-600 border-rose-300 shadow-xs dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/40'
+                        : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
+                    }`}
+                  >
+                    <CloseCircleOutlined
+                      style={{
+                        fontSize: '14px',
+                        color:
+                          bookingStatusFilter === 'NOT_BOOKED'
+                            ? themeMode === 'dark'
+                              ? '#f87171'
+                              : '#e11d48'
+                            : undefined,
+                      }}
+                    />
+                  </button>
+                </Tooltip>
+              </div>
+
+              {/* Borderless Search Input */}
+              <div className="flex items-center border border-slate-200 dark:border-slate-800/60 bg-slate-500/5 px-2.5 h-8 rounded-lg max-w-[280px] focus-within:border-slate-300 dark:focus-within:border-slate-700 transition-colors">
+                <SearchOutlined style={{ color: '#aaa', marginRight: '6px' }} />
+                <Input
+                  placeholder="Tìm khách hàng..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  allowClear
+                  variant="borderless"
+                  style={{ padding: 0, fontSize: '13px', width: 180 }}
+                />
+              </div>
+
+              {/* Action buttons (Settings) */}
+              <Tooltip title="Cấu hình cột bảng">
+                <Button
+                  type="primary"
+                  icon={<SettingOutlined style={{ color: '#ffffff', fontSize: '14px' }} />}
+                  onClick={openLocaConfig}
+                  style={{
+                    backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
+                    borderColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
+                    width: 32,
+                    height: 32,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '8px',
+                    padding: 0,
+                  }}
+                />
+              </Tooltip>
             </div>
           </div>
-        )}
 
-        {/* CONTACTED SUB-TAB SELECTOR */}
-        {activeTab === 'CONTACTED' && (
-          <div className="flex items-center gap-3 py-1">
-            <Text style={{ fontWeight: '600', fontSize: '13px' }}>Hình thức liên hệ:</Text>
-            <Segmented
-              value={contactSubTab}
-              onChange={(val) => setContactSubTab(val as 'ALL' | 'CALL' | 'TEXT')}
-              options={[
-                { value: 'ALL', label: 'Tất cả' },
-                { value: 'CALL', label: 'Cuộc gọi', icon: <PhoneOutlined /> },
-                { value: 'TEXT', label: 'Tin nhắn', icon: <MessageOutlined /> },
-              ]}
-              style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5' }}
-            />
-          </div>
-        )}
-
-        {/* MINIMALIST FILTER BAR (SINGLE ROW - RIGHT ALIGNED) */}
-        <div className="flex flex-wrap items-center justify-end gap-2.5 py-2 border-b border-slate-100 dark:border-slate-800/60 w-full">
-          {/* Segmented Preset (NEW_LOCA only) */}
-          {activeTab === 'NEW_LOCA' && (
-            <ConfigProvider
-              theme={{
-                components: {
-                  Segmented: {
-                    itemSelectedBg: '#D4A84B',
-                    itemSelectedColor: '#000000',
-                    trackBg: themeMode === 'dark' ? '#141414' : '#f5f5f5',
-                    itemColor: themeMode === 'dark' ? '#aaa' : '#555',
-                  },
-                },
-              }}
-            >
-              <Segmented
-                value={datePreset}
-                onChange={(val) => setDatePreset(val as 'today' | 'week' | 'month')}
-                options={[
-                  { value: 'month', label: 'Tháng' },
-                  { value: 'week', label: 'Tuần' },
-                  { value: 'today', label: 'Ngày' },
-                ]}
-                style={{
-                  height: 32,
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontWeight: '600',
-                }}
-              />
-            </ConfigProvider>
-          )}
-
-          {/* DatePicker with minimalist arrows (NEW_LOCA only) */}
-          {activeTab === 'NEW_LOCA' && (
-            <div className="flex items-center border border-slate-200 dark:border-slate-800/60 bg-slate-500/5 h-8 rounded-lg overflow-hidden transition-colors hover:border-slate-300 dark:hover:border-slate-700">
-              <Button
-                type="text"
-                size="small"
-                icon={<LeftOutlined style={{ fontSize: '10px', color: '#888' }} />}
-                onClick={handlePrevDate}
-                style={{
-                  width: 28,
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 0,
-                }}
-                className="hover:bg-slate-500/10"
-              />
-              <DatePicker
-                value={selectedDate}
-                onChange={(date) => {
-                  if (date) setSelectedDate(date);
-                }}
-                picker={datePreset === 'month' ? 'month' : datePreset === 'week' ? 'week' : 'date'}
-                format={
-                  datePreset === 'month' ? '[Tháng] MM/YYYY' : datePreset === 'week' ? '[Tuần] ww/YYYY' : 'DD/MM/YYYY'
+          {/* CUSTOMERS DATA TABLE */}
+          <Table
+            size="small"
+            columns={activeTab === 'NEW_LOCA' ? newLocaColumns : locaConfigColumns}
+            dataSource={customers}
+            rowKey="id"
+            loading={loading}
+            className="antd-custom-table"
+            scroll={{ x: 'max-content' }}
+            onChange={(pagination, filters, sorter: SafeAny) => {
+              if (sorter && sorter.field) {
+                const field = sorter.field;
+                const order = sorter.order;
+                if (!order) {
+                  setSortField('daysSinceLastVisit_asc');
+                } else if (field === 'daysSinceLastVisit') {
+                  setSortField(order === 'ascend' ? 'daysSinceLastVisit_asc' : 'daysSinceLastVisit_desc');
+                } else if (field === 'totalSpent') {
+                  setSortField(order === 'ascend' ? 'totalSpent_asc' : 'totalSpent_desc');
+                } else if (field === 'name') {
+                  setSortField(order === 'ascend' ? 'name_asc' : 'name_desc');
+                } else if (field === 'id') {
+                  setSortField(order === 'ascend' ? 'id_asc' : 'id_desc');
                 }
-                allowClear={false}
-                variant="borderless"
-                suffixIcon={<CalendarOutlined style={{ color: '#D4A84B', fontSize: '13px' }} />}
-                style={{
-                  width: 150,
-                  padding: '0 8px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                }}
-                className="text-center font-semibold"
-              />
-              <Button
-                type="text"
-                size="small"
-                icon={<RightOutlined style={{ fontSize: '10px', color: '#888' }} />}
-                onClick={handleNextDate}
-                style={{
-                  width: 28,
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 0,
-                }}
-                className="hover:bg-slate-500/10"
-              />
-            </div>
-          )}
-
-          {/* Minimalist Booking Status Filter Buttons (Square Buttons matching Gear Button style) */}
-          <div className="flex items-center gap-1.5">
-            <Tooltip title="Tất cả khách hàng (Cả đã book & chưa book)">
-              <button
-                type="button"
-                onClick={() => setBookingStatusFilter('ALL')}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
-                  bookingStatusFilter === 'ALL'
-                    ? 'bg-blue-50 text-blue-600 border-blue-300 shadow-xs dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/40'
-                    : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
-                }`}
-              >
-                <UnorderedListOutlined
-                  style={{
-                    fontSize: '14px',
-                    color: bookingStatusFilter === 'ALL' ? (themeMode === 'dark' ? '#60a5fa' : '#2563eb') : undefined,
-                  }}
-                />
-              </button>
-            </Tooltip>
-
-            <Tooltip title="Đã book (Có lịch hẹn tương lai)">
-              <button
-                type="button"
-                onClick={() => setBookingStatusFilter('BOOKED')}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
-                  bookingStatusFilter === 'BOOKED'
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-300 shadow-xs dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/40'
-                    : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
-                }`}
-              >
-                <CalendarOutlined
-                  style={{
-                    fontSize: '14px',
-                    color:
-                      bookingStatusFilter === 'BOOKED' ? (themeMode === 'dark' ? '#34d399' : '#059669') : undefined,
-                  }}
-                />
-              </button>
-            </Tooltip>
-
-            <Tooltip title="Chưa book (Chưa có lịch hẹn tương lai)">
-              <button
-                type="button"
-                onClick={() => setBookingStatusFilter('NOT_BOOKED')}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
-                  bookingStatusFilter === 'NOT_BOOKED'
-                    ? 'bg-rose-50 text-rose-600 border-rose-300 shadow-xs dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/40'
-                    : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
-                }`}
-              >
-                <CloseCircleOutlined
-                  style={{
-                    fontSize: '14px',
-                    color:
-                      bookingStatusFilter === 'NOT_BOOKED' ? (themeMode === 'dark' ? '#f87171' : '#e11d48') : undefined,
-                  }}
-                />
-              </button>
-            </Tooltip>
-          </div>
-
-          {/* Borderless Search Input */}
-          <div className="flex items-center border border-slate-200 dark:border-slate-800/60 bg-slate-500/5 px-2.5 h-8 rounded-lg max-w-[280px] focus-within:border-slate-300 dark:focus-within:border-slate-700 transition-colors">
-            <SearchOutlined style={{ color: '#aaa', marginRight: '6px' }} />
-            <Input
-              placeholder="Tìm khách hàng..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              allowClear
-              variant="borderless"
-              style={{ padding: 0, fontSize: '13px', width: 180 }}
-            />
-          </div>
-
-          {/* Action buttons (Settings) */}
-          <Tooltip title="Cấu hình cột bảng">
-            <Button
-              type="primary"
-              icon={<SettingOutlined style={{ color: '#ffffff', fontSize: '14px' }} />}
-              onClick={openLocaConfig}
-              style={{
-                backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
-                borderColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
-                width: 32,
-                height: 32,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                padding: 0,
-              }}
-            />
-          </Tooltip>
-        </div>
-      </div>
-
-      {/* CUSTOMERS DATA TABLE */}
-      <Table
-        size="small"
-        columns={activeTab === 'NEW_LOCA' ? newLocaColumns : locaConfigColumns}
-        dataSource={customers}
-        rowKey="id"
-        loading={loading}
-        className="antd-custom-table"
-        scroll={{ x: 'max-content' }}
-        onChange={(pagination, filters, sorter: SafeAny) => {
-          if (sorter && sorter.field) {
-            const field = sorter.field;
-            const order = sorter.order;
-            if (!order) {
-              setSortField('daysSinceLastVisit_asc');
-            } else if (field === 'daysSinceLastVisit') {
-              setSortField(order === 'ascend' ? 'daysSinceLastVisit_asc' : 'daysSinceLastVisit_desc');
-            } else if (field === 'totalSpent') {
-              setSortField(order === 'ascend' ? 'totalSpent_asc' : 'totalSpent_desc');
-            } else if (field === 'name') {
-              setSortField(order === 'ascend' ? 'name_asc' : 'name_desc');
-            } else if (field === 'id') {
-              setSortField(order === 'ascend' ? 'id_asc' : 'id_desc');
-            }
-          }
-        }}
-        pagination={{
-          current: currentPage,
-          pageSize: pageSize,
-          total: total,
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50', '100'],
-          onChange: (page, size) => {
-            setCurrentPage(page);
-            if (size !== pageSize) {
-              setPageSize(size);
-              localStorage.setItem('mos_loca_pageSize', size.toString());
-            }
-          },
-          showTotal: (totalCount) => `Tổng số: ${totalCount} khách hàng`,
-        }}
-        rowClassName={(record) => getRowClassName(record, themeMode)}
-        components={{
-          header: {
-            cell: ResizableHeaderCell,
-          },
-        }}
-      />
+              }
+            }}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: total,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              onChange: (page, size) => {
+                setCurrentPage(page);
+                if (size !== pageSize) {
+                  setPageSize(size);
+                  localStorage.setItem('mos_loca_pageSize', size.toString());
+                }
+              },
+              showTotal: (totalCount) => `Tổng số: ${totalCount} khách hàng`,
+            }}
+            rowClassName={(record) => getRowClassName(record, themeMode)}
+            components={{
+              header: {
+                cell: ResizableHeaderCell,
+              },
+            }}
+          />
+        </>
+      )}
 
       {/* DRAWERS */}
       {detailModalVisible && selectedCustomer && (

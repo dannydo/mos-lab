@@ -41,7 +41,7 @@ const CvScheduleDrawer = dynamic(
 import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
 import { OmiCallProvider } from '../../context/OmiCallContext';
-import OmiCallWidget from '../../components/OmiCallWidget';
+const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { ssr: false });
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
 
