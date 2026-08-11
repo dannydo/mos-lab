@@ -498,10 +498,19 @@ export default function QaShopPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isMobileFocusMode, setIsMobileFocusMode] = useState(false);
 
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
+
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setIsMobileFocusMode(true);
-    }
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobileScreen(mobile);
+      if (mobile) {
+        setIsMobileFocusMode(true);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
   const [requireAllPhotos, setRequireAllPhotos] = useState(false);
   const [auditReviewModalOpen, setAuditReviewModalOpen] = useState(false);
@@ -2162,231 +2171,447 @@ export default function QaShopPage() {
         </Form>
       </Modal>
 
-      {/* Modal: Admin Full Inspection Review */}
-      <Modal
-        title={
-          <div className="flex flex-wrap items-center justify-between gap-2 pr-6">
-            <span className="flex items-center gap-2 text-base font-bold text-slate-800 dark:text-slate-100">
-              <SafetyCertificateOutlined className="text-purple-600 dark:text-purple-400" />
-              Chi Tiết Biên Bản Kiểm Tra {selectedAudit?.id || ''}
-            </span>
-            {selectedAudit && (
-              <span className="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
-                {selectedAudit.branchName} · Ngày {selectedAudit.auditDate} · Ca {selectedAudit.shift || 'Sáng'}
-              </span>
-            )}
-          </div>
-        }
-        open={auditReviewModalOpen}
-        onCancel={() => setAuditReviewModalOpen(false)}
-        width={980}
-        footer={[
-          <Button key="close" onClick={() => setAuditReviewModalOpen(false)}>
-            Đóng
-          </Button>,
-          <Button key="print" type="primary" icon={<PrinterOutlined />} onClick={() => window.print()}>
-            In / Xuất PDF
-          </Button>,
-        ]}
-        destroyOnClose
-        zIndex={10050}
-        getContainer={() => document.body}
-      >
-        {selectedAudit && (
-          <div className="space-y-4 py-2">
-            {/* Summary Top Banner */}
-            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex flex-wrap items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedAudit.branchName}</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  Người kiểm tra:{' '}
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">{selectedAudit.auditorName}</span>
-                </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  Ghi chú ca: <span className="italic">{selectedAudit.notes || 'Không có ghi chú thêm.'}</span>
-                </div>
-              </div>
-              <div className="text-right flex items-center gap-4">
-                <div>
-                  <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Điểm Đánh Giá</div>
-                  <div className="text-3xl font-extrabold tabular-nums text-emerald-500">
-                    {(selectedAudit.overallScore || 90).toFixed(1)}{' '}
-                    <span className="text-xs font-normal text-slate-400">/100</span>
+      {/* 📱 Mobile Dedicated Audit Review Fullscreen Drawer (Option 1 Selected) */}
+      {isMobileScreen ? (
+        <Drawer
+          title={null}
+          placement="bottom"
+          height="100%"
+          open={auditReviewModalOpen}
+          onClose={() => setAuditReviewModalOpen(false)}
+          closable={false}
+          zIndex={10050}
+          styles={{ body: { padding: 0, backgroundColor: '#020617', color: '#f8fafc' } }}
+          destroyOnClose
+          getContainer={() => document.body}
+        >
+          {selectedAudit && (
+            <div className="flex flex-col h-full bg-slate-950 text-slate-100 font-sans">
+              {/* 1. Mobile Sticky Top Header */}
+              <div className="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0 shadow-md">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 text-xs text-purple-400 font-bold">
+                    <SafetyCertificateOutlined />
+                    <span className="truncate">{selectedAudit.branchName}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 truncate pt-0.5">
+                    {selectedAudit.auditDate} · Ca {selectedAudit.shift || 'Sáng'} · {selectedAudit.auditorName}
                   </div>
                 </div>
-                <div>{renderAuditStatusTag(selectedAudit.status, selectedAudit)}</div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="text-right">
+                    <div className="text-[10px] text-slate-400 uppercase font-semibold">Điểm</div>
+                    <div className="text-lg font-extrabold tabular-nums text-emerald-400 leading-none">
+                      {(selectedAudit.overallScore || 90).toFixed(1)}
+                    </div>
+                  </div>
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<CloseOutlined className="text-slate-400 text-base" />}
+                    onClick={() => setAuditReviewModalOpen(false)}
+                    className="w-8 h-8 flex items-center justify-center p-0 text-slate-300 hover:text-white"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Filter Tabs Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-b border-slate-200 dark:border-slate-800 pb-3">
-              <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                Bảng Tiêu Chí Chi Tiết (Read-Only Audit Review):
-              </div>
-              <Space size="small">
+              {/* 2. Mobile Filter Pills (Horizontal Scrollable Chips) */}
+              <div className="px-3 py-2 bg-slate-900/60 border-b border-slate-800 shrink-0 overflow-x-auto no-scrollbar flex items-center gap-1.5">
                 {(['ALL', 'PASS', 'FAIL', 'NA', 'PHOTO'] as const).map((tab) => {
                   const labels = {
-                    ALL: 'Tất Cả Tiêu Chí',
+                    ALL: 'Tất Cả',
                     PASS: '🟢 Đạt',
                     FAIL: '🔴 Lỗi Vi Phạm',
                     NA: '⚪ N/A',
-                    PHOTO: '📷 Có Ảnh Chụp',
+                    PHOTO: '📷 Có Ảnh',
                   };
                   const active = reviewFilterTab === tab;
                   return (
-                    <Button
-                      key={tab}
-                      size="small"
-                      type={active ? 'primary' : 'default'}
+                    <button
+                      key={`m-tab-${tab}`}
+                      type="button"
                       onClick={() => setReviewFilterTab(tab)}
-                      className={`text-xs font-medium ${active ? 'bg-purple-600 hover:bg-purple-500 border-none' : ''}`}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all active:scale-95 ${
+                        active
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
+                      }`}
                     >
                       {labels[tab]}
-                    </Button>
+                    </button>
                   );
                 })}
-              </Space>
-            </div>
+              </div>
 
-            {/* Read-Only Checklist Sections View */}
-            <div className="space-y-4 max-h-[550px] overflow-y-auto pr-1">
-              {(activeTemplate?.sections || []).map((sec: SafeAny, secIdx: number) => {
-                const secItems = (sec.items || []).filter((itm: SafeAny) => {
-                  const st = selectedAudit.itemSnapshot?.[itm.id] ||
-                    selectedAudit.items?.find((i: SafeAny) => i.itemId === itm.id) || { result: 'PASS' };
-                  const res = st.result || 'PASS';
-                  const hasPhoto = !!(st.photoUrl || (st.photoUrls && st.photoUrls.length > 0));
+              {/* 3. Mobile Checklist Items Scrollable List */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                {(activeTemplate?.sections || []).map((sec: SafeAny, secIdx: number) => {
+                  const secItems = (sec.items || []).filter((itm: SafeAny) => {
+                    const st = selectedAudit.itemSnapshot?.[itm.id] ||
+                      selectedAudit.items?.find((i: SafeAny) => i.itemId === itm.id) || { result: 'PASS' };
+                    const res = st.result || 'PASS';
+                    const hasPhoto = !!(st.photoUrl || (st.photoUrls && st.photoUrls.length > 0));
 
-                  if (reviewFilterTab === 'PASS') return res === 'PASS';
-                  if (reviewFilterTab === 'FAIL') return res === 'FAIL';
-                  if (reviewFilterTab === 'NA') return res === 'NA';
-                  if (reviewFilterTab === 'PHOTO') return hasPhoto;
-                  return true;
-                });
+                    if (reviewFilterTab === 'PASS') return res === 'PASS';
+                    if (reviewFilterTab === 'FAIL') return res === 'FAIL';
+                    if (reviewFilterTab === 'NA') return res === 'NA';
+                    if (reviewFilterTab === 'PHOTO') return hasPhoto;
+                    return true;
+                  });
 
-                if (secItems.length === 0) return null;
+                  if (secItems.length === 0) return null;
 
-                return (
-                  <div key={sec.id || `sec-${secIdx}`} className="space-y-2">
-                    <div className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800/60 rounded-md border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between uppercase">
-                      <span className="flex items-center gap-1.5">
-                        <BuildOutlined className="text-purple-500" />
-                        {sec.title}
-                      </span>
-                      <span className="text-[11px] font-normal lowercase text-slate-500">
-                        ({secItems.length} tiêu chí)
-                      </span>
-                    </div>
+                  return (
+                    <div key={sec.id || `m-sec-${secIdx}`} className="space-y-2">
+                      <div className="px-2.5 py-1 bg-slate-900 rounded border border-slate-800 text-xs font-bold text-slate-200 flex items-center justify-between uppercase">
+                        <span className="flex items-center gap-1.5 truncate">
+                          <BuildOutlined className="text-purple-400 shrink-0" />
+                          <span className="truncate">{sec.title}</span>
+                        </span>
+                        <span className="text-[10px] font-normal lowercase text-slate-400 shrink-0 ml-1">
+                          ({secItems.length} tiêu chí)
+                        </span>
+                      </div>
 
-                    <div className="space-y-2 pl-1">
-                      {secItems.map((itm: SafeAny) => {
-                        const st = selectedAudit.itemSnapshot?.[itm.id] ||
-                          selectedAudit.items?.find((i: SafeAny) => i.itemId === itm.id) || { result: 'PASS' };
-                        const res = st.result || 'PASS';
-                        const photo = st.photoUrl || (st.photoUrls && st.photoUrls[0]);
-                        const isFail = res === 'FAIL';
-                        const isPass = res === 'PASS';
-                        const isNa = res === 'NA';
+                      <div className="space-y-1.5">
+                        {secItems.map((itm: SafeAny) => {
+                          const st = selectedAudit.itemSnapshot?.[itm.id] ||
+                            selectedAudit.items?.find((i: SafeAny) => i.itemId === itm.id) || { result: 'PASS' };
+                          const res = st.result || 'PASS';
+                          const photo = st.photoUrl || (st.photoUrls && st.photoUrls[0]);
+                          const isFail = res === 'FAIL';
+                          const isPass = res === 'PASS';
+                          const isNa = res === 'NA';
 
-                        return (
-                          <div
-                            key={itm.id}
-                            className={`p-3 rounded-lg border text-xs transition-all ${
-                              isFail
-                                ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40'
-                                : isPass
-                                  ? 'bg-slate-50/50 dark:bg-slate-900/40 border-slate-200/70 dark:border-slate-800/70'
-                                  : 'bg-slate-100/40 dark:bg-slate-900/20 border-slate-200 dark:border-slate-800 opacity-75'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="space-y-1 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-semibold text-slate-800 dark:text-slate-200">{itm.title}</span>
+                          return (
+                            <div
+                              key={`m-rev-${itm.id}`}
+                              className={`p-2.5 rounded-lg border text-xs space-y-1.5 ${
+                                isFail
+                                  ? 'bg-rose-950/40 border-rose-800/80 shadow-xs'
+                                  : isPass
+                                    ? 'bg-slate-900/80 border-emerald-900/60'
+                                    : 'bg-slate-900/40 border-slate-800/80 opacity-70'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="space-y-0.5 flex-1 min-w-0">
+                                  <div className="font-semibold text-slate-100 text-xs leading-snug break-words">
+                                    {itm.title}
+                                  </div>
                                   {itm.severity && (
                                     <span
-                                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                      className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-bold ${
                                         itm.severity === 'CRITICAL'
-                                          ? 'bg-purple-500/10 text-purple-600 border border-purple-500/20'
+                                          ? 'bg-purple-950 text-purple-300 border border-purple-800'
                                           : itm.severity === 'HIGH'
-                                            ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                                            : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                                            ? 'bg-rose-950 text-rose-300 border border-rose-800'
+                                            : 'bg-amber-950 text-amber-300 border border-amber-800'
                                       }`}
                                     >
                                       {itm.severity}
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                                  {itm.standardRequirement || 'Kiểm tra quy chuẩn hoạt động.'}
-                                </div>
 
-                                {isFail && (
-                                  <div className="pt-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-3">
-                                    <span>
-                                      SL Vi Phạm: <b>{st.failedQty || 1}</b>
-                                    </span>
-                                    <span>
-                                      Tỷ Lệ: <b>{st.failedPercent || 100}%</b>
-                                    </span>
-                                    {st.note && (
-                                      <span>
-                                        Ghi chú: <i>&quot;{st.note}&quot;</i>
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-3">
-                                {/* Result Badge */}
-                                <div className="text-right">
+                                <div className="shrink-0 flex items-center gap-2">
                                   {isPass && (
-                                    <span className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                                    <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-bold border border-emerald-800 text-[10px]">
                                       ✓ ĐẠT
                                     </span>
                                   )}
                                   {isFail && (
-                                    <span className="px-2.5 py-1 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">
+                                    <span className="px-2 py-0.5 rounded bg-rose-950 text-rose-400 font-bold border border-rose-800 text-[10px]">
                                       ✕ KHÔNG ĐẠT
                                     </span>
                                   )}
                                   {isNa && (
-                                    <span className="px-2.5 py-1 rounded-md bg-slate-500/10 text-slate-500 font-bold border border-slate-500/20">
+                                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold border border-slate-700 text-[10px]">
                                       - N/A
                                     </span>
                                   )}
-                                </div>
 
-                                {/* Photo Thumbnail */}
-                                {photo && (
-                                  <div
-                                    className="relative group cursor-pointer"
-                                    onClick={() => setPreviewImageUrl(photo)}
-                                  >
+                                  {photo && (
                                     <img
                                       src={photo}
                                       alt="Proof"
-                                      className="w-12 h-12 rounded-md object-cover border border-slate-300 dark:border-slate-700 shadow-xs hover:opacity-90 transition-opacity"
+                                      onClick={() => setPreviewImageUrl(photo)}
+                                      className="w-10 h-10 rounded-md object-cover border border-rose-500 cursor-pointer active:scale-95 transition-transform"
                                     />
-                                    <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-bold">
-                                      🔍 Phóng lớn
-                                    </div>
-                                  </div>
-                                )}
+                                  )}
+                                </div>
                               </div>
+
+                              {isFail && (
+                                <div className="p-1.5 rounded bg-rose-950/60 border border-rose-900/60 text-[11px] text-rose-300 space-y-0.5">
+                                  {st.note && <div>Ghi chú: &quot;{st.note}&quot;</div>}
+                                  <div className="text-[10px] text-rose-400 font-medium">
+                                    SL Vi Phạm: <b>{st.failedQty || 1}</b> · Tỷ Lệ: <b>{st.failedPercent || 100}%</b>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 4. Mobile Sticky Bottom Action Bar */}
+              <div className="p-2 bg-slate-900 border-t border-slate-800 flex items-center gap-2 shrink-0 shadow-lg">
+                <Button
+                  size="large"
+                  onClick={() => setAuditReviewModalOpen(false)}
+                  className="flex-1 bg-slate-800 text-slate-200 border-slate-700 font-semibold text-xs h-11 rounded-xl"
+                >
+                  Đóng
+                </Button>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<PrinterOutlined />}
+                  onClick={() => window.print()}
+                  className="flex-1 bg-amber-600 hover:bg-amber-500 font-bold text-xs h-11 rounded-xl border-none"
+                >
+                  In / Xuất PDF
+                </Button>
+              </div>
+            </div>
+          )}
+        </Drawer>
+      ) : (
+        /* Modal: Admin Full Inspection Review */
+        <Modal
+          title={
+            <div className="flex flex-wrap items-center justify-between gap-2 pr-6">
+              <span className="flex items-center gap-2 text-base font-bold text-slate-800 dark:text-slate-100">
+                <SafetyCertificateOutlined className="text-purple-600 dark:text-purple-400" />
+                Chi Tiết Biên Bản Kiểm Tra {selectedAudit?.id || ''}
+              </span>
+              {selectedAudit && (
+                <span className="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
+                  {selectedAudit.branchName} · Ngày {selectedAudit.auditDate} · Ca {selectedAudit.shift || 'Sáng'}
+                </span>
+              )}
+            </div>
+          }
+          open={auditReviewModalOpen}
+          onCancel={() => setAuditReviewModalOpen(false)}
+          width={980}
+          footer={[
+            <Button key="close" onClick={() => setAuditReviewModalOpen(false)}>
+              Đóng
+            </Button>,
+            <Button key="print" type="primary" icon={<PrinterOutlined />} onClick={() => window.print()}>
+              In / Xuất PDF
+            </Button>,
+          ]}
+          destroyOnClose
+          zIndex={10050}
+          getContainer={() => document.body}
+        >
+          {selectedAudit && (
+            <div className="space-y-4 py-2">
+              {/* Summary Top Banner */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex flex-wrap items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedAudit.branchName}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    Người kiểm tra:{' '}
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      {selectedAudit.auditorName}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    Ghi chú ca: <span className="italic">{selectedAudit.notes || 'Không có ghi chú thêm.'}</span>
+                  </div>
+                </div>
+                <div className="text-right flex items-center gap-4">
+                  <div>
+                    <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Điểm Đánh Giá</div>
+                    <div className="text-3xl font-extrabold tabular-nums text-emerald-500">
+                      {(selectedAudit.overallScore || 90).toFixed(1)}{' '}
+                      <span className="text-xs font-normal text-slate-400">/100</span>
                     </div>
                   </div>
-                );
-              })}
+                  <div>{renderAuditStatusTag(selectedAudit.status, selectedAudit)}</div>
+                </div>
+              </div>
+
+              {/* Filter Tabs Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  Bảng Tiêu Chí Chi Tiết (Read-Only Audit Review):
+                </div>
+                <Space size="small">
+                  {(['ALL', 'PASS', 'FAIL', 'NA', 'PHOTO'] as const).map((tab) => {
+                    const labels = {
+                      ALL: 'Tất Cả Tiêu Chí',
+                      PASS: '🟢 Đạt',
+                      FAIL: '🔴 Lỗi Vi Phạm',
+                      NA: '⚪ N/A',
+                      PHOTO: '📷 Có Ảnh Chụp',
+                    };
+                    const active = reviewFilterTab === tab;
+                    return (
+                      <Button
+                        key={tab}
+                        size="small"
+                        type={active ? 'primary' : 'default'}
+                        onClick={() => setReviewFilterTab(tab)}
+                        className={`text-xs font-medium ${active ? 'bg-purple-600 hover:bg-purple-500 border-none' : ''}`}
+                      >
+                        {labels[tab]}
+                      </Button>
+                    );
+                  })}
+                </Space>
+              </div>
+
+              {/* Read-Only Checklist Sections View */}
+              <div className="space-y-4 max-h-[550px] overflow-y-auto pr-1">
+                {(activeTemplate?.sections || []).map((sec: SafeAny, secIdx: number) => {
+                  const secItems = (sec.items || []).filter((itm: SafeAny) => {
+                    const st = selectedAudit.itemSnapshot?.[itm.id] ||
+                      selectedAudit.items?.find((i: SafeAny) => i.itemId === itm.id) || { result: 'PASS' };
+                    const res = st.result || 'PASS';
+                    const hasPhoto = !!(st.photoUrl || (st.photoUrls && st.photoUrls.length > 0));
+
+                    if (reviewFilterTab === 'PASS') return res === 'PASS';
+                    if (reviewFilterTab === 'FAIL') return res === 'FAIL';
+                    if (reviewFilterTab === 'NA') return res === 'NA';
+                    if (reviewFilterTab === 'PHOTO') return hasPhoto;
+                    return true;
+                  });
+
+                  if (secItems.length === 0) return null;
+
+                  return (
+                    <div key={sec.id || `sec-${secIdx}`} className="space-y-2">
+                      <div className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800/60 rounded-md border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between uppercase">
+                        <span className="flex items-center gap-1.5">
+                          <BuildOutlined className="text-purple-500" />
+                          {sec.title}
+                        </span>
+                        <span className="text-[11px] font-normal lowercase text-slate-500">
+                          ({secItems.length} tiêu chí)
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 pl-1">
+                        {secItems.map((itm: SafeAny) => {
+                          const st = selectedAudit.itemSnapshot?.[itm.id] ||
+                            selectedAudit.items?.find((i: SafeAny) => i.itemId === itm.id) || { result: 'PASS' };
+                          const res = st.result || 'PASS';
+                          const photo = st.photoUrl || (st.photoUrls && st.photoUrls[0]);
+                          const isFail = res === 'FAIL';
+                          const isPass = res === 'PASS';
+                          const isNa = res === 'NA';
+
+                          return (
+                            <div
+                              key={itm.id}
+                              className={`p-3 rounded-lg border text-xs transition-all ${
+                                isFail
+                                  ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40'
+                                  : isPass
+                                    ? 'bg-slate-50/50 dark:bg-slate-900/40 border-slate-200/70 dark:border-slate-800/70'
+                                    : 'bg-slate-100/40 dark:bg-slate-900/20 border-slate-200 dark:border-slate-800 opacity-75'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="space-y-1 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                      {itm.title}
+                                    </span>
+                                    {itm.severity && (
+                                      <span
+                                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                          itm.severity === 'CRITICAL'
+                                            ? 'bg-purple-500/10 text-purple-600 border border-purple-500/20'
+                                            : itm.severity === 'HIGH'
+                                              ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                                              : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                                        }`}
+                                      >
+                                        {itm.severity}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    {itm.standardRequirement || 'Kiểm tra quy chuẩn hoạt động.'}
+                                  </div>
+
+                                  {isFail && (
+                                    <div className="pt-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-3">
+                                      <span>
+                                        SL Vi Phạm: <b>{st.failedQty || 1}</b>
+                                      </span>
+                                      <span>
+                                        Tỷ Lệ: <b>{st.failedPercent || 100}%</b>
+                                      </span>
+                                      {st.note && (
+                                        <span>
+                                          Ghi chú: <i>&quot;{st.note}&quot;</i>
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                  {/* Result Badge */}
+                                  <div className="text-right">
+                                    {isPass && (
+                                      <span className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                                        ✓ ĐẠT
+                                      </span>
+                                    )}
+                                    {isFail && (
+                                      <span className="px-2.5 py-1 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">
+                                        ✕ KHÔNG ĐẠT
+                                      </span>
+                                    )}
+                                    {isNa && (
+                                      <span className="px-2.5 py-1 rounded-md bg-slate-500/10 text-slate-500 font-bold border border-slate-500/20">
+                                        - N/A
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Photo Thumbnail */}
+                                  {photo && (
+                                    <div
+                                      className="relative group cursor-pointer"
+                                      onClick={() => setPreviewImageUrl(photo)}
+                                    >
+                                      <img
+                                        src={photo}
+                                        alt="Proof"
+                                        className="w-12 h-12 rounded-md object-cover border border-slate-300 dark:border-slate-700 shadow-xs hover:opacity-90 transition-opacity"
+                                      />
+                                      <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-bold">
+                                        🔍 Phóng lớn
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
-      </Modal>
+          )}
+        </Modal>
+      )}
 
       {/* Modal: Image Preview */}
       <Modal
