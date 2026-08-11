@@ -15,6 +15,8 @@ import {
   Input,
   Tooltip,
   message,
+  Popconfirm,
+  Switch,
 } from 'antd';
 import {
   SearchOutlined,
@@ -25,6 +27,8 @@ import {
   MinusCircleFilled,
   FileTextOutlined,
   ShopOutlined,
+  DeleteOutlined,
+  UndoOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { QaDailyAudit, QaShopBranchCode } from '@mos-lab/shared';
@@ -32,9 +36,10 @@ import { apiClient } from '../../../../lib/api-client';
 
 interface HistoryLogsTabProps {
   themeMode: string;
+  onRefresh?: () => void;
 }
 
-export const HistoryLogsTab: React.FC<HistoryLogsTabProps> = ({ themeMode }) => {
+export const HistoryLogsTab: React.FC<HistoryLogsTabProps> = ({ themeMode, onRefresh }) => {
   const [audits, setAudits] = useState<QaDailyAudit[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -60,12 +65,36 @@ export const HistoryLogsTab: React.FC<HistoryLogsTabProps> = ({ themeMode }) => 
 
   // Selected Audit Detail Drawer
   const [selectedAudit, setSelectedAudit] = useState<QaDailyAudit | null>(null);
+  const [showDeletedOnly, setShowDeletedOnly] = useState(false);
+
+  const handleDeleteAudit = async (id: string) => {
+    try {
+      await apiClient.qaShop.deleteAudit(id);
+      message.success('Đã xóa biên bản audit (Soft delete for testing)');
+      fetchAudits();
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      message.error(err.message || 'Lỗi khi xóa biên bản audit');
+    }
+  };
+
+  const handleRestoreAudit = async (id: string) => {
+    try {
+      await apiClient.qaShop.restoreAudit(id);
+      message.success('Đã khôi phục biên bản audit!');
+      fetchAudits();
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      message.error(err.message || 'Lỗi khi khôi phục biên bản');
+    }
+  };
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
 
   const fetchAudits = useCallback(async () => {
     try {
       setLoading(true);
       const res = await apiClient.qaShop.getAudits({
+        onlyDeleted: showDeletedOnly,
         branchCode: branchFilter,
         dateFrom: dateRange[0]?.format('YYYY-MM-DD'),
         dateTo: dateRange[1]?.format('YYYY-MM-DD'),
@@ -190,16 +219,41 @@ export const HistoryLogsTab: React.FC<HistoryLogsTabProps> = ({ themeMode }) => 
     {
       title: 'Thao Tác',
       key: 'action',
+      width: 160,
       render: (_: any, record: QaDailyAudit) => (
-        <Button
-          type="link"
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={() => handleOpenDetail(record)}
-          className="focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none"
-        >
-          Xem chi tiết
-        </Button>
+        <Space size="small">
+          <Button
+            type="text"
+            size="small"
+            icon={<EyeOutlined className="text-blue-500" />}
+            onClick={() => handleOpenDetail(record)}
+          >
+            Xem
+          </Button>
+          {record.isDeleted ? (
+            <Button
+              type="text"
+              size="small"
+              icon={<UndoOutlined className="text-emerald-500" />}
+              onClick={() => handleRestoreAudit(record.id)}
+              className="text-emerald-600 hover:text-emerald-500 text-xs"
+            >
+              Khôi phục
+            </Button>
+          ) : (
+            <Popconfirm
+              title="Xóa biên bản audit này?"
+              description="Biên bản sẽ được ẩn khỏi 100% báo cáo & KPI (Soft delete for testing)."
+              onConfirm={() => handleDeleteAudit(record.id)}
+              okText="Xóa"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true, size: 'small' }}
+              cancelButtonProps={{ size: 'small' }}
+            >
+              <Button type="text" danger size="small" icon={<DeleteOutlined className="text-rose-500 text-xs" />} />
+            </Popconfirm>
+          )}
+        </Space>
       ),
     },
   ];
@@ -248,14 +302,29 @@ export const HistoryLogsTab: React.FC<HistoryLogsTabProps> = ({ themeMode }) => 
             </div>
           </div>
 
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={fetchAudits}
-            loading={loading}
-            className="focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none"
-          >
-            Làm mới
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+              <Switch
+                size="small"
+                checked={showDeletedOnly}
+                onChange={(checked) => {
+                  setShowDeletedOnly(checked);
+                  setPage(1);
+                }}
+              />
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 select-none">
+                {showDeletedOnly ? '🗑️ Đang hiện mục đã xóa' : 'Chỉ hiện mục đã xóa'}
+              </span>
+            </div>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={fetchAudits}
+              loading={loading}
+              className="focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none"
+            >
+              Làm mới
+            </Button>
+          </div>
         </div>
       </Card>
 

@@ -78,6 +78,9 @@ export interface QaDailyAudit {
   itemSnapshot?: Record<string, any>;
   sectionsSnapshot?: QaChecklistSection[];
   requireAllPhotos?: boolean;
+  isDeleted?: boolean;
+  deletedAt?: string;
+  deletedBy?: string;
 }
 
 export interface QaActionTicket {

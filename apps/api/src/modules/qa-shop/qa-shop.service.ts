@@ -633,9 +633,21 @@ export class QaShopService {
     return updatedTemplate;
   }
 
-  // 4. List Daily Audits
-  public getAudits(params?: { branchCode?: string; dateFrom?: string; dateTo?: string }): QaDailyAudit[] {
+  // 4. List Daily Audits (Support Soft Delete Filter)
+  public getAudits(params?: {
+    branchCode?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    includeDeleted?: boolean;
+    onlyDeleted?: boolean;
+  }): QaDailyAudit[] {
     let result = [...this.audits];
+
+    if (params?.onlyDeleted) {
+      result = result.filter((a) => a.isDeleted === true);
+    } else if (!params?.includeDeleted) {
+      result = result.filter((a) => !a.isDeleted);
+    }
 
     if (params?.branchCode && params.branchCode !== 'ALL') {
       result = result.filter((a) => a.branchCode === params.branchCode);
@@ -651,6 +663,46 @@ export class QaShopService {
 
     // Sort by newest audit date first
     return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  // 4b. Soft Delete Audit Log (For testing & clean analytics)
+  public softDeleteAudit(id: string, deletedBy?: string): QaDailyAudit {
+    const audit = this.audits.find((a) => a.id === id);
+    if (!audit) {
+      throw new Error(`Biên bản audit với mã ${id} không tồn tại`);
+    }
+    audit.isDeleted = true;
+    audit.deletedAt = new Date().toISOString();
+    audit.deletedBy = deletedBy || 'Admin';
+
+    // Also mark linked tickets as deleted
+    this.tickets.forEach((t) => {
+      if (t.auditId === id) {
+        (t as any).isDeleted = true;
+      }
+    });
+
+    return audit;
+  }
+
+  // 4c. Restore Soft-Deleted Audit Log
+  public restoreAudit(id: string): QaDailyAudit {
+    const audit = this.audits.find((a) => a.id === id);
+    if (!audit) {
+      throw new Error(`Biên bản audit với mã ${id} không tồn tại`);
+    }
+    audit.isDeleted = false;
+    audit.deletedAt = undefined;
+    audit.deletedBy = undefined;
+
+    // Restore linked tickets
+    this.tickets.forEach((t) => {
+      if (t.auditId === id) {
+        (t as any).isDeleted = false;
+      }
+    });
+
+    return audit;
   }
 
   // 5. Get Audit Detail by ID
@@ -821,21 +873,24 @@ export class QaShopService {
     return ticket;
   }
 
-  // 9. Get Overall Analytics & Compliance Stats
+  // 9. Get Overall Analytics & Compliance Stats (Exclude Soft-Deleted Audits)
   public getAnalytics(): QaComplianceStats {
-    const totalAudits = this.audits.length;
+    const activeAudits = this.audits.filter((a) => !a.isDeleted);
+    const activeTickets = this.tickets.filter((t) => !(t as any).isDeleted);
+
+    const totalAudits = activeAudits.length;
     const avgCompliance =
       totalAudits > 0
-        ? Math.round((this.audits.reduce((acc, curr) => acc + curr.complianceRate, 0) / totalAudits) * 10) / 10
+        ? Math.round((activeAudits.reduce((acc, curr) => acc + curr.complianceRate, 0) / totalAudits) * 10) / 10
         : 100;
 
-    const totalFailedItems = this.tickets.length;
-    const resolvedTicketsCount = this.tickets.filter((t) => t.status === 'RESOLVED' || t.status === 'VERIFIED').length;
-    const openTicketsCount = this.tickets.filter((t) => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length;
+    const totalFailedItems = activeTickets.length;
+    const resolvedTicketsCount = activeTickets.filter((t) => t.status === 'RESOLVED' || t.status === 'VERIFIED').length;
+    const openTicketsCount = activeTickets.filter((t) => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length;
 
     // Branch Comparison
     const branchMap = new Map<QaShopBranchCode, { name: string; scores: number[]; fails: number }>();
-    this.audits.forEach((aud) => {
+    activeAudits.forEach((aud) => {
       if (!branchMap.has(aud.branchCode)) {
         branchMap.set(aud.branchCode, { name: aud.branchName, scores: [], fails: 0 });
       }

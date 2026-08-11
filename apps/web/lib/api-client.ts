@@ -1600,12 +1600,22 @@ export const apiClient = {
       branchCode?: string;
       dateFrom?: string;
       dateTo?: string;
+      includeDeleted?: boolean;
+      onlyDeleted?: boolean;
     }): Promise<QaDailyAudit[]> => {
       const response = await api.get('/qa-shop/audits', { params });
       return response.data;
     },
     getAuditById: async (id: string): Promise<QaDailyAudit> => {
       const response = await api.get(`/qa-shop/audits/${id}`);
+      return response.data;
+    },
+    deleteAudit: async (id: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.delete(`/qa-shop/audits/${id}`);
+      return response.data;
+    },
+    restoreAudit: async (id: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post(`/qa-shop/audits/${id}/restore`);
       return response.data;
     },
     saveAudit: async (input: QaSaveAuditInput): Promise<QaDailyAudit> => {

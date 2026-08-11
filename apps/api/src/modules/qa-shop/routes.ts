@@ -109,12 +109,20 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
     { preHandler: [requireAuth] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { branchCode, dateFrom, dateTo } = request.query as {
+        const { branchCode, dateFrom, dateTo, includeDeleted, onlyDeleted } = request.query as {
           branchCode?: string;
           dateFrom?: string;
           dateTo?: string;
+          includeDeleted?: string;
+          onlyDeleted?: string;
         };
-        const audits = qaShopService.getAudits({ branchCode, dateFrom, dateTo });
+        const audits = qaShopService.getAudits({
+          branchCode,
+          dateFrom,
+          dateTo,
+          includeDeleted: includeDeleted === 'true',
+          onlyDeleted: onlyDeleted === 'true',
+        });
         return reply.send(audits);
       } catch (err: any) {
         request.log.error('Failed to fetch QA audits:', err);
