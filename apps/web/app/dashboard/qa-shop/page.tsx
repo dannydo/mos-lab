@@ -112,49 +112,26 @@ const parseNormalizedItem = (itm: SafeAny) => {
   return { subject, detailRequirement, unitQty, area, dept };
 };
 
-// Zero-lag native textarea for 195 items (0ms typing latency, onBlur + 1s idle sync)
+// Zero-lag native textarea for 195 items (0ms typing latency, direct ref sync)
 const ItemNoteInput: React.FC<{
-  value: string;
-  onChange: (val: string) => void;
+  itemId: string;
+  initialValue?: string;
   placeholder?: string;
   className?: string;
-}> = React.memo(({ value, onChange, placeholder, className }) => {
-  const [localVal, setLocalVal] = useState(value || '');
-  const isFocusedRef = useRef(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Sync external value ONLY when input is NOT focused by the user
-  useEffect(() => {
-    if (!isFocusedRef.current) {
-      setLocalVal(value || '');
-    }
-  }, [value]);
+  notesRef: React.MutableRefObject<Record<string, string>>;
+}> = React.memo(({ itemId, initialValue = '', placeholder, className, notesRef }) => {
+  const [localVal, setLocalVal] = useState(() => notesRef.current[itemId] ?? initialValue);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setLocalVal(val);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      onChange(val);
-    }, 1000);
-  };
-
-  const handleFocus = () => {
-    isFocusedRef.current = true;
-  };
-
-  const handleBlur = () => {
-    isFocusedRef.current = false;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    onChange(localVal);
+    notesRef.current[itemId] = val;
   };
 
   return (
     <textarea
       value={localVal}
       onChange={handleChange}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
       placeholder={placeholder || 'Ghi chú lỗi chi tiết...'}
       rows={2}
       className={`w-full p-2 text-xs rounded-md border outline-none transition-colors resize-none ${
@@ -181,6 +158,7 @@ export default function QaShopPage() {
   const [selectedShift, setSelectedShift] = useState<'Sáng' | 'Chiều' | 'Tối' | 'Toàn ngày'>('Sáng');
   const [auditorName, setAuditorName] = useState<string>('');
   const [qaStaffList, setQaStaffList] = useState<Array<{ id: string; displayName: string; role?: string }>>([]);
+  const itemNotesRef = useRef<Record<string, string>>({});
   const [itemStatuses, setItemStatuses] = useState<
     Record<
       string,
@@ -736,7 +714,7 @@ export default function QaShopPage() {
       const auditItems = Object.entries(itemStatuses).map(([itemId, st]) => ({
         itemId,
         result: st.result || 'PASS',
-        note: st.note,
+        note: itemNotesRef.current[itemId] ?? st.note ?? '',
         photoUrls: st.photoUrl ? [st.photoUrl] : [],
       }));
 
@@ -1896,14 +1874,10 @@ export default function QaShopPage() {
                                                 {/* Violation Note Input */}
                                                 <div>
                                                   <ItemNoteInput
+                                                    itemId={itm.id}
+                                                    initialValue={currentSt.note || ''}
+                                                    notesRef={itemNotesRef}
                                                     placeholder="Ghi chú chi tiết lý do vi phạm (ví dụ: Cửa kính dính nhiều vết tay mờ ở lề dưới)..."
-                                                    value={currentSt.note || ''}
-                                                    onChange={(val) =>
-                                                      setItemStatuses((prev) => ({
-                                                        ...prev,
-                                                        [itm.id]: { ...prev[itm.id], note: val },
-                                                      }))
-                                                    }
                                                     className="border-rose-200 dark:border-rose-900/60 dark:bg-slate-900/80 text-xs text-slate-800 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:outline-none"
                                                   />
                                                 </div>
@@ -2923,13 +2897,9 @@ export default function QaShopPage() {
                                         />
 
                                         <ItemNoteInput
-                                          value={currentSt.note || ''}
-                                          onChange={(val) => {
-                                            setItemStatuses((prev) => ({
-                                              ...prev,
-                                              [itm.id]: { ...prev[itm.id], note: val },
-                                            }));
-                                          }}
+                                          itemId={itm.id}
+                                          initialValue={currentSt.note || ''}
+                                          notesRef={itemNotesRef}
                                           placeholder="Ghi chú lỗi chi tiết..."
                                           className="text-xs bg-slate-950 text-white border-rose-900/60 rounded-md focus:border-rose-500"
                                         />
