@@ -2779,15 +2779,28 @@ export default function QaShopPage() {
                     });
                   });
 
+                  const titleMatch = area.title.match(/^([^(]+)(?:\(([^)]+)\))?/);
+                  const mainAreaTitle = titleMatch ? titleMatch[1].trim() : area.title;
+                  const subAreaTitle = titleMatch && titleMatch[2] ? titleMatch[2].trim() : '';
+
                   return {
                     key: area.id,
                     label: (
-                      <div className="flex items-center justify-between py-1 w-full pr-2">
-                        <span className="font-bold text-sm text-slate-100">{area.title}</span>
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="text-emerald-400 font-semibold">{areaPassed} Đạt</span>
+                      <div className="flex items-start justify-between py-0.5 w-full pr-1 gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-sm text-slate-100 leading-snug">{mainAreaTitle}</div>
+                          {subAreaTitle && (
+                            <div className="text-[11px] font-normal text-slate-400 leading-tight pt-0.5 line-clamp-1">
+                              ({subAreaTitle})
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs shrink-0 pt-0.5">
+                          <span className="text-emerald-400 font-semibold tabular-nums px-1.5 py-0.5 rounded bg-emerald-950/40 border border-emerald-900/60">
+                            {areaPassed} Đạt
+                          </span>
                           {areaFailed > 0 && (
-                            <span className="text-rose-400 font-bold bg-rose-950/80 px-2 py-0.5 rounded border border-rose-800">
+                            <span className="text-rose-400 font-bold tabular-nums bg-rose-950/80 px-1.5 py-0.5 rounded border border-rose-800">
                               {areaFailed} Lỗi
                             </span>
                           )}
