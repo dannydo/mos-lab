@@ -423,13 +423,57 @@ export default function QaShopPage() {
     }
   };
 
-  // Handle Native Camera / File Input change
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, itemId: string) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  // Compress Image using Canvas helper to prevent payload explosion on Mobile (iPhone/Android)
+  const compressImageFile = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const MAX_SIZE = 1280;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height = Math.round((height * MAX_SIZE) / width);
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width = Math.round((width * MAX_SIZE) / height);
+              height = MAX_SIZE;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve((event.target?.result as string) || '');
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+          resolve(compressedDataUrl);
+        };
+        img.onerror = () => resolve((event.target?.result as string) || '');
+        img.src = (event.target?.result as string) || '';
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Handle Native Camera / File Input change with automatic client-side compression
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>, itemId: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        message.loading({ content: 'Đang xử lý & đính kèm ảnh bằng chứng...', key: `photo-${itemId}` });
+        const dataUrl = await compressImageFile(file);
         if (dataUrl) {
           setItemStatuses((prev) => ({
             ...prev,
@@ -439,11 +483,15 @@ export default function QaShopPage() {
               photoUrl: dataUrl,
             },
           }));
-          message.success('Đã đính kèm ảnh bằng chứng thành công!');
+          message.success({ content: 'Đã đính kèm ảnh bằng chứng thành công!', key: `photo-${itemId}` });
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err: SafeAny) {
+        console.error('Compress image error:', err);
+        message.error({ content: 'Không thể đính kèm ảnh, vui lòng thử lại!', key: `photo-${itemId}` });
+      }
     }
+    // Clear value so user can take or choose another photo if needed
+    e.target.value = '';
   };
 
   // CRUD & Item Editing States

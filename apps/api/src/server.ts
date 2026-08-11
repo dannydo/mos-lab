@@ -41,6 +41,7 @@ dotenv.config();
 
 const server = Fastify({
   logger: true,
+  bodyLimit: 50 * 1024 * 1024, // 50MB payload limit for audit submissions with photos
 });
 
 const start = async () => {
