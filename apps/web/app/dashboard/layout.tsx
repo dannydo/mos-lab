@@ -344,6 +344,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           trigger={null}
           collapsible
           collapsed={collapsed}
+          collapsedWidth={48}
+          width={200}
           suppressHydrationWarning
           style={{
             background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
@@ -358,7 +360,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
               borderBottom: `1px solid ${token.colorBorderSecondary}`,
               color: token.colorPrimary,
-              fontSize: collapsed ? '15px' : '17px',
+              fontSize: collapsed ? '13px' : '17px',
               fontWeight: 'bold',
               letterSpacing: '1px',
             }}
@@ -381,8 +383,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="sidebar-toggle-btn"
             style={{
               position: 'absolute',
-              top: '72px',
-              left: collapsed ? '68px' : '188px',
+              top: '64px',
+              left: collapsed ? '36px' : '188px',
               width: '24px',
               height: '24px',
               borderRadius: '50%',
@@ -659,7 +661,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
 
         <style jsx global>{`
-          /* Ultra-Compact Left Nav Sidebar Menu */
+          /* Ultra-Compact Left Nav Sidebar Menu & 48px Collapsed Width */
+          .ant-layout-sider-collapsed {
+            flex: 0 0 48px !important;
+            max-width: 48px !important;
+            min-width: 48px !important;
+            width: 48px !important;
+          }
+          .ant-layout-sider-collapsed .ant-menu-item,
+          .ant-layout-sider-collapsed .ant-menu-submenu-title {
+            padding-inline: 0 !important;
+            margin-inline: 4px !important;
+            text-align: center !important;
+          }
+          .ant-layout-sider-collapsed .ant-menu-item .anticon,
+          .ant-layout-sider-collapsed .ant-menu-submenu-title .anticon {
+            margin-inline: 0 !important;
+            font-size: 16px !important;
+          }
           .antd-custom-menu .ant-menu-item,
           .antd-custom-menu .ant-menu-submenu-title {
             height: 36px !important;
