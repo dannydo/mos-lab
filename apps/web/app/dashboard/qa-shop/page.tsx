@@ -2904,8 +2904,8 @@ export default function QaShopPage() {
                                           className="text-xs bg-slate-950 text-white border-rose-900/60 rounded-md focus:border-rose-500"
                                         />
 
-                                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                                          <div className="flex items-center gap-1.5">
+                                        <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
+                                          <div className="flex items-center gap-2 w-full">
                                             <Button
                                               size="small"
                                               icon={<CameraOutlined />}
