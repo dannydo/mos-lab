@@ -2728,10 +2728,10 @@ export default function QaShopPage() {
             </div>
           </div>
 
-          {/* 2. Mobile Main Scrollable Content Area (Overlay 100% Screen Tab 1) */}
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-4">
+          {/* 2. Mobile Main Scrollable Content Area (Edge-to-Edge 100% Screen Tab 1) */}
+          <div className="flex-1 overflow-y-auto p-1 py-1.5 space-y-2">
             {/* Informative Sub-header Banner */}
-            <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-800/60 flex items-center justify-between text-xs">
+            <div className="p-1.5 px-2 rounded-lg bg-purple-950/40 border border-purple-800/60 flex items-center justify-between text-xs">
               <div>
                 <span className="font-bold text-purple-300 block">📱 Bảng Kiểm Tra Từng Phần (Mobile 100%)</span>
                 <span className="text-[11px] text-purple-400">
@@ -2750,7 +2750,7 @@ export default function QaShopPage() {
               <Collapse
                 defaultActiveKey={groupedAreas.map((a: SafeAny) => a.id)}
                 ghost
-                className="space-y-3"
+                className="space-y-1.5"
                 items={groupedAreas.map((area: SafeAny) => {
                   let areaPassed = 0;
                   let areaFailed = 0;
@@ -2779,12 +2779,12 @@ export default function QaShopPage() {
                       </div>
                     ),
                     children: (
-                      <div className="space-y-4 pt-1">
+                      <div className="space-y-1.5 pt-0.5">
                         {area.subSections.map((sec: SafeAny, secIdx: number) => {
                           const secItems = sec.items || [];
                           return (
-                            <div key={sec.id || `m-sec-${secIdx}`} className="space-y-2.5">
-                              <div className="text-xs font-bold text-purple-400 uppercase tracking-wide px-1 flex items-center justify-between">
+                            <div key={sec.id || `m-sec-${secIdx}`} className="space-y-1">
+                              <div className="text-xs font-bold text-purple-400 uppercase tracking-wide px-0.5 flex items-center justify-between">
                                 <span>{sec.title}</span>
                                 <span className="text-slate-500 font-normal">({secItems.length} tiêu chí)</span>
                               </div>
@@ -2798,7 +2798,7 @@ export default function QaShopPage() {
                                 return (
                                   <div
                                     key={`m-itm-${itm.id}`}
-                                    className={`p-2.5 px-3 rounded-lg border transition-all ${
+                                    className={`p-1.5 px-2 rounded-md border transition-all ${
                                       isFail
                                         ? 'bg-rose-950/40 border-rose-800/90 shadow-sm'
                                         : isPass
@@ -2989,7 +2989,7 @@ export default function QaShopPage() {
           </div>
 
           {/* 3. Mobile Sticky Bottom Action Bar */}
-          <div className="p-3 bg-slate-900 border-t border-slate-800 flex items-center gap-2 shrink-0 shadow-lg">
+          <div className="p-1.5 px-2 bg-slate-900 border-t border-slate-800 flex items-center gap-2 shrink-0 shadow-lg">
             <Button
               type="primary"
               size="large"
