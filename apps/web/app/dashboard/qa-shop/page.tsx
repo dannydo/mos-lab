@@ -2772,91 +2772,95 @@ export default function QaShopPage() {
                                 return (
                                   <div
                                     key={`m-itm-${itm.id}`}
-                                    className={`p-3.5 rounded-xl border space-y-2.5 transition-all ${
+                                    className={`p-2.5 px-3 rounded-lg border transition-all ${
                                       isFail
-                                        ? 'bg-rose-950/40 border-rose-800/90 shadow-md'
+                                        ? 'bg-rose-950/40 border-rose-800/90 shadow-sm'
                                         : isPass
                                           ? 'bg-slate-900/90 border-emerald-900/60'
-                                          : 'bg-slate-900/60 border-slate-800'
+                                          : 'bg-slate-900/60 border-slate-800/80'
                                     }`}
                                   >
-                                    {/* Line 1: Header */}
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="space-y-0.5">
-                                        <div className="font-bold text-xs text-slate-100">{itm.title}</div>
-                                        {itm.area && (
-                                          <span className="text-[10px] text-purple-400 font-bold uppercase block">
-                                            [{itm.area}]
+                                    <div className="flex items-center justify-between gap-2.5">
+                                      {/* Left Side: Title + Severity Dot + Requirement */}
+                                      <div className="flex-1 min-w-0 space-y-0.5">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="font-semibold text-xs text-slate-100 truncate max-w-[200px]">
+                                            {itm.title}
                                           </span>
+                                          {renderSeverityDot(itm.severity)}
+                                          {itm.unitQty && itm.unitQty > 1 && (
+                                            <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-800/60 tabular-nums">
+                                              SL: {itm.unitQty}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {itm.standardRequirement && (
+                                          <div className="text-[10px] text-slate-400 line-clamp-1">
+                                            {itm.standardRequirement}
+                                          </div>
                                         )}
                                       </div>
-                                      {renderSeverityDot(itm.severity)}
-                                    </div>
 
-                                    {/* Line 2: Requirement */}
-                                    {itm.standardRequirement && (
-                                      <div className="text-[11px] text-slate-400 line-clamp-2">
-                                        {itm.standardRequirement}
+                                      {/* Right Side: Compact 32px Pill Button Group */}
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setItemStatuses((prev) => ({
+                                              ...prev,
+                                              [itm.id]: { ...prev[itm.id], result: 'PASS' },
+                                            }))
+                                          }
+                                          className={`h-8 px-2.5 rounded-md border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
+                                            isPass
+                                              ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                                          }`}
+                                        >
+                                          <CheckOutlined className="text-xs" />
+                                          <span className="text-[11px]">ĐẠT</span>
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setItemStatuses((prev) => ({
+                                              ...prev,
+                                              [itm.id]: { ...prev[itm.id], result: 'FAIL' },
+                                            }))
+                                          }
+                                          className={`h-8 px-2.5 rounded-md border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
+                                            isFail
+                                              ? 'bg-rose-600 text-white border-rose-500 shadow-sm'
+                                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                                          }`}
+                                        >
+                                          <CloseOutlined className="text-xs" />
+                                          <span className="text-[11px]">LỖI</span>
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setItemStatuses((prev) => ({
+                                              ...prev,
+                                              [itm.id]: { ...prev[itm.id], result: 'NA' },
+                                            }))
+                                          }
+                                          className={`h-8 px-2 rounded-md border font-bold text-xs flex items-center justify-center transition-all active:scale-95 ${
+                                            isNa
+                                              ? 'bg-slate-700 text-slate-100 border-slate-600 shadow-sm'
+                                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                                          }`}
+                                        >
+                                          <MinusOutlined className="text-xs" />
+                                        </button>
                                       </div>
-                                    )}
-
-                                    {/* Line 3: Touch-friendly large action buttons */}
-                                    <div className="grid grid-cols-3 gap-2 pt-1">
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setItemStatuses((prev) => ({
-                                            ...prev,
-                                            [itm.id]: { ...prev[itm.id], result: 'PASS' },
-                                          }))
-                                        }
-                                        className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
-                                          isPass
-                                            ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
-                                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-750'
-                                        }`}
-                                      >
-                                        <CheckOutlined className="text-sm" /> ĐẠT
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setItemStatuses((prev) => ({
-                                            ...prev,
-                                            [itm.id]: { ...prev[itm.id], result: 'FAIL' },
-                                          }))
-                                        }
-                                        className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
-                                          isFail
-                                            ? 'bg-rose-600 text-white border-rose-500 shadow-md'
-                                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-750'
-                                        }`}
-                                      >
-                                        <CloseOutlined className="text-sm" /> LỖI
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setItemStatuses((prev) => ({
-                                            ...prev,
-                                            [itm.id]: { ...prev[itm.id], result: 'NA' },
-                                          }))
-                                        }
-                                        className={`h-11 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
-                                          isNa
-                                            ? 'bg-slate-700 text-slate-100 border-slate-600 shadow-md'
-                                            : 'bg-slate-800 text-slate-400 border-slate-750 hover:bg-slate-750'
-                                        }`}
-                                      >
-                                        <MinusOutlined className="text-sm" /> N/A
-                                      </button>
                                     </div>
 
-                                    {/* Line 4: Failure details if FAIL */}
+                                    {/* Failure details if FAIL */}
                                     {isFail && (
-                                      <div className="space-y-2 pt-2 border-t border-rose-900/40">
+                                      <div className="space-y-2 pt-2 mt-2 border-t border-rose-900/40">
                                         <Input.TextArea
                                           placeholder="Ghi chú lỗi chi tiết..."
                                           value={currentSt.note || ''}
@@ -2867,7 +2871,7 @@ export default function QaShopPage() {
                                               [itm.id]: { ...prev[itm.id], note: val },
                                             }));
                                           }}
-                                          rows={2}
+                                          rows={1}
                                           className="text-xs bg-slate-950 text-white border-rose-900/60"
                                         />
 
@@ -2878,7 +2882,7 @@ export default function QaShopPage() {
                                             onClick={() => openCameraForItem(itm.id)}
                                             className="bg-rose-950 text-rose-300 border-rose-800 text-xs font-medium"
                                           >
-                                            Chụp Ảnh
+                                            Chụp Ảnh Lỗi
                                           </Button>
                                           {currentSt.photoUrl && (
                                             <span className="text-[10px] text-emerald-400 font-bold">
