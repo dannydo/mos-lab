@@ -1803,17 +1803,7 @@ export default function QaShopPage() {
 
                                                   {/* Photo Proof Action Bar (Camera & Upload & Preview) */}
                                                   <div className="flex flex-wrap items-center gap-2">
-                                                    {/* Native Hidden Camera Input */}
-                                                    <input
-                                                      type="file"
-                                                      accept="image/*"
-                                                      capture="environment"
-                                                      style={{ display: 'none' }}
-                                                      id={`camera-input-${itm.id}`}
-                                                      onChange={(e) => handleFileInputChange(e, itm.id)}
-                                                    />
-
-                                                    {/* Native Hidden File Gallery Input */}
+                                                    {/* Native Hidden File Input for Camera & Gallery */}
                                                     <input
                                                       type="file"
                                                       accept="image/*"
@@ -1822,36 +1812,23 @@ export default function QaShopPage() {
                                                       onChange={(e) => handleFileInputChange(e, itm.id)}
                                                     />
 
-                                                    <Tooltip title="Mở máy ảnh thiết bị chụp hình trực tiếp">
-                                                      <Button
-                                                        size="small"
-                                                        type="primary"
-                                                        danger
-                                                        icon={<CameraOutlined />}
-                                                        onClick={() => {
-                                                          const el = document.getElementById(`camera-input-${itm.id}`);
-                                                          if (el) el.click();
-                                                          else openCameraForItem(itm.id);
-                                                        }}
-                                                        className="text-xs font-semibold"
-                                                      >
-                                                        Chụp Ảnh
-                                                      </Button>
-                                                    </Tooltip>
+                                                    <label
+                                                      htmlFor={`file-input-${itm.id}`}
+                                                      className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900 text-xs font-semibold cursor-pointer active:scale-95 transition-transform"
+                                                      title="Chụp ảnh trực tiếp hoặc chọn ảnh từ thiết bị"
+                                                    >
+                                                      <CameraOutlined />
+                                                      <span>Chụp Ảnh</span>
+                                                    </label>
 
-                                                    <Tooltip title="Tải ảnh bằng chứng từ thư viện tệp">
-                                                      <Button
-                                                        size="small"
-                                                        icon={<CloudUploadOutlined />}
-                                                        className="text-xs font-medium cursor-pointer"
-                                                        onClick={() => {
-                                                          const el = document.getElementById(`file-input-${itm.id}`);
-                                                          if (el) el.click();
-                                                        }}
-                                                      >
-                                                        Tải Ảnh
-                                                      </Button>
-                                                    </Tooltip>
+                                                    <label
+                                                      htmlFor={`file-input-${itm.id}`}
+                                                      className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 text-slate-200 border border-slate-700 hover:bg-slate-800 text-xs font-medium cursor-pointer active:scale-95 transition-transform"
+                                                      title="Tải ảnh bằng chứng từ thư viện tệp"
+                                                    >
+                                                      <CloudUploadOutlined />
+                                                      <span>Tải Ảnh</span>
+                                                    </label>
 
                                                     {/* Image Thumbnail Preview & Delete Button */}
                                                     {currentSt.photoUrl && (
@@ -2915,6 +2892,7 @@ export default function QaShopPage() {
                                               [itm.id]: { ...prev[itm.id], result: 'NA' },
                                             }))
                                           }
+                                          aria-label="N/A"
                                           className={`h-8 px-2 rounded-md border font-bold text-xs flex items-center justify-center transition-all active:scale-95 ${
                                             isNa
                                               ? 'bg-slate-700 text-slate-100 border-slate-600 shadow-sm'
@@ -2929,25 +2907,6 @@ export default function QaShopPage() {
                                     {/* Failure details if FAIL */}
                                     {isFail && (
                                       <div className="space-y-2.5 pt-2 mt-2 border-t border-rose-900/40">
-                                        {/* Native Hidden Camera Input */}
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          capture="environment"
-                                          id={`mobile-camera-input-${itm.id}`}
-                                          style={{ display: 'none' }}
-                                          onChange={(e) => handleFileInputChange(e, itm.id)}
-                                        />
-
-                                        {/* Native Hidden File Gallery Input */}
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          id={`mobile-file-input-${itm.id}`}
-                                          style={{ display: 'none' }}
-                                          onChange={(e) => handleFileInputChange(e, itm.id)}
-                                        />
-
                                         <ItemNoteInput
                                           itemId={itm.id}
                                           initialValue={currentSt.note || ''}
@@ -2956,72 +2915,75 @@ export default function QaShopPage() {
                                           className="text-xs bg-slate-950 text-white border-rose-900/60 rounded-md focus:border-rose-500"
                                         />
 
+                                        {/* Native Hidden File Input for iOS / Android / Desktop Camera & Gallery */}
                                         <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
                                           <div className="flex items-center gap-2 w-full">
-                                            <Button
-                                              size="small"
-                                              icon={<CameraOutlined />}
-                                              onClick={() => openCameraForItem(itm.id)}
-                                              className="bg-rose-950 text-rose-300 border-rose-800 hover:bg-rose-900 text-xs font-medium"
+                                            <label
+                                              htmlFor={`mobile-file-input-${itm.id}`}
+                                              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900 text-xs font-medium cursor-pointer active:scale-95 transition-transform"
                                             >
-                                              Chụp Ảnh
-                                            </Button>
+                                              <CameraOutlined />
+                                              <span>Chụp Ảnh</span>
+                                            </label>
 
-                                            <Button
-                                              size="small"
-                                              icon={<CloudUploadOutlined />}
-                                              onClick={() => {
-                                                const el = document.getElementById(`mobile-file-input-${itm.id}`);
-                                                if (el) el.click();
-                                              }}
-                                              className="bg-slate-900 text-slate-200 border-slate-700 hover:bg-slate-800 text-xs font-medium"
+                                            <label
+                                              htmlFor={`mobile-file-input-${itm.id}`}
+                                              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-900 text-slate-200 border border-slate-700 hover:bg-slate-800 text-xs font-medium cursor-pointer active:scale-95 transition-transform"
                                             >
-                                              Tải Ảnh Từ Máy
-                                            </Button>
+                                              <CloudUploadOutlined />
+                                              <span>Tải Ảnh Từ Máy</span>
+                                            </label>
                                           </div>
-
-                                          {/* Thumbnail Image Preview */}
-                                          {currentSt.photoUrl && (
-                                            <div className="flex items-center gap-1.5 bg-emerald-950/60 p-1 px-1.5 rounded border border-emerald-800/80">
-                                              <img
-                                                src={currentSt.photoUrl}
-                                                alt="Bằng chứng vi phạm"
-                                                className="w-8 h-8 rounded object-cover border border-emerald-500 cursor-pointer active:scale-95 transition-transform"
-                                                onClick={() => {
-                                                  Modal.info({
-                                                    title: `Bằng chứng vi phạm: ${itm.title}`,
-                                                    width: 500,
-                                                    content: (
-                                                      <div className="pt-2 text-center">
-                                                        <img
-                                                          src={currentSt.photoUrl}
-                                                          alt="Bằng chứng"
-                                                          className="max-h-[400px] mx-auto rounded border"
-                                                        />
-                                                      </div>
-                                                    ),
-                                                  });
-                                                }}
-                                              />
-                                              <span className="text-[10px] text-emerald-400 font-bold">
-                                                ✓ Đã đính ảnh
-                                              </span>
-                                              <Button
-                                                size="small"
-                                                type="text"
-                                                danger
-                                                icon={<CloseOutlined className="text-[10px]" />}
-                                                onClick={() => {
-                                                  setItemStatuses((prev) => ({
-                                                    ...prev,
-                                                    [itm.id]: { ...prev[itm.id], photoUrl: undefined },
-                                                  }));
-                                                }}
-                                                className="w-5 h-5 flex items-center justify-center p-0 text-rose-400"
-                                              />
-                                            </div>
-                                          )}
                                         </div>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          id={`mobile-file-input-${itm.id}`}
+                                          style={{ display: 'none' }}
+                                          onChange={(e) => handleFileInputChange(e, itm.id)}
+                                        />
+
+                                        {/* Thumbnail Image Preview */}
+                                        {currentSt.photoUrl && (
+                                          <div className="flex items-center gap-1.5 bg-emerald-950/60 p-1 px-1.5 rounded border border-emerald-800/80">
+                                            <img
+                                              src={currentSt.photoUrl}
+                                              alt="Bằng chứng vi phạm"
+                                              className="w-8 h-8 rounded object-cover border border-emerald-500 cursor-pointer active:scale-95 transition-transform"
+                                              onClick={() => {
+                                                Modal.info({
+                                                  title: `Bằng chứng vi phạm: ${itm.title}`,
+                                                  width: 500,
+                                                  content: (
+                                                    <div className="pt-2 text-center">
+                                                      <img
+                                                        src={currentSt.photoUrl}
+                                                        alt="Bằng chứng"
+                                                        className="max-h-[400px] mx-auto rounded border"
+                                                      />
+                                                    </div>
+                                                  ),
+                                                });
+                                              }}
+                                            />
+                                            <span className="text-[10px] text-emerald-400 font-bold">
+                                              ✓ Đã đính ảnh
+                                            </span>
+                                            <Button
+                                              size="small"
+                                              type="text"
+                                              danger
+                                              icon={<CloseOutlined className="text-[10px]" />}
+                                              onClick={() => {
+                                                setItemStatuses((prev) => ({
+                                                  ...prev,
+                                                  [itm.id]: { ...prev[itm.id], photoUrl: undefined },
+                                                }));
+                                              }}
+                                              className="w-5 h-5 flex items-center justify-center p-0 text-rose-400"
+                                            />
+                                          </div>
+                                        )}
                                       </div>
                                     )}
                                   </div>
