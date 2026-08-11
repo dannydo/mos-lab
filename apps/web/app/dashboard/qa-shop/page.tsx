@@ -121,10 +121,14 @@ const ItemNoteInput: React.FC<{
   isTextArea?: boolean;
 }> = React.memo(({ value, onChange, placeholder, className, isTextArea = true }) => {
   const [localVal, setLocalVal] = useState(value || '');
+  const isFocusedRef = useRef(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Sync external value ONLY when input is NOT focused by the user
   useEffect(() => {
-    setLocalVal(value || '');
+    if (!isFocusedRef.current) {
+      setLocalVal(value || '');
+    }
   }, [value]);
 
   const handleTextChange = (val: string) => {
@@ -132,10 +136,15 @@ const ItemNoteInput: React.FC<{
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       onChange(val);
-    }, 400);
+    }, 300);
+  };
+
+  const handleFocus = () => {
+    isFocusedRef.current = true;
   };
 
   const handleBlur = () => {
+    isFocusedRef.current = false;
     if (timerRef.current) clearTimeout(timerRef.current);
     onChange(localVal);
   };
@@ -145,6 +154,7 @@ const ItemNoteInput: React.FC<{
       <Input.TextArea
         value={localVal}
         onChange={(e) => handleTextChange(e.target.value)}
+        onFocus={handleFocus}
         onBlur={handleBlur}
         placeholder={placeholder || 'Ghi chú lỗi chi tiết...'}
         rows={1}
@@ -158,6 +168,7 @@ const ItemNoteInput: React.FC<{
       size="small"
       value={localVal}
       onChange={(e) => handleTextChange(e.target.value)}
+      onFocus={handleFocus}
       onBlur={handleBlur}
       placeholder={placeholder || 'Ghi chú chi tiết lý do vi phạm...'}
       className={className}
