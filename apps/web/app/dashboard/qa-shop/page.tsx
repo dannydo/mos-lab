@@ -2762,7 +2762,7 @@ export default function QaShopPage() {
             {/* Informative Sub-header Banner */}
             <div className="p-1.5 px-2 rounded-lg bg-purple-950/40 border border-purple-800/60 flex items-center justify-between text-xs">
               <div>
-                <span className="font-bold text-purple-300 block">📱 Bảng Kiểm Tra Từng Phần (Mobile 100%)</span>
+                <span className="font-bold text-purple-300 block">📋 Bảng Kiểm Tra Từng Phần</span>
                 <span className="text-[11px] text-purple-400">
                   {activeTemplate?.branchName || selectedBranch} · {inspectionStats.passed + inspectionStats.failed}/
                   {inspectionStats.total} Tiêu chí đã chọn
