@@ -112,6 +112,35 @@ const parseNormalizedItem = (itm: SafeAny) => {
   return { subject, detailRequirement, unitQty, area, dept };
 };
 
+// Fast, zero-lag debounced/local note input for 195 items
+const ItemNoteInput: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  className?: string;
+}> = React.memo(({ value, onChange, placeholder, className }) => {
+  const [localVal, setLocalVal] = useState(value || '');
+
+  useEffect(() => {
+    setLocalVal(value || '');
+  }, [value]);
+
+  return (
+    <Input.TextArea
+      value={localVal}
+      onChange={(e) => {
+        const val = e.target.value;
+        setLocalVal(val);
+        onChange(val);
+      }}
+      placeholder={placeholder || 'Ghi chú lỗi chi tiết...'}
+      rows={1}
+      className={className}
+    />
+  );
+});
+ItemNoteInput.displayName = 'ItemNoteInput';
+
 export default function QaShopPage() {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
@@ -2860,34 +2889,92 @@ export default function QaShopPage() {
 
                                     {/* Failure details if FAIL */}
                                     {isFail && (
-                                      <div className="space-y-2 pt-2 mt-2 border-t border-rose-900/40">
-                                        <Input.TextArea
-                                          placeholder="Ghi chú lỗi chi tiết..."
+                                      <div className="space-y-2.5 pt-2 mt-2 border-t border-rose-900/40">
+                                        {/* Hidden File Input for Native Photo Upload */}
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          id={`mobile-file-input-${itm.id}`}
+                                          style={{ display: 'none' }}
+                                          onChange={(e) => handleFileInputChange(e, itm.id)}
+                                        />
+
+                                        <ItemNoteInput
                                           value={currentSt.note || ''}
-                                          onChange={(e) => {
-                                            const val = e.target.value;
+                                          onChange={(val) => {
                                             setItemStatuses((prev) => ({
                                               ...prev,
                                               [itm.id]: { ...prev[itm.id], note: val },
                                             }));
                                           }}
-                                          rows={1}
-                                          className="text-xs bg-slate-950 text-white border-rose-900/60"
+                                          placeholder="Ghi chú lỗi chi tiết..."
+                                          className="text-xs bg-slate-950 text-white border-rose-900/60 rounded-md focus:border-rose-500"
                                         />
 
-                                        <div className="flex items-center justify-between gap-2">
-                                          <Button
-                                            size="small"
-                                            icon={<CameraOutlined />}
-                                            onClick={() => openCameraForItem(itm.id)}
-                                            className="bg-rose-950 text-rose-300 border-rose-800 text-xs font-medium"
-                                          >
-                                            Chụp Ảnh Lỗi
-                                          </Button>
+                                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                                          <div className="flex items-center gap-1.5">
+                                            <Button
+                                              size="small"
+                                              icon={<CameraOutlined />}
+                                              onClick={() => openCameraForItem(itm.id)}
+                                              className="bg-rose-950 text-rose-300 border-rose-800 hover:bg-rose-900 text-xs font-medium"
+                                            >
+                                              Chụp Ảnh
+                                            </Button>
+
+                                            <Button
+                                              size="small"
+                                              icon={<CloudUploadOutlined />}
+                                              onClick={() => {
+                                                const el = document.getElementById(`mobile-file-input-${itm.id}`);
+                                                if (el) el.click();
+                                              }}
+                                              className="bg-slate-900 text-slate-200 border-slate-700 hover:bg-slate-800 text-xs font-medium"
+                                            >
+                                              Tải Ảnh Từ Máy
+                                            </Button>
+                                          </div>
+
+                                          {/* Thumbnail Image Preview */}
                                           {currentSt.photoUrl && (
-                                            <span className="text-[10px] text-emerald-400 font-bold">
-                                              ✓ Đã chụp ảnh
-                                            </span>
+                                            <div className="flex items-center gap-1.5 bg-emerald-950/60 p-1 px-1.5 rounded border border-emerald-800/80">
+                                              <img
+                                                src={currentSt.photoUrl}
+                                                alt="Bằng chứng vi phạm"
+                                                className="w-8 h-8 rounded object-cover border border-emerald-500 cursor-pointer active:scale-95 transition-transform"
+                                                onClick={() => {
+                                                  Modal.info({
+                                                    title: `Bằng chứng vi phạm: ${itm.title}`,
+                                                    width: 500,
+                                                    content: (
+                                                      <div className="pt-2 text-center">
+                                                        <img
+                                                          src={currentSt.photoUrl}
+                                                          alt="Bằng chứng"
+                                                          className="max-h-[400px] mx-auto rounded border"
+                                                        />
+                                                      </div>
+                                                    ),
+                                                  });
+                                                }}
+                                              />
+                                              <span className="text-[10px] text-emerald-400 font-bold">
+                                                ✓ Đã đính ảnh
+                                              </span>
+                                              <Button
+                                                size="small"
+                                                type="text"
+                                                danger
+                                                icon={<CloseOutlined className="text-[10px]" />}
+                                                onClick={() => {
+                                                  setItemStatuses((prev) => ({
+                                                    ...prev,
+                                                    [itm.id]: { ...prev[itm.id], photoUrl: undefined },
+                                                  }));
+                                                }}
+                                                className="w-5 h-5 flex items-center justify-center p-0 text-rose-400"
+                                              />
+                                            </div>
                                           )}
                                         </div>
                                       </div>
