@@ -112,14 +112,13 @@ const parseNormalizedItem = (itm: SafeAny) => {
   return { subject, detailRequirement, unitQty, area, dept };
 };
 
-// Zero-lag debounced + onBlur note input for 195 items (0ms input latency)
+// Zero-lag native textarea for 195 items (0ms typing latency, onBlur + 1s idle sync)
 const ItemNoteInput: React.FC<{
   value: string;
   onChange: (val: string) => void;
   placeholder?: string;
   className?: string;
-  isTextArea?: boolean;
-}> = React.memo(({ value, onChange, placeholder, className, isTextArea = true }) => {
+}> = React.memo(({ value, onChange, placeholder, className }) => {
   const [localVal, setLocalVal] = useState(value || '');
   const isFocusedRef = useRef(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -131,12 +130,13 @@ const ItemNoteInput: React.FC<{
     }
   }, [value]);
 
-  const handleTextChange = (val: string) => {
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
     setLocalVal(val);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       onChange(val);
-    }, 300);
+    }, 1000);
   };
 
   const handleFocus = () => {
@@ -149,29 +149,17 @@ const ItemNoteInput: React.FC<{
     onChange(localVal);
   };
 
-  if (isTextArea) {
-    return (
-      <Input.TextArea
-        value={localVal}
-        onChange={(e) => handleTextChange(e.target.value)}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        placeholder={placeholder || 'Ghi chú lỗi chi tiết...'}
-        rows={1}
-        className={className}
-      />
-    );
-  }
-
   return (
-    <Input
-      size="small"
+    <textarea
       value={localVal}
-      onChange={(e) => handleTextChange(e.target.value)}
+      onChange={handleChange}
       onFocus={handleFocus}
       onBlur={handleBlur}
-      placeholder={placeholder || 'Ghi chú chi tiết lý do vi phạm...'}
-      className={className}
+      placeholder={placeholder || 'Ghi chú lỗi chi tiết...'}
+      rows={2}
+      className={`w-full p-2 text-xs rounded-md border outline-none transition-colors resize-none ${
+        className || 'bg-slate-950 text-white border-rose-900/60 focus:border-rose-500'
+      }`}
     />
   );
 });
@@ -1908,7 +1896,6 @@ export default function QaShopPage() {
                                                 {/* Violation Note Input */}
                                                 <div>
                                                   <ItemNoteInput
-                                                    isTextArea={false}
                                                     placeholder="Ghi chú chi tiết lý do vi phạm (ví dụ: Cửa kính dính nhiều vết tay mờ ở lề dưới)..."
                                                     value={currentSt.note || ''}
                                                     onChange={(val) =>
