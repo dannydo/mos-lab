@@ -2827,8 +2827,8 @@ export default function QaShopPage() {
                                         )}
                                       </div>
 
-                                      {/* Right Side: Compact 32px Pill Button Group */}
-                                      <div className="flex items-center gap-1 shrink-0">
+                                      {/* Right Side: Compact 32px Icon-only Button Group */}
+                                      <div className="flex items-center gap-1.5 shrink-0">
                                         <button
                                           type="button"
                                           onClick={() =>
@@ -2837,14 +2837,14 @@ export default function QaShopPage() {
                                               [itm.id]: { ...prev[itm.id], result: 'PASS' },
                                             }))
                                           }
-                                          className={`h-8 px-2.5 rounded-md border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
+                                          aria-label="Đạt"
+                                          className={`w-8 h-8 rounded-md border font-bold text-xs flex items-center justify-center transition-all active:scale-95 ${
                                             isPass
                                               ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
                                               : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
                                           }`}
                                         >
                                           <CheckOutlined className="text-xs" />
-                                          <span className="text-[11px]">ĐẠT</span>
                                         </button>
 
                                         <button
@@ -2855,14 +2855,14 @@ export default function QaShopPage() {
                                               [itm.id]: { ...prev[itm.id], result: 'FAIL' },
                                             }))
                                           }
-                                          className={`h-8 px-2.5 rounded-md border font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 ${
+                                          aria-label="Lỗi"
+                                          className={`w-8 h-8 rounded-md border font-bold text-xs flex items-center justify-center transition-all active:scale-95 ${
                                             isFail
                                               ? 'bg-rose-600 text-white border-rose-500 shadow-sm'
                                               : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
                                           }`}
                                         >
                                           <CloseOutlined className="text-xs" />
-                                          <span className="text-[11px]">LỖI</span>
                                         </button>
 
                                         <button
