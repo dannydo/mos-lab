@@ -1,4 +1,4 @@
-import { fitLogarithmicModel, predictCvSpeed } from '../../dist/modules/kpi/services/cv-speed-model.service.js';
+import { predictCvSpeed } from '../../dist/modules/kpi/services/cv-speed-model.service.js';
 
 console.log('=== EMPIRICAL TEST: LAYER 2 MATH.MAX OVERRIDE BREAKDOWN ===');
 

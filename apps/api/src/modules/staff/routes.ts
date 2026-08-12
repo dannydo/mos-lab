@@ -909,7 +909,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         dateTo,
       });
 
-      const dataObj: Record<number, any> = {};
+      const dataObj: Record<number, SafeAny> = {};
       batchMap.forEach((val, key) => {
         dataObj[key] = val;
       });

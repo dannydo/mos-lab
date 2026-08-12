@@ -10,8 +10,8 @@ export interface CreateBookingLogParams {
   originalStaffName?: string;
   reasonCategory?: string | null;
   reasonNote?: string | null;
-  oldData?: Record<string, any> | null;
-  newData?: Record<string, any> | null;
+  oldData?: Record<string, unknown> | null;
+  newData?: Record<string, unknown> | null;
   ipAddress?: string | null;
 }
 
@@ -138,7 +138,7 @@ export class BookingAuditService {
     const limitNum = Math.max(1, Math.min(100, Number(filter.limit) || 20));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {};
+    const where: SafeAny = {};
 
     if (filter.dateFrom || filter.dateTo) {
       where.dateCreated = {};
@@ -188,7 +188,9 @@ export class BookingAuditService {
     const orderMap = new Map<number, { orderKey: string; customerName: string; customerPhone: string }>();
 
     if (orderIds.length > 0) {
-      const orders = await fastify.prisma.legacy.$queryRawUnsafe<Array<any>>(
+      const orders = await fastify.prisma.legacy.$queryRawUnsafe<
+        Array<{ id: number; order_key: string | null; customer_name: string | null; customer_phone: string | null }>
+      >(
         `SELECT o.id, o.order_key, up.full_name as customer_name, u.username as customer_phone
          FROM \`order\` o
          LEFT JOIN user_profile up ON o.user_id = up.user_id

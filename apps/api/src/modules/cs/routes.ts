@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- CS endpoints forward dynamic Fastify payloads to their service boundaries. */
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
 import { happyCallService } from './services/happy-call.service.js';

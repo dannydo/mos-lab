@@ -1,13 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
-import {
-  DailySalesBonusConfig,
-  DailySalesBonusConsultantRecord,
-  DailySalesBonusTransaction,
-  SafeAny,
-  calculateFractionToday,
-} from '@mos-lab/shared';
-import { TeamService } from '../teams/team.service.js';
+import { DailySalesBonusConfig, DailySalesBonusTransaction, SafeAny } from '@mos-lab/shared';
 import { CcKpiService } from '../kpi/services/cc-kpi.service.js';
 
 const DEFAULT_CONFIG: DailySalesBonusConfig = {
@@ -59,10 +52,6 @@ async function getBonusConfig(fastify: FastifyInstance): Promise<DailySalesBonus
     fastify.log.error(err as Error, 'Error loading daily sales bonus config');
     return DEFAULT_CONFIG;
   }
-}
-
-async function getActiveCcIds(fastify: FastifyInstance): Promise<number[]> {
-  return await TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG');
 }
 
 export async function gamificationRoutes(fastify: FastifyInstance) {
@@ -149,7 +138,6 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         storeId?: string;
       };
 
-      const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
       try {
         const res = await CcKpiService.getCcDailySalesBonus(fastify, {
           dateFrom,

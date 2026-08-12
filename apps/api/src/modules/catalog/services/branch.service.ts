@@ -10,6 +10,11 @@ import type {
   BranchType,
 } from '@mos-lab/shared';
 
+// Legacy DB raw SQL returns only selected scalar fields. The database schema is
+// external to Prisma's CRM client, so these calls remain deliberately scoped to
+// the exact fields read below.
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export class BranchService {
   constructor(private fastify: FastifyInstance) {}
 
@@ -137,7 +142,6 @@ export class BranchService {
     ]);
 
     // Fetch staff count and completed orders count for each store
-    const storeIds = records.map((r) => r.id);
     const legacyStoreIds = records.map((r) => r.legacyClientStoreId).filter(Boolean) as number[];
 
     // Staff count per store (user_group_id != 1) and Customer count per store (user_group_id = 1)

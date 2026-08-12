@@ -1,9 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { StaffOffDayResult } from '@mos-lab/shared';
 
-// Type helper for raw SQL rows
-type SafeAny = any;
-
 /**
  * Service dùng chung (Single Source of Truth) quản lý và tra cứu ngày off tuần & ngày nghỉ được duyệt / chưa duyệt của nhân viên.
  */

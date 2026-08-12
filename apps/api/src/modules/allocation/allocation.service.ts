@@ -758,7 +758,7 @@ export class AllocationService {
     const { page = 1, limit = 20, status, bookerId, search } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.CrmAllocationBatchWhereInput = {};
 
     // Filter by role: Telesales/Booker can only view their own allocation history
     if (user.role === 'telesales') {
@@ -813,7 +813,7 @@ export class AllocationService {
 
     const { dateFrom, dateTo, bookerId } = params;
 
-    const where: any = {};
+    const where: Prisma.CrmAllocationBatchWhereInput = {};
     if (dateFrom || dateTo) {
       where.createdAt = {};
       if (dateFrom) where.createdAt.gte = new Date(dateFrom);
@@ -955,7 +955,7 @@ export class AllocationService {
     };
   }
 
-  private static mapBatchToDto(batch: any): CustomerAllocationBatch {
+  private static mapBatchToDto(batch: SafeAny): CustomerAllocationBatch {
     return {
       id: batch.id,
       batchCode: batch.batchCode,
@@ -979,7 +979,7 @@ export class AllocationService {
       sourceFilterJson: batch.sourceFilterJson || null,
       createdAt: new Date(batch.createdAt).toISOString(),
       updatedAt: new Date(batch.updatedAt).toISOString(),
-      items: (batch.items || []).map((i: any) => ({
+      items: (batch.items || []).map((i: SafeAny) => ({
         id: i.id,
         batchId: i.batchId,
         customerId: i.customerId,

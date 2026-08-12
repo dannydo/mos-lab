@@ -8,10 +8,10 @@ async function main() {
 
   try {
     const crmStaffList = await fastify.prisma.crm.crmStaff.findMany();
-    console.log('--- ALL crmStaff Count:', crmStaffList.length);
+    process.stdout.write(`--- ALL crmStaff Count: ${crmStaffList.length}\n`);
     crmStaffList.forEach((s) => {
-      console.log(
-        `[${s.id}] ${s.displayName} | username: ${s.username} | isActive: ${s.isActive} | legacyStaffId: ${s.legacyStaffId}`
+      process.stdout.write(
+        `[${s.id}] ${s.displayName} | username: ${s.username} | isActive: ${s.isActive} | legacyStaffId: ${s.legacyStaffId}\n`
       );
     });
   } catch (err) {

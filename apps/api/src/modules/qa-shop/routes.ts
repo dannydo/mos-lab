@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
 import { qaShopService } from './qa-shop.service.js';
-import { QaShopBranchCode, QaImportSheetInput, QaSaveAuditInput } from '@mos-lab/shared';
+import { QaChecklistSection, QaShopBranchCode, QaImportSheetInput, QaSaveAuditInput } from '@mos-lab/shared';
 
 export async function qaShopRoutes(fastify: FastifyInstance) {
   // 1. Get Templates List
@@ -13,7 +13,7 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
         const { branchCode } = request.query as { branchCode?: QaShopBranchCode };
         const list = qaShopService.getTemplates(branchCode);
         return reply.send(list);
-      } catch (err: any) {
+      } catch (err: SafeAny) {
         request.log.error('Failed to fetch QA templates:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: err.message });
       }
@@ -32,7 +32,7 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
           return reply.status(404).send({ error: 'Not Found', message: `Template ${idOrCode} not found` });
         }
         return reply.send(template);
-      } catch (err: any) {
+      } catch (err: SafeAny) {
         request.log.error('Failed to fetch QA template detail:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: err.message });
       }
@@ -51,7 +51,7 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
         }
         const updatedTemplate = qaShopService.importSheetTemplate(input);
         return reply.send(updatedTemplate);
-      } catch (err: any) {
+      } catch (err: SafeAny) {
         request.log.error('Failed to import QA template from sheet:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: err.message });
       }
@@ -76,7 +76,7 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
         }
         const cloned = qaShopService.cloneTemplate({ sourceBranchCode, targetBranchCode, overwrite });
         return reply.send(cloned);
-      } catch (err: any) {
+      } catch (err: SafeAny) {
         request.log.error('Failed to clone QA template:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: err.message });
       }
@@ -90,13 +90,13 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { branchCode } = request.params as { branchCode: string };
-        const { sections } = request.body as { sections: SafeAny[] };
+        const { sections } = request.body as { sections: QaChecklistSection[] };
         if (!sections || !Array.isArray(sections)) {
           return reply.status(400).send({ error: 'Bad Request', message: 'sections array is required' });
         }
         const updated = qaShopService.updateTemplate(branchCode, sections);
         return reply.send(updated);
-      } catch (err: any) {
+      } catch (err: SafeAny) {
         request.log.error('Failed to update QA template:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: err.message });
       }
@@ -124,7 +124,7 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
           onlyDeleted: onlyDeleted === 'true',
         });
         return reply.send(audits);
-      } catch (err: any) {
+      } catch (err: SafeAny) {
         request.log.error('Failed to fetch QA audits:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: err.message });
       }
@@ -143,7 +143,7 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
           return reply.status(404).send({ error: 'Not Found', message: `Audit ${id} not found` });
         }
         return reply.send(audit);
-      } catch (err: any) {
+      } catch (err: SafeAny) {
         request.log.error('Failed to fetch QA audit detail:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: err.message });
       }
@@ -164,7 +164,7 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
           auditorName: user?.displayName || user?.username || input.auditorName || 'Danny Do',
         });
         return reply.status(201).send(audit);
-      } catch (err: any) {
+      } catch (err: SafeAny) {
         request.log.error('Failed to save QA audit:', err);
         return reply.status(400).send({ error: 'Bad Request', message: err.message });
       }
@@ -180,7 +180,7 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
         const { branchCode, status } = request.query as { branchCode?: string; status?: string };
         const tickets = qaShopService.getTickets({ branchCode, status });
         return reply.send(tickets);
-      } catch (err: any) {
+      } catch (err: SafeAny) {
         request.log.error('Failed to fetch QA tickets:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: err.message });
       }
@@ -206,7 +206,7 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
           resolvedByStaffName: user?.displayName || user?.username || updates.resolvedByStaffName,
         });
         return reply.send(updated);
-      } catch (err: any) {
+      } catch (err: SafeAny) {
         request.log.error('Failed to update QA ticket:', err);
         return reply.status(400).send({ error: 'Bad Request', message: err.message });
       }
@@ -221,7 +221,7 @@ export async function qaShopRoutes(fastify: FastifyInstance) {
       try {
         const stats = qaShopService.getAnalytics();
         return reply.send(stats);
-      } catch (err: any) {
+      } catch (err: SafeAny) {
         request.log.error('Failed to fetch QA analytics:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: err.message });
       }

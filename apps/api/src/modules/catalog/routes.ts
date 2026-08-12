@@ -6,6 +6,14 @@ import { parseComboDateBounds } from '../customers/services/combo-recognition.se
 import { LashBenchmarkService, parseLashSpecs } from './services/lash-benchmark.service.js';
 import { BranchService } from './services/branch.service.js';
 
+/*
+ * Legacy catalog rows and Fastify request payloads are intentionally dynamic: the
+ * legacy schema contains tenant-specific columns and this module performs guarded
+ * catalog migrations inside typed Prisma transactions. Keep the boundary explicit
+ * until the legacy DTOs are extracted into the shared package.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 const CATALOG_DEFAULTS = {
   CLIENT_ID: 1,
   CLIENT_BUSINESS_ID: 1,
@@ -35,7 +43,7 @@ async function fetchRealServiceLashCounts(legacyPrisma: any, serviceIds: number[
         map.set(Number(r.service_id), num);
       }
     }
-  } catch (err) {
+  } catch {
     // Ignore if table missing or query error
   }
   return map;
@@ -50,9 +58,10 @@ function mapServiceDto(
 ): any {
   const isProduct =
     s.service_type === 'Product' || s.service_group === 'Product' || s.service_key === 'any-service-product';
-  let { lashStyle, lashCount } = isProduct
+  const { lashStyle, lashCount: parsedLashCount } = isProduct
     ? { lashStyle: null, lashCount: null }
     : parseLashSpecs(s.service_key, lang?.service_name || s.service_key);
+  let lashCount = parsedLashCount;
 
   if (!isProduct) {
     // Source 1: Real DB item_attribute_value
@@ -1029,7 +1038,6 @@ export async function catalogRoutes(fastify: FastifyInstance) {
       perNormalPrice,
       perRetainPrice,
       expiryAfterDay,
-      bonusActiveDay,
       isSameCount,
       isNewUserDisabled,
       isDisabled,

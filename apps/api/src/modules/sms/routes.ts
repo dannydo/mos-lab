@@ -50,7 +50,7 @@ export async function smsRoutes(fastify: FastifyInstance) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             templates = parsed;
           }
-        } catch (_e) {
+        } catch {
           // Fallback to default
         }
       }
@@ -98,7 +98,7 @@ export async function smsRoutes(fastify: FastifyInstance) {
             if (Array.isArray(parsed) && parsed.length > 0) {
               templates = parsed;
             }
-          } catch (_e) {
+          } catch {
             // Fallback
           }
         }
@@ -167,7 +167,7 @@ export async function smsRoutes(fastify: FastifyInstance) {
             if (Array.isArray(parsed) && parsed.length > 0) {
               templates = parsed;
             }
-          } catch (_e) {
+          } catch {
             // Fallback
           }
         }
@@ -213,7 +213,7 @@ export async function smsRoutes(fastify: FastifyInstance) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             templates = parsed;
           }
-        } catch (_e) {
+        } catch {
           // Fallback
         }
       }
@@ -250,7 +250,7 @@ export async function smsRoutes(fastify: FastifyInstance) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             templates = parsed;
           }
-        } catch (_e) {
+        } catch {
           // Fallback
         }
       }
@@ -306,7 +306,7 @@ export async function smsRoutes(fastify: FastifyInstance) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             templates = parsed;
           }
-        } catch (_e) {
+        } catch {
           // Fallback
         }
       }
@@ -635,7 +635,7 @@ async function getOrCreateCustomerUserUrl(
     });
 
     return shortenUrl;
-  } catch (_e) {
+  } catch {
     return 'https://s.wingslashes.com/Urc5SCIJ';
   }
 }

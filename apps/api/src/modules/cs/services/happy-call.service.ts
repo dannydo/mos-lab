@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { CreateSurveyRatingDto, HappyCallTask, ListHappyCallsParams } from '@mos-lab/shared';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy raw-query rows and persisted survey payloads are dynamic. */
 type SafeAny = any;
 
 export class HappyCallService {
@@ -17,7 +18,7 @@ export class HappyCallService {
     if (csConfig && csConfig.value) {
       try {
         csStaffIds = JSON.parse(csConfig.value);
-      } catch (e) {
+      } catch {
         /* ignore */
       }
     }
@@ -380,7 +381,9 @@ export class HappyCallService {
     if (handlerConfig && handlerConfig.value) {
       try {
         handlerMap = JSON.parse(handlerConfig.value);
-      } catch (e) {}
+      } catch {
+        // Invalid persisted config intentionally leaves the default handler map in place.
+      }
     }
 
     const ratingChecks = [

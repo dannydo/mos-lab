@@ -201,7 +201,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
   // GET /api/dashboard/vat-config
   // Get VAT rate configuration (Defaults to 8%)
-  fastify.get('/dashboard/vat-config', { preHandler: [requireAuth] }, async (request, reply) => {
+  fastify.get('/dashboard/vat-config', { preHandler: [requireAuth] }, async (_request, _reply) => {
     try {
       const config = await fastify.prisma.crm.crmConfig.findUnique({
         where: { key: 'VAT_RATE_CONFIG' },
@@ -745,22 +745,6 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         weekOffsByUserId[uid] = list;
       }
 
-      const getKTVOffDays = (userId: number) => {
-        const weekOffs = weekOffsByUserId[userId] || [];
-        if (weekOffs.length > 0) {
-          const sorted = [...weekOffs].sort((a, b) => b.cnt - a.cnt);
-          return [String(sorted[0].weekday)];
-        }
-
-        const list = schedulesByUserId[userId] || [];
-        const worksAll = list.some((s) => s.type === 'Day' && s.type_value === 'All');
-        if (worksAll) return [];
-        const workingWeekdays = list.filter((s) => s.type === 'Weekday').map((s) => s.type_value);
-        if (workingWeekdays.length === 0) return [];
-        const allWeekdays = ['1', '2', '3', '4', '5', '6', '7'];
-        return allWeekdays.filter((w) => !workingWeekdays.includes(w));
-      };
-
       // 3. Query specific day-offs for target date
       const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT from_user_id FROM staff_day_off 
@@ -768,13 +752,6 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         targetDateStr
       );
       const offUserIds = new Set(dayOffs.map((d) => Number(d.from_user_id)));
-
-      // 4. Query active CVs (technicians)
-      const activeCvs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT user_id as userId, full_name as fullName, client_store_id as storeId
-        FROM \`user_profile\`
-        WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0
-      `);
 
       const dayOfWeek = new Date(targetDateStr).getDay();
       const weekdayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
@@ -1001,9 +978,6 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           branchDetailMap[branchKey].netLe += finalNetLe;
         }
       });
-
-      const refTime = new Date();
-      const normalizeName = (name: string) => (name || '').trim().toLowerCase();
 
       // Fetch working shifts for today
       const workingShifts = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
@@ -1346,7 +1320,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       const end = dateTo + ' 23:59:59';
 
       // Load staff map & team sets for filtering
-      const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT up.user_id as userId, 
                TRIM(COALESCE(NULLIF(up.full_name, ''), CONCAT(COALESCE(up.first_name, ''), ' ', COALESCE(up.last_name, '')))) as fullName
         FROM \`user_profile\` up
@@ -1371,7 +1345,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           const parsed = JSON.parse(teamConfigRaw.value);
           if (parsed.telesales) parsed.telesales.forEach((n: string) => telesalesSet.add(n.trim().toLowerCase()));
           if (parsed.control_cs) parsed.control_cs.forEach((n: string) => controlCsSet.add(n.trim().toLowerCase()));
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -1397,7 +1371,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       const branchKeyToStoreIdMap: Record<string, number> = { detham: 6, pxl: 2, estella: 16 };
       const targetStoreId = branchKey && branchKey !== 'all' ? branchKeyToStoreIdMap[branchKey] : null;
 
-      const rawOrders: any[] = await fastify.prisma.legacy.$queryRawUnsafe(
+      const rawOrders: SafeAny[] = await fastify.prisma.legacy.$queryRawUnsafe(
         `
         SELECT 
           o.id as orderId,
@@ -1431,10 +1405,10 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
       if (orderIds.length > 0) {
         const orderIdsStr = orderIds.join(',');
-        const combos = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const combos = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT order_id, SUM(total_price) as total FROM order_service_combo WHERE order_id IN (${orderIdsStr}) GROUP BY order_id
         `);
-        const products = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const products = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT order_id, SUM(total_price) as total FROM order_product WHERE order_id IN (${orderIdsStr}) GROUP BY order_id
         `);
 
@@ -1458,9 +1432,9 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
             orderCount: 0,
           };
           return acc;
-        }, {} as any);
+        }, {} as SafeAny);
 
-      const hourlyData: any[] = [];
+      const hourlyData: SafeAny[] = [];
       let globalCumulative = 0;
       for (let h = 9; h <= 23; h++) {
         hourlyData.push({
@@ -1611,7 +1585,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       const storeIdToBranchName: Record<number, string> = { 6: 'Đề Thám', 2: 'Phan Xích Long', 16: 'Estella' };
 
       // Build hourlyBreakdown array
-      const hourlyBreakdown = hourlyData.map((hd: any) => ({
+      const hourlyBreakdown = hourlyData.map((hd: SafeAny) => ({
         hour: `${String(hd.hour).padStart(2, '0')}:00`,
         comboRevenue: Math.round(hd.comboRevenue),
         singleRevenue: Math.round(hd.singleRevenue),
@@ -1624,15 +1598,15 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       const branchHourlyMatrix = branchKeys.map((bk: string) => ({
         branchKey: bk,
         branchName: storeIdToBranchName[branchKeyToStoreId[bk]] || bk,
-        hours: hourlyData.map((hd: any) => ({
+        hours: hourlyData.map((hd: SafeAny) => ({
           hour: `${String(hd.hour).padStart(2, '0')}:00`,
           revenue: Math.round(hd.branches[bk]?.totalRevenue || 0),
           orderCount: hd.branches[bk]?.orderCount || 0,
         })),
         totalRevenue: Math.round(
-          hourlyData.reduce((s: number, hd: any) => s + (hd.branches[bk]?.totalRevenue || 0), 0)
+          hourlyData.reduce((s: number, hd: SafeAny) => s + (hd.branches[bk]?.totalRevenue || 0), 0)
         ),
-        totalOrders: hourlyData.reduce((s: number, hd: any) => s + (hd.branches[bk]?.orderCount || 0), 0),
+        totalOrders: hourlyData.reduce((s: number, hd: SafeAny) => s + (hd.branches[bk]?.orderCount || 0), 0),
       }));
 
       const { netFactor } = await getVatRateConfig(fastify);
@@ -1699,7 +1673,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       }
 
       // Load staff map & team sets
-      const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT up.user_id as userId, 
                TRIM(COALESCE(NULLIF(up.full_name, ''), CONCAT(COALESCE(up.first_name, ''), ' ', COALESCE(up.last_name, '')))) as fullName
         FROM \`user_profile\` up
@@ -1724,7 +1698,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           const parsed = JSON.parse(teamConfigRaw.value);
           if (parsed.telesales) parsed.telesales.forEach((n: string) => telesalesSet.add(n.trim().toLowerCase()));
           if (parsed.control_cs) parsed.control_cs.forEach((n: string) => controlCsSet.add(n.trim().toLowerCase()));
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -1765,7 +1739,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         ORDER BY checkin_time DESC
       `;
 
-      const rawOrders: any[] = await fastify.prisma.legacy.$queryRawUnsafe(query, start, end);
+      const rawOrders: SafeAny[] = await fastify.prisma.legacy.$queryRawUnsafe(query, start, end);
       const completedOrders = rawOrders.filter((o) => {
         const bookerName = o.created_staff_id
           ? staffMap.get(Number(o.created_staff_id)) || 'Nhiều Booker'
@@ -1776,29 +1750,29 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       const orderIds = completedOrders.map((o) => o.orderId);
       const userIds = [...new Set(completedOrders.map((o) => o.user_id).filter(Boolean))];
 
-      const orderServicesMap: Record<number, any[]> = {};
+      const orderServicesMap: Record<number, SafeAny[]> = {};
       const combosMap: Record<number, boolean> = {};
       const productsMap: Record<number, boolean> = {};
-      const usersMap: Record<number, any> = {};
+      const usersMap: Record<number, SafeAny> = {};
       const staffIds = new Set<number>();
 
       if (orderIds.length > 0) {
         const orderIdsStr = orderIds.join(',');
 
         // Check combos
-        const combos = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const combos = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT DISTINCT order_id FROM order_service_combo WHERE order_id IN (${orderIdsStr})
         `);
         combos.forEach((c) => (combosMap[c.order_id] = true));
 
         // Check products
-        const products = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const products = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT DISTINCT order_id FROM order_product WHERE order_id IN (${orderIdsStr})
         `);
         products.forEach((p) => (productsMap[p.order_id] = true));
 
         // Get services
-        const services = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const services = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT 
             os.order_id, 
             os.check_in_staff_id, 
@@ -1822,7 +1796,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       const allUserIds = [...new Set([...userIds, ...Array.from(staffIds)])];
       if (allUserIds.length > 0) {
         const allUserIdsStr = allUserIds.join(',');
-        const users = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        const users = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT u.id, up.full_name, uc.phone_number as phone
           FROM user u
           LEFT JOIN user_profile up ON u.id = up.user_id

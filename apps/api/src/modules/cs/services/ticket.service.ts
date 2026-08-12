@@ -10,6 +10,7 @@ import {
 } from '@mos-lab/shared';
 import { happyCallService } from './happy-call.service.js';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- ticket subtasks and legacy raw-query rows have runtime-defined shapes. */
 type SafeAny = any;
 
 export class TicketService {
@@ -112,7 +113,9 @@ export class TicketService {
         if (s.technicalIssueTags) {
           try {
             parsedTags = JSON.parse(s.technicalIssueTags);
-          } catch (e) {}
+          } catch {
+            // Invalid tag JSON intentionally becomes an empty tag list.
+          }
         }
         return {
           id: s.id,
@@ -326,7 +329,7 @@ export class TicketService {
     if (!config || !config.value) return {};
     try {
       return JSON.parse(config.value);
-    } catch (e) {
+    } catch {
       return {};
     }
   }

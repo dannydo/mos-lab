@@ -60,6 +60,18 @@ interface BenchmarkCalcRow {
   sampleSize: number;
 }
 
+interface EtaResult {
+  etaMinutes: number;
+  elapsedMinutes: number;
+  remainingMinutes: number;
+  progressPercent: number;
+  layer: 1 | 2 | 3;
+  confidence: 'high' | 'medium' | 'low';
+  lashStyle: string;
+  lashCount: number | null;
+  source: string;
+}
+
 // ─── LashBenchmarkService ────────────────────────────────────────────────────
 
 export class LashBenchmarkService {
@@ -392,23 +404,8 @@ export class LashBenchmarkService {
       lashCount: number | null;
       bookingStartStr: string; // ICT formatted "YYYY-MM-DD HH:mm:ss"
     }>
-  ): Promise<
-    Map<
-      number,
-      {
-        etaMinutes: number;
-        elapsedMinutes: number;
-        remainingMinutes: number;
-        progressPercent: number;
-        layer: 1 | 2 | 3;
-        confidence: 'high' | 'medium' | 'low';
-        lashStyle: string;
-        lashCount: number | null;
-        source: string;
-      }
-    >
-  > {
-    const result = new Map<number, any>();
+  ): Promise<Map<number, EtaResult>> {
+    const result = new Map<number, EtaResult>();
     if (busyCvEntries.length === 0) return result;
 
     const staffIds = busyCvEntries.map((e) => e.staffId);

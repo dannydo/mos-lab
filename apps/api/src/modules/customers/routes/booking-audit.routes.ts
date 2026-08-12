@@ -17,7 +17,7 @@ export async function bookingAuditRoutes(fastify: FastifyInstance) {
     try {
       const logs = await BookingAuditService.getLogsForOrder(fastify, orderId);
       return reply.send({ success: true, logs });
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(err, 'Get booking audit logs error:');
       return reply
         .status(500)
@@ -33,7 +33,7 @@ export async function bookingAuditRoutes(fastify: FastifyInstance) {
     try {
       const result = await BookingAuditService.getAuditLogReport(fastify, filter);
       return reply.send(result);
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(err, 'Get booking audit report error:');
       return reply
         .status(500)

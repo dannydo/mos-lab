@@ -7,8 +7,12 @@ import {
   QaImportSheetInput,
   QaAuditItemRecord,
   QaShopBranchCode,
+  QaChecklistItem,
   QaChecklistSection,
 } from '@mos-lab/shared';
+
+type QaActionTicketWithDeletion = QaActionTicket & { isDeleted?: boolean };
+type QaSaveAuditWithSnapshots = QaSaveAuditInput & Pick<QaDailyAudit, 'itemSnapshot' | 'sectionsSnapshot'>;
 
 // Initial Preset Templates based on CSDL Nội Bộ specification
 const PRESET_TEMPLATES: QaChecklistTemplate[] = [
@@ -402,7 +406,7 @@ import path from 'path';
 export class QaShopService {
   private templates: QaChecklistTemplate[] = [...PRESET_TEMPLATES];
   private audits: QaDailyAudit[] = [...INITIAL_AUDITS];
-  private tickets: QaActionTicket[] = [...INITIAL_TICKETS];
+  private tickets: QaActionTicketWithDeletion[] = [...INITIAL_TICKETS];
 
   constructor() {
     this.loadSyncedSheetTemplates();
@@ -520,7 +524,9 @@ export class QaShopService {
             fs.mkdirSync(dir, { recursive: true });
           }
           fs.writeFileSync(p, jsonString, 'utf-8');
-        } catch (_) {}
+        } catch {
+          // A secondary output path may not exist or be writable in every deployment.
+        }
       });
     } catch (err) {
       console.error('Failed to persist QA sheet templates to disk:', err);
@@ -599,17 +605,15 @@ export class QaShopService {
               ? 'Văn Phòng HQ (HQ)'
               : `Chi Nhánh ${tgtBranch}`;
 
-    const clonedSections: QaChecklistSection[] = JSON.parse(JSON.stringify(srcTemplate.sections || [])).map(
-      (sec: any, secIdx: number) => ({
-        ...sec,
-        id: `sec-${tgtBranch.toLowerCase()}-${secIdx + 1}`,
-        items: (sec.items || []).map((itm: any, itmIdx: number) => ({
-          ...itm,
-          id: `${tgtBranch.toLowerCase()}-${secIdx + 1}-${itmIdx + 1}`,
-          code: `${tgtBranch}.${itm.code ? itm.code.split('.').slice(1).join('.') : `ITEM.${itmIdx + 1}`}`,
-        })),
-      })
-    );
+    const clonedSections: QaChecklistSection[] = structuredClone(srcTemplate.sections).map((sec, secIdx: number) => ({
+      ...sec,
+      id: `sec-${tgtBranch.toLowerCase()}-${secIdx + 1}`,
+      items: sec.items.map((itm, itmIdx: number) => ({
+        ...itm,
+        id: `${tgtBranch.toLowerCase()}-${secIdx + 1}-${itmIdx + 1}`,
+        code: `${tgtBranch}.${itm.code ? itm.code.split('.').slice(1).join('.') : `ITEM.${itmIdx + 1}`}`,
+      })),
+    }));
 
     const updatedTemplate: QaChecklistTemplate = {
       id: `tpl-${tgtBranch.toLowerCase()}`,
@@ -678,7 +682,7 @@ export class QaShopService {
     // Also mark linked tickets as deleted
     this.tickets.forEach((t) => {
       if (t.auditId === id) {
-        (t as any).isDeleted = true;
+        t.isDeleted = true;
       }
     });
 
@@ -698,7 +702,7 @@ export class QaShopService {
     // Restore linked tickets
     this.tickets.forEach((t) => {
       if (t.auditId === id) {
-        (t as any).isDeleted = false;
+        t.isDeleted = false;
       }
     });
 
@@ -730,10 +734,10 @@ export class QaShopService {
     const generatedTickets: QaActionTicket[] = [];
 
     // Map template items for fast lookup
-    const itemMap = new Map<string, { sectionTitle: string; item: any }>();
+    const itemMap = new Map<string, { sectionId: string; sectionTitle: string; item: QaChecklistItem }>();
     template.sections.forEach((sec) => {
       sec.items.forEach((itm) => {
-        itemMap.set(itm.id, { sectionTitle: sec.title, item: itm });
+        itemMap.set(itm.id, { sectionId: sec.id, sectionTitle: sec.title, item: itm });
       });
     });
 
@@ -741,7 +745,7 @@ export class QaShopService {
       const found = itemMap.get(submitted.itemId);
       if (!found) return;
 
-      const { sectionTitle, item } = found;
+      const { sectionId, sectionTitle, item } = found;
       const weight = item.weight || 1;
 
       let ticketId: string | undefined;
@@ -789,7 +793,7 @@ export class QaShopService {
         itemId: item.id,
         itemCode: item.code,
         itemTitle: item.title,
-        sectionId: item.sectionId || 'sec-general',
+        sectionId,
         sectionTitle,
         weight,
         result: submitted.result,
@@ -802,6 +806,7 @@ export class QaShopService {
 
     const complianceRate = maxPossiblePoints > 0 ? Math.round((earnedPoints / maxPossiblePoints) * 1000) / 10 : 100;
 
+    const inputWithSnapshots = input as QaSaveAuditWithSnapshots;
     const newAudit: QaDailyAudit = {
       id: auditId,
       auditCode,
@@ -823,8 +828,8 @@ export class QaShopService {
       notes: input.notes,
       createdAt: new Date().toISOString(),
       items: recordedItems,
-      itemSnapshot: (input as any).itemSnapshot,
-      sectionsSnapshot: (input as any).sectionsSnapshot,
+      itemSnapshot: inputWithSnapshots.itemSnapshot,
+      sectionsSnapshot: inputWithSnapshots.sectionsSnapshot,
     };
 
     this.audits.unshift(newAudit);
@@ -876,7 +881,7 @@ export class QaShopService {
   // 9. Get Overall Analytics & Compliance Stats (Exclude Soft-Deleted Audits)
   public getAnalytics(): QaComplianceStats {
     const activeAudits = this.audits.filter((a) => !a.isDeleted);
-    const activeTickets = this.tickets.filter((t) => !(t as any).isDeleted);
+    const activeTickets = this.tickets.filter((t) => !t.isDeleted);
 
     const totalAudits = activeAudits.length;
     const avgCompliance =

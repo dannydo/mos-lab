@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
-import { CsCampaign, ListCsCampaignsParams, CreateCsCampaignDto, UpdateCsCampaignDto } from '@mos-lab/shared';
+import { ListCsCampaignsParams, CreateCsCampaignDto, UpdateCsCampaignDto } from '@mos-lab/shared';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy raw-query rows and Prisma JSON payloads are dynamic. */
 type SafeAny = any;
 
 export class CsCampaignService {
@@ -123,7 +124,7 @@ export class CsCampaignService {
     if (csConfig && csConfig.value) {
       try {
         csStaffIds = JSON.parse(csConfig.value);
-      } catch (e) {
+      } catch {
         /* ignore */
       }
     }

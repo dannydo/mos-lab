@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { CsDashboardParams, CsDashboardStats } from '@mos-lab/shared';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- dashboard aggregation rows are dynamic by design. */
 type SafeAny = any;
 
 export class DashboardService {
@@ -122,7 +123,9 @@ export class DashboardService {
     if (csConfig && csConfig.value) {
       try {
         csStaffIds = JSON.parse(csConfig.value);
-      } catch (e) {}
+      } catch {
+        // Invalid persisted config intentionally falls through to the staff lookup fallback.
+      }
     }
 
     if (!csStaffIds.length) {

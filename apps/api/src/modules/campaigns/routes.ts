@@ -1,4 +1,5 @@
 // Campaign Routes
+/* eslint-disable @typescript-eslint/no-explicit-any -- Fastify request boundaries are validated by the campaign service. */
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { requireAuth, requireCampaignAdmin } from '../../middlewares/auth.js';
 import { CampaignService } from './campaign.service.js';

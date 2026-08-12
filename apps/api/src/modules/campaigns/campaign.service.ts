@@ -1,13 +1,12 @@
 import { FastifyInstance } from 'fastify';
+/* eslint-disable @typescript-eslint/no-explicit-any -- campaign payloads and legacy query rows have runtime-defined shapes. */
 import {
   AddCampaignCustomersResponse,
   Campaign,
-  CampaignCustomer,
   CampaignPromotion,
   CampaignPromotionType,
   CampaignStatsResponse,
   CampaignStatus,
-  CampaignTouchpoint,
   CampaignTouchpointLog,
   CloneCampaignDto,
   CreateCampaignDto,
@@ -134,7 +133,9 @@ export class CampaignService {
       if ((c as any).assignedStaffIds) {
         try {
           assignedStaffIds = JSON.parse((c as any).assignedStaffIds);
-        } catch {}
+        } catch {
+          // Invalid legacy JSON intentionally falls back to no assigned staff.
+        }
       }
       return {
         id: c.id,

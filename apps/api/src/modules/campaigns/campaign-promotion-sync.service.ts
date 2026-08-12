@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma raw-query boundaries expose legacy rows with dynamic column sets. */
 type SafeAny = any;
 
 function stripEmojis(text: string): string {

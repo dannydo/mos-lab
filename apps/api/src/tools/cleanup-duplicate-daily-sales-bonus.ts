@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- This is an interactive maintenance CLI whose primary output is its terminal report. */
 /**
  * Cleanup Duplicate "Daily Sales Bonus (Combo)" Records
  * ======================================================
@@ -64,6 +65,10 @@ interface DuplicateGroup {
   row_count: number;
   bonus_ids: string;
   amounts: string;
+}
+
+interface CountRow {
+  cnt: number | bigint | string;
 }
 
 // ─── Main ────────────────────────────────────────────────────
@@ -172,7 +177,7 @@ async function run() {
     console.log(`   IDs đã xóa: [${idsToDelete.join(', ')}]\n`);
 
     // 4. Verify
-    const verify = await legacy.$queryRawUnsafe<any[]>(
+    const verify = await legacy.$queryRawUnsafe<CountRow[]>(
       `
       SELECT COUNT(*) as cnt
       FROM staff_bonus

@@ -1,14 +1,4 @@
-import {
-  fitLogarithmicModel,
-  predictCvSpeed,
-  computeSpeedRating,
-  computeConfidence,
-} from '../../dist/modules/kpi/services/cv-speed-model.service.js';
-import {
-  STANDARD_LASH_COUNTS,
-  STANDARD_LASH_STYLES,
-  STANDARD_SERVICE_MODES,
-} from '../../dist/modules/kpi/services/cv-speed-seed.service.js';
+import { fitLogarithmicModel, predictCvSpeed } from '../../dist/modules/kpi/services/cv-speed-model.service.js';
 
 console.log('=== EMPIRICAL MATHEMATICAL & LOGIC VERIFICATION ===');
 

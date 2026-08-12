@@ -47,7 +47,7 @@ console.log(`T(60) = ${T_60}, T(80) = ${T_80}, T(80) >= T(60): ${T_80 >= T_60}`)
 console.log('\n--- TEST 3: 3-Layer Estimation Cascade & Thresholds ---');
 
 // Create mock prismas to test predictCvSpeed
-function createMockPrisma(rawCases: any[]) {
+function createMockPrisma(rawCases: unknown[]) {
   return {
     crmPrisma: {
       crmLashTypeBenchmark: {
@@ -158,7 +158,13 @@ async function runCascadeTests() {
   // 4. Task 4: Phase breakdown sum T_total = T_cleaning + T_extension + T_prep_qc
   console.log('\n--- TEST 4: Phase Breakdown Sum Integrity ---');
 
-  function verifyPhaseSum(name: string, pred: any) {
+  function verifyPhaseSum(
+    name: string,
+    pred: {
+      modelLayer: number;
+      predictedMinutes: { cleaning: number; extension: number; prepQc: number; total: number };
+    }
+  ) {
     const { cleaning, extension, prepQc, total } = pred.predictedMinutes;
     const sum = cleaning + extension + prepQc;
     const diff = Math.abs(sum - total);
