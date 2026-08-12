@@ -2243,12 +2243,7 @@ export default function QaShopPage() {
                           <span>Lỗi</span>
                         </>
                       )}
-                      {tab === 'NA' && (
-                        <>
-                          <MinusOutlined className="text-slate-400" />
-                          <span>-</span>
-                        </>
-                      )}
+                      {tab === 'NA' && <span className="font-bold text-slate-400">——</span>}
                       {tab === 'PHOTO' && (
                         <>
                           <CameraOutlined className="text-purple-400" />
@@ -2484,11 +2479,7 @@ export default function QaShopPage() {
                             <CloseOutlined className="text-rose-500" /> Lỗi
                           </span>
                         )}
-                        {tab === 'NA' && (
-                          <span className="inline-flex items-center gap-1">
-                            <MinusOutlined className="text-slate-400" /> -
-                          </span>
-                        )}
+                        {tab === 'NA' && <span className="font-bold text-slate-400">——</span>}
                         {tab === 'PHOTO' && (
                           <span className="inline-flex items-center gap-1">
                             <CameraOutlined className="text-purple-400" /> Có Ảnh
