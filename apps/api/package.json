@@ -10,6 +10,7 @@
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate --schema=prisma/legacy.prisma && prisma generate --schema=prisma/crm.prisma",
     "prisma:migrate:crm": "prisma migrate dev --schema=prisma/crm.prisma --name init",
+    "legacy:indexes:phase1": "tsx src/scripts/apply-dashboard-phase1-indexes.ts",
     "lint": "eslint src/ --max-warnings=-1",
     "prisma:db:pull:legacy": "prisma db pull --schema=prisma/legacy.prisma"
   },

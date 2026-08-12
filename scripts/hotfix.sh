@@ -75,6 +75,9 @@ ssh -o StrictHostKeyChecking=no live-wings "
   echo '[VPS] Installing dependencies...'
   pnpm install
 
+  echo '[VPS] Applying Legacy Phase 1 reporting indexes...'
+  pnpm --filter @mos-lab/api legacy:indexes:phase1
+
   echo '[VPS] Syncing Database Schema...'
   pnpm --filter @mos-lab/api exec prisma db push --schema=prisma/crm.prisma --skip-generate
 

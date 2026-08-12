@@ -1,5 +1,7 @@
 -- Dashboard SQL/index phase 1 (local first; production requires the companion runbook).
 -- MariaDB 10.6 supports IF NOT EXISTS. These indexes change metadata only; no transaction data is changed.
+-- Production MariaDB 10.3 must use `pnpm --filter @mos-lab/api legacy:indexes:phase1`,
+-- which checks information_schema before creating each index.
 
 CREATE INDEX IF NOT EXISTS idx_report_order_actual_order
   ON report_order (actual_booking_date_start, order_id);
