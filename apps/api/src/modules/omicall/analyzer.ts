@@ -5,10 +5,10 @@ const MAX_RETRIES = 3;
 const _AI_TIMEOUT_MS = 180_000; // 3 minutes
 let isProcessing = false; // Simple poller mutex
 
-async function fetchRecordingUrl(callUuid: string): Promise<string | null> {
+async function fetchRecordingUrl(fastify: FastifyInstance, callUuid: string): Promise<string | null> {
   const apiKey = process.env.OMICALL_API_KEY;
   if (!apiKey || (apiKey === 'mock_omicall_api_key_for_dev' && process.env.NODE_ENV !== 'production')) {
-    console.warn('[DEV MODE] Using mock recording URL for laughter detection testing');
+    fastify.log.warn('[DEV MODE] Using mock recording URL for laughter detection testing');
     return `https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.wav`;
   }
 
@@ -32,7 +32,7 @@ async function fetchRecordingUrl(callUuid: string): Promise<string | null> {
       data?.recording_url;
     return recordingUrl || null;
   } catch (error) {
-    console.error(`Error fetching OmiCall recording URL for ${callUuid}:`, error);
+    fastify.log.error(error, `Error fetching OmiCall recording URL for ${callUuid}`);
     return null;
   }
 }
@@ -201,20 +201,39 @@ Hãy trả về kết quả chính xác theo cấu trúc JSON định nghĩa s�
 }
 
 /**
+ * Atomically claims a pending analysis so concurrent webhook/poller workers cannot
+ * submit the same recording to Gemini more than once.
+ */
+export async function claimPendingAnalysis(fastify: FastifyInstance, logId: number): Promise<boolean> {
+  const claim = await fastify.prisma.crm.crmOmicallLog.updateMany({
+    where: {
+      id: logId,
+      analysisStatus: 'PENDING',
+      analysisRetryCount: { lt: MAX_RETRIES },
+    },
+    data: { analysisStatus: 'PROCESSING' },
+  });
+
+  return claim.count === 1;
+}
+
+/**
  * Instantly triggers the Gemini audio analysis asynchronously in the background.
  */
 export function triggerImmediateAnalysis(fastify: FastifyInstance, logId: number) {
   // Fire-and-forget background task
-  (async () => {
-    fastify.log.info(`[ImmediateAnalysis] Starting background analysis for log ID: ${logId}`);
-
-    // Mark PROCESSING
-    await fastify.prisma.crm.crmOmicallLog.update({
-      where: { id: logId },
-      data: { analysisStatus: 'PROCESSING' },
-    });
+  void (async () => {
+    let claimed = false;
 
     try {
+      claimed = await claimPendingAnalysis(fastify, logId);
+      if (!claimed) {
+        fastify.log.debug(`[ImmediateAnalysis] Skipped unclaimable log ID: ${logId}`);
+        return;
+      }
+
+      fastify.log.info(`[ImmediateAnalysis] Starting background analysis for log ID: ${logId}`);
+
       const log = await fastify.prisma.crm.crmOmicallLog.findUnique({
         where: { id: logId },
       });
@@ -225,6 +244,9 @@ export function triggerImmediateAnalysis(fastify: FastifyInstance, logId: number
       fastify.log.info(`[ImmediateAnalysis] Completed successfully for log ID: ${logId}`);
     } catch (err: SafeAny) {
       fastify.log.error(err, `[ImmediateAnalysis] Failed for log ID: ${logId}`);
+
+      // A failed DB claim never started analysis and must not consume a retry.
+      if (!claimed) return;
 
       // Update retry states
       const log = await fastify.prisma.crm.crmOmicallLog.findUnique({
@@ -264,7 +286,7 @@ async function processNextBatch(fastify: FastifyInstance) {
 
     for (const w of waiting) {
       try {
-        const url = await fetchRecordingUrl(w.callUuid);
+        const url = await fetchRecordingUrl(fastify, w.callUuid);
         if (url) {
           await fastify.prisma.crm.crmOmicallLog.update({
             where: { id: w.id },
