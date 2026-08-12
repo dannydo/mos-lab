@@ -23,6 +23,24 @@ import { getBranchBadgeInfo } from './MultiDayColumnView';
 
 const { Text } = Typography;
 
+type AppointmentWithLegacyFields = Appointment & {
+  orderId?: string | number;
+  userId?: string | number;
+  appointmentTime?: string;
+};
+
+// Preserve table rows across renders even for legacy appointments without an id.
+const getAppointmentKey = (appointment: Appointment): string => {
+  const legacyAppointment = appointment as AppointmentWithLegacyFields;
+  const fallback = [
+    appointment.customerId ?? legacyAppointment.userId ?? 'customer',
+    appointment.bookingDateStart ?? legacyAppointment.appointmentTime ?? 'appointment',
+    appointment.serviceName ?? 'service',
+  ].join('-');
+
+  return String(appointment.id ?? legacyAppointment.orderId ?? fallback);
+};
+
 interface ScheduleListViewProps {
   loading: boolean;
   appointments: Appointment[];
@@ -337,7 +355,7 @@ export default function ScheduleListView({
       <Table
         loading={loading}
         dataSource={appointments}
-        rowKey={(record) => String(record.id || (record as any).orderId || Math.random())}
+        rowKey={getAppointmentKey}
         columns={columns}
         components={{
           header: {

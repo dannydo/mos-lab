@@ -54,6 +54,11 @@ export const getNycColumns = ({
   currentPage = 1,
   pageSize = 20,
 }: NycColumnsOptions): ColumnsType<Customer> => {
+  // Compute the time boundaries once per columns instance rather than once for
+  // every rendered row in the table.
+  const now = new Date();
+  const todayStart = dayjs().startOf('day').toDate();
+
   return [
     {
       title: 'STT',
@@ -133,9 +138,7 @@ export const getNycColumns = ({
             ? ('descend' as const)
             : null,
       render: (days: number | null, record: Customer) => {
-        const hasCallback = record.callbackDate
-          ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
-          : false;
+        const hasCallback = record.callbackDate ? new Date(record.callbackDate) >= todayStart : false;
         if (hasCallback) {
           const callbackFormatted = dayjs(record.callbackDate).format('DD/MM/YYYY');
           return (
@@ -145,7 +148,7 @@ export const getNycColumns = ({
           );
         }
 
-        const isBookingInFuture = record.lastBookingDate ? new Date(record.lastBookingDate) > new Date() : false;
+        const isBookingInFuture = record.lastBookingDate ? new Date(record.lastBookingDate) > now : false;
         if (isBookingInFuture) {
           const state = record.lastBookingState;
           const isBooked = state === 'New' || state === 'Confirmed';
@@ -159,7 +162,7 @@ export const getNycColumns = ({
           }
         }
 
-        const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < new Date() : false;
+        const isBookingInPast = record.lastBookingDate ? new Date(record.lastBookingDate) < now : false;
         if (isBookingInPast) {
           const state = record.lastBookingState;
           const isMissed =
@@ -173,8 +176,7 @@ export const getNycColumns = ({
             let missedDays = days;
             if (record.lastBookingDate) {
               const bookingDate = new Date(record.lastBookingDate);
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
+              const today = new Date(todayStart);
               bookingDate.setHours(0, 0, 0, 0);
               const diffMs = today.getTime() - bookingDate.getTime();
               missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));

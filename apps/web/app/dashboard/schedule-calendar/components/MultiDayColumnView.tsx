@@ -72,6 +72,25 @@ const HOURS_RANGE = [
   '21:00',
 ];
 
+type AppointmentWithLegacyFields = Appointment & {
+  orderId?: string | number;
+  userId?: string | number;
+  appointmentTime?: string;
+};
+
+// Some legacy appointments do not expose an `id`. Keep their React identity
+// deterministic so a calendar refresh does not remount every card/popover.
+const getAppointmentKey = (appointment: Appointment): string => {
+  const legacyAppointment = appointment as AppointmentWithLegacyFields;
+  const fallback = [
+    appointment.customerId ?? legacyAppointment.userId ?? 'customer',
+    appointment.bookingDateStart ?? legacyAppointment.appointmentTime ?? 'appointment',
+    appointment.serviceName ?? 'service',
+  ].join('-');
+
+  return String(appointment.id ?? legacyAppointment.orderId ?? fallback);
+};
+
 export function getBranchBadgeInfo(storeId?: number | null, branchName?: string) {
   const name = branchName || '';
   const sId = storeId ? Number(storeId) : 0;
@@ -433,7 +452,7 @@ function MultiDayColumnView({
 
                           {subSlotAppts.map((appt) => (
                             <AppointmentCardItem
-                              key={String(appt.id || (appt as any).orderId || Math.random())}
+                              key={getAppointmentKey(appt)}
                               appt={appt}
                               hourStr={subSlotTimeStr}
                               draggedAppt={draggedAppt}
@@ -582,12 +601,7 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
   );
 
   return (
-    <Popover
-      key={String(appt.id || (appt as any).orderId || Math.random())}
-      content={cardPopoverContent}
-      title={undefined}
-      trigger="click"
-    >
+    <Popover key={getAppointmentKey(appt)} content={cardPopoverContent} title={undefined} trigger="click">
       <div
         draggable
         onDragStart={(e) => onHandleDragStart(e, appt)}

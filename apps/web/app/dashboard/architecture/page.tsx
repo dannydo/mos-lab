@@ -19,7 +19,7 @@ export default function ArchitecturePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [iframeKey, setIframeKey] = useState(Date.now());
+  const [iframeKey, setIframeKey] = useState(0);
   const iframeRef = React.useRef<HTMLIFrameElement>(null);
 
   // Sync global themeMode with iframe via postMessage
@@ -63,7 +63,7 @@ export default function ArchitecturePage() {
   }, []);
 
   const handleRefresh = () => {
-    setIframeKey(Date.now());
+    setIframeKey((previousKey) => previousKey + 1);
   };
 
   const handleOpenStandalone = () => {
