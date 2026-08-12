@@ -108,6 +108,10 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
   // 2. GET /matrix
   addRoute('get', '/matrix', async (request: SafeAny, reply: SafeAny) => {
     const { serviceMode = 'normal_clean' } = request.query as { serviceMode?: string };
+    // `all` is a dashboard aggregate sentinel, not a persisted profile mode. Use the
+    // normal-clean matrix rather than treating every profile as missing and reseeding.
+    const effectiveServiceMode: LashServiceMode =
+      serviceMode === 'all' ? 'normal_clean' : (serviceMode as LashServiceMode);
 
     try {
       const activeCvs = await getActiveCvStaffList(fastify.prisma.crm, fastify.prisma.legacy);
@@ -116,7 +120,7 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
       const dbProfiles = await fastify.prisma.crm.crmCvSpeedProfile.findMany({
         where: {
           staffId: { in: activeCvIds },
-          serviceMode,
+          serviceMode: effectiveServiceMode,
         },
       });
 
@@ -157,7 +161,7 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
             } else {
               // Personalized in-memory fallback based on staff member's overall working speed ratio
               const baseMin = style.includes('Volume') || style.includes('Ultralight') ? 35 : 30;
-              const bmTotal = baseMin + Math.round(count * 0.6) + (serviceMode === 'normal_removal' ? 5 : 0);
+              const bmTotal = baseMin + Math.round(count * 0.6) + (effectiveServiceMode === 'normal_removal' ? 5 : 0);
               const estTotal = Math.round(bmTotal * cvRatio);
               const speedRating: SpeedRating =
                 estTotal <= bmTotal * 0.95 ? 'fast' : estTotal >= bmTotal * 1.05 ? 'slow' : 'normal';
@@ -717,7 +721,10 @@ async function getStaffTrendsBatch(
       LEFT JOIN report_order ro ON o.id = ro.order_id
       WHERE o.order_state = 'Completed'
         AND os.assigned_staff_id IN (${staffIds.join(',')})
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+        AND (
+          ro.actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 6 MONTH))
+        )
       GROUP BY os.assigned_staff_id
     `)) as Array<{ staff_id: number; recent_avg: number | null; prior_avg: number | null }>;
 
@@ -757,14 +764,15 @@ async function getStaffOverallSpeedFactors(
       FROM order_service os
       JOIN \`order\` o ON os.order_id = o.id
       JOIN report_order_service ros ON os.id = ros.order_service_id
+      LEFT JOIN report_order ro ON ro.order_id = o.id
       JOIN staff_bonus sb ON sb.order_service_id = os.id
       WHERE o.order_state = 'Completed'
         AND sb.user_id IN (${staffIds.join(',')})
         AND (COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) BETWEEN 15 AND 200
-        AND COALESCE(
-          (SELECT ro.actual_booking_date_start FROM report_order ro WHERE ro.order_id = o.id LIMIT 1),
-          o.booking_date_start
-        ) >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+        AND (
+          ro.actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 12 MONTH))
+        )
       GROUP BY sb.user_id
     `)) as Array<{ staff_id: number; avg_clean: number; avg_prep: number; avg_ext: number; avg_time: number | null }>;
 

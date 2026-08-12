@@ -115,8 +115,13 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         JOIN \`order_service\` os ON os.order_id = o.id
         WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
+          AND (
+            (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
+            OR (
+              ro.actual_booking_date_start IS NULL
+              AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59'
+            )
+          )
           AND ${staffExprOs} IN (${validStaffListStr})
           ${storeFilterClause}
         GROUP BY staff_id
@@ -132,8 +137,13 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         JOIN \`order\` o ON o.id = st.order_id
         LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
+          AND (
+            (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
+            OR (
+              ro.actual_booking_date_start IS NULL
+              AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59'
+            )
+          )
           AND st.user_id IN (${validStaffListStr})
         GROUP BY st.user_id
       `;

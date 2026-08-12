@@ -1460,8 +1460,13 @@ export async function catalogRoutes(fastify: FastifyInstance) {
         LEFT JOIN \`service_language\` sl ON s.id = sl.service_id AND sl.language_id = 1
         LEFT JOIN \`service_price\` sp ON os.service_price_id = sp.id
         WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ?
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
+          AND (
+            (ro.actual_booking_date_start >= ? AND ro.actual_booking_date_start <= ?)
+            OR (
+              ro.actual_booking_date_start IS NULL
+              AND o.booking_date_start >= ? AND o.booking_date_start <= ?
+            )
+          )
         GROUP BY s.id, sl.service_name, s.service_key, s.service_group
       `;
 
@@ -1483,8 +1488,13 @@ export async function catalogRoutes(fastify: FastifyInstance) {
         JOIN \`service\` s ON sp.service_id = s.id
         LEFT JOIN \`service_language\` sl ON s.id = sl.service_id AND sl.language_id = 1
         WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ?
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
+          AND (
+            (ro.actual_booking_date_start >= ? AND ro.actual_booking_date_start <= ?)
+            OR (
+              ro.actual_booking_date_start IS NULL
+              AND o.booking_date_start >= ? AND o.booking_date_start <= ?
+            )
+          )
         GROUP BY sp.id, sp.service_price_package_key, sl.service_name, s.service_key, sp.service_price
       `;
 
@@ -1506,20 +1516,25 @@ export async function catalogRoutes(fastify: FastifyInstance) {
         LEFT JOIN \`product_language\` pl ON p.id = pl.product_id AND pl.language_id = 1
         LEFT JOIN \`product_price\` pp ON p.id = pp.product_id AND pp.currency_id = 2
         WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ?
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ?
+          AND (
+            (ro.actual_booking_date_start >= ? AND ro.actual_booking_date_start <= ?)
+            OR (
+              ro.actual_booking_date_start IS NULL
+              AND o.booking_date_start >= ? AND o.booking_date_start <= ?
+            )
+          )
         GROUP BY p.id, pl.product_name, p.product_sku
       `;
 
       const [servicesRaw, combosRaw, productsRaw] = await Promise.all([
         itemTypeFilter === 'all' || itemTypeFilter === 'service'
-          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(servicesSql, startStr, endStr)
+          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(servicesSql, startStr, endStr, startStr, endStr)
           : Promise.resolve([]),
         itemTypeFilter === 'all' || itemTypeFilter === 'combo'
-          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(combosSql, startStr, endStr)
+          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(combosSql, startStr, endStr, startStr, endStr)
           : Promise.resolve([]),
         itemTypeFilter === 'all' || itemTypeFilter === 'product'
-          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(productsSql, startStr, endStr)
+          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(productsSql, startStr, endStr, startStr, endStr)
           : Promise.resolve([]),
       ]);
 

@@ -144,51 +144,44 @@ export class BranchService {
     // Fetch staff count and completed orders count for each store
     const legacyStoreIds = records.map((r) => r.legacyClientStoreId).filter(Boolean) as number[];
 
-    // Staff count per store (user_group_id != 1) and Customer count per store (user_group_id = 1)
+    // Run independent per-store aggregates together; each is scoped by the active page's store IDs.
     const staffCountMap = new Map<number, number>();
     const customerCountMap = new Map<number, number>();
+    const completedOrdersMap = new Map<number, number>();
 
     if (legacyStoreIds.length > 0) {
       try {
-        const staffCounts = await this.fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-          `SELECT client_store_id, COUNT(DISTINCT user_id) as cnt
-           FROM user_profile
-           WHERE user_group_id != 1 AND is_disabled = 0 AND is_deleted = 0 AND client_store_id IN (${legacyStoreIds.join(',')})
-           GROUP BY client_store_id`
-        );
+        const [staffCounts, customerCounts, orderCounts] = await Promise.all([
+          this.fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `SELECT client_store_id, COUNT(DISTINCT user_id) as cnt
+             FROM user_profile
+             WHERE user_group_id != 1 AND is_disabled = 0 AND is_deleted = 0 AND client_store_id IN (${legacyStoreIds.join(',')})
+             GROUP BY client_store_id`
+          ),
+          this.fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `SELECT client_store_id, COUNT(DISTINCT user_id) as cnt
+             FROM user_profile
+             WHERE user_group_id = 1 AND is_disabled = 0 AND is_deleted = 0 AND client_store_id IN (${legacyStoreIds.join(',')})
+             GROUP BY client_store_id`
+          ),
+          this.fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `SELECT client_store_id, COUNT(*) as cnt
+             FROM \`order\`
+             WHERE order_state = 'Completed' AND client_store_id IN (${legacyStoreIds.join(',')})
+             GROUP BY client_store_id`
+          ),
+        ]);
         for (const row of staffCounts) {
           staffCountMap.set(Number(row.client_store_id), Number(row.cnt));
         }
-
-        const customerCounts = await this.fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-          `SELECT client_store_id, COUNT(DISTINCT user_id) as cnt
-           FROM user_profile
-           WHERE user_group_id = 1 AND is_disabled = 0 AND is_deleted = 0 AND client_store_id IN (${legacyStoreIds.join(',')})
-           GROUP BY client_store_id`
-        );
         for (const row of customerCounts) {
           customerCountMap.set(Number(row.client_store_id), Number(row.cnt));
         }
-      } catch (err) {
-        this.fastify.log.error(err, 'Failed to fetch staff/customer counts per store');
-      }
-    }
-
-    // Completed orders count per store
-    const completedOrdersMap = new Map<number, number>();
-    if (legacyStoreIds.length > 0) {
-      try {
-        const orderCounts = await this.fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-          `SELECT client_store_id, COUNT(*) as cnt
-           FROM \`order\`
-           WHERE order_state = 'Completed' AND client_store_id IN (${legacyStoreIds.join(',')})
-           GROUP BY client_store_id`
-        );
         for (const row of orderCounts) {
           completedOrdersMap.set(Number(row.client_store_id), Number(row.cnt));
         }
       } catch (err) {
-        this.fastify.log.error(err, 'Failed to fetch order counts per store');
+        this.fastify.log.error(err, 'Failed to fetch per-store aggregate counts');
       }
     }
 

@@ -2212,8 +2212,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
             WHERE o_nl.user_id = u.id
               AND o_nl.order_state = 'Completed'
               AND osc_nl.total_price > 0
-              AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= '${nlDateFrom}'
-              AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= '${nlDateTo}'
+              AND (
+                (ro_nl.actual_booking_date_start >= '${nlDateFrom}' AND ro_nl.actual_booking_date_start <= '${nlDateTo}')
+                OR (
+                  ro_nl.actual_booking_date_start IS NULL
+                  AND o_nl.booking_date_start >= '${nlDateFrom}' AND o_nl.booking_date_start <= '${nlDateTo}'
+                )
+              )
           )`;
 
       // Build dynamic SELECT for touchpoints
@@ -8599,7 +8604,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
                COALESCE(ros.pre_servicing_minute, 0) +
                COALESCE(ros.cleaning_minute, 0) +
                COALESCE(ros.servicing_minute, 0)) BETWEEN 15 AND 200
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+          AND (
+            ro.actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY))
+          )
         GROUP BY os.assigned_staff_id, s.service_type
       `);
 
@@ -9031,7 +9039,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     try {
       let storeFilter = '';
-      const storeParams: SafeAny[] = [new Date(dFrom), new Date(dTo)];
+      const storeParams: SafeAny[] = [new Date(dFrom), new Date(dTo), new Date(dFrom), new Date(dTo)];
       if (storeId && storeId !== 'ALL') {
         storeFilter = ' AND o.client_store_id = ?';
         storeParams.push(Number(storeId));
@@ -9056,8 +9064,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
           END) as missedOrderIdsStr
         FROM \`order\` o
         LEFT JOIN report_order ro ON o.id = ro.order_id
-        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= ? 
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= ? ${storeFilter}
+        WHERE (
+            (ro.actual_booking_date_start >= ? AND ro.actual_booking_date_start <= ?)
+            OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= ? AND o.booking_date_start <= ?)
+          ) ${storeFilter}
       `;
 
       const countsRes = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countsSql, ...storeParams);

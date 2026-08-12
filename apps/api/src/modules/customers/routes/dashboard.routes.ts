@@ -365,6 +365,14 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
             })
           : [];
 
+      const balancesByUserId = new Map<number, SafeAny[]>();
+      for (const balance of userBalances) {
+        const userId = Number(balance.user_id);
+        const balances = balancesByUserId.get(userId) || [];
+        balances.push(balance);
+        balancesByUserId.set(userId, balances);
+      }
+
       const balanceIds = userBalances.map((b) => b.id);
       const userBalanceTransactions =
         balanceIds.length > 0
@@ -397,6 +405,14 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
               where: { order_id: { in: allOrderIds } },
             })
           : [];
+
+      const servicesByOrderId = new Map<number, SafeAny[]>();
+      for (const service of allOrderServices) {
+        const orderId = Number(service.order_id);
+        const services = servicesByOrderId.get(orderId) || [];
+        services.push(service);
+        servicesByOrderId.set(orderId, services);
+      }
 
       const profileMap = new Map(userProfiles.map((p) => [Number(p.userId), p]));
       const contactMap = new Map(userContacts.map((c) => [Number(c.userId), c.phoneNumber]));
@@ -436,7 +452,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       // Exact legacy PHP combo active helper function
       const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
         const bTime = bookingDateStart || orderCreatedDate;
-        const userBals = userBalances.filter((b) => b.user_id === userId);
+        const userBals = balancesByUserId.get(userId) || [];
 
         for (const usb of userBals) {
           // Condition 1: usb.date_created < booking_date_start
@@ -515,14 +531,14 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
         // Check active combo using exact legacy logic
         const hasLiveCombo = checkHasLiveCombo(o.user_id, o.booking_date_start, o.date_created);
-        const userBal = userBalances.filter((b) => b.user_id === o.user_id);
+        const userBal = balancesByUserId.get(Number(o.user_id)) || [];
         const group = hasLiveCombo ? 'combo_live' : userBal.length > 0 ? 'combo_dead' : 'single';
 
         const booker = o.created_staff_id
           ? staffMap.get(Number(o.created_staff_id)) || 'Nhiều Booker'
           : `Khách tự đặt (${o.booking_channels || 'GB'})`;
 
-        const orderSvs = allOrderServices.filter((cs) => cs.order_id === o.id);
+        const orderSvs = servicesByOrderId.get(Number(o.id)) || [];
         const firstPromoSv = orderSvs.find((cs) => cs.promotion_id !== null && cs.promotion_id !== undefined);
         const pId = firstPromoSv?.promotion_id || o.promotion_id || o.selected_promotion_id;
         const promoName = pId ? promoMap.get(Number(pId)) || `PROMO-${pId}` : null;
@@ -1319,14 +1335,8 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       const start = dateFrom + ' 00:00:00';
       const end = dateTo + ' 23:59:59';
 
-      // Load staff map & team sets for filtering
-      const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT up.user_id as userId, 
-               TRIM(COALESCE(NULLIF(up.full_name, ''), CONCAT(COALESCE(up.first_name, ''), ' ', COALESCE(up.last_name, '')))) as fullName
-        FROM \`user_profile\` up
-      `);
+      // Load only profiles referenced by the selected orders; the old full staff scan dominated short date ranges.
       const staffMap = new Map<number, string>();
-      staffProfiles.forEach((s) => staffMap.set(Number(s.userId), s.fullName || `Staff #${s.userId}`));
 
       const crmTelesales = await fastify.prisma.crm.crmStaff.findMany({
         where: {
@@ -1383,12 +1393,41 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         FROM \`order\` o
         LEFT JOIN report_order ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
-          AND COALESCE(o.booking_date_end, ro.actual_booking_date_start, o.booking_date_start) BETWEEN ? AND ?
+          AND (
+            (o.booking_date_end >= ? AND o.booking_date_end <= ?)
+            OR (
+              o.booking_date_end IS NULL
+              AND ro.actual_booking_date_start >= ? AND ro.actual_booking_date_start <= ?
+            )
+            OR (
+              o.booking_date_end IS NULL AND ro.actual_booking_date_start IS NULL
+              AND o.booking_date_start >= ? AND o.booking_date_start <= ?
+            )
+          )
         ORDER BY checkin_time ASC
       `,
         start,
+        end,
+        start,
+        end,
+        start,
         end
       );
+
+      const createdStaffIds = Array.from(
+        new Set(rawOrders.map((order) => Number(order.created_staff_id)).filter((id) => id > 0))
+      );
+      if (createdStaffIds.length > 0) {
+        const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT up.user_id as userId,
+                 TRIM(COALESCE(NULLIF(up.full_name, ''), CONCAT(COALESCE(up.first_name, ''), ' ', COALESCE(up.last_name, '')))) as fullName
+          FROM \`user_profile\` up
+          WHERE up.user_id IN (${createdStaffIds.join(',')})
+        `);
+        staffProfiles.forEach((staff) =>
+          staffMap.set(Number(staff.userId), staff.fullName || `Staff #${staff.userId}`)
+        );
+      }
 
       const completedOrders = rawOrders.filter((o) => {
         if (targetStoreId && Number(o.client_store_id) !== targetStoreId) return false;

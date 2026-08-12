@@ -717,6 +717,16 @@ export class CcKpiService {
       }
     }
 
+    // Keep Rule #15 actual-check-in semantics while leaving both date columns sargable.
+    const actualCheckinRangeClause = `
+      AND (
+        (ro.actual_booking_date_start >= '${startStr} 00:00:00' AND ro.actual_booking_date_start <= '${endStr} 23:59:59')
+        OR (
+          ro.actual_booking_date_start IS NULL
+          AND o.booking_date_start >= '${startStr} 00:00:00' AND o.booking_date_start <= '${endStr} 23:59:59'
+        )
+      )`;
+
     const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
       SELECT 
         u.id as userId,
@@ -754,8 +764,7 @@ export class CcKpiService {
       LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
       LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
       WHERE o.order_state = 'Completed'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
+        ${actualCheckinRangeClause}
         ${storeFilterClause}
     `;
 
@@ -772,8 +781,7 @@ export class CcKpiService {
       LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
       LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
       WHERE o.order_state = 'Completed'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
+        ${actualCheckinRangeClause}
         AND os.upgrade_price > 0
         ${storeFilterClause}
     `;
@@ -791,8 +799,7 @@ export class CcKpiService {
       LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
       LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
       WHERE o.order_state = 'Completed'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
+        ${actualCheckinRangeClause}
         ${storeFilterClause}
     `;
 
@@ -808,8 +815,7 @@ export class CcKpiService {
       LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
       LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
       WHERE o.order_state = 'Completed'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr} 00:00:00'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr} 23:59:59'
+        ${actualCheckinRangeClause}
         AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
         AND LOWER(COALESCE(os.service_type, '')) NOT LIKE '%combo%'
         AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%product%'
