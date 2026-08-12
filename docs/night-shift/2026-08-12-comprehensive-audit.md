@@ -61,7 +61,7 @@ The pre-existing `codex/frontend-perf-audit` work was saved as the required Nigh
 - New API regression suite: 8/8 passed (5 FAL, 2 ranking, 1 atomic claim).
 - Frontend tests: 30/31 passed. Baseline was 28/29; the same pre-existing QA Shop test remains the only failure.
 - Browser QA: Today, KPI, and Customers rendered authenticated live local data with 0 console errors.
-- Local services restored after build: Web `:4000`, API `:4001`, Ads portal `:8000`; existing WingsApp `:3000` and legacy `:80` were left intact.
+- Local services restored after build: Web `:4000`, API `:4001`, Ads portal `:8000`, WingsApp `:3000`, and legacy `:80` all responded over HTTP. The original WingsApp process was restarted with Homebrew Node 25 after the Node 22 process listened on the port but timed out on every request.
 
 ## Residual findings, ordered by risk
 
@@ -79,6 +79,7 @@ The pre-existing `codex/frontend-perf-audit` work was saved as the required Nigh
 3. **OmiCall API contract drift:** UI sends direction/analysis status filters that the active backend route does not apply; SDK typing is still loose. Align shared DTO, SDK, route parsing, and tests together.
 4. **CSV importer correctness:** OmiCall Excel/CSV import uses comma splitting, without quoted-field handling, schema validation, or dry-run. Use a real CSV parser and failure report before expanding imports.
 5. **Catalog light theme:** Combo Live cards contain hard-coded dark surfaces. Fix with theme tokens and validate both themes in the browser.
+6. **Start-server Node drift:** `start-servers.sh` inherited `~/.local/bin/node` v22 even though WingsApp declares Node `>=24`; that process became CPU-bound and stopped answering HTTP. Make the launcher select and verify a compatible Node executable before backgrounding WingsApp.
 
 ### P2 — cleanup after route smoke coverage
 
