@@ -11,6 +11,41 @@ export interface CcKpiFilters {
   limit?: number;
 }
 
+export const FAL_RULE_VALUES = ['Fix', 'Adjust', 'Log', 'Replace'] as const;
+export type FalRule = (typeof FAL_RULE_VALUES)[number];
+
+export const FAL_RULE_VALUES_SQL = FAL_RULE_VALUES.map((rule) => `'${rule}'`).join(', ');
+export const FAL_TRACKING_KEY_SQL_CASES = FAL_RULE_VALUES.map(
+  (rule) => `WHEN sb.tracking_key LIKE '%"next_service_type":"${rule}"%' THEN '${rule}'`
+).join('\n');
+
+export function resolveFalRule(input: {
+  nextFixOrderServiceId?: number | null;
+  nextAdjustOrderServiceId?: number | null;
+  serviceType?: string | null;
+  ruleValue?: string | null;
+  trackingKey?: string | null;
+}): FalRule | '' {
+  if (Number(input.nextFixOrderServiceId) > 0) return 'Fix';
+  if (Number(input.nextAdjustOrderServiceId) > 0) return 'Adjust';
+
+  const directValue = FAL_RULE_VALUES.find((rule) => rule === input.serviceType || rule === input.ruleValue);
+  if (directValue) return directValue;
+
+  if (input.trackingKey) {
+    try {
+      const parsed = JSON.parse(input.trackingKey) as { next_service_type?: string };
+      const trackedValue = FAL_RULE_VALUES.find((rule) => rule === parsed.next_service_type);
+      if (trackedValue) return trackedValue;
+    } catch {
+      const trackedValue = FAL_RULE_VALUES.find((rule) => input.trackingKey?.includes(`"next_service_type":"${rule}"`));
+      if (trackedValue) return trackedValue;
+    }
+  }
+
+  return '';
+}
+
 export function parseDateRange(dateFrom?: string, dateTo?: string, defaultDaysStart = 30) {
   const startStr =
     dateFrom || new Date(Date.now() - defaultDaysStart * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
@@ -296,7 +331,7 @@ export class CcKpiService {
         CASE 
             WHEN os.next_fix_order_service_id > 0 THEN 'Fix'
             WHEN os.next_adjust_order_service_id > 0 THEN 'Adjust'
-            WHEN s.service_type IN ('Fix', 'Adjust', 'Log') THEN s.service_type
+            WHEN s.service_type IN (${FAL_RULE_VALUES_SQL}) THEN s.service_type
             ELSE '' 
         END AS falRule
       FROM order_service os
@@ -365,10 +400,8 @@ export class CcKpiService {
         SUM(CASE WHEN sbr.type = 'OrderServiceAttributeDesign' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS designPts,
         SUM(CASE WHEN sbr.type = 'OrderServiceAttributeColor' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS colorPts,
         MAX(CASE 
-            WHEN sbr.type IN ('OrderServiceType', 'OrderServicePrice') AND sbr.value_required IN ('Log', 'Fix', 'Adjust') THEN sbr.value_required
-            WHEN sb.tracking_key LIKE '%"next_service_type":"Fix"%' THEN 'Fix'
-            WHEN sb.tracking_key LIKE '%"next_service_type":"Adjust"%' THEN 'Adjust'
-            WHEN sb.tracking_key LIKE '%"next_service_type":"Log"%' THEN 'Log'
+            WHEN sbr.type IN ('OrderServiceType', 'OrderServicePrice') AND sbr.value_required IN (${FAL_RULE_VALUES_SQL}) THEN sbr.value_required
+            ${FAL_TRACKING_KEY_SQL_CASES}
             ELSE ''
         END) AS falRule
       FROM staff_bonus sb

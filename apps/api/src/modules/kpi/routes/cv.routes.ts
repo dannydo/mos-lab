@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { CvConfigResponse, CvStaffOption, CvXoayRecord, CvXoayReportResponse, SafeAny } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
+import { FAL_RULE_VALUES_SQL, FAL_TRACKING_KEY_SQL_CASES } from '../services/cc-kpi.service.js';
 
 async function getActiveCvIds(fastify: FastifyInstance): Promise<number[]> {
   const ids = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
@@ -84,7 +85,7 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
           CASE 
               WHEN os.next_fix_order_service_id > 0 THEN 'Fix'
               WHEN os.next_adjust_order_service_id > 0 THEN 'Adjust'
-              WHEN s.service_type IN ('Fix', 'Adjust', 'Log') THEN s.service_type
+              WHEN s.service_type IN (${FAL_RULE_VALUES_SQL}) THEN s.service_type
               WHEN sb_agg.falRule IS NOT NULL AND sb_agg.falRule != '' THEN sb_agg.falRule
               ELSE '' 
           END AS falRule
@@ -113,10 +114,8 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
             SUM(CASE WHEN sbr.type = 'OrderServiceAttributeDesign' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS designPts,
             SUM(CASE WHEN sbr.type = 'OrderServiceAttributeColor' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS colorPts,
             MAX(CASE 
-                WHEN sbr.type IN ('OrderServiceType', 'OrderServicePrice') AND sbr.value_required IN ('Log', 'Fix', 'Adjust') THEN sbr.value_required
-                WHEN sb.tracking_key LIKE '%"next_service_type":"Fix"%' THEN 'Fix'
-                WHEN sb.tracking_key LIKE '%"next_service_type":"Adjust"%' THEN 'Adjust'
-                WHEN sb.tracking_key LIKE '%"next_service_type":"Log"%' THEN 'Log'
+                WHEN sbr.type IN ('OrderServiceType', 'OrderServicePrice') AND sbr.value_required IN (${FAL_RULE_VALUES_SQL}) THEN sbr.value_required
+                ${FAL_TRACKING_KEY_SQL_CASES}
                 ELSE ''
             END) AS falRule
           FROM staff_bonus sb
