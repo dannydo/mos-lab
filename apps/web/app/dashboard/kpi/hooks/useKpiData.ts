@@ -82,7 +82,10 @@ export function useKpiData(options?: UseKpiDataOptions) {
       end = referenceDate.endOf('day');
     }
 
-    setDateRange([start, end]);
+    setDateRange((currentRange) => {
+      const isUnchanged = currentRange[0].isSame(start) && currentRange[1].isSame(end);
+      return isUnchanged ? currentRange : [start, end];
+    });
   }, [viewMode, referenceDate]);
 
   // Fetch logged in user
@@ -139,13 +142,16 @@ export function useKpiData(options?: UseKpiDataOptions) {
     fetchKpiData();
   }, [fetchKpiData]);
 
-  const handleShowAppointments = (staffId: number, displayName: string) => {
-    setSelectedBookerId(staffId);
-    setSelectedBookerName(displayName);
-    const matchedRecord = leaderboard.find((item) => item.staffId === staffId);
-    setSelectedStaffRecord(matchedRecord || null);
-    setAppointmentsDrawerOpen(true);
-  };
+  const handleShowAppointments = useCallback(
+    (staffId: number, displayName: string) => {
+      setSelectedBookerId(staffId);
+      setSelectedBookerName(displayName);
+      const matchedRecord = leaderboard.find((item) => item.staffId === staffId);
+      setSelectedStaffRecord(matchedRecord || null);
+      setAppointmentsDrawerOpen(true);
+    },
+    [leaderboard]
+  );
 
   const getPeriodLabel = () => {
     if (!dateRange[0] || !dateRange[1]) return 'Chọn thời gian';

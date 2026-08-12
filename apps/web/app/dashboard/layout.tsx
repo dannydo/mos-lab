@@ -71,6 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isCvDrawerOpen, setIsCvDrawerOpen] = useState(false);
   const [cvDrawerDate, setCvDrawerDate] = useState(() => dayjs());
   const [workingCvCount, setWorkingCvCount] = useState(0);
+  const hasAuthenticatedUser = !loading && Boolean(user?.id);
 
   const fetchWorkingCvCount = useCallback(async () => {
     try {
@@ -86,14 +87,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    if (loading || !user) return;
+    if (!hasAuthenticatedUser) return;
     fetchWorkingCvCount();
     const interval = setInterval(fetchWorkingCvCount, 30000);
     return () => clearInterval(interval);
-  }, [fetchWorkingCvCount, loading, user]);
+  }, [fetchWorkingCvCount, hasAuthenticatedUser]);
 
   useEffect(() => {
-    if (loading || !user) return;
+    if (!hasAuthenticatedUser) return;
 
     const fetchReleaseMarker = () => {
       apiClient.release
@@ -105,7 +106,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetchReleaseMarker();
     const interval = setInterval(fetchReleaseMarker, 60_000);
     return () => clearInterval(interval);
-  }, [loading, user]);
+  }, [hasAuthenticatedUser]);
 
   const fetchPendingAllocationsCount = useCallback(async () => {
     try {
@@ -117,11 +118,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    if (loading || !user) return;
+    if (!hasAuthenticatedUser) return;
     fetchPendingAllocationsCount();
     const interval = setInterval(fetchPendingAllocationsCount, 30000);
     return () => clearInterval(interval);
-  }, [fetchPendingAllocationsCount, loading, user]);
+  }, [fetchPendingAllocationsCount, hasAuthenticatedUser]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -143,11 +144,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    if (loading || !user) return;
+    if (!hasAuthenticatedUser) return;
     fetchDailyCallsCount();
     const interval = setInterval(fetchDailyCallsCount, 30000);
     return () => clearInterval(interval);
-  }, [fetchDailyCallsCount, loading, user]);
+  }, [fetchDailyCallsCount, hasAuthenticatedUser]);
 
   const fetchOnlineStaff = useCallback(async () => {
     try {
@@ -209,11 +210,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    if (loading || !user) return;
+    if (!hasAuthenticatedUser) return;
     fetchOnlineStaff();
     const interval = setInterval(fetchOnlineStaff, 25000);
     return () => clearInterval(interval);
-  }, [fetchOnlineStaff, loading, user]);
+  }, [fetchOnlineStaff, hasAuthenticatedUser]);
 
   useEffect(() => {
     const saved = localStorage.getItem('mos_sidebar_collapsed');

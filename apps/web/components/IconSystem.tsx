@@ -2,9 +2,28 @@
 
 import React from 'react';
 import dynamic from 'next/dynamic';
-import dynamicIconImports from 'lucide-react/dynamicIconImports';
-
-import * as AntdIcons from '@ant-design/icons';
+import {
+  CalendarOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  ClusterOutlined,
+  CustomerServiceOutlined,
+  DollarOutlined,
+  GiftOutlined,
+  HeartOutlined,
+  InfoCircleOutlined,
+  MessageOutlined,
+  OrderedListOutlined,
+  PhoneOutlined,
+  SettingOutlined,
+  ShareAltOutlined,
+  ShopOutlined,
+  SolutionOutlined,
+  StarOutlined,
+  TagOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 
 export interface IconProps {
   size?: number;
@@ -168,62 +187,74 @@ export const getCustomIconComponent = (name: string, props?: IconProps): React.R
   return null;
 };
 
-const lucideComponentsCache: Record<string, React.ComponentType<SafeAny>> = {};
+const DeferredLucideIcon = dynamic(() => import('./DeferredLucideIcon').then((module) => module.DeferredLucideIcon), {
+  ssr: false,
+  loading: () => null,
+});
+
+const DeferredAntdIcon = dynamic(() => import('./DeferredAntdIcon').then((module) => module.DeferredAntdIcon), {
+  ssr: false,
+  loading: () => null,
+});
+
+const deferredLucideComponentsCache: Record<string, React.ComponentType<SafeAny>> = {};
+const deferredAntdComponentsCache: Record<string, React.ComponentType<SafeAny>> = {};
+
+const COMMON_ANTD_ICONS: Record<string, React.ComponentType<SafeAny>> = {
+  CalendarOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  ClusterOutlined,
+  CustomerServiceOutlined,
+  DollarOutlined,
+  GiftOutlined,
+  HeartOutlined,
+  InfoCircleOutlined,
+  MessageOutlined,
+  OrderedListOutlined,
+  PhoneOutlined,
+  SettingOutlined,
+  ShareAltOutlined,
+  ShopOutlined,
+  SolutionOutlined,
+  StarOutlined,
+  TagOutlined,
+  TeamOutlined,
+  UserOutlined,
+};
 
 export const getDynamicLucideIcon = (name: string): React.ComponentType<SafeAny> | null => {
   if (!name) return null;
   const cleanName = name.replace(/^lucide:/i, '').trim();
-
-  // 1. Direct match (e.g. "bed-double" or "smile")
-  let importFn = (dynamicIconImports as SafeAny)[cleanName];
-
-  // 2. Kebab-case conversion from PascalCase/camelCase (e.g. "BedDouble" -> "bed-double")
-  if (!importFn) {
-    const kebab = cleanName
-      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-      .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
-      .toLowerCase();
-    importFn = (dynamicIconImports as SafeAny)[kebab];
-  }
-
-  // 3. Normalized match (e.g. "beddouble" -> "bed-double")
-  if (!importFn) {
-    const targetNormalized = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const foundKey = Object.keys(dynamicIconImports).find((k) => k.replace(/[^a-z0-9]/g, '') === targetNormalized);
-    if (foundKey) {
-      importFn = (dynamicIconImports as SafeAny)[foundKey];
-    }
-  }
-
-  if (!importFn) return null;
-
   const cacheKey = cleanName.toLowerCase();
-  if (!lucideComponentsCache[cacheKey]) {
-    lucideComponentsCache[cacheKey] = dynamic(importFn, {
-      ssr: false,
-      loading: () =>
-        React.createElement('span', {
-          style: { display: 'inline-block', width: '14px', height: '14px', marginRight: '6px' },
-        }),
-    });
+  if (!deferredLucideComponentsCache[cacheKey]) {
+    deferredLucideComponentsCache[cacheKey] = function DeferredLucideIconProxy(props: SafeAny) {
+      return React.createElement(DeferredLucideIcon, { ...props, name: cleanName });
+    };
   }
 
-  return lucideComponentsCache[cacheKey];
+  return deferredLucideComponentsCache[cacheKey];
 };
 
 export const getAntdIconComponent = (name: string): React.ComponentType<SafeAny> | null => {
   if (!name) return null;
   const cleanName = name.trim();
-  const IconComp = (AntdIcons as SafeAny)[cleanName];
-  if (IconComp && (typeof IconComp === 'function' || typeof IconComp === 'object')) {
-    return IconComp;
+  if (/^(lucide:|custom:)/i.test(cleanName)) return null;
+
+  const commonIcon = COMMON_ANTD_ICONS[cleanName] || COMMON_ANTD_ICONS[`${cleanName}Outlined`];
+  if (commonIcon) return commonIcon;
+
+  // Picker values use Ant Design's explicit suffix. Returning null for other
+  // names preserves the legacy fallback that resolves unprefixed Lucide icons.
+  if (!/(Outlined|Filled|TwoTone)$/.test(cleanName)) return null;
+
+  if (!deferredAntdComponentsCache[cleanName]) {
+    deferredAntdComponentsCache[cleanName] = function DeferredAntdIconProxy(props: SafeAny) {
+      return React.createElement(DeferredAntdIcon, { ...props, name: cleanName });
+    };
   }
-  if (!cleanName.endsWith('Outlined')) {
-    const outlinedName = `${cleanName}Outlined`;
-    const OutlinedComp = (AntdIcons as SafeAny)[outlinedName];
-    if (OutlinedComp) return OutlinedComp;
-  }
-  return null;
+
+  return deferredAntdComponentsCache[cleanName];
 };
 
 // List of custom icons

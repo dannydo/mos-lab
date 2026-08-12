@@ -61,4 +61,7 @@ GRAPH_REPORT.md
 graph.json
 .graph/
 
+# Local browser and performance audit artifacts
+/.playwright-cli/
+/output/
 
