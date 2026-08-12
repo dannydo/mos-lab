@@ -1,6 +1,11 @@
 import { FastifyInstance } from 'fastify';
 
 export async function healthRoutes(fastify: FastifyInstance) {
+  // Deliberately avoids database checks: the sidebar polls this lightweight release marker.
+  fastify.get('/release', async () => ({
+    deployedAt: process.env.DEPLOYED_AT || null,
+  }));
+
   fastify.get('/health', async (request, reply) => {
     try {
       // Test legacy DB connection with simple query count

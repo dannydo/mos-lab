@@ -53,7 +53,7 @@ ssh -o StrictHostKeyChecking=no live-wings "
   pnpm --filter @mos-lab/web build
 
   echo '[VPS] Restarting Backend API via PM2...'
-  pm2 restart mos-lab-api
+  DEPLOYED_AT=\$(TZ=Asia/Ho_Chi_Minh date -Iseconds) pm2 restart mos-lab-api --update-env
 
   echo '[VPS] VPS Deployment completed successfully!'
 "

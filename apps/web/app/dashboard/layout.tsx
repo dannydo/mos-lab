@@ -62,6 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<SafeAny>(null);
   const [loading, setLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState(false);
+  const [deployedAt, setDeployedAt] = useState<string | null>(null);
 
   const [isPendingAllocationOpen, setIsPendingAllocationOpen] = useState(false);
   const [pendingAllocationCount, setPendingAllocationCount] = useState(0);
@@ -90,6 +91,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const interval = setInterval(fetchWorkingCvCount, 30000);
     return () => clearInterval(interval);
   }, [fetchWorkingCvCount, loading, user]);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    apiClient.release
+      .get()
+      .then((release) => setDeployedAt(release.deployedAt))
+      .catch(() => setDeployedAt(null));
+  }, [loading, user]);
 
   const fetchPendingAllocationsCount = useCallback(async () => {
     try {
@@ -350,6 +359,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           style={{
             background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
             borderRight: `1px solid ${token.colorBorderSecondary}`,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           <h1 className="sr-only">WINGS LASHES Management System</h1>
@@ -368,8 +379,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {collapsed ? 'WL' : 'WINGS LASHES'}
           </div>
           <Suspense fallback={null}>
-            <SidebarNav collapsed={collapsed} themeMode={themeMode} token={token} userRole={user?.role} />
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+              <SidebarNav collapsed={collapsed} themeMode={themeMode} token={token} userRole={user?.role} />
+            </div>
           </Suspense>
+          {deployedAt && (
+            <div
+              title={`Updated: ${dayjs(deployedAt).format('DD/MM/YYYY · HH:mm')}`}
+              style={{
+                flexShrink: 0,
+                padding: collapsed ? '10px 0' : '10px 12px',
+                textAlign: collapsed ? 'center' : 'left',
+                color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)',
+                borderTop: `1px solid ${token.colorBorderSecondary}`,
+                fontSize: '11px',
+                fontVariantNumeric: 'tabular-nums',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+              }}
+            >
+              {collapsed ? '●' : `Updated: ${dayjs(deployedAt).format('DD/MM · HH:mm')}`}
+            </div>
+          )}
         </Sider>
 
         <div className="sidebar-toggle-container">

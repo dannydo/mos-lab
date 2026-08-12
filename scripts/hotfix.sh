@@ -83,7 +83,7 @@ ssh -o StrictHostKeyChecking=no live-wings "
   pnpm --filter @mos-lab/api build
 
   echo '[VPS] Performing Zero-Downtime PM2 Reload...'
-  pm2 reload mos-lab-api --update-env || pm2 restart mos-lab-api
+  DEPLOYED_AT=\$(TZ=Asia/Ho_Chi_Minh date -Iseconds) pm2 reload mos-lab-api --update-env || DEPLOYED_AT=\$(TZ=Asia/Ho_Chi_Minh date -Iseconds) pm2 restart mos-lab-api --update-env
 
   echo '[VPS] Hotfix VPS process reloaded successfully!'
 "

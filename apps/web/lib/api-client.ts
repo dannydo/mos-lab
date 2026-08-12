@@ -214,6 +214,12 @@ export interface LocaStaffActivityResponse {
 
 // API Client SDK for mos-lab
 export const apiClient = {
+  release: {
+    get: async (): Promise<{ deployedAt: string | null }> => {
+      const response = await api.get('/release');
+      return response.data;
+    },
+  },
   auth: {
     login: async (data: LoginRequest): Promise<LoginResponse> => {
       const response = await api.post('/auth/login', data);
