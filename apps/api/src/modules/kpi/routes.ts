@@ -11,6 +11,7 @@ import { registerCvSpeedRoutes } from './routes/cv-speed.routes.js';
 import { registerBkRoutes } from './routes/bk.routes.js';
 import { registerPackageAuditRoutes } from './routes/package-audit.routes.js';
 import { calculateBookerSalaryStats } from './services/salary-calculator.js';
+import { compareBookerProductivity } from './utils/leaderboard.js';
 
 // Default configuration parameters for Booker Salary
 const DEFAULT_SALARY_CONFIG = {
@@ -1177,11 +1178,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         });
       }
 
-      if (user.role === 'admin') {
-        leaderboard.sort((a, b) => b.totalEarnings - a.totalEarnings);
-      } else {
-        leaderboard.sort((a, b) => b.totalCheckin - a.totalCheckin);
-      }
+      leaderboard.sort(compareBookerProductivity);
       return leaderboard;
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Leaderboard KPI error');
