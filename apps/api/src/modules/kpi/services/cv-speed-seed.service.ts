@@ -1,12 +1,5 @@
 import { LashServiceMode, CvSpeedSeedResult, CvSpeedPrediction, SafeAny } from '@mos-lab/shared';
-import {
-  fitLogarithmicModel,
-  getCvRollingWindowMonths,
-  computeSpeedRating,
-  computeConfidence,
-  predictCvSpeed,
-  StaffPhaseMetrics,
-} from './cv-speed-model.service.js';
+import { computeSpeedRating, predictCvSpeed, StaffPhaseMetrics } from './cv-speed-model.service.js';
 import { parseLashSpecs } from '../../catalog/services/lash-benchmark.service.js';
 
 export const STANDARD_LASH_STYLES: string[] = [
@@ -28,7 +21,7 @@ export const DEFAULT_FALLBACK_CV_IDS: number[] = [47510, 48026, 46092, 37790, 34
 /**
  * Fetch active CV staff IDs from crmConfig (ACTIVE_CV_STAFF_CONFIG) or legacy DB.
  */
-async function getActiveCvStaffIds(crmPrisma: any, legacyPrisma: any): Promise<number[]> {
+async function getActiveCvStaffIds(crmPrisma: SafeAny, legacyPrisma: SafeAny): Promise<number[]> {
   let candidateIds: number[] = [];
   try {
     const record = await crmPrisma.crmConfig.findUnique({
@@ -38,10 +31,10 @@ async function getActiveCvStaffIds(crmPrisma: any, legacyPrisma: any): Promise<n
     if (record && record.value) {
       const parsed = JSON.parse(record.value);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        candidateIds = parsed.map((id: any) => Number(id)).filter((id: number) => !isNaN(id) && id > 0);
+        candidateIds = parsed.map((id: SafeAny) => Number(id)).filter((id: number) => !isNaN(id) && id > 0);
       }
     }
-  } catch (err) {
+  } catch {
     // Fallback to legacy DB query
   }
 
@@ -61,7 +54,7 @@ async function getActiveCvStaffIds(crmPrisma: any, legacyPrisma: any): Promise<n
       if (rows && rows.length > 0) {
         candidateIds = rows.map((r) => Number(r.staff_id)).filter((id) => id > 0);
       }
-    } catch (err) {
+    } catch {
       // Fallback
     }
   }
@@ -82,7 +75,7 @@ async function getActiveCvStaffIds(crmPrisma: any, legacyPrisma: any): Promise<n
     if (activeRows && activeRows.length > 0) {
       return activeRows.map((r) => Number(r.user_id));
     }
-  } catch (err) {
+  } catch {
     // Fallback to candidateIds if query fails
   }
 
@@ -98,7 +91,7 @@ export interface StaffInfo {
 /**
  * Fetch staff display names & avatar URLs from legacy user_profile table.
  */
-async function getStaffInfoMap(legacyPrisma: any, staffIds: number[]): Promise<Map<number, StaffInfo>> {
+async function getStaffInfoMap(legacyPrisma: SafeAny, staffIds: number[]): Promise<Map<number, StaffInfo>> {
   const map = new Map<number, StaffInfo>();
   if (!staffIds || staffIds.length === 0) return map;
 
@@ -167,14 +160,14 @@ function enforceMonotonicity(predictions: CvSpeedPrediction[]): CvSpeedPredictio
  * Run nightly model recalculation for all active CVs across all lash styles, service modes, and counts.
  * Upserts result into crm_cv_speed_profile.
  */
-export async function runNightlyCvSpeedSeed(crmPrisma: any, legacyPrisma: any): Promise<CvSpeedSeedResult> {
+export async function runNightlyCvSpeedSeed(crmPrisma: SafeAny, legacyPrisma: SafeAny): Promise<CvSpeedSeedResult> {
   const activeCvIds = await getActiveCvStaffIds(crmPrisma, legacyPrisma);
   const staffMap = await getStaffInfoMap(legacyPrisma, activeCvIds);
 
   // 1. Bulk fetch all benchmarks into a map
   const allBenchmarks = await crmPrisma.crmLashTypeBenchmark.findMany();
   const benchmarkMap = new Map<string, number>();
-  allBenchmarks.forEach((b: any) => {
+  allBenchmarks.forEach((b: SafeAny) => {
     benchmarkMap.set(`${b.lashStyle}_${b.lashCount}`, b.benchmarkMinutes);
   });
 
@@ -223,7 +216,6 @@ export async function runNightlyCvSpeedSeed(crmPrisma: any, legacyPrisma: any): 
   for (const staffId of activeCvIds) {
     const staffInfo = staffMap.get(staffId);
     const staffName = staffInfo?.name || `Chuyên viên ${staffId}`;
-    const windowMonths = await getCvRollingWindowMonths(legacyPrisma, staffId);
     const staffMetrics = staffPhaseMetricsMap.get(staffId) || { ratio: 1.0, avgCleaning: 10, avgPrepQc: 8 };
 
     // 2. Pre-fetch ALL historical cases for this staff member in 1 fast query
@@ -235,7 +227,7 @@ export async function runNightlyCvSpeedSeed(crmPrisma: any, legacyPrisma: any): 
       extension: number;
       prepQc: number;
       total: number;
-    }> = [];
+    }>;
 
     try {
       const rawCases = (await legacyPrisma.$queryRawUnsafe(`

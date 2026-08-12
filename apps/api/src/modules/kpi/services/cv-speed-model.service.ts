@@ -280,7 +280,7 @@ export async function predictCvSpeed(
     extension: number;
     prepQc: number;
     total: number;
-  }> = [];
+  }>;
 
   if (preFetchedCases) {
     parsedCases = preFetchedCases.filter((c) => {
@@ -289,8 +289,6 @@ export async function predictCvSpeed(
       return matchStyle && matchMode;
     });
   } else {
-    const windowMonths = await getCvRollingWindowMonths(legacyPrisma, staffId);
-
     // Helper SQL filter for lash style
     const styleCondition = getStyleSqlFilter(lashStyle);
 
@@ -461,8 +459,8 @@ export async function predictCvSpeed(
 
   const predTotal = Math.max(25, Math.round(benchmarkTotalMinutes * speedRatio));
 
-  let predClean = 10;
-  let predPrep = 8;
+  let predClean: number;
+  let predPrep: number;
   if (parsedCases.length > 0) {
     const sortedClean = parsedCases.map((c) => c.cleaning).sort((a, b) => a - b);
     const sortedPrep = parsedCases.map((c) => c.prepQc).sort((a, b) => a - b);
@@ -520,15 +518,22 @@ function getStyleSqlFilter(lashStyle: string): string {
 }
 
 function getFallbackBenchmark(lashStyle: string, serviceMode: LashServiceMode, lashCount: number): number {
-  let base = 60;
-  if (lashCount <= 30) base = 35;
-  else if (lashCount <= 60) base = 50;
-  else if (lashCount <= 70) base = 55;
-  else if (lashCount <= 80) base = 62;
-  else if (lashCount <= 90) base = 70;
-  else if (lashCount <= 100) base = 78;
-  else if (lashCount <= 120) base = 90;
-  else base = 105;
+  let base =
+    lashCount <= 30
+      ? 35
+      : lashCount <= 60
+        ? 50
+        : lashCount <= 70
+          ? 55
+          : lashCount <= 80
+            ? 62
+            : lashCount <= 90
+              ? 70
+              : lashCount <= 100
+                ? 78
+                : lashCount <= 120
+                  ? 90
+                  : 105;
 
   // Lash Style Difficulty Multipliers
   let styleMultiplier = 1.0;

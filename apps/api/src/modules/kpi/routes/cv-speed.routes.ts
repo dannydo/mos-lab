@@ -16,12 +16,7 @@ import {
   ModelLayer,
   SafeAny,
 } from '@mos-lab/shared';
-import {
-  predictCvSpeed,
-  detectServiceMode,
-  detectServiceModeBatch,
-  StaffPhaseMetrics,
-} from '../services/cv-speed-model.service.js';
+import { predictCvSpeed, detectServiceModeBatch, StaffPhaseMetrics } from '../services/cv-speed-model.service.js';
 import { runNightlyCvSpeedSeed, getActiveCvStaffList } from '../services/cv-speed-seed.service.js';
 import { parseLashSpecs } from '../../catalog/services/lash-benchmark.service.js';
 
@@ -737,7 +732,7 @@ async function getStaffTrendsBatch(
       }
       map.set(Number(r.staff_id), trend);
     }
-  } catch (err) {
+  } catch {
     // Return empty map on error
   }
 
@@ -787,36 +782,9 @@ async function getStaffOverallSpeedFactors(
         });
       });
     }
-  } catch (err) {
+  } catch {
     // Ignore error, fallback to empty map
   }
 
   return map;
-}
-
-async function getCvAverageSpeedWindow(
-  legacyPrisma: SafeAny,
-  staffId: number,
-  lashStyle: string,
-  startMonthAgo: number,
-  endMonthAgo: number
-): Promise<number> {
-  try {
-    const rows = (await legacyPrisma.$queryRawUnsafe(`
-      SELECT ROUND(AVG(COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0))) as avg_time
-      FROM order_service os
-      JOIN \`order\` o ON os.order_id = o.id
-      JOIN report_order_service ros ON os.id = ros.order_service_id
-      LEFT JOIN report_order ro ON o.id = ro.order_id
-      JOIN staff_bonus sb ON sb.order_service_id = os.id
-        WHERE o.order_state = 'Completed'
-          AND (os.assigned_staff_id = ${staffId} OR sb.user_id = ${staffId})
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL ${endMonthAgo} MONTH)
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < DATE_SUB(NOW(), INTERVAL ${startMonthAgo} MONTH)
-    `)) as Array<{ avg_time: number }>;
-
-    return Number(rows[0]?.avg_time || 0);
-  } catch {
-    return 0;
-  }
 }

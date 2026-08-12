@@ -473,9 +473,6 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
         const isCompletedOrder = String(r.orderState) === 'Completed';
         const netRev = isCompletedOrder ? totalPrice : 0;
-        const tipAmount = tipMap.get(orderId) || 0;
-        const serviceName = checkinInfo.serviceName || 'Đặt lịch dịch vụ';
-
         return {
           orderId,
           orderKey: String(r.orderKey || `#${r.orderId}`),

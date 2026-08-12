@@ -42,7 +42,7 @@ export function parseServiceSpecs(
   durationMinute?: number,
   rawServiceType?: string,
   realAttrMap?: Map<number, number>,
-  cvBenchmarkList: any[] = [],
+  cvBenchmarkList: SafeAny[] = [],
   serviceId?: number
 ) {
   const sLower = (serviceName || '').toLowerCase();
@@ -122,7 +122,7 @@ export function parseServiceSpecs(
   else if (cvBenchmarkList && cvBenchmarkList.length > 0 && durationMinute && durationMinute > 0) {
     const normType = rawServiceType === 'Retain' || serviceType === 'Refill' ? 'Retain' : 'Normal';
     const matchedBm = cvBenchmarkList.find(
-      (b: any) =>
+      (b: SafeAny) =>
         (b.lashStyle === lashStyle ||
           (b.lashStyle === 'Mink' && lashStyle === 'Flawless') ||
           (b.lashStyle === 'Volume 3D' && lashStyle === 'Volume')) &&
@@ -996,14 +996,7 @@ export class CcKpiService {
     // Calculate Real-time Run-rate Elapsed Ratio (11:00 AM - 23:00 PM shift formula)
     const now = new Date();
     const currentHour = now.getHours();
-    let fractionToday = 0;
-    if (currentHour < 11) {
-      fractionToday = 0;
-    } else if (currentHour > 22) {
-      fractionToday = 1;
-    } else {
-      fractionToday = (currentHour - 11 + 1) / 12;
-    }
+    const fractionToday = currentHour < 11 ? 0 : currentHour > 22 ? 1 : (currentHour - 11 + 1) / 12;
 
     const sDate = new Date(startStr);
     const eDate = new Date(endStr);
@@ -1011,19 +1004,19 @@ export class CcKpiService {
 
     const totalDays = Math.max(1, Math.round((eDate.getTime() - sDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 
-    let elapsedRatio = 1.0;
-    if (tDate < sDate) {
-      elapsedRatio = 0.001;
-    } else if (tDate > eDate) {
-      elapsedRatio = 1.0;
-    } else {
-      const daysPassedBeforeToday = Math.max(
-        0,
-        Math.round((tDate.getTime() - sDate.getTime()) / (1000 * 60 * 60 * 24))
-      );
-      const totalElapsedDays = daysPassedBeforeToday + fractionToday;
-      elapsedRatio = Math.min(1.0, Math.max(0.001, totalElapsedDays / totalDays));
-    }
+    const elapsedRatio =
+      tDate < sDate
+        ? 0.001
+        : tDate > eDate
+          ? 1.0
+          : Math.min(
+              1.0,
+              Math.max(
+                0.001,
+                (Math.max(0, Math.round((tDate.getTime() - sDate.getTime()) / (1000 * 60 * 60 * 24))) + fractionToday) /
+                  totalDays
+              )
+            );
 
     const totalComboSales = Math.round(result.reduce((sum, r) => sum + (r.combo_sales || 0), 0));
     const totalProductSales = Math.round(result.reduce((sum, r) => sum + (r.product_sales || 0), 0));

@@ -7,7 +7,7 @@ import { registerExportRoutes } from './routes/export.routes.js';
 import { registerCvRoutes } from './routes/cv.routes.js';
 import { registerCvTipRoutes } from './routes/cv-tip.routes.js';
 import { registerCvPaystubRoutes } from './routes/cv-paystub.routes.js';
-import { registerCvSpeedRoutes, cvSpeedRoutes } from './routes/cv-speed.routes.js';
+import { registerCvSpeedRoutes } from './routes/cv-speed.routes.js';
 import { registerBkRoutes } from './routes/bk.routes.js';
 import { registerPackageAuditRoutes } from './routes/package-audit.routes.js';
 import { calculateBookerSalaryStats } from './services/salary-calculator.js';
