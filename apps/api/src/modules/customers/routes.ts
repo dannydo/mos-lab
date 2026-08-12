@@ -146,7 +146,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const sortParam = (sortField || sort || 'id_desc') as string;
 
       // Determine what joins and select fields we need in the inner query to optimize performance
-      const _needContact = search && search.trim() !== '';
       const needServiceBalance = bucket && bucket !== 'ALL';
 
       const needSpent =
@@ -174,6 +173,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // Pre-compute allowedUserIds before constructing innerJoins to push down predicates
       let allowedUserIds: number[] | null = null;
       let excludedUserIds: number[] | null = null;
+      // A NEW_LOCA request needs this set both while narrowing pre-filters and while
+      // building the final SQL predicate. Resolve it once to avoid repeating its UNION query.
+      let newLocaUserIdsForRequest: number[] | null = null;
+      const resolveNewLocaUserIds = async (): Promise<number[]> => {
+        if (newLocaUserIdsForRequest === null) {
+          newLocaUserIdsForRequest = await getNewLocaUserIds(dateFrom, dateTo);
+        }
+        return newLocaUserIdsForRequest;
+      };
 
       if (ids && ids.trim() !== '') {
         allowedUserIds = ids
@@ -291,7 +299,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       if (bucket === 'NEW_LOCA') {
-        const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
+        const newLocaUserIds = await resolveNewLocaUserIds();
         if (newLocaUserIds.length === 0) {
           return {
             data: [],
@@ -616,7 +624,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         } else if (bStr === 'NOT_COMBO_LIVE') {
           innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
         } else if (bStr === 'NEW_LOCA') {
-          const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
+          const newLocaUserIds = await resolveNewLocaUserIds();
           if (newLocaUserIds.length === 0) {
             innerWhereClauses.push('1 = 0');
           } else {
@@ -2560,7 +2568,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const limitNum = parseInt(limit, 10) || 20;
 
     try {
-      const _needContact = search && search.trim() !== '';
       const needServiceBalance = bucket && bucket !== 'ALL';
       const needSpent =
         (totalSpentMin !== undefined && totalSpentMin !== '') || (totalSpentMax !== undefined && totalSpentMax !== '');
@@ -5525,8 +5532,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.get('/customers/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const customerId = parseInt(id, 10);
-    const user = request.user as { id: number; role: string };
-
     if (isNaN(customerId)) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
@@ -5604,8 +5609,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.get('/customers/:id/history', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const customerId = parseInt(id, 10);
-    const user = request.user as { id: number; role: string };
-
     if (isNaN(customerId)) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
@@ -5783,8 +5786,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.get('/customers/:id/detailed', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const customerId = parseInt(id, 10);
-    const user = request.user as { id: number; role: string };
-
     if (isNaN(customerId)) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
@@ -6397,6 +6398,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
       ]);
 
       const auditCountMap = new Map<number, number>(auditLogCounts.map((item) => [item.orderId, item._count.id]));
+      const orderServicesByOrderId = new Map<number, SafeAny[]>();
+      for (const orderService of orderServicesDetails) {
+        const orderId = Number(orderService.order_id);
+        const services = orderServicesByOrderId.get(orderId) || [];
+        services.push(orderService);
+        orderServicesByOrderId.set(orderId, services);
+      }
 
       const staffUserIds = new Set<number>();
       for (const b of bookingsRaw) {
@@ -6442,7 +6450,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       const formattedBookings = bookingsRaw.map((b) => {
-        const orderSvs = orderServicesDetails.filter((os) => Number(os.order_id) === Number(b.id));
+        const orderSvs = orderServicesByOrderId.get(Number(b.id)) || [];
         const rawCheckIn = orderSvs.find((os) => os.check_in_staff_id && os.check_in_staff_id > 0)?.check_in_staff_id;
         const rawCheckOut = orderSvs.find(
           (os) => os.check_out_staff_id && os.check_out_staff_id > 0
@@ -6722,7 +6730,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         })(),
         tipTransactions: completedOrders.map((o) => {
           const payInfo = orderPaymentMap.get(Number(o.id));
-          const orderSvs = orderServicesDetails.filter((os) => Number(os.order_id) === Number(o.id));
+          const orderSvs = orderServicesByOrderId.get(Number(o.id)) || [];
           const checkOutStaffId = orderSvs.find((os) => os.check_out_staff_id)?.check_out_staff_id;
           const firstCvStaffId = o.technicianId || orderSvs.find((os) => os.assigned_staff_id)?.assigned_staff_id;
 
@@ -6744,7 +6752,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }),
         revenueTransactions: completedOrders.map((o) => {
           const payInfo = orderPaymentMap.get(Number(o.id));
-          const orderSvs = orderServicesDetails.filter((os) => Number(os.order_id) === Number(o.id));
+          const orderSvs = orderServicesByOrderId.get(Number(o.id)) || [];
           const checkOutStaffId = orderSvs.find((os) => os.check_out_staff_id)?.check_out_staff_id;
           const firstCvStaffId = o.technicianId || orderSvs.find((os) => os.assigned_staff_id)?.assigned_staff_id;
 
@@ -7099,6 +7107,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       const auditCountMap = new Map<number, number>(auditLogCounts.map((item) => [item.orderId, item._count.id]));
+      const orderServicesByOrderId = new Map<number, SafeAny[]>();
+      for (const orderService of orderServicesDetails) {
+        const orderId = Number(orderService.order_id);
+        const services = orderServicesByOrderId.get(orderId) || [];
+        services.push(orderService);
+        orderServicesByOrderId.set(orderId, services);
+      }
 
       // Collect staff IDs for name lookup
       const staffUserIds = new Set<number>();
@@ -7131,7 +7146,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       );
 
       const items = bookingsRaw.map((b) => {
-        const orderSvs = orderServicesDetails.filter((os) => Number(os.order_id) === Number(b.id));
+        const orderSvs = orderServicesByOrderId.get(Number(b.id)) || [];
         const rawCheckIn = orderSvs.find((os) => os.check_in_staff_id && os.check_in_staff_id > 0)?.check_in_staff_id;
         const rawCheckOut = orderSvs.find(
           (os) => os.check_out_staff_id && os.check_out_staff_id > 0
@@ -8841,17 +8856,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
             // Check if CV is actually available now
             const isAvailableNow = staffStatus ? staffStatus.liveStatus === 'IDLE' : true;
 
-            const customerIds = Array.from(
-              new Set(upcomingStoreOrders.map((o: SafeAny) => Number(o.userId)).filter(Boolean))
-            );
-            const phoneMap = new Map<number, string>();
-            // Note: In actual implementation, this part would be pre-calculated outside the loop for efficiency.
-
             // Calculate estimated wait time based on actual real booking schedule mapping for queue position
-            let estimatedWaitMinutes: number | null = null;
-            let mappedBookingTime: string | null = null;
-
-            if (isLockedForBooking && nextBookingInMinutes != null) {
+            let estimatedWaitMinutes: number | null;
+            let mappedBookingTime: string | null;
+            if (isLockedForBooking && nextBookingInMinutes !== null && nextBooking) {
               estimatedWaitMinutes = nextBookingInMinutes;
               mappedBookingTime = nextBooking.bookStartStr ? String(nextBooking.bookStartStr).slice(11, 16) : null;
             } else if (storeUpcomingBookings[idx]) {

@@ -1774,8 +1774,6 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
   fastify.get('/customers/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const customerId = parseInt(id, 10);
-    const user = request.user as { id: number; role: string };
-
     if (isNaN(customerId)) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
@@ -1853,8 +1851,6 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
   fastify.get('/customers/:id/history', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const customerId = parseInt(id, 10);
-    const user = request.user as { id: number; role: string };
-
     if (isNaN(customerId)) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
@@ -2013,8 +2009,6 @@ export async function registerCustomerBaseRoutes(fastify: FastifyInstance) {
   fastify.get('/customers/:id/detailed', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const customerId = parseInt(id, 10);
-    const user = request.user as { id: number; role: string };
-
     if (isNaN(customerId)) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }

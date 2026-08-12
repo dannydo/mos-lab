@@ -93,8 +93,7 @@ export class CvAttendanceService {
 
     // 4. Fetch approved & pending leave requests from staff_day_off
     const dayOffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-      SELECT sdo.from_user_id as userId, sdo.note, sdo.attribute_option_id as attributeOptionId,
-             DATEDIFF(sdo.from_date, sdo.date_created) as daysAhead
+      SELECT sdo.from_user_id as userId, sdo.note, sdo.attribute_option_id as attributeOptionId
       FROM staff_day_off sdo
       WHERE sdo.from_date <= '${targetDateStr}' AND COALESCE(sdo.to_date, sdo.from_date) >= '${targetDateStr}'
         AND sdo.request_state IN ('Approved', 'Submitted', 'Pending')
@@ -105,7 +104,6 @@ export class CvAttendanceService {
     dayOffRows.forEach((r) => {
       const uid = Number(r.userId);
       const attrOptId = Number(r.attributeOptionId || 0);
-      const daysAhead = Number(r.daysAhead || 0);
       const noteText = String(r.note || r.reason || '').trim();
 
       const isWeeklyOffRecord = attrOptId === 110 || /hàng tuần|off tuần/i.test(noteText);
