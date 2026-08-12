@@ -56,10 +56,16 @@ ssh -o StrictHostKeyChecking=no live-wings "
   pnpm --filter @mos-lab/web build
 
   echo '[VPS] Restarting Backend API via PM2...'
-  DEPLOYED_AT=\$(TZ=Asia/Ho_Chi_Minh date -Iseconds) pm2 restart mos-lab-api --update-env
+  DEPLOYED_AT=\$(TZ=Asia/Ho_Chi_Minh date -Iseconds)
+  DEPLOYED_AT=\"\$DEPLOYED_AT\" pm2 restart mos-lab-api --update-env
+  echo \"[VPS] Release marker updated: \$DEPLOYED_AT\"
 
   echo '[VPS] VPS Deployment completed successfully!'
 "
+
+echo -e "${YELLOW}Verifying production release marker...${NC}"
+curl --fail --silent --show-error --retry 6 --retry-delay 2 https://api.lab.masteros.app/api/release
+echo
 
 echo -e "${GREEN}=== 🎉 DEPLOYMENT WORKFLOW COMPLETED SUCCESSFULLY! ===${NC}"
 echo -e "${GREEN}Frontend is building on Vercel: https://lab.masteros.app${NC}"

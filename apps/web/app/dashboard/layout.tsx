@@ -94,10 +94,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (loading || !user) return;
-    apiClient.release
-      .get()
-      .then((release) => setDeployedAt(release.deployedAt))
-      .catch(() => setDeployedAt(null));
+
+    const fetchReleaseMarker = () => {
+      apiClient.release
+        .get()
+        .then((release) => setDeployedAt(release.deployedAt))
+        .catch(() => setDeployedAt(null));
+    };
+
+    fetchReleaseMarker();
+    const interval = setInterval(fetchReleaseMarker, 60_000);
+    return () => clearInterval(interval);
   }, [loading, user]);
 
   const fetchPendingAllocationsCount = useCallback(async () => {
