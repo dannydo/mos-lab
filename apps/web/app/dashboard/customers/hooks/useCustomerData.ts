@@ -138,14 +138,16 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
 
   // Reset random selection when filterParams change (Option B)
   const lastFilterParamsRef = useRef(filterParams);
+  const setRandomSelectedIds = randomSelectorHook.setRandomSelectedIds;
+  const setSelectedRowKeys = assignmentHook.setSelectedRowKeys;
   useEffect(() => {
     if (lastFilterParamsRef.current !== filterParams) {
       lastFilterParamsRef.current = filterParams;
       setActiveRandomIds(null);
-      randomSelectorHook.setRandomSelectedIds(null);
-      assignmentHook.setSelectedRowKeys([]);
+      setRandomSelectedIds(null);
+      setSelectedRowKeys([]);
     }
-  }, [filterParams, randomSelectorHook, assignmentHook]);
+  }, [filterParams, setRandomSelectedIds, setSelectedRowKeys]);
 
   // Staff list fetching for allocation modal
   const [staffList, setStaffList] = useState<SafeAny[]>([]);

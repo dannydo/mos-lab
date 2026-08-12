@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Drawer, Spin, Tag, Tooltip, Button, Space, Table, Pagination, Input, Radio, Typography } from 'antd';
 import {
   HistoryOutlined,
@@ -69,12 +69,38 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
 }) => {
   const [filterAction, setFilterAction] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const searchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const searchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [nowTimestamp, setNowTimestamp] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!open) return;
+
+    const updateTimestamp = () => setNowTimestamp(Date.now());
+    updateTimestamp();
+    const interval = setInterval(updateTimestamp, 60_000);
+
+    return () => clearInterval(interval);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open && searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+      searchTimerRef.current = null;
+    }
+
+    return () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = null;
+      }
+    };
+  }, [open]);
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(() => {
+      searchTimerRef.current = null;
       fetchAssignmentHistory(1, val, filterAction);
     }, 350);
   };
@@ -83,8 +109,6 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
     setFilterAction(val);
     fetchAssignmentHistory(1, searchQuery, val);
   };
-
-  const nowTimestamp = useMemo(() => Date.now(), []);
 
   const getActionBadge = (item: SafeAny) => {
     if (item.isUndone) {
