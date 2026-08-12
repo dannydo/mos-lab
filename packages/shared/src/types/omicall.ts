@@ -2,7 +2,7 @@ export interface OmiCallDiagnosticResult {
   status: 'ok' | 'error' | 'simulation_fallback';
   code?: number;
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 export interface OmiCallConfigPayload {
@@ -25,7 +25,7 @@ export interface OmiCallLogPayload {
   laughCount: number;
   laughCountAgent: number;
   laughCountCustomer: number;
-  laughTimestamps: any[];
+  laughTimestamps: unknown[];
   customerSatisfactionScore: number | null;
   customerSentiment: string | null;
   satisfactionAnalysis: string | null;

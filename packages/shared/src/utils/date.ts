@@ -11,13 +11,14 @@ export const VIETNAM_OFFSET = '+07:00';
  */
 export function toVietnamISO(input: Date | string | number | null | undefined): string | null {
   if (!input) return null;
-  try {
-    const d = input instanceof Date ? input : new Date(input);
-    if (isNaN(d.getTime())) return null;
-    return d.toISOString().replace('Z', VIETNAM_OFFSET);
-  } catch (_) {
-    return null;
-  }
+  const date = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(date.getTime())) return null;
+
+  // `toISOString()` always serializes in UTC. Shift the instant before
+  // serializing so the written date/time actually represents UTC+7, rather
+  // than merely relabeling a UTC timestamp with a +07:00 suffix.
+  const vietnamLocalTime = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+  return vietnamLocalTime.toISOString().replace('Z', VIETNAM_OFFSET);
 }
 
 /**

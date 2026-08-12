@@ -75,7 +75,7 @@ export interface QaDailyAudit {
   notes?: string;
   createdAt: string;
   items: QaAuditItemRecord[];
-  itemSnapshot?: Record<string, any>;
+  itemSnapshot?: Record<string, unknown>;
   sectionsSnapshot?: QaChecklistSection[];
   requireAllPhotos?: boolean;
   isDeleted?: boolean;
