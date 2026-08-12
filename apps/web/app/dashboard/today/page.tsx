@@ -40,9 +40,17 @@ import TodayStats from './components/TodayStats';
 import TodayBookingsTable from './components/TodayBookingsTable';
 import TodayComingTable from './components/TodayComingTable';
 import TodayStaffAttendance from './components/TodayStaffAttendance';
-import TodayCalendarSummary from './components/TodayCalendarSummary';
-import BookerTeamConfigModal from './components/BookerTeamConfigModal';
 import { PageHeader } from '../../../components/ui';
+
+const TodayCalendarSummary = dynamic(() => import('./components/TodayCalendarSummary'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-64 items-center justify-center" aria-label="Đang tải lịch tổng quan">
+      <Spin size="large" />
+    </div>
+  ),
+});
+const BookerTeamConfigModal = dynamic(() => import('./components/BookerTeamConfigModal'), { ssr: false });
 
 const RealtimeClock = React.memo(() => {
   const [time, setTime] = useState('');
@@ -523,14 +531,16 @@ export default function TodayDashboard() {
       />
 
       {/* Booker Team Config Modal */}
-      <BookerTeamConfigModal
-        open={data.teamModalVisible}
-        onClose={() => data.setTeamModalVisible(false)}
-        teamConfig={data.teamConfig}
-        onSave={data.saveTeamConfig}
-        themeMode={themeMode}
-        token={token}
-      />
+      {data.teamModalVisible && (
+        <BookerTeamConfigModal
+          open
+          onClose={() => data.setTeamModalVisible(false)}
+          teamConfig={data.teamConfig}
+          onSave={data.saveTeamConfig}
+          themeMode={themeMode}
+          token={token}
+        />
+      )}
 
       <style jsx global>{`
         /* Custom styles for Ant Design Table under Dark & Light Mode */
