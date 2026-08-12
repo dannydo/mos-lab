@@ -16,7 +16,7 @@ model CrmStaff {
   role         String   @default("telesales") @db.VarChar(20)
   isActive     Boolean  @default(true) @map("is_active") @db.TinyInt
   createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
-  
+
   // HR System Extensions
   email            String?   @db.VarChar(100)
   phone            String?   @db.VarChar(20)
@@ -34,15 +34,15 @@ model CrmStaff {
   omicallAutoInit  Boolean?  @map("omicall_auto_init") @db.TinyInt
   baseSalary       Float?    @map("base_salary")
   hourlyWage       Float?    @map("hourly_wage")
-  seniorityOffset  Int?      @map("seniority_offset") @default(0)
+  seniorityOffset  Int?      @default(0) @map("seniority_offset")
 
   customerAssignments CrmCustomerAssignment[]
-  prevHistory         CrmAssignmentHistory[] @relation("PrevStaffHistory")
-  newHistory          CrmAssignmentHistory[] @relation("NewStaffHistory")
-  assignedHistory     CrmAssignmentHistory[] @relation("AssignerHistory")
-  assignedBatches     CrmAllocationBatch[]   @relation("BatchAssigner")
-  receivedBatches     CrmAllocationBatch[]   @relation("BatchBooker")
-  createdCampaigns    CrmCustomCampaign[]    @relation("CampaignCreator")
+  prevHistory         CrmAssignmentHistory[]  @relation("PrevStaffHistory")
+  newHistory          CrmAssignmentHistory[]  @relation("NewStaffHistory")
+  assignedHistory     CrmAssignmentHistory[]  @relation("AssignerHistory")
+  assignedBatches     CrmAllocationBatch[]    @relation("BatchAssigner")
+  receivedBatches     CrmAllocationBatch[]    @relation("BatchBooker")
+  createdCampaigns    CrmCustomCampaign[]     @relation("CampaignCreator")
 
   @@map("crm_staff")
 }
@@ -122,16 +122,16 @@ model CrmCustomerAssignment {
 }
 
 model CrmRole {
-  key         String   @id @db.VarChar(20)
-  name        String   @db.VarChar(100)
-  color       String   @default("default") @db.VarChar(20)
-  viewKPI     Boolean  @default(false) @map("view_kpi") @db.TinyInt
-  viewTeamKPI Boolean  @default(false) @map("view_team_kpi") @db.TinyInt
-  manageStaff Boolean  @default(false) @map("manage_staff") @db.TinyInt
-  omicallAutoInit Boolean @default(false) @map("omicall_auto_init") @db.TinyInt
-  isSystem    Boolean  @default(false) @map("is_system") @db.TinyInt
-  description String?  @db.Text
-  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  key             String   @id @db.VarChar(20)
+  name            String   @db.VarChar(100)
+  color           String   @default("default") @db.VarChar(20)
+  viewKPI         Boolean  @default(false) @map("view_kpi") @db.TinyInt
+  viewTeamKPI     Boolean  @default(false) @map("view_team_kpi") @db.TinyInt
+  manageStaff     Boolean  @default(false) @map("manage_staff") @db.TinyInt
+  omicallAutoInit Boolean  @default(false) @map("omicall_auto_init") @db.TinyInt
+  isSystem        Boolean  @default(false) @map("is_system") @db.TinyInt
+  description     String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
   @@map("crm_roles")
 }
@@ -153,9 +153,9 @@ model CrmAssignmentHistory {
   isUndone            Boolean   @default(false) @map("is_undone") @db.TinyInt
   undoneAt            DateTime? @map("undone_at") @db.DateTime(0)
 
-  prevStaff           CrmStaff? @relation("PrevStaffHistory", fields: [prevStaffId], references: [id], onDelete: SetNull)
-  newStaff            CrmStaff? @relation("NewStaffHistory", fields: [newStaffId], references: [id], onDelete: SetNull)
-  assigner            CrmStaff  @relation("AssignerHistory", fields: [assignedBy], references: [id], onDelete: Cascade)
+  prevStaff CrmStaff? @relation("PrevStaffHistory", fields: [prevStaffId], references: [id], onDelete: SetNull)
+  newStaff  CrmStaff? @relation("NewStaffHistory", fields: [newStaffId], references: [id], onDelete: SetNull)
+  assigner  CrmStaff  @relation("AssignerHistory", fields: [assignedBy], references: [id], onDelete: Cascade)
 
   @@index([batchId])
   @@index([legacyUserId])
@@ -168,32 +168,32 @@ model CrmAssignmentHistory {
 model CrmOmicallLog {
   id                Int       @id @default(autoincrement())
   callUuid          String    @unique @map("call_uuid") @db.VarChar(100)
-  direction         String    @db.VarChar(10)           // 'outbound' | 'inbound'
-  status            String    @db.VarChar(20)           // 'ANSWER' | 'NOANSWER' | 'BUSY' | 'CANCEL'
+  direction         String    @db.VarChar(10) // 'outbound' | 'inbound'
+  status            String    @db.VarChar(20) // 'ANSWER' | 'NOANSWER' | 'BUSY' | 'CANCEL'
   sourceNumber      String    @map("source_number") @db.VarChar(20)
   destinationNumber String    @map("destination_number") @db.VarChar(20)
-  duration          Int       @default(0)               // total seconds
+  duration          Int       @default(0) // total seconds
   billSec           Int       @default(0) @map("bill_sec") // billable seconds
   recordingUrl      String?   @map("recording_url") @db.VarChar(500)
   timeStartCall     DateTime? @map("time_start_call") @db.DateTime(0)
   timeEndCall       DateTime? @map("time_end_call") @db.DateTime(0)
 
   // Linking
-  staffId           Int?      @map("staff_id")          // matched CRM staff
-  legacyUserId      Int?      @map("legacy_user_id")    // matched customer
-  callLogId         Int?      @map("call_log_id")       // linked CrmCallLog (notes/tags)
+  staffId      Int? @map("staff_id") // matched CRM staff
+  legacyUserId Int? @map("legacy_user_id") // matched customer
+  callLogId    Int? @map("call_log_id") // linked CrmCallLog (notes/tags)
 
   // AI Analysis
-  analysisStatus    String    @default("PENDING") @map("analysis_status") @db.VarChar(20)
-                              // PENDING → WAITING_RECORDING → PROCESSING → DONE → FAILED | SKIPPED
-  analysisRetryCount Int      @default(0) @map("analysis_retry_count")
-  analysisError     String?   @map("analysis_error") @db.Text
-  laughCount        Int?      @map("laugh_count")
-  laughCountAgent     Int?      @map("laugh_count_agent")
-  laughCountCustomer  Int?      @map("laugh_count_customer")
-  laughTimestamps   String?   @map("laugh_timestamps") @db.Text
-                              // JSON: [{"start":12.5,"end":14.2,"speaker":"agent"|"customer","confidence":0.92}, ...]
-  transcript        String?   @db.LongText
+  analysisStatus     String  @default("PENDING") @map("analysis_status") @db.VarChar(20)
+  // PENDING → WAITING_RECORDING → PROCESSING → DONE → FAILED | SKIPPED
+  analysisRetryCount Int     @default(0) @map("analysis_retry_count")
+  analysisError      String? @map("analysis_error") @db.Text
+  laughCount         Int?    @map("laugh_count")
+  laughCountAgent    Int?    @map("laugh_count_agent")
+  laughCountCustomer Int?    @map("laugh_count_customer")
+  laughTimestamps    String? @map("laugh_timestamps") @db.Text
+  // JSON: [{"start":12.5,"end":14.2,"speaker":"agent"|"customer","confidence":0.92}, ...]
+  transcript         String? @db.LongText
 
   // Customer Satisfaction (CSAT) Evaluation Fields
   customerSatisfactionScore Int?    @map("customer_satisfaction_score")
@@ -201,23 +201,23 @@ model CrmOmicallLog {
   satisfactionAnalysis      String? @map("satisfaction_analysis") @db.Text
 
   // Happy Call Status (thay thế isHappyCall boolean)
-  happyCallStatus   String    @default("NONE") @map("happy_call_status") @db.VarChar(20)
-                              // NONE | APPROVED | PENDING_APPROVAL | REJECTED
-  happyCallReason   String?   @map("happy_call_reason") @db.VarChar(30)
-                              // 'auto_180s' | 'auto_laughter_30s' | 'manual_approved' | null
+  happyCallStatus String  @default("NONE") @map("happy_call_status") @db.VarChar(20)
+  // NONE | APPROVED | PENDING_APPROVAL | REJECTED
+  happyCallReason String? @map("happy_call_reason") @db.VarChar(30)
+  // 'auto_180s' | 'auto_laughter_30s' | 'manual_approved' | null
 
   // QA Verification (Positive Feedback per laugh)
-  qaVerified        Boolean   @default(false) @map("qa_verified") @db.TinyInt
-  qaVerifiedBy      Int?      @map("qa_verified_by")
-  qaVerifiedAt      DateTime? @map("qa_verified_at") @db.DateTime(0)
-  qaLaughVerifications String? @map("qa_laugh_verifications") @db.Text
-                              // JSON: [{"timestamp":12.5,"verified":true}, {"timestamp":45.8,"verified":false}]
-  qaNotes           String?   @map("qa_notes") @db.Text
-  qaScore           Int?      @map("qa_score")
-  qaTags            String?   @map("qa_tags") @db.Text
-  qaChecklist       String?   @map("qa_checklist") @db.Text
+  qaVerified           Boolean   @default(false) @map("qa_verified") @db.TinyInt
+  qaVerifiedBy         Int?      @map("qa_verified_by")
+  qaVerifiedAt         DateTime? @map("qa_verified_at") @db.DateTime(0)
+  qaLaughVerifications String?   @map("qa_laugh_verifications") @db.Text
+  // JSON: [{"timestamp":12.5,"verified":true}, {"timestamp":45.8,"verified":false}]
+  qaNotes              String?   @map("qa_notes") @db.Text
+  qaScore              Int?      @map("qa_score")
+  qaTags               String?   @map("qa_tags") @db.Text
+  qaChecklist          String?   @map("qa_checklist") @db.Text
 
-  createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
   @@index([staffId])
   @@index([legacyUserId])
@@ -233,26 +233,26 @@ model CrmOmicallLog {
 // OmiCall Config — API keys, extension mapping
 // ═══════════════════════════════════════════
 model CrmOmicallConfig {
-  id           Int    @id @default(autoincrement())
-  staffId      Int    @unique @map("staff_id")
-  extension    String @db.VarChar(20)          // SIP extension number
-  phoneNumber  String? @map("phone_number") @db.VarChar(20) // Outbound caller ID
-  sipPassword  String? @map("sip_password") @db.VarChar(255) // SIP password (đã mã hóa)
+  id          Int     @id @default(autoincrement())
+  staffId     Int     @unique @map("staff_id")
+  extension   String  @db.VarChar(20) // SIP extension number
+  phoneNumber String? @map("phone_number") @db.VarChar(20) // Outbound caller ID
+  sipPassword String? @map("sip_password") @db.VarChar(255) // SIP password (đã mã hóa)
 
   @@map("crm_omicall_config")
 }
 
 model CrmMissedLog {
-  id             Int      @id @default(autoincrement())
-  orderId        Int      @unique @map("order_id")
-  reasonCategory String   @map("reason_category") @db.VarChar(50)
-  responsibility String   @db.VarChar(50)
-  note           String?  @db.Text
-  followUpStatus String   @default("PENDING") @map("follow_up_status") @db.VarChar(30)
+  id             Int       @id @default(autoincrement())
+  orderId        Int       @unique @map("order_id")
+  reasonCategory String    @map("reason_category") @db.VarChar(50)
+  responsibility String    @db.VarChar(50)
+  note           String?   @db.Text
+  followUpStatus String    @default("PENDING") @map("follow_up_status") @db.VarChar(30)
   callbackDate   DateTime? @map("callback_date") @db.Date
-  createdBy      String?  @map("created_by") @db.VarChar(100)
-  createdAt      DateTime @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt      DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+  createdBy      String?   @map("created_by") @db.VarChar(100)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
   @@index([reasonCategory])
   @@index([responsibility])
@@ -265,23 +265,23 @@ model CrmMissedLog {
 // Team Configuration — Unified team/group management
 // ═══════════════════════════════════════════
 model CrmTeam {
-  id            Int             @id @default(autoincrement())
-  code          String          @unique @db.VarChar(30)        // CC, CV, BK, BK_TELESALES...
-  name          String          @db.VarChar(100)               // Display name
-  description   String?         @db.Text
-  color         String?         @db.VarChar(30)                // Hex or named color
-  icon          String?         @db.VarChar(50)                // Emoji or icon name
-  sortOrder     Int             @default(0) @map("sort_order")
-  isActive      Boolean         @default(true) @map("is_active") @db.TinyInt
-  parentTeamId  Int?            @map("parent_team_id")
-  metadata      String?         @db.Text                       // JSON: salary config, bonus formula
-  createdAt     DateTime        @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt     DateTime        @updatedAt @map("updated_at") @db.DateTime(0)
+  id           Int      @id @default(autoincrement())
+  code         String   @unique @db.VarChar(30) // CC, CV, BK, BK_TELESALES...
+  name         String   @db.VarChar(100) // Display name
+  description  String?  @db.Text
+  color        String?  @db.VarChar(30) // Hex or named color
+  icon         String?  @db.VarChar(50) // Emoji or icon name
+  sortOrder    Int      @default(0) @map("sort_order")
+  isActive     Boolean  @default(true) @map("is_active") @db.TinyInt
+  parentTeamId Int?     @map("parent_team_id")
+  metadata     String?  @db.Text // JSON: salary config, bonus formula
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
   // Self-referencing hierarchy
-  parent        CrmTeam?        @relation("TeamHierarchy", fields: [parentTeamId], references: [id], onDelete: SetNull)
-  children      CrmTeam[]       @relation("TeamHierarchy")
-  members       CrmTeamMember[]
+  parent   CrmTeam?        @relation("TeamHierarchy", fields: [parentTeamId], references: [id], onDelete: SetNull)
+  children CrmTeam[]       @relation("TeamHierarchy")
+  members  CrmTeamMember[]
 
   @@index([parentTeamId])
   @@index([isActive])
@@ -289,20 +289,20 @@ model CrmTeam {
 }
 
 model CrmTeamMember {
-  id              Int       @id @default(autoincrement())
-  teamId          Int       @map("team_id")
-  legacyStaffId   Int       @map("legacy_staff_id")
-  crmStaffId      Int?      @map("crm_staff_id")
-  displayName     String?   @map("display_name") @db.VarChar(100)
-  role            String?   @db.VarChar(20)                  // leader, member, trainee
-  isActive        Boolean   @default(true) @map("is_active") @db.TinyInt
-  sortOrder       Int       @default(0) @map("sort_order")
-  joinedAt        DateTime  @default(now()) @map("joined_at") @db.DateTime(0)
-  leftAt          DateTime? @map("left_at") @db.DateTime(0)
-  createdAt       DateTime  @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+  id            Int       @id @default(autoincrement())
+  teamId        Int       @map("team_id")
+  legacyStaffId Int       @map("legacy_staff_id")
+  crmStaffId    Int?      @map("crm_staff_id")
+  displayName   String?   @map("display_name") @db.VarChar(100)
+  role          String?   @db.VarChar(20) // leader, member, trainee
+  isActive      Boolean   @default(true) @map("is_active") @db.TinyInt
+  sortOrder     Int       @default(0) @map("sort_order")
+  joinedAt      DateTime  @default(now()) @map("joined_at") @db.DateTime(0)
+  leftAt        DateTime? @map("left_at") @db.DateTime(0)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
-  team            CrmTeam   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  team CrmTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, legacyStaffId], name: "teamId_legacyStaffId")
   @@index([legacyStaffId])
@@ -315,20 +315,20 @@ model CrmTeamMember {
 // Booking Audit Logs — Trace changes & cross-booker cancellations
 // ═══════════════════════════════════════════
 model CrmBookingLog {
-  id                  Int      @id @default(autoincrement())
-  orderId             Int      @map("order_id")
-  actionType          String   @map("action_type") @db.VarChar(30) // CANCEL, RESCHEDULE, CHANGE_CV, CHANGE_STORE, EDIT
-  actorStaffId        Int      @map("actor_staff_id")
-  actorStaffName      String?  @map("actor_staff_name") @db.VarChar(100)
-  originalStaffId     Int?     @map("original_staff_id")
-  originalStaffName   String?  @map("original_staff_name") @db.VarChar(100)
-  isCrossAction       Boolean  @default(false) @map("is_cross_action")
-  reasonCategory      String?  @map("reason_category") @db.VarChar(100)
-  reasonNote          String?  @map("reason_note") @db.Text
-  oldDataJson         String?  @map("old_data_json") @db.Text
-  newDataJson         String?  @map("new_data_json") @db.Text
-  ipAddress           String?  @map("ip_address") @db.VarChar(45)
-  dateCreated         DateTime @default(now()) @map("date_created") @db.DateTime(0)
+  id                Int      @id @default(autoincrement())
+  orderId           Int      @map("order_id")
+  actionType        String   @map("action_type") @db.VarChar(30) // CANCEL, RESCHEDULE, CHANGE_CV, CHANGE_STORE, EDIT
+  actorStaffId      Int      @map("actor_staff_id")
+  actorStaffName    String?  @map("actor_staff_name") @db.VarChar(100)
+  originalStaffId   Int?     @map("original_staff_id")
+  originalStaffName String?  @map("original_staff_name") @db.VarChar(100)
+  isCrossAction     Boolean  @default(false) @map("is_cross_action")
+  reasonCategory    String?  @map("reason_category") @db.VarChar(100)
+  reasonNote        String?  @map("reason_note") @db.Text
+  oldDataJson       String?  @map("old_data_json") @db.Text
+  newDataJson       String?  @map("new_data_json") @db.Text
+  ipAddress         String?  @map("ip_address") @db.VarChar(45)
+  dateCreated       DateTime @default(now()) @map("date_created") @db.DateTime(0)
 
   @@index([orderId])
   @@index([actorStaffId])
@@ -342,25 +342,25 @@ model CrmBookingLog {
 // Customer Allocation System — 2-step verification, 24h countdown, 30-day retention
 // ═══════════════════════════════════════════
 model CrmAllocationBatch {
-  id                 Int       @id @default(autoincrement())
-  batchCode          String    @unique @map("batch_code") @db.VarChar(50)
-  campaignId         Int?      @map("campaign_id")
-  assignerId         Int       @map("assigner_id")
-  bookerId           Int       @map("booker_id")
-  totalCount         Int       @map("total_count")
-  status             String    @default("PENDING_ACCEPT") @db.VarChar(20) // PENDING_ACCEPT | ACCEPTED | DECLINED | EXPIRED | RECALLED
-  declineReason      String?   @map("decline_reason") @db.Text
-  declineCategory    String?   @map("decline_category") @db.VarChar(100)
-  declineNote        String?   @map("decline_note") @db.Text
-  expiresAt          DateTime  @map("expires_at") @db.DateTime(0) // 24h countdown target
-  acceptedAt         DateTime? @map("accepted_at") @db.DateTime(0)
-  declinedAt         DateTime? @map("declined_at") @db.DateTime(0)
-  recalledAt         DateTime? @map("recalled_at") @db.DateTime(0)
-  retentionExpiresAt DateTime? @map("retention_expires_at") @db.DateTime(0) // 30-day countdown target
-  sourceFilterSummary String?  @map("source_filter_summary") @db.Text
-  sourceFilterJson    String?  @map("source_filter_json") @db.Text
-  createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+  id                  Int       @id @default(autoincrement())
+  batchCode           String    @unique @map("batch_code") @db.VarChar(50)
+  campaignId          Int?      @map("campaign_id")
+  assignerId          Int       @map("assigner_id")
+  bookerId            Int       @map("booker_id")
+  totalCount          Int       @map("total_count")
+  status              String    @default("PENDING_ACCEPT") @db.VarChar(20) // PENDING_ACCEPT | ACCEPTED | DECLINED | EXPIRED | RECALLED
+  declineReason       String?   @map("decline_reason") @db.Text
+  declineCategory     String?   @map("decline_category") @db.VarChar(100)
+  declineNote         String?   @map("decline_note") @db.Text
+  expiresAt           DateTime  @map("expires_at") @db.DateTime(0) // 24h countdown target
+  acceptedAt          DateTime? @map("accepted_at") @db.DateTime(0)
+  declinedAt          DateTime? @map("declined_at") @db.DateTime(0)
+  recalledAt          DateTime? @map("recalled_at") @db.DateTime(0)
+  retentionExpiresAt  DateTime? @map("retention_expires_at") @db.DateTime(0) // 30-day countdown target
+  sourceFilterSummary String?   @map("source_filter_summary") @db.Text
+  sourceFilterJson    String?   @map("source_filter_json") @db.Text
+  createdAt           DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
   campaign CrmCustomCampaign?       @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   assigner CrmStaff                 @relation("BatchAssigner", fields: [assignerId], references: [id], onDelete: Cascade)
@@ -425,18 +425,18 @@ model CrmLocaTouchpoint {
 // ═══════════════════════════════════════════
 
 model CrmCustomCampaign {
-  id          Int       @id @default(autoincrement())
-  name        String    @db.VarChar(100)
-  slug        String    @unique @db.VarChar(100)
-  description String?   @db.Text
-  startDate   DateTime? @map("start_date") @db.Date
-  endDate     DateTime? @map("end_date") @db.Date
-  status      String    @default("ACTIVE") @db.VarChar(20) // DRAFT | SCHEDULED | ACTIVE | PAUSED | COMPLETED | ENDED | ARCHIVED
-  createdBy   Int?      @map("created_by")
-  assignedStaffIds String? @map("assigned_staff_ids") @db.Text
-  deletedAt   DateTime? @map("deleted_at") @db.DateTime(0)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+  id               Int       @id @default(autoincrement())
+  name             String    @db.VarChar(100)
+  slug             String    @unique @db.VarChar(100)
+  description      String?   @db.Text
+  startDate        DateTime? @map("start_date") @db.Date
+  endDate          DateTime? @map("end_date") @db.Date
+  status           String    @default("ACTIVE") @db.VarChar(20) // DRAFT | SCHEDULED | ACTIVE | PAUSED | COMPLETED | ENDED | ARCHIVED
+  createdBy        Int?      @map("created_by")
+  assignedStaffIds String?   @map("assigned_staff_ids") @db.Text
+  deletedAt        DateTime? @map("deleted_at") @db.DateTime(0)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
   creator           CrmStaff?               @relation("CampaignCreator", fields: [createdBy], references: [id], onDelete: SetNull)
   customers         CrmCampaignCustomer[]
@@ -536,24 +536,24 @@ model CrmCampaignTouchpointLog {
 // ═══════════════════════════════════════════
 
 model CrmHappyCallTask {
-  id                  Int       @id @default(autoincrement())
-  orderId             Int       @map("order_id")
-  customerId          Int       @map("customer_id")
-  assignedCsStaffId   Int?      @map("assigned_cs_staff_id")
-  status              String    @default("PENDING") @db.VarChar(20)
-  attemptCount        Int       @default(0) @map("attempt_count")
-  scheduledDate       DateTime  @map("scheduled_date") @db.Date
-  completedAt         DateTime? @map("completed_at") @db.DateTime(0)
-  checkoutDate        DateTime? @map("checkout_date") @db.DateTime(0)
-  technicianId        Int?      @map("technician_id")
-  ccInStaffId         Int?      @map("cc_in_staff_id")
-  ccOutStaffId        Int?      @map("cc_out_staff_id")
-  bookerStaffId       Int?      @map("booker_staff_id")
-  createdAt           DateTime  @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt           DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+  id                Int       @id @default(autoincrement())
+  orderId           Int       @map("order_id")
+  customerId        Int       @map("customer_id")
+  assignedCsStaffId Int?      @map("assigned_cs_staff_id")
+  status            String    @default("PENDING") @db.VarChar(20)
+  attemptCount      Int       @default(0) @map("attempt_count")
+  scheduledDate     DateTime  @map("scheduled_date") @db.Date
+  completedAt       DateTime? @map("completed_at") @db.DateTime(0)
+  checkoutDate      DateTime? @map("checkout_date") @db.DateTime(0)
+  technicianId      Int?      @map("technician_id")
+  ccInStaffId       Int?      @map("cc_in_staff_id")
+  ccOutStaffId      Int?      @map("cc_out_staff_id")
+  bookerStaffId     Int?      @map("booker_staff_id")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
-  surveyRating        CrmSurveyRating?
-  tickets             CrmCsTicket[]
+  surveyRating CrmSurveyRating?
+  tickets      CrmCsTicket[]
 
   @@index([orderId])
   @@index([customerId])
@@ -564,29 +564,29 @@ model CrmHappyCallTask {
 }
 
 model CrmSurveyRating {
-  id                      Int       @id @default(autoincrement())
-  happyCallTaskId         Int       @unique @map("happy_call_task_id")
-  orderId                 Int       @map("order_id")
-  customerId              Int       @map("customer_id")
-  overallRating           Int       @map("overall_rating") @db.TinyInt
-  technicianQualityRating Int?      @map("technician_quality_rating") @db.TinyInt
-  staffAttitudeRating     Int?      @map("staff_attitude_rating") @db.TinyInt
-  facilityRating          Int?      @map("facility_rating") @db.TinyInt
-  valueForMoneyRating     Int?      @map("value_for_money_rating") @db.TinyInt
-  checkInExperienceRating Int?      @map("check_in_experience_rating") @db.TinyInt
+  id                       Int      @id @default(autoincrement())
+  happyCallTaskId          Int      @unique @map("happy_call_task_id")
+  orderId                  Int      @map("order_id")
+  customerId               Int      @map("customer_id")
+  overallRating            Int      @map("overall_rating") @db.TinyInt
+  technicianQualityRating  Int?     @map("technician_quality_rating") @db.TinyInt
+  staffAttitudeRating      Int?     @map("staff_attitude_rating") @db.TinyInt
+  facilityRating           Int?     @map("facility_rating") @db.TinyInt
+  valueForMoneyRating      Int?     @map("value_for_money_rating") @db.TinyInt
+  checkInExperienceRating  Int?     @map("check_in_experience_rating") @db.TinyInt
   checkOutExperienceRating Int?     @map("check_out_experience_rating") @db.TinyInt
-  bookingExperienceRating Int?      @map("booking_experience_rating") @db.TinyInt
-  customerNote            String?   @map("customer_note") @db.Text
-  csNote                  String?   @map("cs_note") @db.Text
-  technicianId            Int?      @map("technician_id")
-  ccInStaffId             Int?      @map("cc_in_staff_id")
-  ccOutStaffId            Int?      @map("cc_out_staff_id")
-  bookerStaffId           Int?      @map("booker_staff_id")
-  createdAt               DateTime  @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt               DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+  bookingExperienceRating  Int?     @map("booking_experience_rating") @db.TinyInt
+  customerNote             String?  @map("customer_note") @db.Text
+  csNote                   String?  @map("cs_note") @db.Text
+  technicianId             Int?     @map("technician_id")
+  ccInStaffId              Int?     @map("cc_in_staff_id")
+  ccOutStaffId             Int?     @map("cc_out_staff_id")
+  bookerStaffId            Int?     @map("booker_staff_id")
+  createdAt                DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt                DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
-  happyCallTask           CrmHappyCallTask @relation(fields: [happyCallTaskId], references: [id], onDelete: Cascade)
-  tickets                 CrmCsTicket[]
+  happyCallTask CrmHappyCallTask @relation(fields: [happyCallTaskId], references: [id], onDelete: Cascade)
+  tickets       CrmCsTicket[]
 
   @@index([orderId])
   @@index([customerId])
@@ -594,31 +594,31 @@ model CrmSurveyRating {
 }
 
 model CrmCsTicket {
-  id                  Int       @id @default(autoincrement())
-  ticketCode          String    @unique @map("ticket_code") @db.VarChar(20)
-  surveyRatingId      Int?      @map("survey_rating_id")
-  happyCallTaskId     Int?      @map("happy_call_task_id")
-  orderId             Int?      @map("order_id")
-  customerId          Int?      @map("customer_id")
-  type                String    @db.VarChar(30)
-  priority            String    @default("MEDIUM") @db.VarChar(10)
-  status              String    @default("OPEN") @db.VarChar(20)
-  department          String?   @db.VarChar(20)
-  relatedStaffId      Int?      @map("related_staff_id")
-  assignedCsStaffId   Int?      @map("assigned_cs_staff_id")
-  description         String    @db.Text
-  slaDueDate          DateTime? @map("sla_due_date") @db.DateTime(0)
-  resolutionNote      String?   @map("resolution_note") @db.Text
-  actionPlan          String?   @map("action_plan") @db.Text
-  resolvedAt          DateTime? @map("resolved_at") @db.DateTime(0)
-  resolvedByStaffId   Int?      @map("resolved_by_staff_id")
-  createdAt           DateTime  @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt           DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+  id                Int       @id @default(autoincrement())
+  ticketCode        String    @unique @map("ticket_code") @db.VarChar(20)
+  surveyRatingId    Int?      @map("survey_rating_id")
+  happyCallTaskId   Int?      @map("happy_call_task_id")
+  orderId           Int?      @map("order_id")
+  customerId        Int?      @map("customer_id")
+  type              String    @db.VarChar(30)
+  priority          String    @default("MEDIUM") @db.VarChar(10)
+  status            String    @default("OPEN") @db.VarChar(20)
+  department        String?   @db.VarChar(20)
+  relatedStaffId    Int?      @map("related_staff_id")
+  assignedCsStaffId Int?      @map("assigned_cs_staff_id")
+  description       String    @db.Text
+  slaDueDate        DateTime? @map("sla_due_date") @db.DateTime(0)
+  resolutionNote    String?   @map("resolution_note") @db.Text
+  actionPlan        String?   @map("action_plan") @db.Text
+  resolvedAt        DateTime? @map("resolved_at") @db.DateTime(0)
+  resolvedByStaffId Int?      @map("resolved_by_staff_id")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
-  surveyRating        CrmSurveyRating?  @relation(fields: [surveyRatingId], references: [id], onDelete: SetNull)
-  happyCallTask       CrmHappyCallTask? @relation(fields: [happyCallTaskId], references: [id], onDelete: SetNull)
-  comments            CrmCsTicketComment[]
-  subtasks            CrmCsTicketSubtask[]
+  surveyRating  CrmSurveyRating?     @relation(fields: [surveyRatingId], references: [id], onDelete: SetNull)
+  happyCallTask CrmHappyCallTask?    @relation(fields: [happyCallTaskId], references: [id], onDelete: SetNull)
+  comments      CrmCsTicketComment[]
+  subtasks      CrmCsTicketSubtask[]
 
   @@index([surveyRatingId])
   @@index([happyCallTaskId])
@@ -636,7 +636,7 @@ model CrmCsTicketSubtask {
   department                String    @db.VarChar(20)
   assignedStaffId           Int?      @map("assigned_staff_id")
   status                    String    @default("PENDING") @db.VarChar(30)
-                                      // PENDING | APPOINTMENT_SCHEDULED | RESOLVED
+  // PENDING | APPOINTMENT_SCHEDULED | RESOLVED
   issueSummary              String?   @map("issue_summary") @db.Text
   resolutionNote            String?   @map("resolution_note") @db.Text
   actionPlan                String?   @map("action_plan") @db.Text
@@ -655,7 +655,7 @@ model CrmCsTicketSubtask {
   createdAt                 DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt                 DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
-  ticket                    CrmCsTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticket CrmCsTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
   @@index([department])
@@ -665,15 +665,15 @@ model CrmCsTicketSubtask {
 }
 
 model CrmCsTicketComment {
-  id          Int      @id @default(autoincrement())
-  ticketId    Int      @map("ticket_id")
-  staffId     Int      @map("staff_id")
-  staffName   String?  @map("staff_name") @db.VarChar(100)
-  content     String   @db.Text
-  isInternal  Boolean  @default(true) @map("is_internal") @db.TinyInt
-  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  id         Int      @id @default(autoincrement())
+  ticketId   Int      @map("ticket_id")
+  staffId    Int      @map("staff_id")
+  staffName  String?  @map("staff_name") @db.VarChar(100)
+  content    String   @db.Text
+  isInternal Boolean  @default(true) @map("is_internal") @db.TinyInt
+  createdAt  DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
-  ticket      CrmCsTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticket CrmCsTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
   @@map("crm_cs_ticket_comments")
@@ -693,7 +693,7 @@ model CrmCsCampaign {
   createdAt        DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
-  tasks            CrmCsCampaignTask[]
+  tasks CrmCsCampaignTask[]
 
   @@index([status])
   @@map("crm_cs_campaigns")
@@ -712,7 +712,7 @@ model CrmCsCampaignTask {
   createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt         DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
-  campaign          CrmCsCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign CrmCsCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([campaignId])
   @@index([orderId])
@@ -794,5 +794,14 @@ model CrmStore {
   @@map("crm_stores")
 }
 
+// Records idempotent, versioned production data migrations executed by the deploy pipeline.
+model CrmDataMigration {
+  id          String   @id @db.VarChar(191)
+  checksum    String   @db.Char(64)
+  description String   @db.Text
+  commitSha   String?  @map("commit_sha") @db.VarChar(64)
+  durationMs  Int      @map("duration_ms")
+  appliedAt   DateTime @default(now()) @map("applied_at") @db.DateTime(0)
 
-
+  @@map("crm_data_migrations")
+}

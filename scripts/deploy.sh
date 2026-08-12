@@ -31,37 +31,9 @@ echo -e "${YELLOW}Pushing code to GitHub (main)...${NC}"
 git push origin main
 echo -e "${GREEN}Pushed successfully to GitHub. Frontend Vercel deployment triggered!${NC}"
 
-# 4. Connect to VPS, Pull, Sync DB Schema, Build, and Restart PM2
+# 4. Connect to VPS and run the guarded production migration/deploy pipeline.
 echo -e "${YELLOW}Deploying to Production VPS (live-wings)...${NC}"
-ssh -o StrictHostKeyChecking=no live-wings "
-  set -e
-  echo '[VPS] Navigating to project directory...'
-  cd /home/web/mos-lab
-
-  echo '[VPS] Pulling latest code from GitHub...'
-  git pull
-
-  echo '[VPS] Installing dependencies...'
-  pnpm install
-
-  echo '[VPS] Applying Legacy Phase 1 reporting indexes...'
-  pnpm --filter @mos-lab/api legacy:indexes:phase1
-
-  echo '[VPS] Syncing Database Schema (Prisma db push)...'
-  pnpm --filter @mos-lab/api exec prisma db push --schema=prisma/crm.prisma --skip-generate
-
-  echo '[VPS] Building project packages...'
-  pnpm --filter @mos-lab/shared build
-  pnpm --filter @mos-lab/api build
-  pnpm --filter @mos-lab/web build
-
-  echo '[VPS] Restarting Backend API via PM2...'
-  DEPLOYED_AT=\$(TZ=Asia/Ho_Chi_Minh date -Iseconds)
-  DEPLOYED_AT=\"\$DEPLOYED_AT\" pm2 restart mos-lab-api --update-env
-  echo \"[VPS] Release marker updated: \$DEPLOYED_AT\"
-
-  echo '[VPS] VPS Deployment completed successfully!'
-"
+ssh -o StrictHostKeyChecking=no live-wings 'bash /home/web/mos-lab/scripts/deploy-production.sh'
 
 echo -e "${YELLOW}Verifying production release marker...${NC}"
 curl --fail --silent --show-error --retry 6 --retry-delay 2 https://api.lab.masteros.app/api/release
