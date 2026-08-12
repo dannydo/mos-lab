@@ -50,7 +50,16 @@ async function main() {
         .map(quoteIdentifier)
         .join(', ')})`;
       console.log(`Creating index: ${index.name}`);
-      await legacy.$executeRawUnsafe(statement);
+      try {
+        await legacy.$executeRawUnsafe(statement);
+      } catch (error) {
+        // A prior deploy connection can finish the same DDL between the initial inventory and this statement.
+        if (error instanceof Error && error.message.includes('Duplicate key name')) {
+          console.log(`Index already present after concurrent DDL: ${index.name}`);
+          continue;
+        }
+        throw error;
+      }
     }
   } finally {
     await legacy.$disconnect();
