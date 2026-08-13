@@ -27,6 +27,7 @@ import { allocationRoutes } from './modules/allocation/routes.js';
 import { campaignRoutes } from './modules/campaigns/routes.js';
 import { csRoutes } from './modules/cs/routes.js';
 import { qaShopRoutes } from './modules/qa-shop/routes.js';
+import { falRoutes } from './modules/fal/routes.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
 import { CampaignPromotionSyncService } from './modules/campaigns/campaign-promotion-sync.service.js';
@@ -220,6 +221,7 @@ const start = async () => {
     await server.register(campaignRoutes, { prefix: '/api' });
     await server.register(csRoutes, { prefix: '/api' });
     await server.register(qaShopRoutes, { prefix: '/api' });
+    await server.register(falRoutes, { prefix: '/api' });
 
     // Start background analyzer polling for AI laugh detection
     startRecordingAnalyzer(server);

@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { SafeAny, CC_GAMIFICATION_SYSTEM_CONFIG, calculateWheelBonusCap } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 import { buildComboBalanceExistsSql } from '../../customers/services/combo-recognition.service.js';
+import { getFalReadModelMap } from '../../fal/fal.service.js';
 
 export interface CcKpiFilters {
   dateFrom?: string;
@@ -493,6 +494,12 @@ export class CcKpiService {
         s.id AS service_id,
         s.duration_minute AS durationMinute,
         s.service_type AS rawServiceType,
+        COALESCE(ros.service_type, s.service_type, 'Normal') AS effectiveServiceType,
+        ros.servicing_minute AS servicingMinutes,
+        ros.cleaning_minute AS cleaningMinutes,
+        os.next_fix_order_service_id AS nextFixOrderServiceId,
+        os.next_adjust_order_service_id AS nextAdjustOrderServiceId,
+        os.next_log_order_service_id AS nextLogOrderServiceId,
         CAST(ro.date AS CHAR) AS dateOnlyStr,
         CAST(ro.actual_booking_date_start AS CHAR) AS checkinStr,
         TIME_FORMAT(ro.actual_booking_date_start, '%H:%i') AS checkinTimeStr,
@@ -510,12 +517,15 @@ export class CcKpiService {
         CASE 
             WHEN os.next_fix_order_service_id > 0 THEN 'Fix'
             WHEN os.next_adjust_order_service_id > 0 THEN 'Adjust'
+            WHEN os.next_log_order_service_id > 0 THEN 'Log'
+            WHEN ros.service_type IN (${FAL_RULE_VALUES_SQL}) THEN ros.service_type
             WHEN s.service_type IN (${FAL_RULE_VALUES_SQL}) THEN s.service_type
             ELSE '' 
         END AS falRule
       FROM order_service os
       JOIN \`order\` o ON os.order_id = o.id
       JOIN report_order ro ON o.id = ro.order_id
+      LEFT JOIN report_order_service ros ON ros.order_service_id = os.id
       LEFT JOIN user_profile client_p ON o.user_id = client_p.user_id
       LEFT JOIN client_store cs ON o.client_store_id = cs.id
       LEFT JOIN service s ON os.service_id = s.id
@@ -537,6 +547,19 @@ export class CcKpiService {
         summary: { totalCheckins: 0, totalBonus: 0, totalPoints: 0 },
       };
     }
+
+    const falMap = await getFalReadModelMap(
+      fastify,
+      rows.map((row) => ({
+        orderServiceId: Number(row.order_service_id),
+        effectiveServiceType: String(row.effectiveServiceType || ''),
+        nextFixOrderServiceId: Number(row.nextFixOrderServiceId || 0),
+        nextAdjustOrderServiceId: Number(row.nextAdjustOrderServiceId || 0),
+        nextLogOrderServiceId: Number(row.nextLogOrderServiceId || 0),
+        servicingMinutes: row.servicingMinutes == null ? null : Number(row.servicingMinutes),
+        cleaningMinutes: row.cleaningMinutes == null ? null : Number(row.cleaningMinutes),
+      }))
+    );
 
     // Batch-fetch real DB attributes & CV benchmarks for accurate Lash Count resolution
     const serviceIds = Array.from(new Set(rows.map((r) => Number(r.service_id)).filter((id) => id > 0)));
@@ -694,6 +717,7 @@ export class CcKpiService {
         const ccInName = String(row.ccInName || '');
         const ccOutName = String(row.ccOutName || '');
         const isSplit = checkInId > 0 && checkOutId > 0 && checkInId !== checkOutId;
+        const fal = falMap.get(Number(row.order_service_id)) || null;
 
         const consultantBonus = resolveCcCashBonus({
           dbCashBonus: Number(sbData.dbCashBonus || 0),
@@ -741,7 +765,8 @@ export class CcKpiService {
             designPts: Number(sbData.designPts) || specs.designPts,
             color: specs.color,
             colorPts: Number(sbData.colorPts) || specs.colorPts,
-            falRule: String(row.falRule || sbData.falRule || ''),
+            falRule: fal?.rule || String(row.falRule || sbData.falRule || ''),
+            fal,
           });
         }
       }

@@ -314,15 +314,33 @@ export default function CvXoayTab({
       dataIndex: 'falRule',
       key: 'falRule',
       width: 80,
-      render: (rule?: string) => {
+      render: (rule?: string, record?: CvXoayRecord) => {
         if (!rule) return <span className="text-slate-500 text-xs">-</span>;
+        const fal = record?.fal;
         return (
-          <Tag
-            color={rule === 'Fix' ? 'error' : rule === 'Adjust' ? 'warning' : 'default'}
-            className="font-semibold text-[10px] m-0 py-0 px-1"
+          <Tooltip
+            title={
+              fal
+                ? `${fal.caseRole === 'ORIGIN' ? 'Ca gốc' : 'Ca xử lý'} · ${fal.totalMinutes ?? '?'} phút · ${fal.compensationMode}${fal.decisionStatus ? ` · ${fal.decisionStatus}` : ''}`
+                : rule
+            }
           >
-            {rule}
-          </Tag>
+            <Tag
+              color={
+                fal?.compensationMode === 'BLOCKED'
+                  ? 'default'
+                  : rule === 'Fix'
+                    ? 'error'
+                    : rule === 'Adjust'
+                      ? 'warning'
+                      : 'blue'
+              }
+              className="font-semibold text-[10px] m-0 py-0 px-1"
+            >
+              {rule}
+              {fal?.compensationMode === 'BLOCKED' ? ' · Chờ' : ''}
+            </Tag>
+          </Tooltip>
         );
       },
     },

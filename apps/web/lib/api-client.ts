@@ -49,6 +49,7 @@ import {
   CvPaystubResponse,
   CvWorkLogDetailResponse,
   CvConfigResponse,
+  FalLogExplanationRecord,
   DailySalesBonusConfig,
   DailySalesBonusConsultantResponse,
   DailySalesBonusTransaction,
@@ -214,6 +215,40 @@ export interface LocaStaffActivityResponse {
 
 // API Client SDK for mos-lab
 export const apiClient = {
+  fal: {
+    listCases: async (params?: {
+      rule?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      page?: number;
+      limit?: number;
+    }) => {
+      const response = await api.get<{
+        data: Array<Record<string, unknown>>;
+        total: number;
+        page: number;
+        limit: number;
+      }>('/fal/cases', { params });
+      return response.data;
+    },
+    submitLogExplanation: async (
+      orderServiceId: number,
+      data: { explanation: string; explanationChannel?: string }
+    ) => {
+      const response = await api.post<{ success: boolean; data: FalLogExplanationRecord }>(
+        `/fal/logs/${orderServiceId}/explanation`,
+        data
+      );
+      return response.data;
+    },
+    approveLog: async (orderServiceId: number, data: { approved: boolean; rejectionReason?: string }) => {
+      const response = await api.post<{ success: boolean; data: FalLogExplanationRecord }>(
+        `/fal/logs/${orderServiceId}/approval`,
+        data
+      );
+      return response.data;
+    },
+  },
   release: {
     get: async (): Promise<{ deployedAt: string | null }> => {
       const response = await api.get('/release');

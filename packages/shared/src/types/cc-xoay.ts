@@ -1,3 +1,5 @@
+import type { FalReadModel } from './fal.js';
+
 export interface CcXoayRecord {
   consultantId?: number;
   orderId: number;
@@ -29,6 +31,7 @@ export interface CcXoayRecord {
   color: string;
   colorPts: number;
   falRule?: string;
+  fal?: FalReadModel | null;
 
   // 1.5x Wheel Bonus Cap fields
   monthlyDailyBonus?: number;

@@ -415,7 +415,35 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         dataIndex: 'falRule',
         key: 'falRule',
         width: 80,
-        render: (val?: string) => <span className="text-xs text-slate-500">{val || '-'}</span>,
+        render: (val?: string, record?: CcXoayRecord) => {
+          if (!val) return <span className="text-xs text-slate-500">-</span>;
+          const fal = record?.fal;
+          return (
+            <Tooltip
+              title={
+                fal
+                  ? `${fal.caseRole === 'ORIGIN' ? 'Ca gốc' : 'Ca xử lý'} · ${fal.totalMinutes ?? '?'} phút · ${fal.compensationMode}${fal.decisionStatus ? ` · ${fal.decisionStatus}` : ''}`
+                  : val
+              }
+            >
+              <Tag
+                color={
+                  fal?.compensationMode === 'BLOCKED'
+                    ? 'default'
+                    : val === 'Fix'
+                      ? 'error'
+                      : val === 'Adjust'
+                        ? 'warning'
+                        : 'blue'
+                }
+                className="font-semibold text-[10px] m-0 py-0 px-1"
+              >
+                {val}
+                {fal?.compensationMode === 'BLOCKED' ? ' · Chờ' : ''}
+              </Tag>
+            </Tooltip>
+          );
+        },
       },
     ],
     []

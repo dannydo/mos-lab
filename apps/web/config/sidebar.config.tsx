@@ -156,41 +156,52 @@ export function getSidebarGroups(
   };
 
   // Group 3: VẬN HÀNH CUỘC GỌI
+  const operationsItems: SidebarItemConfig[] = [
+    {
+      key: 'my-appointments',
+      label: 'Lịch hẹn của tôi',
+      icon: <CalendarOutlined />,
+      path: '/dashboard/appointments',
+    },
+    {
+      key: 'plans',
+      label: 'Kế hoạch gọi',
+      icon: <CalendarOutlined />,
+      path: '/dashboard/plans',
+    },
+    {
+      key: 'calls',
+      label: 'Lịch sử cuộc gọi',
+      icon: <PhoneOutlined />,
+      path: '/dashboard/calls',
+    },
+    {
+      key: 'omicall',
+      label: 'Cuộc gọi OmiCall (AI)',
+      icon: <AudioOutlined />,
+      path: '/dashboard/omicall',
+    },
+    {
+      key: 'qa-shop',
+      label: 'QA & QC Shop',
+      icon: <SafetyCertificateOutlined />,
+      path: '/dashboard/qa-shop',
+    },
+  ];
+
+  if (['admin', 'manager', 'oc', 'cc'].includes(normalizedRole)) {
+    operationsItems.push({
+      key: 'fal-control-tower',
+      label: 'FAL Control Tower',
+      icon: <SafetyCertificateOutlined />,
+      path: '/dashboard/fal',
+    });
+  }
+
   const operationsGroup: SidebarGroupConfig = {
     groupKey: 'grp-operations',
     groupTitle: 'VẬN HÀNH CUỘC GỌI',
-    items: [
-      {
-        key: 'my-appointments',
-        label: 'Lịch hẹn của tôi',
-        icon: <CalendarOutlined />,
-        path: '/dashboard/appointments',
-      },
-      {
-        key: 'plans',
-        label: 'Kế hoạch gọi',
-        icon: <CalendarOutlined />,
-        path: '/dashboard/plans',
-      },
-      {
-        key: 'calls',
-        label: 'Lịch sử cuộc gọi',
-        icon: <PhoneOutlined />,
-        path: '/dashboard/calls',
-      },
-      {
-        key: 'omicall',
-        label: 'Cuộc gọi OmiCall (AI)',
-        icon: <AudioOutlined />,
-        path: '/dashboard/omicall',
-      },
-      {
-        key: 'qa-shop',
-        label: 'QA & QC Shop',
-        icon: <SafetyCertificateOutlined />,
-        path: '/dashboard/qa-shop',
-      },
-    ],
+    items: operationsItems,
   };
 
   // Group 4: BÁO CÁO & KPI
@@ -278,6 +289,7 @@ export function getSidebarGroups(
 
 export function getSelectedMenuKey(pathname: string, assignedStaffId?: string | null): string {
   if (pathname.includes('/dashboard/today')) return 'today';
+  if (pathname.includes('/dashboard/fal')) return 'fal-control-tower';
   if (pathname.includes('/dashboard/customers')) {
     return assignedStaffId === 'me' ? 'my-customers' : 'customers-all';
   }

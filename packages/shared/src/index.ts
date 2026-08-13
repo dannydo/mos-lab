@@ -10,6 +10,7 @@ export * from './types/cc-thuong.js';
 export * from './types/cc-tip.js';
 export * from './types/cc-diamond.js';
 export * from './types/cv.js';
+export * from './types/fal.js';
 export * from './types/bk.js';
 export * from './types/catalog.js';
 export * from './types/omicall.js';

@@ -106,6 +106,45 @@ model CrmConfig {
   @@map("crm_config")
 }
 
+/// FAL itself is selected in Wings. MOS records only the explanation and
+/// approval gate required before an existing Log may receive a ledger.
+model CrmFalLogExplanation {
+  id                       Int      @id @default(autoincrement())
+  orderServiceId           BigInt   @unique @map("order_service_id")
+  decisionStatus           String   @default("PENDING") @map("decision_status") @db.VarChar(12)
+  ledgerStatus             String   @default("NOT_APPLIED") @map("ledger_status") @db.VarChar(16)
+  explanation              String?  @db.Text
+  explanationChannel       String?  @map("explanation_channel") @db.VarChar(30)
+  explainedByStaffId       Int?     @map("explained_by_staff_id")
+  approvedByStaffId        Int?     @map("approved_by_staff_id")
+  approvedAt               DateTime? @map("approved_at") @db.DateTime(0)
+  rejectionReason          String?  @map("rejection_reason") @db.Text
+  appliedAt                DateTime? @map("applied_at") @db.DateTime(0)
+  failureReason            String?  @map("failure_reason") @db.Text
+  createdAt                DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt                DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  audits CrmFalLogExplanationAudit[]
+
+  @@index([decisionStatus])
+  @@index([ledgerStatus])
+  @@map("crm_fal_log_explanations")
+}
+
+model CrmFalLogExplanationAudit {
+  id         Int      @id @default(autoincrement())
+  decisionId Int      @map("decision_id")
+  action     String   @db.VarChar(30)
+  actorStaffId Int?   @map("actor_staff_id")
+  details    String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  decision CrmFalLogExplanation @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  @@index([decisionId, createdAt])
+  @@map("crm_fal_log_explanation_audits")
+}
+
 model CrmCustomerAssignment {
   id                   Int       @id @default(autoincrement())
   legacyUserId         Int       @unique @map("legacy_user_id")

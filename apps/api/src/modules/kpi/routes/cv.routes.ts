@@ -3,6 +3,7 @@ import { requireAuth } from '../../../middlewares/auth.js';
 import { CvConfigResponse, CvStaffOption, CvXoayRecord, CvXoayReportResponse, SafeAny } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 import { FAL_RULE_VALUES_SQL, FAL_TRACKING_KEY_SQL_CASES } from '../services/cc-kpi.service.js';
+import { getFalReadModelMap } from '../../fal/fal.service.js';
 
 async function getActiveCvIds(fastify: FastifyInstance): Promise<number[]> {
   const ids = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
@@ -62,6 +63,12 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
           DATE_FORMAT(ro.actual_booking_date_start, '%H:%i:%s') as checkinTime,
           s.service_key,
           COALESCE(s.service_type, 'Normal') as serviceType,
+          COALESCE(ros.service_type, s.service_type, 'Normal') as effectiveServiceType,
+          ros.servicing_minute AS servicingMinutes,
+          ros.cleaning_minute AS cleaningMinutes,
+          os.next_fix_order_service_id AS nextFixOrderServiceId,
+          os.next_adjust_order_service_id AS nextAdjustOrderServiceId,
+          os.next_log_order_service_id AS nextLogOrderServiceId,
           os.attribute_group_key,
           
           COALESCE(client_p.full_name, '') AS clientName,
@@ -85,6 +92,8 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
           CASE 
               WHEN os.next_fix_order_service_id > 0 THEN 'Fix'
               WHEN os.next_adjust_order_service_id > 0 THEN 'Adjust'
+              WHEN os.next_log_order_service_id > 0 THEN 'Log'
+              WHEN ros.service_type IN (${FAL_RULE_VALUES_SQL}) THEN ros.service_type
               WHEN s.service_type IN (${FAL_RULE_VALUES_SQL}) THEN s.service_type
               WHEN sb_agg.falRule IS NOT NULL AND sb_agg.falRule != '' THEN sb_agg.falRule
               ELSE '' 
@@ -93,6 +102,7 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
         FROM order_service os
         JOIN \`order\` o ON os.order_id = o.id
         JOIN report_order ro ON o.id = ro.order_id
+        LEFT JOIN report_order_service ros ON ros.order_service_id = os.id
         JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
         JOIN service s ON os.service_id = s.id
         LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
@@ -133,6 +143,18 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
       `;
 
       const dbRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(rawSql);
+      const falMap = await getFalReadModelMap(
+        fastify,
+        dbRows.map((r) => ({
+          orderServiceId: Number(r.orderServiceId),
+          effectiveServiceType: String(r.effectiveServiceType || ''),
+          nextFixOrderServiceId: Number(r.nextFixOrderServiceId || 0),
+          nextAdjustOrderServiceId: Number(r.nextAdjustOrderServiceId || 0),
+          nextLogOrderServiceId: Number(r.nextLogOrderServiceId || 0),
+          servicingMinutes: r.servicingMinutes == null ? null : Number(r.servicingMinutes),
+          cleaningMinutes: r.cleaningMinutes == null ? null : Number(r.cleaningMinutes),
+        }))
+      );
 
       // Pre-query prior accumulated points in current month if startPart > 1st of month
       const monthStart = `${startPart.slice(0, 7)}-01`;
@@ -175,6 +197,7 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
         pointsAccuMap.set(techId, newAccu);
 
         const techLevel = Math.floor(prevAccu / 100) + 1;
+        const fal = falMap.get(Number(r.orderServiceId)) || null;
 
         return {
           orderServiceId: Number(r.orderServiceId),
@@ -198,7 +221,8 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
           lashPts: Math.round(Number(r.lashPts || 0)),
           designPts: Math.round(Number(r.designPts || 0)),
           colorPts: Math.round(Number(r.colorPts || 0)),
-          falRule: String(r.falRule || ''),
+          falRule: fal?.rule || String(r.falRule || ''),
+          fal,
         };
       });
 

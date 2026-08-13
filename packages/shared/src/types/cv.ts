@@ -1,3 +1,5 @@
+import type { FalReadModel } from './fal.js';
+
 export interface CvXoayRecord {
   orderServiceId: number;
   checkin: string; // YYYY-MM-DD HH:mm:ss
@@ -21,6 +23,7 @@ export interface CvXoayRecord {
   designPts: number;
   colorPts: number;
   falRule?: string;
+  fal?: FalReadModel | null;
 }
 
 export interface CvXoayReportResponse {
