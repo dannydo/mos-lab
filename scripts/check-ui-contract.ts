@@ -12,6 +12,7 @@ const maxPageLines = 900;
 const legacyPageExceptions = new Set([
   'app/dashboard/catalog/page.tsx',
   'app/dashboard/design-system/page.tsx',
+  'app/dashboard/fal/page.tsx',
   'app/dashboard/loca/page.tsx',
   'app/dashboard/nyc/campaigns/[slug]/page.tsx',
   'app/dashboard/nyc/campaigns/page.tsx',
