@@ -102,6 +102,8 @@ type TraceService = {
   cvAvatar: string | null;
   ccInName: string | null;
   ccOutName: string | null;
+  ccInAvatar: string | null;
+  ccOutAvatar: string | null;
   cvId: number | null;
   ccInId: number | null;
   ccOutId: number | null;
