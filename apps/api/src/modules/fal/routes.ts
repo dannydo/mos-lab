@@ -1,4 +1,4 @@
-import { FalLogExplanationRecord, FalReadModel } from '@mos-lab/shared';
+import { FalReadModel } from '@mos-lab/shared';
 import { FastifyInstance } from 'fastify';
 import { requireAuth, requireRole } from '../../middlewares/auth.js';
 import { getFalReadModelMap, toLogExplanationRecord } from './fal.service.js';
