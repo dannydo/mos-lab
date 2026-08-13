@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { SafeAny, CC_GAMIFICATION_SYSTEM_CONFIG, calculateWheelBonusCap } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
+import { buildComboBalanceExistsSql } from '../../customers/services/combo-recognition.service.js';
 
 export interface CcKpiFilters {
   dateFrom?: string;
@@ -69,6 +70,183 @@ export function formatStoreCode(store?: string | null): string {
   if (s.includes('THAM') || s.includes('DE') || s.includes('DT')) return 'DT';
   if (s.includes('PXL') || s.includes('PHAN')) return 'PXL';
   return s;
+}
+
+export function filterActiveCcTargets<T extends { staffId: number }>(targets: T[], activeCcIds: number[]): T[] {
+  const activeIds = new Set(activeCcIds.map(Number));
+  return targets.filter((target) => activeIds.has(Number(target.staffId)));
+}
+
+export function splitCcShares(
+  ccInRaw: SafeAny,
+  ccOutRaw: SafeAny,
+  allowedStaffIds: number[]
+): Array<{ staffId: number; share: number }> {
+  const allowedIds = new Set(allowedStaffIds.map(Number));
+  const ccIn = ccInRaw ? Number(ccInRaw) : null;
+  const ccOut = ccOutRaw ? Number(ccOutRaw) : null;
+
+  if (!ccIn && !ccOut) return [];
+
+  if (!ccIn || !ccOut) {
+    const onlyCc = (ccOut || ccIn)!;
+    return allowedIds.has(onlyCc) ? [{ staffId: onlyCc, share: 1 }] : [];
+  }
+
+  if (ccIn === ccOut) {
+    return allowedIds.has(ccIn) ? [{ staffId: ccIn, share: 1 }] : [];
+  }
+
+  const result: Array<{ staffId: number; share: number }> = [];
+  if (allowedIds.has(ccIn)) result.push({ staffId: ccIn, share: 0.5 });
+  if (allowedIds.has(ccOut)) result.push({ staffId: ccOut, share: 0.5 });
+  return result;
+}
+
+export function resolveCcCashBonus(input: {
+  dbCashBonus: number;
+  cashBonusRows: number;
+  level: number;
+  isSplit: boolean;
+}): number {
+  if (input.cashBonusRows > 0) return Math.round(input.dbCashBonus || 0);
+
+  const fullBonus = Math.max(0, input.level || 0) * CC_GAMIFICATION_SYSTEM_CONFIG.BONUS_PER_LEVEL_VND;
+  return input.isSplit ? Math.round(fullBonus / 2) : fullBonus;
+}
+
+interface BuildCcLeaderboardInput {
+  selectedRecords: SafeAny[];
+  monthlyRecords: SafeAny[];
+  selectedDailySales: SafeAny[];
+  monthlyDailySales: SafeAny[];
+}
+
+interface CcLeaderboardAccumulator {
+  consultantId: number;
+  displayName: string;
+  avatar: string | null;
+  stores: Set<string>;
+  orderIds: Set<number>;
+  serviceIds: Set<number>;
+  totalConsultantBonus: number;
+}
+
+export function buildCcLeaderboard({
+  selectedRecords,
+  monthlyRecords,
+  selectedDailySales,
+  monthlyDailySales,
+}: BuildCcLeaderboardInput): SafeAny[] {
+  const selectedByStaff = new Map<number, CcLeaderboardAccumulator>();
+
+  for (const record of selectedRecords) {
+    const consultantId = Number(record.consultantId);
+    if (!consultantId) continue;
+
+    const current = selectedByStaff.get(consultantId) || {
+      consultantId,
+      displayName: String(record.consultantName || `CC ${consultantId}`),
+      avatar: record.avatar ? String(record.avatar) : null,
+      stores: new Set<string>(),
+      orderIds: new Set<number>(),
+      serviceIds: new Set<number>(),
+      totalConsultantBonus: 0,
+    };
+
+    if (record.store) current.stores.add(String(record.store));
+    if (Number(record.orderId) > 0) current.orderIds.add(Number(record.orderId));
+    if (Number(record.serviceId) > 0) current.serviceIds.add(Number(record.serviceId));
+    current.totalConsultantBonus += Math.round(Number(record.consultantBonus) || 0);
+    selectedByStaff.set(consultantId, current);
+  }
+
+  const monthlyByStaff = new Map<number, { totalWheelBonus: number; latestPoints: number; latestKey: string }>();
+  for (const record of monthlyRecords) {
+    const consultantId = Number(record.consultantId);
+    if (!consultantId) continue;
+
+    const current = monthlyByStaff.get(consultantId) || {
+      totalWheelBonus: 0,
+      latestPoints: 0,
+      latestKey: '',
+    };
+    current.totalWheelBonus += Math.round(Number(record.consultantBonus) || 0);
+
+    const chronologicalKey = `${String(record.checkin || '')}_${String(record.serviceId || '').padStart(12, '0')}`;
+    if (chronologicalKey >= current.latestKey) {
+      current.latestKey = chronologicalKey;
+      current.latestPoints = Math.round((Number(record.pointsAccu) || 0) * 10) / 10;
+    }
+    monthlyByStaff.set(consultantId, current);
+  }
+
+  const selectedSalesByStaff = new Map<number, { comboRevenue: number; comboCount: number }>();
+  for (const row of selectedDailySales) {
+    const consultantId = Number(row.user_id);
+    if (!consultantId) continue;
+    const current = selectedSalesByStaff.get(consultantId) || { comboRevenue: 0, comboCount: 0 };
+    current.comboRevenue += Math.round(Number(row.combo_sales) || 0);
+    current.comboCount += Number(row.combo_count) || 0;
+    selectedSalesByStaff.set(consultantId, current);
+  }
+
+  const monthlyDailyBonusByStaff = new Map<number, number>();
+  for (const row of monthlyDailySales) {
+    const consultantId = Number(row.user_id);
+    if (!consultantId) continue;
+    monthlyDailyBonusByStaff.set(
+      consultantId,
+      (monthlyDailyBonusByStaff.get(consultantId) || 0) + Math.round(Number(row.daily_bonus) || 0)
+    );
+  }
+
+  const leaderboard = Array.from(selectedByStaff.values()).map((selected) => {
+    const monthly = monthlyByStaff.get(selected.consultantId) || {
+      totalWheelBonus: selected.totalConsultantBonus,
+      latestPoints: 0,
+    };
+    const selectedSales = selectedSalesByStaff.get(selected.consultantId) || { comboRevenue: 0, comboCount: 0 };
+    const monthlyDailyBonus = monthlyDailyBonusByStaff.get(selected.consultantId) || 0;
+    const capResult = calculateWheelBonusCap(monthlyDailyBonus, monthly.totalWheelBonus);
+    const totalPointsAccu = monthly.latestPoints;
+    const totalCheckins = selected.orderIds.size;
+
+    return {
+      rank: 0,
+      consultantId: selected.consultantId,
+      displayName: selected.displayName,
+      avatar: selected.avatar,
+      store: selected.stores.size === 1 ? Array.from(selected.stores)[0] : 'MOS-LAB',
+      totalCheckins,
+      totalServices: selected.serviceIds.size,
+      comboRevenue: selectedSales.comboRevenue,
+      comboCount: selectedSales.comboCount,
+      totalPointsAccu,
+      level: Math.floor(Math.max(0, totalPointsAccu) / CC_GAMIFICATION_SYSTEM_CONFIG.POINTS_PER_LEVEL) + 1,
+      totalConsultantBonus: Math.round(selected.totalConsultantBonus),
+      targetCompletionRate: Math.min(100, Math.round((totalCheckins / 200) * 100)),
+      monthlyDailyBonus: capResult.monthlyDailyBonus,
+      monthlyWheelBonus: capResult.rawWheelBonus,
+      maxWheelBonusAllowed: capResult.maxWheelBonusAllowed,
+      wheelCapPercent: capResult.wheelCapPercent,
+      capStatus: capResult.capStatus,
+    };
+  });
+
+  leaderboard.sort(
+    (a, b) =>
+      b.totalPointsAccu - a.totalPointsAccu ||
+      b.totalConsultantBonus - a.totalConsultantBonus ||
+      b.totalCheckins - a.totalCheckins ||
+      a.displayName.localeCompare(b.displayName, 'vi') ||
+      a.consultantId - b.consultantId
+  );
+  leaderboard.forEach((entry, index) => {
+    entry.rank = index + 1;
+  });
+
+  return leaderboard;
 }
 
 export function parseServiceSpecs(
@@ -310,6 +488,7 @@ export class CcKpiService {
     // Query from beginning of the month (monthStartStr) to endStr to build accurate MTD points & Level
     const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
       SELECT 
+        o.id AS order_id,
         os.id AS order_service_id,
         s.id AS service_id,
         s.duration_minute AS durationMinute,
@@ -393,6 +572,7 @@ export class CcKpiService {
         sb.user_id,
         SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS consultantPoints,
         SUM(CASE WHEN sb.bonus_type = 'Cash' THEN sb.bonus_amount ELSE 0 END) AS dbCashBonus,
+        SUM(CASE WHEN sb.bonus_type = 'Cash' THEN 1 ELSE 0 END) AS cashBonusRows,
         SUM(CASE WHEN sbr.type = 'OrderServiceClass' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS classPts,
         SUM(CASE WHEN sbr.type = 'OrderServiceAttributeFan' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS fanPts,
         SUM(CASE WHEN sbr.type = 'OrderServiceType' AND sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) AS typePts,
@@ -486,7 +666,7 @@ export class CcKpiService {
         }
       }
 
-      for (const target of staffTargets) {
+      for (const target of filterActiveCcTargets(staffTargets, activeCcIds)) {
         const targetStaffId = target.staffId;
         const targetStaffName = target.staffName;
         const targetAvatar = target.avatar;
@@ -513,15 +693,20 @@ export class CcKpiService {
 
         const ccInName = String(row.ccInName || '');
         const ccOutName = String(row.ccOutName || '');
-        const isSplit = Boolean(ccInName && ccOutName && ccInName !== ccOutName);
+        const isSplit = checkInId > 0 && checkOutId > 0 && checkInId !== checkOutId;
 
-        const dbCash = Math.round(Number(sbData.dbCashBonus || 0));
-        const consultantBonus = dbCash > 0 ? dbCash : this.calculateCcBonus(calculatedLevel, isSplit);
+        const consultantBonus = resolveCcCashBonus({
+          dbCashBonus: Number(sbData.dbCashBonus || 0),
+          cashBonusRows: Number(sbData.cashBonusRows || 0),
+          level: calculatedLevel,
+          isSplit,
+        });
 
         const dateOnly = String(row.dateOnlyStr || '').substring(0, 10);
         if (dateOnly >= startStr && dateOnly <= endStr) {
           filteredRecords.push({
             consultantId: targetStaffId,
+            orderId: Number(row.order_id),
             serviceId: Number(row.order_service_id),
             checkin: String(row.checkinStr || ''),
             checkinTime: String(row.checkinTimeStr || ''),
@@ -587,134 +772,60 @@ export class CcKpiService {
    * 2. GET Realtime CC Leaderboard rankings
    */
   public static async getCcLeaderboard(fastify: FastifyInstance, filters: CcKpiFilters) {
-    const { dateFrom, dateTo } = filters;
+    const { dateFrom, dateTo, storeId = 'ALL' } = filters;
     const { startStr: startDateStr, endStr: endDateStr } = parseDateRange(dateFrom, dateTo);
     const activeCcIds = await this.getActiveCcStaffIds(fastify);
-
-    const startStr = `${startDateStr} 00:00:00`;
-    const endStr = `${endDateStr} 23:59:59`;
-
-    const cacheKey = `${startStr}_${endStr}_${activeCcIds.join(',')}`;
+    const monthStart = `${startDateStr.substring(0, 7)}-01`;
+    const normalizedStoreId = storeId && storeId !== 'ALL' ? String(storeId) : 'ALL';
+    const cacheKey = `${startDateStr}_${endDateStr}_${normalizedStoreId}_${activeCcIds.join(',')}`;
     const cached = this.leaderboardCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < 20000) {
-      return { data: cached.data };
+      return { data: cached.data, total: cached.data.length };
     }
 
-    let activeCcFilter = '';
-    if (activeCcIds && activeCcIds.length > 0) {
-      activeCcFilter = ` AND sb.user_id IN (${activeCcIds.join(',')})`;
-    }
-
-    const staffStats = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-      `
-      SELECT 
-        sb.user_id as staffId,
-        up.full_name as displayName,
-        up.avatar as avatar,
-        COUNT(DISTINCT sb.order_id) as totalCheckins,
-        COUNT(DISTINCT sb.order_service_id) as totalServices,
-        SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) as totalPointsAccu,
-        FLOOR(SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END) / 100) + 1 as level,
-        SUM(CASE WHEN sb.bonus_type = 'Cash' AND sb.order_service_id IS NOT NULL THEN sb.bonus_amount ELSE 0 END) as totalConsultantBonus,
-        COALESCE(combo.combo_revenue, 0) as comboRevenue,
-        COALESCE(combo.combo_count, 0) as comboCount
-      FROM \`staff_bonus\` sb
-      JOIN \`user_profile\` up ON up.user_id = sb.user_id
-      LEFT JOIN (
-        SELECT 
-          COALESCE(
-            osc.check_in_staff_id,
-            osc.check_out_staff_id,
-            o.assigned_staff_id,
-            o.created_staff_id
-          ) as staff_id,
-          SUM(COALESCE(NULLIF(osc.total_price - osc.tax_amount, 0), osc.service_price - osc.discount_amount - osc.tax_amount, 0)) as combo_revenue,
-          SUM(COALESCE(osc.quantity, 1)) as combo_count
-        FROM \`order\` o
-        JOIN \`order_service_combo\` osc ON osc.order_id = o.id
-        WHERE o.order_state = 'Completed'
-          AND o.booking_date_start >= ?
-          AND o.booking_date_start <= ?
-        GROUP BY staff_id
-      ) combo ON combo.staff_id = sb.user_id
-      WHERE sb.date_created >= ? AND sb.date_created <= ? ${activeCcFilter}
-      GROUP BY sb.user_id, up.full_name, up.avatar
-      ORDER BY totalPointsAccu DESC
-      LIMIT 30
-    `,
-      startStr,
-      endStr,
-      startStr,
-      endStr
-    );
-
-    const leaderboard = staffStats.map((s, index) => {
-      const staffId = Number(s.staffId);
-      const displayName = String(s.displayName || `CC ${staffId}`);
-      const totalCheckins = Number(s.totalCheckins || 0);
-      const totalServices = Number(s.totalServices || 0);
-      const comboRevenue = Number(s.comboRevenue || 0);
-      const comboCount = Number(s.comboCount || 0);
-      const totalPointsAccu = Math.round(Number(s.totalPointsAccu || 0) * 10) / 10;
-      const level = Number(s.level || 1);
-      let totalConsultantBonus = Math.round(Number(s.totalConsultantBonus || 0));
-      // Formula Fallback: If DB bonus is 0 but staff has points/services, verify/fallback with calculateCcBonus(level)
-      if (totalConsultantBonus === 0 && totalServices > 0 && level > 0) {
-        totalConsultantBonus = this.calculateCcBonus(level, false) * totalServices;
-      }
-      const targetCompletionRate = Math.min(100, Math.round((totalCheckins / 200) * 100));
-
-      return {
-        rank: index + 1,
-        consultantId: staffId,
-        displayName,
-        avatar: s.avatar ? String(s.avatar) : null,
-        store: 'MOS-LAB',
-        totalCheckins,
-        totalServices,
-        comboRevenue,
-        comboCount,
-        totalPointsAccu,
-        level,
-        totalConsultantBonus,
-        targetCompletionRate,
-      };
+    const selectedReportPromise = this.getCcXoayReport(fastify, {
+      dateFrom: startDateStr,
+      dateTo: endDateStr,
+      storeId: normalizedStoreId,
+      page: 1,
+      limit: 100000,
     });
+    const monthlyReportPromise =
+      startDateStr === monthStart
+        ? selectedReportPromise
+        : this.getCcXoayReport(fastify, {
+            dateFrom: monthStart,
+            dateTo: endDateStr,
+            storeId: normalizedStoreId,
+            page: 1,
+            limit: 100000,
+          });
+    const selectedDailySalesPromise = this.getCcDailySalesBonus(fastify, {
+      dateFrom: startDateStr,
+      dateTo: endDateStr,
+      storeId: normalizedStoreId,
+    });
+    const monthlyDailySalesPromise =
+      startDateStr === monthStart
+        ? selectedDailySalesPromise
+        : this.getCcDailySalesBonus(fastify, {
+            dateFrom: monthStart,
+            dateTo: endDateStr,
+            storeId: normalizedStoreId,
+          });
 
-    // === ENRICH LEADERBOARD WITH 1.5x HARDCAP DATA ===
-    // Get full-month daily bonus totals per staff to calculate wheel cap
-    try {
-      const monthStart = `${startDateStr.substring(0, 7)}-01`;
-      const dailyBonusResult = await this.getCcDailySalesBonus(fastify, {
-        dateFrom: monthStart,
-        dateTo: endDateStr,
-      });
-
-      // Aggregate monthly daily bonus per staff
-      const staffDailyBonusMap = new Map<number, number>();
-      if (dailyBonusResult?.data) {
-        for (const rec of dailyBonusResult.data) {
-          const uid = Number(rec.user_id);
-          const prev = staffDailyBonusMap.get(uid) || 0;
-          staffDailyBonusMap.set(uid, prev + Math.round(Number(rec.daily_bonus) || 0));
-        }
-      }
-
-      // Enrich each leaderboard entry with cap info
-      for (const entry of leaderboard) {
-        const monthlyDaily = staffDailyBonusMap.get(Number(entry.consultantId)) || 0;
-        const monthlyWheel = entry.totalConsultantBonus; // CC Xoay bonus = wheel bonus
-        const capResult = calculateWheelBonusCap(monthlyDaily, monthlyWheel);
-
-        (entry as SafeAny).monthlyDailyBonus = capResult.monthlyDailyBonus;
-        (entry as SafeAny).monthlyWheelBonus = capResult.rawWheelBonus;
-        (entry as SafeAny).maxWheelBonusAllowed = capResult.maxWheelBonusAllowed;
-        (entry as SafeAny).wheelCapPercent = capResult.wheelCapPercent;
-        (entry as SafeAny).capStatus = capResult.capStatus;
-      }
-    } catch (capErr) {
-      fastify.log.warn(capErr as Error, 'Failed to enrich leaderboard with wheel cap data (non-blocking)');
-    }
+    const [selectedReport, monthlyReport, selectedDailySales, monthlyDailySales] = await Promise.all([
+      selectedReportPromise,
+      monthlyReportPromise,
+      selectedDailySalesPromise,
+      monthlyDailySalesPromise,
+    ]);
+    const leaderboard = buildCcLeaderboard({
+      selectedRecords: selectedReport.data,
+      monthlyRecords: monthlyReport.data,
+      selectedDailySales: selectedDailySales.data,
+      monthlyDailySales: monthlyDailySales.data,
+    });
 
     this.leaderboardCache.set(cacheKey, { data: leaderboard, timestamp: Date.now() });
 
@@ -793,11 +904,24 @@ export class CcKpiService {
         UPPER(cs.client_store_key) as store_code
       FROM \`order\` o
       JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+      LEFT JOIN \`service_price\` sp ON sp.id = osc.service_price_id
+      LEFT JOIN \`service_language\` sl ON sl.service_id = osc.service_id AND sl.language_id = 1
       LEFT JOIN \`user_debt\` ud ON ud.order_id = o.id AND ud.debt_amount > 0
       LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
       LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
       WHERE o.order_state = 'Completed'
         ${actualCheckinRangeClause}
+        AND ${buildComboBalanceExistsSql('o')}
+        AND (sp.service_price_package_key IS NULL OR (
+          LOWER(sp.service_price_package_key) NOT LIKE '%single%'
+          AND LOWER(sp.service_price_package_key) NOT LIKE '%refill%'
+          AND LOWER(sp.service_price_package_key) NOT LIKE '%balance%'
+        ))
+        AND (sl.service_name IS NULL OR (
+          LOWER(sl.service_name) NOT LIKE '%single%'
+          AND LOWER(sl.service_name) NOT LIKE '%refill%'
+          AND LOWER(sl.service_name) NOT LIKE '%balance%'
+        ))
         ${storeFilterClause}
     `;
 
@@ -898,41 +1022,9 @@ export class CcKpiService {
       return entry;
     };
 
-    /**
-     * Apply 50/50 split: returns array of { staffId, share } tuples.
-     * - CC owner = COALESCE(check_out, check_in) — if both null, skip.
-     * - If CC IN == CC OUT (or one is null): 1 entry with share = 1.0
-     * - If CC IN != CC OUT: 2 entries each with share = 0.5
-     */
-    const splitForCcs = (ccInRaw: SafeAny, ccOutRaw: SafeAny): Array<{ staffId: number; share: number }> => {
-      const ccIn = ccInRaw ? Number(ccInRaw) : null;
-      const ccOut = ccOutRaw ? Number(ccOutRaw) : null;
-
-      if (!ccIn && !ccOut) return [];
-
-      // Only one CC exists
-      if (!ccIn || !ccOut) {
-        const singleCc = (ccOut || ccIn)!;
-        if (!targetStaffIds.includes(singleCc)) return [];
-        return [{ staffId: singleCc, share: 1.0 }];
-      }
-
-      // CC IN == CC OUT: 100% to that CC
-      if (ccIn === ccOut) {
-        if (!targetStaffIds.includes(ccIn)) return [];
-        return [{ staffId: ccIn, share: 1.0 }];
-      }
-
-      // CC IN != CC OUT: 50/50 split
-      const result: Array<{ staffId: number; share: number }> = [];
-      if (targetStaffIds.includes(ccIn)) result.push({ staffId: ccIn, share: 0.5 });
-      if (targetStaffIds.includes(ccOut)) result.push({ staffId: ccOut, share: 0.5 });
-      return result;
-    };
-
     // Process combo rows (per-order, not aggregated)
     comboRows.forEach((r) => {
-      const splits = splitForCcs(r.cc_in_id, r.cc_out_id);
+      const splits = splitCcShares(r.cc_in_id, r.cc_out_id, targetStaffIds);
       const sales = Math.round(Number(r.combo_sales) || 0);
       const count = Number(r.combo_count) || 0;
       const dateStr = String(r.sale_date);
@@ -941,13 +1033,13 @@ export class CcKpiService {
       splits.forEach(({ staffId, share }) => {
         const entry = getOrCreate(dateStr, staffId, storeCode);
         entry.combo_sales += Math.round(sales * share);
-        entry.combo_count += Math.round(count * share);
+        entry.combo_count += count * share;
       });
     });
 
     // Process upgrade rows (per-order)
     upgradeRows.forEach((r) => {
-      const splits = splitForCcs(r.cc_in_id, r.cc_out_id);
+      const splits = splitCcShares(r.cc_in_id, r.cc_out_id, targetStaffIds);
       const sales = Math.round(Number(r.combo_sales) || 0);
       const dateStr = String(r.sale_date);
       const storeCode = String(r.store_code || 'MOS');
@@ -960,7 +1052,7 @@ export class CcKpiService {
 
     // Process product rows (per-order)
     productRows.forEach((r) => {
-      const splits = splitForCcs(r.cc_in_id, r.cc_out_id);
+      const splits = splitCcShares(r.cc_in_id, r.cc_out_id, targetStaffIds);
       const sales = Math.round(Number(r.product_sales) || 0);
       const count = Number(r.product_count) || 0;
       const dateStr = String(r.sale_date);
@@ -969,13 +1061,13 @@ export class CcKpiService {
       splits.forEach(({ staffId, share }) => {
         const entry = getOrCreate(dateStr, staffId, storeCode);
         entry.product_sales += Math.round(sales * share);
-        entry.product_count += Math.round(count * share);
+        entry.product_count += count * share;
       });
     });
 
     // Process single service rows (per-order, for display only — NOT in bonus calculation)
     singleRows.forEach((r) => {
-      const splits = splitForCcs(r.cc_in_id, r.cc_out_id);
+      const splits = splitCcShares(r.cc_in_id, r.cc_out_id, targetStaffIds);
       const sales = Math.round(Number(r.single_sales) || 0);
       const dateStr = String(r.sale_date);
       const storeCode = String(r.store_code || 'MOS');

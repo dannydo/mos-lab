@@ -1,5 +1,6 @@
 export interface CcXoayRecord {
   consultantId?: number;
+  orderId: number;
   serviceId: number;
   checkin: string; // YYYY-MM-DD HH:mm:ss
   checkinTime: string; // HH:mm:ss

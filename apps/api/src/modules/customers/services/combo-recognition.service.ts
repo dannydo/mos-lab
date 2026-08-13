@@ -5,6 +5,18 @@ export interface DateBounds {
   endStr: string;
 }
 
+export function buildComboBalanceExistsSql(candidateAlias: string): string {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(candidateAlias)) {
+    throw new Error('Invalid SQL alias for combo balance recognition');
+  }
+
+  return `EXISTS (
+    SELECT 1
+    FROM user_service_balance usb
+    WHERE usb.user_id = ${candidateAlias}.user_id
+  )`;
+}
+
 /**
  * Rule #21: Unified Date Range Parsing & Bounds Formatter
  * Guarantees 00:00:00 start and 23:59:59 end bounds for string date inputs.
@@ -38,20 +50,20 @@ export function parseComboDateBounds(dFrom?: string, dTo?: string): DateBounds {
 export class ComboRecognitionService {
   public static async getNewLoCaCustomerIds(fastify: FastifyInstance, dFrom?: string, dTo?: string): Promise<number[]> {
     const { startStr, endStr } = parseComboDateBounds(dFrom, dTo);
+    const balanceExistsSql = buildComboBalanceExistsSql('recognized_combo');
 
     try {
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
-        `SELECT DISTINCT user_id FROM (
+        `SELECT DISTINCT recognized_combo.user_id FROM (
           SELECT o_nl.user_id FROM \`order\` o_nl
           JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
           LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
           LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
-          LEFT JOIN service s_nl ON osc_nl.service_id = s_nl.id
           LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
           WHERE o_nl.order_state = 'Completed'
             AND osc_nl.total_price > 0
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) >= ? 
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) <= ?
+            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ?
+            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
             AND (sp_nl.service_price_package_key IS NULL OR (
               LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
               AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
@@ -67,13 +79,12 @@ export class ComboRecognitionService {
           JOIN order_service os_nl ON os_nl.order_id = o_nl.id
           LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
           LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
-          LEFT JOIN service s_nl ON os_nl.service_id = s_nl.id
           LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
           WHERE o_nl.order_state = 'Completed'
             AND os_nl.total_price > 0
-            AND (os_nl.user_service_type = 'combo' OR s_nl.service_group = 'combo')
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) >= ? 
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start, o_nl.date_created) <= ?
+            AND (os_nl.user_service_type = 'combo' OR os_nl.service_group = 'combo')
+            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ?
+            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
             AND (sp_nl.service_price_package_key IS NULL OR (
               LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
               AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
@@ -84,7 +95,8 @@ export class ComboRecognitionService {
               AND LOWER(sl_nl.service_name) NOT LIKE '%refill%'
               AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
             ))
-        ) t`,
+        ) recognized_combo
+        WHERE ${balanceExistsSql}`,
         startStr,
         endStr,
         startStr,
