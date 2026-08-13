@@ -12,14 +12,7 @@ export interface SectionCardProps {
   style?: React.CSSProperties;
 }
 
-export function SectionCard({
-  title,
-  extra,
-  children,
-  className = '',
-  bodyPadding = '16px',
-  style,
-}: SectionCardProps) {
+export function SectionCard({ title, extra, children, className = '', bodyPadding = '16px', style }: SectionCardProps) {
   const { token } = theme.useToken();
 
   return (
@@ -33,7 +26,7 @@ export function SectionCard({
         ...style,
       }}
       styles={{ body: { padding: bodyPadding } }}
-      className={`shadow-sm rounded-xl ${className}`}
+      className={`rounded-xl ${className}`}
     >
       {children}
     </Card>

@@ -172,8 +172,10 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole }: Si
         theme={themeMode === 'dark' ? 'dark' : 'light'}
         mode="inline"
         selectedKeys={[selectedKey]}
-        openKeys={openKeys}
-        onOpenChange={handleOpenChange}
+        // A collapsed rail must not retain an expanded submenu overlay above page content.
+        // The remembered keys are restored when the user expands the sidebar again.
+        openKeys={collapsed ? [] : openKeys}
+        onOpenChange={collapsed ? undefined : handleOpenChange}
         items={menuItems}
         style={{
           background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,

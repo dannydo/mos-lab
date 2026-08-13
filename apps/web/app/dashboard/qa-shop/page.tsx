@@ -71,6 +71,7 @@ import { SafeAny } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { useTheme } from '../../../context/ThemeContext';
 import { FullBranchAuditReportTab } from './components/FullBranchAuditReportTab';
+import styles from './qa-shop.module.css';
 
 const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
@@ -504,8 +505,8 @@ export default function QaShopPage() {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
       setIsMobileScreen(mobile);
-      if (mobile) {
-        setIsMobileFocusMode(true);
+      if (!mobile) {
+        setIsMobileFocusMode(false);
       }
     };
     checkMobile();
@@ -740,6 +741,8 @@ export default function QaShopPage() {
 
     return { total: totalItems, passed, failed, na, passRate, failedItemsList };
   }, [itemStatuses, activeTemplate]);
+  const hasRecordedInspectionResult = inspectionStats.passed + inspectionStats.failed + inspectionStats.na > 0;
+  const inspectionProgressLabel = hasRecordedInspectionResult ? `${inspectionStats.passRate.toFixed(1)}%` : 'Chưa chấm';
 
   // Fetch Data Function
   const fetchData = useCallback(async () => {
@@ -1108,24 +1111,24 @@ export default function QaShopPage() {
   ];
 
   return (
-    <div className="p-6 space-y-5" style={{ background: isDark ? '#0a0a0a' : '#f8fafc', minHeight: '100vh' }}>
+    <div
+      className={`${styles.qaPage} p-3 sm:p-6 space-y-3 sm:space-y-5`}
+      style={{ background: isDark ? '#0a0a0a' : '#f8fafc', minHeight: '100vh' }}
+    >
       {/* Minimalist Top Navigation Header */}
       <div
-        className="rounded-xl p-5 border transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+        className={`${styles.pageHeader} rounded-xl p-4 sm:p-5 border transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-4`}
         style={{
           background: isDark ? '#141414' : '#ffffff',
           borderColor: isDark ? '#262626' : '#e2e8f0',
         }}
       >
-        <div className="space-y-0.5">
+        <div className={`${styles.headerContent} space-y-0.5`}>
           <div className="flex items-center gap-2">
             <SafetyCertificateOutlined className="text-xl text-purple-500" />
             <Title level={4} style={{ margin: 0, fontWeight: 600 }}>
               QA & QC Shop Inspection
             </Title>
-            <span className="text-xs text-slate-600 dark:text-slate-400 font-normal">
-              v2.0 Minimalist Vector Edition
-            </span>
           </div>
           <Paragraph className="text-slate-600 dark:text-slate-400 text-xs mb-0">
             Bảng kiểm tra chất lượng cửa hàng phân chia theo từng phần (Quầy lễ tân, Sảnh đón, Toilet, Giường mi 1..N)
@@ -1133,7 +1136,7 @@ export default function QaShopPage() {
           </Paragraph>
         </div>
 
-        <Space wrap size="small">
+        <div className={styles.headerActions}>
           <Button
             type="primary"
             icon={<SaveOutlined />}
@@ -1148,7 +1151,7 @@ export default function QaShopPage() {
             loading={isSavingAudit}
             disabled={isSavingAudit}
           >
-            {`Lưu Biên Bản (${inspectionStats.passRate}%)`}
+            Lưu Biên Bản
           </Button>
 
           <Button
@@ -1158,14 +1161,14 @@ export default function QaShopPage() {
             className="focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-1 focus-visible:outline-none"
             aria-label="Tải lại dữ liệu"
           />
-        </Space>
+        </div>
       </div>
 
       {/* Flat Minimal Stat Cards */}
-      <Row gutter={[12, 12]}>
+      <Row gutter={[12, 12]} className={styles.statsGrid}>
         <Col xs={24} sm={12} lg={6}>
           <div
-            className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-700 shadow-none"
+            className={`${styles.statCard} p-3 sm:p-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-700 shadow-none`}
             style={{ background: isDark ? '#141414' : '#ffffff' }}
           >
             <div className="flex items-center justify-between">
@@ -1187,7 +1190,7 @@ export default function QaShopPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <div
-            className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-700 shadow-none"
+            className={`${styles.statCard} p-3 sm:p-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-700 shadow-none`}
             style={{ background: isDark ? '#141414' : '#ffffff' }}
           >
             <div className="flex items-center justify-between">
@@ -1208,7 +1211,7 @@ export default function QaShopPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <div
-            className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-700 shadow-none"
+            className={`${styles.statCard} p-3 sm:p-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-700 shadow-none`}
             style={{ background: isDark ? '#141414' : '#ffffff' }}
           >
             <div className="flex items-center justify-between">
@@ -1229,7 +1232,7 @@ export default function QaShopPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <div
-            className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-700 shadow-none"
+            className={`${styles.statCard} p-3 sm:p-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-700 shadow-none`}
             style={{ background: isDark ? '#141414' : '#ffffff' }}
           >
             <div className="flex items-center justify-between">
@@ -1252,19 +1255,18 @@ export default function QaShopPage() {
 
       {/* Interactive Inspection Control & Live Score Bar */}
       <div
-        className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200"
+        className={`${styles.controlsPanel} p-3 sm:p-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200`}
         style={{ background: isDark ? '#141414' : '#ffffff' }}
       >
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Space wrap size="middle">
-              <div>
-                <Text className="text-[11px] text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                  Chi Nhánh Kiểm Tra:
-                </Text>
+          <div className={styles.controlsLayout}>
+            <div className={styles.primaryControls}>
+              <div className={styles.controlGroup}>
+                <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Chi Nhánh Kiểm Tra:</Text>
                 <Select
                   value={selectedBranch}
                   onChange={setSelectedBranch}
+                  className={styles.branchSelect}
                   style={{ width: 250 }}
                   options={STORE_BRANCHES.map((b) => ({
                     value: b.code,
@@ -1273,10 +1275,8 @@ export default function QaShopPage() {
                 />
               </div>
 
-              <div>
-                <Text className="text-[11px] text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                  Ca Kiểm Tra:
-                </Text>
+              <div className={styles.controlGroup}>
+                <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Ca Kiểm Tra:</Text>
                 <Radio.Group
                   value={selectedShift}
                   onChange={(e) => setSelectedShift(e.target.value)}
@@ -1290,14 +1290,13 @@ export default function QaShopPage() {
                 </Radio.Group>
               </div>
 
-              <div>
-                <Text className="text-[11px] text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                  Auditor (QA & QC):
-                </Text>
+              <div className={styles.controlGroup}>
+                <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Auditor (QA & QC):</Text>
                 <Select
                   value={auditorName}
                   onChange={setAuditorName}
                   size="small"
+                  className={styles.auditorSelect}
                   style={{ width: 220 }}
                   getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
                   options={qaStaffList.map((s) => ({
@@ -1307,38 +1306,38 @@ export default function QaShopPage() {
                 />
               </div>
 
-              <div>
-                <Text className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider block mb-1">
-                  Giao Diện Mobile:
-                </Text>
+              <div className={`${styles.controlGroup} ${styles.quickCheckGroup}`}>
+                <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Kiểm Tra Nhanh:</Text>
                 <Tooltip title="Bật Chế độ Mobile tập trung (Full-screen Mobile Inspection Mode) ẩn Sidebar & Clutter">
                   <Button
                     size="small"
                     icon={<MobileOutlined className="text-purple-500" />}
                     onClick={() => setIsMobileFocusMode((prev) => !prev)}
-                    className={`text-xs font-semibold ${
+                    className={`${styles.mobileFocusButton} ${
                       isMobileFocusMode
                         ? 'bg-purple-600 text-white border-purple-600'
                         : 'border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40'
                     }`}
                   >
-                    {isMobileFocusMode ? '📱 ĐANG BẬT MOBILE' : '📱 Mobile Focus Mode'}
+                    {isMobileFocusMode
+                      ? 'Đang ở chế độ kiểm tra nhanh'
+                      : isMobileScreen
+                        ? 'Mở chế độ kiểm tra nhanh'
+                        : 'Mobile Focus Mode'}
                   </Button>
                 </Tooltip>
               </div>
 
-              <div>
-                <Text className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider block mb-1">
-                  Audit Đột Xuất:
-                </Text>
+              <div className={styles.controlGroup}>
+                <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Audit Đột Xuất:</Text>
                 <Tooltip title="Bật ON khi kiểm tra đột xuất: Yêu cầu chụp hình 100% tất cả tiêu chí (kể cả Đạt) mới cho Nộp Biên Bản">
                   <div
                     onClick={() => setRequireAllPhotos((prev) => !prev)}
                     className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border cursor-pointer transition-all ${
                       requireAllPhotos
                         ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-300 font-bold'
-                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 text-slate-500'
-                    }`}
+                        : 'border-slate-200 dark:border-slate-700 bg-transparent text-slate-500'
+                    } ${styles.toggleControl}`}
                   >
                     <Switch
                       size="small"
@@ -1346,20 +1345,20 @@ export default function QaShopPage() {
                       onClick={(_, e) => e.stopPropagation()}
                       onChange={setRequireAllPhotos}
                     />
-                    <span className="text-xs select-none">{requireAllPhotos ? '📷 ÉP CHỤP 100%' : 'Chụp Thường'}</span>
+                    <span className={`${styles.controlActionText} select-none`}>
+                      {requireAllPhotos ? 'Ép chụp ảnh 100%' : 'Chụp thường'}
+                    </span>
                   </div>
                 </Tooltip>
               </div>
 
-              <div>
-                <Text className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                  Chế Độ Chỉnh Sửa:
-                </Text>
-                <Space size="small" align="center">
+              <div className={styles.controlGroup}>
+                <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Chế Độ Chỉnh Sửa:</Text>
+                <div className={styles.editControls}>
                   <Tooltip title="Bật/Tắt chế độ hiển thị nút Chỉnh sửa & Xóa tiêu chí">
                     <div
                       onClick={() => setIsEditMode((prev) => !prev)}
-                      className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 cursor-pointer"
+                      className={`${styles.toggleControl} flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 bg-transparent cursor-pointer`}
                     >
                       <Switch
                         size="small"
@@ -1368,9 +1367,9 @@ export default function QaShopPage() {
                         onChange={setIsEditMode}
                       />
                       <span
-                        className={`text-xs font-semibold select-none ${isEditMode ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}
+                        className={`${styles.controlActionText} font-semibold select-none ${isEditMode ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}
                       >
-                        {isEditMode ? 'BẬT Edit' : 'TẮT Edit'}
+                        {isEditMode ? 'Cho phép chỉnh sửa' : 'Chỉ xem'}
                       </span>
                     </div>
                   </Tooltip>
@@ -1396,20 +1395,27 @@ export default function QaShopPage() {
                       </Button>
                     </>
                   )}
-                </Space>
+                </div>
               </div>
-            </Space>
+            </div>
 
-            <div className="flex items-center gap-3 text-xs">
-              <span className="text-slate-600 dark:text-slate-400">Tỷ lệ đạt:</span>
+            <div className={styles.scoreSummary}>
+              <span className={`${styles.scoreLabel} text-slate-600 dark:text-slate-400`}>Tỷ lệ đạt:</span>
               <span
-                className="text-xl font-bold tabular-nums"
+                className={hasRecordedInspectionResult ? 'text-xl font-bold tabular-nums' : styles.pendingScoreValue}
                 style={{
-                  color:
-                    inspectionStats.passRate >= 90 ? '#10b981' : inspectionStats.passRate >= 80 ? '#f59e0b' : '#ef4444',
+                  color: !hasRecordedInspectionResult
+                    ? isDark
+                      ? '#94a3b8'
+                      : '#64748b'
+                    : inspectionStats.passRate >= 90
+                      ? '#10b981'
+                      : inspectionStats.passRate >= 80
+                        ? '#f59e0b'
+                        : '#ef4444',
                 }}
               >
-                {inspectionStats.passRate.toFixed(1)}%
+                {inspectionProgressLabel}
               </span>
               <div className="flex gap-1.5 ml-2">
                 <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 tabular-nums">
@@ -1425,14 +1431,20 @@ export default function QaShopPage() {
             </div>
           </div>
 
-          <Progress
-            percent={inspectionStats.passRate}
-            strokeColor={
-              inspectionStats.passRate >= 90 ? '#10b981' : inspectionStats.passRate >= 80 ? '#f59e0b' : '#ef4444'
-            }
-            size="small"
-            showInfo={false}
-          />
+          {hasRecordedInspectionResult ? (
+            <Progress
+              percent={inspectionStats.passRate}
+              strokeColor={
+                inspectionStats.passRate >= 90 ? '#10b981' : inspectionStats.passRate >= 80 ? '#f59e0b' : '#ef4444'
+              }
+              size="small"
+              showInfo={false}
+            />
+          ) : (
+            <div className={`${styles.pendingHint} text-xs text-slate-500 dark:text-slate-400`}>
+              Chọn Đạt, Lỗi hoặc N/A để bắt đầu chấm.
+            </div>
+          )}
 
           {/* Soft Alert Strip for Failed Items */}
           {inspectionStats.failed > 0 && (
@@ -1474,24 +1486,30 @@ export default function QaShopPage() {
 
       {/* Main Tabs Container */}
       <div
-        className="p-5 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200"
+        className={`${styles.tabsShell} p-3 sm:p-5 rounded-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-200`}
         style={{ background: isDark ? '#141414' : '#ffffff' }}
       >
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
           type="line"
+          className={styles.mainTabs}
           items={[
             {
               key: 'checklist',
               label: (
-                <span className="flex items-center gap-1.5 text-xs font-medium">
-                  <BuildOutlined /> Bảng Kiểm Tra Từng Phần ({selectedBranch})
+                <span
+                  className={`${styles.tabLabel} flex items-center gap-1.5 text-xs font-medium`}
+                  title="Bảng Kiểm Tra Từng Phần"
+                >
+                  <BuildOutlined />
+                  <span className={styles.tabDesktopLabel}>Bảng Kiểm Tra Từng Phần ({selectedBranch})</span>
+                  <span className={styles.tabMobileLabel}>Kiểm tra</span>
                 </span>
               ),
               children: (
                 <div className="space-y-4 py-2">
-                  <div className="flex items-center justify-between">
+                  <div className={`${styles.checklistHeading} flex items-center justify-between`}>
                     <div>
                       <Title level={5} style={{ margin: 0, fontWeight: 600 }}>
                         {(activeTemplate?.title || `Bộ Tiêu Chuẩn Kiểm Tra Chi Nhánh ${selectedBranch}`)
@@ -1508,7 +1526,9 @@ export default function QaShopPage() {
                         )}
                       </Text>
                     </div>
-                    <span className="text-xs text-slate-600 dark:text-slate-400 font-medium tabular-nums">
+                    <span
+                      className={`${styles.checklistCount} text-xs text-slate-600 dark:text-slate-400 font-medium tabular-nums`}
+                    >
                       {activeTemplate?.sections?.length || 0} Nhóm Khu Vực
                     </span>
                   </div>
@@ -1534,18 +1554,21 @@ export default function QaShopPage() {
 
                         const areaFailedPercent =
                           area.totalItems > 0 ? Math.round((areaFailed / area.totalItems) * 100) : 0;
+                        const areaTitle = area.title.split('(')[0].trim();
+                        const areaDescription = area.title.match(/\((.*)\)/)?.[1]?.trim();
 
                         return {
                           key: area.id,
                           label: (
-                            <div className="flex items-center justify-between w-full pr-2">
-                              <span className="font-bold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                                {area.title}
-                                <span className="text-slate-600 dark:text-slate-400 font-normal text-xs tabular-nums">
-                                  ({area.subSections.length} nhóm nhỏ · {area.totalItems} tiêu chí)
+                            <div className={`${styles.areaHeading} flex items-center justify-between w-full pr-2`}>
+                              <div className={styles.areaLabel}>
+                                <span className={styles.areaTitle}>{areaTitle}</span>
+                                {areaDescription && <span className={styles.areaDescription}>{areaDescription}</span>}
+                                <span className={`${styles.areaMeta} tabular-nums`}>
+                                  {area.subSections.length} nhóm nhỏ · {area.totalItems} tiêu chí
                                 </span>
-                              </span>
-                              <div className="flex items-center gap-2 text-xs">
+                              </div>
+                              <div className={`${styles.areaStats} flex items-center gap-2 text-xs`}>
                                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold tabular-nums border border-emerald-500/20">
                                   {areaPassed} Đạt
                                 </span>
@@ -1582,7 +1605,9 @@ export default function QaShopPage() {
                                 return (
                                   <div key={sec.id || `sec-${secIdx}`} className="space-y-2">
                                     {/* Sub-section Header */}
-                                    <div className="flex items-center justify-between px-2.5 py-1 bg-slate-100/70 dark:bg-slate-800/50 rounded-md border border-slate-200/60 dark:border-slate-800/60">
+                                    <div
+                                      className={`${styles.subsectionHeader} flex items-center justify-between px-2.5 py-1 bg-slate-100/70 dark:bg-slate-800/50 rounded-md border border-slate-200/60 dark:border-slate-800/60`}
+                                    >
                                       <span className="font-semibold text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1.5 uppercase tracking-wide">
                                         <BuildOutlined className="text-purple-500 text-xs" />
                                         {sec.title}
@@ -1590,7 +1615,7 @@ export default function QaShopPage() {
                                           ({secItems.length} tiêu chí)
                                         </span>
                                       </span>
-                                      <div className="flex items-center gap-1.5 text-[11px]">
+                                      <div className={`${styles.subsectionMeta} flex items-center gap-1.5 text-[11px]`}>
                                         <span className="text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
                                           {secPassed} Đạt
                                         </span>
@@ -1661,15 +1686,19 @@ export default function QaShopPage() {
                                         return (
                                           <div
                                             key={itm.id}
-                                            className={`py-2 px-3 rounded-lg border transition-all duration-150 ${
+                                            className={`${styles.checklistItem} py-2 px-3 rounded-lg border transition-all duration-150 ${
                                               isFail
                                                 ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60 shadow-xs'
                                                 : 'bg-slate-50/40 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 hover:bg-slate-100/50 dark:hover:bg-slate-800/40'
                                             }`}
                                           >
                                             {/* Line 1: Header Row (Subject & Badges + Pure Icon-Only Buttons) */}
-                                            <div className="flex items-center justify-between gap-2">
-                                              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                            <div
+                                              className={`${styles.checklistItemHeader} flex items-center justify-between gap-2`}
+                                            >
+                                              <div
+                                                className={`${styles.itemTitleGroup} flex items-center gap-2 flex-wrap min-w-0`}
+                                              >
                                                 {renderSeverityDot(itm.severity)}
                                                 <Text className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate">
                                                   {subject}
@@ -1690,7 +1719,7 @@ export default function QaShopPage() {
                                               <div
                                                 role="group"
                                                 aria-label={`Đánh giá tiêu chuẩn: ${itm.title}`}
-                                                className="flex items-center gap-1 shrink-0"
+                                                className={`${styles.statusToggle} flex items-center gap-1 shrink-0`}
                                               >
                                                 <Tooltip title="Đạt quy chuẩn (PASS)">
                                                   <button
@@ -1966,8 +1995,13 @@ export default function QaShopPage() {
             {
               key: 'audits',
               label: (
-                <span className="flex items-center gap-1.5 text-xs font-medium">
-                  <FileTextOutlined /> Nhật Ký Biên Bản ({audits.length})
+                <span
+                  className={`${styles.tabLabel} flex items-center gap-1.5 text-xs font-medium`}
+                  title="Nhật Ký Biên Bản"
+                >
+                  <FileTextOutlined />
+                  <span className={styles.tabDesktopLabel}>Nhật Ký Biên Bản ({audits.length})</span>
+                  <span className={styles.tabMobileLabel}>Biên bản</span>
                 </span>
               ),
               children: (
@@ -1976,6 +2010,7 @@ export default function QaShopPage() {
                   columns={auditColumns}
                   rowKey="id"
                   loading={loading}
+                  scroll={{ x: 720 }}
                   pagination={{
                     current: auditTabNextPage,
                     pageSize: auditTabNextSize,
@@ -2001,8 +2036,13 @@ export default function QaShopPage() {
             {
               key: 'tickets',
               label: (
-                <span className="flex items-center gap-1.5 text-xs font-medium">
-                  <AlertOutlined /> Lỗi Vi Phạm ({tickets.length})
+                <span
+                  className={`${styles.tabLabel} flex items-center gap-1.5 text-xs font-medium`}
+                  title="Lỗi Vi Phạm"
+                >
+                  <AlertOutlined />
+                  <span className={styles.tabDesktopLabel}>Lỗi Vi Phạm ({tickets.length})</span>
+                  <span className={styles.tabMobileLabel}>Lỗi</span>
                 </span>
               ),
               children: (
@@ -2011,6 +2051,7 @@ export default function QaShopPage() {
                   columns={ticketColumns}
                   rowKey="id"
                   loading={loading}
+                  scroll={{ x: 720 }}
                   pagination={{
                     current: ticketTabNextPage,
                     pageSize: ticketTabNextSize,
@@ -2036,8 +2077,13 @@ export default function QaShopPage() {
             {
               key: 'full-branch-report',
               label: (
-                <span className="flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400">
-                  <BarChartOutlined /> Báo Cáo Full Audit (Passed & Failed)
+                <span
+                  className={`${styles.tabLabel} flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400`}
+                  title="Báo Cáo Full Audit"
+                >
+                  <BarChartOutlined />
+                  <span className={styles.tabDesktopLabel}>Báo Cáo Full Audit (Passed & Failed)</span>
+                  <span className={styles.tabMobileLabel}>Báo cáo</span>
                 </span>
               ),
               children: (
@@ -2054,8 +2100,13 @@ export default function QaShopPage() {
             {
               key: 'analytics',
               label: (
-                <span className="flex items-center gap-1.5 text-xs font-medium">
-                  <TrophyOutlined /> Xếp Hạng Chi Nhánh
+                <span
+                  className={`${styles.tabLabel} flex items-center gap-1.5 text-xs font-medium`}
+                  title="Xếp Hạng Chi Nhánh"
+                >
+                  <TrophyOutlined />
+                  <span className={styles.tabDesktopLabel}>Xếp Hạng Chi Nhánh</span>
+                  <span className={styles.tabMobileLabel}>Xếp hạng</span>
                 </span>
               ),
               children: (
@@ -2977,7 +3028,7 @@ export default function QaShopPage() {
       {isMobileFocusMode && (
         <div
           id="mobile-focus-overlay"
-          className="fixed inset-0 z-[9999] bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-sans"
+          className={`${styles.mobileFocusOverlay} fixed inset-0 z-[9999] bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-sans`}
         >
           {/* 1. Mobile Sticky Top Header */}
           <div className="px-3 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0 shadow-md">
@@ -3009,10 +3060,16 @@ export default function QaShopPage() {
               <span
                 className="text-[11px] font-bold px-2 py-0.5 rounded border tabular-nums"
                 style={{
-                  color:
-                    inspectionStats.passRate >= 90 ? '#34d399' : inspectionStats.passRate >= 80 ? '#fbbf24' : '#f87171',
-                  borderColor:
-                    inspectionStats.passRate >= 90
+                  color: !hasRecordedInspectionResult
+                    ? '#94a3b8'
+                    : inspectionStats.passRate >= 90
+                      ? '#34d399'
+                      : inspectionStats.passRate >= 80
+                        ? '#fbbf24'
+                        : '#f87171',
+                  borderColor: !hasRecordedInspectionResult
+                    ? 'rgba(148,163,184,0.3)'
+                    : inspectionStats.passRate >= 90
                       ? 'rgba(52,211,153,0.3)'
                       : inspectionStats.passRate >= 80
                         ? 'rgba(251,191,36,0.3)'
@@ -3020,14 +3077,14 @@ export default function QaShopPage() {
                   backgroundColor: 'rgba(15,23,42,0.8)',
                 }}
               >
-                {inspectionStats.passRate.toFixed(1)}%
+                {inspectionProgressLabel}
               </span>
               <Button
                 size="small"
                 icon={<DesktopOutlined />}
                 onClick={() => setIsMobileFocusMode(false)}
-                aria-label="Về Desktop"
-                title="Về Desktop"
+                aria-label="Mở bảng điều khiển QA"
+                title="Mở bảng điều khiển QA"
                 className="text-xs font-semibold bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700 shrink-0"
               />
             </div>
@@ -3156,7 +3213,7 @@ export default function QaShopPage() {
                                             }))
                                           }
                                           aria-label="Đạt"
-                                          className={`w-8 h-8 rounded-md border font-bold text-xs flex items-center justify-center transition-all active:scale-95 ${
+                                          className={`w-10 h-10 rounded-md border font-bold text-xs flex items-center justify-center transition-all active:scale-95 ${
                                             isPass
                                               ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
                                               : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
@@ -3174,7 +3231,7 @@ export default function QaShopPage() {
                                             }))
                                           }
                                           aria-label="Lỗi"
-                                          className={`w-8 h-8 rounded-md border font-bold text-xs flex items-center justify-center transition-all active:scale-95 ${
+                                          className={`w-10 h-10 rounded-md border font-bold text-xs flex items-center justify-center transition-all active:scale-95 ${
                                             isFail
                                               ? 'bg-rose-600 text-white border-rose-500 shadow-sm'
                                               : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
@@ -3192,7 +3249,7 @@ export default function QaShopPage() {
                                             }))
                                           }
                                           aria-label="N/A"
-                                          className={`h-8 px-2 rounded-md border font-bold text-xs flex items-center justify-center transition-all active:scale-95 ${
+                                          className={`h-10 min-w-10 px-2 rounded-md border font-bold text-xs flex items-center justify-center transition-all active:scale-95 ${
                                             isNa
                                               ? 'bg-slate-700 text-slate-100 border-slate-600 shadow-sm'
                                               : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
@@ -3323,15 +3380,15 @@ export default function QaShopPage() {
               disabled={isSavingAudit}
               className="flex-1 bg-emerald-600 hover:bg-emerald-500 font-bold text-sm h-12 rounded-xl"
             >
-              {`Lưu Biên Bản (${inspectionStats.passRate.toFixed(1)}%)`}
+              {`Lưu Biên Bản (${inspectionProgressLabel})`}
             </Button>
 
             <Button
               size="large"
               icon={<DesktopOutlined />}
               onClick={() => setIsMobileFocusMode(false)}
-              aria-label="Về Desktop"
-              title="Về Desktop"
+              aria-label="Mở bảng điều khiển QA"
+              title="Mở bảng điều khiển QA"
               className="bg-slate-800 text-slate-200 border-slate-700 font-semibold text-xs h-12 w-12 flex items-center justify-center p-0 rounded-xl shrink-0"
             />
           </div>

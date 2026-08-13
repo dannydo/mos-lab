@@ -2,29 +2,8 @@
 
 import '../../suppress-warnings';
 import React from 'react';
-import {
-  Tabs,
-  Input,
-  Button,
-  Typography,
-  Select,
-  theme,
-  Tooltip,
-  Space,
-  Modal,
-  Checkbox,
-  Spin,
-  message,
-  Tag,
-} from 'antd';
-import {
-  SearchOutlined,
-  CalendarOutlined,
-  HistoryOutlined,
-  DeleteOutlined,
-  SettingOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { Tabs, Input, Button, Select, theme, Tooltip, Space, Badge, Spin, message } from 'antd';
+import { SearchOutlined, HistoryOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import CalendarPlusIcon from '../../../components/icons/CalendarPlusIcon';
@@ -37,6 +16,8 @@ import CustomerBulkActions from './components/CustomerBulkActions';
 import CustomerTable from './components/CustomerTable';
 import { RetainDataButton } from './components/RetainDataButton';
 import AllocationBatchHeader from './components/AllocationBatchHeader';
+import CustomerRandomSelectorModal from './components/CustomerRandomSelectorModal';
+import { ContentSurface, PageHeader, PageToolbar } from '../../../components/ui';
 
 const UndoReasonModal = dynamic(() => import('./components/UndoReasonModal').then((m) => m.UndoReasonModal), {
   ssr: false,
@@ -50,8 +31,6 @@ const AssignmentHistoryDrawer = dynamic(
   () => import('./components/AssignmentHistoryDrawer').then((m) => m.AssignmentHistoryDrawer),
   { ssr: false }
 );
-
-const { Title, Text } = Typography;
 
 const PRESET_FILTERS = [
   {
@@ -89,7 +68,6 @@ const PRESET_FILTERS = [
 function CustomersPageContent() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
-  const [modal, contextHolder] = Modal.useModal();
   const tableRef = React.useRef<{ openConfig: () => void } | null>(null);
 
   const data = useCustomerData({
@@ -105,8 +83,6 @@ function CustomersPageContent() {
     setBookingWizardVisible,
     pageSize,
     activeTab,
-    searchQuery,
-    sortField,
     daysSinceLastVisitMin,
     daysSinceLastVisitMax,
     totalSpentMin,
@@ -119,11 +95,7 @@ function CustomersPageContent() {
     referralUsed,
     referralCountMin,
     referralCountMax,
-    assignedStaffId,
     refreshListAndStats,
-    bookingWizardVisible,
-    bookingInitialCustomer,
-    modalVisible,
     selectedCustomer,
     setSelectedCustomer,
   } = data;
@@ -166,63 +138,18 @@ function CustomersPageContent() {
   }, [refreshListAndStats]);
 
   const getTabLabel = (key: string, baseLabel: string, count: number) => {
-    let color = 'default';
-    if (key === 'COMBO_LIVE') color = 'green';
-    if (key === 'NOT_COMBO_LIVE') color = 'blue';
-    if (key === 'COMBO_DEAD') color = 'red';
-    if (key === 'SINGLE') color = 'gold';
+    const colorByTab: Record<string, string> = {
+      COMBO_LIVE: '#52C41A',
+      NOT_COMBO_LIVE: token.colorInfo,
+      COMBO_DEAD: token.colorError,
+      SINGLE: token.colorPrimary,
+    };
 
     return (
-      <Space>
+      <Space size={6}>
         {baseLabel}
-        <Badge
-          count={count}
-          overflowCount={99999}
-          style={{
-            backgroundColor:
-              color === 'green'
-                ? '#52C41A'
-                : color === 'red'
-                  ? '#FF4D4F'
-                  : color === 'gold'
-                    ? '#D4A84B'
-                    : color === 'blue'
-                      ? '#1677ff'
-                      : '#888',
-            color: color === 'gold' ? '#000' : '#fff',
-          }}
-        />
+        <Badge count={count} overflowCount={99999} color={colorByTab[key]} />
       </Space>
-    );
-  };
-
-  // Badge component inside Tab label wrapper
-  const Badge = ({
-    count,
-    style,
-    overflowCount,
-  }: {
-    count: number;
-    style?: React.CSSProperties;
-    overflowCount?: number;
-  }) => {
-    return (
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minWidth: '20px',
-          height: '20px',
-          padding: '0 6px',
-          fontSize: '12px',
-          fontWeight: 'bold',
-          borderRadius: '10px',
-          ...style,
-        }}
-      >
-        {count > (overflowCount || 99999) ? `${overflowCount}+` : count}
-      </span>
     );
   };
 
@@ -250,7 +177,6 @@ function CustomersPageContent() {
 
   return (
     <div>
-      {contextHolder}
       <UndoReasonModal
         visible={undoModalState.visible}
         batchId={undoModalState.batchId}
@@ -274,52 +200,24 @@ function CustomersPageContent() {
         staffList={data.staffList}
       />
 
-      <div className="flex justify-between items-center mb-4" style={{ marginBottom: '16px' }}>
-        <div>
-          <Title level={3} style={{ color: token.colorPrimary, margin: 0, fontWeight: 700 }}>
-            Danh Sách Khách Hàng
-          </Title>
-          <Text style={{ color: token.colorTextDescription, fontSize: '13px' }}>
-            Quản lý phân loại & phân bổ data real-time
-          </Text>
-        </div>
-        <Tooltip title="Đặt lịch mới">
-          <Button
-            type="primary"
-            icon={<CalendarPlusIcon fontSize={18} />}
-            style={{
-              backgroundColor: '#D4A84B',
-              borderColor: '#D4A84B',
-              height: '36px',
-              width: '36px',
-              padding: 0,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '8px',
-              boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
-            }}
-            onClick={() => data.setBookingWizardVisible(true)}
-          />
-        </Tooltip>
-      </div>
+      <PageHeader
+        title="Danh Sách Khách Hàng"
+        subtitle="Quản lý phân loại và phân bổ data real-time"
+        extra={
+          <Tooltip title="Đặt lịch mới">
+            <Button
+              type="primary"
+              aria-label="Đặt lịch mới"
+              icon={<CalendarPlusIcon fontSize={18} />}
+              onClick={() => data.setBookingWizardVisible(true)}
+            />
+          </Tooltip>
+        }
+      />
 
-      {/* MINIMALIST CONTROL BAR */}
-      <div
-        style={{
-          background: token.colorBgContainer,
-          border: `1px solid ${token.colorBorderSecondary}`,
-          borderRadius: '12px',
-          padding: '12px 16px',
-          marginBottom: '16px',
-          boxShadow: themeMode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.03)',
-        }}
-      >
-        <div
-          style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}
-        >
-          {/* LEFT: SEARCH & ADVANCED FILTERS */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', flex: 1, minWidth: 280 }}>
+      <PageToolbar
+        primary={
+          <>
             <Input.Search
               placeholder="Tìm tên hoặc SĐT..."
               allowClear
@@ -331,7 +229,6 @@ function CustomersPageContent() {
 
             <CustomerFilters
               themeMode={themeMode}
-              token={token}
               currentUser={data.currentUser}
               hasActiveFilters={data.hasActiveFilters}
               clearFilters={data.clearFilters}
@@ -396,10 +293,10 @@ function CustomersPageContent() {
               PRESET_FILTERS={PRESET_FILTERS}
               onOpenRandomModal={isManagerOrAdmin ? () => data.setRandomModalVisible(true) : undefined}
             />
-          </div>
-
-          {/* RIGHT: RETAIN BADGE, ACTION ICONS & SORT */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          </>
+        }
+        actions={
+          <>
             <RetainDataButton
               mode="quota-badge"
               retainedOnly={data.retainedOnly}
@@ -457,9 +354,9 @@ function CustomersPageContent() {
                 { value: 'totalSpent_desc', label: 'Chi tiêu giảm dần' },
               ]}
             />
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <CustomerBulkActions
         themeMode={themeMode}
@@ -553,33 +450,28 @@ function CustomersPageContent() {
       )}
 
       {data.randomSelectedIds && data.randomSelectedIds.length > 0 && (
-        <div
-          style={{
-            background: themeMode === 'dark' ? '#2b2111' : '#FFFBE6',
-            border: `1px solid ${themeMode === 'dark' ? '#5c3e16' : '#FFE58F'}`,
-            borderRadius: '8px',
-            padding: '12px 16px',
-            marginBottom: '16px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
+        <ContentSurface
+          className="mb-4"
+          padding="12px 16px"
+          style={{ background: token.colorWarningBg, borderColor: token.colorWarningBorder }}
         >
-          <span style={{ color: themeMode === 'dark' ? '#d48806' : '#D46B08' }}>
-            Đang hiển thị <strong>{data.randomSelectedIds.length}</strong> khách hàng chưa phân bổ được chọn ngẫu nhiên.
-          </span>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              data.setRandomSelectedIds(null);
-              data.setSelectedRowKeys([]);
-            }}
-            style={{ color: '#D4A84B', padding: 0, fontWeight: 'bold' }}
-          >
-            Hủy chế độ ngẫu nhiên (Xem tất cả)
-          </Button>
-        </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span style={{ color: token.colorWarning }}>
+              Đang hiển thị <strong>{data.randomSelectedIds.length}</strong> khách hàng chưa phân bổ được chọn ngẫu
+              nhiên.
+            </span>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => {
+                data.setRandomSelectedIds(null);
+                data.setSelectedRowKeys([]);
+              }}
+            >
+              Hủy chế độ ngẫu nhiên (Xem tất cả)
+            </Button>
+          </div>
+        </ContentSurface>
       )}
 
       <CustomerTable
@@ -602,109 +494,20 @@ function CustomersPageContent() {
         handleOpenSmsModal={handleOpenSmsModal}
       />
 
-      {/* RANDOM SELECTOR MODAL */}
-      <Modal
-        title={
-          <span style={{ color: '#D4A84B', fontSize: '18px', fontWeight: 'bold' }}>Chọn Ngẫu Nhiên Khách Hàng</span>
-        }
+      <CustomerRandomSelectorModal
         open={data.randomModalVisible}
+        loading={data.randomLoading}
+        count={data.randomCount}
+        setCount={data.setRandomCount}
+        excludeAssigned={data.excludeAssigned}
+        setExcludeAssigned={data.setExcludeAssigned}
+        excludeUnconfirmedAllocation={data.excludeUnconfirmedAllocation}
+        setExcludeUnconfirmedAllocation={data.setExcludeUnconfirmedAllocation}
+        excludeFutureBooking={data.excludeFutureBooking}
+        setExcludeFutureBooking={data.setExcludeFutureBooking}
         onCancel={() => data.setRandomModalVisible(false)}
-        footer={[
-          <Button key="cancel" onClick={() => data.setRandomModalVisible(false)}>
-            Hủy
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={data.randomLoading}
-            onClick={data.handleRandomSelect}
-            style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B', color: '#000' }}
-          >
-            Chọn
-          </Button>,
-        ]}
-      >
-        <div style={{ margin: '16px 0' }}>
-          <p style={{ color: token.colorTextDescription, marginBottom: '16px' }}>
-            Hệ thống sẽ tự động tìm kiếm và chọn ngẫu nhiên các khách hàng thỏa mãn bộ lọc hiện tại của anh/chị.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ color: token.colorText, fontWeight: 500 }}>Số lượng khách hàng:</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={1000}
-                  placeholder="Nhập số..."
-                  value={data.randomCount}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
-                      data.setRandomCount('');
-                    } else {
-                      const num = parseInt(val, 10);
-                      data.setRandomCount(isNaN(num) ? '' : num);
-                    }
-                  }}
-                  style={{ width: '110px', borderRadius: '6px' }}
-                />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
-                <span style={{ fontSize: '12px', color: token.colorTextDescription }}>Preset chọn nhanh:</span>
-                {[10, 20, 50, 100, 200].map((preset) => (
-                  <Tag.CheckableTag
-                    key={preset}
-                    checked={data.randomCount === preset}
-                    onChange={() => data.setRandomCount(preset)}
-                    style={{
-                      borderRadius: '12px',
-                      padding: '2px 10px',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      border: `1px solid ${
-                        data.randomCount === preset ? '#D4A84B' : themeMode === 'dark' ? '#434343' : '#d9d9d9'
-                      }`,
-                      background: data.randomCount === preset ? '#D4A84B' : 'transparent',
-                      color: data.randomCount === preset ? '#000' : token.colorText,
-                      fontWeight: data.randomCount === preset ? 600 : 400,
-                    }}
-                  >
-                    {preset} KH
-                  </Tag.CheckableTag>
-                ))}
-              </div>
-            </div>
-            <div>
-              <Checkbox
-                checked={data.excludeAssigned}
-                onChange={(e) => data.setExcludeAssigned(e.target.checked)}
-                style={{ color: token.colorText }}
-              >
-                Chỉ chọn khách hàng chưa được phân bổ Booker
-              </Checkbox>
-            </div>
-            <div>
-              <Checkbox
-                checked={data.excludeUnconfirmedAllocation}
-                onChange={(e) => data.setExcludeUnconfirmedAllocation(e.target.checked)}
-                style={{ color: token.colorText }}
-              >
-                Bỏ khách hàng đã phân bổ, chưa xác nhận
-              </Checkbox>
-            </div>
-            <div>
-              <Checkbox
-                checked={data.excludeFutureBooking}
-                onChange={(e) => data.setExcludeFutureBooking(e.target.checked)}
-                style={{ color: token.colorText }}
-              >
-                Bỏ khách hàng đã có lịch book tương lai
-              </Checkbox>
-            </div>
-          </div>
-        </div>
-      </Modal>
+        onSubmit={data.handleRandomSelect}
+      />
 
       {/* CUSTOMER DETAIL DRAWER */}
       <CustomerDetailDrawer
@@ -764,98 +567,6 @@ function CustomersPageContent() {
           data.openDetailModal({ id: customerId } as SafeAny);
         }}
       />
-
-      <style jsx global>{`
-        /* Custom styles for Ant Design Table under Dark & Light Mode */
-        .dark-theme .antd-custom-table .ant-table {
-          background: #111827 !important;
-          color: #cbd5e1 !important;
-        }
-        .light-theme .antd-custom-table .ant-table {
-          background: #ffffff !important;
-          color: #0f172a !important;
-        }
-        .dark-theme .antd-custom-table .ant-table-thead > tr > th {
-          background: #0b0f19 !important;
-          color: #94a3b8 !important;
-          border-bottom: 1px solid #1e293b !important;
-        }
-        .light-theme .antd-custom-table .ant-table-thead > tr > th {
-          background: #f8fafc !important;
-          color: #9e7118 !important;
-          border-bottom: 1px solid #e2e8f0 !important;
-        }
-        .dark-theme .antd-custom-table .ant-table-tbody > tr > td {
-          border-bottom: 1px solid #1f2937 !important;
-        }
-        .light-theme .antd-custom-table .ant-table-tbody > tr > td {
-          border-bottom: 1px solid #e2e8f0 !important;
-        }
-        .dark-theme .antd-custom-table .ant-table-row:hover > td {
-          background: #1e293b !important;
-        }
-        .light-theme .antd-custom-table .ant-table-row:hover > td {
-          background: #f1f5f9 !important;
-        }
-
-        /* Row highlighting - Light Theme */
-        .light-theme .row-missed-light > td {
-          background-color: #fff1f0 !important;
-        }
-        .light-theme .row-booked-future-light > td {
-          background-color: #f6ffed !important;
-        }
-        .light-theme .row-hope-light > td {
-          background-color: #fffbe6 !important;
-        }
-        .light-theme .row-missed-light:hover > td {
-          background-color: #ffe8e6 !important;
-        }
-        .light-theme .row-booked-future-light:hover > td {
-          background-color: #ebfcdd !important;
-        }
-        .light-theme .row-hope-light:hover > td {
-          background-color: #fffac6 !important;
-        }
-
-        /* Row highlighting - Dark Theme */
-        .dark-theme .row-missed-dark > td {
-          background-color: #2a1215 !important;
-        }
-        .dark-theme .row-booked-future-dark > td {
-          background-color: #162c1b !important;
-        }
-        .dark-theme .row-hope-dark > td {
-          background-color: #2b2111 !important;
-        }
-        .dark-theme .row-missed-dark:hover > td {
-          background-color: #381b1e !important;
-        }
-        .dark-theme .row-booked-future-dark:hover > td {
-          background-color: #1e3a24 !important;
-        }
-        .dark-theme .row-hope-dark:hover > td {
-          background-color: #382c16 !important;
-        }
-
-        /* Gold highlights for both light/dark */
-        .antd-custom-table .ant-pagination-item-active {
-          border-color: #d4a84b !important;
-        }
-        .antd-custom-table .ant-pagination-item-active a {
-          color: #d4a84b !important;
-        }
-
-        /* Compact line height & padding */
-        .antd-custom-table .ant-table-tbody > tr > td {
-          padding: 6px 8px !important;
-          line-height: 1.25 !important;
-        }
-        .antd-custom-table .ant-table-thead > tr > th {
-          padding: 8px 8px !important;
-          line-height: 1.25 !important;
-        }
-      `}</style>
 
       {/* SMS MODAL */}
       <SMSModal open={smsModalVisible} onClose={() => setSmsModalVisible(false)} customer={data.selectedCustomer} />

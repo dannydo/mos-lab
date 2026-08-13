@@ -26,7 +26,6 @@ import SavedFilterDropdown from './filters/SavedFilterDropdown';
 
 interface CustomerFiltersProps {
   themeMode: string;
-  token: SafeAny;
   currentUser: SafeAny;
   hasActiveFilters: boolean;
   clearFilters: () => void;

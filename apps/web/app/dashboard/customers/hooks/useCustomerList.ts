@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { apiClient } from '../../../../lib/api-client';
-import { Customer } from '@mos-lab/shared';
+import { Customer, ListCustomersParams } from '@mos-lab/shared';
 
 export const useCustomerList = (
   filterParams: SafeAny,
@@ -33,7 +33,7 @@ export const useCustomerList = (
   const fetchStats = useCallback(
     async (overrideSearchVal?: string) => {
       try {
-        const params: SafeAny = {
+        const params: ListCustomersParams = {
           search: overrideSearchVal !== undefined ? overrideSearchVal : filterParams.searchQuery,
         };
         if (filterParams.showTrash) {
@@ -113,7 +113,7 @@ export const useCustomerList = (
       const currentFetchId = ++fetchIdRef.current;
       setLoading(true);
       try {
-        const params: SafeAny = {
+        const params: ListCustomersParams = {
           page: page.toString(),
           limit: limit.toString(),
           sort: filterParams.sortField,

@@ -112,11 +112,12 @@ export interface CustomerWeeklyProgress {
 }
 
 export interface ListCustomersParams {
-  bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE';
+  bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE' | 'NEW_LOCA';
   search?: string;
   page?: number | string;
   limit?: number | string;
   sort?: string;
+  sortField?: string;
   daysSinceLastVisitMin?: number | string;
   daysSinceLastVisitMax?: number | string;
   totalSpentMin?: number | string;
@@ -141,6 +142,17 @@ export interface ListCustomersParams {
   lastCallDaysMax?: number | string;
   trash?: string | boolean;
   ids?: string;
+  hsd30?: string | boolean;
+  lsd1?: string | boolean;
+  hasProduct?: string | boolean;
+  contacted?: string | boolean;
+  contactType?: string;
+  hasCallback?: string | boolean;
+  hasFutureBooking?: string | boolean;
+  dateFrom?: string;
+  dateTo?: string;
+  retainedOnly?: string | boolean;
+  allocationBatchId?: string;
   isForeign?: 'all' | 'foreign' | 'local' | boolean | string;
 }
 

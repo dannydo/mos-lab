@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Table, Avatar, Tag, Typography, Space, Tooltip, Button, theme } from 'antd';
+import { Avatar, Tag, Typography, Space, Tooltip, Button, theme } from 'antd';
 import { UserOutlined, PhoneOutlined, CheckCircleOutlined, PlusOutlined, MessageOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -12,6 +12,7 @@ import { ResizableHeaderCell } from '../../../../components/ResizableHeaderCell'
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import { ColumnsType } from 'antd/es/table';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
+import { DataTable } from '../../../../components/ui';
 
 const { Text } = Typography;
 
@@ -487,7 +488,7 @@ const CustomerTable = React.memo(
 
     return (
       <>
-        <Table
+        <DataTable
           dataSource={customers}
           columns={mergedColumns}
           rowKey="id"
@@ -522,18 +523,12 @@ const CustomerTable = React.memo(
             showTotal: (totalCount) => `Tổng số: ${totalCount} khách hàng`,
           }}
           scroll={{ x: 'max-content', y: 650 }}
-          style={{
-            background: token.colorBgContainer,
-            border: `1px solid ${token.colorBorderSecondary}`,
-            borderRadius: '8px',
-            marginBottom: '16px',
-          }}
           components={{
             header: {
               cell: ResizableHeaderCell,
             },
           }}
-          className="antd-custom-table"
+          className="customer-data-table"
         />
 
         <TableConfigDrawer

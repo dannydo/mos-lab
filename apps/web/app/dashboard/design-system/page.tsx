@@ -228,6 +228,42 @@ export default function DesignSystemPage() {
       statusText: 'Chuẩn Design System',
       auditNotes: 'Engine bọc bố cục tự động điều chỉnh padding/gap theo compact, comfort, spacious.',
     },
+    {
+      id: 'ContentSurface',
+      name: 'ContentSurface',
+      category: '1. UI Primitives & Foundation',
+      filePath: 'apps/web/components/ui/ContentSurface.tsx',
+      status: 'VERIFIED',
+      statusText: 'Chuẩn Design System',
+      auditNotes: 'Bề mặt nội dung chuẩn cho toolbar, bảng và khối dữ liệu; tự nhận token light/dark.',
+    },
+    {
+      id: 'PageToolbar',
+      name: 'PageToolbar',
+      category: '1. UI Primitives & Foundation',
+      filePath: 'apps/web/components/ui/PageToolbar.tsx',
+      status: 'VERIFIED',
+      statusText: 'Chuẩn Design System',
+      auditNotes: 'Thanh tìm kiếm, lọc và action responsive cho các trang vận hành dữ liệu.',
+    },
+    {
+      id: 'DataTable',
+      name: 'DataTable',
+      category: '1. UI Primitives & Foundation',
+      filePath: 'apps/web/components/ui/DataTable.tsx',
+      status: 'VERIFIED',
+      statusText: 'Chuẩn Design System',
+      auditNotes: 'Vỏ Ant Design Table thống nhất surface/density; feature vẫn kiểm soát pagination và dữ liệu.',
+    },
+    {
+      id: 'StatePanel',
+      name: 'StatePanel',
+      category: '1. UI Primitives & Foundation',
+      filePath: 'apps/web/components/ui/StatePanel.tsx',
+      status: 'VERIFIED',
+      statusText: 'Chuẩn Design System',
+      auditNotes: 'Trạng thái loading, empty và error nhất quán cho data surfaces.',
+    },
 
     // 2. Bộ Lọc & Tìm Kiếm (Filter & Search)
     {

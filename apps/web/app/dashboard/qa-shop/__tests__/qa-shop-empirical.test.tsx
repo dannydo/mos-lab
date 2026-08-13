@@ -59,6 +59,9 @@ vi.mock('../../../../context/ThemeContext', () => ({
 
 vi.mock('../../../../lib/api-client', () => ({
   apiClient: {
+    staff: {
+      list: vi.fn().mockResolvedValue([]),
+    },
     qaShop: {
       getAudits: vi.fn().mockResolvedValue([]),
       getTickets: vi.fn().mockResolvedValue([]),
@@ -183,24 +186,25 @@ describe('QA Shop Inspection UI Empirical Verification Suite', () => {
       });
     });
 
-    it('shows note and photo input fields when item status is FAIL, hides them when changed back to PASS', async () => {
+    it('shows failure details when item status is FAIL, hides them when changed back to PASS', async () => {
       render(<QaShopPage />);
 
       await waitFor(() => {
         expect(screen.getByText(/Khu Vực Quầy Lễ Tân/i)).toBeInTheDocument();
       });
 
-      // Note input placeholder before FAIL
-      expect(screen.queryByPlaceholderText(/Nhập ghi chú lý do không đạt.../i)).toBeNull();
+      const notePlaceholder = /Ghi chú chi tiết lý do vi phạm/i;
+      expect(screen.queryByPlaceholderText(notePlaceholder)).toBeNull();
 
       // Click FAIL on first item
       const failButtons = screen.getAllByRole('button', { name: /Đánh giá Không đạt cho tiêu chí/i });
       fireEvent.click(failButtons[0]);
 
-      // Note and photo inputs should appear
+      // The current failure detail panel exposes a note and photo capture controls.
       await waitFor(() => {
-        expect(screen.getByPlaceholderText(/Nhập ghi chú lý do không đạt.../i)).toBeInTheDocument();
-        expect(screen.getByPlaceholderText(/URL Ảnh minh chứng.../i)).toBeInTheDocument();
+        expect(screen.getByText(/SL vi phạm:/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(notePlaceholder)).toBeInTheDocument();
+        expect(document.querySelectorAll('input[type="file"]').length).toBeGreaterThan(0);
       });
 
       // Click PASS back on first item
@@ -209,7 +213,7 @@ describe('QA Shop Inspection UI Empirical Verification Suite', () => {
 
       // Note input should disappear
       await waitFor(() => {
-        expect(screen.queryByPlaceholderText(/Nhập ghi chú lý do không đạt.../i)).toBeNull();
+        expect(screen.queryByPlaceholderText(notePlaceholder)).toBeNull();
       });
     });
   });

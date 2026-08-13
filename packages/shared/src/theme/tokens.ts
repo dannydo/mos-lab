@@ -80,6 +80,28 @@ export interface DesignTokens {
       fontFeatureSettings: string;
     };
   };
+  semantic: {
+    dark: SemanticThemeTokens;
+    light: SemanticThemeTokens;
+  };
+}
+
+/**
+ * Semantic UI roles. Feature code should consume these roles (or the mapped
+ * Ant Design tokens) instead of encoding a palette locally.
+ */
+export interface SemanticThemeTokens {
+  surface: string;
+  surfaceRaised: string;
+  surfaceMuted: string;
+  text: string;
+  textMuted: string;
+  border: string;
+  borderStrong: string;
+  accent: string;
+  accentContrast: string;
+  focusRing: string;
+  shadow: string;
 }
 
 export const themeTokens: DesignTokens = {
@@ -176,6 +198,34 @@ export const themeTokens: DesignTokens = {
     tabularNumsStyle: {
       fontVariantNumeric: 'tabular-nums',
       fontFeatureSettings: '"tnum"',
+    },
+  },
+  semantic: {
+    dark: {
+      surface: '#111827',
+      surfaceRaised: '#1e293b',
+      surfaceMuted: '#0f172a',
+      text: '#f8fafc',
+      textMuted: '#cbd5e1',
+      border: '#1f2937',
+      borderStrong: '#374151',
+      accent: '#D4A84B',
+      accentContrast: '#111827',
+      focusRing: 'rgba(212, 168, 75, 0.28)',
+      shadow: '0 12px 28px rgba(0, 0, 0, 0.22)',
+    },
+    light: {
+      surface: '#ffffff',
+      surfaceRaised: '#ffffff',
+      surfaceMuted: '#f8fafc',
+      text: '#0f172a',
+      textMuted: '#475569',
+      border: '#e2e8f0',
+      borderStrong: '#cbd5e1',
+      accent: '#855b0e',
+      accentContrast: '#ffffff',
+      focusRing: 'rgba(133, 91, 14, 0.2)',
+      shadow: '0 12px 28px rgba(15, 23, 42, 0.08)',
     },
   },
 };

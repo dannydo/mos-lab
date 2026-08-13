@@ -912,6 +912,79 @@ body {
   padding: 6px 12px !important;
 }
 
+/* FAL control tower: icon-only rotation state, with theme-aware contrast. */
+.fal-rotation-icon {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark-theme .fal-rotation-head {
+  color: #4ade80;
+}
+.light-theme .fal-rotation-head {
+  color: #15803d;
+}
+.dark-theme .fal-rotation-consumed {
+  color: #60a5fa;
+}
+.light-theme .fal-rotation-consumed {
+  color: #2563eb;
+}
+.dark-theme .fal-rotation-final {
+  color: #94a3b8;
+}
+.light-theme .fal-rotation-final {
+  color: #64748b;
+}
+.dark-theme .fal-rotation-undetermined {
+  color: #fbbf24;
+}
+.light-theme .fal-rotation-undetermined {
+  color: #b45309;
+}
+
+.fal-status-icon {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark-theme .fal-status-ready {
+  color: #4ade80;
+}
+.light-theme .fal-status-ready {
+  color: #15803d;
+}
+.dark-theme .fal-status-processing {
+  color: #60a5fa;
+}
+.light-theme .fal-status-processing {
+  color: #2563eb;
+}
+.dark-theme .fal-status-pending {
+  color: #fbbf24;
+}
+.light-theme .fal-status-pending {
+  color: #b45309;
+}
+.dark-theme .fal-status-rejected {
+  color: #fb7185;
+}
+.light-theme .fal-status-rejected {
+  color: #be123c;
+}
+.dark-theme .fal-status-follow {
+  color: #94a3b8;
+}
+.light-theme .fal-status-follow {
+  color: #64748b;
+}
+
 /* ==========================================================================
    Ant Design DatePicker Theme Overrides (Dark & Light High Contrast Standards)
    ========================================================================== */
@@ -1188,4 +1261,86 @@ body {
 [class*='timer'] {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+}
+
+/* Customer operations table: centralized theme-aware table and row-state contract. */
+.dark-theme .customer-data-table .ant-table {
+  background: #111827 !important;
+  color: #cbd5e1 !important;
+}
+.light-theme .customer-data-table .ant-table {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+.dark-theme .customer-data-table .ant-table-thead > tr > th {
+  background: #0b0f19 !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+.light-theme .customer-data-table .ant-table-thead > tr > th {
+  background: #f8fafc !important;
+  color: #9e7118 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+.dark-theme .customer-data-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #1f2937 !important;
+}
+.light-theme .customer-data-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+.dark-theme .customer-data-table .ant-table-row:hover > td {
+  background: #1e293b !important;
+}
+.light-theme .customer-data-table .ant-table-row:hover > td {
+  background: #f1f5f9 !important;
+}
+.light-theme .customer-data-table .row-missed-light > td {
+  background-color: #fff1f0 !important;
+}
+.light-theme .customer-data-table .row-booked-future-light > td {
+  background-color: #f6ffed !important;
+}
+.light-theme .customer-data-table .row-hope-light > td {
+  background-color: #fffbe6 !important;
+}
+.light-theme .customer-data-table .row-missed-light:hover > td {
+  background-color: #ffe8e6 !important;
+}
+.light-theme .customer-data-table .row-booked-future-light:hover > td {
+  background-color: #ebfcdd !important;
+}
+.light-theme .customer-data-table .row-hope-light:hover > td {
+  background-color: #fffac6 !important;
+}
+.dark-theme .customer-data-table .row-missed-dark > td {
+  background-color: #2a1215 !important;
+}
+.dark-theme .customer-data-table .row-booked-future-dark > td {
+  background-color: #162c1b !important;
+}
+.dark-theme .customer-data-table .row-hope-dark > td {
+  background-color: #2b2111 !important;
+}
+.dark-theme .customer-data-table .row-missed-dark:hover > td {
+  background-color: #381b1e !important;
+}
+.dark-theme .customer-data-table .row-booked-future-dark:hover > td {
+  background-color: #1e3a24 !important;
+}
+.dark-theme .customer-data-table .row-hope-dark:hover > td {
+  background-color: #382c16 !important;
+}
+.customer-data-table .ant-pagination-item-active {
+  border-color: #d4a84b !important;
+}
+.customer-data-table .ant-pagination-item-active a {
+  color: #d4a84b !important;
+}
+.customer-data-table .ant-table-tbody > tr > td {
+  padding: 6px 8px !important;
+  line-height: 1.25 !important;
+}
+.customer-data-table .ant-table-thead > tr > th {
+  padding: 8px 8px !important;
+  line-height: 1.25 !important;
 }

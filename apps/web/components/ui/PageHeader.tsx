@@ -14,22 +14,19 @@ export interface PageHeaderProps {
   className?: string;
 }
 
-export function PageHeader({
-  title,
-  subtitle,
-  icon,
-  tag,
-  extra,
-  className = '',
-}: PageHeaderProps) {
+export function PageHeader({ title, subtitle, icon, tag, extra, className = '' }: PageHeaderProps) {
   const { token } = theme.useToken();
 
   return (
     <div className={`flex flex-wrap justify-between items-center mb-6 gap-4 ${className}`}>
       <div>
         <div className="flex items-center gap-2">
-          {icon && <span className="text-xl text-amber-500 flex items-center">{icon}</span>}
-          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
+          {icon && (
+            <span className="flex items-center text-xl" style={{ color: token.colorPrimary }}>
+              {icon}
+            </span>
+          )}
+          <Title level={2} style={{ color: token.colorText, margin: 0 }}>
             {title}
           </Title>
           {tag && <div className="ml-1">{tag}</div>}
@@ -41,7 +38,11 @@ export function PageHeader({
         )}
       </div>
 
-      {extra && <Space wrap size={10}>{extra}</Space>}
+      {extra && (
+        <Space wrap size={10}>
+          {extra}
+        </Space>
+      )}
     </div>
   );
 }

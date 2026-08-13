@@ -39,16 +39,21 @@ export function StatCard({
         ...style,
       }}
       styles={{ body: { padding: '16px' } }}
-      className={`shadow-sm rounded-xl transition-all duration-200 hover:shadow-md ${className}`}
+      className={`rounded-xl transition-all duration-200 hover:shadow-md ${className}`}
     >
       <div className="flex justify-between items-start gap-3">
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-medium text-slate-400 mb-1 truncate">{title}</div>
+          <div className="mb-1 truncate text-xs font-medium" style={{ color: token.colorTextSecondary }}>
+            {title}
+          </div>
           <div className="text-xl font-bold tabular-nums tracking-tight" style={{ color: token.colorText }}>
             {value}
           </div>
           {(subValue || trendText) && (
-            <div className="mt-1 text-xs text-slate-400 flex items-center gap-1.5 truncate">
+            <div
+              className="mt-1 flex items-center gap-1.5 truncate text-xs"
+              style={{ color: token.colorTextSecondary }}
+            >
               {subValue && <span>{subValue}</span>}
               {trendText && <span className="font-medium text-emerald-400">{trendText}</span>}
             </div>
