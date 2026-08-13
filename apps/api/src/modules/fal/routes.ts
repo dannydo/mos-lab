@@ -24,6 +24,9 @@ type LegacyFalRow = {
   ccOutName: string;
   ccInAvatar: string | null;
   ccOutAvatar: string | null;
+  bookerId: number | null;
+  bookerName: string | null;
+  bookerAvatar: string | null;
   cvId: number | null;
   ccInId: number | null;
   ccOutId: number | null;
@@ -36,6 +39,11 @@ type LegacyFalRow = {
   originCvAvatar: string | null;
   originCcInName: string | null;
   originCcOutName: string | null;
+  originCcInAvatar: string | null;
+  originCcOutAvatar: string | null;
+  originBookerId: number | null;
+  originBookerName: string | null;
+  originBookerAvatar: string | null;
   originCvId: number | null;
   originCcInId: number | null;
   originCcOutId: number | null;
@@ -91,7 +99,7 @@ async function findLegacyFalRows(fastify: FastifyInstance, options: FalListOptio
   const page = Math.max(1, Number(options.page) || 1);
   const limit = Math.min(500, Math.max(1, Number(options.limit) || 100));
   const offset = (page - 1) * limit;
-  return fastify.prisma.legacy.$queryRawUnsafe<LegacyFalRow[]>(`
+  const rows = await fastify.prisma.legacy.$queryRawUnsafe<LegacyFalRow[]>(`
     SELECT * FROM (
       SELECT
         os.id AS orderServiceId,
@@ -121,20 +129,28 @@ async function findLegacyFalRows(fastify: FastifyInstance, options: FalListOptio
         os.next_log_order_service_id AS nextLogOrderServiceId,
         COALESCE(checkin_p.full_name, '') AS ccInName,
         COALESCE(checkout_p.full_name, '') AS ccOutName,
-        NULLIF(checkin_p.avatar, '') AS ccInAvatar,
-        NULLIF(checkout_p.avatar, '') AS ccOutAvatar,
+        COALESCE(NULLIF(checkin_p.avatar, ''), NULLIF(checkin_p.avatar_internal, '')) AS ccInAvatar,
+        COALESCE(NULLIF(checkout_p.avatar, ''), NULLIF(checkout_p.avatar_internal, '')) AS ccOutAvatar,
+        o.created_staff_id AS bookerId,
+        NULLIF(booker_p.full_name, '') AS bookerName,
+        COALESCE(NULLIF(booker_p.avatar, ''), NULLIF(booker_p.avatar_internal, '')) AS bookerAvatar,
         os.assigned_staff_id AS cvId,
         os.check_in_staff_id AS ccInId,
         os.check_out_staff_id AS ccOutId,
         COALESCE(cv_p.full_name, '') AS cvName,
-        NULLIF(cv_p.avatar, '') AS cvAvatar,
+        COALESCE(NULLIF(cv_p.avatar, ''), NULLIF(cv_p.avatar_internal, '')) AS cvAvatar,
         origin_os.id AS originOrderServiceId,
         DATE_FORMAT(origin_ro.actual_booking_date_start, '%Y-%m-%d %H:%i:%s') AS originCheckin,
         COALESCE(origin_sl.service_name, origin_s.service_key) AS originServiceName,
         NULLIF(origin_cv_p.full_name, '') AS originCvName,
-        NULLIF(origin_cv_p.avatar, '') AS originCvAvatar,
+        COALESCE(NULLIF(origin_cv_p.avatar, ''), NULLIF(origin_cv_p.avatar_internal, '')) AS originCvAvatar,
         NULLIF(origin_cc_in_p.full_name, '') AS originCcInName,
         NULLIF(origin_cc_out_p.full_name, '') AS originCcOutName,
+        COALESCE(NULLIF(origin_cc_in_p.avatar, ''), NULLIF(origin_cc_in_p.avatar_internal, '')) AS originCcInAvatar,
+        COALESCE(NULLIF(origin_cc_out_p.avatar, ''), NULLIF(origin_cc_out_p.avatar_internal, '')) AS originCcOutAvatar,
+        origin_o.created_staff_id AS originBookerId,
+        NULLIF(origin_booker_p.full_name, '') AS originBookerName,
+        COALESCE(NULLIF(origin_booker_p.avatar, ''), NULLIF(origin_booker_p.avatar_internal, '')) AS originBookerAvatar,
         origin_os.assigned_staff_id AS originCvId,
         origin_os.check_in_staff_id AS originCcInId,
         origin_os.check_out_staff_id AS originCcOutId,
@@ -169,6 +185,7 @@ async function findLegacyFalRows(fastify: FastifyInstance, options: FalListOptio
       LEFT JOIN user_profile client_p ON client_p.user_id = o.user_id
       LEFT JOIN user_profile checkin_p ON checkin_p.user_id = os.check_in_staff_id
       LEFT JOIN user_profile checkout_p ON checkout_p.user_id = os.check_out_staff_id
+      LEFT JOIN user_profile booker_p ON booker_p.user_id = o.created_staff_id
       LEFT JOIN user_profile cv_p ON cv_p.user_id = os.assigned_staff_id
       LEFT JOIN order_service origin_os ON origin_os.id = COALESCE(parent_fix.id, parent_adjust.id, parent_log.id)
       LEFT JOIN \`order\` origin_o ON origin_o.id = origin_os.order_id
@@ -178,6 +195,7 @@ async function findLegacyFalRows(fastify: FastifyInstance, options: FalListOptio
       LEFT JOIN user_profile origin_cv_p ON origin_cv_p.user_id = origin_os.assigned_staff_id
       LEFT JOIN user_profile origin_cc_in_p ON origin_cc_in_p.user_id = origin_os.check_in_staff_id
       LEFT JOIN user_profile origin_cc_out_p ON origin_cc_out_p.user_id = origin_os.check_out_staff_id
+      LEFT JOIN user_profile origin_booker_p ON origin_booker_p.user_id = origin_o.created_staff_id
       LEFT JOIN fal_rotation_priority frp ON frp.order_service_id = os.id
       WHERE 1 = 1 ${orderServiceCondition} ${selectedDateCondition}
     ) fal_cases
@@ -185,6 +203,53 @@ async function findLegacyFalRows(fastify: FastifyInstance, options: FalListOptio
     ORDER BY checkin DESC, orderServiceId DESC
     LIMIT ${limit} OFFSET ${offset}
   `);
+  await applyCrmAvatarFallbacks(fastify, rows);
+  return rows;
+}
+
+async function applyCrmAvatarFallbacks(fastify: FastifyInstance, rows: LegacyFalRow[]) {
+  const staffIds = [
+    ...new Set(
+      rows
+        .flatMap((row) => [
+          row.bookerId,
+          row.ccInId,
+          row.ccOutId,
+          row.cvId,
+          row.originBookerId,
+          row.originCcInId,
+          row.originCcOutId,
+          row.originCvId,
+        ])
+        .map(Number)
+        .filter((id) => Number.isInteger(id) && id > 0)
+    ),
+  ];
+  if (!staffIds.length) return;
+  try {
+    const staff = await fastify.prisma.crm.crmStaff.findMany({
+      where: { legacyStaffId: { in: staffIds } },
+      select: { legacyStaffId: true, avatarUrl: true },
+    });
+    const avatars = new Map(
+      staff
+        .filter((item) => item.legacyStaffId && item.avatarUrl)
+        .map((item) => [Number(item.legacyStaffId), item.avatarUrl as string])
+    );
+    const fallback = (avatar: string | null, staffId: number | null) => avatar || avatars.get(Number(staffId)) || null;
+    rows.forEach((row) => {
+      row.bookerAvatar = fallback(row.bookerAvatar, row.bookerId);
+      row.ccInAvatar = fallback(row.ccInAvatar, row.ccInId);
+      row.ccOutAvatar = fallback(row.ccOutAvatar, row.ccOutId);
+      row.cvAvatar = fallback(row.cvAvatar, row.cvId);
+      row.originBookerAvatar = fallback(row.originBookerAvatar, row.originBookerId);
+      row.originCcInAvatar = fallback(row.originCcInAvatar, row.originCcInId);
+      row.originCcOutAvatar = fallback(row.originCcOutAvatar, row.originCcOutId);
+      row.originCvAvatar = fallback(row.originCvAvatar, row.originCvId);
+    });
+  } catch (error) {
+    fastify.log.warn({ error }, 'FAL Trace CRM avatar fallback unavailable');
+  }
 }
 
 async function getStaffLedgerByOrderService(fastify: FastifyInstance, orderServiceIds: number[]) {
@@ -320,8 +385,13 @@ export async function falRoutes(fastify: FastifyInstance) {
                 serviceName: row.originServiceName,
                 cvName: row.originCvName,
                 cvAvatar: row.originCvAvatar,
+                bookerId: row.originBookerId,
+                bookerName: row.originBookerName,
+                bookerAvatar: row.originBookerAvatar,
                 ccInName: row.originCcInName,
                 ccOutName: row.originCcOutName,
+                ccInAvatar: row.originCcInAvatar,
+                ccOutAvatar: row.originCcOutAvatar,
                 cvId: row.originCvId,
                 ccInId: row.originCcInId,
                 ccOutId: row.originCcOutId,
@@ -334,6 +404,9 @@ export async function falRoutes(fastify: FastifyInstance) {
             serviceName: row.serviceName,
             cvName: row.cvName,
             cvAvatar: row.cvAvatar,
+            bookerId: row.bookerId,
+            bookerName: row.bookerName,
+            bookerAvatar: row.bookerAvatar,
             ccInName: row.ccInName,
             ccOutName: row.ccOutName,
             cvId: row.cvId,

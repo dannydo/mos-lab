@@ -95,6 +95,9 @@ type TraceService = {
   orderServiceId: number;
   checkin: string | null;
   serviceName: string | null;
+  bookerId: number | null;
+  bookerName: string | null;
+  bookerAvatar: string | null;
   cvName: string | null;
   cvAvatar: string | null;
   ccInName: string | null;
@@ -232,6 +235,20 @@ function CompactConsultant({
       )}
       <Tooltip title={displayName}>
         <Text className="block truncate text-xs">{displayName}</Text>
+      </Tooltip>
+    </Space>
+  );
+}
+
+function TraceStaff({ name, avatar }: { name?: string | null; avatar?: string | null }) {
+  const displayName = name || '-';
+  return (
+    <Space size={6} className="min-w-0">
+      <Avatar size="small" src={toWingsAvatarUrl(avatar)}>
+        {displayName.slice(0, 1).toUpperCase() || '?'}
+      </Avatar>
+      <Tooltip title={displayName}>
+        <Text className="truncate">{displayName}</Text>
       </Tooltip>
     </Space>
   );
@@ -470,10 +487,28 @@ function LogDecisionIndicator({ record }: { record: FalCase }) {
   );
 }
 
+type LedgerRole = 'BK' | 'CC' | 'CV' | 'Khác';
+
+function isSameStaffId(left?: number | null, right?: number | null) {
+  return left != null && right != null && Number(left) === Number(right);
+}
+
+function getLedgerRoles(item: LedgerItem, service: TraceService): LedgerRole[] {
+  const roles: LedgerRole[] = [];
+  if (isSameStaffId(item.staffId, service.bookerId)) roles.push('BK');
+  if (isSameStaffId(item.staffId, service.ccInId) || isSameStaffId(item.staffId, service.ccOutId)) roles.push('CC');
+  if (isSameStaffId(item.staffId, service.cvId)) roles.push('CV');
+  return roles.length ? roles : ['Khác'];
+}
+
 function getLedgerRole(item: LedgerItem, service: TraceService) {
-  if (item.staffId === service.cvId) return 'CV';
-  if (item.staffId === service.ccInId || item.staffId === service.ccOutId) return 'CC';
-  return 'Khác';
+  return getLedgerRoles(item, service)[0];
+}
+
+function compareLedgerByRole(left: LedgerItem, right: LedgerItem, service: TraceService) {
+  const rank: Record<string, number> = { BK: 0, CC: 1, CV: 2, Khác: 3 };
+  const rankDiff = rank[getLedgerRole(left, service)] - rank[getLedgerRole(right, service)];
+  return rankDiff || left.staffName.localeCompare(right.staffName, 'vi');
 }
 
 function getOriginLedgerImpact(
@@ -482,12 +517,13 @@ function getOriginLedgerImpact(
   rule: string,
   remediationOrderServiceId: number
 ) {
-  const role = getLedgerRole(item, service);
+  const roles = getLedgerRoles(item, service);
+  const role = roles[0];
   const responsibleRole = rule === 'Fix' ? 'CV' : rule === 'Adjust' ? 'CC' : null;
-  if (!responsibleRole || role !== responsibleRole) {
+  if (!responsibleRole || !roles.includes(responsibleRole)) {
     const isAdjustCvHistoricalMismatch =
       rule === 'Adjust' &&
-      role === 'CV' &&
+      roles.includes('CV') &&
       item.bonusPoints === 0 &&
       item.cash === 0 &&
       item.positiveConfiguredRuleCount > 0 &&
@@ -495,7 +531,7 @@ function getOriginLedgerImpact(
       item.cashMultiplier > 0;
     return isAdjustCvHistoricalMismatch
       ? 'Cần backfill — 0 trái rule Adjust'
-      : role === 'Khác'
+      : roles.every((currentRole) => currentRole === 'Khác' || currentRole === 'BK')
         ? 'Không thuộc FAL'
         : 'Giữ nguyên';
   }
@@ -520,36 +556,45 @@ function LedgerList({
   if (!ledger.length) return <Text type="secondary">Chưa có bút toán trong staff_bonus.</Text>;
   return (
     <div className="space-y-2">
-      {ledger.map((item) => {
-        const role = getLedgerRole(item, service);
-        const impact = isOrigin
-          ? getOriginLedgerImpact(item, service, rule, remediationOrderServiceId)
-          : 'Ledger ca xử lý';
-        return (
-          <div key={item.staffId} className="rounded-lg border px-3 py-2.5">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <Space size={6} wrap className="min-w-0">
-                <Text strong ellipsis>
-                  {item.staffName}
-                </Text>
-                <Tag color={role === 'CV' ? 'purple' : role === 'CC' ? 'blue' : 'default'}>{role}</Tag>
-              </Space>
-              <Space size={4} wrap className="ml-auto">
-                <Tag color={item.bananaCredit === 0 ? 'default' : 'gold'}>
-                  {item.bananaCredit.toLocaleString('vi-VN')} Chuối
-                </Tag>
-                <Tag color={item.bonusPoints === 0 ? 'default' : 'blue'}>
-                  {item.bonusPoints.toLocaleString('vi-VN')} điểm
-                </Tag>
-                <Tag color={item.cash === 0 ? 'default' : 'green'}>{formatMoney(item.cash)}</Tag>
-              </Space>
+      {[...ledger]
+        .sort((left, right) => compareLedgerByRole(left, right, service))
+        .map((item) => {
+          const roles = getLedgerRoles(item, service);
+          const impact = isOrigin
+            ? getOriginLedgerImpact(item, service, rule, remediationOrderServiceId)
+            : 'Ledger ca xử lý';
+          return (
+            <div key={item.staffId} className="rounded-lg border px-3 py-2.5">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <Space size={6} wrap className="min-w-0">
+                  <Text strong ellipsis>
+                    {item.staffName}
+                  </Text>
+                  {roles.map((role) => (
+                    <Tag
+                      key={role}
+                      color={role === 'CV' ? 'purple' : role === 'CC' ? 'blue' : role === 'BK' ? 'cyan' : 'default'}
+                    >
+                      {role}
+                    </Tag>
+                  ))}
+                </Space>
+                <Space size={4} wrap className="ml-auto">
+                  <Tag color={item.bananaCredit === 0 ? 'default' : 'gold'}>
+                    {item.bananaCredit.toLocaleString('vi-VN')} Chuối
+                  </Tag>
+                  <Tag color={item.bonusPoints === 0 ? 'default' : 'blue'}>
+                    {item.bonusPoints.toLocaleString('vi-VN')} điểm
+                  </Tag>
+                  <Tag color={item.cash === 0 ? 'default' : 'green'}>{formatMoney(item.cash)}</Tag>
+                </Space>
+              </div>
+              <Text type="secondary" className="text-xs">
+                {impact}
+              </Text>
             </div>
-            <Text type="secondary" className="text-xs">
-              {impact}
-            </Text>
-          </div>
-        );
-      })}
+          );
+        })}
     </div>
   );
 }
@@ -575,10 +620,6 @@ function TraceCaseCard({
         <Text type="secondary">{fallback}</Text>
       </Card>
     );
-  const cc =
-    service.ccInName === service.ccOutName
-      ? service.ccInName || '-'
-      : `${service.ccInName || '-'} / ${service.ccOutName || '-'}`;
   return (
     <Card size="small" title={title}>
       <Descriptions
@@ -589,18 +630,32 @@ function TraceCaseCard({
           { key: 'time', label: 'Thời gian', children: service.checkin || '-' },
           { key: 'service', label: 'Dịch vụ', children: service.serviceName || '-' },
           {
-            key: 'cv',
-            label: 'CV',
+            key: 'bk',
+            label: 'BK',
+            children: <TraceStaff name={service.bookerName} avatar={service.bookerAvatar} />,
+          },
+          {
+            key: 'cc',
+            label: 'CC IN / OUT',
             children: (
-              <Space size={6}>
-                <Avatar size="small" src={toWingsAvatarUrl(service.cvAvatar)}>
-                  {service.cvName?.slice(0, 1).toUpperCase() || '?'}
-                </Avatar>
-                {service.cvName || '-'}
-              </Space>
+              <CompactConsultant
+                inName={service.ccInName}
+                outName={service.ccOutName}
+                inAvatar={
+                  service.ccInAvatar || (isSameStaffId(service.ccInId, service.bookerId) ? service.bookerAvatar : null)
+                }
+                outAvatar={
+                  service.ccOutAvatar ||
+                  (isSameStaffId(service.ccOutId, service.bookerId) ? service.bookerAvatar : null)
+                }
+              />
             ),
           },
-          { key: 'cc', label: 'CC IN / OUT', children: cc },
+          {
+            key: 'cv',
+            label: 'CV',
+            children: <TraceStaff name={service.cvName} avatar={service.cvAvatar} />,
+          },
         ]}
       />
       <Divider className="!my-3" />
